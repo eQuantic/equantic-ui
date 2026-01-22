@@ -1,8 +1,16 @@
 <Project>
     <!-- Sdk.targets: Imports custom build task -->
 
+    <PropertyGroup>
+        <UiBuildAssemblyPath
+            Condition="'$(UiBuildAssemblyPath)' == ''And Exists('$(MSBuildThisFileDirectory)../tools/net8.0/eQuantic.Build.dll')">
+            $(MSBuildThisFileDirectory)../tools/net8.0/eQuantic.Build.dll</UiBuildAssemblyPath>
+        <UiBuildAssemblyPath Condition="'$(UiBuildAssemblyPath)' == ''">
+            $(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Debug/net8.0/eQuantic.Build.dll</UiBuildAssemblyPath>
+    </PropertyGroup>
+
     <UsingTask TaskName="eQuantic.Build.CompileUiComponents"
-        AssemblyFile="$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Debug/net8.0/eQuantic.Build.dll" />
+        AssemblyFile="$(UiBuildAssemblyPath)" />
 
     <Target Name="CompileUiComponents" AfterTargets="Build">
         <CompileUiComponents Sources="@(UIComponent)"

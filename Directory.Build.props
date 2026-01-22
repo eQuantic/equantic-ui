@@ -1,0 +1,12 @@
+<Project>
+    <PropertyGroup>
+        <Version>0.1.0</Version>
+        <Authors>eQuantic</Authors>
+        <Company>eQuantic</Company>
+        <Product>eQuantic.UI</Product>
+        <Copyright>Copyright © 2025 eQuantic</Copyright>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/equantic/equantic-ui</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+    </PropertyGroup>
+</Project>

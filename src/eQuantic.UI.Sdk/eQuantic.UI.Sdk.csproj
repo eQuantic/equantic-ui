@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <IsPackable>true</IsPackable>
+        <PackageId>eQuantic.UI.Sdk</PackageId>
+        <Description>MSBuild SDK for eQuantic UI components.</Description>
+        <PackageType>MSBuildSdk</PackageType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="Sdk\**" PackagePath="Sdk" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\eQuantic.Build\eQuantic.Build.csproj"
+            ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <TargetsForTfmSpecificContentInPackage>
+            $(TargetsForTfmSpecificContentInPackage);CollectBuildOutput</TargetsForTfmSpecificContentInPackage>
+    </PropertyGroup>
+
+    <Target Name="CollectBuildOutput">
+        <MSBuild Projects="..\eQuantic.Build\eQuantic.Build.csproj" Targets="Build"
+            Properties="Configuration=$(Configuration)" />
+        <ItemGroup>
+            <_BuildOutput Include="..\eQuantic.Build\bin\$(Configuration)\net8.0\**"
+                Exclude="..\eQuantic.Build\bin\$(Configuration)\net8.0\*.pdb" />
+        </ItemGroup>
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="@(_BuildOutput)" PackagePath="tools\net8.0" />
+        </ItemGroup>
+    </Target>
+
+</Project>

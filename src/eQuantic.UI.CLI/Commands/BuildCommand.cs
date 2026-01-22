@@ -18,24 +18,30 @@ public static class BuildCommand
             return;
         }
         
-        var compiler = new EqxCompiler();
+        var compiler = new ComponentCompiler();
         var outputDir = Path.GetFullPath(output);
         Directory.CreateDirectory(outputDir);
         
-        // Find all .eqx files
-        var files = Directory.Exists(input)
-            ? Directory.GetFiles(input, "*.eqx", SearchOption.AllDirectories)
-            : new[] { input };
+        // Find all .cs files that look like components
+        // In a real CLI this would use a proper project analysis, but for standalone CLI simple grep is fine
+        var files = (Directory.Exists(input)
+            ? Directory.GetFiles(input, "*.cs", SearchOption.AllDirectories)
+            : new[] { input })
+            .Where(f => !f.Contains("/obj/") && !f.Contains("/bin/") && 
+                       (File.ReadAllText(f).Contains(": StatefulComponent") || 
+                        File.ReadAllText(f).Contains(": StatelessComponent") || 
+                        File.ReadAllText(f).Contains("[Component]")))
+            .ToArray();
         
         if (files.Length == 0)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("⚠️  No .eqx files found");
+            Console.WriteLine("⚠️  No component files found");
             Console.ResetColor();
             return;
         }
         
-        Console.WriteLine($"   Found {files.Length} .eqx file(s)");
+        Console.WriteLine($"   Found {files.Length} component file(s)");
         Console.WriteLine();
         
         var successCount = 0;
@@ -99,12 +105,12 @@ public static class BuildCommand
         }
     }
     
-    private static void WatchForChanges(string input, string output, EqxCompiler compiler)
+    private static void WatchForChanges(string input, string output, ComponentCompiler compiler)
     {
         var watcher = new FileSystemWatcher
         {
             Path = Directory.Exists(input) ? input : Path.GetDirectoryName(input)!,
-            Filter = "*.eqx",
+            Filter = "*.cs",
             IncludeSubdirectories = true,
             EnableRaisingEvents = true
         };
@@ -122,8 +128,11 @@ public static class BuildCommand
         exitEvent.WaitOne();
     }
     
-    private static void RecompileFile(string filePath, string output, EqxCompiler compiler)
+    private static void RecompileFile(string filePath, string output, ComponentCompiler compiler)
     {
+        // Simple optimization check
+        if (!File.ReadAllText(filePath).Contains("Component")) return;
+
         Console.WriteLine($"   🔄 Recompiling {Path.GetFileName(filePath)}...");
         
         try
