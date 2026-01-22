@@ -14,12 +14,14 @@ public class ComponentCompiler
 {
     private readonly ComponentParser _parser;
     private readonly JavaScriptEmitter _jsEmitter;
+    private readonly TypeScriptEmitter _tsEmitter;
     private readonly CssEmitter _cssEmitter;
     
     public ComponentCompiler()
     {
         _parser = new ComponentParser();
         _jsEmitter = new JavaScriptEmitter();
+        _tsEmitter = new TypeScriptEmitter();
         _cssEmitter = new CssEmitter();
     }
     
@@ -54,7 +56,10 @@ public class ComponentCompiler
         
         try
         {
-            // Generate JavaScript
+            // Generate TypeScript (preferred for Bun bundling)
+            result.TypeScript = _tsEmitter.Emit(component);
+            
+            // Generate JavaScript (fallback)
             result.JavaScript = _jsEmitter.Emit(component);
             
             // Generate CSS from StyleClass usages
@@ -144,6 +149,7 @@ public class CompilationResult
     public bool Success { get; set; }
     public string ComponentName { get; set; } = string.Empty;
     public string Namespace { get; set; } = string.Empty;
+    public string TypeScript { get; set; } = string.Empty;
     public string JavaScript { get; set; } = string.Empty;
     public string? Css { get; set; }
     public List<CompilationError> Errors { get; set; } = new();

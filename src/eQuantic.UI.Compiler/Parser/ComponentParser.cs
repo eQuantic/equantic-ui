@@ -64,6 +64,12 @@ public class ComponentParser
                 definition.Name = classDecl.Identifier.Text;
                 definition.IsStateful = true;
                 
+                // Parse [Page] attributes
+                ParsePageAttributes(classDecl, definition);
+                
+                // Parse [ServerAction] methods
+                ParseServerActions(classDecl, definition);
+                
                 // Find the CreateState method to get state class name
                 var createStateMethod = classDecl.DescendantNodes()
                     .OfType<MethodDeclarationSyntax>()
@@ -86,6 +92,9 @@ public class ComponentParser
             {
                 definition.Name = classDecl.Identifier.Text;
                 definition.IsStateful = false;
+                
+                // Parse [Page] attributes
+                ParsePageAttributes(classDecl, definition);
             }
             else if (baseType?.StartsWith("ComponentState") == true && definition.IsStateful)
             {
@@ -95,6 +104,72 @@ public class ComponentParser
         }
         
         return definition;
+    }
+    
+    private void ParsePageAttributes(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
+    {
+        foreach (var attrList in classDecl.AttributeLists)
+        {
+            foreach (var attr in attrList.Attributes)
+            {
+                var attrName = attr.Name.ToString();
+                if (attrName == "Page" || attrName == "PageAttribute")
+                {
+                    var routeInfo = new PageRouteInfo();
+                    
+                    if (attr.ArgumentList?.Arguments.Count > 0)
+                    {
+                        var routeArg = attr.ArgumentList.Arguments[0];
+                        routeInfo.Route = routeArg.Expression.ToString().Trim('"');
+                        
+                        // Check for named Title argument
+                        foreach (var arg in attr.ArgumentList.Arguments.Skip(1))
+                        {
+                            if (arg.NameEquals?.Name.ToString() == "Title")
+                            {
+                                routeInfo.Title = arg.Expression.ToString().Trim('"');
+                            }
+                        }
+                    }
+                    
+                    definition.PageRoutes.Add(routeInfo);
+                }
+            }
+        }
+    }
+    
+    private void ParseServerActions(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
+    {
+        var methods = classDecl.DescendantNodes().OfType<MethodDeclarationSyntax>();
+        
+        foreach (var method in methods)
+        {
+            var hasServerAction = method.AttributeLists
+                .SelectMany(al => al.Attributes)
+                .Any(a => a.Name.ToString() == "ServerAction" || a.Name.ToString() == "ServerActionAttribute");
+            
+            if (hasServerAction)
+            {
+                var actionInfo = new ServerActionInfo
+                {
+                    MethodName = method.Identifier.Text,
+                    ActionId = $"{definition.Name}/{method.Identifier.Text}",
+                    ReturnType = method.ReturnType.ToString(),
+                    IsAsync = method.Modifiers.Any(m => m.ValueText == "async")
+                };
+                
+                foreach (var param in method.ParameterList.Parameters)
+                {
+                    actionInfo.Parameters.Add(new ParameterDefinition
+                    {
+                        Name = param.Identifier.Text,
+                        Type = param.Type?.ToString() ?? "object"
+                    });
+                }
+                
+                definition.ServerActions.Add(actionInfo);
+            }
+        }
     }
     
     private void ParseStateClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)

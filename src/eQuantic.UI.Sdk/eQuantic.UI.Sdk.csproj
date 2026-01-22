@@ -11,6 +11,11 @@
 
     <ItemGroup>
         <Content Include="Sdk\**" PackagePath="Sdk" />
+        <!-- Bun binaries for cross-platform TypeScript bundling -->
+        <Content Include="tools\bun.exe" PackagePath="tools" Condition="Exists('tools\bun.exe')" />
+        <Content Include="tools\bun-linux" PackagePath="tools" Condition="Exists('tools\bun-linux')" />
+        <Content Include="tools\bun-darwin" PackagePath="tools"
+            Condition="Exists('tools\bun-darwin')" />
     </ItemGroup>
 
     <ItemGroup>

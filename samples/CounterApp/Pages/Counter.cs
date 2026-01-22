@@ -1,12 +1,24 @@
-// Counter.eqx - Sample eQuantic.UI Component
+// Counter.cs - Sample eQuantic.UI Page Component
 using eQuantic.UI.Core;
 using eQuantic.UI.Components;
 
-namespace CounterApp;
+namespace CounterApp.Pages;
 
-[Component]
+[Page("/", Title = "Counter Demo")]
+[Page("/counter")]
 public class Counter : StatefulComponent
 {
+    /// <summary>
+    /// Example Server Action - processes on the server and returns result.
+    /// </summary>
+    [ServerAction]
+    public async Task<int> IncrementOnServer(int current)
+    {
+        // Simulate server-side processing
+        await Task.Delay(100);
+        return current + 1;
+    }
+    
     public override ComponentState CreateState() => new CounterState();
 }
 

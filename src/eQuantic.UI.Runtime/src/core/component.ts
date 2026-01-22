@@ -128,43 +128,4 @@ export abstract class ComponentState {
   onDispose(): void {}
 }
 
-/**
- * Render HtmlNode to actual DOM element
- */
-function renderToDom(node: HtmlNode): Node {
-  // Text node
-  if (node.tag === '#text') {
-    return document.createTextNode(node.textContent || '');
-  }
 
-  // Create element
-  const element = document.createElement(node.tag);
-
-  // Set attributes
-  for (const [key, value] of Object.entries(node.attributes)) {
-    if (value !== undefined) {
-      element.setAttribute(key, value);
-    }
-  }
-
-  // Attach event handlers
-  for (const [eventName, handler] of Object.entries(node.events)) {
-    element.addEventListener(eventName, (e) => {
-      if (eventName === 'change' || eventName === 'input') {
-        const target = e.target as HTMLInputElement;
-        (handler as (value: string) => void)(target.value);
-      } else {
-        (handler as () => void)();
-      }
-    });
-  }
-
-  // Render children
-  for (const child of node.children) {
-    element.appendChild(renderToDom(child));
-  }
-
-  return element;
-}
-
-export { renderToDom };

@@ -1,7 +1,7 @@
 namespace eQuantic.UI.Compiler.Models;
 
 /// <summary>
-/// Represents a parsed component from a .eqx file
+/// Represents a parsed component from a .cs file
 /// </summary>
 public class ComponentDefinition
 {
@@ -24,6 +24,16 @@ public class ComponentDefinition
     /// Name of the state class (for stateful components)
     /// </summary>
     public string? StateClassName { get; set; }
+    
+    /// <summary>
+    /// Page routes from [Page] attributes
+    /// </summary>
+    public List<PageRouteInfo> PageRoutes { get; set; } = new();
+    
+    /// <summary>
+    /// Server actions from [ServerAction] methods
+    /// </summary>
+    public List<ServerActionInfo> ServerActions { get; set; } = new();
     
     /// <summary>
     /// State fields (field name -> type)
@@ -49,6 +59,27 @@ public class ComponentDefinition
     /// Source file path
     /// </summary>
     public string SourcePath { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Page route information from [Page] attribute
+/// </summary>
+public class PageRouteInfo
+{
+    public string Route { get; set; } = string.Empty;
+    public string? Title { get; set; }
+}
+
+/// <summary>
+/// Server action information from [ServerAction] attribute
+/// </summary>
+public class ServerActionInfo
+{
+    public string MethodName { get; set; } = string.Empty;
+    public string ActionId { get; set; } = string.Empty;
+    public string ReturnType { get; set; } = "void";
+    public List<ParameterDefinition> Parameters { get; set; } = new();
+    public bool IsAsync { get; set; }
 }
 
 /// <summary>

@@ -1,19 +1,31 @@
 <Project>
-    <!-- Sdk.targets: Imports custom build task -->
-
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.Web" />
     <PropertyGroup>
-        <UiBuildAssemblyPath
-            Condition="'$(UiBuildAssemblyPath)' == ''And Exists('$(MSBuildThisFileDirectory)../tools/net8.0/eQuantic.Build.dll')">
-            $(MSBuildThisFileDirectory)../tools/net8.0/eQuantic.Build.dll</UiBuildAssemblyPath>
-        <UiBuildAssemblyPath Condition="'$(UiBuildAssemblyPath)' == ''">
-            $(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Debug/net8.0/eQuantic.Build.dll</UiBuildAssemblyPath>
+        <_SdkToolsDir>$(MSBuildThisFileDirectory)../tools/net8.0/</_SdkToolsDir>
+        <_SourceBuildDir>$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Release/net8.0/</_SourceBuildDir>
+        <_SourceBuildDirDebug>$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Debug/net8.0/</_SourceBuildDirDebug>
     </PropertyGroup>
-
-    <UsingTask TaskName="eQuantic.Build.CompileUiComponents"
-        AssemblyFile="$(UiBuildAssemblyPath)" />
-
-    <Target Name="CompileUiComponents" AfterTargets="Build">
-        <CompileUiComponents Sources="@(UIComponent)"
-            OutputPath="$(OutputPath)/dist" />
+    <PropertyGroup Condition="Exists('$(_SdkToolsDir)eqc.dll')">
+        <EqcCliPath>$(_SdkToolsDir)eqc.dll</EqcCliPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(EqcCliPath)' == '' And Exists('$(_SourceBuildDir)eqc.dll')">
+        <EqcCliPath>$(_SourceBuildDir)eqc.dll</EqcCliPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(EqcCliPath)' == '' And Exists('$(_SourceBuildDirDebug)eqc.dll')">
+        <EqcCliPath>$(_SourceBuildDirDebug)eqc.dll</EqcCliPath>
+    </PropertyGroup>
+    <Target Name="CompileEQuanticUI" BeforeTargets="Build"
+        Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' != ''">
+        <Message Text="eQuantic.UI: Compiling components..." Importance="high" />
+        <MakeDir Directories="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)" />
+        <Exec
+            Command="dotnet $(EqcCliPath) $(MSBuildProjectDirectory)/Pages $(MSBuildProjectDirectory)/$(EQuanticOutputPath)"
+            WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
+            StandardOutputImportance="High" />
+    </Target>
+    <Target Name="WarnNoCli" BeforeTargets="Build"
+        Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' == ''">
+        <Warning
+            Text="eQuantic.UI: Compiler CLI not found. Run 'dotnet build src/eQuantic.Build' first." />
     </Target>
 </Project>

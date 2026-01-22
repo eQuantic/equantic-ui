@@ -7,6 +7,14 @@ bin/
 obj/
 dist/
 out/
+nupkgs/
+*.nupkg
+
+# Tools (large binaries)
+src/eQuantic.UI.Sdk/tools/bun
+src/eQuantic.UI.Sdk/tools/bun-darwin
+src/eQuantic.UI.Sdk/tools/bun-linux
+src/eQuantic.UI.Sdk/tools/bun.exe
 
 # IDE
 .idea/

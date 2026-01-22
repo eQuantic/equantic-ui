@@ -1,17 +1,25 @@
 <Project>
+    <!-- Import Microsoft.NET.Sdk.Web props -->
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk.Web" />
+
     <PropertyGroup>
+        <!-- eQuantic.UI compilation settings -->
+        <EnableEQuanticUICompilation>true</EnableEQuanticUICompilation>
+        <EQuanticOutputPath>wwwroot/_equantic/</EQuanticOutputPath>
+
+        <!-- Disable default items - we manage UIComponent items -->
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
         <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-        <OutputType>Library</OutputType>
-        <!-- We don't want to produce a DLL by default for the components themselves, 
-         but needed for intellisense. This is a hybrid approach. -->
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- Include all .cs files as UIComponents -->
-        <UIComponent Include="**/*.cs" Exclude="obj/**;bin/**" />
+        <!-- Include all .cs files in Pages/ as UIComponents -->
+        <UIComponent Include="Pages/**/*.cs" Exclude="obj/**;bin/**" />
 
-        <!-- Also include them as regular Compile items so VS provides intellisense -->
+        <!-- Include them as Compile items for IntelliSense -->
         <Compile Include="@(UIComponent)" />
+
+        <!-- Include other .cs files as regular compile items -->
+        <Compile Include="**/*.cs" Exclude="Pages/**/*.cs;obj/**;bin/**" />
     </ItemGroup>
 </Project>
