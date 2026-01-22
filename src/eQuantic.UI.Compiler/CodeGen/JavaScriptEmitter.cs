@@ -137,63 +137,74 @@ public class JavaScriptEmitter
         WriteLn("}");
     }
     
+    private readonly CSharpToJsConverter _converter = new();
+
     private void EmitMethod(MethodDefinition method)
     {
         var parameters = string.Join(", ", method.Parameters.Select(p => p.Name));
         var methodName = ToCamelCase(method.Name);
         
-        // Check if it's an arrow function expression like: () => SetState(() => _count++)
-        if (method.Body.Contains("=>"))
+        // Remove trailing semicolons from body if present
+        var body = method.Body.Trim().TrimEnd(';');
+        
+        if (body.StartsWith("{"))
         {
-            // Extract expression after =>
-            var arrowIndex = method.Body.IndexOf("=>");
-            var expression = method.Body[(arrowIndex + 2)..].Trim();
+            // Block body
+            var jsBody = _converter.Convert(body);
+            // Convert private field access in blocks manually for now if needed, 
+            // but the converter handles blocks
+            WriteLn($"{methodName}({parameters}) {jsBody}");
+        }
+        else if (body.Contains("=>"))
+        {
+            // Arrow function: () => SetState(() => _count++)
+            var arrowIndex = body.IndexOf("=>");
+            var expression = body[(arrowIndex + 2)..].Trim();
             
-            // Check if expression is SetState(() => something)
+            // Handle SetState specially
             if (expression.StartsWith("SetState"))
             {
-                // Extract inner lambda from SetState(() => _count++)
+                // Extract inner lambda from SetState(() => expr)
                 var innerStart = expression.IndexOf("() =>");
                 if (innerStart >= 0)
                 {
-                    var innerExpr = expression[(innerStart + 5)..].Trim().TrimEnd(')');
-                    innerExpr = ConvertFieldAccess(innerExpr);
-                    WriteLn($"{methodName}({parameters}) {{ this.setState(() => {{ {innerExpr}; }}); }}");
+                    var innerExpr = expression[(innerStart + 5)..].Trim();
+                    if (innerExpr.EndsWith(")")) innerExpr = innerExpr[..^1].Trim();
+                    
+                    var convertedExpr = _converter.Convert(innerExpr);
+                    WriteLn($"{methodName}({parameters}) {{ this.setState(() => {{ {convertedExpr}; }}); }}");
                 }
                 else
                 {
-                    // Fallback
-                    expression = ConvertCSharpToJs(expression);
-                    WriteLn($"{methodName}({parameters}) {{ {expression}; }}");
+                    var convertedExpr = _converter.Convert(expression);
+                    WriteLn($"{methodName}({parameters}) {{ {convertedExpr}; }}");
                 }
             }
             else
             {
-                // Simple expression like _count++
-                expression = ConvertCSharpToJs(expression);
-                WriteLn($"{methodName}({parameters}) {{ this.setState(() => {{ {expression}; }}); }}");
+                // Simple expression
+                 var convertedExpr = _converter.Convert(expression);
+                 
+                 // If it causes state change (assignment/increment), wrap in SetState?
+                 if (expression.Contains("=") || expression.Contains("++") || expression.Contains("--"))
+                 {
+                     WriteLn($"{methodName}({parameters}) {{ this.setState(() => {{ {convertedExpr}; }}); }}");
+                 }
+                 else
+                 {
+                     WriteLn($"{methodName}({parameters}) {{ {convertedExpr}; }}");
+                 }
             }
         }
         else
         {
-            WriteLn($"{methodName}({parameters}) {{");
-            Indent();
-            var jsBody = ConvertCSharpToJs(method.Body);
-            WriteLn(jsBody);
-            Dedent();
-            WriteLn("}");
+            // Expression body: _increment() => _count++
+            // But parsed as body string usually
+            var convertedExpr = _converter.Convert(body);
+            WriteLn($"{methodName}({parameters}) {{ {convertedExpr}; }}");
         }
     }
     
-    private string ConvertFieldAccess(string expression)
-    {
-        // Convert _fieldName to this._fieldName (without double conversion)
-        return System.Text.RegularExpressions.Regex.Replace(
-            expression, 
-            @"(?<!this\.)(?<![a-zA-Z])_([a-zA-Z]+)", 
-            "this._$1");
-    }
-
     private void EmitComponentTree(ComponentTree tree)
     {
         Write($"new {tree.ComponentType}({{");
@@ -242,41 +253,23 @@ public class JavaScriptEmitter
     {
         return value.Type switch
         {
-            PropertyValueType.String => EmitStringValue(value.StringValue ?? ""),
+            PropertyValueType.String => $"'{EscapeString(value.StringValue ?? "")}'",
             PropertyValueType.Number => value.StringValue ?? "0",
             PropertyValueType.Boolean => value.StringValue?.ToLower() ?? "false",
-            PropertyValueType.Expression => ConvertExpressionToJs(value.Expression ?? ""),
-            PropertyValueType.EventHandler => ConvertLambdaToJs(value.Expression ?? ""),
+            PropertyValueType.Expression => _converter.Convert(value.Expression ?? ""),
+            PropertyValueType.EventHandler => _converter.Convert(value.Expression ?? ""),
             PropertyValueType.StyleClass => value.Expression ?? "null",
             PropertyValueType.Component when value.ComponentValue != null => EmitComponentToString(value.ComponentValue),
             _ => "null"
         };
     }
     
-    private string EmitStringValue(string value)
+    private string ConvertLambdaToJs(string lambda)
     {
-        // Remove surrounding quotes if present
-        value = value.Trim('"');
-        return $"'{EscapeString(value)}'";
+        // Use the converter for lambdas too
+        return _converter.Convert(lambda);
     }
-    
-    private string ConvertExpressionToJs(string expression)
-    {
-        // Check if it's an interpolated string
-        if (expression.StartsWith("$\"") || expression.StartsWith("$@\""))
-        {
-            return ConvertInterpolatedString(expression);
-        }
-        
-        // Check if it's a simple field access
-        if (expression.StartsWith("_"))
-        {
-            return ConvertFieldAccess(expression);
-        }
-        
-        return ConvertCSharpToJs(expression);
-    }
-    
+
     private string EmitComponentToString(ComponentTree tree)
     {
         var sb = new StringBuilder();
@@ -299,110 +292,6 @@ public class JavaScriptEmitter
         return sb.ToString();
     }
     
-    private string ConvertCSharpToJs(string csharp)
-    {
-        if (string.IsNullOrEmpty(csharp)) return csharp;
-        
-        var result = csharp;
-        
-        // Convert C# interpolated strings to JS template literals
-        // $"Message: {_message}" -> `Message: ${this._message}`
-        result = ConvertInterpolatedString(result);
-        
-        // Convert C# dictionary initializers
-        // new() { ["testid"] = "counter" } -> { testid: "counter" }
-        result = ConvertDictionaryInitializer(result);
-        
-        // Convert SetState calls
-        result = result.Replace("SetState", "this.setState");
-        
-        // Convert field access - only standalone underscores not already prefixed with this.
-        // Use word boundary to avoid double conversion
-        result = System.Text.RegularExpressions.Regex.Replace(
-            result, 
-            @"(?<!this\.)(?<![a-zA-Z])_([a-zA-Z]+)", 
-            "this._$1");
-        
-        return result;
-    }
-    
-    private string ConvertLambdaToJs(string lambda)
-    {
-        if (string.IsNullOrEmpty(lambda)) return lambda;
-        
-        var result = lambda;
-        
-        // Convert SetState calls
-        result = result.Replace("SetState", "this.setState");
-        
-        // Convert field access with word boundary check
-        result = System.Text.RegularExpressions.Regex.Replace(
-            result, 
-            @"(?<!this\.)(?<![a-zA-Z])_([a-zA-Z]+)", 
-            "this._$1");
-        
-        return result;
-    }
-    
-    private string ConvertInterpolatedString(string input)
-    {
-        // Match $"..." or $@"..."
-        var pattern = @"\$""([^""]*?)""";
-        return System.Text.RegularExpressions.Regex.Replace(input, pattern, match =>
-        {
-            var content = match.Groups[1].Value;
-            
-            // Convert {expression} to ${expression}
-            content = System.Text.RegularExpressions.Regex.Replace(
-                content, 
-                @"\{([^}]+)\}", 
-                m =>
-                {
-                    var expr = m.Groups[1].Value;
-                    // Add this. prefix to fields
-                    expr = System.Text.RegularExpressions.Regex.Replace(
-                        expr, 
-                        @"(?<![a-zA-Z])_([a-zA-Z]+)", 
-                        "this._$1");
-                    return "${" + expr + "}";
-                });
-            
-            return "`" + content + "`";
-        });
-    }
-    
-    private string ConvertDictionaryInitializer(string input)
-    {
-        // Match new() { ["key"] = "value" } or new Dictionary<...>() { ... }
-        var pattern = @"new\s*\(\)\s*\{\s*\[""([^""]+)""\]\s*=\s*""([^""]+)""\s*\}";
-        return System.Text.RegularExpressions.Regex.Replace(input, pattern, match =>
-        {
-            var key = match.Groups[1].Value;
-            var value = match.Groups[2].Value;
-            return $"{{ {key}: \"{value}\" }}";
-        });
-    }
-
-    private string ConvertMethodBody(string body)
-    {
-        if (string.IsNullOrEmpty(body)) return body;
-        
-        // Handle arrow expressions: () => _count++
-        if (body.Contains("=>"))
-        {
-            // Extract the expression after =>
-            var arrowIndex = body.IndexOf("=>");
-            var expression = body[(arrowIndex + 2)..].Trim();
-            
-            // Convert the expression
-            expression = ConvertCSharpToJs(expression);
-            
-            return expression;
-        }
-        
-        return ConvertCSharpToJs(body);
-    }
-
     private string ConvertToJsValue(string value, string type)
     {
         return type switch

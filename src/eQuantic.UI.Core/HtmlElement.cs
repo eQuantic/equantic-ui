@@ -111,7 +111,7 @@ public abstract class HtmlElement : IComponent
     protected readonly List<IComponent> _children = new();
     
     /// <inheritdoc />
-    public IReadOnlyList<IComponent> Children => _children.AsReadOnly();
+    public IList<IComponent> Children => _children;
     
     /// <inheritdoc />
     public virtual void AddChild(IComponent child) => _children.Add(child);

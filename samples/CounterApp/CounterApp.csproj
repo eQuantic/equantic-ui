@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <!-- Import Custom Props -->
+    <Import Project="..\..\src\eQuantic.UI.Sdk\Sdk\Sdk.props" />
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
+        <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+    </ItemGroup>
+
+    <!-- Import Custom Targets -->
+    <Import Project="..\..\src\eQuantic.UI.Sdk\Sdk\Sdk.targets" />
+</Project>

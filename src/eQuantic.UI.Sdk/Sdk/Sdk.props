@@ -1,0 +1,17 @@
+<Project>
+    <PropertyGroup>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+        <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+        <OutputType>Library</OutputType>
+        <!-- We don't want to produce a DLL by default for the components themselves, 
+         but needed for intellisense. This is a hybrid approach. -->
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Include all .cs files as UIComponents -->
+        <UIComponent Include="**/*.cs" Exclude="obj/**;bin/**" />
+
+        <!-- Also include them as regular Compile items so VS provides intellisense -->
+        <Compile Include="@(UIComponent)" />
+    </ItemGroup>
+</Project>

@@ -43,7 +43,10 @@ public interface IComponent
     /// <summary>
     /// Child components - Composite Pattern
     /// </summary>
-    IReadOnlyList<IComponent> Children { get; }
+    /// <summary>
+    /// Child components - Composite Pattern
+    /// </summary>
+    IList<IComponent> Children { get; }
     
     /// <summary>
     /// Add a child component

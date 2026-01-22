@@ -1,0 +1,11 @@
+<Project>
+    <!-- Sdk.targets: Imports custom build task -->
+
+    <UsingTask TaskName="eQuantic.Build.CompileUiComponents"
+        AssemblyFile="$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Debug/net8.0/eQuantic.Build.dll" />
+
+    <Target Name="CompileUiComponents" AfterTargets="Build">
+        <CompileUiComponents Sources="@(UIComponent)"
+            OutputPath="$(OutputPath)/dist" />
+    </Target>
+</Project>

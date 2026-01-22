@@ -1,0 +1,8 @@
+{
+  "sdk": {
+    "version": "8.0.414"
+  },
+  "msbuild-sdks": {
+    "eQuantic.UI.Sdk": "src/eQuantic.UI.Sdk/Sdk"
+  }
+}

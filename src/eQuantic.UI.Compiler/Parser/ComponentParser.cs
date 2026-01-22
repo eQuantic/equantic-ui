@@ -6,9 +6,9 @@ using eQuantic.UI.Compiler.Models;
 namespace eQuantic.UI.Compiler.Parser;
 
 /// <summary>
-/// Parser for .eqx component files using Roslyn
+/// Parser for component files using Roslyn
 /// </summary>
-public class EqxParser
+public class ComponentParser
 {
     /// <summary>
     /// Parse a .eqx file and extract component definitions
@@ -201,11 +201,7 @@ public class EqxParser
         {
             var firstArg = objectCreation.ArgumentList.Arguments[0];
             // For Text("content"), store as Content property
-            tree.Properties["Content"] = new PropertyValue
-            {
-                Type = PropertyValueType.String,
-                StringValue = firstArg.Expression.ToString()
-            };
+            tree.Properties["Content"] = ParsePropertyValue(firstArg.Expression);
         }
         
         // Parse initializer properties

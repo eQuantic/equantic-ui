@@ -7,15 +7,18 @@ namespace eQuantic.UI.Compiler;
 /// <summary>
 /// Main compiler class that orchestrates parsing, analysis, and code generation
 /// </summary>
-public class EqxCompiler
+/// <summary>
+/// Compiler orchestrator for eQuantic.UI components
+/// </summary>
+public class ComponentCompiler
 {
-    private readonly EqxParser _parser;
+    private readonly ComponentParser _parser;
     private readonly JavaScriptEmitter _jsEmitter;
     private readonly CssEmitter _cssEmitter;
     
-    public EqxCompiler()
+    public ComponentCompiler()
     {
-        _parser = new EqxParser();
+        _parser = new ComponentParser();
         _jsEmitter = new JavaScriptEmitter();
         _cssEmitter = new CssEmitter();
     }
@@ -76,16 +79,30 @@ public class EqxCompiler
     }
     
     /// <summary>
-    /// Compile all .eqx files in a directory
+    /// Compile all .cs and .eqx files in a directory
     /// </summary>
     public IEnumerable<CompilationResult> CompileDirectory(string directoryPath, bool recursive = true)
     {
         var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        var files = Directory.GetFiles(directoryPath, "*.eqx", searchOption);
+        // Search for both .eqx (legacy) and .cs (new)
+        var files = Directory.GetFiles(directoryPath, "*.cs", searchOption)
+            .Concat(Directory.GetFiles(directoryPath, "*.eqx", searchOption));
         
         foreach (var file in files)
         {
-            yield return CompileFile(file);
+            // Skip obj/bin directories to avoid re-parsing generated code or unrelated files
+            if (file.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar) || 
+                file.Contains(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar))
+            {
+                continue;
+            }
+
+            // Only compile if it looks like a component (optimization)
+            var content = File.ReadAllText(file);
+            if (content.Contains(": StatefulComponent") || content.Contains(": StatelessComponent"))
+            {
+                yield return CompileFile(file);
+            }
         }
     }
     
