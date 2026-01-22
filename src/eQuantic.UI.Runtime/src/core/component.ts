@@ -3,16 +3,21 @@
  */
 
 import { Component, HtmlNode, RenderContext } from './types';
+import { RenderManager } from '../dom/renderer';
+import { getRootServiceProvider, ServiceProvider } from './service-provider';
 
 /**
  * Base class for stateless components
  */
 export abstract class StatelessComponent extends Component {
+  protected serviceProvider: ServiceProvider = getRootServiceProvider();
+
   abstract build(context: RenderContext): Component;
 
   render(): HtmlNode {
     const context: RenderContext = {
-      getService: () => undefined,
+      getService: <T>(key: import('./types').ServiceKey<T>) => this.serviceProvider.getService<T>(key),
+      serviceProvider: this.serviceProvider,
     };
     const component = this.build(context);
     return component.render();
@@ -26,7 +31,8 @@ export abstract class StatefulComponent extends Component {
   private _state: ComponentState | null = null;
   private _mounted = false;
   private _renderScheduled = false;
-  private _element: HTMLElement | null = null;
+  private _renderManager: RenderManager = new RenderManager();
+  protected serviceProvider: ServiceProvider = getRootServiceProvider();
 
   abstract createState(): ComponentState;
 
@@ -41,7 +47,8 @@ export abstract class StatefulComponent extends Component {
 
   render(): HtmlNode {
     const context: RenderContext = {
-      getService: () => undefined,
+      getService: <T>(key: import('./types').ServiceKey<T>) => this.serviceProvider.getService<T>(key),
+      serviceProvider: this.serviceProvider,
     };
     this.state._context = context;
     const component = this.state.build(context);
@@ -49,10 +56,8 @@ export abstract class StatefulComponent extends Component {
   }
 
   mount(container: HTMLElement): void {
-    this._element = container;
     const node = this.render();
-    const dom = renderToDom(node);
-    container.appendChild(dom);
+    this._renderManager.mount(node, container);
     this._mounted = true;
     this.state.onMount();
   }
@@ -63,12 +68,12 @@ export abstract class StatefulComponent extends Component {
 
     requestAnimationFrame(() => {
       this._renderScheduled = false;
-      if (this._element && this._mounted) {
-        // Clear and re-render
-        this._element.innerHTML = '';
+      if (this._mounted) {
+        // Efficient update using reconciler
         const node = this.render();
-        const dom = renderToDom(node);
-        this._element.appendChild(dom);
+        this._renderManager.update(node);
+
+        // Call lifecycle hook
         this.state.onUpdate();
       }
     });
@@ -77,8 +82,8 @@ export abstract class StatefulComponent extends Component {
   unmount(): void {
     if (this._mounted && this._state) {
       this._state.onDispose();
+      this._renderManager.unmount();
       this._mounted = false;
-      this._element = null;
     }
   }
 }
