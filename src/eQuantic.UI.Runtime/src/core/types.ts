@@ -28,8 +28,22 @@ export interface StyleClass {
 }
 
 export interface RenderContext {
-  getService<T>(key: string): T | undefined;
+  getService<T>(key: ServiceKey<T>): T | undefined;
+  serviceProvider?: ServiceProvider;
 }
+
+/**
+ * Re-export ServiceKey and ServiceProvider type for use in RenderContext
+ * (actual implementation is in service-provider.ts to avoid circular deps)
+ */
+export type ServiceKey<T = unknown> = (new (...args: unknown[]) => T) | string;
+export type ServiceProvider = {
+  getService<T>(key: ServiceKey<T>): T | undefined;
+  getRequiredService<T>(key: ServiceKey<T>): T;
+  hasService(key: ServiceKey): boolean;
+  createScope(): ServiceProvider;
+  dispose(): void;
+};
 
 /**
  * Base class for all components

@@ -3,8 +3,16 @@
  */
 
 // Core
-export { Component, IComponent, HtmlNode, RenderContext, StyleClass, EventHandler } from './core/types';
+export { Component } from './core/types';
+export type { IComponent, HtmlNode, RenderContext, StyleClass, EventHandler } from './core/types';
 export { StatelessComponent, StatefulComponent, ComponentState, renderToDom } from './core/component';
+export { ServiceProvider, ServiceCollectionBuilder, getRootServiceProvider, configureServices, resetServiceProvider } from './core/service-provider';
+export type { ServiceKey } from './core/service-provider';
+export { ServiceLifetime } from './core/service-provider';
+
+// DOM
+export { Reconciler, getReconciler, resetReconciler } from './dom/reconciler';
+export { RenderManager } from './dom/renderer';
 
 // Components
 export {
