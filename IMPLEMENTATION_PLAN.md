@@ -124,31 +124,31 @@ public static class AppStyles
 ```css
 /* Generated: app.styles.css */
 .eqx-a3f2d1 {
-  background-color: #3b82f6;
-  color: #ffffff;
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
+    background-color: #3b82f6;
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
 }
 .eqx-a3f2d1:hover {
-  background-color: #2563eb;
+    background-color: #2563eb;
 }
 .eqx-a3f2d1:active {
-  background-color: #1d4ed8;
+    background-color: #1d4ed8;
 }
 
 .eqx-b7c4e2 {
-  background-color: var(--color-primary);
+    background-color: var(--color-primary);
 }
 .eqx-b7c4e2:hover {
-  background-color: var(--color-primary-dark);
+    background-color: var(--color-primary-dark);
 }
 
 @media (max-width: 640px) {
-  .eqx-c9d5f3 {
-    padding: 8px;
-  }
+    .eqx-c9d5f3 {
+        padding: 8px;
+    }
 }
 ```
 
@@ -273,7 +273,7 @@ equantic-ui/
 │   │
 │   ├── eQuantic.UI.Compiler/          # Roslyn compiler
 │   │   ├── Parser/
-│   │   │   └── EqxParser.cs
+│   │   │   └── ComponentParser.cs
 │   │   ├── Analyzer/
 │   │   │   ├── ComponentAnalyzer.cs   # Component tree analysis
 │   │   │   ├── StyleAnalyzer.cs       # StyleClass usage analysis
@@ -281,8 +281,16 @@ equantic-ui/
 │   │   ├── CodeGen/
 │   │   │   ├── JavaScriptEmitter.cs
 │   │   │   └── CssEmitter.cs          # StyleClass → CSS generator
-│   │   └── MSBuild/
-│   │       └── EqxBuildTask.cs
+│   │   └── ComponentCompiler.cs       # Main Compiler entry
+│   │
+│   ├── eQuantic.UI.Sdk/               # MSBuild SDK
+│   │   ├── Sdk/
+│   │   │   ├── Sdk.props
+│   │   │   └── Sdk.targets
+│   │   └── eQuantic.UI.Sdk.csproj
+│   │
+│   ├── eQuantic.Build/                # MSBuild Task
+│   │   └── CompileUiComponents.cs
 │   │
 │   ├── eQuantic.UI.Runtime/           # Browser runtime (TS)
 │   │   └── src/
@@ -303,8 +311,8 @@ equantic-ui/
 │
 ├── samples/
 │   └── CounterApp/
-│       ├── Counter.eqx
-│       └── App.eqx
+│       ├── Counter.cs
+│       └── App.cs
 │
 └── tests/
 ```
@@ -411,18 +419,18 @@ public class CounterState : ComponentState<Counter>
 
 ```html
 <div
-  id="counter-container"
-  class="counter"
-  style="padding: 24px"
-  data-testid="counter"
+    id="counter-container"
+    class="counter"
+    style="padding: 24px"
+    data-testid="counter"
 >
-  <input
-    id="message-input"
-    type="text"
-    placeholder="Type something..."
-    aria-label="Message input"
-  />
-  <button id="increment-btn" class="btn btn-primary">Clicked 0 times</button>
+    <input
+        id="message-input"
+        type="text"
+        placeholder="Type something..."
+        aria-label="Message input"
+    />
+    <button id="increment-btn" class="btn btn-primary">Clicked 0 times</button>
 </div>
 ```
 
@@ -441,42 +449,41 @@ public class CounterState : ComponentState<Counter>
 
 ---
 
-## Weekly Milestones
+## Implementation Roadmap & Status
 
-### Week 1-2: Foundation
+### Phase 1: Foundation (Completed ✅)
 
-- Project setup, CI/CD
+- Project setup, Solution structure
 - `IComponent`, `HtmlElement` base classes
 - `StatelessComponent`, `StatefulComponent`
-- Basic Roslyn parser
+- Centralized Versioning (0.1.0) established via `Directory.Build.props`
 
-**Deliverable**: Core abstractions compiling
+### Phase 2: Compiler & SDK (Completed ✅)
 
-### Week 3-4: Compiler & Runtime
+- Roslyn-based Parser (`ComponentParser`) supporting standard C# files
+- JavaScript Emitter (`JavaScriptEmitter`) with AST-based expression conversion
+- MSBuild Task (`eQuantic.Build`) for build integration
+- MSBuild SDK (`eQuantic.UI.Sdk`) for seamless `.csproj` consumption
+- CLI Tool (`eqx`) for build and watch commands
 
-- AST generation from C#
-- JavaScript emitter (basic)
-- TypeScript runtime core
-- Event binding system
+### Phase 3: Packaging & CI/CD (Completed ✅)
 
-**Deliverable**: Static component rendering
+- NuGet Packaging (`dotnet pack`) for SDK distribution
+- GitHub Actions CI Pipeline (`ci.yml`) for automated build and test
+- Artifact Verification ensuring correct package structure
 
-### Week 5: Interactive Components
+### Phase 4: Runtime (Next 🚧)
 
-- `Button` with click handling
-- `TextInput` with two-way binding
-- State synchronization
+- TypeScript Runtime Core
+- Signals/State Management
+- DOM Reconciliation
+- Event Binding System
 
-**Deliverable**: Counter app functional
+### Phase 5: Demo & Polish (Pending)
 
-### Week 6: DX & Polish
-
-- CLI tool (`eqx dev`/`build`)
-- Hot reload (Vite)
-- VS Code syntax highlighting
+- Interactive Counter App
+- Hot Reload Integration
 - Documentation
-
-**Deliverable**: Complete POC
 
 ---
 

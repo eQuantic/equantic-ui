@@ -1,37 +1,70 @@
 # eQuantic.UI
 
-> **Component-based UI Framework for .NET Web** - Type-safe, compiler-first, HTML-native
+> **Component-based UI Framework for .NET Web** - Type-safe, compiler-first, HTML-native.
+
+![Build Status](https://img.shields.io/github/actions/workflow/status/equantic/equantic-ui/ci.yml?branch=main)
+![NuGet Version](https://img.shields.io/nuget/v/eQuantic.UI.Sdk)
+![License](https://img.shields.io/github/license/equantic/equantic-ui)
 
 ## Overview
 
-eQuantic.UI is a Flutter-inspired UI framework for building web applications with C#. It uses the **Composite Pattern** with components that have native HTML characteristics, compiling C# code to optimized JavaScript.
+**eQuantic.UI** is a Flutter-inspired UI framework for building web applications with C#. Unlike Blazor, it compiles C# components directly to optimized JavaScript at build time, resulting in zero-overhead runtime performance while maintaining the developer experience of a strongly-typed language.
 
 ### Key Features
 
-- ✅ **Component-based** - Familiar web terminology, not "widgets"
-- ✅ **HTML-native** - Every component has `id`, `className`, `style`, `data-*`, `aria-*`
-- ✅ **CSS-in-C#** - Type-safe styles compiled to optimized CSS with hash classNames
-- ✅ **Composite Pattern** - True tree composition with `Children` collection
-- ✅ **Type-Safe** - Full C# IntelliSense, no runtime type errors
-- ✅ **Minimal Runtime** - Target: <30kb bundle (vs Blazor WASM 2MB+)
+- ⚛️ **Component-based** - Build complex UIs using the Composite Pattern.
+- 🌐 **HTML-native** - Components map directly to HTML elements with standard attributes (`id`, `className`, `style`).
+- 🎨 **CSS-in-C#** - Type-safe styling system compiled to optimized CSS.
+- 🚀 **Compiler-First** - C# code is transpiled to efficient JavaScript via a Roslyn-based compiler.
+- 📦 **SDK Integration** - Seamless integration via `eQuantic.UI.Sdk` and standard `.csproj` files.
+- 📉 **Minimal Runtime** - Ultra-lightweight runtime (<30kb) compared to WASM-based solutions.
+
+---
 
 ## Project Structure
 
-```
+```bash
 src/
-├── eQuantic.UI.Core/        # Core abstractions (IComponent, HtmlElement, StyleClass)
-├── eQuantic.UI.Components/  # Base components (Container, Text, Button, TextInput)
-├── eQuantic.UI.Compiler/    # Roslyn-based C# to JS compiler
-├── eQuantic.UI.Runtime/     # Browser runtime (TypeScript)
-└── eQuantic.UI.CLI/         # CLI tool (eqx create/dev/build)
+├── eQuantic.UI.Core/        # Core abstractions (IComponent, HtmlElement)
+├── eQuantic.UI.Components/  # Base library (Container, Text, Button, Input)
+├── eQuantic.UI.Compiler/    # Roslyn-based C# to JavaScript transpiler
+├── eQuantic.UI.Sdk/         # MSBuild SDK for seamless integration
+├── eQuantic.Build/          # MSBuild Tasks for build pipeline
+├── eQuantic.UI.Runtime/     # TypeScript browser runtime
+└── eQuantic.UI.CLI/         # Developer tools
 ```
 
-## Quick Example
+---
+
+## Getting Started
+
+### Prerequisites
+
+- .NET 8.0 SDK
+
+### Installation
+
+Add the SDK to your project file:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="eQuantic.UI.Sdk" Version="0.1.0" />
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+</Project>
+```
+
+### Example Component
+
+Simply create a `.cs` file and define your component:
 
 ```csharp
 using eQuantic.UI;
 using eQuantic.UI.Components;
 
+[Component]
 public class Counter : StatefulComponent
 {
     public override ComponentState CreateState() => new CounterState();
@@ -40,27 +73,20 @@ public class Counter : StatefulComponent
 public class CounterState : ComponentState<Counter>
 {
     private int _count = 0;
-    private string _message = "";
 
     public override IComponent Build(RenderContext context)
     {
         return new Container
         {
-            Id = "counter",
-            StyleClass = AppStyles.Card,
+            ClassName = "p-4 border rounded",
             Children =
             {
-                new TextInput
-                {
-                    Value = _message,
-                    Placeholder = "Type something...",
-                    OnChange = (v) => SetState(() => _message = v)
-                },
-
+                new Text($"Count: {_count}"),
                 new Button
                 {
+                    ClassName = "btn btn-primary ml-2",
                     OnClick = () => SetState(() => _count++),
-                    Text = $"Clicked {_count} times"
+                    Children = { new Text("Increment") }
                 }
             }
         };
@@ -68,59 +94,22 @@ public class CounterState : ComponentState<Counter>
 }
 ```
 
-## CSS-in-C#
+---
 
-```csharp
-public static class AppStyles
-{
-    public static readonly StyleClass Card = new()
-    {
-        BackgroundColor = Colors.White,
-        Padding = Spacing.All(24),
-        BorderRadius = 8,
-        BoxShadow = "0 2px 8px rgba(0,0,0,0.1)",
+## Roadmap
 
-        Hover = new()
-        {
-            BoxShadow = "0 4px 12px rgba(0,0,0,0.15)"
-        }
-    };
-}
-```
+We are currently in **Phase 4** of development.
 
-Generates optimized CSS:
+- ✅ **Phase 1:** Core Architecture & Foundation
+- ✅ **Phase 2:** Compiler & SDK Implementation
+- ✅ **Phase 3:** CI/CD & Packaging
+- 🚧 **Phase 4:** Runtime & State Management (Current)
+- 📅 **Phase 5:** Interactive Demo & Polish
 
-```css
-.eqx-a3f2d1 {
-  background-color: #ffffff;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-.eqx-a3f2d1:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-```
+See the [Implementation Plan](./IMPLEMENTATION_PLAN.md) for detailed progress.
 
-## Development
-
-```bash
-# Build
-dotnet build
-
-# Run tests
-dotnet test
-
-# Run CLI (coming soon)
-dotnet run --project src/eQuantic.UI.CLI -- dev
-```
-
-## Status
-
-🚧 **POC in Development** - Target: March 2026
-
-See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for detailed roadmap.
+---
 
 ## License
 
-MIT © eQuantic
+MIT © [eQuantic](https://github.com/equantic)
