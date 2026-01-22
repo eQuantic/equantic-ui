@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "eQuantic",
+  "classifications": ["Web", "UI"],
+  "name": "eQuantic.UI Application",
+  "identity": "eQuantic.UI.App",
+  "shortName": "equantic-app",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "EQuanticApp",
+  "preferNameDirectory": true,
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "exclude": [".template.config/**"]
+        }
+      ]
+    }
+  ]
+}

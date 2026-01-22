@@ -1,0 +1,24 @@
+<Project Sdk="eQuantic.UI.Sdk/1.0.0">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\src\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
+    </ItemGroup>
+    <!-- 
+       Note: In a real distributed template, you would use PackageReference to eQuantic.UI.Sdk 
+       and eQuantic.UI.Server instead of ProjectReference or local paths.
+       For this dev setup, we might need a nuget.config or similar, but for now assuming 
+       local dev usage might need adjustment or we use a fixed version. 
+       
+       Actually, since the Sdk is custom, we usually install it via global.json or referenced locally.
+       For the template to work 'out of the box' after pack, it should refer to published packages.
+       But for now, I will use a placeholder that matches the repo structure for testing, 
+       or simpler: minimal config.
+  -->
+
+</Project>

@@ -41,7 +41,7 @@ public class TypeScriptEmitter
     private void EmitImports(ComponentDefinition component)
     {
         // Core runtime imports
-        var coreImports = new List<string> { "Component", "BuildContext" };
+        var coreImports = new HashSet<string> { "Component", "BuildContext" };
         
         if (component.IsStateful)
         {
@@ -52,16 +52,42 @@ public class TypeScriptEmitter
             coreImports.Add("StatelessComponent");
         }
         
-        WriteLn($"import {{ {string.Join(", ", coreImports)} }} from '@equantic/runtime';");
-        
         // Widget imports based on what's used in the component
         var widgetTypes = CollectWidgetTypes(component.BuildTree);
-        if (widgetTypes.Count > 0)
+        var userComponents = new List<string>();
+        
+        foreach (var type in widgetTypes)
         {
-            WriteLn($"import {{ {string.Join(", ", widgetTypes.OrderBy(x => x))} }} from '@equantic/runtime';");
+            if (IsRuntimeComponent(type))
+            {
+                coreImports.Add(type);
+            }
+            else
+            {
+                userComponents.Add(type);
+            }
+        }
+        
+        WriteLn($"import {{ {string.Join(", ", coreImports.OrderBy(x => x))} }} from '@equantic/runtime';");
+        
+        // Import user components from relative paths
+        // For Phase 2.2 we assume flat structure in intermediate folder
+        foreach (var userComp in userComponents.OrderBy(x => x))
+        {
+            WriteLn($"import {{ {userComp} }} from './{userComp}';");
         }
     }
     
+    private bool IsRuntimeComponent(string typeName)
+    {
+        return typeName switch
+        {
+            "Container" or "Flex" or "Column" or "Row" or "Text" or "Heading" or 
+            "Button" or "TextInput" or "Link" => true,
+            _ => false
+        };
+    }
+
     private HashSet<string> CollectWidgetTypes(ComponentTree? tree)
     {
         var types = new HashSet<string>();
