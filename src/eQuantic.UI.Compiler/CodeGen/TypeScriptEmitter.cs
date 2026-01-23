@@ -174,17 +174,17 @@ public class TypeScriptEmitter
             coreImports.Add("getServerActionsClient");
         }
 
-        // Widget imports based on what's used in the component
-        var widgetTypes = CollectWidgetTypes(component.BuildTree);
+        // Component imports based on what's used in the component
+        var componentTypes = CollectComponentTypes(component.BuildTree);
 
         // Also scan procedural code in BuildMethodNode
         if (component.BuildMethodNode != null)
         {
-             var proceduralTypes = CollectWidgetTypesFromNode(component.BuildMethodNode);
-             foreach (var t in proceduralTypes) widgetTypes.Add(t);
+             var proceduralTypes = CollectComponentTypesFromNode(component.BuildMethodNode);
+             foreach (var t in proceduralTypes) componentTypes.Add(t);
         }
 
-        // CRITICAL: Add base class to widget types (for inheritance like "Column extends Flex")
+        // CRITICAL: Add base class to component types (for inheritance like "Column extends Flex")
         if (!string.IsNullOrEmpty(component.BaseClassName))
         {
             var baseClass = component.BaseClassName;
@@ -193,23 +193,23 @@ public class TypeScriptEmitter
             {
                 baseClass = baseClass.Substring(0, baseClass.IndexOf('<'));
             }
-            widgetTypes.Add(baseClass);
+            componentTypes.Add(baseClass);
         }
 
         // AUTOMATIC DEPENDENCY RESOLUTION
         // Use dependency resolver to find transitive dependencies (e.g., Row → Flex)
         if (_dependencyResolver != null)
         {
-            var dependencies = _dependencyResolver.ResolveDependencies(widgetTypes);
+            var dependencies = _dependencyResolver.ResolveDependencies(componentTypes);
             foreach (var dep in dependencies)
             {
-                widgetTypes.Add(dep);
+                componentTypes.Add(dep);
             }
         }
 
         var userComponents = new List<string>();
 
-        foreach (var type in widgetTypes)
+        foreach (var type in componentTypes)
         {
             var cleanType = type.Trim().Replace("?", "");
             if (cleanType.Contains("<")) cleanType = cleanType.Split('<')[0];
@@ -246,23 +246,23 @@ public class TypeScriptEmitter
         };
     }
 
-    private HashSet<string> CollectWidgetTypes(ComponentTree? tree)
+    private HashSet<string> CollectComponentTypes(ComponentTree? tree)
     {
         var types = new HashSet<string>();
         if (tree == null) return types;
-        
+
         types.Add(tree.ComponentType);
         foreach (var child in tree.Children)
         {
-            foreach (var t in CollectWidgetTypes(child))
+            foreach (var t in CollectComponentTypes(child))
             {
                 types.Add(t);
             }
         }
         return types;
     }
-    
-    private HashSet<string> CollectWidgetTypesFromNode(Microsoft.CodeAnalysis.SyntaxNode? node)
+
+    private HashSet<string> CollectComponentTypesFromNode(Microsoft.CodeAnalysis.SyntaxNode? node)
     {
         var types = new HashSet<string>();
         if (node == null) return types;
