@@ -7,7 +7,7 @@ builder.Services.AddSingleton<TodoListApp.Services.ITodoService, TodoListApp.Ser
 builder.Services.AddUI(options =>
 {
     // Configure your UI options here
-    // options.ScanAssembly(typeof(Program).Assembly);
+    options.ScanAssembly(typeof(Program).Assembly);
 });
 
 var app = builder.Build();

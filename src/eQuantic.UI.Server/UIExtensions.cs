@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -14,6 +15,27 @@ namespace eQuantic.UI.Server;
 /// </summary>
 public static class UIExtensions
 {
+    // Deterministic Build ID based on Assembly Timestamp
+    // This allows browser caching to work across server restarts, 
+    // invalidating only when the code actually changes.
+    private static readonly string BuildId = GetDeterministicBuildId();
+
+    private static string GetDeterministicBuildId()
+    {
+        try
+        {
+            var location = typeof(UIExtensions).Assembly.Location;
+            if (!string.IsNullOrEmpty(location))
+            {
+                // Use hex timestamp for a short, unique, and ordered ID
+                return System.IO.File.GetLastWriteTimeUtc(location).Ticks.ToString("x");
+            }
+        }
+        catch { /* Fallback to random if file access fails */ }
+        
+        return Guid.NewGuid().ToString("N");
+    }
+
     /// <summary>
     /// Adds UI services to the DI container.
     /// </summary>
@@ -71,9 +93,7 @@ public static class UIExtensions
 
                 endpoints.MapGet(route, async context =>
                 {
-                    // Serve the compiled JavaScript for this page
-                    var jsPath = $"/_equantic/{pageType.Name}.js";
-                    context.Response.Redirect($"/?page={pageType.Name}");
+                    await ServeAppShell(context, pageType.Name);
                 });
             }
         }
@@ -81,20 +101,89 @@ public static class UIExtensions
         // Map SignalR Hub
         endpoints.MapHub<Hubs.ServerActionHub>("/_equantic/hub");
 
+        // Map Runtime JS
+        endpoints.MapGet("/_equantic/runtime.js", async context =>
+        {
+            context.Response.ContentType = "application/javascript";
+            var assembly = typeof(UIExtensions).Assembly;
+            var resourceName = "eQuantic.UI.Server.runtime.js";
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            
+            if (stream == null)
+            {
+                context.Response.StatusCode = 404;
+                var resources = string.Join(", ", assembly.GetManifestResourceNames());
+                await context.Response.WriteAsync($"console.error('Runtime embedded resource not found: {resourceName}. Available: {resources}');");
+                return;
+            }
+            await stream.CopyToAsync(context.Response.Body);
+        });
+
+        // Debug/Fallback: Manually serve component files if StaticFiles misses them
+        endpoints.MapGet("/_equantic/{name}.js", async context =>
+        {
+            var name = (string?)context.GetRouteValue("name");
+            var path = System.IO.Path.Combine(context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>().WebRootPath, "_equantic", $"{name}.js");
+            
+            if (System.IO.File.Exists(path))
+            {
+                context.Response.ContentType = "application/javascript";
+                await context.Response.SendFileAsync(path);
+            }
+            else
+            {
+                context.Response.StatusCode = 404;
+                // Try finding it in the local directory (Dev scenario)
+                var localPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", "_equantic", $"{name}.js");
+                 if (System.IO.File.Exists(localPath))
+                {
+                    context.Response.ContentType = "application/javascript";
+                    await context.Response.SendFileAsync(localPath);
+                }
+                else 
+                {
+                    await context.Response.WriteAsync($"// 404: Component {name} not found at {path} or {localPath}");
+                }
+            }
+        });
+
         return endpoints;
     }
 
     /// <summary>
     /// Maps the UI fallback route to serve the SPA HTML shell.
     /// </summary>
+    /// <summary>
+    /// Maps the UI fallback route to serve the SPA HTML shell.
+    /// Includes mapping of pages and runtime assets.
+    /// </summary>
     public static IEndpointRouteBuilder MapUI(this IEndpointRouteBuilder endpoints)
     {
+        // Ensure all page routes and assets are mapped
+        endpoints.MapPages();
+
         endpoints.MapFallback(async context =>
         {
-            var options = context.RequestServices.GetRequiredService<UIOptions>();
-            var shell = options.HtmlShell;
+            // Fallback for 404s or root
+            await ServeAppShell(context, null);
+        });
 
-            var html = $@"<!DOCTYPE html>
+        return endpoints;
+    }
+
+    private static async Task ServeAppShell(HttpContext context, string? pageName)
+    {
+        var options = context.RequestServices.GetRequiredService<UIOptions>();
+        var shell = options.HtmlShell;
+        var pageValue = pageName != null ? $"'{pageName}'" : "null";
+
+        // Inject configuration object
+        var configJson = $@"{{
+            page: {pageValue},
+            version: '{BuildId}'
+        }}";
+
+        var html = $@"<!DOCTYPE html>
 <html lang=""en"">
 <head>
     <meta charset=""UTF-8"">
@@ -104,6 +193,16 @@ public static class UIExtensions
         {shell.BaseStyles}
     </style>
     {string.Join("\n    ", shell.HeadTags)}
+    
+    <!-- Import Map for bare modules -->
+    <script type=""importmap"">
+    {{
+        ""imports"": {{
+            ""@equantic/runtime"": ""/_equantic/runtime.js?v={BuildId}""
+        }}
+    }}
+    </script>
+    
     <script src=""https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js""></script>
 </head>
 <body>
@@ -111,21 +210,17 @@ public static class UIExtensions
         <div class=""loading"">Loading...</div>
     </div>
 
-    <!-- eQuantic.UI Runtime -->
-    <script type=""module"">
-        // Placeholder for runtime loading
-        console.log('eQuantic.UI Runtime loaded');
+    <!-- eQuantic.UI Runtime (Static Asset) -->
+    <script>
+        window.__EQ_CONFIG = {configJson};
     </script>
+    <script type=""module"" src=""/_equantic/runtime.js?v={BuildId}""></script>
 </body>
 </html>";
 
-            context.Response.ContentType = "text/html";
-            await context.Response.WriteAsync(html);
-        });
-
-        return endpoints;
+        context.Response.ContentType = "text/html";
+        await context.Response.WriteAsync(html);
     }
-
 }
 
 /// <summary>
@@ -149,8 +244,6 @@ public class UIOptions
         return this;
     }
 }
-
-
 
 /// <summary>
 /// Options for generating the HTML shell.

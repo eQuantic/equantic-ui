@@ -15,5 +15,24 @@
   <ItemGroup>
     <ProjectReference Include="..\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="wwwroot/runtime.js" />
+    <EmbeddedResource Include="wwwroot/runtime.js">
+      <LogicalName>eQuantic.UI.Server.runtime.js</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Target Name="BundleRuntime" BeforeTargets="BeforeBuild">
+    <Message Text="Bundling eQuantic UI Runtime..." Importance="high" />
+    <MakeDir Directories="wwwroot" />
+    <!-- Try global bun first, simpler for dev environment -->
+    <Exec
+      Command="bun build ../eQuantic.UI.Sdk/Resources/boot.ts --outfile wwwroot/runtime.js --minify"
+      IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="BunExitCode" />
+    </Exec>
+    <Error Condition="'$(BunExitCode)' != '0'"
+      Text="Failed to bundle runtime. Ensure 'bun' is installed and in PATH." />
+  </Target>
 
 </Project>
