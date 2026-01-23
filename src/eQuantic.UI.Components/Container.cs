@@ -90,7 +90,7 @@ public class Flex : HtmlElement
         // Build inline style for flex
         var layoutStyle = new HtmlStyle 
         { 
-            Display = Display.Flex,
+            Display = eQuantic.UI.Core.Display.Flex,
             FlexDirection = Direction,
             JustifyContent = Justify,
             AlignItems = Align,

@@ -19,7 +19,7 @@ public class RadioGroup : HtmlElement
         // Container style
         var style = new HtmlStyle 
         { 
-            Display = Display.Flex, 
+            Display = eQuantic.UI.Core.Display.Flex, 
             FlexDirection = Direction,
             Gap = "0.5rem"
         };
