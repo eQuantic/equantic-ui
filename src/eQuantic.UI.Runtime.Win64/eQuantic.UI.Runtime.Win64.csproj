@@ -12,6 +12,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="tools\bun\bun.exe" PackagePath="tools\bun\bun.exe" />
+        <Content Include="tools\bun\bun.exe.zip" PackagePath="tools\bun\bun.exe.zip" />
     </ItemGroup>
 </Project>

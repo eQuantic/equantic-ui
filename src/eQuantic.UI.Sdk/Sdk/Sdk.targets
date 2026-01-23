@@ -23,29 +23,68 @@
         <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('OSX'))">eQuantic.UI.Runtime.Osx64</BunRuntimePackageId>
     </PropertyGroup>
 
-    <Target Name="ResolveBunPath" BeforeTargets="CompileEQuanticUI">
+    <Target Name="ResolveBunZipPath" BeforeTargets="ResolveBunPath">
         <PropertyGroup>
             <BunPkgRef>Pkg$(BunRuntimePackageId.Replace('.', '_'))</BunPkgRef>
 
             <!-- Dev Fallback (Source Tree) -->
-            <BunPath
-                Condition="'$(BunPath)' == '' and $([MSBuild]::IsOSPlatform('OSX')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin')">
-                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin</BunPath>
-            <BunPath
-                Condition="'$(BunPath)' == '' and $([MSBuild]::IsOSPlatform('Windows')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe')">
-                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe</BunPath>
-            <BunPath
-                Condition="'$(BunPath)' == '' and $([MSBuild]::IsOSPlatform('Linux')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux')">
-                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux</BunPath>
+            <BunZipPath
+                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('OSX')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin.zip')">
+                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin.zip</BunZipPath>
+            <BunZipPath
+                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Windows')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe.zip')">
+                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe.zip</BunZipPath>
+            <BunZipPath
+                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Linux')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip')">
+                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip</BunZipPath>
 
             <!-- Package Cache Resolution -->
-            <BunPath Condition="'$(BunPath)' == ''">$($(BunPkgRef))/tools/bun/bun-darwin</BunPath>
-            <BunPath Condition="'$(BunPath)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">
-                $($(BunPkgRef))/tools/bun/bun.exe</BunPath>
-            <BunPath Condition="'$(BunPath)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">
-                $($(BunPkgRef))/tools/bun/bun-linux</BunPath>
+            <BunZipPath Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">
+                $($(BunPkgRef))/tools/bun/bun-darwin.zip</BunZipPath>
+            <BunZipPath Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">
+                $($(BunPkgRef))/tools/bun/bun.exe.zip</BunZipPath>
+            <BunZipPath Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">
+                $($(BunPkgRef))/tools/bun/bun-linux.zip</BunZipPath>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="EnsureBunExtracted" BeforeTargets="ResolveBunPath"
+        DependsOnTargets="ResolveBunZipPath">
+        <PropertyGroup>
+            <BunExeName Condition="$([MSBuild]::IsOSPlatform('Windows'))">bun.exe</BunExeName>
+            <BunExeName Condition="$([MSBuild]::IsOSPlatform('Linux'))">bun-linux</BunExeName>
+            <BunExeName Condition="$([MSBuild]::IsOSPlatform('OSX'))">bun-darwin</BunExeName>
+
+            <BunZipDir Condition="'$(BunZipPath)' != ''">
+                $([System.IO.Path]::GetDirectoryName('$(BunZipPath)'))</BunZipDir>
+        </PropertyGroup>
+        <PropertyGroup>
+            <BunExePath Condition="'$(BunZipDir)' != ''">$(BunZipDir)/$(BunExeName)</BunExePath>
+        </PropertyGroup>
+        <PropertyGroup Condition="'$(BunExePath)' != ''">
+            <BunExePath>$(BunExePath.Trim())</BunExePath>
         </PropertyGroup>
 
+        <!-- Unzip if .exe missing but .zip present -->
+        <Message Text="eQuantic.UI: Extracting Bun runtime from '$(BunZipPath)'..."
+            Importance="High" Condition="Exists('$(BunZipPath)') And !Exists('$(BunExePath)')" />
+        <Unzip
+            SourceFiles="$(BunZipPath)"
+            DestinationFolder="$(BunZipDir)"
+            Condition="Exists('$(BunZipPath)') And !Exists('$(BunExePath)')"
+        />
+
+        <!-- Make executable on Linux/Mac -->
+        <Exec Command="chmod +x &quot;$(BunExePath)&quot;"
+            Condition="Exists('$(BunExePath)') And !$([MSBuild]::IsOSPlatform('Windows'))" />
+
+        <PropertyGroup Condition="Exists('$(BunExePath)')">
+            <BunPath>$(BunExePath)</BunPath>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="ResolveBunPath" BeforeTargets="CompileEQuanticUI"
+        DependsOnTargets="EnsureBunExtracted">
         <PropertyGroup Condition="'$(BunPath)' != ''">
             <BunPath>$(BunPath.Trim())</BunPath>
             <_BunArg> --bun "$(BunPath)"</_BunArg>
