@@ -1,14 +1,21 @@
 using System.Diagnostics;
+using System.Threading;
 
 namespace eQuantic.UI.CLI.Commands;
 
 public static class DevCommand
 {
+    private static FileSystemWatcher? _watcher;
+    private static bool _isRebuilding = false;
+    private static readonly object _buildLock = new object();
+    private static Timer? _debounceTimer;
+
     public static void Execute(int port, string input)
     {
+        var fullInputPath = Path.GetFullPath(input);
         Console.WriteLine("🚀 eQuantic.UI Development Server");
         Console.WriteLine($"   Port:  {port}");
-        Console.WriteLine($"   Input: {Path.GetFullPath(input)}");
+        Console.WriteLine($"   Input: {fullInputPath}");
         Console.WriteLine();
         
         // Create temp output directory
@@ -16,26 +23,89 @@ public static class DevCommand
         Directory.CreateDirectory(tempOutput);
         
         // Initial build
-        Console.WriteLine("⚙️  Initial compilation...");
-        BuildCommand.Execute(input, tempOutput, watch: false);
-        Console.WriteLine();
+        PerformBuild(input, tempOutput);
         
         // Generate index.html
         GenerateDevHtml(tempOutput, port);
         
-        // Start a simple HTTP server (using Python for now, or can use Kestrel)
-        Console.WriteLine($"🌐 Starting server at http://localhost:{port}");
+        // Start Watcher
+        StartWatcher(input, tempOutput);
+
+        // Start HTTP Server
+        var serverTask = Task.Run(() => StartHttpServer(tempOutput, port));
+
         Console.WriteLine();
-        Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine($"   → Open http://localhost:{port} in your browser");
-        Console.ResetColor();
-        Console.WriteLine();
-        Console.WriteLine("👀 Watching for changes... (Ctrl+C to stop)");
-        Console.WriteLine();
+        Console.WriteLine("👀 Watching for changes... (Press Ctrl+C to stop)");
         
-        // Try to start Python HTTP server
-        StartHttpServer(tempOutput, port);
+        // Block main thread
+        new ManualResetEvent(false).WaitOne();
     }
+
+    private static void PerformBuild(string input, string output)
+    {
+        lock (_buildLock)
+        {
+            if (_isRebuilding) return;
+            _isRebuilding = true;
+        }
+
+        try
+        {
+            Console.Write("⚡ Change detected. Rebuilding... ");
+            var sw = Stopwatch.StartNew();
+            
+            // Re-run build command (incremental)
+            BuildCommand.Execute(input, output, watch: false);
+            
+            sw.Stop();
+            Console.WriteLine($"Done in {sw.ElapsedMilliseconds}ms 🟢");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n❌ Build failed: {ex.Message}");
+        }
+        finally
+        {
+            lock (_buildLock) { _isRebuilding = false; }
+        }
+    }
+
+    private static void StartWatcher(string input, string output)
+    {
+        var path = Path.GetDirectoryName(Path.GetFullPath(input)) ?? Directory.GetCurrentDirectory();
+        
+        _watcher = new FileSystemWatcher(path)
+        {
+            IncludeSubdirectories = true,
+            EnableRaisingEvents = true,
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime
+        };
+
+        // Filter for .cs files only (for now)
+        _watcher.Filters.Add("*.cs");
+
+        // Debounce logic (500ms)
+        _debounceTimer = new Timer(_ => 
+        {
+            PerformBuild(input, output);
+        }, null, Timeout.Infinite, Timeout.Infinite);
+
+        FileSystemEventHandler onChanged = (s, e) => 
+        {
+            // Ignore temporary files or bin/obj
+            if (e.FullPath.Contains("bin") || e.FullPath.Contains("obj") || e.FullPath.Contains(".git")) return;
+
+            // Reset timer
+            _debounceTimer.Change(500, Timeout.Infinite);
+        };
+
+        _watcher.Changed += onChanged;
+        _watcher.Created += onChanged;
+        _watcher.Deleted += onChanged;
+        _watcher.Renamed += (s, e) => onChanged(s, e);
+    }
+    
+    // ... GenerateDevHtml and StartHttpServer remain similar ...
     
     private static void GenerateDevHtml(string outputDir, int port)
     {

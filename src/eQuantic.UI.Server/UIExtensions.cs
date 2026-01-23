@@ -36,6 +36,9 @@ public static class UIExtensions
             return registry;
         });
 
+        // Add SignalR services
+        services.AddSignalR();
+
         return services;
     }
 
@@ -74,6 +77,9 @@ public static class UIExtensions
                 });
             }
         }
+
+        // Map SignalR Hub
+        endpoints.MapHub<Hubs.ServerActionHub>("/_equantic/hub");
 
         return endpoints;
     }
