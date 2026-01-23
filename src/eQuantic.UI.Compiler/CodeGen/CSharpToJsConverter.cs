@@ -500,7 +500,15 @@ public class CSharpToJsConverter
     {
         var expr = ConvertExpression(memberAccess.Expression);
         var name = memberAccess.Name.Identifier.Text;
-        
+
+        // Remove eQuantic.UI.Core namespace prefix (enums, types that don't exist in JS runtime)
+        if (expr.StartsWith("eQuantic.UI.Core.") || expr.StartsWith("eQuantic.UI."))
+        {
+            // Extract just the type name (e.g., "Display" from "eQuantic.UI.Core.Display")
+            var parts = expr.Split('.');
+            expr = parts[^1]; // Last part is the type name
+        }
+
         // Convert C# properties to JS
         name = name switch
         {
@@ -510,7 +518,7 @@ public class CSharpToJsConverter
             "Value" => "",
             _ => ToCamelCase(name)
         };
-        
+
         if (name == "!= null")
         {
             return $"({expr} != null)";
@@ -519,7 +527,7 @@ public class CSharpToJsConverter
         {
             return expr;
         }
-        
+
         return $"{expr}.{name}";
     }
     
