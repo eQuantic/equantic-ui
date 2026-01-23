@@ -104,6 +104,7 @@ public static class UIExtensions
         {shell.BaseStyles}
     </style>
     {string.Join("\n    ", shell.HeadTags)}
+    <script src=""https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js""></script>
 </head>
 <body>
     <div id=""app"">
