@@ -115,28 +115,50 @@ public class CSharpToJsConverter
             methodName = memberAccess.Name.Identifier.Text;
         }
 
-        // 1. Check Registry for full matches (e.g., SetState)
-        // Note: Without Semantic Model, we match by simple name for now (Phase 1)
-        var mappedName = _registry.GetMethodMapping(methodName);
+        // 1. Semantic Resolution (Phase 2 & 3)
+        string? libraryMethodName = null;
+        if (_semanticModel != null)
+        {
+            var symbol = _semanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
+            if (symbol != null)
+            {
+                // Get full name: System.Linq.Enumerable.Where
+                var containingType = symbol.ContainingType.ToDisplayString();
+                libraryMethodName = $"{containingType}.{symbol.Name}";
+            }
+        }
+        
+        // 2. Check Registry
+        // First try semantic name, then fallback to simple name
+        var mappedName = _semanticModel != null && libraryMethodName != null 
+            ? _registry.GetMethodMapping(libraryMethodName) 
+            : _registry.GetMethodMapping(methodName);
+            
         var targetMethod = mappedName ?? methodName;
         
-        // 2. Resolve Arguments
+        // 3. Handle No-Op conversions (e.g. ToList -> "")
+        if (targetMethod == "")
+        {
+             if (methodExpression is MemberAccessExpressionSyntax access)
+             {
+                 return ConvertExpression(access.Expression);
+             }
+             return ""; // Should not happen for standalone calls usually
+        }
+        
+        // 4. Resolve Arguments
         var args = string.Join(", ", invocation.ArgumentList.Arguments.Select(a => ConvertExpression(a.Expression)));
 
-        // 3. Handle Special Prefixes (e.g., "!")
+        // 5. Handle Special Prefixes (e.g., "!")
         if (targetMethod == "!")
         {
             return $"!({args})";
         }
         
-        // 4. Handle conversion 
-        // If it's a known static method replacement (Console.WriteLine -> console.log)
-        // We might need to drop the caller if it's static, OR keep it if instance.
-        // For Phase 1, we assume specific hardcoded replacements or simple renames.
-        
-        if (methodExpression is MemberAccessExpressionSyntax access)
+        // 6. Handle Member Access invocation
+        if (methodExpression is MemberAccessExpressionSyntax memAccess)
         {
-             var caller = ConvertExpression(access.Expression);
+             var caller = ConvertExpression(memAccess.Expression);
              return $"{caller}.{targetMethod}({args})";
         }
 

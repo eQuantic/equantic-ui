@@ -307,52 +307,75 @@ public class TypeScriptEmitter
         var methodName = ToCamelCase(method.Name);
         var returnType = CSharpTypeToTypeScript(method.ReturnType ?? "void");
         
+        var isAsync = method.ReturnType != null && method.ReturnType.StartsWith("Task");
+        var asyncPrefix = isAsync ? "async " : "";
+        var promiseReturnType = isAsync && returnType == "void" ? "Promise<void>" : 
+                                isAsync ? $"Promise<{returnType}>" : returnType;
+
         var body = method.Body.Trim().TrimEnd(';');
         
         if (body.StartsWith("{"))
         {
             var jsBody = _converter.Convert(body);
-            WriteLn($"{methodName}({parameters}): {returnType} {jsBody}");
+            WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {jsBody}");
         }
         else if (body.Contains("=>"))
         {
+            // ... (Arrow function handling, simplified for async)
             var arrowIndex = body.IndexOf("=>");
             var expression = body[(arrowIndex + 2)..].Trim();
+            var convertedExpr = _converter.Convert(expression);
             
-            if (expression.StartsWith("SetState"))
+            // If it's a simple arrow expression but method is async, wrap in { return ... } or just expression
+            if (isAsync)
             {
-                var innerStart = expression.IndexOf("() =>");
-                if (innerStart >= 0)
-                {
-                    var innerExpr = expression[(innerStart + 5)..].Trim();
-                    if (innerExpr.EndsWith(")")) innerExpr = innerExpr[..^1].Trim();
-                    
-                    var convertedExpr = _converter.Convert(innerExpr);
-                    WriteLn($"{methodName}({parameters}): {returnType} {{ this.setState(() => {{ {convertedExpr}; }}); }}");
-                }
-                else
-                {
-                    var convertedExpr = _converter.Convert(expression);
-                    WriteLn($"{methodName}({parameters}): {returnType} {{ {convertedExpr}; }}");
-                }
+                WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {{ return {convertedExpr}; }}");
             }
             else
             {
-                var convertedExpr = _converter.Convert(expression);
-                if (expression.Contains("=") || expression.Contains("++") || expression.Contains("--"))
-                {
-                    WriteLn($"{methodName}({parameters}): {returnType} {{ this.setState(() => {{ {convertedExpr}; }}); }}");
-                }
-                else
-                {
-                    WriteLn($"{methodName}({parameters}): {returnType} {{ {convertedExpr}; }}");
-                }
+                 // Reuse existing logic for setState vs simple return
+                 if (expression.StartsWith("SetState"))
+                 {
+                     // ... same SetState logic
+                     var innerStart = expression.IndexOf("() =>");
+                    if (innerStart >= 0)
+                    {
+                        var innerExpr = expression[(innerStart + 5)..].Trim();
+                        if (innerExpr.EndsWith(")")) innerExpr = innerExpr[..^1].Trim();
+                        
+                        var conv = _converter.Convert(innerExpr);
+                        WriteLn($"{methodName}({parameters}): {returnType} {{ this.setState(() => {{ {conv}; }}); }}");
+                    }
+                    else
+                    {
+                        var conv = _converter.Convert(expression);
+                        WriteLn($"{methodName}({parameters}): {returnType} {{ {conv}; }}");
+                    }
+                 }
+                 else
+                 {
+                    if (expression.Contains("=") || expression.Contains("++") || expression.Contains("--"))
+                    {
+                         WriteLn($"{methodName}({parameters}): {returnType} {{ this.setState(() => {{ {convertedExpr}; }}); }}");
+                    }
+                    else
+                    {
+                         WriteLn($"{methodName}({parameters}): {returnType} {{ {convertedExpr}; }}");
+                    }
+                 }
             }
         }
         else
         {
             var convertedExpr = _converter.Convert(body);
-            WriteLn($"{methodName}({parameters}): {returnType} {{ {convertedExpr}; }}");
+             if (isAsync)
+            {
+                WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {{ return {convertedExpr}; }}");
+            }
+            else
+            {
+                WriteLn($"{methodName}({parameters}): {returnType} {{ {convertedExpr}; }}");
+            }
         }
     }
     

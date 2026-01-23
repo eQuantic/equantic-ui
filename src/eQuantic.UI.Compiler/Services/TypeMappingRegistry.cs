@@ -31,6 +31,16 @@ public class TypeMappingRegistry
         // Properties
         RegisterProperty("Length", "length");
         RegisterProperty("Count", "length");
+
+        // LINQ Mappings
+        RegisterMethod("System.Linq.Enumerable.Where", "filter");
+        RegisterMethod("System.Linq.Enumerable.Select", "map");
+        RegisterMethod("System.Linq.Enumerable.First", "find"); // Note: find returns undefined if not found, First throws. For JS/TS UI, find is usually preferred.
+        RegisterMethod("System.Linq.Enumerable.FirstOrDefault", "find");
+        RegisterMethod("System.Linq.Enumerable.Any", "some");
+        RegisterMethod("System.Linq.Enumerable.All", "every");
+        RegisterMethod("System.Linq.Enumerable.ToList", ""); // No-op in JS arrays usually, or slice()
+        RegisterMethod("System.Linq.Enumerable.ToArray", ""); // No-op
     }
 
     public void RegisterMethod(string csharpName, string jsName) => _methodMappings[csharpName] = jsName;
