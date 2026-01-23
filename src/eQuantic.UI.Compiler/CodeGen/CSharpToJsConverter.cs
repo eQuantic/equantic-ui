@@ -498,15 +498,20 @@ public class CSharpToJsConverter
     
     private string ConvertMemberAccess(MemberAccessExpressionSyntax memberAccess)
     {
+        // Check BEFORE converting if this is an eQuantic namespace that should be removed
+        var originalExpr = memberAccess.Expression.ToString();
+        var shouldRemoveNamespace = originalExpr.StartsWith("eQuantic.UI.Core.") ||
+                                     originalExpr.StartsWith("eQuantic.UI.");
+
         var expr = ConvertExpression(memberAccess.Expression);
         var name = memberAccess.Name.Identifier.Text;
 
         // Remove eQuantic.UI.Core namespace prefix (enums, types that don't exist in JS runtime)
-        if (expr.StartsWith("eQuantic.UI.Core.") || expr.StartsWith("eQuantic.UI."))
+        if (shouldRemoveNamespace)
         {
             // Extract just the type name (e.g., "Display" from "eQuantic.UI.Core.Display")
-            var parts = expr.Split('.');
-            expr = parts[^1]; // Last part is the type name
+            var parts = originalExpr.Split('.');
+            expr = ToCamelCase(parts[^1]); // Last part is the type name, apply camelCase
         }
 
         // Convert C# properties to JS
