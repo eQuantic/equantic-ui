@@ -92,8 +92,7 @@ public class CSharpToJsConverter
             // Literals
             LiteralExpressionSyntax literal => ConvertLiteral(literal),
             
-            // Object creation: new Type() { ... }
-            ObjectCreationExpressionSyntax objCreation => ConvertObjectCreation(objCreation),
+            // Object creation: handled below
             ImplicitObjectCreationExpressionSyntax implicitCreation => ConvertImplicitObjectCreation(implicitCreation),
             
             // Conditional: condition ? a : b
@@ -102,6 +101,16 @@ public class CSharpToJsConverter
             // Parenthesized: (expr)
             ParenthesizedExpressionSyntax parens => $"({ConvertExpression(parens.Expression)})",
             
+            
+            // Object Creation: new Button { Text = "X" }
+            ObjectCreationExpressionSyntax objCreation => ConvertObjectCreation(objCreation),
+            
+            // Initialization: { ... }
+            InitializerExpressionSyntax initializer => ConvertInitializer(initializer),
+
+            // Lambda: () => ...
+            LambdaExpressionSyntax lambda => ConvertLambda(lambda),
+
             // Default: return as-is
             _ => expression.ToString()
         };
@@ -218,6 +227,19 @@ public class CSharpToJsConverter
         
         // 4. Resolve Arguments
         var args = string.Join(", ", invocation.ArgumentList.Arguments.Select(a => ConvertExpression(a.Expression)));
+        
+        // Handle string.IsNullOrWhiteSpace / IsNullOrEmpty
+        if (methodExpression is MemberAccessExpressionSyntax staticAccess && ConvertExpression(staticAccess.Expression) == "string")
+        {
+            var arg = invocation.ArgumentList.Arguments.First().Expression;
+            var argJs = ConvertExpression(arg);
+            
+            if (targetMethod == "IsNullOrWhiteSpace")
+                return $"(!{argJs} || {argJs}.trim() === '')";
+                
+            if (targetMethod == "IsNullOrEmpty")
+                return $"(!{argJs} || {argJs} === '')";
+        }
 
         // 5. Handle Special Prefixes (e.g., "!")
         if (targetMethod == "!")
@@ -256,16 +278,23 @@ public class CSharpToJsConverter
         return char.ToLowerInvariant(name[0]) + name[1..];
     }
     
-    private string ConvertLambda(ParenthesizedLambdaExpressionSyntax lambda)
+    private string ConvertLambda(LambdaExpressionSyntax lambda)
     {
-        var parameters = string.Join(", ", lambda.ParameterList.Parameters.Select(p => p.Identifier.Text));
-        var body = lambda.ExpressionBody != null 
-            ? ConvertExpression(lambda.ExpressionBody)
-            : lambda.Block != null 
-                ? ConvertBlock(lambda.Block)
-                : "";
+        if (lambda is ParenthesizedLambdaExpressionSyntax parenthesized)
+        {
+            var parameters = string.Join(", ", parenthesized.ParameterList.Parameters.Select(p => p.Identifier.Text));
+            var body = parenthesized.Block != null ? ConvertBlock(parenthesized.Block) : ConvertExpression(parenthesized.ExpressionBody);
+            return $"({parameters}) => {body}";
+        }
         
-        return $"({parameters}) => {body}";
+        if (lambda is SimpleLambdaExpressionSyntax simple)
+        {
+            var param = simple.Parameter.Identifier.Text;
+            var body = simple.Block != null ? ConvertBlock(simple.Block) : ConvertExpression(simple.ExpressionBody);
+            return $"({param}) => {body}";
+        }
+        
+        return "() => {}";
     }
     
     private string ConvertSimpleLambda(SimpleLambdaExpressionSyntax lambda)
@@ -375,57 +404,85 @@ public class CSharpToJsConverter
     
     private string ConvertObjectCreation(ObjectCreationExpressionSyntax objCreation)
     {
-        var type = objCreation.Type.ToString();
+        var typeName = objCreation.Type.ToString();
+        var arguments = "";
         
-        // Dictionary initializer: new() { ["key"] = "value" }
-        if (type.StartsWith("Dictionary") || objCreation.Initializer != null)
+        if (objCreation.ArgumentList != null && objCreation.ArgumentList.Arguments.Count > 0)
         {
-            return ConvertInitializer(objCreation.Initializer);
+             arguments = string.Join(", ", objCreation.ArgumentList.Arguments.Select(a => ConvertExpression(a.Expression)));
+        }
+
+        var initializer = "";
+        if (objCreation.Initializer != null)
+        {
+            initializer = ConvertInitializer(objCreation.Initializer);
+            // Verify if constructor args exist to decide on merging or appending
+            if (string.IsNullOrEmpty(arguments))
+            {
+                arguments = initializer;
+            }
+            else
+            {
+                // If arguments exist, usually the initializer is a separate argument or merged options?
+                // For UI libraries, usually new Widget(arg, { options }) or new Widget({ ... })
+                // Assuming typical pattern: append as last argument
+                arguments += ", " + initializer;
+            }
         }
         
-        var args = objCreation.ArgumentList != null
-            ? string.Join(", ", objCreation.ArgumentList.Arguments.Select(a => ConvertExpression(a.Expression)))
-            : "";
-        
-        return $"new {type}({args})";
+        return $"new {typeName}({arguments})";
     }
-    
+
     private string ConvertImplicitObjectCreation(ImplicitObjectCreationExpressionSyntax creation)
     {
         if (creation.Initializer != null)
         {
+             // Implicit creation usually implies component structure in this framework context if inside Children
+             // But valid JS needs explicit type or just config object? 
+             // If we don't know the type, we return the config object.
+             // Ideally we should know the type from context, but we lack that here.
+             // Given the failure was "Expected }", sticking to object literal is safer than invalid "new ()".
             return ConvertInitializer(creation.Initializer);
         }
         return "{}";
     }
-    
+
     private string ConvertInitializer(InitializerExpressionSyntax? initializer)
     {
         if (initializer == null) return "{}";
         
-        var sb = new StringBuilder();
-        sb.Append("{ ");
-        
-        var parts = new List<string>();
-        foreach (var expr in initializer.Expressions)
+        // Collection Initializer: { new A(), new B() } -> [ new A(), new B() ]
+        if (initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
         {
-            if (expr is AssignmentExpressionSyntax assignment)
-            {
-                var key = assignment.Left switch
-                {
-                    // Handle ["key"] syntax
-                    ImplicitElementAccessSyntax elementAccess => 
-                        elementAccess.ArgumentList.Arguments[0].Expression.ToString().Trim('"'),
-                    _ => assignment.Left.ToString()
-                };
-                var value = ConvertExpression(assignment.Right);
-                parts.Add($"{key}: {value}");
-            }
+            var elements = initializer.Expressions.Select(e => ConvertExpression(e));
+            return $"[{string.Join(", ", elements)}]";
         }
         
-        sb.Append(string.Join(", ", parts));
-        sb.Append(" }");
-        return sb.ToString();
+        // Object Initializer: { Prop = Value } -> { prop: value }
+        if (initializer.Kind() == SyntaxKind.ObjectInitializerExpression)
+        {
+            var props = new List<string>();
+            foreach (var expr in initializer.Expressions)
+            {
+                if (expr is AssignmentExpressionSyntax assignment)
+                {
+                    var propName = assignment.Left.ToString();
+                    var value = ConvertExpression(assignment.Right);
+                    
+                    // Special handling for Children in initialization
+                    if (propName == "Children" && assignment.Right is InitializerExpressionSyntax childInit)
+                    {
+                        // Explicitly convert collection initializer to array
+                         value = ConvertInitializer(childInit);
+                    }
+                    
+                    props.Add($"{ToCamelCase(propName)}: {value}");
+                }
+            }
+            return $"{{ {string.Join(", ", props)} }}";
+        }
+        
+        return "{}";
     }
     
     private string ConvertConditional(ConditionalExpressionSyntax conditional)

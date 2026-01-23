@@ -227,6 +227,9 @@ public class ComponentParser
         
         if (buildMethod != null)
         {
+            // Capture full method node for robust conversion (Phase 2)
+            definition.BuildMethodNode = buildMethod;
+
             var returnStatement = buildMethod.DescendantNodes()
                 .OfType<ReturnStatementSyntax>()
                 .FirstOrDefault();

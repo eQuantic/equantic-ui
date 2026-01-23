@@ -110,6 +110,14 @@ public class TypeScriptEmitter
         
         // Widget imports based on what's used in the component
         var widgetTypes = CollectWidgetTypes(component.BuildTree);
+        
+        // Also scan procedural code in BuildMethodNode
+        if (component.BuildMethodNode != null)
+        {
+             var proceduralTypes = CollectWidgetTypesFromNode(component.BuildMethodNode);
+             foreach (var t in proceduralTypes) widgetTypes.Add(t);
+        }
+
         var userComponents = new List<string>();
         
         foreach (var type in widgetTypes)
@@ -159,6 +167,19 @@ public class TypeScriptEmitter
         return types;
     }
     
+    private HashSet<string> CollectWidgetTypesFromNode(Microsoft.CodeAnalysis.SyntaxNode? node)
+    {
+        var types = new HashSet<string>();
+        if (node == null) return types;
+        
+        var creations = node.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ObjectCreationExpressionSyntax>();
+        foreach (var creation in creations)
+        {
+             types.Add(creation.Type.ToString());
+        }
+        return types;
+    }
+    
     private void EmitStatefulComponent(ComponentDefinition component)
     {
         // Only emit the State class. The Component class is emitted by the main Emit method.
@@ -204,11 +225,31 @@ public class TypeScriptEmitter
             // Build method
             c.Method("build", "context: BuildContext", false, () =>
             {
-                var root = component.BuildTree;
-                if (root != null)
+                if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
+                {
+                    // Use robust converter to emit full body (supports variables, loops, etc.)
+                   var jsBody = _converter.Convert(component.BuildMethodNode.Body);
+                   
+                   // Remove outer braces since c.Method adds them (via logic or we need to be careful)
+                   // Actually c.Method adds braces. Convert(Block) adds braces. 
+                   // We should strip the outer braces from jsBody to avoid double indentation/bracing if necessary,
+                   // OR just emit the content. 
+                   // Let's rely on Convert returning "{ ... }" and we just inject the *content*?
+                   // CSharpToJsConverter struct: ConvertBlock returns "{ stmt; stmt; }"
+                   // CodeBuilder Method adds "{ ... }". 
+                   // So we need to strip first and last char of jsBody.
+                   
+                   jsBody = jsBody.Trim();
+                   if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
+                   {
+                       jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
+                   }
+                   c.Raw(jsBody);
+                }
+                else if (component.BuildTree != null)
                 {
                     c.Raw("return (");
-                    EmitComponentTree(root);
+                    EmitComponentTree(component.BuildTree);
                     c.Raw(");");
                 }
                 else

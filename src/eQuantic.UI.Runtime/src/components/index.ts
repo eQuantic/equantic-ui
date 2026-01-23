@@ -217,3 +217,37 @@ export class Link extends Component {
     };
   }
 }
+
+/**
+ * Checkbox component
+ */
+export class Checkbox extends Component {
+  checked = false;
+  disabled = false;
+  name?: string;
+  onChange?: (checked: boolean) => void;
+
+  render(): HtmlNode {
+    const attrs = this.buildAttributes();
+    attrs['type'] = 'checkbox';
+    if (this.checked) attrs['checked'] = 'true';
+    if (this.disabled) attrs['disabled'] = 'true';
+    if (this.name) attrs['name'] = this.name;
+
+    const events: Record<string, EventHandler> = {};
+    if (this.onChange) {
+      events['change'] = (e: any) => {
+        // e is Event, target is HTMLInputElement
+        const target = e.target as HTMLInputElement;
+        this.onChange!(target.checked);
+      };
+    }
+
+    return {
+      tag: 'input',
+      attributes: attrs,
+      events,
+      children: [],
+    };
+  }
+}

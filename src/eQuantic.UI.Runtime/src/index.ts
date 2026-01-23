@@ -29,6 +29,7 @@ export {
   Button,
   TextInput,
   Link,
+  Checkbox,
 } from './components/index';
 
 /**

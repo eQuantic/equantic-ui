@@ -46,9 +46,14 @@ public class ComponentDefinition
     public List<MethodDefinition> Methods { get; set; } = new();
     
     /// <summary>
-    /// The Build method's component tree
+    /// The Build method's component tree (Legacy/Fallback)
     /// </summary>
     public ComponentTree? BuildTree { get; set; }
+
+    /// <summary>
+    /// The full Build method syntax node (Preferred)
+    /// </summary>
+    public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? BuildMethodNode { get; set; }
     
     /// <summary>
     /// StyleClass usages found in the component
