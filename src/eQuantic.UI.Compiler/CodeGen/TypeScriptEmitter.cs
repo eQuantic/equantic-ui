@@ -51,6 +51,11 @@ public class TypeScriptEmitter
         {
             coreImports.Add("StatelessComponent");
         }
+
+        if (component.ServerActions.Count > 0)
+        {
+            coreImports.Add("getServerActionsClient");
+        }
         
         // Widget imports based on what's used in the component
         var widgetTypes = CollectWidgetTypes(component.BuildTree);
@@ -83,7 +88,7 @@ public class TypeScriptEmitter
         return typeName switch
         {
             "Container" or "Flex" or "Column" or "Row" or "Text" or "Heading" or 
-            "Button" or "TextInput" or "Link" => true,
+            "Button" or "TextInput" or "Link" or "Checkbox" => true,
             _ => false
         };
     }
@@ -109,11 +114,29 @@ public class TypeScriptEmitter
         // Component class with TypeScript types
         WriteLn($"export class {component.Name} extends StatefulComponent {{");
         Indent();
+        
+        // Create State
         WriteLn($"createState(): {component.StateClassName} {{");
         Indent();
         WriteLn($"return new {component.StateClassName}(this);");
         Dedent();
         WriteLn("}");
+
+        // Server Action Stubs
+        foreach (var action in component.ServerActions)
+        {
+            WriteLn();
+            var parameters = string.Join(", ", action.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
+            var returnType = CSharpTypeToTypeScript(action.ReturnType); // Should handle Task<T>
+            var args = string.Join(", ", action.Parameters.Select(p => p.Name));
+            
+            WriteLn($"async {ToCamelCase(action.MethodName)}({parameters}): Promise<{returnType}> {{");
+            Indent();
+            WriteLn($"return await getServerActionsClient().invoke('{action.ActionId}', [{args}]);");
+            Dedent();
+            WriteLn("}");
+        }
+
         Dedent();
         WriteLn("}");
         WriteLn();
@@ -343,13 +366,24 @@ public class TypeScriptEmitter
     
     private static string CSharpTypeToTypeScript(string csharpType)
     {
-        return csharpType.ToLowerInvariant() switch
+        var result = csharpType.ToLowerInvariant();
+        
+        if (result.StartsWith("task<"))
+        {
+            // Extract inner type "Task<T>" => T
+            var inner = csharpType.Substring(5, csharpType.Length - 6);
+            return CSharpTypeToTypeScript(inner);
+        }
+        if (result == "task") return "void";
+        
+        return result switch
         {
             "string" => "string",
             "int" or "double" or "float" or "decimal" or "long" or "short" or "byte" => "number",
             "bool" or "boolean" => "boolean",
             "void" => "void",
             "object" => "unknown",
+            "guid" => "string",
             _ when csharpType.StartsWith("List<") => $"{CSharpTypeToTypeScript(csharpType[5..^1])}[]",
             _ when csharpType.EndsWith("[]") => $"{CSharpTypeToTypeScript(csharpType[..^2])}[]",
             _ => csharpType // Keep as-is for custom types
@@ -358,12 +392,21 @@ public class TypeScriptEmitter
     
     private static string ConvertToTsValue(string value, string type)
     {
+        if (value.Contains("new()") || value.Contains("new List"))
+        {
+            var tsType = CSharpTypeToTypeScript(type);
+            if (tsType.EndsWith("[]"))
+            {
+                return "[]";
+            }
+        }
+        
         return type.ToLowerInvariant() switch
         {
             "string" => $"\"{value.Trim('"')}\"",
             "int" or "double" or "float" => value,
             "bool" or "boolean" => value.ToLower(),
-            _ => value
+             _ => value
         };
     }
     
@@ -374,7 +417,7 @@ public class TypeScriptEmitter
             "string" => "\"\"",
             "int" or "double" or "float" => "0",
             "bool" or "boolean" => "false",
-            _ => "null"
+             _ => "null"
         };
     }
     

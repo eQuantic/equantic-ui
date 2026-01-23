@@ -7,8 +7,8 @@ public class HtmlStyle
 {
     #region Layout
     
-    public string? Display { get; set; }
-    public string? Position { get; set; }
+    public Display? Display { get; set; }
+    public Position? Position { get; set; }
     public string? Top { get; set; }
     public string? Right { get; set; }
     public string? Bottom { get; set; }
@@ -19,11 +19,11 @@ public class HtmlStyle
     
     #region Flexbox
     
-    public string? FlexDirection { get; set; }
-    public string? FlexWrap { get; set; }
-    public string? JustifyContent { get; set; }
-    public string? AlignItems { get; set; }
-    public string? AlignContent { get; set; }
+    public FlexDirection? FlexDirection { get; set; }
+    public FlexWrap? FlexWrap { get; set; }
+    public JustifyContent? JustifyContent { get; set; }
+    public AlignItem? AlignItems { get; set; }
+    public AlignItem? AlignContent { get; set; }
     public string? Gap { get; set; }
     public string? Flex { get; set; }
     public string? FlexGrow { get; set; }
@@ -37,6 +37,8 @@ public class HtmlStyle
     public string? GridTemplateRows { get; set; }
     public string? GridColumn { get; set; }
     public string? GridRow { get; set; }
+    public GridFlow? GridAutoFlow { get; set; }
+    public JustifyContent? JustifyItems { get; set; }
     
     #endregion
     
@@ -93,7 +95,7 @@ public class HtmlStyle
     public string? FontWeight { get; set; }
     public string? FontStyle { get; set; }
     public string? LineHeight { get; set; }
-    public string? TextAlign { get; set; }
+    public TextAlign? TextAlign { get; set; }
     public string? TextDecoration { get; set; }
     public string? TextTransform { get; set; }
     public string? LetterSpacing { get; set; }
@@ -142,6 +144,8 @@ public class HtmlStyle
         AddProperty(properties, "grid-template-rows", GridTemplateRows);
         AddProperty(properties, "grid-column", GridColumn);
         AddProperty(properties, "grid-row", GridRow);
+        AddProperty(properties, "grid-auto-flow", GridAutoFlow);
+        AddProperty(properties, "justify-items", JustifyItems);
         
         AddProperty(properties, "width", Width);
         AddProperty(properties, "height", Height);
@@ -195,11 +199,29 @@ public class HtmlStyle
         return string.Join("; ", properties);
     }
     
-    private static void AddProperty(List<string> properties, string name, string? value)
+    private static void AddProperty(List<string> properties, string name, object? value)
     {
-        if (!string.IsNullOrEmpty(value))
+        if (value != null)
         {
-            properties.Add($"{name}: {value}");
+            var cssValue = value.ToString()!.ToLowerInvariant();
+            
+            // Fix generic enum replacements
+            cssValue = cssValue
+                .Replace("flexstart", "flex-start")
+                .Replace("flexend", "flex-end")
+                .Replace("inlineblock", "inline-block")
+                .Replace("inlineflex", "inline-flex")
+                .Replace("inlinegrid", "inline-grid")
+                .Replace("spacebetween", "space-between")
+                .Replace("spacearound", "space-around")
+                .Replace("spaceevenly", "space-evenly")
+                .Replace("rowreverse", "row-reverse")
+                .Replace("columnreverse", "column-reverse")
+                .Replace("rowdense", "row dense")
+                .Replace("columndense", "column dense")
+                .Replace("nowrap", "nowrap"); // Enum is NoWrap, CSS is nowrap
+                
+            properties.Add($"{name}: {cssValue}");
         }
     }
 }
