@@ -9,14 +9,14 @@ namespace eQuantic.UI.Server;
 /// <summary>
 /// Extension methods for configuring eQuantic.UI in ASP.NET Core.
 /// </summary>
-public static class EQuanticUIExtensions
+public static class UIExtensions
 {
     /// <summary>
-    /// Adds eQuantic.UI services to the DI container.
+    /// Adds UI services to the DI container.
     /// </summary>
-    public static IServiceCollection AddEQuanticUI(this IServiceCollection services, Action<EQuanticUIOptions>? configure = null)
+    public static IServiceCollection AddUI(this IServiceCollection services, Action<UIOptions>? configure = null)
     {
-        var options = new EQuanticUIOptions();
+        var options = new UIOptions();
         configure?.Invoke(options);
         
         services.AddSingleton(options);
@@ -39,19 +39,50 @@ public static class EQuanticUIExtensions
     /// <summary>
     /// Adds the Server Actions middleware to the pipeline.
     /// </summary>
-    public static IApplicationBuilder UseEQuanticServerActions(this IApplicationBuilder app)
+    public static IApplicationBuilder UseServerActions(this IApplicationBuilder app)
     {
         return app.UseMiddleware<ServerActionsMiddleware>();
     }
     
     /// <summary>
-    /// Maps the eQuantic.UI fallback route to serve the SPA HTML shell.
+    /// Maps page routes based on [Page] attributes found in scanned assemblies.
     /// </summary>
-    public static IEndpointRouteBuilder MapEQuanticUi(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapPages(this IEndpointRouteBuilder endpoints)
+    {
+        var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
+        var registry = endpoints.ServiceProvider.GetRequiredService<IServerActionRegistry>();
+        
+        // Get all page routes from scanned assemblies
+        foreach (var assembly in options.AssembliesToScan)
+        {
+            var pageTypes = assembly.GetTypes()
+                .Where(t => t.GetCustomAttribute<Core.PageAttribute>() != null);
+            
+            foreach (var pageType in pageTypes)
+            {
+                var pageAttr = pageType.GetCustomAttribute<Core.PageAttribute>()!;
+                var route = pageAttr.Route;
+                
+                endpoints.MapGet(route, async context =>
+                {
+                    // Serve the compiled JavaScript for this page
+                    var jsPath = $"/_equantic/{pageType.Name}.js";
+                    context.Response.Redirect($"/?page={pageType.Name}");
+                });
+            }
+        }
+        
+        return endpoints;
+    }
+    
+    /// <summary>
+    /// Maps the UI fallback route to serve the SPA HTML shell.
+    /// </summary>
+    public static IEndpointRouteBuilder MapUI(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapFallback(async context =>
         {
-            var options = context.RequestServices.GetRequiredService<EQuanticUIOptions>();
+            var options = context.RequestServices.GetRequiredService<UIOptions>();
             var shell = options.HtmlShell;
             
             var html = $@"<!DOCTYPE html>
@@ -84,12 +115,13 @@ public static class EQuanticUIExtensions
 
         return endpoints;
     }
+
 }
 
 /// <summary>
-/// Configuration options for eQuantic.UI.
+/// Configuration options for UI services.
 /// </summary>
-public class EQuanticUIOptions
+public class UIOptions
 {
     internal List<Assembly> AssembliesToScan { get; } = new();
     
@@ -101,12 +133,14 @@ public class EQuanticUIOptions
     /// <summary>
     /// Scan an assembly for components with [Page] and [ServerAction] attributes.
     /// </summary>
-    public EQuanticUIOptions ScanAssembly(Assembly assembly)
+    public UIOptions ScanAssembly(Assembly assembly)
     {
         AssembliesToScan.Add(assembly);
         return this;
     }
 }
+
+
 
 /// <summary>
 /// Options for generating the HTML shell.

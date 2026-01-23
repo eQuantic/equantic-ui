@@ -56,7 +56,7 @@ public class CounterState : ComponentState<Counter>
                 new Row
                 {
                     Gap = "8px",
-                    Justify = "center",
+                    Justify = JustifyContent.Center,
                     Children =
                     {
                         new Button

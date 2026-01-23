@@ -2,9 +2,8 @@ using eQuantic.UI.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add eQuantic.UI services
-// Add eQuantic.UI services
-builder.Services.AddEQuanticUI(options =>
+// Add UI services
+builder.Services.AddUI(options =>
 {
     options.ScanAssembly(typeof(Program).Assembly);
     
@@ -24,9 +23,10 @@ var app = builder.Build();
 app.UseStaticFiles();
 
 // Enable Server Actions
-app.UseEQuanticServerActions();
+app.UseServerActions();
 
 // Serve the SPA shell dynamically
-app.MapEQuanticUi();
+app.MapUI();
 
 app.Run();
+
