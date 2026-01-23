@@ -242,6 +242,8 @@ public class TypeScriptEmitter
         return typeName switch
         {
             "HtmlNode" or "HtmlStyle" or "ServiceKey" or "ServiceProvider" => true,
+            "Component" or "BuildContext" or "HtmlElement" => true,
+            "StatefulComponent" or "StatelessComponent" or "ComponentState" => true,
             _ => false
         };
     }
