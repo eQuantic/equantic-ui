@@ -12,6 +12,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="tools\bun\bun-linux" PackagePath="tools\bun\bun-linux" />
+        <Content Include="tools\bun\bun-linux.zip" PackagePath="tools\bun\bun-linux.zip" />
     </ItemGroup>
 </Project>
