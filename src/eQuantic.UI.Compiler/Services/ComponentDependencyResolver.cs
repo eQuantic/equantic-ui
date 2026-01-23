@@ -64,8 +64,9 @@ public class ComponentDependencyResolver
                         baseTypeName = baseTypeName.Substring(0, baseTypeName.IndexOf('<'));
                     }
 
-                    // Only track UI component inheritance
-                    if (IsUIComponent(baseTypeName))
+                    // Track ALL inheritance relationships for UI components
+                    // We'll filter later - this allows discovering the full dependency graph
+                    if (!string.IsNullOrEmpty(baseTypeName))
                     {
                         if (!_dependencyCache.ContainsKey(className))
                         {

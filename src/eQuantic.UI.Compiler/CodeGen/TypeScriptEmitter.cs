@@ -184,6 +184,18 @@ public class TypeScriptEmitter
              foreach (var t in proceduralTypes) widgetTypes.Add(t);
         }
 
+        // CRITICAL: Add base class to widget types (for inheritance like "Column extends Flex")
+        if (!string.IsNullOrEmpty(component.BaseClassName))
+        {
+            var baseClass = component.BaseClassName;
+            // Clean generic types
+            if (baseClass.Contains('<'))
+            {
+                baseClass = baseClass.Substring(0, baseClass.IndexOf('<'));
+            }
+            widgetTypes.Add(baseClass);
+        }
+
         // AUTOMATIC DEPENDENCY RESOLUTION
         // Use dependency resolver to find transitive dependencies (e.g., Row → Flex)
         if (_dependencyResolver != null)
