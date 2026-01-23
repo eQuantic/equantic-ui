@@ -99,8 +99,10 @@ public class ComponentParser
                     }
                 }
 
+                definition.BaseClassName = baseType;
+                
                 // If we found a state class name, find it in the same file
-                if (!string.IsNullOrEmpty(definition.StateClassName))
+                if (!string.IsNullOrEmpty(definition.BaseClassName) && !string.IsNullOrEmpty(definition.StateClassName))
                 {
                     var stateClass = classes.FirstOrDefault(c => c.Identifier.Text == definition.StateClassName);
                     if (stateClass != null)
@@ -112,12 +114,14 @@ public class ComponentParser
             else if (baseType == "StatelessComponent")
             {
                 definition.IsStateful = false;
+                definition.BaseClassName = baseType;
                 ParsePageAttributes(classDecl, definition);
             }
             else if (baseType == "HtmlElement" || isComp)
             {
                 definition.IsPrimitive = true;
                 definition.IsStateful = false;
+                definition.BaseClassName = baseType;
                 ParsePrimitiveClass(classDecl, definition);
             }
 
@@ -241,6 +245,32 @@ public class ComponentParser
             }
             
             definition.Methods.Add(methodDef);
+        }
+
+        // Extract constructors
+        var constructors = classDecl.DescendantNodes()
+            .OfType<ConstructorDeclarationSyntax>();
+        
+        foreach (var ctor in constructors)
+        {
+            var ctorDef = new MethodDefinition
+            {
+                Name = ctor.Identifier.Text,
+                ReturnType = "void",
+                Body = ctor.Body?.ToString() ?? ctor.ExpressionBody?.Expression.ToString() ?? "",
+                SyntaxNode = null // Marker for constructor helper
+            };
+
+            foreach (var param in ctor.ParameterList.Parameters)
+            {
+                ctorDef.Parameters.Add(new ParameterDefinition
+                {
+                    Name = param.Identifier.Text,
+                    Type = param.Type?.ToString() ?? "object"
+                });
+            }
+
+            definition.Constructors.Add(ctorDef);
         }
     }
 

@@ -33,7 +33,7 @@ public class TypeScriptEmitter
         WriteLn();
         
         // Define component class
-        var baseClass = component.IsPrimitive ? "Component" : (component.IsStateful ? "StatefulComponent" : "StatelessComponent");
+        var baseClass = component.BaseClassName ?? (component.IsPrimitive ? "HtmlElement" : (component.IsStateful ? "StatefulComponent" : "StatelessComponent"));
         
         _builder.Class(component.Name, baseClass, c => 
             {
@@ -45,11 +45,37 @@ public class TypeScriptEmitter
                         c.Property(ToCamelCase(prop.Name), CSharpTypeToTypeScript(prop.ReturnType), true);
                     }
 
-                    // Emit Render method for primitive
-                    c.Method("render", "", false, () => 
+                    // Emit constructor for primitive
+                    if (component.Constructors.Any())
                     {
-                        if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
+                        var ctor = component.Constructors.OrderByDescending(c => c.Parameters.Count).First();
+                        var parameters = string.Join(", ", ctor.Parameters.Select(p => $"{p.Name}: any"));
+                        c.Constructor(parameters, () =>
                         {
+                            c.Raw("super();");
+                            foreach (var param in ctor.Parameters)
+                            {
+                                c.Raw($"this.{ToCamelCase(param.Name)} = {param.Name};");
+                            }
+                        });
+                    }
+
+                    // Emit Render method for primitive - ONLY if defined or it's the base primitive
+                    if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
+                    {
+                        c.Method("render", "", false, () => 
+                        {
+                            // Discover out variables
+                            var outVars = component.BuildMethodNode.Body.DescendantNodes()
+                                .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.DeclarationExpressionSyntax>()
+                                .Select(d => d.Designation.ToString())
+                                .Distinct();
+                            
+                            foreach (var v in outVars)
+                            {
+                                c.Raw($"let {v};");
+                            }
+
                             var jsBody = _converter.Convert(component.BuildMethodNode.Body);
                             jsBody = jsBody.Trim();
                             if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
@@ -57,12 +83,16 @@ public class TypeScriptEmitter
                                 jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
                             }
                             c.Raw(jsBody);
-                        }
-                        else 
+                        });
+                    }
+                    else if (component.BaseClassName == "HtmlElement" || component.BaseClassName == null)
+                    {
+                        // Fallback for base primitives that MUST have a render
+                        c.Method("render", "", false, () => 
                         {
                             c.Raw("return { tag: 'div', attributes: {}, events: {}, children: [] };");
-                        }
-                    });
+                        });
+                    }
                 }
                 else if (component.IsStateful)
                 {
@@ -118,14 +148,14 @@ public class TypeScriptEmitter
     private void EmitImports(ComponentDefinition component)
     {
         // Core runtime imports
-        var coreImports = new HashSet<string> { "Component", "BuildContext" };
+        var coreImports = new HashSet<string> { "Component", "BuildContext", "HtmlElement" };
         
         if (component.IsStateful)
         {
             coreImports.Add("StatefulComponent");
             coreImports.Add("ComponentState");
         }
-        else
+        else if (!component.IsPrimitive)
         {
             coreImports.Add("StatelessComponent");
         }

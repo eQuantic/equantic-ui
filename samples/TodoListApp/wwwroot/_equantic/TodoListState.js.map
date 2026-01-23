@@ -2,9 +2,9 @@
   "version": 3,
   "sources": ["../../obj/eQuantic/ts/TodoListState.ts"],
   "sourcesContent": [
-    "import { BuildContext, Component, StatelessComponent } from \"@equantic/runtime\";\n\nexport class TodoListState extends Component {\n    render() {\n        return { tag: 'div', attributes: {}, events: {}, children: [] };\n    }\n\n}\n\n"
+    "import { BuildContext, Component, HtmlElement } from \"@equantic/runtime\";\n\nexport class TodoListState extends ComponentState<TodoList> {\n}\n\n"
   ],
-  "mappings": "AAAA,yCAEO,MAAM,sBAAsB,SAAU,CACzC,MAAM,EAAG,CACL,MAAO,CAAE,IAAK,MAAO,WAAY,CAAC,EAAG,OAAQ,CAAC,EAAG,SAAU,CAAC,CAAE,EAGtE",
-  "debugId": "965D0A67EBF989FB64756E2164756E21",
+  "mappings": "AAEO,MAAM,sBAAsB,cAAyB,CAC5D",
+  "debugId": "D68DE7F8C4C9222664756E2164756E21",
   "names": []
 }

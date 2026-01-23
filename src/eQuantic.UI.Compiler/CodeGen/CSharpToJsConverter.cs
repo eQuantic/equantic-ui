@@ -264,15 +264,16 @@ public class CSharpToJsConverter
         var argsList = new List<string>();
         foreach (var arg in invocation.ArgumentList.Arguments)
         {
-            var argExpr = arg.Expression.ToString();
-            // Handle 'out var s' pattern by just using the variable name in JS
-            if (argExpr.StartsWith("out var "))
+            if (arg.RefOrOutKeyword.Kind() == Microsoft.CodeAnalysis.CSharp.SyntaxKind.OutKeyword)
             {
-                argsList.Add(argExpr.Substring(8));
-            }
-            else if (argExpr.StartsWith("out "))
-            {
-                argsList.Add(argExpr.Substring(4));
+                if (arg.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.DeclarationExpressionSyntax decl)
+                {
+                    argsList.Add(decl.Designation.ToString());
+                }
+                else
+                {
+                    argsList.Add(arg.Expression.ToString().Trim());
+                }
             }
             else
             {
@@ -280,6 +281,22 @@ public class CSharpToJsConverter
             }
         }
         var args = string.Join(", ", argsList);
+        
+        // Handle Nullable properties
+        if (targetMethod == "HasValue" && fullMethodName.EndsWith(".HasValue"))
+        {
+            if (methodExpression is MemberAccessExpressionSyntax access)
+            {
+                return $"{ConvertExpression(access.Expression)} !== null";
+            }
+        }
+        if (targetMethod == "Value" && fullMethodName.EndsWith(".Value"))
+        {
+             if (methodExpression is MemberAccessExpressionSyntax access)
+             {
+                 return ConvertExpression(access.Expression);
+             }
+        }
         
         // Handle common library mappings
         if (targetMethod == "Join" && (libraryMethodName == "System.String.Join" || fullMethodName.Contains("String.Join") || fullMethodName.Contains("string.Join")))
@@ -327,6 +344,10 @@ public class CSharpToJsConverter
         {
             return $"!({args})";
         }
+        if (libraryMethodName == "eQuantic.UI.Core.HtmlNode.Text" || fullMethodName == "HtmlNode.Text" || fullMethodName == "htmlNode.Text")
+        {
+            return $"{{ tag: '#text', textContent: {argsList[0]} }}";
+        }
         
         // Dictionary Methods Mapped to JS/TS patterns
         if (targetMethod == "TryGetValue" || targetMethod == "TryGetValueOrDefault" || targetMethod == "GetValueOrDefault")
@@ -335,6 +356,14 @@ public class CSharpToJsConverter
              {
                  var caller = ConvertExpression(access.Expression);
                  var key = argsList.Count > 0 ? argsList[0] : "''";
+                 
+                 // Handle 'out var s' pattern by assigning it
+                 if (argsList.Count > 1)
+                 {
+                     var outVar = argsList[1];
+                     return $"({outVar} = {caller}[{key}]) !== undefined";
+                 }
+                 
                  return $"{caller}[{key}]";
              }
         }

@@ -1,4 +1,4 @@
-import{Component}from"@equantic/runtime";class TodoListState extends Component{render(){return{tag:"div",attributes:{},events:{},children:[]}}}export{TodoListState};
+class TodoListState extends ComponentState{}export{TodoListState};
 
-//# debugId=965D0A67EBF989FB64756E2164756E21
+//# debugId=D68DE7F8C4C9222664756E2164756E21
 //# sourceMappingURL=TodoListState.js.map

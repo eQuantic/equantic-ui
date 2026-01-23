@@ -44,6 +44,11 @@ public class ComponentDefinition
     /// Methods defined in the state class
     /// </summary>
     public List<MethodDefinition> Methods { get; set; } = new();
+
+    /// <summary>
+    /// Constructors defined in the class
+    /// </summary>
+    public List<MethodDefinition> Constructors { get; set; } = new();
     
     /// <summary>
     /// The Build method's component tree (Legacy/Fallback)
@@ -64,6 +69,11 @@ public class ComponentDefinition
     /// Indicates if this is a primitive HTML component (inherits from HtmlElement)
     /// </summary>
     public bool IsPrimitive { get; set; }
+
+    /// <summary>
+    /// Base class name
+    /// </summary>
+    public string? BaseClassName { get; set; }
     
     /// <summary>
     /// Source file path

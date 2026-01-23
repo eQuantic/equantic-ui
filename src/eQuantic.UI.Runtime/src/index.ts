@@ -3,7 +3,7 @@
  */
 
 // Core
-export { Component } from './core/types';
+export { Component, HtmlElement } from './core/types';
 export type { IComponent, HtmlNode, RenderContext, StyleClass, EventHandler } from './core/types';
 export { StatelessComponent, StatefulComponent, ComponentState } from './core/component';
 export { ServiceProvider, ServiceCollectionBuilder, getRootServiceProvider, configureServices, resetServiceProvider } from './core/service-provider';
