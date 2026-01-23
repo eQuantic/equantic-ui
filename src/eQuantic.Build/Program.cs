@@ -107,7 +107,8 @@ void CompileAndBundle()
                 generatedFiles.Add(tsPath);
                 
                 var relativePath = Path.GetRelativePath(sourceDir, file);
-                if (relativePath.StartsWith("Pages"))
+                // Simple heuristic: loose files in root or pages/components dirs are entry points
+                if (relativePath.StartsWith("Pages") || !relativePath.Contains(Path.DirectorySeparatorChar))
                 {
                     entryPoints.Add(tsPath);
                 }
@@ -129,6 +130,7 @@ void CompileAndBundle()
         {
             // Console.WriteLine($"   📦 Bundling {entryPoints.Count} entry points...");
             
+            // Generate source maps and minify
             var bunArgs = $"build {string.Join(" ", entryPoints.Select(p => $"\"{p}\""))} --outdir \"{outputDir}\" --splitting --sourcemap --minify --target browser --external @equantic/runtime";
             
             var process = new Process

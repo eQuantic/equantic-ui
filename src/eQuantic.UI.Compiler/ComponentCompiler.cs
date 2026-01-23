@@ -13,14 +13,12 @@ namespace eQuantic.UI.Compiler;
 public class ComponentCompiler
 {
     private readonly ComponentParser _parser;
-    private readonly JavaScriptEmitter _jsEmitter;
     private readonly TypeScriptEmitter _tsEmitter;
     private readonly CssEmitter _cssEmitter;
     
     public ComponentCompiler()
     {
         _parser = new ComponentParser();
-        _jsEmitter = new JavaScriptEmitter();
         _tsEmitter = new TypeScriptEmitter();
         _cssEmitter = new CssEmitter();
     }
@@ -59,8 +57,8 @@ public class ComponentCompiler
             // Generate TypeScript (preferred for Bun bundling)
             result.TypeScript = _tsEmitter.Emit(component);
             
-            // Generate JavaScript (fallback)
-            result.JavaScript = _jsEmitter.Emit(component);
+            // JavaScript generation is now handled by Bun in the build pipeline
+            // result.JavaScript is empty here, but will be populated by Bun output later if needed
             
             // Generate CSS from StyleClass usages
             if (component.StyleUsages.Count > 0)

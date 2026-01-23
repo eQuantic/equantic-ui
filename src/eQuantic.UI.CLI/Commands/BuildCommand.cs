@@ -57,9 +57,26 @@ public static class BuildCommand
                 
                 if (result.Success)
                 {
-                    // Write JavaScript
-                    var jsPath = Path.Combine(outputDir, $"{result.ComponentName}.js");
-                    File.WriteAllText(jsPath, result.JavaScript);
+                    // Create intermediate directory for TS files
+                    var intermediateDir = Path.Combine(outputDir, "obj", "ts");
+                    Directory.CreateDirectory(intermediateDir);
+                    
+                    // Write TypeScript to intermediate folder
+                    var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
+                    File.WriteAllText(tsPath, result.TypeScript);
+                    
+                    // Bundle with Bun to final output
+                    // e.g. dist/Counter.js
+                    var bundled = Services.BunBundler.BundleAsync(tsPath, outputDir).GetAwaiter().GetResult();
+                    
+                    if (!bundled)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine(" ✗ (Bun Error)");
+                        Console.ResetColor();
+                        errorCount++;
+                        continue;
+                    }
                     
                     // Write CSS if present
                     if (!string.IsNullOrEmpty(result.Css))
@@ -142,8 +159,12 @@ public static class BuildCommand
             
             if (result.Success)
             {
-                var jsPath = Path.Combine(output, $"{result.ComponentName}.js");
-                File.WriteAllText(jsPath, result.JavaScript);
+                var intermediateDir = Path.Combine(output, "obj", "ts");
+                Directory.CreateDirectory(intermediateDir);
+                var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
+                File.WriteAllText(tsPath, result.TypeScript);
+                
+                Services.BunBundler.BundleAsync(tsPath, output).GetAwaiter().GetResult();
                 
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine($"   ✓ {Path.GetFileName(filePath)} recompiled");
