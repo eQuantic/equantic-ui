@@ -108,13 +108,9 @@ void CompileAndBundle()
                 if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
                     file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
                     continue;
-            
-                var content = File.ReadAllText(file);
-                if (!content.Contains(": StatefulComponent") && !content.Contains(": StatelessComponent") && !content.Contains(": HtmlElement"))
-                    continue;
-            
-                // Console.WriteLine($"   ⚙️  Generating {Path.GetFileName(file)}...");
-                
+
+                // Try to compile - parser will return empty if not a component
+                // This removes restrictions on naming, inheritance patterns, aliases, etc.
                 var results = compiler.CompileFile(file);
                 
                 foreach (var result in results)
