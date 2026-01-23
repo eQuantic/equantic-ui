@@ -16,19 +16,42 @@
         <EqcCliPath>$(_SourceBuildDirDebug)eqc.dll</EqcCliPath>
     </PropertyGroup>
     <PropertyGroup>
-        <BunExecutable Condition="$([MSBuild]::IsOSPlatform('Windows'))">bun.exe</BunExecutable>
-        <BunExecutable Condition="$([MSBuild]::IsOSPlatform('Linux'))">bun-linux</BunExecutable>
-        <BunExecutable Condition="$([MSBuild]::IsOSPlatform('OSX'))">bun-darwin</BunExecutable>
-        <_BunToolsDir>$(MSBuildThisFileDirectory)../tools/</_BunToolsDir>
+        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+            eQuantic.UI.Runtime.Win64</BunRuntimePackageId>
+        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+            eQuantic.UI.Runtime.Linux64</BunRuntimePackageId>
+        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('OSX'))">eQuantic.UI.Runtime.Osx64</BunRuntimePackageId>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(BunPath)' == '' And Exists('$(_BunToolsDir)$(BunExecutable)')">
-        <BunPath>$(_BunToolsDir)$(BunExecutable)</BunPath>
-    </PropertyGroup>
+    <Target Name="ResolveBunPath" BeforeTargets="CompileEQuanticUI">
+        <PropertyGroup>
+            <BunPkgRef>Pkg$(BunRuntimePackageId.Replace('.', '_'))</BunPkgRef>
 
-    <PropertyGroup Condition="'$(BunPath)' != ''">
-        <_BunArg> --bun "$(BunPath)"</_BunArg>
-    </PropertyGroup>
+            <!-- Dev Fallback (Source Tree) -->
+            <BunPath
+                Condition="'$(BunPath)' == '' and $([MSBuild]::IsOSPlatform('OSX')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin')">
+                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin</BunPath>
+            <BunPath
+                Condition="'$(BunPath)' == '' and $([MSBuild]::IsOSPlatform('Windows')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe')">
+                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe</BunPath>
+            <BunPath
+                Condition="'$(BunPath)' == '' and $([MSBuild]::IsOSPlatform('Linux')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux')">
+                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux</BunPath>
+
+            <!-- Package Cache Resolution -->
+            <BunPath Condition="'$(BunPath)' == ''">$($(BunPkgRef))/tools/bun/bun-darwin</BunPath>
+            <BunPath Condition="'$(BunPath)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">
+                $($(BunPkgRef))/tools/bun/bun.exe</BunPath>
+            <BunPath Condition="'$(BunPath)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">
+                $($(BunPkgRef))/tools/bun/bun-linux</BunPath>
+        </PropertyGroup>
+
+        <PropertyGroup Condition="'$(BunPath)' != ''">
+            <BunPath>$(BunPath.Trim())</BunPath>
+            <_BunArg> --bun "$(BunPath)"</_BunArg>
+        </PropertyGroup>
+        <Message Text="eQuantic.UI: BunPath resolved to '$(BunPath)'" Importance="High" />
+    </Target>
 
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' != ''">

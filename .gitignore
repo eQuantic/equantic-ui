@@ -11,10 +11,11 @@ nupkgs/
 *.nupkg
 
 # Tools (large binaries)
-src/eQuantic.UI.Sdk/tools/bun
-src/eQuantic.UI.Sdk/tools/bun-darwin
-src/eQuantic.UI.Sdk/tools/bun-linux
-src/eQuantic.UI.Sdk/tools/bun.exe
+# Tools (large binaries) - Runtime Packages
+src/eQuantic.UI.Runtime.*/tools/bun/bun
+src/eQuantic.UI.Runtime.*/tools/bun/bun-darwin
+src/eQuantic.UI.Runtime.*/tools/bun/bun-linux
+src/eQuantic.UI.Runtime.*/tools/bun/bun.exe
 
 # IDE
 .idea/
