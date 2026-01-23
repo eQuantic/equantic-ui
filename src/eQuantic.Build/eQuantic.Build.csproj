@@ -14,4 +14,15 @@
         <ProjectReference Include="..\eQuantic.UI.Compiler\eQuantic.UI.Compiler.csproj" />
     </ItemGroup>
 
+    <!-- Automatically update the SDK tools folder whenever the compiler is built -->
+    <Target Name="UpdateSdkTools" AfterTargets="Build">
+        <ItemGroup>
+            <_FilesToCopy Include="$(OutputPath)**" Exclude="$(OutputPath)*.pdb" />
+        </ItemGroup>
+        <Message Text="eQuantic.UI: Updating SDK tools from $(AssemblyName)..." Importance="high" />
+        <Copy SourceFiles="@(_FilesToCopy)"
+            DestinationFolder="..\eQuantic.UI.Sdk\tools\net8.0"
+            SkipUnchangedFiles="true" />
+    </Target>
+
 </Project>

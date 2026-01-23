@@ -17,6 +17,7 @@ src/eQuantic.UI.Runtime.*/tools/bun/bun-darwin
 src/eQuantic.UI.Runtime.*/tools/bun/bun-linux
 src/eQuantic.UI.Runtime.*/tools/bun/bun.exe
 !src/eQuantic.UI.Runtime.*/tools/bun/*.zip
+src/eQuantic.UI.Sdk/tools/
 
 # IDE
 .idea/

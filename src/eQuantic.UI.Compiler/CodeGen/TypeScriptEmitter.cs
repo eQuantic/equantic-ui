@@ -142,7 +142,7 @@ public class TypeScriptEmitter
         WriteLn();
         
         // State class with type annotations
-        WriteLn($"class {component.StateClassName} {{");
+        WriteLn($"class {component.StateClassName} extends ComponentState {{");
         Indent();
         
         // Private component reference
@@ -162,6 +162,7 @@ public class TypeScriptEmitter
         // Constructor with type
         WriteLn($"constructor(component: {component.Name}) {{");
         Indent();
+        WriteLn("super();");
         WriteLn("this._component = component;");
         Dedent();
         WriteLn("}");

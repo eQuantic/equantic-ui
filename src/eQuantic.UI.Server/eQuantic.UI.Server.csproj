@@ -27,7 +27,7 @@
     <MakeDir Directories="wwwroot" />
     <!-- Try global bun first, simpler for dev environment -->
     <Exec
-      Command="bun build ../eQuantic.UI.Sdk/Resources/boot.ts --outfile wwwroot/runtime.js --minify"
+      Command="bun build ../eQuantic.UI.Sdk/Resources/boot.ts --outfile wwwroot/runtime.js --minify-syntax --minify-whitespace"
       IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="BunExitCode" />
     </Exec>

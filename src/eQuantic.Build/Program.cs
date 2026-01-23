@@ -131,7 +131,7 @@ void CompileAndBundle()
             // Console.WriteLine($"   📦 Bundling {entryPoints.Count} entry points...");
             
             // Generate source maps and minify
-            var bunArgs = $"build {string.Join(" ", entryPoints.Select(p => $"\"{p}\""))} --outdir \"{outputDir}\" --splitting --sourcemap --minify --target browser --external @equantic/runtime";
+            var bunArgs = $"build {string.Join(" ", entryPoints.Select(p => $"\"{p}\""))} --outdir \"{outputDir}\" --splitting --sourcemap --minify-syntax --minify-whitespace --target browser --external @equantic/runtime";
             
             var process = new Process
             {

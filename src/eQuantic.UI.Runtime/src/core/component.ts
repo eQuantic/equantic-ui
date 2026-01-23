@@ -38,8 +38,24 @@ export abstract class StatefulComponent extends Component {
 
   get state(): ComponentState {
     if (!this._state) {
+      if (typeof this.createState !== 'function') {
+         throw new Error(`Component ${this.constructor.name} does not implement createState()`);
+      }
       this._state = this.createState();
-      this._state._setComponent(this);
+      
+      if (!this._state) {
+        throw new Error(`createState() returned null/undefined for ${this.constructor.name}`);
+      }
+
+      if (typeof this._state.setComponent === 'function') {
+         this._state.setComponent(this);
+      } else {
+         console.warn(`State object for ${this.constructor.name} missing setComponent method.`, this._state);
+         // Fallback legacy name check
+         if (typeof (this._state as any)._setComponent === 'function') {
+            (this._state as any)._setComponent(this);
+         }
+      }
       this._state.onInit();
     }
     return this._state;
@@ -103,7 +119,7 @@ export abstract class ComponentState {
     return this._component;
   }
 
-  _setComponent(component: StatefulComponent): void {
+  setComponent(component: StatefulComponent): void {
     this._component = component;
   }
 
