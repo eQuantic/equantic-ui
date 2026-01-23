@@ -1,3 +1,5 @@
+using System;
+
 namespace eQuantic.UI.Core;
 
 /// <summary>
@@ -9,7 +11,7 @@ public abstract class StatelessComponent : HtmlElement
     /// Build the component tree
     /// </summary>
     public abstract IComponent Build(RenderContext context);
-    
+
     /// <inheritdoc />
     public override HtmlNode Render()
     {
@@ -26,17 +28,17 @@ public abstract class StatelessComponent : HtmlElement
 public abstract class StatefulComponent : HtmlElement
 {
     private ComponentState? _state;
-    
+
     /// <summary>
     /// Create the state for this component
     /// </summary>
     public abstract ComponentState CreateState();
-    
+
     /// <summary>
     /// Get or create the component state
     /// </summary>
     internal ComponentState State => _state ??= InitializeState();
-    
+
     private ComponentState InitializeState()
     {
         var state = CreateState();
@@ -44,7 +46,7 @@ public abstract class StatefulComponent : HtmlElement
         state.OnInit();
         return state;
     }
-    
+
     /// <inheritdoc />
     public override HtmlNode Render()
     {
@@ -62,22 +64,22 @@ public abstract class ComponentState
 {
     private StatefulComponent? _component;
     private Action? _onStateChanged;
-    
+
     /// <summary>
     /// The component this state belongs to
     /// </summary>
     public StatefulComponent Component => _component ?? throw new InvalidOperationException("State not initialized");
-    
+
     /// <summary>
     /// Render context
     /// </summary>
     public RenderContext Context { get; internal set; } = new();
-    
+
     internal void SetComponent(StatefulComponent component)
     {
         _component = component;
     }
-    
+
     /// <summary>
     /// Register a callback for state changes
     /// </summary>
@@ -85,7 +87,7 @@ public abstract class ComponentState
     {
         _onStateChanged = callback;
     }
-    
+
     /// <summary>
     /// Update state and trigger re-render
     /// </summary>
@@ -94,34 +96,34 @@ public abstract class ComponentState
         mutate();
         _onStateChanged?.Invoke();
     }
-    
+
     /// <summary>
     /// Build the component tree
     /// </summary>
     public abstract IComponent Build(RenderContext context);
-    
+
     #region Lifecycle
-    
+
     /// <summary>
     /// Called when the state is first created
     /// </summary>
     public virtual void OnInit() { }
-    
+
     /// <summary>
     /// Called when the component is mounted to the DOM
     /// </summary>
     public virtual void OnMount() { }
-    
+
     /// <summary>
     /// Called when the component is updated
     /// </summary>
     public virtual void OnUpdate() { }
-    
+
     /// <summary>
     /// Called when the component is disposed
     /// </summary>
     public virtual void OnDispose() { }
-    
+
     #endregion
 }
 

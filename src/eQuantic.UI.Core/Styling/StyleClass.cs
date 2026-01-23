@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -9,109 +11,109 @@ namespace eQuantic.UI.Core;
 public class StyleClass
 {
     private string? _generatedClassName;
-    
+
     #region Layout
-    
+
     public string? Display { get; init; }
     public string? Position { get; init; }
-    
+
     #endregion
-    
+
     #region Flexbox
-    
+
     public string? FlexDirection { get; init; }
     public string? JustifyContent { get; init; }
     public string? AlignItems { get; init; }
     public string? Gap { get; init; }
-    
+
     #endregion
-    
+
     #region Sizing
-    
+
     public string? Width { get; init; }
     public string? Height { get; init; }
     public string? MaxWidth { get; init; }
     public string? MinHeight { get; init; }
-    
+
     #endregion
-    
+
     #region Spacing
-    
+
     public Spacing? Margin { get; init; }
     public Spacing? Padding { get; init; }
-    
+
     #endregion
-    
+
     #region Background
-    
+
     public string? BackgroundColor { get; init; }
     public string? Background { get; init; }
-    
+
     #endregion
-    
+
     #region Border
-    
+
     public string? Border { get; init; }
     public int? BorderRadius { get; init; }
     public string? BorderColor { get; init; }
-    
+
     #endregion
-    
+
     #region Typography
-    
+
     public string? Color { get; init; }
     public string? FontSize { get; init; }
     public string? FontWeight { get; init; }
     public string? TextAlign { get; init; }
-    
+
     #endregion
-    
+
     #region Effects
-    
+
     public string? BoxShadow { get; init; }
     public string? Cursor { get; init; }
     public string? Transition { get; init; }
-    
+
     #endregion
-    
+
     #region Pseudo-classes
-    
+
     /// <summary>
     /// Styles applied on :hover
     /// </summary>
     public StyleClass? Hover { get; init; }
-    
+
     /// <summary>
     /// Styles applied on :active
     /// </summary>
     public StyleClass? Active { get; init; }
-    
+
     /// <summary>
     /// Styles applied on :focus
     /// </summary>
     public StyleClass? Focus { get; init; }
-    
+
     /// <summary>
     /// Styles applied on :disabled
     /// </summary>
     public StyleClass? Disabled { get; init; }
-    
+
     #endregion
-    
+
     #region Responsive
-    
+
     /// <summary>
     /// Media query styles
     /// </summary>
     public Dictionary<Breakpoint, StyleClass>? Media { get; init; }
-    
+
     #endregion
-    
+
     /// <summary>
     /// Generated className (eqx-{hash})
     /// </summary>
     public string GeneratedClassName => _generatedClassName ??= GenerateClassName();
-    
+
     /// <summary>
     /// Create a new StyleClass extending this one with overrides
     /// </summary>
@@ -150,7 +152,7 @@ public class StyleClass
             Media = overrides.Media ?? Media
         };
     }
-    
+
     /// <summary>
     /// Generate CSS string for this StyleClass
     /// </summary>
@@ -158,12 +160,12 @@ public class StyleClass
     {
         var sb = new StringBuilder();
         var className = GeneratedClassName;
-        
+
         // Base styles
         sb.AppendLine($".{className} {{");
         AppendCssProperties(sb);
         sb.AppendLine("}");
-        
+
         // Pseudo-classes
         if (Hover != null)
         {
@@ -171,28 +173,28 @@ public class StyleClass
             Hover.AppendCssProperties(sb);
             sb.AppendLine("}");
         }
-        
+
         if (Active != null)
         {
             sb.AppendLine($".{className}:active {{");
             Active.AppendCssProperties(sb);
             sb.AppendLine("}");
         }
-        
+
         if (Focus != null)
         {
             sb.AppendLine($".{className}:focus {{");
             Focus.AppendCssProperties(sb);
             sb.AppendLine("}");
         }
-        
+
         if (Disabled != null)
         {
             sb.AppendLine($".{className}:disabled {{");
             Disabled.AppendCssProperties(sb);
             sb.AppendLine("}");
         }
-        
+
         // Media queries
         if (Media != null)
         {
@@ -205,10 +207,10 @@ public class StyleClass
                 sb.AppendLine("}");
             }
         }
-        
+
         return sb.ToString();
     }
-    
+
     private void AppendCssProperties(StringBuilder sb, string indent = "  ")
     {
         if (Display != null) sb.AppendLine($"{indent}display: {Display};");
@@ -236,13 +238,13 @@ public class StyleClass
         if (Cursor != null) sb.AppendLine($"{indent}cursor: {Cursor};");
         if (Transition != null) sb.AppendLine($"{indent}transition: {Transition};");
     }
-    
+
     private string GenerateClassName()
     {
         var hash = ComputeHash(ToCss());
         return $"eqx-{hash[..6]}";
     }
-    
+
     private static string ComputeHash(string input)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
@@ -259,28 +261,28 @@ public class Spacing
     public int? Right { get; init; }
     public int? Bottom { get; init; }
     public int? Left { get; init; }
-    
+
     /// <summary>
     /// All sides equal
     /// </summary>
     public static Spacing All(int value) => new() { Top = value, Right = value, Bottom = value, Left = value };
-    
+
     /// <summary>
     /// Vertical and horizontal
     /// </summary>
-    public static Spacing Symmetric(int vertical = 0, int horizontal = 0) => 
+    public static Spacing Symmetric(int vertical = 0, int horizontal = 0) =>
         new() { Top = vertical, Right = horizontal, Bottom = vertical, Left = horizontal };
-    
+
     /// <summary>
     /// Horizontal only
     /// </summary>
     public static Spacing Horizontal(int value) => new() { Right = value, Left = value };
-    
+
     /// <summary>
     /// Vertical only
     /// </summary>
     public static Spacing Vertical(int value) => new() { Top = value, Bottom = value };
-    
+
     /// <summary>
     /// Convert to CSS value
     /// </summary>
@@ -288,10 +290,10 @@ public class Spacing
     {
         if (Top == Right && Right == Bottom && Bottom == Left)
             return $"{Top}px";
-        
+
         if (Top == Bottom && Right == Left)
             return $"{Top}px {Right}px";
-        
+
         return $"{Top ?? 0}px {Right ?? 0}px {Bottom ?? 0}px {Left ?? 0}px";
     }
 }
@@ -302,7 +304,7 @@ public class Spacing
 public class Breakpoint
 {
     public int MaxWidth { get; init; }
-    
+
     public static readonly Breakpoint Mobile = new() { MaxWidth = 640 };
     public static readonly Breakpoint Tablet = new() { MaxWidth = 768 };
     public static readonly Breakpoint Desktop = new() { MaxWidth = 1024 };

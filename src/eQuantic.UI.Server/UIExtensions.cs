@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -18,24 +21,24 @@ public static class UIExtensions
     {
         var options = new UIOptions();
         configure?.Invoke(options);
-        
+
         services.AddSingleton(options);
         services.AddSingleton<IServerActionRegistry>(sp =>
         {
             var registry = new ServerActionRegistry();
-            
+
             // Scan registered assemblies
             foreach (var assembly in options.AssembliesToScan)
             {
                 registry.ScanAssembly(assembly);
             }
-            
+
             return registry;
         });
-        
+
         return services;
     }
-    
+
     /// <summary>
     /// Adds the Server Actions middleware to the pipeline.
     /// </summary>
@@ -43,7 +46,7 @@ public static class UIExtensions
     {
         return app.UseMiddleware<ServerActionsMiddleware>();
     }
-    
+
     /// <summary>
     /// Maps page routes based on [Page] attributes found in scanned assemblies.
     /// </summary>
@@ -51,18 +54,18 @@ public static class UIExtensions
     {
         var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
         var registry = endpoints.ServiceProvider.GetRequiredService<IServerActionRegistry>();
-        
+
         // Get all page routes from scanned assemblies
         foreach (var assembly in options.AssembliesToScan)
         {
             var pageTypes = assembly.GetTypes()
                 .Where(t => t.GetCustomAttribute<Core.PageAttribute>() != null);
-            
+
             foreach (var pageType in pageTypes)
             {
                 var pageAttr = pageType.GetCustomAttribute<Core.PageAttribute>()!;
                 var route = pageAttr.Route;
-                
+
                 endpoints.MapGet(route, async context =>
                 {
                     // Serve the compiled JavaScript for this page
@@ -71,10 +74,10 @@ public static class UIExtensions
                 });
             }
         }
-        
+
         return endpoints;
     }
-    
+
     /// <summary>
     /// Maps the UI fallback route to serve the SPA HTML shell.
     /// </summary>
@@ -84,7 +87,7 @@ public static class UIExtensions
         {
             var options = context.RequestServices.GetRequiredService<UIOptions>();
             var shell = options.HtmlShell;
-            
+
             var html = $@"<!DOCTYPE html>
 <html lang=""en"">
 <head>
@@ -100,7 +103,7 @@ public static class UIExtensions
     <div id=""app"">
         <div class=""loading"">Loading...</div>
     </div>
-    
+
     <!-- eQuantic.UI Runtime -->
     <script type=""module"">
         // Placeholder for runtime loading
@@ -124,12 +127,12 @@ public static class UIExtensions
 public class UIOptions
 {
     internal List<Assembly> AssembliesToScan { get; } = new();
-    
+
     /// <summary>
     /// Configuration for the HTML shell (index.html).
     /// </summary>
     public HtmlShellOptions HtmlShell { get; } = new();
-    
+
     /// <summary>
     /// Scan an assembly for components with [Page] and [ServerAction] attributes.
     /// </summary>

@@ -1,3 +1,5 @@
+using System;
+
 namespace eQuantic.UI.Core;
 
 /// <summary>
@@ -10,12 +12,12 @@ public class PageAttribute : Attribute
     /// The route pattern for this page (e.g., "/counter", "/user/{id:int}").
     /// </summary>
     public string Route { get; }
-    
+
     /// <summary>
     /// Optional page title for metadata.
     /// </summary>
     public string? Title { get; set; }
-    
+
     public PageAttribute(string route)
     {
         Route = route ?? throw new ArgumentNullException(nameof(route));

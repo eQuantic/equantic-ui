@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using eQuantic.UI.Core;
 using eQuantic.UI.Core.Events;
 

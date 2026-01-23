@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Navigation;
@@ -56,8 +58,8 @@ public class Breadcrumb : HtmlElement
                 new HtmlNode
                 {
                     Tag = "ol",
-                    Attributes = new Dictionary<string, string?> 
-                    { 
+                    Attributes = new Dictionary<string, string?>
+                    {
                         ["class"] = "breadcrumb",
                         ["style"] = $"--bs-breadcrumb-divider: '{Separator}';"
                     },

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Display;
@@ -25,7 +26,7 @@ public class Avatar : HtmlElement
             AvatarSize.Large => "avatar-lg",
             _ => "avatar-md"
         };
-        
+
         var classes = $"avatar {sizeClass}";
         var existingClass = attrs.GetValueOrDefault("class");
         attrs["class"] = string.IsNullOrEmpty(existingClass) ? classes : $"{existingClass} {classes}";

@@ -1,3 +1,5 @@
+using System;
+
 namespace eQuantic.UI.Core.Events;
 
 /// <summary>
