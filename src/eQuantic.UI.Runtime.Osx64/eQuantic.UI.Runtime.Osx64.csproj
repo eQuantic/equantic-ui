@@ -12,6 +12,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="tools\bun\bun-darwin" PackagePath="tools\bun\bun-darwin" />
+        <Content Include="tools\bun\bun-darwin.zip" PackagePath="tools\bun\bun-darwin.zip" />
     </ItemGroup>
 </Project>
