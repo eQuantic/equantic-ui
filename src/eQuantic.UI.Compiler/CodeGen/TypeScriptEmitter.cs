@@ -1,5 +1,7 @@
 using System.Text;
+using Microsoft.CodeAnalysis;
 using eQuantic.UI.Compiler.Models;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -9,33 +11,83 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// </summary>
 public class TypeScriptEmitter
 {
-    private readonly StringBuilder _output = new();
-    private int _indentLevel = 0;
+    private readonly StringBuilder _output = new(); // Legacy, to be removed
+    private readonly TypeScriptCodeBuilder _builder = new(); // New builder
+    
+    // Legacy helper to bridge during refactor
+    private void WriteLn(string line = "") => _builder.Line(line);
+    private void Indent() => _builder.Indent();
+    private void Dedent() => _builder.Dedent();
     private readonly CSharpToJsConverter _converter = new();
     
     /// <summary>
     /// Generate TypeScript code for a component
     /// </summary>
-    public string Emit(ComponentDefinition component)
+    public string Emit(ComponentDefinition component, SemanticModel? semanticModel = null)
     {
+        _converter.SetSemanticModel(semanticModel);
         _output.Clear();
-        _indentLevel = 0;
+        // _indentLevel = 0; // Removed
         
-        // Emit imports
         EmitImports(component);
         WriteLn();
         
-        // Emit component class
+        // Define component class
+        _builder.Class(component.Name, 
+            component.IsStateful ? "StatefulComponent" : "StatelessComponent", 
+            c => 
+            {
+                if (component.IsStateful)
+                {
+                    c.Method("createState", "", false, () => 
+                    {
+                        c.Raw($"return new {component.StateClassName}(this)");
+                    });
+                }
+                else
+                {
+                    // For stateless, build directly
+                    c.Method("build", "context: BuildContext", false, () => 
+                    {
+                         var root = component.BuildTree;
+                         if (root != null)
+                         {
+                             c.Raw("return (");
+                             EmitComponentTree(root);
+                             c.Raw(");");
+                         }
+                         else 
+                         {
+                             c.Raw("return new Container({});");
+                         }
+                    });
+                }
+                
+                // Server Actions
+                foreach (var action in component.ServerActions)
+                {
+                    var paramsList = string.Join(", ", action.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
+                    var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
+                    var returnType = CSharpTypeToTypeScript(action.ReturnType);
+
+                    c.Method(ToCamelCase(action.MethodName), paramsList, true, () => 
+                    {
+                        c.Raw($"return await getServerActionsClient().invoke('{component.Name}/{action.MethodName}', [{argsList}])");
+                    });
+                }
+            });
+
+        // State class logic hooks into builder via EmitStateClass (already refactored)
+        // We just need to ensure EmitStateClass writes to builder, OR we inline it here if we want full builder control in one pass.
+        // Given current structure, we rely on EmitStateClass using _builder.
         if (component.IsStateful)
         {
-            EmitStatefulComponent(component);
-        }
-        else
-        {
-            EmitStatelessComponent(component);
+            EmitStatefulComponent(component); // This method needs update to NOT use WriteLn manually if we want full builder purity, but for now we mix.
         }
         
-        return _output.ToString();
+        _builder.Line($"export {{ {component.Name} }};");
+        
+        return _builder.ToString();
     }
     
     private void EmitImports(ComponentDefinition component)
@@ -46,6 +98,7 @@ public class TypeScriptEmitter
         if (component.IsStateful)
         {
             coreImports.Add("StatefulComponent");
+            coreImports.Add("ComponentState");
         }
         else
         {
@@ -73,13 +126,12 @@ public class TypeScriptEmitter
             }
         }
         
-        WriteLn($"import {{ {string.Join(", ", coreImports.OrderBy(x => x))} }} from '@equantic/runtime';");
+        _builder.Import(coreImports, "@equantic/runtime");
         
-        // Import user components from relative paths
-        // For Phase 2.2 we assume flat structure in intermediate folder
+        // Import user components
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
-            WriteLn($"import {{ {userComp} }} from './{userComp}';");
+            _builder.Import(new[] { userComp }, $"./{userComp}");
         }
     }
     
@@ -141,31 +193,51 @@ public class TypeScriptEmitter
         WriteLn("}");
         WriteLn();
         
-        // State class with type annotations
-        WriteLn($"class {component.StateClassName} extends ComponentState {{");
-        Indent();
-        
-        // Private component reference
-        WriteLn($"private _component: {component.Name};");
-        WriteLn("private _needsRender: boolean = false;");
-        WriteLn();
-        
-        // Typed fields
-        foreach (var field in component.StateFields)
+        _builder.Class(component.StateClassName, "ComponentState", c =>
         {
-            var tsType = CSharpTypeToTypeScript(field.Type);
-            var tsDefault = ConvertToTsValue(field.DefaultValue ?? GetDefaultForType(field.Type), field.Type);
-            WriteLn($"private {field.Name}: {tsType} = {tsDefault};");
-        }
-        WriteLn();
-        
-        // Constructor with type
-        WriteLn($"constructor(component: {component.Name}) {{");
-        Indent();
-        WriteLn("super();");
-        WriteLn("this._component = component;");
-        Dedent();
-        WriteLn("}");
+            // Private component reference
+            c.Field("_component", component.Name);
+            c.Field("_needsRender", "boolean", "false");
+            
+            // Typed fields
+            foreach (var field in component.StateFields)
+            {
+                var tsType = CSharpTypeToTypeScript(field.Type);
+                var tsDefault = ConvertToTsValue(field.DefaultValue ?? GetDefaultForType(field.Type), field.Type);
+                c.Field(field.Name, tsType, tsDefault);
+            }
+
+            // Constructor
+            c.Constructor($"component: {component.Name}", () =>
+            {
+                c.Raw("super();");
+                c.Raw("this._component = component;");
+            });
+            
+            // SetState
+            c.Method("setState", "fn: () => void", false, () => 
+            {
+                c.Raw("fn();");
+                c.Raw("this._needsRender = true;");
+                c.Raw("this._component._scheduleRender();");
+            });
+
+            // Build method
+            c.Method("build", "context: BuildContext", false, () =>
+            {
+                var root = component.BuildTree;
+                if (root != null)
+                {
+                    c.Raw("return (");
+                    EmitComponentTree(root);
+                    c.Raw(");");
+                }
+                else
+                {
+                    c.Raw("return new Container({});");
+                }
+            });
+        });
         WriteLn();
         
         // SetState method
@@ -437,24 +509,8 @@ public class TypeScriptEmitter
     
     private void Write(string text)
     {
-        _output.Append(text);
+        _builder.Line(text); // Basic mapping for Write, though Builder prefers structured calls
     }
-    
-    private void WriteLn(string text = "")
-    {
-        if (!string.IsNullOrEmpty(text))
-        {
-            _output.Append(new string(' ', _indentLevel * 2));
-            _output.AppendLine(text);
-        }
-        else
-        {
-            _output.AppendLine();
-        }
-    }
-    
-    private void Indent() => _indentLevel++;
-    private void Dedent() => _indentLevel = Math.Max(0, _indentLevel - 1);
     
     #endregion
 }

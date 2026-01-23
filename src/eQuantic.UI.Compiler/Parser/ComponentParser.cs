@@ -29,7 +29,8 @@ public class ComponentParser
         
         var definition = new ComponentDefinition
         {
-            SourcePath = sourcePath
+            SourcePath = sourcePath,
+            SyntaxTree = tree
         };
         
         // Extract namespace

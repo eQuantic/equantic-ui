@@ -59,6 +59,11 @@ public class ComponentDefinition
     /// Source file path
     /// </summary>
     public string SourcePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Roslyn Syntax Reference
+    /// </summary>
+    public Microsoft.CodeAnalysis.SyntaxTree? SyntaxTree { get; set; }
 }
 
 /// <summary>

@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Text;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -87,27 +88,59 @@ public class CSharpToJsConverter
         return name;
     }
     
+    private readonly TypeMappingRegistry _registry;
+    private SemanticModel? _semanticModel;
+
+    public CSharpToJsConverter()
+    {
+        _registry = new TypeMappingRegistry();
+    }
+    
+    public void SetSemanticModel(SemanticModel? semanticModel)
+    {
+        _semanticModel = semanticModel;
+    }
+
+    /// <summary>
+    /// Convert a parsed expression to JavaScript
+    /// </summary>
     private string ConvertInvocation(InvocationExpressionSyntax invocation)
     {
-        var method = ConvertExpression(invocation.Expression);
+        var methodExpression = invocation.Expression;
+        var methodName = methodExpression.ToString(); // Fallback for simple names
         
-        // Convert C# method names to JS conventions
-        method = method switch
+        // Handle member access (obj.Method)
+        if (methodExpression is MemberAccessExpressionSyntax memberAccess)
         {
-            "SetState" => "this.setState",
-            "string.IsNullOrEmpty" => "!",
-            _ => method
-        };
+            methodName = memberAccess.Name.Identifier.Text;
+        }
+
+        // 1. Check Registry for full matches (e.g., SetState)
+        // Note: Without Semantic Model, we match by simple name for now (Phase 1)
+        var mappedName = _registry.GetMethodMapping(methodName);
+        var targetMethod = mappedName ?? methodName;
         
+        // 2. Resolve Arguments
         var args = string.Join(", ", invocation.ArgumentList.Arguments.Select(a => ConvertExpression(a.Expression)));
-        
-        // Special case for string.IsNullOrEmpty
-        if (method == "!")
+
+        // 3. Handle Special Prefixes (e.g., "!")
+        if (targetMethod == "!")
         {
-            return $"!{args}";
+            return $"!({args})";
         }
         
-        return $"{method}({args})";
+        // 4. Handle conversion 
+        // If it's a known static method replacement (Console.WriteLine -> console.log)
+        // We might need to drop the caller if it's static, OR keep it if instance.
+        // For Phase 1, we assume specific hardcoded replacements or simple renames.
+        
+        if (methodExpression is MemberAccessExpressionSyntax access)
+        {
+             var caller = ConvertExpression(access.Expression);
+             return $"{caller}.{targetMethod}({args})";
+        }
+
+        return $"{targetMethod}({args})";
     }
     
     private string ConvertLambda(ParenthesizedLambdaExpressionSyntax lambda)

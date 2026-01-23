@@ -2,25 +2,26 @@ using eQuantic.UI.Compiler.Parser;
 using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.Models;
 
+using eQuantic.UI.Compiler.Services;
+
 namespace eQuantic.UI.Compiler;
 
 /// <summary>
 /// Main compiler class that orchestrates parsing, analysis, and code generation
-/// </summary>
-/// <summary>
-/// Compiler orchestrator for eQuantic.UI components
 /// </summary>
 public class ComponentCompiler
 {
     private readonly ComponentParser _parser;
     private readonly TypeScriptEmitter _tsEmitter;
     private readonly CssEmitter _cssEmitter;
+    private readonly SemanticModelProvider _semanticModelProvider;
     
     public ComponentCompiler()
     {
         _parser = new ComponentParser();
         _tsEmitter = new TypeScriptEmitter();
         _cssEmitter = new CssEmitter();
+        _semanticModelProvider = new SemanticModelProvider();
     }
     
     /// <summary>
@@ -54,8 +55,26 @@ public class ComponentCompiler
         
         try
         {
+            // Semantic Analysis
+            Microsoft.CodeAnalysis.SemanticModel? semanticModel = null;
+            if (component.SyntaxTree != null)
+            {
+                semanticModel = _semanticModelProvider.GetSemanticModel(component.SyntaxTree);
+                
+                // Validate Component Rules
+                var validator = new SemanticValidator(semanticModel);
+                var semanticErrors = validator.Validate(component);
+                
+                if (semanticErrors.Count > 0)
+                {
+                    result.Success = false;
+                    result.Errors.AddRange(semanticErrors);
+                    return result;
+                }
+            }
+
             // Generate TypeScript (preferred for Bun bundling)
-            result.TypeScript = _tsEmitter.Emit(component);
+            result.TypeScript = _tsEmitter.Emit(component, semanticModel);
             
             // JavaScript generation is now handled by Bun in the build pipeline
             // result.JavaScript is empty here, but will be populated by Bun output later if needed
