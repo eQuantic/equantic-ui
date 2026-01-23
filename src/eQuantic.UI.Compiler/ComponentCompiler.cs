@@ -27,19 +27,19 @@ public class ComponentCompiler
     /// <summary>
     /// Compile a single .eqx file
     /// </summary>
-    public CompilationResult CompileFile(string filePath)
+    public IEnumerable<CompilationResult> CompileFile(string filePath)
     {
-        var component = _parser.Parse(filePath);
-        return Compile(component);
+        var components = _parser.Parse(filePath);
+        return components.Select(Compile);
     }
     
     /// <summary>
     /// Compile from source code
     /// </summary>
-    public CompilationResult CompileSource(string sourceCode, string sourcePath = "")
+    public IEnumerable<CompilationResult> CompileSource(string sourceCode, string sourcePath = "")
     {
-        var component = _parser.ParseSource(sourceCode, sourcePath);
-        return Compile(component);
+        var components = _parser.ParseSource(sourceCode, sourcePath);
+        return components.Select(Compile);
     }
     
     /// <summary>
@@ -121,9 +121,12 @@ public class ComponentCompiler
 
             // Only compile if it looks like a component (optimization)
             var content = File.ReadAllText(file);
-            if (content.Contains(": StatefulComponent") || content.Contains(": StatelessComponent"))
+            if (content.Contains(": StatefulComponent") || content.Contains(": StatelessComponent") || content.Contains(": HtmlElement"))
             {
-                yield return CompileFile(file);
+                foreach (var result in CompileFile(file))
+                {
+                    yield return result;
+                }
             }
         }
     }
@@ -135,24 +138,27 @@ public class ComponentCompiler
     {
         Directory.CreateDirectory(outputDir);
         
-        var result = CompileFile(inputPath);
+        var results = CompileFile(inputPath);
         
-        if (result.Success)
+        foreach (var result in results)
         {
-            var jsPath = Path.Combine(outputDir, $"{result.ComponentName}.js");
-            File.WriteAllText(jsPath, result.JavaScript);
-            
-            if (!string.IsNullOrEmpty(result.Css))
+            if (result.Success)
             {
-                var cssPath = Path.Combine(outputDir, $"{result.ComponentName}.css");
-                File.WriteAllText(cssPath, result.Css);
+                var jsPath = Path.Combine(outputDir, $"{result.ComponentName}.js");
+                File.WriteAllText(jsPath, result.JavaScript);
+                
+                if (!string.IsNullOrEmpty(result.Css))
+                {
+                    var cssPath = Path.Combine(outputDir, $"{result.ComponentName}.css");
+                    File.WriteAllText(cssPath, result.Css);
+                }
             }
-        }
-        else
-        {
-            foreach (var error in result.Errors)
+            else
             {
-                Console.Error.WriteLine($"Error in {error.SourcePath}: {error.Message}");
+                foreach (var error in result.Errors)
+                {
+                    Console.Error.WriteLine($"Error in {error.SourcePath}: {error.Message}");
+                }
             }
         }
     }

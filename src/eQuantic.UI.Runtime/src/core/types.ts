@@ -53,9 +53,31 @@ export abstract class Component implements IComponent {
   className?: string;
   style?: Record<string, string>;
   styleClass?: StyleClass;
+  title?: string;
+  hidden?: boolean;
+  tabIndex?: number;
   dataAttributes?: Record<string, string>;
   ariaAttributes?: Record<string, string>;
   children: IComponent[] = [];
+
+  constructor(props?: any) {
+    if (props && typeof props === 'object') {
+      Object.assign(this, props);
+    }
+  }
+
+  // Common Events
+  onClick?: Action;
+  onDoubleClick?: Action;
+  onFocus?: Action;
+  onBlur?: Action;
+  onMouseEnter?: Action<any>;
+  onMouseLeave?: Action<any>;
+  onMouseDown?: Action<any>;
+  onMouseUp?: Action<any>;
+  onKeyDown?: Action<any>;
+  onKeyUp?: Action<any>;
+  onKeyPress?: Action<any>;
 
   abstract render(): HtmlNode;
 
@@ -63,6 +85,9 @@ export abstract class Component implements IComponent {
     const attrs: Record<string, string | undefined> = {};
 
     if (this.id) attrs['id'] = this.id;
+    if (this.title) attrs['title'] = this.title;
+    if (this.hidden) attrs['hidden'] = 'true';
+    if (this.tabIndex !== undefined) attrs['tabindex'] = this.tabIndex.toString();
 
     // Build className from className + styleClass
     const classNames: string[] = [];
@@ -93,4 +118,41 @@ export abstract class Component implements IComponent {
 
     return attrs;
   }
+
+  protected buildEvents(): Record<string, EventHandler> {
+    const events: Record<string, EventHandler> = {};
+
+    if (this.onClick) events['click'] = this.onClick as EventHandler;
+    if (this.onDoubleClick) events['dblclick'] = this.onDoubleClick as EventHandler;
+    if (this.onFocus) events['focus'] = this.onFocus as EventHandler;
+    if (this.onBlur) events['blur'] = this.onBlur as EventHandler;
+    if (this.onMouseEnter) events['mouseenter'] = this.onMouseEnter as EventHandler;
+    if (this.onMouseLeave) events['mouseleave'] = this.onMouseLeave as EventHandler;
+    if (this.onMouseDown) events['mousedown'] = this.onMouseDown as EventHandler;
+    if (this.onMouseUp) events['mouseup'] = this.onMouseUp as EventHandler;
+    if (this.onKeyDown) events['keydown'] = this.onKeyDown as EventHandler;
+    if (this.onKeyUp) events['keyup'] = this.onKeyUp as EventHandler;
+    if (this.onKeyPress) events['keypress'] = this.onKeyPress as EventHandler;
+
+    return events;
+  }
 }
+
+type Action<T = void> = (args: T) => void;
+
+export abstract class HtmlElement extends Component {
+  protected get htmlNode() {
+    return {
+      text: (content: string) => {
+        (this as any).content = content;
+        return this.htmlNode;
+      },
+      attr: (name: string, value: any) => {
+        if (!(this as any).attributes) (this as any).attributes = {};
+        (this as any).attributes[name] = value;
+        return this.htmlNode;
+      }
+    };
+  }
+}
+

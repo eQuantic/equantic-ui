@@ -30,6 +30,7 @@ public static class BuildCommand
             .Where(f => !f.Contains("/obj/") && !f.Contains("/bin/") && 
                        (File.ReadAllText(f).Contains(": StatefulComponent") || 
                         File.ReadAllText(f).Contains(": StatelessComponent") || 
+                        File.ReadAllText(f).Contains(": HtmlElement") || 
                         File.ReadAllText(f).Contains("[Component]")))
             .ToArray();
         
@@ -53,53 +54,55 @@ public static class BuildCommand
             
             try
             {
-                var result = compiler.CompileFile(file);
+                var results = compiler.CompileFile(file);
                 
-                if (result.Success)
+                foreach (var result in results)
                 {
-                    // Create intermediate directory for TS files
-                    var intermediateDir = Path.Combine(outputDir, "obj", "ts");
-                    Directory.CreateDirectory(intermediateDir);
-                    
-                    // Write TypeScript to intermediate folder
-                    var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
-                    File.WriteAllText(tsPath, result.TypeScript);
-                    
-                    // Bundle with Bun to final output
-                    // e.g. dist/Counter.js
-                    var bundled = Services.BunBundler.BundleAsync(tsPath, outputDir).GetAwaiter().GetResult();
-                    
-                    if (!bundled)
+                    if (result.Success)
+                    {
+                        // Create intermediate directory for TS files
+                        var intermediateDir = Path.Combine(outputDir, "obj", "ts");
+                        Directory.CreateDirectory(intermediateDir);
+                        
+                        // Write TypeScript to intermediate folder
+                        var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
+                        File.WriteAllText(tsPath, result.TypeScript);
+                        
+                        // Bundle with Bun to final output
+                        var bundled = Services.BunBundler.BundleAsync(tsPath, outputDir).GetAwaiter().GetResult();
+                        
+                        if (!bundled)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine($" ✗ (Bun Error: {result.ComponentName})");
+                            Console.ResetColor();
+                            errorCount++;
+                            continue;
+                        }
+                        
+                        // Write CSS if present
+                        if (!string.IsNullOrEmpty(result.Css))
+                        {
+                            var cssPath = Path.Combine(outputDir, $"{result.ComponentName}.css");
+                            File.WriteAllText(cssPath, result.Css);
+                        }
+                        
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine($" ✓ {result.ComponentName}");
+                        Console.ResetColor();
+                        successCount++;
+                    }
+                    else
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine(" ✗ (Bun Error)");
+                        Console.WriteLine($" ✗ {result.ComponentName}");
+                        foreach (var error in result.Errors)
+                        {
+                            Console.WriteLine($"      Error: {error.Message}");
+                        }
                         Console.ResetColor();
                         errorCount++;
-                        continue;
                     }
-                    
-                    // Write CSS if present
-                    if (!string.IsNullOrEmpty(result.Css))
-                    {
-                        var cssPath = Path.Combine(outputDir, $"{result.ComponentName}.css");
-                        File.WriteAllText(cssPath, result.Css);
-                    }
-                    
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine(" ✓");
-                    Console.ResetColor();
-                    successCount++;
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine(" ✗");
-                    foreach (var error in result.Errors)
-                    {
-                        Console.WriteLine($"      Error: {error.Message}");
-                    }
-                    Console.ResetColor();
-                    errorCount++;
                 }
             }
             catch (Exception ex)
@@ -155,20 +158,23 @@ public static class BuildCommand
         try
         {
             Thread.Sleep(100); // Debounce
-            var result = compiler.CompileFile(filePath);
+            var results = compiler.CompileFile(filePath);
             
-            if (result.Success)
+            foreach (var result in results)
             {
-                var intermediateDir = Path.Combine(output, "obj", "ts");
-                Directory.CreateDirectory(intermediateDir);
-                var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
-                File.WriteAllText(tsPath, result.TypeScript);
-                
-                Services.BunBundler.BundleAsync(tsPath, output).GetAwaiter().GetResult();
-                
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"   ✓ {Path.GetFileName(filePath)} recompiled");
-                Console.ResetColor();
+                if (result.Success)
+                {
+                    var intermediateDir = Path.Combine(output, "obj", "ts");
+                    Directory.CreateDirectory(intermediateDir);
+                    var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
+                    File.WriteAllText(tsPath, result.TypeScript);
+                    
+                    Services.BunBundler.BundleAsync(tsPath, output).GetAwaiter().GetResult();
+                    
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"   ✓ {result.ComponentName} (from {Path.GetFileName(filePath)}) recompiled");
+                    Console.ResetColor();
+                }
             }
         }
         catch (Exception ex)

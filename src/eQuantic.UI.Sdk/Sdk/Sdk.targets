@@ -94,10 +94,13 @@
 
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' != ''">
+        <PropertyGroup>
+            <_StandardComponentsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Components</_StandardComponentsDir>
+        </PropertyGroup>
         <Message Text="eQuantic.UI: Compiling components..." Importance="high" />
         <MakeDir Directories="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)" />
         <Exec
-            Command="dotnet $(EqcCliPath) $(MSBuildProjectDirectory) $(MSBuildProjectDirectory)/$(EQuanticOutputPath)$(_BunArg)"
+            Command="dotnet $(EqcCliPath) &quot;$(MSBuildProjectDirectory);$(_StandardComponentsDir)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath)$(_BunArg)"
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
     </Target>

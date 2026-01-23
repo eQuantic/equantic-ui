@@ -59,6 +59,11 @@ public class ComponentDefinition
     /// StyleClass usages found in the component
     /// </summary>
     public List<StyleClassUsage> StyleUsages { get; set; } = new();
+
+    /// <summary>
+    /// Indicates if this is a primitive HTML component (inherits from HtmlElement)
+    /// </summary>
+    public bool IsPrimitive { get; set; }
     
     /// <summary>
     /// Source file path

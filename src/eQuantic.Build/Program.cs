@@ -8,15 +8,14 @@ if (args.Length < 2)
     return 1;
 }
 
-var sourceDir = args[0];
+var sourceDirs = args[0].Split(';', StringSplitOptions.RemoveEmptyEntries);
 var outputDir = args[1];
 var bunPath = args.ToList().Contains("--bun") ? args[args.ToList().IndexOf("--bun") + 1] : null;
 var isWatchMode = args.Any(a => a == "--watch");
 
-// Determine intermediate directory for TS files
-var intermediateDir = Path.Combine(sourceDir, "obj", "eQuantic", "ts");
-if (!Directory.Exists(intermediateDir)) Directory.CreateDirectory(intermediateDir);
-if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
+// Determine intermediate directory based on primary source dir
+var primarySourceDir = sourceDirs[0];
+var intermediateDir = Path.Combine(primarySourceDir, "obj", "eQuantic", "ts");
 
 var compiler = new ComponentCompiler();
 var hasBun = !string.IsNullOrEmpty(bunPath) && File.Exists(bunPath);
@@ -24,11 +23,11 @@ var mode = hasBun ? "Bun (Bundled)" : "Legacy (1:1)";
 
 if (isWatchMode)
 {
-    Console.WriteLine($"👀 eQuantic.UI: Watching for changes... [{mode}]");
+    Console.WriteLine($"👀 eQuantic.UI: Watching {sourceDirs.Length} directories... [{mode}]");
 }
 else
 {
-    Console.WriteLine($"🔨 eQuantic.UI: Compiling components [{mode}]");
+    Console.WriteLine($"🔨 eQuantic.UI: Compiling components from {sourceDirs.Length} directories [{mode}]");
 }
 
 Console.WriteLine($"   Intermediate: {intermediateDir}");
@@ -40,34 +39,34 @@ CompileAndBundle();
 if (isWatchMode)
 {
     var debouncer = new Debouncer(TimeSpan.FromMilliseconds(100));
-    using var watcher = new FileSystemWatcher(sourceDir, "*.cs");
-    
-    watcher.IncludeSubdirectories = true;
-    watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime;
-
-    FileSystemEventHandler onChanged = (sender, e) =>
+    // Watch all source directories
+    var watchers = new List<FileSystemWatcher>();
+    foreach (var dir in sourceDirs)
     {
-        // Filter out extraneous files
-        if (e.FullPath.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
-            e.FullPath.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
-            return;
-            
-        debouncer.Debounce(() => {
-            Console.Clear();
-            Console.WriteLine($"🔄 Change detected in {Path.GetFileName(e.FullPath)}. Recompiling...");
-            CompileAndBundle();
-            Console.WriteLine("👀 Watching...");
-        });
-    };
+        var watcher = new FileSystemWatcher(dir, "*.cs");
+        watcher.IncludeSubdirectories = true;
+        watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime;
 
-    watcher.Changed += onChanged;
-    watcher.Created += onChanged;
-    watcher.Deleted += onChanged;
-    watcher.Renamed += (s, e) => onChanged(s, e);
+        FileSystemEventHandler onChanged = (sender, e) =>
+        {
+            if (e.FullPath.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
+                e.FullPath.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+                return;
+                
+            debouncer.Debounce(() => {
+                Console.WriteLine($"🔄 Change detected in {Path.GetFileName(e.FullPath)}. Recompiling...");
+                CompileAndBundle();
+            });
+        };
+
+        watcher.Changed += onChanged;
+        watcher.Created += onChanged;
+        watcher.Deleted += onChanged;
+        watcher.Renamed += (s, e) => onChanged(s, e);
+        watcher.EnableRaisingEvents = true;
+        watchers.Add(watcher);
+    }
     
-    watcher.EnableRaisingEvents = true;
-    
-    // Prevent exit
     await Task.Delay(-1); 
 }
 
@@ -78,59 +77,60 @@ void CompileAndBundle()
     try
     {
         var hasErrors = false;
-        var generatedFiles = new List<string>();
         var entryPoints = new List<string>();
         
-        var files = Directory.GetFiles(sourceDir, "*.cs", SearchOption.AllDirectories);
-        
-        // Step 1: Generate TypeScript
-        foreach (var file in files)
+        if (!Directory.Exists(intermediateDir)) Directory.CreateDirectory(intermediateDir);
+        if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
+
+        foreach (var dir in sourceDirs)
         {
-            // Skip obj/bin directories
-            if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
-                file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
-                continue;
-        
-            // Only compile components
-            var content = File.ReadAllText(file);
-            if (!content.Contains(": StatefulComponent") && !content.Contains(": StatelessComponent"))
-                continue;
-        
-            // Console.WriteLine($"   ⚙️  Generating {Path.GetFileName(file)}...");
+            if (!Directory.Exists(dir)) continue;
+            var files = Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories);
             
-            var result = compiler.CompileFile(file);
-            
-            if (result.Success)
+            foreach (var file in files)
             {
-                var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
-                File.WriteAllText(tsPath, result.TypeScript);
-                generatedFiles.Add(tsPath);
+                if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
+                    file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+                    continue;
+            
+                var content = File.ReadAllText(file);
+                if (!content.Contains(": StatefulComponent") && !content.Contains(": StatelessComponent") && !content.Contains(": HtmlElement"))
+                    continue;
+            
+                // Console.WriteLine($"   ⚙️  Generating {Path.GetFileName(file)}...");
                 
-                var relativePath = Path.GetRelativePath(sourceDir, file);
-                // Simple heuristic: loose files in root or pages/components dirs are entry points
-                if (relativePath.StartsWith("Pages") || !relativePath.Contains(Path.DirectorySeparatorChar))
+                var results = compiler.CompileFile(file);
+                
+                foreach (var result in results)
                 {
-                    entryPoints.Add(tsPath);
-                }
-            }
-            else
-            {
-                hasErrors = true;
-                foreach (var error in result.Errors)
-                {
-                    Console.Error.WriteLine($"Error [{error.SourcePath}:{error.Line}]: {error.Message}");
+                    if (result.Success)
+                    {
+                        var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
+                        File.WriteAllText(tsPath, result.TypeScript);
+                        
+                        var relativePath = Path.GetRelativePath(dir, file);
+                        // Entry points are only from the primary source directory (the first one)
+                        if (dir == sourceDirs[0] && (relativePath.StartsWith("Pages") || !relativePath.Contains(Path.DirectorySeparatorChar)))
+                        {
+                            entryPoints.Add(tsPath);
+                        }
+                    }
+                    else
+                    {
+                        hasErrors = true;
+                        foreach (var error in result.Errors)
+                        {
+                            Console.Error.WriteLine($"Error [{error.SourcePath}:{error.Line}]: {error.Message}");
+                        }
+                    }
                 }
             }
         }
         
         if (hasErrors) return;
         
-        // Step 2: Bundle with Bun
         if (hasBun && entryPoints.Count > 0)
         {
-            // Console.WriteLine($"   📦 Bundling {entryPoints.Count} entry points...");
-            
-            // Generate source maps and minify
             var bunArgs = $"build {string.Join(" ", entryPoints.Select(p => $"\"{p}\""))} --outdir \"{outputDir}\" --splitting --sourcemap --minify-syntax --minify-whitespace --target browser --external @equantic/runtime";
             
             var process = new Process
@@ -147,7 +147,6 @@ void CompileAndBundle()
             };
             
             process.Start();
-            var output = process.StandardOutput.ReadToEnd();
             var error = process.StandardError.ReadToEnd();
             process.WaitForExit();
             
@@ -157,8 +156,6 @@ void CompileAndBundle()
                 Console.Error.WriteLine(error);
                 return;
             }
-            
-            // Console.WriteLine(output);
         }
 
         Console.WriteLine($"✅ Built at {DateTime.Now:HH:mm:ss}");

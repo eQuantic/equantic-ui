@@ -80,6 +80,9 @@ public class CSharpToJsConverter
             // Assignment: _count = value
             AssignmentExpressionSyntax assignment => ConvertAssignment(assignment),
             
+            // Is Pattern: x is string s
+            IsPatternExpressionSyntax isPattern => ConvertIsPattern(isPattern),
+            
             // Binary: a + b, a == b
             BinaryExpressionSyntax binary => ConvertBinary(binary),
             
@@ -114,6 +117,31 @@ public class CSharpToJsConverter
             // Default: return as-is
             _ => expression.ToString()
         };
+    }
+
+    private string ConvertIsPattern(IsPatternExpressionSyntax isPattern)
+    {
+        var expr = ConvertExpression(isPattern.Expression);
+        if (isPattern.Pattern is DeclarationPatternSyntax decl)
+        {
+            var type = decl.Type.ToString();
+            var name = decl.Designation is SingleVariableDesignationSyntax variable ? variable.Identifier.Text : "_";
+            
+            // Very simplified conversion: (name = expr, typeof expr === 'type')
+            var jsType = type switch
+            {
+                "string" => "'string'",
+                "int" or "double" or "float" or "long" or "decimal" or "number" => "'number'",
+                "bool" or "boolean" => "'boolean'",
+                _ => null
+            };
+
+            if (jsType != null)
+            {
+                return $"((() => {{ {name} = {expr}; return typeof {expr} === {jsType}; }})())";
+            }
+        }
+        return "false";
     }
 
     private string ConvertBlock(BlockSyntax block)
@@ -174,10 +202,16 @@ public class CSharpToJsConverter
         // Map 'Component' property (in State classes) to 'this._component'
         if (name == "Component") return "this._component";
         
-        // Convert private field access: _fieldName -> this._fieldName
+        // Convert private field access or PascalCase properties to this.camelCase
         if (name.StartsWith("_"))
         {
             return $"this.{name}";
+        }
+        
+        // If it starts with Uppercase, it's likely a property of the component
+        if (char.IsUpper(name[0]))
+        {
+            return $"this.{ToCamelCase(name)}";
         }
         
         return name;
@@ -186,7 +220,8 @@ public class CSharpToJsConverter
     private string ConvertInvocation(InvocationExpressionSyntax invocation)
     {
         var methodExpression = invocation.Expression;
-        var methodName = methodExpression.ToString(); // Fallback for simple names
+        var fullMethodName = methodExpression.ToString();
+        var methodName = fullMethodName;
         
         // Handle member access (obj.Method)
         if (methodExpression is MemberAccessExpressionSyntax memberAccess)
@@ -216,7 +251,7 @@ public class CSharpToJsConverter
         var targetMethod = mappedName ?? methodName;
         
         // 3. Handle No-Op conversions (e.g. ToList -> "")
-        if (targetMethod == "")
+        if (targetMethod == "" || targetMethod == "ToList" || targetMethod == "ToArray")
         {
              if (methodExpression is MemberAccessExpressionSyntax access)
              {
@@ -226,7 +261,53 @@ public class CSharpToJsConverter
         }
         
         // 4. Resolve Arguments
-        var args = string.Join(", ", invocation.ArgumentList.Arguments.Select(a => ConvertExpression(a.Expression)));
+        var argsList = new List<string>();
+        foreach (var arg in invocation.ArgumentList.Arguments)
+        {
+            var argExpr = arg.Expression.ToString();
+            // Handle 'out var s' pattern by just using the variable name in JS
+            if (argExpr.StartsWith("out var "))
+            {
+                argsList.Add(argExpr.Substring(8));
+            }
+            else if (argExpr.StartsWith("out "))
+            {
+                argsList.Add(argExpr.Substring(4));
+            }
+            else
+            {
+                argsList.Add(ConvertExpression(arg.Expression));
+            }
+        }
+        var args = string.Join(", ", argsList);
+        
+        // Handle common library mappings
+        if (targetMethod == "Join" && (libraryMethodName == "System.String.Join" || fullMethodName.Contains("String.Join") || fullMethodName.Contains("string.Join")))
+        {
+            if (argsList.Count >= 2)
+            {
+                var separator = argsList[0];
+                var array = argsList[1];
+                return $"{array}.join({separator})";
+            }
+        }
+        
+        if (targetMethod == "IsNullOrEmpty" && (libraryMethodName == "System.String.IsNullOrEmpty" || fullMethodName.Contains("String.IsNullOrEmpty") || fullMethodName.Contains("string.IsNullOrEmpty")))
+        {
+            if (argsList.Count > 0)
+            {
+                return $"!{argsList[0]}";
+            }
+        }
+
+        if (libraryMethodName?.StartsWith("System.Math") == true || fullMethodName.StartsWith("Math.") || fullMethodName.StartsWith("math."))
+        {
+            if (targetMethod == "Clamp" && argsList.Count >= 3)
+            {
+                return $"Math.min(Math.max({argsList[0]}, {argsList[1]}), {argsList[2]})";
+            }
+            return $"Math.{ToCamelCase(targetMethod)}({args})";
+        }
         
         // Handle string.IsNullOrWhiteSpace / IsNullOrEmpty
         if (methodExpression is MemberAccessExpressionSyntax staticAccess && ConvertExpression(staticAccess.Expression) == "string")
@@ -247,18 +328,50 @@ public class CSharpToJsConverter
             return $"!({args})";
         }
         
+        // Dictionary Methods Mapped to JS/TS patterns
+        if (targetMethod == "TryGetValue" || targetMethod == "TryGetValueOrDefault" || targetMethod == "GetValueOrDefault")
+        {
+             if (methodExpression is MemberAccessExpressionSyntax access)
+             {
+                 var caller = ConvertExpression(access.Expression);
+                 var key = argsList.Count > 0 ? argsList[0] : "''";
+                 return $"{caller}[{key}]";
+             }
+        }
+
         // 6. Handle Member Access invocation
         if (methodExpression is MemberAccessExpressionSyntax memAccess)
         {
              var caller = ConvertExpression(memAccess.Expression);
-             return $"{caller}.{ToCamelCase(targetMethod)}({args})";
+             
+             // Map common LINQ/Collection methods to JS
+             var jsMethod = targetMethod switch
+             {
+                 "Select" => "map",
+                 "Where" => "filter",
+                 "Any" => "some",
+                 "All" => "every",
+                 "First" => "find",
+                 "FirstOrDefault" => "find",
+                 "Add" => "push",
+                 "AddRange" => "push",
+                 "AddChild" => "Children.push", // Specific to framework
+                 _ => ToCamelCase(targetMethod)
+             };
+
+             if (jsMethod == "Children.push")
+             {
+                 return $"{caller}.Children.push({args})";
+             }
+
+             return $"{caller}.{jsMethod}({args})";
         }
         
         // 7. Handle Local Method Calls (this.Method) using Semantic Model
         if (_semanticModel != null)
         {
             var symbol = _semanticModel.GetSymbolInfo(invocation).Symbol;
-            if (symbol != null && !symbol.IsStatic && (symbol.ContainingType.Name == "StatefulComponent" || symbol.ContainingType.Name.EndsWith("State")))
+            if (symbol != null && !symbol.IsStatic && (symbol.ContainingType.Name == "StatefulComponent" || symbol.ContainingType.Name.EndsWith("State") || symbol.ContainingType.Name == "HtmlElement" || (symbol.ContainingType is ITypeSymbol typeSymbol && typeSymbol.BaseType?.Name == "HtmlElement")))
             {
                  return $"this.{ToCamelCase(targetMethod)}({args})";
             }
@@ -328,6 +441,10 @@ public class CSharpToJsConverter
         var left = ConvertExpression(assignment.Left);
         var right = ConvertExpression(assignment.Right);
         var op = assignment.OperatorToken.Text;
+        
+        // Handle discard _ = ...
+        if (left == "_" || left == "this._") return right;
+
         return $"{left} {op} {right}";
     }
     
@@ -360,8 +477,19 @@ public class CSharpToJsConverter
         {
             "Length" => "length",
             "Count" => "length",
-            _ => name
+            "HasValue" => "!= null",
+            "Value" => "",
+            _ => ToCamelCase(name)
         };
+        
+        if (name == "!= null")
+        {
+            return $"({expr} != null)";
+        }
+        if (name == "")
+        {
+            return expr;
+        }
         
         return $"{expr}.{name}";
     }
@@ -428,6 +556,22 @@ public class CSharpToJsConverter
                 // Assuming typical pattern: append as last argument
                 arguments += ", " + initializer;
             }
+        }
+
+        // Special handling for common .NET Generic Collections
+        if (typeName.StartsWith("List<") || typeName.StartsWith("IEnumerable<"))
+        {
+            return string.IsNullOrEmpty(arguments) || arguments == "{}" ? "[]" : arguments;
+        }
+        if (typeName.StartsWith("Dictionary<"))
+        {
+            return string.IsNullOrEmpty(arguments) || arguments == "[]" ? "{}" : arguments;
+        }
+        
+        // Handle framework types that are interfaces in TS
+        if (typeName == "HtmlNode" || typeName == "HtmlStyle")
+        {
+            return string.IsNullOrEmpty(arguments) ? "{}" : arguments;
         }
         
         return $"new {typeName}({arguments})";

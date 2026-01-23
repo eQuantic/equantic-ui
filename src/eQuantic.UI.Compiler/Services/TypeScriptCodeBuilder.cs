@@ -62,6 +62,12 @@ public class TypeScriptCodeBuilder
             _builder.Line($"{name}: {type}{init};");
         }
 
+        public void Property(string name, string type, bool isPublic = true)
+        {
+            var access = isPublic ? "" : "private ";
+            _builder.Line($"{access}{name}: {type};");
+        }
+
         public void Constructor(string parameters, Action bodyAction)
         {
             _builder.Line($"constructor({parameters}) {{");

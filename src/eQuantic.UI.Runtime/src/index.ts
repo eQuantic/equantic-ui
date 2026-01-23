@@ -18,19 +18,7 @@ export type { ServerActionResponse } from './core/server-actions';
 export { Reconciler, getReconciler, resetReconciler } from './dom/reconciler';
 export { RenderManager } from './dom/renderer';
 
-// Components
-export {
-  Container,
-  Flex,
-  Column,
-  Row,
-  Text,
-  Heading,
-  Button,
-  TextInput,
-  Link,
-  Checkbox,
-} from './components/index';
+// Components - No longer exported here. Standard components are dynamically generated.
 
 /**
  * Mount a component to a DOM element

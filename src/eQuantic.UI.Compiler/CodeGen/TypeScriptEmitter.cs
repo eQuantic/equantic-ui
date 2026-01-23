@@ -12,7 +12,7 @@ namespace eQuantic.UI.Compiler.CodeGen;
 public class TypeScriptEmitter
 {
     private readonly StringBuilder _output = new(); // Legacy, to be removed
-    private readonly TypeScriptCodeBuilder _builder = new(); // New builder
+    private TypeScriptCodeBuilder _builder = new(); // New builder
     
     // Legacy helper to bridge during refactor
     private void WriteLn(string line = "") => _builder.Line(line);
@@ -25,19 +25,46 @@ public class TypeScriptEmitter
     /// </summary>
     public string Emit(ComponentDefinition component, SemanticModel? semanticModel = null)
     {
+        _builder = new TypeScriptCodeBuilder();
         _converter.SetSemanticModel(semanticModel);
         _output.Clear();
-        // _indentLevel = 0; // Removed
         
         EmitImports(component);
         WriteLn();
         
         // Define component class
-        _builder.Class(component.Name, 
-            component.IsStateful ? "StatefulComponent" : "StatelessComponent", 
-            c => 
+        var baseClass = component.IsPrimitive ? "Component" : (component.IsStateful ? "StatefulComponent" : "StatelessComponent");
+        
+        _builder.Class(component.Name, baseClass, c => 
             {
-                if (component.IsStateful)
+                if (component.IsPrimitive)
+                {
+                    // Emit properties for primitive
+                    foreach (var prop in component.Methods.Where(m => m.SyntaxNode == null))
+                    {
+                        c.Property(ToCamelCase(prop.Name), CSharpTypeToTypeScript(prop.ReturnType), true);
+                    }
+
+                    // Emit Render method for primitive
+                    c.Method("render", "", false, () => 
+                    {
+                        if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
+                        {
+                            var jsBody = _converter.Convert(component.BuildMethodNode.Body);
+                            jsBody = jsBody.Trim();
+                            if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
+                            {
+                                jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
+                            }
+                            c.Raw(jsBody);
+                        }
+                        else 
+                        {
+                            c.Raw("return { tag: 'div', attributes: {}, events: {}, children: [] };");
+                        }
+                    });
+                }
+                else if (component.IsStateful)
                 {
                     c.Method("createState", "", false, () => 
                     {
@@ -122,13 +149,19 @@ public class TypeScriptEmitter
         
         foreach (var type in widgetTypes)
         {
-            if (IsRuntimeComponent(type))
+            var cleanType = type.Trim().Replace("?", "");
+            if (cleanType.Contains("<")) cleanType = cleanType.Split('<')[0];
+            
+            if (string.IsNullOrEmpty(cleanType) || cleanType == "string" || cleanType == "number" || cleanType == "boolean" || cleanType == "any") 
+                continue;
+
+            if (IsRuntimeComponent(cleanType) || cleanType == "HtmlNode" || cleanType == "HtmlStyle")
             {
-                coreImports.Add(type);
+                coreImports.Add(cleanType);
             }
             else
             {
-                userComponents.Add(type);
+                userComponents.Add(cleanType);
             }
         }
         
@@ -137,6 +170,7 @@ public class TypeScriptEmitter
         // Import user components
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
+            if (userComp == component.Name) continue;
             _builder.Import(new[] { userComp }, $"./{userComp}");
         }
     }
@@ -145,8 +179,7 @@ public class TypeScriptEmitter
     {
         return typeName switch
         {
-            "Container" or "Flex" or "Column" or "Row" or "Text" or "Heading" or 
-            "Button" or "TextInput" or "Link" or "Checkbox" => true,
+            "HtmlNode" or "HtmlStyle" or "ServiceKey" or "ServiceProvider" => true,
             _ => false
         };
     }
@@ -392,30 +425,63 @@ public class TypeScriptEmitter
         return sb.ToString();
     }
     
-    private static string CSharpTypeToTypeScript(string csharpType)
+    private static string CSharpTypeToTypeScript(string? csharpType)
     {
-        var result = csharpType.ToLowerInvariant();
+        if (string.IsNullOrEmpty(csharpType)) return "any";
         
-        if (result.StartsWith("task<"))
+        // Handle Nullable<T> or T?
+        var isNullable = csharpType.EndsWith("?");
+        var baseType = isNullable ? csharpType.Substring(0, csharpType.Length - 1) : csharpType;
+        
+        if (baseType.StartsWith("Nullable<") && baseType.EndsWith(">"))
         {
-            // Extract inner type "Task<T>" => T
-            var inner = csharpType.Substring(5, csharpType.Length - 6);
-            return CSharpTypeToTypeScript(inner);
+            baseType = baseType.Substring(9, baseType.Length - 10);
         }
-        if (result == "task") return "void";
-        
-        return result switch
+
+        string tsType = baseType switch
         {
             "string" => "string",
-            "int" or "double" or "float" or "decimal" or "long" or "short" or "byte" => "number",
+            "int" or "long" or "double" or "float" or "decimal" or "number" => "number",
             "bool" or "boolean" => "boolean",
             "void" => "void",
-            "object" => "unknown",
-            "guid" => "string",
-            _ when csharpType.StartsWith("List<") => $"{CSharpTypeToTypeScript(csharpType[5..^1])}[]",
-            _ when csharpType.EndsWith("[]") => $"{CSharpTypeToTypeScript(csharpType[..^2])}[]",
-            _ => csharpType // Keep as-is for custom types
+            "object" => "any",
+            "DateTime" => "Date",
+            "Guid" => "string",
+            "Task" => "void",
+            _ => baseType
         };
+
+        // Handle Generics (limited support)
+        if (tsType.StartsWith("List<") && tsType.EndsWith(">"))
+        {
+            var itemType = tsType.Substring(5, tsType.Length - 6);
+            tsType = $"{CSharpTypeToTypeScript(itemType)}[]";
+        }
+        else if (tsType.StartsWith("IEnumerable<") && tsType.EndsWith(">"))
+        {
+            var itemType = tsType.Substring(12, tsType.Length - 13);
+            tsType = $"{CSharpTypeToTypeScript(itemType)}[]";
+        }
+        else if (tsType.StartsWith("Task<") && tsType.EndsWith(">"))
+        {
+            var itemType = tsType.Substring(5, tsType.Length - 6);
+            tsType = CSharpTypeToTypeScript(itemType);
+        }
+        else if (tsType.StartsWith("Action<") && tsType.EndsWith(">"))
+        {
+            var itemType = tsType.Substring(7, tsType.Length - 8);
+            tsType = $"({ToCamelCase(itemType)}: {CSharpTypeToTypeScript(itemType)}) => void";
+        }
+        else if (tsType == "Action")
+        {
+            tsType = "() => void";
+        }
+        else if (tsType.StartsWith("Dictionary<") && tsType.EndsWith(">"))
+        {
+            tsType = "Record<string, any>";
+        }
+
+        return tsType;
     }
     
     private static string ConvertToTsValue(string value, string type)

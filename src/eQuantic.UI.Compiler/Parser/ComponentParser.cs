@@ -13,7 +13,7 @@ public class ComponentParser
     /// <summary>
     /// Parse a .eqx file and extract component definitions
     /// </summary>
-    public ComponentDefinition Parse(string filePath)
+    public IEnumerable<ComponentDefinition> Parse(string filePath)
     {
         var sourceCode = File.ReadAllText(filePath);
         return ParseSource(sourceCode, filePath);
@@ -22,25 +22,21 @@ public class ComponentParser
     /// <summary>
     /// Parse source code and extract component definitions
     /// </summary>
-    public ComponentDefinition ParseSource(string sourceCode, string sourcePath = "")
+    public IEnumerable<ComponentDefinition> ParseSource(string sourceCode, string sourcePath = "")
     {
         var tree = CSharpSyntaxTree.ParseText(sourceCode);
         var root = tree.GetCompilationUnitRoot();
-        
-        var definition = new ComponentDefinition
-        {
-            SourcePath = sourcePath,
-            SyntaxTree = tree
-        };
+        var results = new List<ComponentDefinition>();
         
         // Extract namespace
+        string? ns = null;
         var namespaceDecl = root.DescendantNodes()
             .OfType<FileScopedNamespaceDeclarationSyntax>()
             .FirstOrDefault();
         
         if (namespaceDecl != null)
         {
-            definition.Namespace = namespaceDecl.Name.ToString();
+            ns = namespaceDecl.Name.ToString();
         }
         else
         {
@@ -49,36 +45,50 @@ public class ComponentParser
                 .FirstOrDefault();
             if (blockNamespace != null)
             {
-                definition.Namespace = blockNamespace.Name.ToString();
+                ns = blockNamespace.Name.ToString();
             }
         }
         
-        // Find component class (extends StatefulComponent or StatelessComponent)
+        // Find component class (extends StatefulComponent, StatelessComponent or HtmlElement)
         var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
         
         foreach (var classDecl in classes)
         {
             var baseType = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ToString();
             
+            bool isComp = baseType == "StatefulComponent" || 
+                         baseType == "StatelessComponent" || 
+                         baseType == "HtmlElement" ||
+                         baseType == "Flex" || 
+                         baseType == "Container" ||
+                         baseType == "Stack" ||
+                         classDecl.Members.OfType<MethodDeclarationSyntax>().Any(m => m.Identifier.Text == "Render" || m.Identifier.Text == "Build");
+                         
+            if (!isComp) continue;
+
+            var definition = new ComponentDefinition
+            {
+                Name = classDecl.Identifier.Text,
+                SourcePath = sourcePath,
+                SyntaxTree = tree,
+                Namespace = ns ?? ""
+            };
+
             if (baseType == "StatefulComponent")
             {
-                definition.Name = classDecl.Identifier.Text;
                 definition.IsStateful = true;
                 
-                // Parse [Page] attributes
+                // Parse Page attributes and ServerActions
                 ParsePageAttributes(classDecl, definition);
-                
-                // Parse [ServerAction] methods
                 ParseServerActions(classDecl, definition);
                 
-                // Find the CreateState method to get state class name
+                // Find state class name from CreateState method
                 var createStateMethod = classDecl.DescendantNodes()
                     .OfType<MethodDeclarationSyntax>()
                     .FirstOrDefault(m => m.Identifier.Text == "CreateState");
                 
                 if (createStateMethod != null)
                 {
-                    // Extract state class name from "new StateClassName()"
                     var newExpr = createStateMethod.DescendantNodes()
                         .OfType<ObjectCreationExpressionSyntax>()
                         .FirstOrDefault();
@@ -88,23 +98,33 @@ public class ComponentParser
                         definition.StateClassName = newExpr.Type.ToString();
                     }
                 }
+
+                // If we found a state class name, find it in the same file
+                if (!string.IsNullOrEmpty(definition.StateClassName))
+                {
+                    var stateClass = classes.FirstOrDefault(c => c.Identifier.Text == definition.StateClassName);
+                    if (stateClass != null)
+                    {
+                        ParseStateClass(stateClass, definition);
+                    }
+                }
             }
             else if (baseType == "StatelessComponent")
             {
-                definition.Name = classDecl.Identifier.Text;
                 definition.IsStateful = false;
-                
-                // Parse [Page] attributes
                 ParsePageAttributes(classDecl, definition);
             }
-            else if (baseType?.StartsWith("ComponentState") == true && definition.IsStateful)
+            else if (baseType == "HtmlElement" || isComp)
             {
-                // This is the state class - extract fields and methods
-                ParseStateClass(classDecl, definition);
+                definition.IsPrimitive = true;
+                definition.IsStateful = false;
+                ParsePrimitiveClass(classDecl, definition);
             }
+
+            results.Add(definition);
         }
         
-        return definition;
+        return results;
     }
     
     private void ParsePageAttributes(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
@@ -173,6 +193,57 @@ public class ComponentParser
         }
     }
     
+    private void ParsePrimitiveClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
+    {
+        // Extract properties
+        var properties = classDecl.DescendantNodes()
+            .OfType<PropertyDeclarationSyntax>()
+            .Where(p => p.Modifiers.Any(SyntaxKind.PublicKeyword));
+        
+        foreach (var prop in properties)
+        {
+            definition.Methods.Add(new MethodDefinition
+            {
+                Name = prop.Identifier.Text,
+                ReturnType = prop.Type.ToString(),
+                Body = "", // Properties don't have bodies in this context
+                SyntaxNode = null // Marker for property
+            });
+        }
+        
+        // Extract methods (including Render)
+        var methods = classDecl.DescendantNodes()
+            .OfType<MethodDeclarationSyntax>();
+        
+        foreach (var method in methods)
+        {
+            if (method.Identifier.Text == "Render")
+            {
+                definition.BuildMethodNode = method;
+                continue;
+            }
+
+            var methodDef = new MethodDefinition
+            {
+                Name = method.Identifier.Text,
+                ReturnType = method.ReturnType.ToString(),
+                Body = method.Body?.ToString() ?? method.ExpressionBody?.Expression.ToString() ?? "",
+                SyntaxNode = method
+            };
+            
+            foreach (var param in method.ParameterList.Parameters)
+            {
+                methodDef.Parameters.Add(new ParameterDefinition
+                {
+                    Name = param.Identifier.Text,
+                    Type = param.Type?.ToString() ?? "object"
+                });
+            }
+            
+            definition.Methods.Add(methodDef);
+        }
+    }
+
     private void ParseStateClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
         // Extract fields
