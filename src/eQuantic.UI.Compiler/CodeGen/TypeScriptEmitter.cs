@@ -85,8 +85,6 @@ public class TypeScriptEmitter
             EmitStatefulComponent(component); // This method needs update to NOT use WriteLn manually if we want full builder purity, but for now we mix.
         }
         
-        _builder.Line($"export {{ {component.Name} }};");
-        
         return _builder.ToString();
     }
     
@@ -163,34 +161,8 @@ public class TypeScriptEmitter
     
     private void EmitStatefulComponent(ComponentDefinition component)
     {
-        // Component class with TypeScript types
-        WriteLn($"export class {component.Name} extends StatefulComponent {{");
-        Indent();
+        // Only emit the State class. The Component class is emitted by the main Emit method.
         
-        // Create State
-        WriteLn($"createState(): {component.StateClassName} {{");
-        Indent();
-        WriteLn($"return new {component.StateClassName}(this);");
-        Dedent();
-        WriteLn("}");
-
-        // Server Action Stubs
-        foreach (var action in component.ServerActions)
-        {
-            WriteLn();
-            var parameters = string.Join(", ", action.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
-            var returnType = CSharpTypeToTypeScript(action.ReturnType); // Should handle Task<T>
-            var args = string.Join(", ", action.Parameters.Select(p => p.Name));
-            
-            WriteLn($"async {ToCamelCase(action.MethodName)}({parameters}): Promise<{returnType}> {{");
-            Indent();
-            WriteLn($"return await getServerActionsClient().invoke('{action.ActionId}', [{args}]);");
-            Dedent();
-            WriteLn("}");
-        }
-
-        Dedent();
-        WriteLn("}");
         WriteLn();
         
         _builder.Class(component.StateClassName, "ComponentState", c =>
@@ -222,6 +194,13 @@ public class TypeScriptEmitter
                 c.Raw("this._component._scheduleRender();");
             });
 
+            // Custom methods (Phase 2: Semantic Body)
+            foreach (var method in component.Methods)
+            {
+                EmitMethod(method);
+                c.Raw(""); // Spacer
+            }
+            
             // Build method
             c.Method("build", "context: BuildContext", false, () =>
             {
@@ -239,72 +218,21 @@ public class TypeScriptEmitter
             });
         });
         WriteLn();
-        
-        // SetState method
-        WriteLn("setState(fn: () => void): void {");
-        Indent();
-        WriteLn("fn();");
-        WriteLn("this._needsRender = true;");
-        WriteLn("this._component._scheduleRender();");
-        Dedent();
-        WriteLn("}");
-        WriteLn();
-        
-        // Custom methods
-        foreach (var method in component.Methods)
-        {
-            EmitMethod(method);
-            WriteLn();
-        }
-        
-        // Build method
-        WriteLn("build(context: BuildContext): Component {");
-        Indent();
-        if (component.BuildTree != null)
-        {
-            Write("return ");
-            EmitComponentTree(component.BuildTree);
-            WriteLn(";");
-        }
-        else
-        {
-            WriteLn("return null!;");
-        }
-        Dedent();
-        WriteLn("}");
-        
-        Dedent();
-        WriteLn("}");
     }
     
     private void EmitStatelessComponent(ComponentDefinition component)
     {
-        WriteLn($"export class {component.Name} extends StatelessComponent {{");
-        Indent();
-        
-        WriteLn("build(context: BuildContext): Component {");
-        Indent();
-        if (component.BuildTree != null)
-        {
-            Write("return ");
-            EmitComponentTree(component.BuildTree);
-            WriteLn(";");
-        }
-        else
-        {
-            WriteLn("return null!;");
-        }
-        Dedent();
-        WriteLn("}");
-        
-        Dedent();
-        WriteLn("}");
+        // No-op: Stateless components are fully handled by Emit()
     }
     
     private void EmitMethod(MethodDefinition method)
     {
         var parameters = string.Join(", ", method.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
         var methodName = ToCamelCase(method.Name);
+        
+        // Lifecycle mapping
+        if (method.Name == "OnMount") methodName = "onInit";
+        
         var returnType = CSharpTypeToTypeScript(method.ReturnType ?? "void");
         
         var isAsync = method.ReturnType != null && method.ReturnType.StartsWith("Task");
@@ -312,70 +240,33 @@ public class TypeScriptEmitter
         var promiseReturnType = isAsync && returnType == "void" ? "Promise<void>" : 
                                 isAsync ? $"Promise<{returnType}>" : returnType;
 
-        var body = method.Body.Trim().TrimEnd(';');
-        
-        if (body.StartsWith("{"))
+        if (method.SyntaxNode != null)
         {
-            var jsBody = _converter.Convert(body);
-            WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {jsBody}");
-        }
-        else if (body.Contains("=>"))
-        {
-            // ... (Arrow function handling, simplified for async)
-            var arrowIndex = body.IndexOf("=>");
-            var expression = body[(arrowIndex + 2)..].Trim();
-            var convertedExpr = _converter.Convert(expression);
-            
-            // If it's a simple arrow expression but method is async, wrap in { return ... } or just expression
-            if (isAsync)
+            // Use Robust SyntaxNode Conversion (Phase 2+)
+            // Handle body (Block or ExpressionBody)
+            string jsBody;
+            if (method.SyntaxNode.Body != null)
             {
-                WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {{ return {convertedExpr}; }}");
+                jsBody = _converter.Convert(method.SyntaxNode.Body);
+            }
+            else if (method.SyntaxNode.ExpressionBody != null)
+            {
+                var expr = _converter.Convert(method.SyntaxNode.ExpressionBody.Expression);
+                jsBody = $"{{ return {expr}; }}";
             }
             else
             {
-                 // Reuse existing logic for setState vs simple return
-                 if (expression.StartsWith("SetState"))
-                 {
-                     // ... same SetState logic
-                     var innerStart = expression.IndexOf("() =>");
-                    if (innerStart >= 0)
-                    {
-                        var innerExpr = expression[(innerStart + 5)..].Trim();
-                        if (innerExpr.EndsWith(")")) innerExpr = innerExpr[..^1].Trim();
-                        
-                        var conv = _converter.Convert(innerExpr);
-                        WriteLn($"{methodName}({parameters}): {returnType} {{ this.setState(() => {{ {conv}; }}); }}");
-                    }
-                    else
-                    {
-                        var conv = _converter.Convert(expression);
-                        WriteLn($"{methodName}({parameters}): {returnType} {{ {conv}; }}");
-                    }
-                 }
-                 else
-                 {
-                    if (expression.Contains("=") || expression.Contains("++") || expression.Contains("--"))
-                    {
-                         WriteLn($"{methodName}({parameters}): {returnType} {{ this.setState(() => {{ {convertedExpr}; }}); }}");
-                    }
-                    else
-                    {
-                         WriteLn($"{methodName}({parameters}): {returnType} {{ {convertedExpr}; }}");
-                    }
-                 }
+                jsBody = "{}";
             }
+            
+            WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {jsBody}");
         }
         else
         {
+            // Fallback for legacy parsing (should happen rarely now)
+            var body = method.Body.Trim().TrimEnd(';');
             var convertedExpr = _converter.Convert(body);
-             if (isAsync)
-            {
-                WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {{ return {convertedExpr}; }}");
-            }
-            else
-            {
-                WriteLn($"{methodName}({parameters}): {returnType} {{ {convertedExpr}; }}");
-            }
+            WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {{ return {convertedExpr}; }}");
         }
     }
     
@@ -430,8 +321,8 @@ public class TypeScriptEmitter
             PropertyValueType.String => $"'{EscapeString(value.StringValue ?? "")}'",
             PropertyValueType.Number => value.StringValue ?? "0",
             PropertyValueType.Boolean => value.StringValue?.ToLower() ?? "false",
-            PropertyValueType.Expression => _converter.Convert(value.Expression ?? ""),
-            PropertyValueType.EventHandler => _converter.Convert(value.Expression ?? ""),
+            PropertyValueType.Expression => value.ExpressionNode != null ? _converter.Convert(value.ExpressionNode) : _converter.Convert(value.Expression ?? ""),
+            PropertyValueType.EventHandler => value.ExpressionNode != null ? _converter.Convert(value.ExpressionNode) : _converter.Convert(value.Expression ?? ""),
             PropertyValueType.StyleClass => value.Expression ?? "null",
             PropertyValueType.Component when value.ComponentValue != null => EmitComponentToString(value.ComponentValue),
             _ => "null"

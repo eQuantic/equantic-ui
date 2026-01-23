@@ -11,17 +11,46 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// </summary>
 public class CSharpToJsConverter
 {
+    private readonly TypeMappingRegistry _registry;
+    private SemanticModel? _semanticModel;
+
+    public CSharpToJsConverter()
+    {
+        _registry = new TypeMappingRegistry();
+    }
+    
+    public void SetSemanticModel(SemanticModel? semanticModel)
+    {
+        _semanticModel = semanticModel;
+    }
+
     /// <summary>
     /// Convert a C# expression string to JavaScript
     /// </summary>
-    public string Convert(string csharpExpression)
+    public string Convert(string code)
     {
-        if (string.IsNullOrWhiteSpace(csharpExpression))
-            return csharpExpression;
+        // Legacy/Fallback string conversion (compiles new tree)
+        var parsed = CSharpSyntaxTree.ParseText(code).GetRoot();
         
-        // Parse the expression
-        var expression = SyntaxFactory.ParseExpression(csharpExpression);
-        return ConvertExpression(expression);
+        // Try to find the best node to convert
+        var expr = parsed.DescendantNodes().OfType<ExpressionSyntax>().FirstOrDefault();
+        if (expr != null) return ConvertExpression(expr);
+        
+        var block = parsed.DescendantNodes().OfType<BlockSyntax>().FirstOrDefault();
+        if (block != null) return ConvertBlock(block);
+        
+        var stmt = parsed.DescendantNodes().OfType<StatementSyntax>().FirstOrDefault();
+        if (stmt != null) return ConvertStatement(stmt);
+        
+        return code;
+    }
+
+    public string Convert(SyntaxNode node)
+    {
+        if (node is ExpressionSyntax expr) return ConvertExpression(expr);
+        if (node is BlockSyntax block) return ConvertBlock(block);
+        if (node is StatementSyntax stmt) return ConvertStatement(stmt);
+        return node.ToString();
     }
     
     /// <summary>
@@ -45,6 +74,9 @@ public class CSharpToJsConverter
             PrefixUnaryExpressionSyntax prefix => ConvertPrefixUnary(prefix),
             PostfixUnaryExpressionSyntax postfix => ConvertPostfixUnary(postfix),
             
+            // Await: await Task
+            AwaitExpressionSyntax awaitExpr => $"await {ConvertExpression(awaitExpr.Expression)}",
+
             // Assignment: _count = value
             AssignmentExpressionSyntax assignment => ConvertAssignment(assignment),
             
@@ -74,10 +106,64 @@ public class CSharpToJsConverter
             _ => expression.ToString()
         };
     }
+
+    private string ConvertBlock(BlockSyntax block)
+    {
+        var sb = new StringBuilder();
+        sb.Append("{"); // Use standard formatting
+        foreach (var stmt in block.Statements)
+        {
+             sb.Append(ConvertStatement(stmt));
+        }
+        sb.Append("}");
+        return sb.ToString();
+    }
+    
+    private string ConvertStatement(StatementSyntax stmt)
+    {
+        if (stmt is ExpressionStatementSyntax exprStmt)
+        {
+            return ConvertExpression(exprStmt.Expression) + ";";
+        }
+        if (stmt is ReturnStatementSyntax retStmt)
+        {
+            return "return " + (retStmt.Expression != null ? ConvertExpression(retStmt.Expression) : "") + ";";
+        }
+        if (stmt is LocalDeclarationStatementSyntax decl)
+        {
+            var variable = decl.Declaration.Variables.First();
+            var name = variable.Identifier.Text;
+            var init = variable.Initializer != null ? ConvertExpression(variable.Initializer.Value) : "null";
+            return $"let {name} = {init};";
+        }
+        if (stmt is IfStatementSyntax ifStmt)
+        {
+            var condition = ConvertExpression(ifStmt.Condition);
+            var ifTrue = ConvertStatement(ifStmt.Statement);
+            var ifFalse = ifStmt.Else != null ? " else " + ConvertStatement(ifStmt.Else.Statement) : "";
+            return $"if ({condition}) {ifTrue}{ifFalse}";
+        }
+        if (stmt is ForEachStatementSyntax foreachStmt)
+        {
+             var item = foreachStmt.Identifier.Text;
+             var collection = ConvertExpression(foreachStmt.Expression);
+             var body = ConvertStatement(foreachStmt.Statement);
+             return $"for (const {item} of {collection}) {body}";
+        }
+        if (stmt is BlockSyntax block)
+        {
+            return ConvertBlock(block);
+        }
+        
+        return stmt.ToString(); 
+    }
     
     private string ConvertIdentifier(IdentifierNameSyntax identifier)
     {
         var name = identifier.Identifier.Text;
+        
+        // Map 'Component' property (in State classes) to 'this._component'
+        if (name == "Component") return "this._component";
         
         // Convert private field access: _fieldName -> this._fieldName
         if (name.StartsWith("_"))
@@ -87,23 +173,7 @@ public class CSharpToJsConverter
         
         return name;
     }
-    
-    private readonly TypeMappingRegistry _registry;
-    private SemanticModel? _semanticModel;
 
-    public CSharpToJsConverter()
-    {
-        _registry = new TypeMappingRegistry();
-    }
-    
-    public void SetSemanticModel(SemanticModel? semanticModel)
-    {
-        _semanticModel = semanticModel;
-    }
-
-    /// <summary>
-    /// Convert a parsed expression to JavaScript
-    /// </summary>
     private string ConvertInvocation(InvocationExpressionSyntax invocation)
     {
         var methodExpression = invocation.Expression;
@@ -143,7 +213,7 @@ public class CSharpToJsConverter
              {
                  return ConvertExpression(access.Expression);
              }
-             return ""; // Should not happen for standalone calls usually
+             return "";
         }
         
         // 4. Resolve Arguments
@@ -159,10 +229,31 @@ public class CSharpToJsConverter
         if (methodExpression is MemberAccessExpressionSyntax memAccess)
         {
              var caller = ConvertExpression(memAccess.Expression);
-             return $"{caller}.{targetMethod}({args})";
+             return $"{caller}.{ToCamelCase(targetMethod)}({args})";
+        }
+        
+        // 7. Handle Local Method Calls (this.Method) using Semantic Model
+        if (_semanticModel != null)
+        {
+            var symbol = _semanticModel.GetSymbolInfo(invocation).Symbol;
+            if (symbol != null && !symbol.IsStatic && (symbol.ContainingType.Name == "StatefulComponent" || symbol.ContainingType.Name.EndsWith("State")))
+            {
+                 return $"this.{ToCamelCase(targetMethod)}({args})";
+            }
+        }
+        // Fallback for Phase 1/2 without semantic model or if unsure: assume local if not standard library?
+        if (targetMethod == methodName && char.IsUpper(targetMethod[0]))
+        {
+             return $"this.{ToCamelCase(targetMethod)}({args})";
         }
 
         return $"{targetMethod}({args})";
+    }
+    
+    private static string ToCamelCase(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return name;
+        return char.ToLowerInvariant(name[0]) + name[1..];
     }
     
     private string ConvertLambda(ParenthesizedLambdaExpressionSyntax lambda)
@@ -187,31 +278,6 @@ public class CSharpToJsConverter
                 : "";
         
         return $"({param}) => {body}";
-    }
-    
-    private string ConvertBlock(BlockSyntax block)
-    {
-        var sb = new StringBuilder();
-        sb.Append("{ ");
-        foreach (var statement in block.Statements)
-        {
-            sb.Append(ConvertStatement(statement));
-            sb.Append(" ");
-        }
-        sb.Append("}");
-        return sb.ToString();
-    }
-    
-    private string ConvertStatement(StatementSyntax statement)
-    {
-        return statement switch
-        {
-            ExpressionStatementSyntax exprStmt => $"{ConvertExpression(exprStmt.Expression)};",
-            ReturnStatementSyntax returnStmt => returnStmt.Expression != null 
-                ? $"return {ConvertExpression(returnStmt.Expression)};"
-                : "return;",
-            _ => statement.ToString()
-        };
     }
     
     private string ConvertPrefixUnary(PrefixUnaryExpressionSyntax prefix)

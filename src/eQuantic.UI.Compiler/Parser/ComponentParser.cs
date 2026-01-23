@@ -196,8 +196,7 @@ public class ComponentParser
         // Extract methods (excluding Build)
         var methods = classDecl.DescendantNodes()
             .OfType<MethodDeclarationSyntax>()
-            .Where(m => m.Identifier.Text != "Build" && 
-                       !m.Modifiers.Any(SyntaxKind.OverrideKeyword));
+            .Where(m => m.Identifier.Text != "Build");
         
         foreach (var method in methods)
         {
@@ -205,7 +204,8 @@ public class ComponentParser
             {
                 Name = method.Identifier.Text,
                 ReturnType = method.ReturnType.ToString(),
-                Body = method.Body?.ToString() ?? method.ExpressionBody?.Expression.ToString() ?? ""
+                Body = method.Body?.ToString() ?? method.ExpressionBody?.Expression.ToString() ?? "",
+                SyntaxNode = method
             };
             
             foreach (var param in method.ParameterList.Parameters)
@@ -349,14 +349,16 @@ public class ComponentParser
             InterpolatedStringExpressionSyntax interpolated => new PropertyValue
             {
                 Type = PropertyValueType.Expression,
-                Expression = interpolated.ToString()
+                Expression = interpolated.ToString(),
+                ExpressionNode = interpolated
             },
             
             // Lambda expression: (v) => SetState(() => _message = v)
             ParenthesizedLambdaExpressionSyntax or SimpleLambdaExpressionSyntax => new PropertyValue
             {
                 Type = PropertyValueType.EventHandler,
-                Expression = expression.ToString()
+                Expression = expression.ToString(),
+                ExpressionNode = expression
             },
             
             // Member access: AppStyles.Button
@@ -367,7 +369,8 @@ public class ComponentParser
                     _ when memberAccess.Expression.ToString().Contains("Styles") => PropertyValueType.StyleClass,
                     _ => PropertyValueType.Expression
                 },
-                Expression = memberAccess.ToString()
+                Expression = memberAccess.ToString(),
+                ExpressionNode = memberAccess
             },
             
             // Object creation: new Container { ... }
@@ -392,7 +395,8 @@ public class ComponentParser
             _ => new PropertyValue
             {
                 Type = PropertyValueType.Expression,
-                Expression = expression.ToString()
+                Expression = expression.ToString(),
+                ExpressionNode = expression
             }
         };
     }

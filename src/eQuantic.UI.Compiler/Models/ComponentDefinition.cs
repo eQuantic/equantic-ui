@@ -106,6 +106,7 @@ public class MethodDefinition
     public string ReturnType { get; set; } = "void";
     public List<ParameterDefinition> Parameters { get; set; } = new();
     public string Body { get; set; } = string.Empty;
+    public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? SyntaxNode { get; set; }
 }
 
 /// <summary>
@@ -135,6 +136,7 @@ public class PropertyValue
     public PropertyValueType Type { get; set; }
     public string? StringValue { get; set; }
     public string? Expression { get; set; }
+    public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? ExpressionNode { get; set; }
     public ComponentTree? ComponentValue { get; set; }
     public List<ComponentTree>? ListValue { get; set; }
 }
