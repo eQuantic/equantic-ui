@@ -23,7 +23,15 @@ public class ComponentCompiler
         _cssEmitter = new CssEmitter();
         _semanticModelProvider = new SemanticModelProvider();
     }
-    
+
+    /// <summary>
+    /// Sets the dependency resolver for automatic component dependency detection
+    /// </summary>
+    public void SetDependencyResolver(ComponentDependencyResolver resolver)
+    {
+        _tsEmitter.SetDependencyResolver(resolver);
+    }
+
     /// <summary>
     /// Compile a single .eqx file
     /// </summary>

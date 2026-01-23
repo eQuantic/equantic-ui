@@ -18,6 +18,22 @@ var primarySourceDir = sourceDirs[0];
 var intermediateDir = Path.Combine(primarySourceDir, "obj", "eQuantic", "ts");
 
 var compiler = new ComponentCompiler();
+
+// Initialize dependency resolver by scanning component directories
+var dependencyResolver = new eQuantic.UI.Compiler.Services.ComponentDependencyResolver();
+var componentDirectories = new List<string>(sourceDirs);
+
+// Also scan standard component library locations relative to build tool
+var buildDir = AppContext.BaseDirectory;
+var standardComponentsPath = Path.GetFullPath(Path.Combine(buildDir, "..", "..", "..", "..", "eQuantic.UI.Components"));
+if (Directory.Exists(standardComponentsPath))
+{
+    componentDirectories.Add(standardComponentsPath);
+}
+
+dependencyResolver.ScanSourceDirectories(componentDirectories);
+compiler.SetDependencyResolver(dependencyResolver);
+
 var hasBun = !string.IsNullOrEmpty(bunPath) && File.Exists(bunPath);
 var mode = hasBun ? "Bun (Bundled)" : "Legacy (1:1)";
 

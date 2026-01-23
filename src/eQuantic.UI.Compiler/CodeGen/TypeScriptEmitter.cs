@@ -13,12 +13,21 @@ public class TypeScriptEmitter
 {
     private readonly StringBuilder _output = new(); // Legacy, to be removed
     private TypeScriptCodeBuilder _builder = new(); // New builder
-    
+
     // Legacy helper to bridge during refactor
     private void WriteLn(string line = "") => _builder.Line(line);
     private void Indent() => _builder.Indent();
     private void Dedent() => _builder.Dedent();
     private readonly CSharpToJsConverter _converter = new();
+    private ComponentDependencyResolver? _dependencyResolver;
+
+    /// <summary>
+    /// Sets the dependency resolver for automatic dependency detection
+    /// </summary>
+    public void SetDependencyResolver(ComponentDependencyResolver resolver)
+    {
+        _dependencyResolver = resolver;
+    }
     
     /// <summary>
     /// Generate TypeScript code for a component
@@ -149,7 +158,7 @@ public class TypeScriptEmitter
     {
         // Core runtime imports
         var coreImports = new HashSet<string> { "Component", "BuildContext", "HtmlElement" };
-        
+
         if (component.IsStateful)
         {
             coreImports.Add("StatefulComponent");
@@ -164,10 +173,10 @@ public class TypeScriptEmitter
         {
             coreImports.Add("getServerActionsClient");
         }
-        
+
         // Widget imports based on what's used in the component
         var widgetTypes = CollectWidgetTypes(component.BuildTree);
-        
+
         // Also scan procedural code in BuildMethodNode
         if (component.BuildMethodNode != null)
         {
@@ -175,14 +184,25 @@ public class TypeScriptEmitter
              foreach (var t in proceduralTypes) widgetTypes.Add(t);
         }
 
+        // AUTOMATIC DEPENDENCY RESOLUTION
+        // Use dependency resolver to find transitive dependencies (e.g., Row → Flex)
+        if (_dependencyResolver != null)
+        {
+            var dependencies = _dependencyResolver.ResolveDependencies(widgetTypes);
+            foreach (var dep in dependencies)
+            {
+                widgetTypes.Add(dep);
+            }
+        }
+
         var userComponents = new List<string>();
-        
+
         foreach (var type in widgetTypes)
         {
             var cleanType = type.Trim().Replace("?", "");
             if (cleanType.Contains("<")) cleanType = cleanType.Split('<')[0];
-            
-            if (string.IsNullOrEmpty(cleanType) || cleanType == "string" || cleanType == "number" || cleanType == "boolean" || cleanType == "any") 
+
+            if (string.IsNullOrEmpty(cleanType) || cleanType == "string" || cleanType == "number" || cleanType == "boolean" || cleanType == "any")
                 continue;
 
             if (IsRuntimeComponent(cleanType) || cleanType == "HtmlNode" || cleanType == "HtmlStyle")
@@ -194,9 +214,9 @@ public class TypeScriptEmitter
                 userComponents.Add(cleanType);
             }
         }
-        
+
         _builder.Import(coreImports, "@equantic/runtime");
-        
+
         // Import user components
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
