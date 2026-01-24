@@ -501,22 +501,27 @@ public class CSharpToJsConverter
         var originalExpr = memberAccess.Expression.ToString();
         var name = memberAccess.Name.Identifier.Text;
 
-        // Generic namespace removal: if the expression looks like a namespace-qualified type access
-        // (e.g., Company.Namespace.Type or eQuantic.UI.Core.Display), extract only the last part
-        // This works for ANY namespace, not just eQuantic-specific ones
+        // Generic namespace removal and enum detection
+        // Handles patterns like: Company.Namespace.Type.Member
         if (originalExpr.Contains('.') && !originalExpr.StartsWith("this.") && !originalExpr.Contains('('))
         {
-            // Check if this is a static/enum access by seeing if it's all identifiers
             var parts = originalExpr.Split('.');
 
-            // If we have multiple parts and they look like namespace.Type pattern,
-            // keep only the last part (the Type name) before the member
-            // Example: Company.UI.Display.Flex → Display.flex
+            // If we have multiple parts, extract the type name (last part before member)
             if (parts.Length > 1)
             {
                 var typeName = parts[^1]; // Last part is the type name
 
-                // Return TypeName.memberName in camelCase
+                // ENUM DETECTION: If both Type and Member start with uppercase,
+                // it's likely an enum → convert to string literal
+                // Examples: Display.Flex → "flex", FlexDirection.Row → "row"
+                if (char.IsUpper(typeName[0]) && char.IsUpper(name[0]))
+                {
+                    // Convert enum member to lowercase string literal
+                    return $"'{ToCamelCase(name)}'";
+                }
+
+                // Otherwise, it's a static member access → Type.member
                 return $"{ToCamelCase(typeName)}.{ToCamelCase(name)}";
             }
         }
