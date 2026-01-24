@@ -217,7 +217,11 @@ public class TypeScriptEmitter
             if (string.IsNullOrEmpty(cleanType) || cleanType == "string" || cleanType == "number" || cleanType == "boolean" || cleanType == "any")
                 continue;
 
-            if (IsRuntimeComponent(cleanType) || cleanType == "HtmlNode" || cleanType == "HtmlStyle")
+            // Skip HtmlNode - it's a type-only interface, not a runtime class
+            if (cleanType == "HtmlNode")
+                continue;
+
+            if (IsRuntimeComponent(cleanType))
             {
                 coreImports.Add(cleanType);
             }
