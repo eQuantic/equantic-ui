@@ -1,4 +1,5 @@
 using eQuantic.UI.Server;
+using eQuantic.UI.Tailwind;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,9 @@ app.UseRouting();
 
 // Enable Server Actions
 app.UseServerActions();
+
+// Enable Tailwind CSS
+app.UseTailwind();
 
 // Map UI (dynamic routing)
 app.MapUI();
