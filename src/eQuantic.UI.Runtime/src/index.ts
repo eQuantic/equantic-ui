@@ -9,6 +9,7 @@ export { StatelessComponent, StatefulComponent, ComponentState } from './core/co
 export { ServiceProvider, ServiceCollectionBuilder, getRootServiceProvider, configureServices, resetServiceProvider } from './core/service-provider';
 export type { ServiceKey } from './core/service-provider';
 export { ServiceLifetime } from './core/service-provider';
+export { HtmlStyle } from './core/html-style';
 
 // Server Actions
 export { ServerActionsClient, getServerActionsClient, configureServerActions, resetServerActionsClient } from './core/server-actions';

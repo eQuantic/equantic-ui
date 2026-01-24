@@ -297,7 +297,7 @@ public class CSharpToJsConverter
                  return ConvertExpression(access.Expression);
              }
         }
-        
+
         // Handle common library mappings
         if (targetMethod == "Join" && (libraryMethodName == "System.String.Join" || fullMethodName.Contains("String.Join") || fullMethodName.Contains("string.Join")))
         {
@@ -634,13 +634,7 @@ public class CSharpToJsConverter
         {
             return string.IsNullOrEmpty(arguments) || arguments == "[]" ? "{}" : arguments;
         }
-        
-        // Handle framework types that are interfaces in TS
-        if (typeName == "HtmlNode" || typeName == "HtmlStyle")
-        {
-            return string.IsNullOrEmpty(arguments) ? "{}" : arguments;
-        }
-        
+
         return $"new {typeName}({arguments})";
     }
 
