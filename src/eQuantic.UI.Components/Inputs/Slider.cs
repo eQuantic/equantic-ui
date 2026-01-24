@@ -3,14 +3,11 @@ using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Inputs;
 
-public class Slider : HtmlElement
+public class Slider : InputComponent<double>
 {
     public double Min { get; set; } = 0;
     public double Max { get; set; } = 100;
     public double Step { get; set; } = 1;
-    public double Value { get; set; }
-    
-    public Action<double>? OnChange { get; set; }
 
     public override HtmlNode Render()
     {

@@ -123,7 +123,7 @@ public class TodoListState : ComponentState<TodoList>
                         new TextInput {
                             Value = _newTodoTitle,
                             Placeholder = "What needs to be done?",
-                            OnChange = val => SetState(() => _newTodoTitle = val)
+                            OnInput = val => SetState(() => _newTodoTitle = val)
                         },
                         new Button {
                             Text = "Add",

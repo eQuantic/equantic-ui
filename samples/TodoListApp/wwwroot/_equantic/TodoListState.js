@@ -1,4 +1,4 @@
-class TodoListState extends ComponentState{}export{TodoListState};
+import{ComponentState}from"@equantic/runtime";class TodoListState extends ComponentState{}export{TodoListState};
 
-//# debugId=D68DE7F8C4C9222664756E2164756E21
+//# debugId=99423CBC5BF3279764756E2164756E21
 //# sourceMappingURL=TodoListState.js.map

@@ -13,12 +13,21 @@ public class TypeScriptEmitter
 {
     private readonly StringBuilder _output = new(); // Legacy, to be removed
     private TypeScriptCodeBuilder _builder = new(); // New builder
-    
+
     // Legacy helper to bridge during refactor
     private void WriteLn(string line = "") => _builder.Line(line);
     private void Indent() => _builder.Indent();
     private void Dedent() => _builder.Dedent();
     private readonly CSharpToJsConverter _converter = new();
+    private ComponentDependencyResolver? _dependencyResolver;
+
+    /// <summary>
+    /// Sets the dependency resolver for automatic dependency detection
+    /// </summary>
+    public void SetDependencyResolver(ComponentDependencyResolver resolver)
+    {
+        _dependencyResolver = resolver;
+    }
     
     /// <summary>
     /// Generate TypeScript code for a component
@@ -35,27 +44,70 @@ public class TypeScriptEmitter
         // Define component class
         var baseClass = component.BaseClassName ?? (component.IsPrimitive ? "HtmlElement" : (component.IsStateful ? "StatefulComponent" : "StatelessComponent"));
         
+        // Normalize base class (map InputComponent to HtmlElement for JS)
+        if (baseClass.StartsWith("InputComponent"))
+        {
+            baseClass = "HtmlElement";
+        }
+        
         _builder.Class(component.Name, baseClass, c => 
             {
                 if (component.IsPrimitive)
                 {
                     // Emit properties for primitive
-                    foreach (var prop in component.Methods.Where(m => m.SyntaxNode == null))
-                    {
-                        c.Property(ToCamelCase(prop.Name), CSharpTypeToTypeScript(prop.ReturnType), true);
-                    }
+                    // WE DO NOT EMIT PROPERTIES AS FIELDS for primitives.
+                    // This is because we rely on the base Component constructor to Object.assign(this, props).
+                    // If we emit 'fieldName;', it initializes to undefined after super(), overwriting the assigned value.
+                    // Only emit methods and constructor.
 
                     // Emit constructor for primitive
+                    // ALWAYS accept props and pass to super, even if C# constructor has no params
+                    // This is critical for Object.assign pattern in Component base class
                     if (component.Constructors.Any())
                     {
                         var ctor = component.Constructors.OrderByDescending(c => c.Parameters.Count).First();
-                        var parameters = string.Join(", ", ctor.Parameters.Select(p => $"{p.Name}: any"));
-                        c.Constructor(parameters, () =>
+                        var hasExplicitParams = ctor.Parameters.Count > 0;
+
+                        string jsParams;
+                        if (hasExplicitParams)
                         {
-                            c.Raw("super();");
-                            foreach (var param in ctor.Parameters)
+                            // Constructor has explicit params (e.g., Heading(content, level))
+                            var paramList = string.Join(", ", ctor.Parameters.Select(p => $"{p.Name}: any"));
+                            jsParams = paramList;
+                        }
+                        else
+                        {
+                            // Constructor has no params - accept generic props for Object.assign
+                            jsParams = "props?: any";
+                        }
+
+                        c.Constructor(jsParams, () =>
+                        {
+                            // Pass props to super
+                            c.Raw(hasExplicitParams ? "super();" : "super(props);");
+
+                            // Assign explicit parameters as properties
+                            if (hasExplicitParams)
                             {
-                                c.Raw($"this.{ToCamelCase(param.Name)} = {param.Name};");
+                                foreach (var param in ctor.Parameters)
+                                {
+                                    c.Raw($"this.{ToCamelCase(param.Name)} = {param.Name};");
+                                }
+                            }
+
+                            // Execute C# constructor body (e.g., Direction = FlexDirection.Column)
+                            if (ctor.SyntaxNode?.Body != null)
+                            {
+                                var jsBody = _converter.Convert(ctor.SyntaxNode.Body);
+                                jsBody = jsBody.Trim();
+                                if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
+                                {
+                                    jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
+                                }
+                                if (!string.IsNullOrWhiteSpace(jsBody))
+                                {
+                                    c.Raw(jsBody);
+                                }
                             }
                         });
                     }
@@ -149,7 +201,7 @@ public class TypeScriptEmitter
     {
         // Core runtime imports
         var coreImports = new HashSet<string> { "Component", "BuildContext", "HtmlElement" };
-        
+
         if (component.IsStateful)
         {
             coreImports.Add("StatefulComponent");
@@ -164,28 +216,55 @@ public class TypeScriptEmitter
         {
             coreImports.Add("getServerActionsClient");
         }
-        
-        // Widget imports based on what's used in the component
-        var widgetTypes = CollectWidgetTypes(component.BuildTree);
-        
+
+        // Component imports based on what's used in the component
+        var componentTypes = CollectComponentTypes(component.BuildTree);
+
         // Also scan procedural code in BuildMethodNode
         if (component.BuildMethodNode != null)
         {
-             var proceduralTypes = CollectWidgetTypesFromNode(component.BuildMethodNode);
-             foreach (var t in proceduralTypes) widgetTypes.Add(t);
+             var proceduralTypes = CollectComponentTypesFromNode(component.BuildMethodNode);
+             foreach (var t in proceduralTypes) componentTypes.Add(t);
+        }
+
+        // CRITICAL: Add base class to component types (for inheritance like "Column extends Flex")
+        if (!string.IsNullOrEmpty(component.BaseClassName))
+        {
+            var baseClass = component.BaseClassName;
+            // Clean generic types
+            if (baseClass.Contains('<'))
+            {
+                baseClass = baseClass.Substring(0, baseClass.IndexOf('<'));
+            }
+            componentTypes.Add(baseClass);
+        }
+
+        // AUTOMATIC DEPENDENCY RESOLUTION
+        // Use dependency resolver to find transitive dependencies (e.g., Row → Flex)
+        if (_dependencyResolver != null)
+        {
+            var dependencies = _dependencyResolver.ResolveDependencies(componentTypes);
+            foreach (var dep in dependencies)
+            {
+                componentTypes.Add(dep);
+            }
         }
 
         var userComponents = new List<string>();
-        
-        foreach (var type in widgetTypes)
+
+        foreach (var type in componentTypes)
         {
             var cleanType = type.Trim().Replace("?", "");
             if (cleanType.Contains("<")) cleanType = cleanType.Split('<')[0];
-            
-            if (string.IsNullOrEmpty(cleanType) || cleanType == "string" || cleanType == "number" || cleanType == "boolean" || cleanType == "any") 
+
+            if (string.IsNullOrEmpty(cleanType) || cleanType == "string" || cleanType == "number" || cleanType == "boolean" || cleanType == "any")
                 continue;
 
-            if (IsRuntimeComponent(cleanType) || cleanType == "HtmlNode" || cleanType == "HtmlStyle")
+            // Skip HtmlNode - it's a type-only interface, not a runtime class
+            if (cleanType == "HtmlNode")
+                continue;
+
+            if (IsRuntimeComponent(cleanType))
             {
                 coreImports.Add(cleanType);
             }
@@ -194,9 +273,9 @@ public class TypeScriptEmitter
                 userComponents.Add(cleanType);
             }
         }
-        
+
         _builder.Import(coreImports, "@equantic/runtime");
-        
+
         // Import user components
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
@@ -210,27 +289,29 @@ public class TypeScriptEmitter
         return typeName switch
         {
             "HtmlNode" or "HtmlStyle" or "ServiceKey" or "ServiceProvider" => true,
+            "Component" or "BuildContext" or "HtmlElement" or "InputComponent" => true,
+            "StatefulComponent" or "StatelessComponent" or "ComponentState" => true,
             _ => false
         };
     }
 
-    private HashSet<string> CollectWidgetTypes(ComponentTree? tree)
+    private HashSet<string> CollectComponentTypes(ComponentTree? tree)
     {
         var types = new HashSet<string>();
         if (tree == null) return types;
-        
+
         types.Add(tree.ComponentType);
         foreach (var child in tree.Children)
         {
-            foreach (var t in CollectWidgetTypes(child))
+            foreach (var t in CollectComponentTypes(child))
             {
                 types.Add(t);
             }
         }
         return types;
     }
-    
-    private HashSet<string> CollectWidgetTypesFromNode(Microsoft.CodeAnalysis.SyntaxNode? node)
+
+    private HashSet<string> CollectComponentTypesFromNode(Microsoft.CodeAnalysis.SyntaxNode? node)
     {
         var types = new HashSet<string>();
         if (node == null) return types;

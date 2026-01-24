@@ -102,9 +102,9 @@ public abstract class HtmlElement : IComponent
     public Action<KeyboardEventArgs>? OnKeyUp { get; set; }
 
     /// <summary>
-    /// Key press event handler
+    /// Submit event handler
     /// </summary>
-    public Action<KeyboardEventArgs>? OnKeyPress { get; set; }
+    public Action? OnSubmit { get; set; }
 
     #endregion
 
@@ -177,24 +177,44 @@ public abstract class HtmlElement : IComponent
         return attrs;
     }
 
+    private static readonly Dictionary<string, string> EventNameMap = new()
+    {
+        ["OnClick"] = "click",
+        ["OnDoubleClick"] = "dblclick",
+        ["OnFocus"] = "focus",
+        ["OnBlur"] = "blur",
+        ["OnMouseEnter"] = "mouseenter",
+        ["OnMouseLeave"] = "mouseleave",
+        ["OnMouseDown"] = "mousedown",
+        ["OnMouseUp"] = "mouseup",
+        ["OnKeyDown"] = "keydown",
+        ["OnKeyUp"] = "keyup",
+        ["OnKeyPress"] = "keypress",
+        ["OnChange"] = "change",
+        ["OnInput"] = "input",
+        ["OnSubmit"] = "submit"
+    };
+
     /// <summary>
-    /// Build event handlers dictionary
+    /// Build event handlers dictionary using Reflection for discovery
     /// </summary>
     protected Dictionary<string, Delegate> BuildEvents()
     {
         var events = new Dictionary<string, Delegate>();
+        var type = GetType();
 
-        if (OnClick != null) events["click"] = OnClick;
-        if (OnDoubleClick != null) events["dblclick"] = OnDoubleClick;
-        if (OnFocus != null) events["focus"] = OnFocus;
-        if (OnBlur != null) events["blur"] = OnBlur;
-        if (OnMouseEnter != null) events["mouseenter"] = OnMouseEnter;
-        if (OnMouseLeave != null) events["mouseleave"] = OnMouseLeave;
-        if (OnMouseDown != null) events["mousedown"] = OnMouseDown;
-        if (OnMouseUp != null) events["mouseup"] = OnMouseUp;
-        if (OnKeyDown != null) events["keydown"] = OnKeyDown;
-        if (OnKeyUp != null) events["keyup"] = OnKeyUp;
-        if (OnKeyPress != null) events["keypress"] = OnKeyPress;
+        foreach (var (propName, domEvent) in EventNameMap)
+        {
+            var prop = type.GetProperty(propName);
+            if (prop != null)
+            {
+                var value = prop.GetValue(this) as Delegate;
+                if (value != null)
+                {
+                    events[domEvent] = value;
+                }
+            }
+        }
 
         return events;
     }

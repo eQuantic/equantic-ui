@@ -23,7 +23,15 @@ public class ComponentCompiler
         _cssEmitter = new CssEmitter();
         _semanticModelProvider = new SemanticModelProvider();
     }
-    
+
+    /// <summary>
+    /// Sets the dependency resolver for automatic component dependency detection
+    /// </summary>
+    public void SetDependencyResolver(ComponentDependencyResolver resolver)
+    {
+        _tsEmitter.SetDependencyResolver(resolver);
+    }
+
     /// <summary>
     /// Compile a single .eqx file
     /// </summary>
@@ -113,20 +121,17 @@ public class ComponentCompiler
         foreach (var file in files)
         {
             // Skip obj/bin directories to avoid re-parsing generated code or unrelated files
-            if (file.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar) || 
+            if (file.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar) ||
                 file.Contains(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar))
             {
                 continue;
             }
 
-            // Only compile if it looks like a component (optimization)
-            var content = File.ReadAllText(file);
-            if (content.Contains(": StatefulComponent") || content.Contains(": StatelessComponent") || content.Contains(": HtmlElement"))
+            // Try to compile - parser will return empty if not a component
+            // No restrictions on naming, inheritance, aliases, or patterns
+            foreach (var result in CompileFile(file))
             {
-                foreach (var result in CompileFile(file))
-                {
-                    yield return result;
-                }
+                yield return result;
             }
         }
     }

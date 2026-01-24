@@ -78,9 +78,9 @@ export class Reconciler {
 
       // Element nodes
       if (currentElement instanceof HTMLElement) {
-        this.updateAttributes(currentElement, oldNode.attributes, newNode.attributes);
-        this.updateEventListeners(currentElement, oldNode.events, newNode.events);
-        this.reconcileChildren(currentElement, oldNode.children, newNode.children);
+        this.updateAttributes(currentElement, oldNode.attributes || {}, newNode.attributes || {});
+        this.updateEventListeners(currentElement, oldNode.events || {}, newNode.events || {});
+        this.reconcileChildren(currentElement, oldNode.children || [], newNode.children || []);
       }
     }
   }
@@ -115,7 +115,7 @@ export class Reconciler {
     this.attachEventListeners(element, node.events);
 
     // Render children
-    for (const child of node.children) {
+    for (const child of (node.children || [])) {
       element.appendChild(this.createDomElement(child));
     }
 
@@ -160,7 +160,8 @@ export class Reconciler {
       const wrappedHandler = (e: Event) => {
         if (eventName === 'change' || eventName === 'input') {
           const target = e.target as HTMLInputElement;
-          (handler as (value: string) => void)(target.value);
+          const value = target.type === 'checkbox' ? target.checked : target.value;
+          (handler as (value: any) => void)(value);
         } else if (eventName === 'click') {
           (handler as () => void)();
         } else {
@@ -220,7 +221,8 @@ export class Reconciler {
           const wrappedHandler = (e: Event) => {
             if (eventName === 'change' || eventName === 'input') {
               const target = e.target as HTMLInputElement;
-              (handler as (value: string) => void)(target.value);
+              const value = target.type === 'checkbox' ? target.checked : target.value;
+              (handler as (value: any) => void)(value);
             } else if (eventName === 'click') {
               (handler as () => void)();
             } else {

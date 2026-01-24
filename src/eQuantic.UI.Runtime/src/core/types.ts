@@ -78,6 +78,9 @@ export abstract class Component implements IComponent {
   onKeyDown?: Action<any>;
   onKeyUp?: Action<any>;
   onKeyPress?: Action<any>;
+  onChange?: Action<any>;
+  onInput?: Action<any>;
+  onSubmit?: Action<any>;
 
   abstract render(): HtmlNode;
 
@@ -119,21 +122,31 @@ export abstract class Component implements IComponent {
     return attrs;
   }
 
+  private static readonly EVENT_MAP: Record<string, string> = {
+    'onClick': 'click',
+    'onDoubleClick': 'dblclick',
+    'onFocus': 'focus',
+    'onBlur': 'blur',
+    'onMouseEnter': 'mouseenter',
+    'onMouseLeave': 'mouseleave',
+    'onMouseDown': 'mousedown',
+    'onMouseUp': 'mouseup',
+    'onKeyDown': 'keydown',
+    'onKeyUp': 'keyup',
+    'onKeyPress': 'keypress',
+    'onChange': 'change',
+    'onInput': 'input',
+    'onSubmit': 'submit',
+  };
+
   protected buildEvents(): Record<string, EventHandler> {
     const events: Record<string, EventHandler> = {};
-
-    if (this.onClick) events['click'] = this.onClick as EventHandler;
-    if (this.onDoubleClick) events['dblclick'] = this.onDoubleClick as EventHandler;
-    if (this.onFocus) events['focus'] = this.onFocus as EventHandler;
-    if (this.onBlur) events['blur'] = this.onBlur as EventHandler;
-    if (this.onMouseEnter) events['mouseenter'] = this.onMouseEnter as EventHandler;
-    if (this.onMouseLeave) events['mouseleave'] = this.onMouseLeave as EventHandler;
-    if (this.onMouseDown) events['mousedown'] = this.onMouseDown as EventHandler;
-    if (this.onMouseUp) events['mouseup'] = this.onMouseUp as EventHandler;
-    if (this.onKeyDown) events['keydown'] = this.onKeyDown as EventHandler;
-    if (this.onKeyUp) events['keyup'] = this.onKeyUp as EventHandler;
-    if (this.onKeyPress) events['keypress'] = this.onKeyPress as EventHandler;
-
+    for (const [prop, eventName] of Object.entries(Component.EVENT_MAP)) {
+      const handler = (this as any)[prop];
+      if (handler && typeof handler === 'function') {
+        events[eventName] = handler as EventHandler;
+      }
+    }
     return events;
   }
 }

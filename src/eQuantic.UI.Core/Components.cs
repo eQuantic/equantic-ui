@@ -127,6 +127,7 @@ public abstract class ComponentState
     #endregion
 }
 
+
 /// <summary>
 /// Typed base class for component state
 /// </summary>
@@ -136,4 +137,26 @@ public abstract class ComponentState<T> : ComponentState where T : StatefulCompo
     /// The typed component this state belongs to
     /// </summary>
     public new T Component => (T)base.Component;
+}
+
+/// <summary>
+/// Base class for all input components
+/// </summary>
+/// <typeparam name="TValue">The type of the input value</typeparam>
+public abstract class InputComponent<TValue> : HtmlElement
+{
+    /// <summary>
+    /// Current value
+    /// </summary>
+    public TValue? Value { get; set; }
+
+    /// <summary>
+    /// Change event handler
+    /// </summary>
+    public Action<TValue>? OnChange { get; set; }
+
+    /// <summary>
+    /// Input event handler
+    /// </summary>
+    public Action<TValue>? OnInput { get; set; }
 }

@@ -3,21 +3,18 @@ using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Inputs;
 
-public class Checkbox : HtmlElement
+public class Checkbox : InputComponent<bool>
 {
-    public bool Checked { get; set; }
-    public Action<bool>? OnChange { get; set; }
+    public bool Checked { get => Value; set => Value = value; }
     public bool Disabled { get; set; }
 
     public override HtmlNode Render()
     {
         var inputAttrs = BuildAttributes();
         inputAttrs["type"] = "checkbox";
-        if (Checked) inputAttrs["checked"] = "true";
+        if (Value) inputAttrs["checked"] = "true";
         if (Disabled) inputAttrs["disabled"] = "true";
 
-        // Map change event to OnChange
-        // The compiler/runtime needs to handle value extraction for "checked".
         var events = BuildEvents();
 
         return new HtmlNode

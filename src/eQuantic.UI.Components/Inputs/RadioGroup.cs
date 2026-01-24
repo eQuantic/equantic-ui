@@ -6,14 +6,11 @@ using eQuantic.UI.Components.Layout;
 
 namespace eQuantic.UI.Components.Inputs;
 
-public class RadioGroup : HtmlElement
+public class RadioGroup : InputComponent<string>
 {
     public string Name { get; set; } = Guid.NewGuid().ToString("N");
-    public string? Value { get; set; }
     public List<RadioOption> Options { get; set; } = new();
     public FlexDirection Direction { get; set; } = FlexDirection.Column;
-    
-    public Action<string>? OnChange { get; set; }
 
     public override HtmlNode Render()
     {
