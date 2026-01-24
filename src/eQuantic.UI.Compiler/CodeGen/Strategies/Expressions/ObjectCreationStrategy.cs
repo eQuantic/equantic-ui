@@ -85,6 +85,35 @@ public class ObjectCreationStrategy : IConversionStrategy
         {
              return context.Converter.ConvertInitializer(creation.Initializer);
         }
+
+        // Try to get type from semantic model
+        var symbol = context.SemanticHelper.GetSymbol(creation);
+        if (symbol is IMethodSymbol ms)
+        {
+            var typeName = ms.ContainingType.ToDisplayString();
+            if (typeName.Contains("List<") || typeName.Contains("IEnumerable<") || typeName.Contains("Collection<"))
+            {
+                return "[]";
+            }
+            if (typeName.Contains("Dictionary<"))
+            {
+                return "{}";
+            }
+        }
+
+        // Fallback to ExpectedType hint
+        if (context.ExpectedType != null)
+        {
+            if (context.ExpectedType.Contains("List<") || context.ExpectedType.Contains("IEnumerable<") || context.ExpectedType.EndsWith("[]"))
+            {
+                return "[]";
+            }
+            if (context.ExpectedType.Contains("Dictionary<") || context.ExpectedType.Contains("IDictionary<"))
+            {
+                return "{}";
+            }
+        }
+        
         return "{}";
     }
 

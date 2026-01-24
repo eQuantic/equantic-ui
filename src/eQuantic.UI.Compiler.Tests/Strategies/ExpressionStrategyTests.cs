@@ -61,4 +61,30 @@ public class ExpressionStrategyTests
         // Modern JS supports ??
         result.Should().Be("a ?? b");
     }
+    [Fact]
+    public void SwitchExpression_MapsTo_NestedTernary()
+    {
+        var result = TestHelper.ConvertExpression("status switch { 0 => \"Pending\", 1 => \"Active\", _ => \"Unknown\" }");
+        result.Should().Be("(status === 0 ? 'Pending' : (status === 1 ? 'Active' : 'Unknown'))");
+    }
+    [Fact]
+    public void SwitchExpression_NoDiscard_MapsToNestedTernaryWithNull()
+    {
+        var result = TestHelper.ConvertExpression("val switch { 0 => \"A\" }");
+        result.Should().Be("(val === 0 ? 'A' : null)");
+    }
+    [Fact]
+    public void Any_NoArgs_MapsToLengthGreaterThanZeroWithParens()
+    {
+        var result = TestHelper.ConvertExpression("list.Any()");
+        result.Should().Be("(list.length > 0)");
+    }
+
+    [Fact]
+    public void ImplicitObjectCreation_List_MapsToArray()
+    {
+        // We simulate the type hint from the emitter
+        var result = TestHelper.ConvertExpression("new()", "List<string>");
+        result.Should().Be("[]");
+    }
 }

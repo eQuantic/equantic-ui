@@ -29,8 +29,8 @@ public class AnyStrategy : IConversionStrategy
             return true;
         }
 
-        // Fallback: If no semantic model, assume .Any() is LINQ-like if on enumerable
-        if (context.SemanticModel == null)
+        // Fallback: If no semantic model or unresolved symbol, assume it's LINQ if the name matches
+        if (context.SemanticModel == null || symbol == null)
         {
             return true;
         }
@@ -57,7 +57,7 @@ public class AnyStrategy : IConversionStrategy
         else
         {
             // Any() -> length > 0
-            return $"{caller}.length > 0";
+            return $"({caller}.length > 0)";
         }
     }
 

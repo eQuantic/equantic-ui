@@ -8,6 +8,7 @@ public interface ITodoService
     Task<Todo> AddTodoAsync(string title);
     Task ToggleTodoAsync(Guid id);
     Task DeleteTodoAsync(Guid id);
+    Task UpdateTodoAsync(Guid id, string title);
 }
 
 public class TodoService : ITodoService
@@ -49,6 +50,16 @@ public class TodoService : ITodoService
         if (todo != null)
         {
             _todos.Remove(todo);
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateTodoAsync(Guid id, string title)
+    {
+        var todo = _todos.FirstOrDefault(t => t.Id == id);
+        if (todo != null)
+        {
+            todo.Title = title;
         }
         return Task.CompletedTask;
     }

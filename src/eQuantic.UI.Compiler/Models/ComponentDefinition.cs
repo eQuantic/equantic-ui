@@ -115,6 +115,7 @@ public class StateField
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public string? DefaultValue { get; set; }
+    public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? DefaultValueNode { get; set; }
 }
 
 /// <summary>

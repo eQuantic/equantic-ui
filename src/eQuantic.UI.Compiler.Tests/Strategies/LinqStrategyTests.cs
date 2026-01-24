@@ -37,7 +37,7 @@ public class LinqStrategyTests
     public void Any_NoPredicate_MapsTo_LengthCheck()
     {
         var result = TestHelper.ConvertExpression("list.Any()");
-        result.Should().Be("list.length > 0");
+        result.Should().Be("(list.length > 0)");
     }
 
     [Fact]

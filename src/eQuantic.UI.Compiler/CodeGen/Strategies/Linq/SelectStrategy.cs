@@ -27,8 +27,8 @@ public class SelectStrategy : IConversionStrategy
             return true;
         }
 
-        // Fallback
-        if (context.SemanticModel == null)
+        // Fallback: If no semantic model or unresolved symbol, assume it's LINQ if the name matches
+        if (context.SemanticModel == null || symbol == null)
         {
             return true;
         }

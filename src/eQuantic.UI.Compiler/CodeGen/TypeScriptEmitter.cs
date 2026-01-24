@@ -98,6 +98,7 @@ public class TypeScriptEmitter
                             // Execute C# constructor body (e.g., Direction = FlexDirection.Column)
                             if (ctor.SyntaxNode?.Body != null)
                             {
+                                _converter.SetCurrentClass(component.Name);
                                 var jsBody = _converter.Convert(ctor.SyntaxNode.Body);
                                 jsBody = jsBody.Trim();
                                 if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
@@ -128,6 +129,7 @@ public class TypeScriptEmitter
                                 c.Raw($"let {v};");
                             }
 
+                            _converter.SetCurrentClass(component.Name);
                             var jsBody = _converter.Convert(component.BuildMethodNode.Body);
                             jsBody = jsBody.Trim();
                             if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
@@ -158,11 +160,22 @@ public class TypeScriptEmitter
                     // For stateless, build directly
                     c.Method("build", "context: BuildContext", false, () => 
                     {
-                         var root = component.BuildTree;
-                         if (root != null)
+                         if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
+                         {
+                            // Use robust converter for stateless build body
+                            _converter.SetCurrentClass(component.Name);
+                            var jsBody = _converter.Convert(component.BuildMethodNode.Body);
+                            jsBody = jsBody.Trim();
+                            if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
+                            {
+                                jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
+                            }
+                            c.Raw(jsBody);
+                         }
+                         else if (component.BuildTree != null)
                          {
                              c.Raw("return (");
-                             EmitComponentTree(root);
+                             EmitComponentTree(component.BuildTree);
                              c.Raw(");");
                          }
                          else 
@@ -291,6 +304,8 @@ public class TypeScriptEmitter
             "HtmlNode" or "HtmlStyle" or "ServiceKey" or "ServiceProvider" => true,
             "Component" or "BuildContext" or "HtmlElement" or "InputComponent" => true,
             "StatefulComponent" or "StatelessComponent" or "ComponentState" => true,
+            "Container" or "Column" or "Row" or "Stack" or "Flex" => true,
+            "Text" or "Heading" or "Button" or "Checkbox" or "TextInput" or "Select" => true,
             _ => false
         };
     }
@@ -340,7 +355,9 @@ public class TypeScriptEmitter
             foreach (var field in component.StateFields)
             {
                 var tsType = CSharpTypeToTypeScript(field.Type);
-                var tsDefault = ConvertToTsValue(field.DefaultValue ?? GetDefaultForType(field.Type), field.Type);
+                var tsDefault = field.DefaultValueNode != null 
+                    ? _converter.ConvertExpression(field.DefaultValueNode, field.Type)
+                    : ConvertToTsValue(field.DefaultValue ?? GetDefaultForType(field.Type), field.Type);
                 c.Field(field.Name, tsType, tsDefault);
             }
 
@@ -362,7 +379,7 @@ public class TypeScriptEmitter
             // Custom methods (Phase 2: Semantic Body)
             foreach (var method in component.Methods)
             {
-                EmitMethod(method);
+                EmitMethod(method, component.StateClassName);
                 c.Raw(""); // Spacer
             }
             
@@ -372,6 +389,7 @@ public class TypeScriptEmitter
                 if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
                 {
                     // Use robust converter to emit full body (supports variables, loops, etc.)
+                   _converter.SetCurrentClass(component.StateClassName);
                    var jsBody = _converter.Convert(component.BuildMethodNode.Body);
                    
                    // Remove outer braces since c.Method adds them (via logic or we need to be careful)
@@ -410,7 +428,7 @@ public class TypeScriptEmitter
         // No-op: Stateless components are fully handled by Emit()
     }
     
-    private void EmitMethod(MethodDefinition method)
+    private void EmitMethod(MethodDefinition method, string? className = null)
     {
         var parameters = string.Join(", ", method.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
         var methodName = ToCamelCase(method.Name);
@@ -423,7 +441,7 @@ public class TypeScriptEmitter
         var isAsync = method.ReturnType != null && method.ReturnType.StartsWith("Task");
         var asyncPrefix = isAsync ? "async " : "";
         var promiseReturnType = isAsync && returnType == "void" ? "Promise<void>" : 
-                                isAsync ? $"Promise<{returnType}>" : returnType;
+                                 isAsync ? $"Promise<{returnType}>" : returnType;
 
         if (method.SyntaxNode != null)
         {
@@ -432,10 +450,12 @@ public class TypeScriptEmitter
             string jsBody;
             if (method.SyntaxNode.Body != null)
             {
+                _converter.SetCurrentClass(className);
                 jsBody = _converter.Convert(method.SyntaxNode.Body);
             }
             else if (method.SyntaxNode.ExpressionBody != null)
             {
+                _converter.SetCurrentClass(className);
                 var expr = _converter.Convert(method.SyntaxNode.ExpressionBody.Expression);
                 jsBody = $"{{ return {expr}; }}";
             }
@@ -450,6 +470,7 @@ public class TypeScriptEmitter
         {
             // Fallback for legacy parsing (should happen rarely now)
             var body = method.Body.Trim().TrimEnd(';');
+            _converter.SetCurrentClass(className);
             var convertedExpr = _converter.Convert(body);
             WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {{ return {convertedExpr}; }}");
         }

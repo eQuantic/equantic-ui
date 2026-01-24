@@ -116,6 +116,25 @@ public class ComponentParser
                 definition.IsStateful = false;
                 definition.BaseClassName = baseType;
                 ParsePageAttributes(classDecl, definition);
+                
+                // Parse Build method for stateless component
+                var buildMethod = classDecl.DescendantNodes()
+                    .OfType<MethodDeclarationSyntax>()
+                    .FirstOrDefault(m => m.Identifier.Text == "Build");
+                
+                if (buildMethod != null)
+                {
+                    definition.BuildMethodNode = buildMethod;
+                    
+                    var returnStatement = buildMethod.DescendantNodes()
+                        .OfType<ReturnStatementSyntax>()
+                        .FirstOrDefault();
+                    
+                    if (returnStatement?.Expression != null)
+                    {
+                        definition.BuildTree = ParseComponentExpression(returnStatement.Expression);
+                    }
+                }
             }
             else if (baseType == "HtmlElement" || isComp)
             {
@@ -304,7 +323,8 @@ public class ComponentParser
                 {
                     Name = variable.Identifier.Text,
                     Type = field.Declaration.Type.ToString(),
-                    DefaultValue = variable.Initializer?.Value.ToString()
+                    DefaultValue = variable.Initializer?.Value.ToString(),
+                    DefaultValueNode = variable.Initializer?.Value
                 });
             }
         }

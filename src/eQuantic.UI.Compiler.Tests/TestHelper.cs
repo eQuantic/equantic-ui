@@ -9,7 +9,7 @@ namespace eQuantic.UI.Compiler.Tests;
 
 public static class TestHelper
 {
-    public static string ConvertExpression(string code)
+    public static string ConvertExpression(string code, string? expectedType = null)
     {
         var converter = new CSharpToJsConverter();
         
@@ -59,14 +59,14 @@ public static class TestHelper
         
         if (stmt is ExpressionStatementSyntax exprStmt)
         {
-            return converter.ConvertExpression(exprStmt.Expression);
+            return converter.ConvertExpression(exprStmt.Expression, expectedType);
         }
         
         return converter.Convert(stmt);
     }
     
-    public static string ConvertStatement(string code)
+    public static string ConvertStatement(string code, string? expectedType = null)
     {
-        return ConvertExpression(code);
+        return ConvertExpression(code, expectedType);
     }
 }

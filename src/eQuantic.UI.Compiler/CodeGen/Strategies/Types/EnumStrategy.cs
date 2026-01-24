@@ -28,19 +28,14 @@ public class EnumStrategy : IConversionStrategy
             return true;
         }
 
-        // Heuristic fallback (same as original code)
-        if (context.SemanticModel == null)
-        {
-            var expr = memberAccess.Expression.ToString();
-            bool isPascalCase = !expr.Contains('.') &&
-                               !expr.StartsWith("this.") &&
-                               expr.Length > 0 &&
-                               char.IsUpper(expr[0]) &&
-                               char.IsUpper(member[0]);
-            return isPascalCase;
-        }
-
-        return false;
+        // Heuristic fallback (if semantic fails or is missing)
+        var expr = memberAccess.Expression.ToString();
+        bool isPascalCase = !expr.Contains('.') &&
+                           !expr.StartsWith("this.") &&
+                           expr.Length > 0 &&
+                           char.IsUpper(expr[0]) &&
+                           char.IsUpper(member[0]);
+        return isPascalCase;
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

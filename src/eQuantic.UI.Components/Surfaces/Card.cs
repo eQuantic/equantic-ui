@@ -14,7 +14,7 @@ public enum Shadow
 public class Card : StatelessComponent
 {
     public IComponent? Header { get; set; }
-    public IComponent Body { get; set; }
+    public IComponent Body { get; set; } = new NullComponent();
     public IComponent? Footer { get; set; }
     public Shadow Shadow { get; set; } = Shadow.Medium;
     public string Width { get; set; } = "w-full";

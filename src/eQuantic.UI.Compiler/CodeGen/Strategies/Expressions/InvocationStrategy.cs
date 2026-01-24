@@ -188,6 +188,33 @@ public class InvocationStrategy : IConversionStrategy
         }
 
         // Direct invocation (Function() -> function())
+        bool needsThis = false;
+        
+        // Use semantic resolution if available
+        if (symbol != null && !symbol.IsStatic)
+        {
+            if (symbol.ContainingType?.TypeKind == TypeKind.Class)
+            {
+                needsThis = true;
+            }
+        }
+        
+        // Heuristic fallback if we are in a class context
+        if (!needsThis && !string.IsNullOrEmpty(context.CurrentClassName))
+        {
+            // If the method name starts with Uppercase, it's likely a member method
+            // UNLESS it's a known global function or local variable (handled by symbol check above)
+            if (char.IsUpper(methodName[0]) && symbol == null)
+            {
+                 needsThis = true;
+            }
+        }
+
+        if (needsThis)
+        {
+            return $"this.{ToCamelCase(methodName)}({args})";
+        }
+
         return $"{ToCamelCase(methodName)}({args})";
     }
 

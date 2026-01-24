@@ -5,9 +5,11 @@ using eQuantic.UI.Compiler.Services;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
-/// Converts LINQ .All() to JavaScript .every()
+/// Converts LINQ .Count() to JavaScript.
+/// - Count() without predicate -> .length
+/// - Count(predicate) -> .filter(predicate).length
 /// </summary>
-public class AllStrategy : IConversionStrategy
+public class CountStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -17,7 +19,7 @@ public class AllStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
-        if (memberAccess.Name.Identifier.Text != "All")
+        if (memberAccess.Name.Identifier.Text != "Count")
             return false;
 
         // Semantic Check
@@ -42,17 +44,21 @@ public class AllStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
-        var args = invocation.ArgumentList.Arguments;
-        
-        if (args.Count > 0)
+        var hasArguments = invocation.ArgumentList.Arguments.Count > 0;
+
+        if (hasArguments)
         {
-            // All(predicate) -> every(predicate)
-            var predicate = context.Converter.ConvertExpression(args[0].Expression);
-            return $"{caller}.every({predicate})";
+            // Count(predicate) -> filter(predicate).length
+            var predicate = context.Converter.ConvertExpression(
+                invocation.ArgumentList.Arguments[0].Expression
+            );
+            return $"{caller}.filter({predicate}).length";
         }
-        
-        // All() without args is not valid LINQ, but just in case
-        return $"{caller}.every(x => true)"; 
+        else
+        {
+            // Count() -> .length
+            return $"{caller}.length";
+        }
     }
 
     public int Priority => 10;

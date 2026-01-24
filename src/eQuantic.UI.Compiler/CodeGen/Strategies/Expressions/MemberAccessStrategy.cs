@@ -24,6 +24,26 @@ public class MemberAccessStrategy : IConversionStrategy
 
         // Convert C# properties to JS
         // Note: Specialized mappings (HasValue, Value) are handled by NullableStrategy
+        
+        // Semantic check for DateTime.Now, Guid.Empty, etc.
+        var symbol = context.SemanticHelper.GetSymbol(node);
+        if (symbol != null)
+        {
+            var containingType = symbol.ContainingType.ToDisplayString();
+            if (containingType == "System.DateTime" && (symbol.Name == "Now" || symbol.Name == "Today"))
+            {
+                return "new Date()";
+            }
+            if (containingType == "System.Guid" && symbol.Name == "Empty")
+            {
+                return "''";
+            }
+        }
+
+        // Heuristic fallback
+        if (expr == "DateTime" && (name == "Now" || name == "Today")) return "new Date()";
+        if (expr == "Guid" && name == "Empty") return "''";
+
         name = name switch
         {
             "Length" => "length",

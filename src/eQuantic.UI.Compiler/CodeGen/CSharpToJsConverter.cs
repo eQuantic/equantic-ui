@@ -5,6 +5,7 @@ using System.Text;
 using eQuantic.UI.Compiler.Services;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Special;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -45,6 +46,11 @@ public class CSharpToJsConverter
         _context.SemanticHelper = new SemanticHelper(semanticModel);
     }
 
+    public void SetCurrentClass(string? className)
+    {
+        _context.CurrentClassName = className;
+    }
+
     private void RegisterStrategies()
     {
         _strategyRegistry.Register<AnyStrategy>();
@@ -59,6 +65,8 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<WhereStrategy>();
         _strategyRegistry.Register<FirstStrategy>();
         _strategyRegistry.Register<AllStrategy>();
+        _strategyRegistry.Register<AnyStrategy>();
+        _strategyRegistry.Register<CountStrategy>();
         _strategyRegistry.Register<OrderByStrategy>();
         
         // Expression Strategies
@@ -66,6 +74,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<MemberAccessStrategy>();
         _strategyRegistry.Register<ObjectCreationStrategy>();
         _strategyRegistry.Register<BinaryExpressionStrategy>();
+        _strategyRegistry.Register<SwitchExpressionStrategy>();
         
         // Statement Strategies
         _statementRegistry.Register<IfStatementStrategy>();
@@ -107,10 +116,11 @@ public class CSharpToJsConverter
     }
     
     /// <summary>
-    /// Convert a parsed expression to JavaScript
+    /// Convert a parsed expression to JavaScript with an expected type hint
     /// </summary>
-    public string ConvertExpression(ExpressionSyntax expression)
+    public string ConvertExpression(ExpressionSyntax expression, string? expectedType = null)
     {
+        _context.ExpectedType = expectedType;
         // Check cache
         var cached = _context.GetCached(expression);
         if (cached != null) return cached;
@@ -241,10 +251,28 @@ public class CSharpToJsConverter
         // Map 'Console' to global 'console'
         // Priority: Semantic Check > String Check (Fallback)
         var symbol = _context.SemanticHelper.GetSymbol(identifier);
+        
+        // If it's a type symbol, return as is (to allow EnumStrategy to work)
+        if (symbol is ITypeSymbol || symbol is INamedTypeSymbol) return name;
+
         if (_context.SemanticHelper.IsSystemConsole(symbol)) return "console";
         if (_semanticModel == null && name == "Console") return "console";
         
-        // Convert private field access or PascalCase properties to this.camelCase
+        // Resolve member access prefix (this.) using semantic model
+        if (symbol != null && !symbol.IsStatic)
+        {
+             if (symbol.Kind == SymbolKind.Field || symbol.Kind == SymbolKind.Property)
+             {
+                 if (symbol.ContainingType?.TypeKind == TypeKind.Class)
+                 {
+                     // Map private field _name to this._name, otherwise to this.name (camelCase)
+                     if (name.StartsWith("_")) return $"this.{name}";
+                     return $"this.{ToCamelCase(name)}";
+                 }
+             }
+        }
+
+        // Fallback Heuristics
         if (name.StartsWith("_"))
         {
             return $"this.{name}";
