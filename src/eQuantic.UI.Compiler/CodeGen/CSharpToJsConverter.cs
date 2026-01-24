@@ -498,21 +498,31 @@ public class CSharpToJsConverter
     
     private string ConvertMemberAccess(MemberAccessExpressionSyntax memberAccess)
     {
-        // Check BEFORE converting if this is an eQuantic namespace that should be removed
         var originalExpr = memberAccess.Expression.ToString();
-        var shouldRemoveNamespace = originalExpr.StartsWith("eQuantic.UI.Core.") ||
-                                     originalExpr.StartsWith("eQuantic.UI.");
-
-        var expr = ConvertExpression(memberAccess.Expression);
         var name = memberAccess.Name.Identifier.Text;
 
-        // Remove eQuantic.UI.Core namespace prefix (enums, types that don't exist in JS runtime)
-        if (shouldRemoveNamespace)
+        // Generic namespace removal: if the expression looks like a namespace-qualified type access
+        // (e.g., Company.Namespace.Type or eQuantic.UI.Core.Display), extract only the last part
+        // This works for ANY namespace, not just eQuantic-specific ones
+        if (originalExpr.Contains('.') && !originalExpr.StartsWith("this.") && !originalExpr.Contains('('))
         {
-            // Extract just the type name (e.g., "Display" from "eQuantic.UI.Core.Display")
+            // Check if this is a static/enum access by seeing if it's all identifiers
             var parts = originalExpr.Split('.');
-            expr = ToCamelCase(parts[^1]); // Last part is the type name, apply camelCase
+
+            // If we have multiple parts and they look like namespace.Type pattern,
+            // keep only the last part (the Type name) before the member
+            // Example: Company.UI.Display.Flex → Display.flex
+            if (parts.Length > 1)
+            {
+                var typeName = parts[^1]; // Last part is the type name
+
+                // Return TypeName.memberName in camelCase
+                return $"{ToCamelCase(typeName)}.{ToCamelCase(name)}";
+            }
         }
+
+        // Normal member access - convert expression normally
+        var expr = ConvertExpression(memberAccess.Expression);
 
         // Convert C# properties to JS
         name = name switch
