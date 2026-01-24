@@ -158,6 +158,9 @@ public class CSharpToJsConverter
             // Is Pattern: x is string s
             IsPatternExpressionSyntax isPattern => ConvertIsPattern(isPattern),
             
+            // Declaration: var (a, b)
+            DeclarationExpressionSyntax declExpr => ConvertDeclarationExpression(declExpr),
+            
 
             
             // Interpolated string: $"text {expr}"
@@ -348,7 +351,31 @@ public class CSharpToJsConverter
         // Handle discard _ = ...
         if (left == "_" || left == "this._") return right;
 
+        // If it's a declaration deconstruction, prefix with 'let ' if not already handled
+        if (assignment.Left is DeclarationExpressionSyntax && !left.StartsWith("let "))
+        {
+            return $"let {left} {op} {right}";
+        }
+
         return $"{left} {op} {right}";
+    }
+
+    private string ConvertDeclarationExpression(DeclarationExpressionSyntax decl)
+    {
+        if (decl.Designation is ParenthesizedVariableDesignationSyntax deconstruction)
+        {
+            var names = string.Join(", ", deconstruction.Variables
+                .OfType<SingleVariableDesignationSyntax>()
+                .Select(v => v.Identifier.Text));
+            return $"[{names}]";
+        }
+        
+        if (decl.Designation is SingleVariableDesignationSyntax single)
+        {
+            return single.Identifier.Text;
+        }
+
+        return decl.Designation.ToString();
     }
     
     
@@ -398,6 +425,14 @@ public class CSharpToJsConverter
         // Collection Initializer: { new A(), new B() } -> [ new A(), new B() ]
         if (initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
         {
+            // Check if it's a Dictionary initializer: { {k, v}, {k, v} }
+            if (initializer.Expressions.Count > 0 && initializer.Expressions.All(e => e is InitializerExpressionSyntax ie && ie.Expressions.Count == 2))
+            {
+                var pairs = initializer.Expressions.Cast<InitializerExpressionSyntax>()
+                    .Select(ie => $"{ConvertExpression(ie.Expressions[0])}: {ConvertExpression(ie.Expressions[1])}");
+                return $"{{ {string.Join(", ", pairs)} }}";
+            }
+            
             var elements = initializer.Expressions.Select(e => ConvertExpression(e));
             return $"[{string.Join(", ", elements)}]";
         }
@@ -414,10 +449,22 @@ public class CSharpToJsConverter
                     var value = ConvertExpression(assignment.Right);
                     
                     // Special handling for Children in initialization
-                    if (propName == "Children" && assignment.Right is InitializerExpressionSyntax childInit)
+                    if (propName == "Children")
                     {
-                        // Explicitly convert collection initializer to array
-                         value = ConvertInitializer(childInit);
+                        if (assignment.Right is InitializerExpressionSyntax childInit)
+                        {
+                            value = ConvertInitializer(childInit);
+                            // Handle empty {} with any whitespace as array for Children
+                            var trimmedValue = value?.Trim();
+                            if (string.IsNullOrEmpty(trimmedValue) || (trimmedValue.StartsWith("{") && trimmedValue.EndsWith("}") && string.IsNullOrWhiteSpace(trimmedValue.Substring(1, trimmedValue.Length - 2))))
+                                value = "[]";
+                        }
+                        else 
+                        {
+                             var trimmedValue = value?.Trim();
+                             if (string.IsNullOrEmpty(trimmedValue) || (trimmedValue.StartsWith("{") && trimmedValue.EndsWith("}") && string.IsNullOrWhiteSpace(trimmedValue.Substring(1, trimmedValue.Length - 2))))
+                                value = "[]";
+                        }
                     }
                     
                     props.Add($"{ToCamelCase(propName)}: {value}");

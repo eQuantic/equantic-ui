@@ -304,8 +304,6 @@ public class TypeScriptEmitter
             "HtmlNode" or "HtmlStyle" or "ServiceKey" or "ServiceProvider" => true,
             "Component" or "BuildContext" or "HtmlElement" or "InputComponent" => true,
             "StatefulComponent" or "StatelessComponent" or "ComponentState" => true,
-            "Container" or "Column" or "Row" or "Stack" or "Flex" => true,
-            "Text" or "Heading" or "Button" or "Checkbox" or "TextInput" or "Select" => true,
             _ => false
         };
     }

@@ -76,6 +76,17 @@ export class Reconciler {
         return;
       }
 
+      // Comment nodes
+      if (newNode.tag === '#comment') {
+        const text = newNode.attributes?.text || '';
+        if (currentElement instanceof Comment) {
+          if (currentElement.textContent !== text) {
+            currentElement.textContent = text;
+          }
+        }
+        return;
+      }
+
       // Element nodes
       if (currentElement instanceof HTMLElement) {
         this.updateAttributes(currentElement, oldNode.attributes || {}, newNode.attributes || {});
@@ -99,6 +110,11 @@ export class Reconciler {
     // Text node
     if (node.tag === '#text') {
       return document.createTextNode(node.textContent || '');
+    }
+
+    // Comment node
+    if (node.tag === '#comment') {
+      return document.createComment(node.attributes?.text || '');
     }
 
     // Create element

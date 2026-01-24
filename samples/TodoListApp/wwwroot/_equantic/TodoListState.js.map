@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "sources": ["../../obj/eQuantic/ts/TodoListState.ts"],
+  "sourcesContent": [
+    "import { BuildContext, Component, ComponentState, HtmlElement } from \"@equantic/runtime\";\n\nexport class TodoListState extends ComponentState<TodoList> {\n}\n\n"
+  ],
+  "mappings": "AAAA,8CAEO,MAAM,sBAAsB,cAAyB,CAC5D",
+  "debugId": "99423CBC5BF3279764756E2164756E21",
+  "names": []
+}
