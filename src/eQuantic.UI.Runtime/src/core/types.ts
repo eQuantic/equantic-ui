@@ -122,31 +122,22 @@ export abstract class Component implements IComponent {
     return attrs;
   }
 
-  private static readonly EVENT_MAP: Record<string, string> = {
-    'onClick': 'click',
-    'onDoubleClick': 'dblclick',
-    'onFocus': 'focus',
-    'onBlur': 'blur',
-    'onMouseEnter': 'mouseenter',
-    'onMouseLeave': 'mouseleave',
-    'onMouseDown': 'mousedown',
-    'onMouseUp': 'mouseup',
-    'onKeyDown': 'keydown',
-    'onKeyUp': 'keyup',
-    'onKeyPress': 'keypress',
-    'onChange': 'change',
-    'onInput': 'input',
-    'onSubmit': 'submit',
-  };
-
   protected buildEvents(): Record<string, EventHandler> {
     const events: Record<string, EventHandler> = {};
-    for (const [prop, eventName] of Object.entries(Component.EVENT_MAP)) {
-      const handler = (this as any)[prop];
-      if (handler && typeof handler === 'function') {
-        events[eventName] = handler as EventHandler;
+    
+    // Dynamic discovery of events (all props starting with 'on')
+    for (const prop of Object.keys(this)) {
+      if (prop.startsWith('on') && prop.length > 2) {
+        // e.g. onClick -> click, onMouseEnter -> mouseenter
+        const eventName = prop.substring(2).toLowerCase();
+        
+        const handler = (this as any)[prop];
+        if (handler && typeof handler === 'function') {
+           events[eventName] = handler as EventHandler;
+        }
       }
     }
+    
     return events;
   }
 }

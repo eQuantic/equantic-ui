@@ -50,6 +50,8 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<AnyStrategy>();
         _strategyRegistry.Register<EnumStrategy>();
         _strategyRegistry.Register<NullableStrategy>();
+        _strategyRegistry.Register<TupleExpressionStrategy>();
+        _strategyRegistry.Register<GuidTypeStrategy>();
         _strategyRegistry.Register<NamespaceRemovalStrategy>();
         
         // LINQ Strategies

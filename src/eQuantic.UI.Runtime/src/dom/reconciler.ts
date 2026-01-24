@@ -157,17 +157,7 @@ export class Reconciler {
     for (const [eventName, handler] of Object.entries(events)) {
       if (!handler) continue;
 
-      const wrappedHandler = (e: Event) => {
-        if (eventName === 'change' || eventName === 'input') {
-          const target = e.target as HTMLInputElement;
-          const value = target.type === 'checkbox' ? target.checked : target.value;
-          (handler as (value: any) => void)(value);
-        } else if (eventName === 'click') {
-          (handler as () => void)();
-        } else {
-          handler(e);
-        }
-      };
+      const wrappedHandler = this.createEventHandler(eventName, handler);
 
       element.addEventListener(eventName, wrappedHandler);
 
@@ -191,13 +181,7 @@ export class Reconciler {
     // Remove old event listeners
     for (const eventName of Object.keys(oldEvents)) {
       if (!(eventName in newEvents)) {
-        const listener = this.eventListeners.find(
-          (l) => l.element === element && l.eventName === eventName
-        );
-        if (listener) {
-          element.removeEventListener(eventName, listener.handler);
-          this.eventListeners = this.eventListeners.filter((l) => l !== listener);
-        }
+        this.removeEventListener(element, eventName);
       }
     }
 
@@ -208,28 +192,11 @@ export class Reconciler {
       // If handler changed, remove old and add new
       if (handler !== oldHandler) {
         // Remove old
-        const oldListener = this.eventListeners.find(
-          (l) => l.element === element && l.eventName === eventName
-        );
-        if (oldListener) {
-          element.removeEventListener(eventName, oldListener.handler);
-          this.eventListeners = this.eventListeners.filter((l) => l !== oldListener);
-        }
+        this.removeEventListener(element, eventName);
 
         // Add new
         if (handler) {
-          const wrappedHandler = (e: Event) => {
-            if (eventName === 'change' || eventName === 'input') {
-              const target = e.target as HTMLInputElement;
-              const value = target.type === 'checkbox' ? target.checked : target.value;
-              (handler as (value: any) => void)(value);
-            } else if (eventName === 'click') {
-              (handler as () => void)();
-            } else {
-              handler(e);
-            }
-          };
-
+          const wrappedHandler = this.createEventHandler(eventName, handler);
           element.addEventListener(eventName, wrappedHandler);
 
           this.eventListeners.push({
@@ -240,6 +207,86 @@ export class Reconciler {
         }
       }
     }
+  }
+
+  /**
+   * Safely remove an event listener from tracking and DOM
+   */
+  private removeEventListener(element: HTMLElement, eventName: string): void {
+    const listener = this.eventListeners.find(
+      (l) => l.element === element && l.eventName === eventName
+    );
+    if (listener) {
+      element.removeEventListener(eventName, listener.handler);
+      this.eventListeners = this.eventListeners.filter((l) => l !== listener);
+    }
+  }
+
+  /**
+   * Create a standardized event handler wrapper
+   */
+  private createEventHandler(eventName: string, handler: EventHandler): (e: Event) => void {
+    return (e: Event) => {
+      // 1. Value Change Events (Input, Change)
+      if (eventName === 'change' || eventName === 'input') {
+        const value = this.extractEventValue(e);
+        (handler as (value: any) => void)(value);
+        return;
+      } 
+      
+      // 2. Void Events (Click, Submit) - typically often defined as Action() not Action(e)
+      // We assume if it's a void C# action, we don't pass arguments, 
+      // but TypeScript handler might be (e) => ... or () => ...
+      // For safety, generic handlers pass the event.
+      // Specific simplified handlers (like typical button clicks) might just be invoked.
+      if (eventName === 'click' || eventName === 'submit') {
+         // Try to detect if handler expects args? Hard in JS.
+         // Pass event if it's a standard handler, but C# generation usually expects no args for simple Actions.
+         // However, our unified type EventHandler might be Function.
+         // Let's pass 'e' for general correctness, C# wrappers/bridging usually ignore extra args if not mapped.
+         // BUT existing logic used: (handler as () => void)();
+         // Let's keep that pattern for click for now to avoid breaking existing void callbacks.
+         (handler as any)(); 
+         return;
+      }
+
+      // 3. General Events
+      handler(e);
+    };
+  }
+
+  /**
+   * Extract meaningful value from an event target
+   */
+  private extractEventValue(e: Event): any {
+    const target = e.target as HTMLElement;
+
+    if (target instanceof HTMLInputElement) {
+      if (target.type === 'checkbox') {
+        return target.checked;
+      }
+      if (target.type === 'number') {
+        return target.valueAsNumber; // Native number support
+      }
+      if (target.type === 'file') {
+        return target.files; // File support
+      }
+      return target.value;
+    }
+
+    if (target instanceof HTMLTextAreaElement) {
+      return target.value;
+    }
+
+    if (target instanceof HTMLSelectElement) {
+      if (target.multiple) {
+        return Array.from(target.selectedOptions).map(opt => opt.value);
+      }
+      return target.value;
+    }
+
+    // Custom elements or contenteditable could go here
+    return (target as any).value;
   }
 
   /**

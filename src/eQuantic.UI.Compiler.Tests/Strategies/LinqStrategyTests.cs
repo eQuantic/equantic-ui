@@ -64,4 +64,35 @@ public class LinqStrategyTests
         // For simplicity, let's assume valid int subtraction for Id
         result.Should().Contain(".sort(");
     }
+    [Fact]
+    public void Chained_Calls_Respect_Order()
+    {
+        // list.Where(x => x.Active).OrderBy(x => x.Name).Select(x => x.Id)
+        var result = TestHelper.ConvertExpression("list.Where(x => x.Active).OrderBy(x => x.Name).Select(x => x.Id)");
+        
+        // Check structural correctness of the chain
+        result.Should().StartWith("list.filter((x) => x.active)");
+        result.Should().Contain(".sort(");
+        result.Should().EndWith(".map((x) => x.id)");
+    }
+
+    [Fact]
+    public void Nested_Lambdas_Recurse_Correctly()
+    {
+        // list.Select(u => u.Orders.Where(o => o.Total > 100))
+        var result = TestHelper.ConvertExpression("list.Select(u => u.Orders.Where(o => o.Total > 100))");
+        
+        // This validates that the inner .Where() is correctly converted inside the .Select() callback
+        result.Should().Be("list.map((u) => u.orders.filter((o) => o.total > 100))");
+    }
+
+    [Fact]
+    public void Complex_Predicate_With_Nested_Scope()
+    {
+        // list.Where(x => x.Active && otherList.Any(y => y.Id == x.Id))
+        var result = TestHelper.ConvertExpression("list.Where(x => x.Active && otherList.Any(y => y.Id == x.Id))");
+        
+        // This validates that variable 'x' from outer scope is accessible in inner 'Any'
+        result.Should().Be("list.filter((x) => x.active && otherList.some((y) => y.id === x.id))");
+    }
 }

@@ -19,9 +19,17 @@ public static class TestHelper
             using System.Linq;
             using System.Collections.Generic;
             
+            public class Order {{
+                public int Id {{ get; set; }}
+                public decimal Total {{ get; set; }}
+            }}
+
             public class TestClass {{
                 public List<TestClass> list {{ get; set; }}
+                public List<TestClass> otherList {{ get; set; }}
+                public List<Order> Orders {{ get; set; }}
                 public int Id {{ get; set; }}
+                public string Name {{ get; set; }}
                 public bool Active {{ get; set; }}
                 
                 public void Method() {{

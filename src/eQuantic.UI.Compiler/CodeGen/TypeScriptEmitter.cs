@@ -181,7 +181,7 @@ public class TypeScriptEmitter
 
                     c.Method(ToCamelCase(action.MethodName), paramsList, true, () => 
                     {
-                        c.Raw($"return await getServerActionsClient().invoke('{component.Name}/{action.MethodName}', [{argsList}])");
+                        c.Raw($"return await getServerActionsClient().invoke('{action.ActionId}', [{argsList}])");
                     });
                 }
             });

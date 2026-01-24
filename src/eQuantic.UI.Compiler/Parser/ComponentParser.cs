@@ -169,16 +169,31 @@ public class ComponentParser
         
         foreach (var method in methods)
         {
-            var hasServerAction = method.AttributeLists
+            var serverActionAttr = method.AttributeLists
                 .SelectMany(al => al.Attributes)
-                .Any(a => a.Name.ToString() == "ServerAction" || a.Name.ToString() == "ServerActionAttribute");
+                .FirstOrDefault(a => a.Name.ToString() == "ServerAction" || a.Name.ToString() == "ServerActionAttribute");
             
-            if (hasServerAction)
+            if (serverActionAttr != null)
             {
+                string actionName = method.Identifier.Text;
+                
+                // Check for Name parameter
+                if (serverActionAttr.ArgumentList != null)
+                {
+                    foreach (var arg in serverActionAttr.ArgumentList.Arguments)
+                    {
+                        if (arg.NameEquals?.Name.ToString() == "Name")
+                        {
+                            actionName = arg.Expression.ToString().Trim('"');
+                            break;
+                        }
+                    }
+                }
+
                 var actionInfo = new ServerActionInfo
                 {
                     MethodName = method.Identifier.Text,
-                    ActionId = $"{definition.Name}/{method.Identifier.Text}",
+                    ActionId = $"{definition.Name}/{actionName}",
                     ReturnType = method.ReturnType.ToString(),
                     IsAsync = method.Modifiers.Any(m => m.ValueText == "async")
                 };
