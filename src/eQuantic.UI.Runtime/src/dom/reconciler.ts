@@ -78,9 +78,9 @@ export class Reconciler {
 
       // Element nodes
       if (currentElement instanceof HTMLElement) {
-        this.updateAttributes(currentElement, oldNode.attributes, newNode.attributes);
-        this.updateEventListeners(currentElement, oldNode.events, newNode.events);
-        this.reconcileChildren(currentElement, oldNode.children, newNode.children);
+        this.updateAttributes(currentElement, oldNode.attributes || {}, newNode.attributes || {});
+        this.updateEventListeners(currentElement, oldNode.events || {}, newNode.events || {});
+        this.reconcileChildren(currentElement, oldNode.children || [], newNode.children || []);
       }
     }
   }
@@ -115,7 +115,7 @@ export class Reconciler {
     this.attachEventListeners(element, node.events);
 
     // Render children
-    for (const child of node.children) {
+    for (const child of (node.children || [])) {
       element.appendChild(this.createDomElement(child));
     }
 

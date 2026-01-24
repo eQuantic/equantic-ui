@@ -374,9 +374,21 @@ public class CSharpToJsConverter
              var caller = ConvertExpression(memAccess.Expression);
              
              // Special case: Any() without predicate → length > 0
-             if (targetMethod == "Any" && string.IsNullOrEmpty(args))
+             if (methodName == "Any" && string.IsNullOrEmpty(args))
              {
                  return $"{caller}.length > 0";
+             }
+             
+             // Special case: Count() → length
+             if (methodName == "Count" && string.IsNullOrEmpty(args))
+             {
+                 return $"{caller}.length";
+             }
+             
+             // Special case: First() or FirstOrDefault() without predicate → [0]
+             if ((methodName == "First" || methodName == "FirstOrDefault") && string.IsNullOrEmpty(args))
+             {
+                 return $"{caller}[0]";
              }
 
              // Map common LINQ/Collection methods to JS
