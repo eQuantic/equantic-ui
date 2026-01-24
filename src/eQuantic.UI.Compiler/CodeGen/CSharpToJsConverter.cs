@@ -201,6 +201,12 @@ public class CSharpToJsConverter
         
         // Map 'Component' property (in State classes) to 'this._component'
         if (name == "Component") return "this._component";
+
+        // Map 'Console' to global 'console'
+        if (name == "Console") return "console";
+        
+        // Map 'Console' to global 'console'
+        if (name == "Console") return "console";
         
         // Convert private field access or PascalCase properties to this.camelCase
         if (name.StartsWith("_"))
@@ -373,6 +379,11 @@ public class CSharpToJsConverter
         {
              var caller = ConvertExpression(memAccess.Expression);
              
+             if (methodName == "WriteLine" && (caller == "Console" || caller == "console"))
+             {
+                 return $"console.log({args})";
+             }
+
              // Special case: Any() without predicate → length > 0
              if (methodName == "Any" && string.IsNullOrEmpty(args))
              {

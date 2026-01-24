@@ -49,10 +49,10 @@ public class TypeScriptEmitter
                 if (component.IsPrimitive)
                 {
                     // Emit properties for primitive
-                    foreach (var prop in component.Methods.Where(m => m.SyntaxNode == null))
-                    {
-                        c.Property(ToCamelCase(prop.Name), CSharpTypeToTypeScript(prop.ReturnType), true);
-                    }
+                    // WE DO NOT EMIT PROPERTIES AS FIELDS for primitives.
+                    // This is because we rely on the base Component constructor to Object.assign(this, props).
+                    // If we emit 'fieldName;', it initializes to undefined after super(), overwriting the assigned value.
+                    // Only emit methods and constructor.
 
                     // Emit constructor for primitive
                     // ALWAYS accept props and pass to super, even if C# constructor has no params
