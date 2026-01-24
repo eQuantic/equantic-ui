@@ -373,6 +373,12 @@ public class CSharpToJsConverter
         {
              var caller = ConvertExpression(memAccess.Expression);
              
+             // Special case: Any() without predicate → length > 0
+             if (targetMethod == "Any" && string.IsNullOrEmpty(args))
+             {
+                 return $"{caller}.length > 0";
+             }
+
              // Map common LINQ/Collection methods to JS
              var jsMethod = targetMethod switch
              {
