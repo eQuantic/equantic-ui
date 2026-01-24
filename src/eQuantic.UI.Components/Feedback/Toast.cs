@@ -19,7 +19,7 @@ public class Toast : HtmlElement
 {
     public new string? Title { get; set; }
     public string? Message { get; set; }
-    public AlertVariant Variant { get; set; } = AlertVariant.Info;
+    public AlertType Variant { get; set; } = AlertType.Info;
     public bool AutoHide { get; set; } = true;
     public int DelayMs { get; set; } = 5000;
     public Action? OnClose { get; set; }

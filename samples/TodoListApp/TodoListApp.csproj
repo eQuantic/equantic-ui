@@ -4,17 +4,19 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <!-- Simulation Hack: Hardcode path because Pkg property generation is flaky in local
+        restore -->
+        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.osx64/1.0.0-dev/tools/bun/bun-darwin.zip</BunZipPath>
     </PropertyGroup>
 
-    <!-- eQuantic.UI SDK integration (inherits Web SDK) -->
-    <Import Project="..\..\src\eQuantic.UI.Sdk\Sdk\Sdk.props" />
-
     <ItemGroup>
-        <ProjectReference Include="..\..\src\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
-        <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
-        <ProjectReference Include="..\..\src\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
+        <PackageReference Include="eQuantic.UI.Core" Version="1.0.0-dev" />
+        <PackageReference Include="eQuantic.UI.Components" Version="1.0.0-dev" />
+        <PackageReference Include="eQuantic.UI.Server" Version="1.0.0-dev" />
+        <PackageReference Include="eQuantic.UI.Sdk" Version="1.0.0-dev" PrivateAssets="all" />
+        <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="1.0.0-dev"
+            GeneratePathProperty="true" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+        <PackageReference Include="eQuantic.UI.Tailwind" Version="1.0.0-dev" PrivateAssets="all" />
     </ItemGroup>
-
-    <Import Project="..\..\src\eQuantic.UI.Sdk\Sdk\Sdk.targets" />
 
 </Project>

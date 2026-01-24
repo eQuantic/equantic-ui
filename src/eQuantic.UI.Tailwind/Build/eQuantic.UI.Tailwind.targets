@@ -1,0 +1,20 @@
+<Project>
+
+    <Target Name="BuildCSS" AfterTargets="CompileEQuanticUI" DependsOnTargets="ResolveBunPath">
+        <PropertyGroup>
+            <TailwindInput>./src/styles.css</TailwindInput>
+            <TailwindOutput>./wwwroot/css/app.css</TailwindOutput>
+            <!-- Use standard glob pattern -->
+            <ContentPattern>./wwwroot/_equantic/**/*.js</ContentPattern>
+        </PropertyGroup>
+
+        <!-- Use embedded Bun to run Tailwind CLI (True Zero-Config) -->
+        <!-- The StackOverflow link confirms this works with the official CLI. The previous error
+        was likely due to @next version. -->
+        <Message Text="eQuantic.UI.Tailwind: Generating CSS (via Bun)..." Importance="High" />
+        <MakeDir Directories="./wwwroot/_equantic" />
+        <Exec
+            Command="&quot;$(BunPath)&quot; x @tailwindcss/cli@latest -i $(TailwindInput) -o $(TailwindOutput) --content &quot;$(ContentPattern)&quot;" />
+    </Target>
+
+</Project>

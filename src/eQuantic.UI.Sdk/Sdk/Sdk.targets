@@ -95,7 +95,14 @@
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' != ''">
         <PropertyGroup>
-            <_StandardComponentsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Components</_StandardComponentsDir>
+            <!-- Try package location first, then dev fallback -->
+            <_PkgComponentsDir>$(MSBuildThisFileDirectory)../tools/StandardComponents</_PkgComponentsDir>
+            <_DevComponentsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Components</_DevComponentsDir>
+
+            <_StandardComponentsDir Condition="Exists('$(_PkgComponentsDir)')">$(_PkgComponentsDir)</_StandardComponentsDir>
+            <_StandardComponentsDir
+                Condition="'$(_StandardComponentsDir)' == '' And Exists('$(_DevComponentsDir)')">
+                $(_DevComponentsDir)</_StandardComponentsDir>
         </PropertyGroup>
         <Message Text="eQuantic.UI: Compiling components..." Importance="high" />
         <MakeDir Directories="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)" />

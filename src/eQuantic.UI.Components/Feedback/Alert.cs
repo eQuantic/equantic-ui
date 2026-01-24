@@ -12,7 +12,7 @@ public enum AlertType
 
 public class Alert : StatelessComponent
 {
-    public string Title { get; set; } = string.Empty;
+    public new string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
     public AlertType Type { get; set; } = AlertType.Info;
 

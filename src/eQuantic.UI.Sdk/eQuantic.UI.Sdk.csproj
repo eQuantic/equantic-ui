@@ -11,6 +11,10 @@
 
     <ItemGroup>
         <Content Include="Sdk\**" PackagePath="Sdk" />
+        <Content Include="Sdk\Sdk.props" PackagePath="build\eQuantic.UI.Sdk.props" />
+        <Content Include="Sdk\Sdk.targets" PackagePath="build\eQuantic.UI.Sdk.targets" />
+        <!-- Embed Standard Components Source for Compiler -->
+        <Content Include="..\eQuantic.UI.Components\**\*.cs" PackagePath="tools\StandardComponents" />
     </ItemGroup>
 
     <!-- Bundle Runtimes based on OS (Meta-Packages) -->

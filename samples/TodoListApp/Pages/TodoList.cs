@@ -1,6 +1,8 @@
 using eQuantic.UI.Core;
 using eQuantic.UI.Components;
 using eQuantic.UI.Components.Inputs;
+using eQuantic.UI.Components.Surfaces;
+using eQuantic.UI.Components.Feedback;
 
 using TodoListApp.Models;
 using TodoListApp.Services;
@@ -92,7 +94,7 @@ public class TodoListState : ComponentState<TodoList>
         foreach (var todo in _todos)
         {
             todoList.Children.Add(new Row {
-                ClassName = "todo-item",
+                ClassName = "items-center p-2 border-b border-gray-100 dark:border-zinc-700",
                 Gap = "10px",
                 Children = {
                     new Checkbox {
@@ -100,11 +102,11 @@ public class TodoListState : ComponentState<TodoList>
                         OnChange = _ => { HandleToggle(todo.Id); }
                     },
                     new Text(todo.Title) {
-                        ClassName = todo.IsCompleted ? "completed" : ""
+                        ClassName = todo.IsCompleted ? "line-through text-gray-400" : "flex-1"
                     },
                     new Button {
-                        Text = "X",
-                        ClassName = "btn btn-danger btn-sm",
+                        Text = "Delete",
+                        ClassName = "px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded",
                         OnClick = () => { HandleDelete(todo.Id); }
                     }
                 }
@@ -113,27 +115,51 @@ public class TodoListState : ComponentState<TodoList>
 
         return new Container
         {
-            ClassName = "todo-container",
+            ClassName = "min-h-screen bg-gray-50 dark:bg-zinc-900 p-8 flex justify-center",
             Children = {
-                new Heading("eQuantic Todo List", 1),
-                
-                new Row {
-                    Gap = "10px",
-                    Children = {
-                        new TextInput {
-                            Value = _newTodoTitle,
-                            Placeholder = "What needs to be done?",
-                            OnInput = val => SetState(() => _newTodoTitle = val)
-                        },
-                        new Button {
-                            Text = "Add",
-                            ClassName = "btn btn-primary",
-                            OnClick = () => { HandleAdd(); }
+                new Card
+                {
+                    Width = "w-full max-w-md",
+                    Shadow = Shadow.Large,
+                    Header = new Row 
+                    { 
+                        ClassName = "items-center justify-between",
+                        Children = { 
+                            new Heading("Tasks", 2) { ClassName = "text-xl font-bold text-gray-800 dark:text-white" },
+                            new Text($"{_todos.Count(t => !t.IsCompleted)} remaining") { ClassName = "text-sm text-gray-500" }
+                        }
+                    },
+                    Body = new Column
+                    {
+                        Gap = "20px",
+                        Children = {
+                            new Alert 
+                            { 
+                                Type = AlertType.Info, 
+                                Message = "Welcome to eQuantic.UI with Tailwind!" 
+                            },
+                            
+                            new Row {
+                                Gap = "10px",
+                                Children = {
+                                    new TextInput {
+                                        Value = _newTodoTitle,
+                                        Placeholder = "New task...",
+                                        ClassName = "flex-1 px-3 py-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500",
+                                        OnInput = val => SetState(() => _newTodoTitle = val)
+                                    },
+                                    new Button {
+                                        Text = "Add",
+                                        ClassName = "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium",
+                                        OnClick = () => { HandleAdd(); }
+                                    }
+                                }
+                            },
+                             
+                            todoList
                         }
                     }
-                },
-                
-                todoList
+                }
             }
         };
     }
