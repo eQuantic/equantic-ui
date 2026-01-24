@@ -44,6 +44,12 @@ public class TypeScriptEmitter
         // Define component class
         var baseClass = component.BaseClassName ?? (component.IsPrimitive ? "HtmlElement" : (component.IsStateful ? "StatefulComponent" : "StatelessComponent"));
         
+        // Normalize base class (map InputComponent to HtmlElement for JS)
+        if (baseClass.StartsWith("InputComponent"))
+        {
+            baseClass = "HtmlElement";
+        }
+        
         _builder.Class(component.Name, baseClass, c => 
             {
                 if (component.IsPrimitive)
@@ -283,7 +289,7 @@ public class TypeScriptEmitter
         return typeName switch
         {
             "HtmlNode" or "HtmlStyle" or "ServiceKey" or "ServiceProvider" => true,
-            "Component" or "BuildContext" or "HtmlElement" => true,
+            "Component" or "BuildContext" or "HtmlElement" or "InputComponent" => true,
             "StatefulComponent" or "StatelessComponent" or "ComponentState" => true,
             _ => false
         };

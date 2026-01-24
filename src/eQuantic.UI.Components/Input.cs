@@ -8,17 +8,12 @@ namespace eQuantic.UI.Components;
 /// <summary>
 /// Text input component
 /// </summary>
-public class TextInput : HtmlElement
+public class TextInput : InputComponent<string>
 {
     /// <summary>
     /// Input type (text, password, email, etc.)
     /// </summary>
     public string Type { get; set; } = "text";
-    
-    /// <summary>
-    /// Current value
-    /// </summary>
-    public string Value { get; set; } = string.Empty;
     
     /// <summary>
     /// Placeholder text
@@ -55,16 +50,6 @@ public class TextInput : HtmlElement
     /// </summary>
     public string? AutoComplete { get; set; }
     
-    /// <summary>
-    /// Change event handler
-    /// </summary>
-    public Action<string>? OnChange { get; set; }
-    
-    /// <summary>
-    /// Input event handler (fires on every keystroke)
-    /// </summary>
-    public Action<string>? OnInput { get; set; }
-    
     /// <inheritdoc />
     public override HtmlNode Render()
     {
@@ -81,8 +66,6 @@ public class TextInput : HtmlElement
         if (AutoComplete != null) attrs["autocomplete"] = AutoComplete;
         
         var events = BuildEvents();
-        if (OnChange != null) events["change"] = OnChange;
-        if (OnInput != null) events["input"] = OnInput;
         
         return new HtmlNode
         {
@@ -93,16 +76,12 @@ public class TextInput : HtmlElement
     }
 }
 
+
 /// <summary>
 /// Text area component for multiline input
 /// </summary>
-public class TextArea : HtmlElement
+public class TextArea : InputComponent<string>
 {
-    /// <summary>
-    /// Current value
-    /// </summary>
-    public string Value { get; set; } = string.Empty;
-    
     /// <summary>
     /// Placeholder text
     /// </summary>
@@ -128,11 +107,6 @@ public class TextArea : HtmlElement
     /// </summary>
     public string? Name { get; set; }
     
-    /// <summary>
-    /// Change event handler
-    /// </summary>
-    public Action<string>? OnChange { get; set; }
-    
     /// <inheritdoc />
     public override HtmlNode Render()
     {
@@ -145,14 +119,13 @@ public class TextArea : HtmlElement
         if (Name != null) attrs["name"] = Name;
         
         var events = BuildEvents();
-        if (OnChange != null) events["change"] = OnChange;
         
         return new HtmlNode
         {
             Tag = "textarea",
             Attributes = attrs,
             Events = events,
-            Children = new List<HtmlNode> { HtmlNode.Text(Value) }
+            Children = new List<HtmlNode> { HtmlNode.Text(Value ?? string.Empty) }
         };
     }
 }

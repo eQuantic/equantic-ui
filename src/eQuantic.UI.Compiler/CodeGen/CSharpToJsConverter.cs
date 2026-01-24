@@ -8,6 +8,7 @@ using eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Special;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 using eQuantic.UI.Compiler.CodeGen.Registry;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -19,6 +20,7 @@ public class CSharpToJsConverter
 {
     private readonly TypeMappingRegistry _registry;
     private readonly StrategyRegistry _strategyRegistry;
+    private readonly StatementStrategyRegistry _statementRegistry;
     private readonly ConversionContext _context;
     private SemanticModel? _semanticModel;
 
@@ -27,6 +29,7 @@ public class CSharpToJsConverter
         _registry = new TypeMappingRegistry();
         _context = new ConversionContext { Converter = this };
         _strategyRegistry = new StrategyRegistry();
+        _statementRegistry = new StatementStrategyRegistry();
 
         RegisterStrategies();
     }
@@ -50,12 +53,22 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<WhereStrategy>();
         _strategyRegistry.Register<FirstStrategy>();
         _strategyRegistry.Register<AllStrategy>();
+        _strategyRegistry.Register<OrderByStrategy>();
         
         // Expression Strategies
         _strategyRegistry.Register<InvocationStrategy>();
         _strategyRegistry.Register<MemberAccessStrategy>();
         _strategyRegistry.Register<ObjectCreationStrategy>();
         _strategyRegistry.Register<BinaryExpressionStrategy>();
+        
+        // Statement Strategies
+        _statementRegistry.Register<IfStatementStrategy>();
+        _statementRegistry.Register<ForEachStatementStrategy>();
+        _statementRegistry.Register<ReturnStatementStrategy>();
+        _statementRegistry.Register<LocalDeclarationStrategy>();
+        _statementRegistry.Register<ExpressionStatementStrategy>();
+        _statementRegistry.Register<SwitchStatementStrategy>();
+        _statementRegistry.Register<WhileStatementStrategy>();
     }
 
     /// <summary>
@@ -198,35 +211,12 @@ public class CSharpToJsConverter
     
     private string ConvertStatement(StatementSyntax stmt)
     {
-        if (stmt is ExpressionStatementSyntax exprStmt)
+        var strategy = _statementRegistry.FindStrategy(stmt, _context);
+        if (strategy != null)
         {
-            return ConvertExpression(exprStmt.Expression) + ";";
+            return strategy.Convert(stmt, _context);
         }
-        if (stmt is ReturnStatementSyntax retStmt)
-        {
-            return "return " + (retStmt.Expression != null ? ConvertExpression(retStmt.Expression) : "") + ";";
-        }
-        if (stmt is LocalDeclarationStatementSyntax decl)
-        {
-            var variable = decl.Declaration.Variables.First();
-            var name = variable.Identifier.Text;
-            var init = variable.Initializer != null ? ConvertExpression(variable.Initializer.Value) : "null";
-            return $"let {name} = {init};";
-        }
-        if (stmt is IfStatementSyntax ifStmt)
-        {
-            var condition = ConvertExpression(ifStmt.Condition);
-            var ifTrue = ConvertStatement(ifStmt.Statement);
-            var ifFalse = ifStmt.Else != null ? " else " + ConvertStatement(ifStmt.Else.Statement) : "";
-            return $"if ({condition}) {ifTrue}{ifFalse}";
-        }
-        if (stmt is ForEachStatementSyntax foreachStmt)
-        {
-             var item = foreachStmt.Identifier.Text;
-             var collection = ConvertExpression(foreachStmt.Expression);
-             var body = ConvertStatement(foreachStmt.Statement);
-             return $"for (const {item} of {collection}) {body}";
-        }
+        
         if (stmt is BlockSyntax block)
         {
             return ConvertBlock(block);

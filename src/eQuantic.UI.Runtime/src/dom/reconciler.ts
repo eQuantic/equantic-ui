@@ -160,7 +160,8 @@ export class Reconciler {
       const wrappedHandler = (e: Event) => {
         if (eventName === 'change' || eventName === 'input') {
           const target = e.target as HTMLInputElement;
-          (handler as (value: string) => void)(target.value);
+          const value = target.type === 'checkbox' ? target.checked : target.value;
+          (handler as (value: any) => void)(value);
         } else if (eventName === 'click') {
           (handler as () => void)();
         } else {
@@ -220,7 +221,8 @@ export class Reconciler {
           const wrappedHandler = (e: Event) => {
             if (eventName === 'change' || eventName === 'input') {
               const target = e.target as HTMLInputElement;
-              (handler as (value: string) => void)(target.value);
+              const value = target.type === 'checkbox' ? target.checked : target.value;
+              (handler as (value: any) => void)(value);
             } else if (eventName === 'click') {
               (handler as () => void)();
             } else {

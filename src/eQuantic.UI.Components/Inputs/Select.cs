@@ -4,19 +4,13 @@ using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Inputs;
 
-public class Select : HtmlElement
+public class Select : InputComponent<string>
 {
     public string? Name { get; set; }
-    public string? Value { get; set; }
     public bool Multiple { get; set; }
     public bool Disabled { get; set; }
     public bool Required { get; set; }
     public List<SelectOption> Options { get; set; } = new();
-    
-    /// <summary>
-    /// Event handler for value change
-    /// </summary>
-    public Action<string>? OnChange { get; set; }
 
     public override HtmlNode Render()
     {

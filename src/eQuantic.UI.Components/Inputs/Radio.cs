@@ -4,15 +4,12 @@ using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Inputs;
 
-public class Radio : HtmlElement
+public class Radio : InputComponent<string>
 {
     public string? Name { get; set; }
-    public string? Value { get; set; }
     public bool Checked { get; set; }
     public bool Disabled { get; set; }
     public string? Label { get; set; }
-    
-    public Action<string>? OnChange { get; set; }
 
     public override HtmlNode Render()
     {
