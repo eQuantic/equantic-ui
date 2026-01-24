@@ -501,6 +501,16 @@ public class CSharpToJsConverter
         var originalExpr = memberAccess.Expression.ToString();
         var name = memberAccess.Name.Identifier.Text;
 
+        // ENUM DETECTION (simple case): Type.Member without namespace
+        // Check BEFORE any conversion - if originalExpr is simple identifier with uppercase
+        // Example: FlexWrap.Wrap, Display.Flex (when type is already imported/in scope)
+        if (!originalExpr.Contains('.') && !originalExpr.StartsWith("this.") &&
+            originalExpr.Length > 0 && char.IsUpper(originalExpr[0]) && char.IsUpper(name[0]))
+        {
+            // Convert enum member to lowercase string literal
+            return $"'{ToCamelCase(name)}'";
+        }
+
         // Generic namespace removal and enum detection
         // Handles patterns like: Company.Namespace.Type.Member
         if (originalExpr.Contains('.') && !originalExpr.StartsWith("this.") && !originalExpr.Contains('('))
