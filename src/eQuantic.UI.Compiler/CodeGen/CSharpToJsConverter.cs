@@ -504,8 +504,10 @@ public class CSharpToJsConverter
         // ENUM DETECTION (simple case): Type.Member without namespace
         // Check BEFORE any conversion - if originalExpr is simple identifier with uppercase
         // Example: FlexWrap.Wrap, Display.Flex (when type is already imported/in scope)
+        // EXCLUDE: Nullable properties (HasValue, Value)
         if (!originalExpr.Contains('.') && !originalExpr.StartsWith("this.") &&
-            originalExpr.Length > 0 && char.IsUpper(originalExpr[0]) && char.IsUpper(name[0]))
+            originalExpr.Length > 0 && char.IsUpper(originalExpr[0]) && char.IsUpper(name[0]) &&
+            name != "Value" && name != "HasValue")  // Nullable properties, not enums
         {
             // Convert enum member to lowercase string literal
             return $"'{ToCamelCase(name)}'";
