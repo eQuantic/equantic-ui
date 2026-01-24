@@ -635,6 +635,13 @@ public class CSharpToJsConverter
             return string.IsNullOrEmpty(arguments) || arguments == "[]" ? "{}" : arguments;
         }
 
+        // HtmlNode is a TypeScript interface (type-only), not a runtime class
+        // Convert: new HtmlNode { Tag = "div" } → { tag: "div" }
+        if (typeName == "HtmlNode")
+        {
+            return string.IsNullOrEmpty(arguments) ? "{}" : arguments;
+        }
+
         return $"new {typeName}({arguments})";
     }
 
