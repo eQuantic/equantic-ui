@@ -27,7 +27,11 @@ public class CSharpToJsConverter
     public CSharpToJsConverter()
     {
         _registry = new TypeMappingRegistry();
-        _context = new ConversionContext { Converter = this };
+        _context = new ConversionContext 
+        { 
+            Converter = this,
+            SemanticHelper = new SemanticHelper(null)
+        };
         _strategyRegistry = new StrategyRegistry();
         _statementRegistry = new StatementStrategyRegistry();
 
@@ -265,14 +269,14 @@ public class CSharpToJsConverter
         if (lambda is ParenthesizedLambdaExpressionSyntax parenthesized)
         {
             var parameters = string.Join(", ", parenthesized.ParameterList.Parameters.Select(p => p.Identifier.Text));
-            var body = parenthesized.Block != null ? ConvertBlock(parenthesized.Block) : ConvertExpression(parenthesized.ExpressionBody);
+            var body = parenthesized.Block != null ? ConvertBlock(parenthesized.Block) : ConvertExpression(parenthesized.ExpressionBody!);
             return $"({parameters}) => {body}";
         }
         
         if (lambda is SimpleLambdaExpressionSyntax simple)
         {
             var param = simple.Parameter.Identifier.Text;
-            var body = simple.Block != null ? ConvertBlock(simple.Block) : ConvertExpression(simple.ExpressionBody);
+            var body = simple.Block != null ? ConvertBlock(simple.Block) : ConvertExpression(simple.ExpressionBody!);
             return $"({param}) => {body}";
         }
         

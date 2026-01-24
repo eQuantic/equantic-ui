@@ -9,8 +9,8 @@ namespace eQuantic.UI.Compiler.CodeGen;
 public class ConversionContext
 {
     public SemanticModel? SemanticModel { get; set; }
-    public CSharpToJsConverter Converter { get; set; }
-    public SemanticHelper SemanticHelper { get; set; }
+    public required CSharpToJsConverter Converter { get; set; }
+    public required SemanticHelper SemanticHelper { get; set; }
 
     // Cache to avoid reprocessing the same node multiple times
     private readonly Dictionary<SyntaxNode, string> _cache = new();

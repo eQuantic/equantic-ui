@@ -30,7 +30,7 @@ public class SemanticValidator
             var symbol = _semanticModel.GetSymbolInfo(invocation).Symbol;
             if (symbol == null) continue;
 
-            var containingType = symbol.ContainingType.ToString();
+            var containingType = symbol.ContainingType?.ToDisplayString() ?? string.Empty;
 
             // Rule 1: No System.IO in Client Components
             if (containingType.StartsWith("System.IO"))

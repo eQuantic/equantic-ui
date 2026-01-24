@@ -330,7 +330,7 @@ public class TypeScriptEmitter
         
         WriteLn();
         
-        _builder.Class(component.StateClassName, "ComponentState", c =>
+        _builder.Class(component.StateClassName!, "ComponentState", c =>
         {
             // Private component reference
             c.Field("_component", component.Name);
