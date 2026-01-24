@@ -55,16 +55,53 @@ public class TypeScriptEmitter
                     }
 
                     // Emit constructor for primitive
+                    // ALWAYS accept props and pass to super, even if C# constructor has no params
+                    // This is critical for Object.assign pattern in Component base class
                     if (component.Constructors.Any())
                     {
                         var ctor = component.Constructors.OrderByDescending(c => c.Parameters.Count).First();
-                        var parameters = string.Join(", ", ctor.Parameters.Select(p => $"{p.Name}: any"));
-                        c.Constructor(parameters, () =>
+                        var hasExplicitParams = ctor.Parameters.Count > 0;
+
+                        string jsParams;
+                        if (hasExplicitParams)
                         {
-                            c.Raw("super();");
-                            foreach (var param in ctor.Parameters)
+                            // Constructor has explicit params (e.g., Heading(content, level))
+                            var paramList = string.Join(", ", ctor.Parameters.Select(p => $"{p.Name}: any"));
+                            jsParams = paramList;
+                        }
+                        else
+                        {
+                            // Constructor has no params - accept generic props for Object.assign
+                            jsParams = "props?: any";
+                        }
+
+                        c.Constructor(jsParams, () =>
+                        {
+                            // Pass props to super
+                            c.Raw(hasExplicitParams ? "super();" : "super(props);");
+
+                            // Assign explicit parameters as properties
+                            if (hasExplicitParams)
                             {
-                                c.Raw($"this.{ToCamelCase(param.Name)} = {param.Name};");
+                                foreach (var param in ctor.Parameters)
+                                {
+                                    c.Raw($"this.{ToCamelCase(param.Name)} = {param.Name};");
+                                }
+                            }
+
+                            // Execute C# constructor body (e.g., Direction = FlexDirection.Column)
+                            if (ctor.SyntaxNode?.Body != null)
+                            {
+                                var jsBody = _converter.Convert(ctor.SyntaxNode.Body);
+                                jsBody = jsBody.Trim();
+                                if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
+                                {
+                                    jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
+                                }
+                                if (!string.IsNullOrWhiteSpace(jsBody))
+                                {
+                                    c.Raw(jsBody);
+                                }
                             }
                         });
                     }
