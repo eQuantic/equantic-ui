@@ -7,14 +7,7 @@
 
 import { HtmlNode, EventHandler } from '../core/types';
 
-/**
- * Event listener tracker for cleanup
- */
-interface EventListener {
-  element: HTMLElement;
-  eventName: string;
-  handler: EventListenerOrEventListenerObject;
-}
+
 
 /**
  * Hydration result for debugging
@@ -29,7 +22,7 @@ export interface HydrationResult {
  * Reconciler manages efficient DOM updates
  */
 export class Reconciler {
-  private eventListeners: EventListener[] = [];
+  private eventListeners: WeakMap<HTMLElement, Map<string, EventHandler>> = new WeakMap();
 
   /**
    * Reconcile (diff and patch) old and new virtual DOM trees
@@ -204,19 +197,17 @@ export class Reconciler {
    * Attach event listeners to element
    */
   private attachEventListeners(element: HTMLElement, events: Record<string, EventHandler>): void {
+    const elementListeners = new Map<string, EventHandler>();
     for (const [eventName, handler] of Object.entries(events)) {
       if (!handler) continue;
 
       const wrappedHandler = this.createEventHandler(eventName, handler);
-
-      element.addEventListener(eventName, wrappedHandler);
-
-      // Track for cleanup
-      this.eventListeners.push({
-        element,
-        eventName,
-        handler: wrappedHandler,
-      });
+      element.addEventListener(eventName, wrappedHandler as unknown as EventListener);
+      elementListeners.set(eventName, wrappedHandler as unknown as EventHandler);
+    }
+    
+    if (elementListeners.size > 0) {
+       this.eventListeners.set(element, elementListeners);
     }
   }
 
@@ -228,10 +219,16 @@ export class Reconciler {
     oldEvents: Record<string, EventHandler>,
     newEvents: Record<string, EventHandler>
   ): void {
+    const elementListeners = this.eventListeners.get(element) || new Map<string, EventHandler>();
+
     // Remove old event listeners
     for (const eventName of Object.keys(oldEvents)) {
       if (!(eventName in newEvents)) {
-        this.removeEventListener(element, eventName);
+        const wrapped = elementListeners.get(eventName);
+        if (wrapped) {
+          element.removeEventListener(eventName, wrapped as unknown as EventListener);
+          elementListeners.delete(eventName);
+        }
       }
     }
 
@@ -242,33 +239,25 @@ export class Reconciler {
       // If handler changed, remove old and add new
       if (handler !== oldHandler) {
         // Remove old
-        this.removeEventListener(element, eventName);
+        const oldWrapped = elementListeners.get(eventName);
+        if (oldWrapped) {
+          element.removeEventListener(eventName, oldWrapped as unknown as EventListener);
+          elementListeners.delete(eventName);
+        }
 
         // Add new
         if (handler) {
           const wrappedHandler = this.createEventHandler(eventName, handler);
-          element.addEventListener(eventName, wrappedHandler);
-
-          this.eventListeners.push({
-            element,
-            eventName,
-            handler: wrappedHandler,
-          });
+          element.addEventListener(eventName, wrappedHandler as unknown as EventListener);
+          elementListeners.set(eventName, wrappedHandler as unknown as EventHandler);
         }
       }
     }
-  }
 
-  /**
-   * Safely remove an event listener from tracking and DOM
-   */
-  private removeEventListener(element: HTMLElement, eventName: string): void {
-    const listener = this.eventListeners.find(
-      (l) => l.element === element && l.eventName === eventName
-    );
-    if (listener) {
-      element.removeEventListener(eventName, listener.handler);
-      this.eventListeners = this.eventListeners.filter((l) => l !== listener);
+    if (elementListeners.size > 0) {
+      this.eventListeners.set(element, elementListeners);
+    } else {
+      this.eventListeners.delete(element);
     }
   }
 
@@ -364,13 +353,13 @@ export class Reconciler {
   private cleanupEventListeners(node: Node): void {
     if (node instanceof HTMLElement) {
       // Remove listeners for this element
-      this.eventListeners = this.eventListeners.filter((listener) => {
-        if (listener.element === node) {
-          node.removeEventListener(listener.eventName, listener.handler);
-          return false;
+      const elementListeners = this.eventListeners.get(node);
+      if (elementListeners) {
+        for (const [eventName, handler] of elementListeners.entries()) {
+          node.removeEventListener(eventName, handler as unknown as EventListener);
         }
-        return true;
-      });
+        this.eventListeners.delete(node);
+      }
 
       // Recursively cleanup children
       for (let i = 0; i < node.childNodes.length; i++) {
@@ -465,20 +454,19 @@ export class Reconciler {
   }
 
   /**
-   * Cleanup all event listeners
+   * Cleanup all event listeners (Reset tracking)
    */
   dispose(): void {
-    for (const listener of this.eventListeners) {
-      listener.element.removeEventListener(listener.eventName, listener.handler);
-    }
-    this.eventListeners = [];
+    // Note: WeakMap is not iterable, so we cannot manually remove all listeners from the DOM elements themselves here.
+    // However, re-initializing the map releases our references, allowing the nodes to be garbage collected.
+    this.eventListeners = new WeakMap();
   }
 
   /**
-   * Get the number of tracked event listeners (for debugging/testing)
+   * Get the number of tracked event listeners (no longer supported with WeakMap)
    */
   getEventListenerCount(): number {
-    return this.eventListeners.length;
+    return -1;
   }
 }
 
