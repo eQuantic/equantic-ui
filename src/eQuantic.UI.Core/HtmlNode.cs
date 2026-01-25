@@ -9,6 +9,11 @@ namespace eQuantic.UI.Core;
 public class HtmlNode
 {
     /// <summary>
+    /// Unique key for reconciliation optimization
+    /// </summary>
+    public string? Key { get; init; }
+
+    /// <summary>
     /// HTML tag name (div, button, input, etc.)
     /// </summary>
     public required string Tag { get; init; }

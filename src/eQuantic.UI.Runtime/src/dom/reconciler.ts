@@ -113,7 +113,7 @@ export class Reconciler {
    * Check if nodes are different types
    */
   private isDifferentNodeType(oldNode: HtmlNode, newNode: HtmlNode): boolean {
-    return oldNode.tag !== newNode.tag;
+    return oldNode.tag !== newNode.tag || oldNode.key !== newNode.key;
   }
 
   /**
@@ -347,22 +347,14 @@ export class Reconciler {
     oldChildren: HtmlNode[],
     newChildren: HtmlNode[]
   ): void {
-    const maxLength = Math.max(oldChildren.length, newChildren.length);
+    const safeOld = oldChildren || [];
+    const safeNew = newChildren || [];
+    const maxLength = Math.max(safeOld.length, safeNew.length);
 
     for (let i = 0; i < maxLength; i++) {
-      const oldChild = oldChildren[i] || null;
-      const newChild = newChildren[i] || null;
-
-      if (!newChild && oldChild) {
-        // Remove extra old children
-        const childElement = parentElement.childNodes[i];
-        if (childElement) {
-          this.cleanupEventListeners(childElement);
-          parentElement.removeChild(childElement);
-        }
-      } else if (newChild) {
+        const oldChild = safeOld[i];
+        const newChild = safeNew[i];
         this.reconcile(parentElement, oldChild, newChild, i);
-      }
     }
   }
 

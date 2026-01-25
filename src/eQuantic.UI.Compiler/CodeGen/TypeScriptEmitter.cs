@@ -525,6 +525,10 @@ public class TypeScriptEmitter
     {
         Write($"new {tree.ComponentType}({{");
         
+        // Extract Key if present. Keys are special and should be top-level in React-like systems,
+        // but here we are passing props object to constructor.
+        // We need to ensure that if "Key" is in Properties, it is emitted as "key".
+        
         var props = tree.Properties.Where(p => p.Key != "Children").ToList();
         
         if (props.Count > 0 || tree.Children.Count > 0)
@@ -535,6 +539,8 @@ public class TypeScriptEmitter
             foreach (var (propName, propValue) in props)
             {
                 var tsPropName = ToCamelCase(propName);
+                if (propName == "Key") tsPropName = "key"; // Special casing for Key
+
                 var tsValue = EmitPropertyValue(propValue);
                 WriteLn($"{tsPropName}: {tsValue},");
             }
@@ -588,7 +594,10 @@ public class TypeScriptEmitter
         var props = tree.Properties.Where(p => p.Key != "Children").ToList();
         foreach (var (propName, propValue) in props)
         {
-            sb.Append($" {ToCamelCase(propName)}: {EmitPropertyValue(propValue)},");
+            var tsPropName = ToCamelCase(propName);
+            if (propName == "Key") tsPropName = "key";
+            
+            sb.Append($" {tsPropName}: {EmitPropertyValue(propValue)},");
         }
         
         if (tree.Children.Count > 0)

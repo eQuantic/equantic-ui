@@ -87,6 +87,7 @@ public class CSharpToJsConverter
         _statementRegistry.Register<ExpressionStatementStrategy>();
         _statementRegistry.Register<SwitchStatementStrategy>();
         _statementRegistry.Register<WhileStatementStrategy>();
+        _statementRegistry.Register<TryStatementStrategy>();
     }
 
     /// <summary>

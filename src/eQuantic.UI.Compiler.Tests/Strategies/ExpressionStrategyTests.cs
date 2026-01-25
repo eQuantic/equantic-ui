@@ -16,14 +16,14 @@ public class ExpressionStrategyTests
     public void ListAdd_MapsTo_Push()
     {
         var result = TestHelper.ConvertExpression("list.Add(item)");
-        result.Should().Be("list.push(item)");
+        result.Should().Be("this.list.push(item)");
     }
 
     [Fact]
     public void StringJoin_MapsTo_Join()
     {
         var result = TestHelper.ConvertExpression("string.Join(\", \", list)");
-        result.Should().Be("list.join(', ')");
+        result.Should().Be("this.list.join(', ')");
     }
 
     [Fact]
@@ -44,6 +44,13 @@ public class ExpressionStrategyTests
     public void BinaryExpression_Equality_MapsTo_StrictEquality()
     {
         var result = TestHelper.ConvertExpression("a == b");
+        // 'a' and 'b' are not properties in TestHelper by default, 
+        // but if TestHelper context treats unresolvable identifiers as local vars, they stay 'a' and 'b'.
+        // However, if they resolve to nothing in SemanticModel, fallback might apply.
+        // Let's assume TestHelper setup makes them locals or parameters in some scope?
+        // Actually TestHelper wraps code in a method. 'a' and 'b' are implicitly locals if not defined as props.
+        // Wait, TestHelper wrapper class does NOT define 'a' and 'b'. 
+        // So they are unknown. Heuristic: lowercase start -> local var -> no this.
         result.Should().Be("a === b");
     }
     
@@ -51,6 +58,8 @@ public class ExpressionStrategyTests
     public void MemberAccess_Length_MapsTo_Length()
     {
         var result = TestHelper.ConvertExpression("str.Length");
+        // str is unknown -> local -> str
+        // Length -> length (standard mapping)
         result.Should().Be("str.length");
     }
 
@@ -58,7 +67,6 @@ public class ExpressionStrategyTests
     public void NullCoalescing_MapsTo_QuestionQuestion()
     {
         var result = TestHelper.ConvertExpression("a ?? b");
-        // Modern JS supports ??
         result.Should().Be("a ?? b");
     }
     [Fact]
@@ -77,7 +85,8 @@ public class ExpressionStrategyTests
     public void Any_NoArgs_MapsToLengthGreaterThanZeroWithParens()
     {
         var result = TestHelper.ConvertExpression("list.Any()");
-        result.Should().Be("(list.length > 0)");
+        // list is a property in TestHelper
+        result.Should().Be("(this.list.length > 0)");
     }
 
     [Fact]

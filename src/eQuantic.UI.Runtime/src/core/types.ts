@@ -14,6 +14,7 @@ export interface IComponent {
 }
 
 export interface HtmlNode {
+  key?: string;
   tag: string;
   attributes: Record<string, string | undefined>;
   events: Record<string, EventHandler>;
