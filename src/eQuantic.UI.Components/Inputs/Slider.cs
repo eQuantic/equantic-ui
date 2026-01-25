@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Inputs;
@@ -9,20 +10,32 @@ public class Slider : InputComponent<double>
     public double Max { get; set; } = 100;
     public double Step { get; set; } = 1;
 
-    public override HtmlNode Render()
+    public override IComponent Build(RenderContext context)
     {
-        var attrs = BuildAttributes();
-        attrs["type"] = "range";
-        attrs["min"] = Min.ToString();
-        attrs["max"] = Max.ToString();
-        attrs["step"] = Step.ToString();
-        attrs["value"] = Value.ToString();
-        
-        return new HtmlNode
+        var attrs = new Dictionary<string, string>
         {
-            Tag = "input",
-            Attributes = attrs,
-            Events = BuildEvents()
+            ["type"] = "range",
+            ["min"] = Min.ToString(),
+            ["max"] = Max.ToString(),
+            ["step"] = Step.ToString(),
+            ["class"] = ClassName
+        };
+        
+        attrs["value"] = Value.ToString();
+
+        var events = BuildEvents();
+        if (OnChange != null)
+        {
+             // Map OnChange logic if needed, or rely on bind
+             events["change"] = OnChange;
+             events["input"] = OnChange; // Sliders often update on input
+        }
+
+        return new DynamicElement
+        {
+            TagName = "input",
+            CustomAttributes = attrs,
+            CustomEvents = events
         };
     }
 }

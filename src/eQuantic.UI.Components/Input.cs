@@ -6,57 +6,54 @@ using eQuantic.UI.Core.Events;
 namespace eQuantic.UI.Components;
 
 /// <summary>
+/// Base class for all input components
+/// </summary>
+/// <typeparam name="TValue">The type of the input value</typeparam>
+public abstract class InputComponent<TValue> : StatelessComponent
+{
+    /// <summary>
+    /// Current value
+    /// </summary>
+    public TValue? Value { get; set; }
+
+    /// <summary>
+    /// Change event handler
+    /// </summary>
+    public Action<TValue>? OnChange { get; set; }
+
+    /// <summary>
+    /// Input event handler
+    /// </summary>
+    public Action<TValue>? OnInput { get; set; }
+}
+
+/// <summary>
 /// Text input component
 /// </summary>
 public class TextInput : InputComponent<string>
 {
-    /// <summary>
-    /// Input type (text, password, email, etc.)
-    /// </summary>
     public string Type { get; set; } = "text";
-    
-    /// <summary>
-    /// Placeholder text
-    /// </summary>
     public string? Placeholder { get; set; }
-    
-    /// <summary>
-    /// Whether the input is disabled
-    /// </summary>
     public bool Disabled { get; set; }
-    
-    /// <summary>
-    /// Whether the input is read-only
-    /// </summary>
     public bool ReadOnly { get; set; }
-    
-    /// <summary>
-    /// Whether the input is required
-    /// </summary>
     public bool Required { get; set; }
-    
-    /// <summary>
-    /// Name attribute for forms
-    /// </summary>
     public string? Name { get; set; }
-    
-    /// <summary>
-    /// Maximum length
-    /// </summary>
     public int? MaxLength { get; set; }
-    
-    /// <summary>
-    /// Autocomplete attribute
-    /// </summary>
     public string? AutoComplete { get; set; }
     
-    /// <inheritdoc />
-    public override HtmlNode Render()
+    public override IComponent Build(RenderContext context)
     {
-        var attrs = BuildAttributes();
-        attrs["type"] = Type;
-        attrs["value"] = Value;
-        
+        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var inputTheme = theme?.Input;
+        var baseStyle = inputTheme?.Base ?? "";
+
+        var attrs = new Dictionary<string, string>
+        {
+            ["type"] = Type,
+            ["class"] = $"{baseStyle} {ClassName}"
+        };
+
+        if (Value != null) attrs["value"] = Value;
         if (Placeholder != null) attrs["placeholder"] = Placeholder;
         if (Disabled) attrs["disabled"] = "true";
         if (ReadOnly) attrs["readonly"] = "true";
@@ -66,51 +63,45 @@ public class TextInput : InputComponent<string>
         if (AutoComplete != null) attrs["autocomplete"] = AutoComplete;
         
         var events = BuildEvents();
+        // InputComponent handles OnChange/OnInput via implicit binding or State handling usually
+        // But here we need to map the Actions to the dictionary keys expected by Runtime.
+        // Wait, BuildEvents in HtmlElement usually maps OnClick. 
+        // InputComponent adds OnChange/OnInput properties but BuildEvents doesn't know them unless override.
+        // Or we map them manually here.
         
-        return new HtmlNode
+        if (OnChange != null) events["change"] = OnChange;
+        if (OnInput != null) events["input"] = OnInput;
+
+        return new DynamicElement
         {
-            Tag = "input",
-            Attributes = attrs,
-            Events = events
+            TagName = "input",
+            CustomAttributes = attrs,
+            CustomEvents = events
         };
     }
 }
-
 
 /// <summary>
 /// Text area component for multiline input
 /// </summary>
 public class TextArea : InputComponent<string>
 {
-    /// <summary>
-    /// Placeholder text
-    /// </summary>
     public string? Placeholder { get; set; }
-    
-    /// <summary>
-    /// Number of visible rows
-    /// </summary>
     public int? Rows { get; set; }
-    
-    /// <summary>
-    /// Whether the textarea is disabled
-    /// </summary>
     public bool Disabled { get; set; }
-    
-    /// <summary>
-    /// Whether the textarea is read-only
-    /// </summary>
     public bool ReadOnly { get; set; }
-    
-    /// <summary>
-    /// Name attribute for forms
-    /// </summary>
     public string? Name { get; set; }
     
-    /// <inheritdoc />
-    public override HtmlNode Render()
+    public override IComponent Build(RenderContext context)
     {
-        var attrs = BuildAttributes();
+        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var inputTheme = theme?.Input;
+        var baseStyle = inputTheme?.Base ?? "";
+
+        var attrs = new Dictionary<string, string>
+        {
+            ["class"] = $"{baseStyle} {ClassName}"
+        };
         
         if (Placeholder != null) attrs["placeholder"] = Placeholder;
         if (Rows.HasValue) attrs["rows"] = Rows.Value.ToString();
@@ -119,13 +110,21 @@ public class TextArea : InputComponent<string>
         if (Name != null) attrs["name"] = Name;
         
         var events = BuildEvents();
+        if (OnChange != null) events["change"] = OnChange;
+        if (OnInput != null) events["input"] = OnInput;
         
-        return new HtmlNode
+        var element = new DynamicElement
         {
-            Tag = "textarea",
-            Attributes = attrs,
-            Events = events,
-            Children = new List<HtmlNode> { HtmlNode.Text(Value ?? string.Empty) }
+            TagName = "textarea",
+            CustomAttributes = attrs,
+            CustomEvents = events
         };
+        
+        if (Value != null)
+        {
+            element.Children.Add(new Text(Value));
+        }
+        
+        return element;
     }
 }

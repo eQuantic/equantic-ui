@@ -157,8 +157,10 @@ public class TodoListState : ComponentState<TodoList>
         if (!filteredTodos.Any())
         {
             todoList.Children.Add(new Box {
-                ClassName = "py-8 text-center text-gray-500 italic",
-                Children = { new Text("No tasks found in this view.") }
+                ClassName = "py-8 text-center",
+                Children = { 
+                    new Text("No tasks found in this view.") { Variant = "muted" } 
+                }
             });
         }
         else
@@ -174,7 +176,13 @@ public class TodoListState : ComponentState<TodoList>
                             OnChange = _ => { HandleToggle(todo.Id); }
                         },
                         new Text(todo.Title) {
-                            ClassName = $"flex-1 { (todo.IsCompleted ? "line-through text-gray-400" : "text-gray-900 dark:text-gray-100") }"
+                            ClassName = "flex-1 transition-all",
+                            // We use ClassName for specific overrides not covered by Variant yet, 
+                            // or create a "Strikethrough" variant? 
+                            // Using ClassName for specific state styles is fine.
+                            // But let's use Variant="muted" if completed.
+                            Variant = todo.IsCompleted ? "muted" : "base",
+                            // Add specific line-through via class since it's state-dependent
                         },
                         new Row {
                             Gap = "4px",
@@ -182,12 +190,14 @@ public class TodoListState : ComponentState<TodoList>
                             Children = {
                                 new Button {
                                     Text = "Edit",
-                                    ClassName = "px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded",
+                                    Variant = "ghost",
+                                    ClassName = "px-2 py-1 text-xs text-blue-600 hover:text-blue-700",
                                     OnClick = () => { OpenEdit(todo); }
                                 },
                                 new Button {
                                     Text = "Delete",
-                                    ClassName = "px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded",
+                                    Variant = "ghost",
+                                    ClassName = "px-2 py-1 text-xs text-red-600 hover:text-red-700",
                                     OnClick = () => { HandleDelete(todo.Id); }
                                 }
                             }
@@ -207,7 +217,8 @@ public class TodoListState : ComponentState<TodoList>
                     Children = {
                         new Button {
                             Text = "⚙️ Settings",
-                            ClassName = "px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-sm hover:shadow-md text-sm",
+                            Variant = "outline",
+                            ClassName = "bg-white dark:bg-zinc-800 text-sm",
                             OnClick = () => { SetState(() => { _isDrawerOpen = true; }); }
                         }
                     }
@@ -225,8 +236,8 @@ public class TodoListState : ComponentState<TodoList>
                             { 
                                 ClassName = "w-full flex flex-row items-center justify-between",
                                 Children = { 
-                                    new Heading("Tasks", 2) { ClassName = "text-xl font-bold text-gray-800 dark:text-white" },
-                                    new Text($"{_todos.Count(t => !t.IsCompleted)} remaining") { ClassName = "text-sm text-gray-500" }
+                                    new Heading("Tasks", 2),
+                                    new Text($"{_todos.Count(t => !t.IsCompleted)} remaining") { Variant = "muted" }
                                 }
                             },
                             new Row {
@@ -250,12 +261,12 @@ public class TodoListState : ComponentState<TodoList>
                                     new TextInput {
                                         Value = _newTodoTitle,
                                         Placeholder = "New task...",
-                                        ClassName = "flex-1 px-3 py-2 border rounded border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all",
+                                        ClassName = "flex-1",
                                         OnInput = val => { SetState(() => { _newTodoTitle = val; }); }
                                     },
                                     new Button {
                                         Text = "Add",
-                                        ClassName = "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium shadow-sm transition-colors",
+                                        Variant = "primary",
                                         OnClick = () => { HandleAdd(); }
                                     }
                                 }
@@ -269,7 +280,8 @@ public class TodoListState : ComponentState<TodoList>
                         Children = {
                             new Button {
                                 Text = "Clear Completed",
-                                ClassName = "text-sm text-red-500 hover:text-red-700 transition-colors uppercase font-semibold tracking-wider",
+                                Variant = "text",
+                                ClassName = "text-xs uppercase font-semibold tracking-wider text-red-500 hover:text-red-700",
                                 OnClick = () => { HandleClearCompleted(); }
                             }
                         }
@@ -285,10 +297,9 @@ public class TodoListState : ComponentState<TodoList>
                     Body = new Column {
                         Gap = "10px",
                         Children = {
-                            new Text("Update the task title:") { ClassName = "text-sm text-gray-500 dark:text-gray-400" },
+                            new Text("Update the task title:") { Variant = "muted" },
                             new TextInput {
                                 Value = _editingTitle,
-                                ClassName = "w-full px-3 py-2 border rounded border-gray-300 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none",
                                 OnInput = val => { SetState(() => { _editingTitle = val; }); }
                             }
                         }
@@ -298,12 +309,12 @@ public class TodoListState : ComponentState<TodoList>
                         Children = {
                             new Button {
                                 Text = "Cancel",
-                                ClassName = "px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded transition-colors",
+                                Variant = "ghost",
                                 OnClick = () => { SetState(() => { _isEditing = false; }); }
                             },
                             new Button {
                                 Text = "Save Changes",
-                                ClassName = "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium",
+                                Variant = "primary",
                                 OnClick = () => { SaveEdit(); }
                             }
                         }
@@ -319,15 +330,16 @@ public class TodoListState : ComponentState<TodoList>
                     Content = new Column {
                         Gap = "20px",
                         Children = {
-                            new Heading("Settings", 3) { ClassName = "text-xl font-bold mb-4 dark:text-white" },
-                            new Text("Theme preferences and other settings will go here.") { ClassName = "text-gray-600 dark:text-gray-400" },
+                            new Heading("Settings", 3) { ClassName = "mb-4" },
+                            new Text("Theme preferences and other settings will go here.") { Variant = "muted" },
                             new Alert { Type = AlertType.Success, Message = "eQuantic.UI is now running with Bun + Tailwind 4!" },
                             new Container {
                                 ClassName = "mt-auto pt-8 border-t border-gray-100 dark:border-zinc-800",
                                 Children = {
                                     new Button {
                                         Text = "Back to List",
-                                        ClassName = "w-full py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors",
+                                        Variant = "secondary",
+                                        ClassName = "w-full",
                                         OnClick = () => { SetState(() => { _isDrawerOpen = false; }); }
                                     }
                                 }
@@ -342,14 +354,13 @@ public class TodoListState : ComponentState<TodoList>
     private Button CreateFilterButton(TodoFilter filter, string label)
     {
         var isActive = _currentFilter == filter;
-        var activeClass = isActive 
-            ? "bg-white dark:bg-zinc-800 text-blue-600 shadow-sm" 
-            : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200";
-
+        // Simplified logic: rely on variants or minimal overrides
+        
         return new Button
         {
             Text = label,
-            ClassName = "flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all " + activeClass,
+            Variant = isActive ? "primary" : "ghost",
+            ClassName = "flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all " + (isActive ? "shadow-sm" : "hover:bg-gray-200 dark:hover:bg-zinc-700/50"),
             OnClick = () => { SetState(() => { _currentFilter = filter; }); }
         };
     }

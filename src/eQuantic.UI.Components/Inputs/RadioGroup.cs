@@ -12,7 +12,7 @@ public class RadioGroup : InputComponent<string>
     public List<RadioOption> Options { get; set; } = new();
     public FlexDirection Direction { get; set; } = FlexDirection.Column;
 
-    public override HtmlNode Render()
+    public override IComponent Build(RenderContext context)
     {
         var attrs = BuildAttributes();
         
@@ -24,16 +24,26 @@ public class RadioGroup : InputComponent<string>
             Gap = "0.5rem"
         };
         
-        var existingStyle = attrs.TryGetValue("style", out var s) ? s + "; " : "";
-        attrs["style"] = existingStyle + style.ToCssString();
+        if (attrs.TryGetValue("style", out var existing))
+        {
+            attrs["style"] = existing + "; " + style.ToCssString();
+        }
+        else
+        {
+            attrs["style"] = style.ToCssString();
+        }
 
-        var children = new List<HtmlNode>();
-
+        var container = new DynamicElement
+        {
+            TagName = "div",
+            CustomAttributes = attrs
+        };
+        
         if (Options.Any())
         {
             foreach (var opt in Options)
             {
-                children.Add(new Radio
+                container.Children.Add(new Radio
                 {
                     Name = Name,
                     Value = opt.Value,
@@ -41,21 +51,20 @@ public class RadioGroup : InputComponent<string>
                     Disabled = opt.Disabled,
                     Checked = Value == opt.Value,
                     OnChange = OnChange
-                }.Render());
+                });
             }
         }
         else
         {
-            // If explicit children are used, we might need to inject Name/Checked state
-            // This is harder in static render. For now assuming Options usage is primary.
-            children.AddRange(Children.Select(c => c.Render()));
+            if (Children.Any())
+            {
+                foreach (var child in Children)
+                {
+                     container.Children.Add(child);
+                }
+            }
         }
 
-        return new HtmlNode
-        {
-            Tag = "div",
-            Attributes = attrs,
-            Children = children
-        };
+        return container;
     }
 }

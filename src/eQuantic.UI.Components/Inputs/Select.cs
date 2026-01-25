@@ -12,39 +12,44 @@ public class Select : InputComponent<string>
     public bool Required { get; set; }
     public List<SelectOption> Options { get; set; } = new();
 
-    public override HtmlNode Render()
+    public override IComponent Build(RenderContext context)
     {
-        var attrs = BuildAttributes();
+        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var inputTheme = theme?.Input;
+        var baseStyle = inputTheme?.Base ?? "";
+
+        var attrs = new Dictionary<string, string>
+        {
+            ["class"] = $"{baseStyle} {ClassName}"
+        };
         
         if (Name != null) attrs["name"] = Name;
         if (Multiple) attrs["multiple"] = "true";
         if (Disabled) attrs["disabled"] = "true";
         if (Required) attrs["required"] = "true";
         
-        // Handle change event
         var events = BuildEvents();
         if (OnChange != null)
         {
-            // For selects, wrapping the change event to extract value
-            // implementation depends on how runtime handles it.
-            // Using standard change event for now.
-             // Note: The Runtime's Bind logic usually handles this, 
-             // but specific OnChange<string> might need compiler support or runtime bridge.
-             // For now, we map it to standard "change" event and let compiler/runtime handle value extraction.
-             // The compiler usually generates: (e) => OnChange(e.target.value)
+            events["change"] = OnChange;
         }
 
-        var children = new List<HtmlNode>();
+        var selectElement = new DynamicElement
+        {
+            TagName = "select",
+            CustomAttributes = attrs,
+            CustomEvents = events
+        };
+
         foreach (var opt in Options)
         {
-            var optAttrs = new Dictionary<string, string?>
+            var optAttrs = new Dictionary<string, string>
             {
                 ["value"] = opt.Value
             };
             
             if (opt.Disabled) optAttrs["disabled"] = "true";
             
-            // Check if selected matches Value (single) or if opt.Selected is explicitly true
             bool isSelected = opt.Selected;
             if (!Multiple && Value != null && opt.Value == Value)
             {
@@ -53,20 +58,14 @@ public class Select : InputComponent<string>
             
             if (isSelected) optAttrs["selected"] = "selected";
 
-            children.Add(new HtmlNode
+            selectElement.Children.Add(new DynamicElement
             {
-                Tag = "option",
-                Attributes = optAttrs,
-                Children =  { HtmlNode.Text(opt.Label) }
+                TagName = "option",
+                InnerText = opt.Label,
+                CustomAttributes = optAttrs
             });
         }
 
-        return new HtmlNode
-        {
-            Tag = "select",
-            Attributes = attrs,
-            Events = events,
-            Children = children
-        };
+        return selectElement;
     }
 }

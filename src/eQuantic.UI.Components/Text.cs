@@ -6,7 +6,7 @@ namespace eQuantic.UI.Components;
 /// <summary>
 /// Text component - renders as a span or paragraph
 /// </summary>
-public class Text : HtmlElement
+public class Text : StatelessComponent
 {
     /// <summary>
     /// Text content
@@ -17,29 +17,38 @@ public class Text : HtmlElement
     /// Whether to render as paragraph (p) instead of span
     /// </summary>
     public bool Paragraph { get; set; }
-
+    
     /// <summary>
-    /// Create a text component with content
+    /// Style variant (e.g. "large", "small", "muted", "lead")
     /// </summary>
+    public string? Variant { get; set; }
+
     public Text() { }
 
-    /// <summary>
-    /// Create a text component with content
-    /// </summary>
     public Text(string content)
     {
         Content = content;
     }
 
-    /// <inheritdoc />
-    public override HtmlNode Render()
+    public override IComponent Build(RenderContext context)
     {
-        return new HtmlNode
+        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var textTheme = theme?.Typography;
+        
+        var baseStyle = textTheme?.Base ?? "";
+        var variantStyle = Variant != null ? textTheme?.GetVariant(Variant) : "";
+
+        var attrs = new Dictionary<string, string>
         {
-            Tag = Paragraph ? "p" : "span",
-            Attributes = BuildAttributes(),
-            Events = BuildEvents(),
-            Children = new List<HtmlNode> { HtmlNode.Text(Content) }
+            ["class"] = $"{baseStyle} {variantStyle} {ClassName}"
+        };
+
+        return new DynamicElement
+        {
+            TagName = Paragraph ? "p" : "span",
+            InnerText = Content,
+            CustomAttributes = attrs,
+            CustomEvents = BuildEvents()
         };
     }
 }

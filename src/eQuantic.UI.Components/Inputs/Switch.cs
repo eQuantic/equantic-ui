@@ -10,34 +10,48 @@ public class Switch : Checkbox
 {
     public string? Label { get; set; }
 
-    public override HtmlNode Render()
+    public override IComponent Build(RenderContext context)
     {
-        var checkboxNode = base.Render();
-        checkboxNode.Attributes["class"] = (checkboxNode.Attributes.GetValueOrDefault("class") + " switch-input").Trim();
-        
-        // Structure: 
-        // <label class="switch">
-        //   <input type="checkbox" ...>
-        //   <span class="slider round"></span>
-        //   Text
-        // </label>
-
-        var children = new List<HtmlNode>
+        // Don't call base.Build because we want different structure
+        var inputAttrs = new Dictionary<string, string>
         {
-            checkboxNode,
-            new HtmlNode { Tag = "span", Attributes = new Dictionary<string, string?> { ["class"] = "slider" } }
+            ["type"] = "checkbox",
+            ["class"] = "switch-input" // Specific class for switch input
         };
 
+        if (Value) inputAttrs["checked"] = "true";
+        if (Disabled) inputAttrs["disabled"] = "true";
+
+        var events = BuildEvents();
+        if (OnChange != null) events["change"] = OnChange;
+
+        var inputElement = new DynamicElement
+        {
+            TagName = "input",
+            CustomAttributes = inputAttrs,
+            CustomEvents = events
+        };
+        
+        var sliderElement = new DynamicElement
+        {
+            TagName = "span",
+            CustomAttributes = new Dictionary<string, string> { ["class"] = "slider" }
+        };
+
+        var container = new DynamicElement
+        {
+            TagName = "label",
+            CustomAttributes = new Dictionary<string, string> { ["class"] = "switch " + ClassName }
+        };
+        
+        container.Children.Add(inputElement);
+        container.Children.Add(sliderElement);
+        
         if (Label != null)
         {
-            children.Add(HtmlNode.Text(" " + Label));
+            container.Children.Add(new Text(" " + Label));
         }
 
-        return new HtmlNode
-        {
-            Tag = "label",
-            Attributes = new Dictionary<string, string?> { ["class"] = "switch" },
-            Children = children
-        };
+        return container;
     }
 }

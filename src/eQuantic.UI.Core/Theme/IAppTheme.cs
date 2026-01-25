@@ -5,6 +5,8 @@ public interface IAppTheme
     ICardTheme Card { get; }
     IButtonTheme Button { get; }
     IInputTheme Input { get; }
+    ICheckboxTheme Checkbox { get; }
+    ITextTheme Typography { get; }
 }
 
 public interface ICardTheme
@@ -25,4 +27,17 @@ public interface IButtonTheme
 public interface IInputTheme
 {
     string Base { get; }
+}
+
+public interface ICheckboxTheme
+{
+    string Base { get; }
+    string Checked { get; }
+    string Unchecked { get; }
+}
+
+public interface ITextTheme
+{
+    string Base { get; }
+    string GetVariant(string variant);
 }

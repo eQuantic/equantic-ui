@@ -11,6 +11,11 @@ public class RenderContext
     private readonly Dictionary<Type, object> _services = new();
     
     /// <summary>
+    /// Global Service Provider fallback for manually created components
+    /// </summary>
+    public static IServiceProvider? ServiceProvider { get; set; }
+
+    /// <summary>
     /// Register a service for dependency injection
     /// </summary>
     public void RegisterService<T>(T service) where T : notnull
@@ -27,6 +32,14 @@ public class RenderContext
         {
             return (T)service;
         }
+
+        // Fallback to global provider
+        if (ServiceProvider != null)
+        {
+            var fallback = ServiceProvider.GetService(typeof(T)) as T;
+            if (fallback != null) return fallback;
+        }
+
         throw new InvalidOperationException($"Service {typeof(T).Name} not registered");
     }
     
@@ -39,6 +52,13 @@ public class RenderContext
         {
             return (T)service;
         }
+        
+        // Fallback to global provider
+        if (ServiceProvider != null)
+        {
+            return ServiceProvider.GetService(typeof(T)) as T;
+        }
+
         return null;
     }
 }
