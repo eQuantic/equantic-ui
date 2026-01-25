@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using eQuantic.UI.Server.Authorization;
+using eQuantic.UI.Server.Rendering;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace eQuantic.UI.Server;
 
@@ -57,6 +61,13 @@ public static class UIExtensions
 
             return registry;
         });
+
+        // Add authorization service for Server Actions
+        // TryAdd allows users to override with their own implementation
+        services.TryAddSingleton<IServerActionAuthorizationService, ServerActionAuthorizationService>();
+
+        // Add SSR rendering service
+        services.TryAddSingleton<IServerRenderingService, ServerRenderingService>();
 
         // Add SignalR services
         services.AddSignalR();
@@ -177,23 +188,82 @@ public static class UIExtensions
         var shell = options.HtmlShell;
         var pageValue = pageName != null ? $"'{pageName}'" : "null";
 
+        // Attempt SSR if page name is provided and SSR is enabled
+        var ssrContent = "<div class=\"loading\">Loading...</div>";
+        var ssrEnabled = false;
+
+        if (pageName != null && options.EnableSsr)
+        {
+            var renderingService = context.RequestServices.GetService<IServerRenderingService>();
+            if (renderingService != null)
+            {
+                try
+                {
+                    var result = await renderingService.RenderPageAsync(pageName, context);
+                    if (result.Success && result.Html != null)
+                    {
+                        ssrContent = result.Html;
+                        ssrEnabled = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var logger = context.RequestServices.GetService<ILogger<UIOptions>>();
+                    logger?.LogWarning(ex, "SSR failed for page {PageName}, falling back to client-side rendering", pageName);
+                }
+            }
+        }
+
+        // Get page metadata for SEO
+        var pageTitle = shell.Title;
+        var pageDescription = "";
+        if (pageName != null)
+        {
+            foreach (var assembly in options.AssembliesToScan)
+            {
+                var pageType = assembly.GetTypes()
+                    .FirstOrDefault(t => t.Name == pageName && t.GetCustomAttribute<Core.PageAttribute>() != null);
+
+                if (pageType != null)
+                {
+                    var attr = pageType.GetCustomAttribute<Core.PageAttribute>()!;
+                    if (!string.IsNullOrEmpty(attr.Title))
+                        pageTitle = attr.Title;
+                    if (!string.IsNullOrEmpty(attr.Description))
+                        pageDescription = attr.Description;
+                    break;
+                }
+            }
+        }
+
         // Inject configuration object
         var configJson = $@"{{
             page: {pageValue},
-            version: '{BuildId}'
+            version: '{BuildId}',
+            ssr: {ssrEnabled.ToString().ToLowerInvariant()}
         }}";
+
+        // Build meta tags for SEO
+        var metaTags = new List<string>();
+        if (!string.IsNullOrEmpty(pageDescription))
+        {
+            metaTags.Add($"<meta name=\"description\" content=\"{System.Web.HttpUtility.HtmlAttributeEncode(pageDescription)}\">");
+            metaTags.Add($"<meta property=\"og:description\" content=\"{System.Web.HttpUtility.HtmlAttributeEncode(pageDescription)}\">");
+        }
+        metaTags.Add($"<meta property=\"og:title\" content=\"{System.Web.HttpUtility.HtmlAttributeEncode(pageTitle)}\">");
 
         var html = $@"<!DOCTYPE html>
 <html lang=""en"">
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>{shell.Title}</title>
+    <title>{System.Web.HttpUtility.HtmlEncode(pageTitle)}</title>
+    {string.Join("\n    ", metaTags)}
     <style>
         {shell.BaseStyles}
     </style>
     {string.Join("\n    ", shell.HeadTags)}
-    
+
     <!-- Import Map for bare modules -->
     <script type=""importmap"">
     {{
@@ -202,12 +272,12 @@ public static class UIExtensions
         }}
     }}
     </script>
-    
+
     <script src=""https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js""></script>
 </head>
 <body>
-    <div id=""app"">
-        <div class=""loading"">Loading...</div>
+    <div id=""app"" data-ssr=""{ssrEnabled.ToString().ToLowerInvariant()}"">
+        {ssrContent}
     </div>
 
     <!-- eQuantic.UI Runtime (Static Asset) -->
@@ -237,6 +307,21 @@ public class UIOptions
     /// Configuration for the HTML shell (index.html).
     /// </summary>
     public HtmlShellOptions HtmlShell { get; } = new();
+
+    /// <summary>
+    /// Enables Server-Side Rendering (SSR) for SEO optimization.
+    /// When enabled, pages will be pre-rendered on the server and sent as HTML.
+    /// Default is true.
+    /// </summary>
+    /// <remarks>
+    /// SSR provides:
+    /// - Better SEO (search engines can index the content)
+    /// - Faster First Contentful Paint (FCP)
+    /// - Social media preview cards (Open Graph)
+    ///
+    /// Individual pages can opt-out using [Page(DisableSsr = true)].
+    /// </remarks>
+    public bool EnableSsr { get; set; } = true;
 
     /// <summary>
     /// Scan an assembly for components with [Page] and [ServerAction] attributes.

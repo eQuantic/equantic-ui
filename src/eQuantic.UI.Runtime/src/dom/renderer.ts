@@ -23,6 +23,7 @@ export class RenderManager {
 
     const reconciler = getReconciler();
     const dom = reconciler.createDomElement(node);
+    container.innerHTML = '';
     container.appendChild(dom);
   }
 

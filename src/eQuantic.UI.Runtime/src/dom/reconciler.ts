@@ -127,7 +127,7 @@ export class Reconciler {
     // Set attributes
     for (const [key, value] of Object.entries(node.attributes)) {
       if (value !== undefined && value !== null) {
-        element.setAttribute(key, String(value));
+        this.applyAttribute(element as HTMLElement, key, value);
       }
     }
 
@@ -143,6 +143,31 @@ export class Reconciler {
   }
 
   /**
+   * Apply attribute or property to element
+   */
+  private applyAttribute(element: HTMLElement, key: string, value: any): void {
+    if (value === undefined || value === null) {
+      element.removeAttribute(key);
+      if (key === 'value' && (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+        element.value = '';
+      }
+      if (key === 'checked' && (element instanceof HTMLInputElement)) {
+        element.checked = false;
+      }
+      return;
+    }
+
+    const strValue = String(value);
+    element.setAttribute(key, strValue);
+
+    if (key === 'value' && (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+      element.value = strValue;
+    } else if (key === 'checked' && (element instanceof HTMLInputElement)) {
+      element.checked = true;
+    }
+  }
+
+  /**
    * Update element attributes (only changed ones)
    */
   private updateAttributes(
@@ -153,7 +178,7 @@ export class Reconciler {
     // Remove old attributes
     for (const key of Object.keys(oldAttrs)) {
       if (!(key in newAttrs)) {
-        element.removeAttribute(key);
+        this.applyAttribute(element, key, null);
       }
     }
 
@@ -161,11 +186,7 @@ export class Reconciler {
     for (const [key, value] of Object.entries(newAttrs)) {
       const oldValue = oldAttrs[key];
       if (value !== oldValue) {
-        if (value !== undefined && value !== null) {
-          element.setAttribute(key, String(value));
-        } else {
-          element.removeAttribute(key);
-        }
+        this.applyAttribute(element, key, value);
       }
     }
   }
