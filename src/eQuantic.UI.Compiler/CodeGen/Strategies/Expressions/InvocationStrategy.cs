@@ -161,6 +161,37 @@ public class InvocationStrategy : IConversionStrategy
              }
         }
 
+        // Service Provider Methods
+        if (methodName == "GetService" || methodName == "GetRequiredService")
+        {
+            if (methodExpression is MemberAccessExpressionSyntax access) 
+            {
+               var caller = context.Converter.ConvertExpression(access.Expression);
+                
+               // Check if generic
+               if (access.Name is GenericNameSyntax genericName && genericName.TypeArgumentList.Arguments.Count > 0)
+               {
+                   var typeArg = genericName.TypeArgumentList.Arguments[0];
+                   var typeName = typeArg.ToString();
+                   // Convert "GetService<T>()" to "getService('T')"
+                   return $"{caller}.{ToCamelCase(methodName)}('{typeName}')";
+               }
+               
+               // Non-generic GetService(typeof(T))
+               if (argsList.Count > 0)
+               {
+                   var arg = argsList[0];
+                   if (arg.StartsWith("typeof(")) 
+                   {
+                       // Extract T from typeof(T)
+                       var typeName = arg.Substring(7, arg.Length - 8);
+                       return $"{caller}.{ToCamelCase(methodName)}('{typeName}')";
+                   }
+                   return $"{caller}.{ToCamelCase(methodName)}({arg})";
+               }
+            }
+        }
+
         // 4. General Method Call
         if (methodExpression is MemberAccessExpressionSyntax genAccess)
         {

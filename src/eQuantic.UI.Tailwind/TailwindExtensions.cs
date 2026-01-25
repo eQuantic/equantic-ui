@@ -53,8 +53,7 @@ public static class TailwindExtensions
         // You cannot add services to IServiceProvider after build.
         
         // So I MUST add `AddTailwind` extension to `IServiceCollection`.
-        
-        return app;
+
 
         // Add the Tailwind link to the head tags
         var version = DateTime.UtcNow.Ticks;
@@ -63,6 +62,23 @@ public static class TailwindExtensions
         {
             options.HtmlShell.HeadTags.Add(linkTag);
         }
+
+        // Inject AppTheme as JS service
+        var theme = new eQuantic.UI.Tailwind.Theme.AppTheme();
+        var jsonOptions = new System.Text.Json.JsonSerializerOptions 
+        { 
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            WriteIndented = false
+        };
+        var themeJson = System.Text.Json.JsonSerializer.Serialize(theme, jsonOptions);
+
+        var script = $@"
+<script type=""module"">
+    import {{ getRootServiceProvider }} from '/_equantic/runtime.js?v={version}';
+    const theme = {themeJson};
+    getRootServiceProvider().registerInstance('IAppTheme', theme);
+</script>";
+        options.HtmlShell.HeadTags.Add(script);
 
         return app;
     }

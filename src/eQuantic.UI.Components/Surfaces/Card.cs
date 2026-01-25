@@ -29,19 +29,19 @@ public class Card : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var shadowClass = Shadow switch
-        {
-            Shadow.None => "shadow-none",
-            Shadow.Small => "shadow-sm",
-            Shadow.Medium => "shadow-md",
-            Shadow.Large => "shadow-lg",
-            Shadow.XLarge => "shadow-xl",
-            _ => "shadow-md"
-        };
+        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var cardTheme = theme?.Card;
+
+        var shadowClass = cardTheme?.GetShadowInfo(Shadow.ToString().ToLower()) ?? "";
         
+        var containerClass = cardTheme?.Container ?? "";
+        var headerClass = cardTheme?.Header ?? "";
+        var bodyClass = cardTheme?.Body ?? "";
+        var footerClass = cardTheme?.Footer ?? "";
+
         var cardContainer = new Box
         {
-            ClassName = $"flex flex-col bg-white dark:bg-zinc-800 rounded-lg {shadowClass} overflow-hidden border border-gray-200 dark:border-zinc-700 {Width} {ClassName}",
+            ClassName = $"{containerClass} {shadowClass} {Width} {ClassName}",
             Children = { }
         };
 
@@ -49,14 +49,14 @@ public class Card : StatelessComponent
         {
             cardContainer.Children.Add(new Box
             {
-                ClassName = "w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50",
+                ClassName = headerClass,
                 Children = { Header }
             });
         }
 
         cardContainer.Children.Add(new Box
         {
-            ClassName = "w-full p-6",
+            ClassName = bodyClass,
             Children = { Body ?? new Text("") }
         });
 
@@ -64,7 +64,7 @@ public class Card : StatelessComponent
         {
             cardContainer.Children.Add(new Box
             {
-                ClassName = "w-full px-6 py-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-200 dark:border-zinc-700",
+                ClassName = footerClass,
                 Children = { Footer }
             });
         }
