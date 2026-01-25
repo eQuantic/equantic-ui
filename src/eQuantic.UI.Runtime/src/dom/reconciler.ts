@@ -17,6 +17,15 @@ interface EventListener {
 }
 
 /**
+ * Hydration result for debugging
+ */
+export interface HydrationResult {
+  success: boolean;
+  attachedListeners: number;
+  warnings: string[];
+}
+
+/**
  * Reconciler manages efficient DOM updates
  */
 export class Reconciler {
@@ -376,6 +385,91 @@ export class Reconciler {
         this.cleanupEventListeners(node.childNodes[i]);
       }
     }
+  }
+
+  /**
+   * Hydrate existing DOM with event listeners from virtual DOM.
+   * This is used for SSR hydration where the HTML is already rendered by the server.
+   * Instead of replacing the DOM, we walk the existing elements and attach event listeners.
+   */
+  hydrate(
+    existingElement: Node,
+    virtualNode: HtmlNode,
+    result: HydrationResult = { success: true, attachedListeners: 0, warnings: [] }
+  ): HydrationResult {
+    // Text node - nothing to hydrate
+    if (virtualNode.tag === '#text') {
+      if (existingElement.nodeType !== Node.TEXT_NODE) {
+        result.warnings.push(`Expected text node, found ${existingElement.nodeName}`);
+        result.success = false;
+      }
+      return result;
+    }
+
+    // Comment node - nothing to hydrate
+    if (virtualNode.tag === '#comment') {
+      return result;
+    }
+
+    // Element node - attach events and recurse children
+    if (!(existingElement instanceof HTMLElement)) {
+      result.warnings.push(`Expected HTMLElement for tag '${virtualNode.tag}', found ${existingElement.nodeName}`);
+      result.success = false;
+      return result;
+    }
+
+    // Validate tag match
+    if (existingElement.tagName.toLowerCase() !== virtualNode.tag.toLowerCase()) {
+      result.warnings.push(`Tag mismatch: expected '${virtualNode.tag}', found '${existingElement.tagName.toLowerCase()}'`);
+      result.success = false;
+      return result;
+    }
+
+    // Attach event listeners
+    if (virtualNode.events) {
+      this.attachEventListeners(existingElement, virtualNode.events);
+      result.attachedListeners += Object.keys(virtualNode.events).length;
+    }
+
+    // Recursively hydrate children
+    const virtualChildren = virtualNode.children || [];
+    const existingChildren = Array.from(existingElement.childNodes).filter(
+      node => node.nodeType === Node.ELEMENT_NODE ||
+              (node.nodeType === Node.TEXT_NODE && node.textContent?.trim())
+    );
+
+    for (let i = 0; i < virtualChildren.length; i++) {
+      const virtualChild = virtualChildren[i];
+      const existingChild = existingChildren[i];
+
+      if (!existingChild) {
+        result.warnings.push(`Missing child at index ${i} for tag '${virtualNode.tag}'`);
+        result.success = false;
+        continue;
+      }
+
+      this.hydrate(existingChild, virtualChild, result);
+    }
+
+    return result;
+  }
+
+  /**
+   * Hydrate a container with the root virtual node.
+   * The container should have SSR-rendered HTML as its content.
+   */
+  hydrateRoot(container: HTMLElement, virtualNode: HtmlNode): HydrationResult {
+    const result: HydrationResult = { success: true, attachedListeners: 0, warnings: [] };
+
+    // Get the first element child of the container (the SSR root)
+    const existingRoot = container.firstElementChild;
+    if (!existingRoot) {
+      result.warnings.push('No existing element to hydrate');
+      result.success = false;
+      return result;
+    }
+
+    return this.hydrate(existingRoot, virtualNode, result);
   }
 
   /**

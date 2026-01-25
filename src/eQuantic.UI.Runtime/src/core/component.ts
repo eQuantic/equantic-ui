@@ -73,7 +73,17 @@ export abstract class StatefulComponent extends Component {
 
   mount(container: HTMLElement): void {
     const node = this.render();
-    this._renderManager.mount(node, container);
+
+    // Check if we should hydrate (SSR content exists)
+    if (this._renderManager.canHydrate(container)) {
+      const result = this._renderManager.hydrate(node, container);
+      if (result.success) {
+        console.debug(`[eQuantic.UI] Hydrated ${this.constructor.name} with ${result.attachedListeners} event listeners`);
+      }
+    } else {
+      this._renderManager.mount(node, container);
+    }
+
     this._mounted = true;
     this.state.onMount();
   }
