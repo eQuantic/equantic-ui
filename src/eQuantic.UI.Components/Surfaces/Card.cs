@@ -20,10 +20,7 @@ public class Card : StatelessComponent
     public Shadow Shadow { get; set; } = Shadow.Medium;
     public string Width { get; set; } = "w-full";
 
-    public Card(IComponent body)
-    {
-        Body = body;
-    }
+    // Constructor removed to fix JS interop with object initializers
 
     // Parameterless constructor for composition
     public Card() { }
@@ -33,7 +30,7 @@ public class Card : StatelessComponent
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
         var cardTheme = theme != null ? theme.Card : null;
 
-        var shadowKey = this.Shadow.ToString().ToLower();
+        var shadowKey = (this.Shadow.ToString() ?? "medium").ToLower();
         var shadowClass = "";
         if (cardTheme != null && cardTheme.Shadows != null)
         {

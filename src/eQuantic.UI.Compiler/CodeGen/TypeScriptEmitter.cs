@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Models;
 using eQuantic.UI.Compiler.Services;
 
@@ -301,10 +302,20 @@ public class TypeScriptEmitter
             {
                 coreImports.Add(cleanType);
             }
+            if (IsRuntimeComponent(cleanType))
+            {
+                coreImports.Add(cleanType);
+            }
             else
             {
                 userComponents.Add(cleanType);
             }
+        }
+
+        // Check for formatting usage
+        if (UsesFormatting(component))
+        {
+            coreImports.Add("format");
         }
 
         _builder.Import(coreImports, "@equantic/runtime");
@@ -329,6 +340,17 @@ public class TypeScriptEmitter
             "getServerActionsClient" or "getRootServiceProvider" => true,
             _ => false
         };
+    }
+
+    private bool UsesFormatting(ComponentDefinition component)
+    {
+        if (component.SyntaxTree == null) return false;
+        
+        var root = component.SyntaxTree.GetRoot();
+        return root.DescendantNodes()
+            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InterpolatedStringExpressionSyntax>()
+            .Any(i => i.Contents.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InterpolationSyntax>()
+                .Any(c => c.FormatClause != null || c.AlignmentClause != null));
     }
 
     private HashSet<string> CollectComponentTypes(ComponentTree? tree)

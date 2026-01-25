@@ -95,6 +95,16 @@ public class InvocationStrategy : IConversionStrategy
                  return $"{caller}.Children.push({args})";
              }
         }
+        
+        // List.Insert -> splice
+        if (methodName == "Insert" && argsList.Count >= 2)
+        {
+             if (methodExpression is MemberAccessExpressionSyntax access)
+             {
+                 var caller = context.Converter.ConvertExpression(access.Expression);
+                 return $"{caller}.splice({argsList[0]}, 0, {argsList[1]})";
+             }
+        }
 
         // Console.WriteLine
         if (methodName == "WriteLine")
@@ -166,6 +176,17 @@ public class InvocationStrategy : IConversionStrategy
                 var caller = context.Converter.ConvertExpression(access.Expression);
                 return $"{caller}.trim()";
             }
+        }
+        
+        // ToString
+        if (methodName == "ToString")
+        {
+             if (methodExpression is MemberAccessExpressionSyntax access)
+             {
+                 var caller = context.Converter.ConvertExpression(access.Expression);
+                 // Safe conversion: String(val) handles null/undefined
+                 return $"String({caller})";
+             }
         }
 
         // HtmlNode.Text

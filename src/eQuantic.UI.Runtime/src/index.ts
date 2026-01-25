@@ -15,6 +15,9 @@ export { HtmlStyle } from './core/html-style';
 export { ServerActionsClient, getServerActionsClient, configureServerActions, resetServerActionsClient } from './core/server-actions';
 export type { ServerActionResponse } from './core/server-actions';
 
+// Utils
+export { format } from './utils/format';
+
 // DOM
 export { Reconciler, getReconciler, resetReconciler } from './dom/reconciler';
 export { RenderManager } from './dom/renderer';

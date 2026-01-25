@@ -209,7 +209,7 @@ public class TodoListState : ComponentState<TodoList>
                     ClassName = "absolute top-4 right-4",
                     Children = {
                         new Button {
-                            Text = "⚙️ Settings",
+                            Text = $"⚙️ Settings ({DateTime.Now:HH:mm})",
                             Variant = "outline",
                             ClassName = "bg-white dark:bg-zinc-800 text-sm",
                             OnClick = () => { SetState(() => { _isDrawerOpen = true; }); }
@@ -230,7 +230,8 @@ public class TodoListState : ComponentState<TodoList>
                                 ClassName = "w-full flex flex-row items-center justify-between",
                                 Children = { 
                                     new Heading("Tasks", 2),
-                                    new Text($"{_todos.Count(t => !t.IsCompleted)} remaining") { Variant = "muted" }
+                                    new Heading("Tasks", 2),
+                                    new Text($"{_todos.Count(t => !t.IsCompleted):N0} remaining") { Variant = "muted" }
                                 }
                             },
                             new Box {
