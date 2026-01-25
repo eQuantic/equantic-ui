@@ -32,16 +32,28 @@ public class Card : StatelessComponent
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
         var cardTheme = theme?.Card;
 
-        var shadowClass = cardTheme?.GetShadowInfo(Shadow.ToString().ToLower()) ?? "";
+        var shadowKey = Shadow.ToString().ToLower();
+        var shadowClass = "";
+        if (cardTheme?.Shadows != null && cardTheme.Shadows.TryGetValue(shadowKey, out var s))
+        {
+            shadowClass = s;
+        }
         
         var containerClass = cardTheme?.Container ?? "";
         var headerClass = cardTheme?.Header ?? "";
         var bodyClass = cardTheme?.Body ?? "";
         var footerClass = cardTheme?.Footer ?? "";
 
+        // Build container class list safely to avoid "undefined" in JS
+        var classes = new List<string>();
+        if (!string.IsNullOrEmpty(containerClass)) classes.Add(containerClass);
+        if (!string.IsNullOrEmpty(shadowClass)) classes.Add(shadowClass);
+        if (!string.IsNullOrEmpty(Width)) classes.Add(Width);
+        if (!string.IsNullOrEmpty(ClassName)) classes.Add(ClassName);
+        
         var cardContainer = new Box
         {
-            ClassName = $"{containerClass} {shadowClass} {Width} {ClassName}",
+            ClassName = string.Join(" ", classes),
             Children = { }
         };
 

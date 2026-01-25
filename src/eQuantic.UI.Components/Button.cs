@@ -20,7 +20,11 @@ public class Button : StatelessComponent
         var buttonTheme = theme?.Button;
 
         var baseStyle = buttonTheme?.Base ?? "";
-        var variantStyle = buttonTheme?.GetVariant(Variant) ?? "";
+        var variantStyle = "";
+        if (buttonTheme?.Variants != null && buttonTheme.Variants.TryGetValue(Variant?.ToLower() ?? "primary", out var v))
+        {
+            variantStyle = v;
+        }
 
         var attrs = new Dictionary<string, string>
         {

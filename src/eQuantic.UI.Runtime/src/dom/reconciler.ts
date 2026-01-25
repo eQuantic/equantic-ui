@@ -36,7 +36,11 @@ export class Reconciler {
     // Case 1: No old node - create new element
     if (!oldNode && newNode) {
       const newElement = this.createDomElement(newNode);
-      parentElement.appendChild(newElement);
+      if (currentElement) {
+        parentElement.insertBefore(newElement, currentElement);
+      } else {
+        parentElement.appendChild(newElement);
+      }
       return;
     }
 

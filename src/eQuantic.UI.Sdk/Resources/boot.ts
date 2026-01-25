@@ -152,5 +152,5 @@ function escapeHtml(unsafe: string) {
          .replace(/'/g, "&#039;");
 }
 
-// Auto-start
-boot();
+// function escapeHtml(unsafe: string) { ... } (already defined above)
+

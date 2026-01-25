@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace eQuantic.UI.Core.Theme;
 
 public interface IAppTheme
@@ -15,12 +17,14 @@ public interface ICardTheme
     string Header { get; }
     string Body { get; }
     string Footer { get; }
+    Dictionary<string, string> Shadows { get; }
     string GetShadowInfo(string shadow);
 }
 
 public interface IButtonTheme
 {
     string Base { get; }
+    Dictionary<string, string> Variants { get; }
     string GetVariant(string variant);
 }
 
@@ -39,5 +43,6 @@ public interface ICheckboxTheme
 public interface ITextTheme
 {
     string Base { get; }
+    Dictionary<string, string> Variants { get; }
     string GetVariant(string variant);
 }

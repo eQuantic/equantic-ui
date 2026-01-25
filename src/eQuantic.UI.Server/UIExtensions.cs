@@ -214,7 +214,10 @@ public static class UIExtensions
     <script>
         window.__EQ_CONFIG = {configJson};
     </script>
-    <script type=""module"" src=""/_equantic/runtime.js?v={BuildId}""></script>
+    <script type=""module"">
+        import {{ boot }} from ""@equantic/runtime"";
+        boot();
+    </script>
 </body>
 </html>";
 

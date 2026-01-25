@@ -140,7 +140,7 @@ public class TodoListState : ComponentState<TodoList>
         await LoadTodos();
     }
 
-    public override IComponent Build(RenderContext context)
+        public override IComponent Build(RenderContext context)
     {
         var filteredTodos = _currentFilter switch
         {
@@ -149,9 +149,9 @@ public class TodoListState : ComponentState<TodoList>
             _ => _todos
         };
 
-        var todoList = new Column 
+        var todoList = new Box 
         {
-            Gap = "5px"
+            ClassName = "flex flex-col gap-[5px]"
         };
         
         if (!filteredTodos.Any())
@@ -167,9 +167,8 @@ public class TodoListState : ComponentState<TodoList>
         {
             foreach (var todo in filteredTodos)
             {
-                todoList.Children.Add(new Row {
-                    ClassName = "items-center p-2 border-b border-gray-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded transition-all hover:bg-gray-50 dark:hover:bg-zinc-700/50 group",
-                    Gap = "10px",
+                todoList.Children.Add(new Box {
+                    ClassName = "flex flex-row items-center p-2 border-b border-gray-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded transition-all hover:bg-gray-50 dark:hover:bg-zinc-700/50 group gap-[10px]",
                     Children = {
                         new Checkbox {
                             Checked = todo.IsCompleted,
@@ -177,16 +176,10 @@ public class TodoListState : ComponentState<TodoList>
                         },
                         new Text(todo.Title) {
                             ClassName = "flex-1 transition-all",
-                            // We use ClassName for specific overrides not covered by Variant yet, 
-                            // or create a "Strikethrough" variant? 
-                            // Using ClassName for specific state styles is fine.
-                            // But let's use Variant="muted" if completed.
                             Variant = todo.IsCompleted ? "muted" : "base",
-                            // Add specific line-through via class since it's state-dependent
                         },
-                        new Row {
-                            Gap = "4px",
-                            ClassName = "opacity-0 group-hover:opacity-100 transition-opacity",
+                        new Box {
+                            ClassName = "flex flex-row gap-[4px] opacity-0 group-hover:opacity-100 transition-opacity",
                             Children = {
                                 new Button {
                                     Text = "Edit",
@@ -240,9 +233,8 @@ public class TodoListState : ComponentState<TodoList>
                                     new Text($"{_todos.Count(t => !t.IsCompleted)} remaining") { Variant = "muted" }
                                 }
                             },
-                            new Row {
-                                Gap = "8px",
-                                ClassName = "bg-gray-100/50 dark:bg-zinc-900/30 p-1 rounded-lg",
+                            new Box {
+                                ClassName = "flex flex-row gap-[8px] bg-gray-100/50 dark:bg-zinc-900/30 p-1 rounded-lg",
                                 Children = {
                                     CreateFilterButton(TodoFilter.All, "All"),
                                     CreateFilterButton(TodoFilter.Active, "Active"),
@@ -251,12 +243,12 @@ public class TodoListState : ComponentState<TodoList>
                             }
                         }
                     },
-                    Body = new Column
+                    Body = new Box
                     {
-                        Gap = "20px",
+                        ClassName = "flex flex-col gap-[20px]",
                         Children = {
-                            new Row {
-                                Gap = "10px",
+                            new Box {
+                                ClassName = "flex flex-row gap-[10px]",
                                 Children = {
                                     new TextInput {
                                         Value = _newTodoTitle,
@@ -275,8 +267,8 @@ public class TodoListState : ComponentState<TodoList>
                             todoList
                         }
                     },
-                    Footer = _todos.Any(t => t.IsCompleted) ? new Row {
-                        ClassName = "justify-center",
+                    Footer = _todos.Any(t => t.IsCompleted) ? new Box {
+                        ClassName = "flex flex-row justify-center",
                         Children = {
                             new Button {
                                 Text = "Clear Completed",
@@ -294,8 +286,8 @@ public class TodoListState : ComponentState<TodoList>
                     IsOpen = _isEditing,
                     Title = "Edit Task",
                     OnClose = () => { SetState(() => { _isEditing = false; }); },
-                    Body = new Column {
-                        Gap = "10px",
+                    Body = new Box {
+                        ClassName = "flex flex-col gap-[10px]",
                         Children = {
                             new Text("Update the task title:") { Variant = "muted" },
                             new TextInput {
@@ -304,8 +296,8 @@ public class TodoListState : ComponentState<TodoList>
                             }
                         }
                     },
-                    Footer = new Row {
-                        Gap = "10px",
+                    Footer = new Box {
+                        ClassName = "flex flex-row gap-[10px]",
                         Children = {
                             new Button {
                                 Text = "Cancel",
@@ -327,8 +319,8 @@ public class TodoListState : ComponentState<TodoList>
                     IsOpen = _isDrawerOpen,
                     Side = DrawerSide.Right,
                     OnClose = () => { SetState(() => { _isDrawerOpen = false; }); },
-                    Content = new Column {
-                        Gap = "20px",
+                    Content = new Box {
+                        ClassName = "flex flex-col gap-[20px]",
                         Children = {
                             new Heading("Settings", 3) { ClassName = "mb-4" },
                             new Text("Theme preferences and other settings will go here.") { Variant = "muted" },

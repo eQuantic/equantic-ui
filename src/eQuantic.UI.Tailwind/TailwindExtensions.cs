@@ -25,36 +25,6 @@ public static class TailwindExtensions
             throw new InvalidOperationException("UIOptions not found. Ensure AddUI() is called before UseTailwind().");
         }
 
-        // Register default theme
-        // We need to access the IServiceCollection to register services, but IApplicationBuilder doesn't expose it directly.
-        // Usually, registration happens in ConfigureServices (AddTailwind). 
-        // Since we are in UseTailwind (Configure), we can't register services here.
-        // However, we can add it to the RenderContext if we can access it, OR we should have an AddTailwind method.
-        
-        // Correct approach: Provide AddTailwind method in IServiceCollection extension, or
-        // Manual registration if the user already built the provider.
-        
-        // Providing a workaround: Register instance in UIOptions or similar if global.
-        // But for now, let's assume the user will register implementation, OR we provide AddTailwind().
-        
-        // Let's create an AddTailwind extension method for IServiceCollection instead?
-        // The user is asking to "Register Theme in TailwindExtensions.cs". 
-        // Existing UIExtensions likely has AddUI.
-        
-        // If I cannot change Program.cs easily (I can, but I want to minimize changes), 
-        // I will assume IAppTheme is accessed via UIOptions or a global service locator if RenderContext doesn't have it.
-        
-        // WAIT. RenderContext in Card.cs `Build(RenderContext context)`. 
-        // Where does `context` come from? 
-        // It is passed by the renderer.
-
-        // I will MODIFY TailwindExtensions to include `AddTailwind` for IServiceCollection if it doesn't exist, 
-        // OR simply register it here if I check `app.ApplicationServices`. 
-        // You cannot add services to IServiceProvider after build.
-        
-        // So I MUST add `AddTailwind` extension to `IServiceCollection`.
-
-
         // Add the Tailwind link to the head tags
         var version = DateTime.UtcNow.Ticks;
         var linkTag = $"<link rel=\"stylesheet\" href=\"{cssPath}?v={version}\">";
@@ -65,18 +35,22 @@ public static class TailwindExtensions
 
         // Inject AppTheme as JS service
         var theme = new eQuantic.UI.Tailwind.Theme.AppTheme();
+        
+        // Use default (PascalCase) naming policy to match C# -> JS transpilation
         var jsonOptions = new System.Text.Json.JsonSerializerOptions 
         { 
-            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            PropertyNamingPolicy = null, // Was CamelCase, now null to keep PascalCase
             WriteIndented = false
         };
         var themeJson = System.Text.Json.JsonSerializer.Serialize(theme, jsonOptions);
 
+        // Register with both Short Name and Full Name to ensure compatibility with C# Compiler output
         var script = $@"
 <script type=""module"">
     import {{ getRootServiceProvider }} from '/_equantic/runtime.js?v={version}';
     const theme = {themeJson};
     getRootServiceProvider().registerInstance('IAppTheme', theme);
+    getRootServiceProvider().registerInstance('eQuantic.UI.Core.Theme.IAppTheme', theme);
 </script>";
         options.HtmlShell.HeadTags.Add(script);
 

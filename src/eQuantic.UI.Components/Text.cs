@@ -36,7 +36,11 @@ public class Text : StatelessComponent
         var textTheme = theme?.Typography;
         
         var baseStyle = textTheme?.Base ?? "";
-        var variantStyle = Variant != null ? textTheme?.GetVariant(Variant) : "";
+        var variantStyle = "";
+        if (Variant != null && textTheme?.Variants != null && textTheme.Variants.TryGetValue(Variant.ToLower(), out var v))
+        {
+            variantStyle = v;
+        }
 
         var attrs = new Dictionary<string, string>
         {
