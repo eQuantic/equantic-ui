@@ -71,7 +71,8 @@ public class ComponentParser
                 Name = classDecl.Identifier.Text,
                 SourcePath = sourcePath,
                 SyntaxTree = tree,
-                Namespace = ns ?? ""
+                Namespace = ns ?? "",
+                TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>()
             };
 
             if (baseType == "StatefulComponent")
@@ -214,6 +215,7 @@ public class ComponentParser
                     MethodName = method.Identifier.Text,
                     ActionId = $"{definition.Name}/{actionName}",
                     ReturnType = method.ReturnType.ToString(),
+                    TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
                     IsAsync = method.Modifiers.Any(m => m.ValueText == "async")
                 };
                 
@@ -265,6 +267,7 @@ public class ComponentParser
             {
                 Name = method.Identifier.Text,
                 ReturnType = method.ReturnType.ToString(),
+                TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
                 Body = method.Body?.ToString() ?? method.ExpressionBody?.Expression.ToString() ?? "",
                 SyntaxNode = method
             };
@@ -340,6 +343,7 @@ public class ComponentParser
             {
                 Name = method.Identifier.Text,
                 ReturnType = method.ReturnType.ToString(),
+                TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
                 Body = method.Body?.ToString() ?? method.ExpressionBody?.Expression.ToString() ?? "",
                 SyntaxNode = method
             };

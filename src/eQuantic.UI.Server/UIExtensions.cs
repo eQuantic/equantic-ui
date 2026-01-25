@@ -18,7 +18,7 @@ public static class UIExtensions
     // Deterministic Build ID based on Assembly Timestamp
     // This allows browser caching to work across server restarts, 
     // invalidating only when the code actually changes.
-    private static readonly string BuildId = GetDeterministicBuildId();
+    public static readonly string BuildId = GetDeterministicBuildId();
 
     private static string GetDeterministicBuildId()
     {

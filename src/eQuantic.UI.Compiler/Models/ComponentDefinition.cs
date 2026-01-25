@@ -14,6 +14,11 @@ public class ComponentDefinition
     /// Name of the component class
     /// </summary>
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Generic type parameters
+    /// </summary>
+    public List<string> TypeParameters { get; set; } = new();
     
     /// <summary>
     /// Whether it's a stateful (has state) or stateless component
@@ -103,6 +108,7 @@ public class ServerActionInfo
     public string MethodName { get; set; } = string.Empty;
     public string ActionId { get; set; } = string.Empty;
     public string ReturnType { get; set; } = "void";
+    public List<string> TypeParameters { get; set; } = new();
     public List<ParameterDefinition> Parameters { get; set; } = new();
     public bool IsAsync { get; set; }
 }
@@ -125,6 +131,7 @@ public class MethodDefinition
 {
     public string Name { get; set; } = string.Empty;
     public string ReturnType { get; set; } = "void";
+    public List<string> TypeParameters { get; set; } = new();
     public List<ParameterDefinition> Parameters { get; set; } = new();
     public string Body { get; set; } = string.Empty;
     public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? SyntaxNode { get; set; }

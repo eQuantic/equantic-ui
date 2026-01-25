@@ -13,10 +13,15 @@ declare global {
     }
 }
 
+let __initialized = false;
+
 /**
  * Bootstraps the eQuantic application
  */
 export async function boot() {
+    if (__initialized) return;
+    __initialized = true;
+
     console.log('eQuantic.UI Runtime (v2.1) initializing...');
 
     try {

@@ -15,10 +15,11 @@ public class TypeScriptCodeBuilder
         AppendLine($"import {{ {string.Join(", ", sortedItems)} }} from \"{from}\";");
     }
 
-    public void Class(string name, string? baseClass, Action<ClassBuilder> buildAction)
+    public void Class(string name, string? baseClass, Action<ClassBuilder> buildAction, IEnumerable<string>? typeParameters = null)
     {
+        var generics = typeParameters != null && typeParameters.Any() ? $"<{string.Join(", ", typeParameters)}>" : "";
         var extendsClause = string.IsNullOrEmpty(baseClass) ? "" : $" extends {baseClass}";
-        AppendLine($"export class {name}{extendsClause} {{");
+        AppendLine($"export class {name}{generics}{extendsClause} {{");
         Indent();
         buildAction(new ClassBuilder(this));
         Dedent();
@@ -78,10 +79,11 @@ public class TypeScriptCodeBuilder
             _builder.Line("");
         }
         
-        public void Method(string name, string parameters, bool isAsync, Action bodyAction)
+        public void Method(string name, string parameters, bool isAsync, Action bodyAction, IEnumerable<string>? typeParameters = null)
         {
             var prefix = isAsync ? "async " : "";
-            _builder.Line($"{prefix}{name}({parameters}) {{");
+            var generics = typeParameters != null && typeParameters.Any() ? $"<{string.Join(", ", typeParameters)}>" : "";
+            _builder.Line($"{prefix}{name}{generics}({parameters}) {{");
             _builder.Indent();
             bodyAction();
             _builder.Dedent();

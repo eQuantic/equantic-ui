@@ -27,14 +27,22 @@ public class BinaryExpressionStrategy : IConversionStrategy
         var op = binary.OperatorToken.Text;
         
         // Convert C# operators to JS equivalents
-        op = op switch
+        // Use loose equality for null checks to catch both null and undefined
+        if ((left == "null" || right == "null") && (op == "==" || op == "!="))
         {
-            "&&" => "&&",
-            "||" => "||",
-            "==" => "===", // Use strict equality in JS
-            "!=" => "!==",
-            _ => op
-        };
+            // Keep op as == or != (loose)
+        }
+        else
+        {
+            op = op switch
+            {
+                "&&" => "&&",
+                "||" => "||",
+                "==" => "===", // Use strict equality in JS for non-null
+                "!=" => "!==",
+                _ => op
+            };
+        }
 
         return $"{left} {op} {right}";
     }
