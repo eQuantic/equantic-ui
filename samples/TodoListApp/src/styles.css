@@ -1,6 +1,11 @@
 @import "tailwindcss";
+@source "../wwwroot/_equantic/**/*.js";
+@source "../../../src/eQuantic.UI.Tailwind/**/*.cs";
+@source "../../../src/eQuantic.UI.Components/**/*.cs";
+@source "../../**/*.cs";
 
 @theme {
     --font-family-sans: "Inter", "sans-serif";
     --color-primary: #3b82f6;
+    --color-border: var(--color-gray-100);
 }

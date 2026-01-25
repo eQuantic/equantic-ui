@@ -14,10 +14,10 @@ public class AppTheme : IAppTheme
 
 public class CardTheme : ICardTheme
 {
-    public string Container => "flex flex-col bg-white dark:bg-zinc-900 rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-800 transition-all duration-200";
-    public string Header => "w-full px-6 py-4 border-b border-gray-100 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm";
+    public string Container => "flex flex-col bg-white dark:bg-zinc-900 rounded-xl overflow-hidden border border-gray-100 dark:border-zinc-800 transition-all duration-200";
+    public string Header => "w-full px-6 py-4 border-b border-gray-50 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm";
     public string Body => "w-full p-6";
-    public string Footer => "w-full px-6 py-4 bg-gray-50/50 dark:bg-zinc-900/50 border-t border-gray-100 dark:border-zinc-800 flex items-center";
+    public string Footer => "w-full px-6 py-4 bg-gray-50/30 dark:bg-zinc-900/50 border-t border-gray-50 dark:border-zinc-800 flex items-center";
 
     public Dictionary<string, string> Shadows { get; } = new Dictionary<string, string>
     {
@@ -33,7 +33,7 @@ public class CardTheme : ICardTheme
 
 public class ButtonTheme : IButtonTheme
 {
-    public string Base => "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]";
+    public string Base => "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer";
 
     public Dictionary<string, string> Variants { get; } = new Dictionary<string, string>
     {

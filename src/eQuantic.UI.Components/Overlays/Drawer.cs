@@ -32,7 +32,7 @@ public class Drawer : StatelessComponent
                 // Drawer Panel
                 new Box {
                     ClassName = $"absolute inset-y-0 {sideClass} {Width} bg-white dark:bg-zinc-900 shadow-2xl animate-in {slideAnim} duration-300 border-gray-100 dark:border-zinc-800 flex flex-col",
-                    OnClick = () => {}, // Stop propagation
+                    // Removed OnClick to avoid potential interference
                     Children = {
                          // Close Button Area
                         new Row {
@@ -40,7 +40,8 @@ public class Drawer : StatelessComponent
                             Children = {
                                 new Button {
                                     Text = "✕",
-                                    ClassName = "p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800",
+                                    Variant = "ghost",
+                                    ClassName = "h-10 w-10 p-0 rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 relative z-50",
                                     OnClick = () => OnClose?.Invoke()
                                 }
                             }

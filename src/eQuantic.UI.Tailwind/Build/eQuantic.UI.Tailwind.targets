@@ -5,7 +5,7 @@
             <TailwindInput>./src/styles.css</TailwindInput>
             <TailwindOutput>./wwwroot/css/app.css</TailwindOutput>
             <!-- Use standard glob pattern -->
-            <ContentPattern>./wwwroot/_equantic/**/*.js</ContentPattern>
+            <ContentPattern>./wwwroot/_equantic/**/*.js;./**/*.cs</ContentPattern>
         </PropertyGroup>
 
         <!-- Use embedded Bun to run Tailwind CLI (True Zero-Config) -->
@@ -14,7 +14,7 @@
         <Message Text="eQuantic.UI.Tailwind: Generating CSS (via Bun)..." Importance="High" />
         <MakeDir Directories="./wwwroot/_equantic" />
         <Exec
-            Command="&quot;$(BunPath)&quot; x @tailwindcss/cli@latest -i $(TailwindInput) -o $(TailwindOutput) --content &quot;$(ContentPattern)&quot;" />
+            Command="&quot;$(BunPath)&quot; x @tailwindcss/cli@latest -i $(TailwindInput) -o $(TailwindOutput) --content &quot;./wwwroot/_equantic/**/*.js&quot; --content &quot;./**/*.cs&quot;" />
     </Target>
 
 </Project>

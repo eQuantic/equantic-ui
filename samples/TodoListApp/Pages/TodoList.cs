@@ -230,7 +230,6 @@ public class TodoListState : ComponentState<TodoList>
                                 ClassName = "w-full flex flex-row items-center justify-between",
                                 Children = { 
                                     new Heading("Tasks", 2),
-                                    new Heading("Tasks", 2),
                                     new Text($"{_todos.Count(t => !t.IsCompleted):N0} remaining") { Variant = "muted" }
                                 }
                             },
