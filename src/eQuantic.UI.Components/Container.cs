@@ -27,13 +27,13 @@ public class Container : HtmlElement
         // Basic container styling
         var style = new List<string> { "margin-right: auto", "margin-left: auto", "padding-right: 15px", "padding-left: 15px", "width: 100%" };
 
-        if (Fluid)
+        if (this.Fluid)
         {
             // Already width: 100%
         }
-        else if (!string.IsNullOrEmpty(MaxWidth))
+        else if (!string.IsNullOrEmpty(this.MaxWidth))
         {
-            style.Add($"max-width: {MaxWidth}");
+            style.Add($"max-width: {this.MaxWidth}");
         }
         else
         {
@@ -41,7 +41,8 @@ public class Container : HtmlElement
             style.Add("max-width: 1320px");
         }
 
-        var existingStyle = attrs.TryGetValue("style", out var s) ? s + "; " : "";
+        var s = attrs["style"];
+        var existingStyle = s != null ? s + "; " : "";
         attrs["style"] = existingStyle + string.Join("; ", style);
 
         return new HtmlNode

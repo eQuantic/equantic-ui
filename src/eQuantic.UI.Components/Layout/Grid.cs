@@ -44,29 +44,30 @@ public class Grid : HtmlElement
         var attrs = BuildAttributes();
         var style = new List<string> { "display: grid" };
 
-        if (Columns is int cols)
+        if (this.Columns is int cols)
         {
             style.Add($"grid-template-columns: repeat({cols}, 1fr)");
         }
-        else if (Columns is string colStr)
+        else if (this.Columns is string colStr)
         {
             style.Add($"grid-template-columns: {colStr}");
         }
 
-        if (!string.IsNullOrEmpty(Gap)) style.Add($"gap: {Gap}");
-        if (!string.IsNullOrEmpty(Rows)) style.Add($"grid-template-rows: {Rows}");
+        if (!string.IsNullOrEmpty(this.Gap)) style.Add($"gap: {this.Gap}");
+        if (!string.IsNullOrEmpty(this.Rows)) style.Add($"grid-template-rows: {this.Rows}");
         
         // Use HtmlStyle for alignment and flow
         var layoutStyle = new HtmlStyle 
         { 
-            GridAutoFlow = Flow,
-            AlignItems = AlignItems,
-            JustifyItems = JustifyItems
+            GridAutoFlow = this.Flow,
+            AlignItems = this.AlignItems,
+            JustifyItems = this.JustifyItems
         };
         
         style.Add(layoutStyle.ToCssString());
 
-        var existingStyle = attrs.TryGetValue("style", out var s) ? s + "; " : "";
+        var s = attrs["style"];
+        var existingStyle = s != null ? s + "; " : "";
         attrs["style"] = existingStyle + string.Join("; ", style);
 
         return new HtmlNode

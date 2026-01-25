@@ -26,34 +26,34 @@ public static class TailwindExtensions
         }
 
         // Add the Tailwind link to the head tags
-        var version = DateTime.UtcNow.Ticks;
-        var linkTag = $"<link rel=\"stylesheet\" href=\"{cssPath}?v={version}\">";
+        var buildId = eQuantic.UI.Server.UIExtensions.BuildId;
+        var linkTag = $"<link rel=\"stylesheet\" href=\"{cssPath}?v={buildId}\">";
         if (!options.HtmlShell.HeadTags.Any(t => t.StartsWith($"<link rel=\"stylesheet\" href=\"{cssPath}")))
         {
             options.HtmlShell.HeadTags.Add(linkTag);
         }
-
+ 
         // Inject AppTheme as JS service
         var theme = new eQuantic.UI.Tailwind.Theme.AppTheme();
         
-        // Use default (PascalCase) naming policy to match C# -> JS transpilation
+        // Use CamelCase naming policy to match transpiler (button, card, etc.)
         var jsonOptions = new System.Text.Json.JsonSerializerOptions 
         { 
-            PropertyNamingPolicy = null, // Was CamelCase, now null to keep PascalCase
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
             WriteIndented = false
         };
         var themeJson = System.Text.Json.JsonSerializer.Serialize(theme, jsonOptions);
-
-        // Register with both Short Name and Full Name to ensure compatibility with C# Compiler output
+ 
+        // Register with both Short Name and Full Name to ensure compatibility
         var script = $@"
 <script type=""module"">
-    import {{ getRootServiceProvider }} from '/_equantic/runtime.js?v={version}';
+    import {{ getRootServiceProvider }} from '/_equantic/runtime.js?v={buildId}';
     const theme = {themeJson};
     getRootServiceProvider().registerInstance('IAppTheme', theme);
     getRootServiceProvider().registerInstance('eQuantic.UI.Core.Theme.IAppTheme', theme);
 </script>";
         options.HtmlShell.HeadTags.Add(script);
-
+ 
         return app;
     }
 

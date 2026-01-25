@@ -63,11 +63,6 @@ public class TextInput : InputComponent<string>
         if (AutoComplete != null) attrs["autocomplete"] = AutoComplete;
         
         var events = BuildEvents();
-        // InputComponent handles OnChange/OnInput via implicit binding or State handling usually
-        // But here we need to map the Actions to the dictionary keys expected by Runtime.
-        // Wait, BuildEvents in HtmlElement usually maps OnClick. 
-        // InputComponent adds OnChange/OnInput properties but BuildEvents doesn't know them unless override.
-        // Or we map them manually here.
         
         if (OnChange != null) events["change"] = OnChange;
         if (OnInput != null) events["input"] = OnInput;

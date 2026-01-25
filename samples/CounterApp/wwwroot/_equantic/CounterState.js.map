@@ -2,9 +2,9 @@
   "version": 3,
   "sources": ["../../obj/eQuantic/ts/CounterState.ts"],
   "sourcesContent": [
-    "import { BuildContext, Component, ComponentState, HtmlElement } from \"@equantic/runtime\";\n\nexport class CounterState extends ComponentState<Counter> {\n}\n\n"
+    "import { BuildContext, Component, ComponentState, HtmlElement } from \"@equantic/runtime\";\n\nexport class CounterState extends ComponentState {\n}\n\n"
   ],
-  "mappings": "AAAA,8CAEO,MAAM,qBAAqB,cAAwB,CAC1D",
+  "mappings": "AAAA,8CAEO,MAAM,qBAAqB,cAAe,CACjD",
   "debugId": "27B09B18A294931B64756E2164756E21",
   "names": []
 }

@@ -17,22 +17,25 @@ public class Button : StatelessComponent
     public override IComponent Build(RenderContext context)
     {
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
-        var buttonTheme = theme?.Button;
+        var buttonTheme = theme != null ? theme.Button : null;
 
-        var baseStyle = buttonTheme?.Base ?? "";
+        var baseStyle = "";
+        if (buttonTheme != null) baseStyle = buttonTheme.Base;
+        
         var variantStyle = "";
-        if (buttonTheme?.Variants != null && buttonTheme.Variants.TryGetValue(Variant?.ToLower() ?? "primary", out var v))
+        if (buttonTheme != null && buttonTheme.Variants != null && this.Variant != null)
         {
-            variantStyle = v;
+             var v = buttonTheme.Variants[this.Variant];
+             if (v != null) variantStyle = v;
         }
 
         var attrs = new Dictionary<string, string>
         {
-            ["type"] = Type,
-            ["class"] = $"{baseStyle} {variantStyle} {ClassName}"
+            ["type"] = this.Type,
+            ["class"] = baseStyle + " " + variantStyle + " " + (this.ClassName != null ? this.ClassName : "")
         };
 
-        if (Disabled) attrs["disabled"] = "true";
+        if (this.Disabled) attrs["disabled"] = "true";
 
         // We need to pass children to the DynamicElement
         // inherited Children property contains the input children.
@@ -44,16 +47,16 @@ public class Button : StatelessComponent
             CustomEvents = BuildEvents()
         };
 
-        if (Children.Any())
+        if (this.Children.Any())
         {
-            foreach (var child in Children)
+            foreach (var child in this.Children)
             {
                 element.Children.Add(child);
             }
         }
-        else if (Text != null)
+        else if (this.Text != null)
         {
-            element.Children.Add(new Text(Text));
+            element.Children.Add(new Text(this.Text));
         }
 
         return element;

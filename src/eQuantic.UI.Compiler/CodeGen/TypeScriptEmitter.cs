@@ -44,10 +44,10 @@ public class TypeScriptEmitter
         // Define component class
         var baseClass = component.BaseClassName ?? (component.IsPrimitive ? "HtmlElement" : (component.IsStateful ? "StatefulComponent" : "StatelessComponent"));
         
-        // Normalize base class (map InputComponent to HtmlElement for JS)
-        if (baseClass.StartsWith("InputComponent"))
+        // Strip generics from base class name for JS/TS inheritance
+        if (baseClass.Contains('<'))
         {
-            baseClass = "HtmlElement";
+            baseClass = baseClass.Substring(0, baseClass.IndexOf('<'));
         }
         
         _builder.Class(component.Name, baseClass, c => 
@@ -155,10 +155,28 @@ public class TypeScriptEmitter
                         c.Raw($"return new {component.StateClassName}(this)");
                     });
                 }
-                else
+                else if (!component.IsAbstract)
                 {
-                    // For stateless, build directly
-                    c.Method("build", "context: BuildContext", false, () => 
+                    // For stateless (non-abstract) with positional constructors (Text, Heading, etc.)
+                    if (component.Constructors.Any(ctor => ctor.Parameters.Count > 0))
+                    {
+                        var ctor = component.Constructors.OrderByDescending(ct => ct.Parameters.Count).First();
+                        var paramList = string.Join(", ", ctor.Parameters.Select(p => $"{ToCamelCase(p.Name)}?: any"));
+
+                        c.Constructor($"{paramList}, props?: any", () =>
+                        {
+                            c.Raw("super(props);");
+                            // Assign explicit parameters as properties
+                            foreach (var param in ctor.Parameters)
+                            {
+                                var camelName = ToCamelCase(param.Name);
+                                c.Raw($"if ({camelName} !== undefined) this.{camelName} = {camelName};");
+                            }
+                        });
+                    }
+
+                    // Build method
+                    c.Method("build", "context: BuildContext", false, () =>
                     {
                          if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
                          {
@@ -178,12 +196,14 @@ public class TypeScriptEmitter
                              EmitComponentTree(component.BuildTree);
                              c.Raw(");");
                          }
-                         else 
+                         else
                          {
-                             c.Raw("return new Container({});");
+                             // Fallback for components without explicit Build method
+                             c.Raw("throw new Error('Build method not implemented');");
                          }
                     });
                 }
+                // Abstract classes: no build method emitted
                 
                 // Server Actions
                 foreach (var action in component.ServerActions)
@@ -197,7 +217,7 @@ public class TypeScriptEmitter
                         c.Raw($"return await getServerActionsClient().invoke('{action.ActionId}', [{argsList}])");
                     });
                 }
-            });
+            }, component.TypeParameters);
 
         // State class logic hooks into builder via EmitStateClass (already refactored)
         // We just need to ensure EmitStateClass writes to builder, OR we inline it here if we want full builder control in one pass.
@@ -299,11 +319,14 @@ public class TypeScriptEmitter
     
     private bool IsRuntimeComponent(string typeName)
     {
+        // Only core runtime types are exported from @equantic/runtime
+        // UI components (Box, Button, Text, etc.) are generated and imported from local files
         return typeName switch
         {
             "HtmlNode" or "HtmlStyle" or "ServiceKey" or "ServiceProvider" => true,
-            "Component" or "BuildContext" or "HtmlElement" or "InputComponent" => true,
+            "Component" or "BuildContext" or "HtmlElement" => true,
             "StatefulComponent" or "StatelessComponent" or "ComponentState" => true,
+            "getServerActionsClient" or "getRootServiceProvider" => true,
             _ => false
         };
     }
@@ -462,7 +485,8 @@ public class TypeScriptEmitter
                 jsBody = "{}";
             }
             
-            WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {jsBody}");
+            var genericPrefix = method.TypeParameters.Any() ? $"<{string.Join(", ", method.TypeParameters)}>" : "";
+            WriteLn($"{asyncPrefix}{methodName}{genericPrefix}({parameters}): {promiseReturnType} {jsBody}");
         }
         else
         {
@@ -470,7 +494,8 @@ public class TypeScriptEmitter
             var body = method.Body.Trim().TrimEnd(';');
             _converter.SetCurrentClass(className);
             var convertedExpr = _converter.Convert(body);
-            WriteLn($"{asyncPrefix}{methodName}({parameters}): {promiseReturnType} {{ return {convertedExpr}; }}");
+            var genericPrefix = method.TypeParameters.Any() ? $"<{string.Join(", ", method.TypeParameters)}>" : "";
+            WriteLn($"{asyncPrefix}{methodName}{genericPrefix}({parameters}): {promiseReturnType} {{ return {convertedExpr}; }}");
         }
     }
     

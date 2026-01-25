@@ -13,6 +13,7 @@ public class ConversionContext
     public required SemanticHelper SemanticHelper { get; set; }
     public string? ExpectedType { get; set; }
     public string? CurrentClassName { get; set; }
+    public HashSet<string> UsedHelpers { get; } = new();
 
     // Cache to avoid reprocessing the same node multiple times
     private readonly Dictionary<SyntaxNode, string> _cache = new();

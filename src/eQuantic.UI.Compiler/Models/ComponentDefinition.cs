@@ -76,6 +76,11 @@ public class ComponentDefinition
     public bool IsPrimitive { get; set; }
 
     /// <summary>
+    /// Indicates if this is an abstract class
+    /// </summary>
+    public bool IsAbstract { get; set; }
+
+    /// <summary>
     /// Base class name
     /// </summary>
     public string? BaseClassName { get; set; }

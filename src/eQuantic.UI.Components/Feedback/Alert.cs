@@ -18,7 +18,7 @@ public class Alert : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var (bgColor, textColor, borderColor) = Type switch
+        var (bgColor, textColor, borderColor) = this.Type switch
         {
             AlertType.Success => ("bg-green-50 dark:bg-green-900/20", "text-green-800 dark:text-green-200", "border-green-200 dark:border-green-800"),
             AlertType.Warning => ("bg-yellow-50 dark:bg-yellow-900/20", "text-yellow-800 dark:text-yellow-200", "border-yellow-200 dark:border-yellow-800"),
@@ -28,19 +28,19 @@ public class Alert : StatelessComponent
 
         var content = new Column { Gap = "4px" };
         
-        if (!string.IsNullOrEmpty(Title))
+        if (!string.IsNullOrEmpty(this.Title))
         {
-            content.Children.Add(new Text(Title) { ClassName = "font-bold" });
+            content.Children.Add(new Text(this.Title) { ClassName = "font-bold" });
         }
         
-        if (!string.IsNullOrEmpty(Message))
+        if (!string.IsNullOrEmpty(this.Message))
         {
-            content.Children.Add(new Text(Message) { ClassName = "text-sm opacity-90" });
+            content.Children.Add(new Text(this.Message) { ClassName = "text-sm opacity-90" });
         }
 
         return new Container
         {
-            ClassName = $"p-4 rounded-md border {bgColor} {textColor} {borderColor} {ClassName}",
+            ClassName = "p-4 rounded-md border " + bgColor + " " + textColor + " " + borderColor + " " + (this.ClassName != null ? this.ClassName : ""),
             Children = { content }
         };
     }

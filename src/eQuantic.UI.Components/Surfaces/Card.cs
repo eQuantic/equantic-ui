@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Surfaces;
@@ -23,61 +24,81 @@ public class Card : StatelessComponent
     {
         Body = body;
     }
-    
+
     // Parameterless constructor for composition
     public Card() { }
 
     public override IComponent Build(RenderContext context)
     {
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
-        var cardTheme = theme?.Card;
+        var cardTheme = theme != null ? theme.Card : null;
 
-        var shadowKey = Shadow.ToString().ToLower();
+        var shadowKey = this.Shadow.ToString().ToLower();
         var shadowClass = "";
-        if (cardTheme?.Shadows != null && cardTheme.Shadows.TryGetValue(shadowKey, out var s))
+        if (cardTheme != null && cardTheme.Shadows != null)
         {
-            shadowClass = s;
+             var s = cardTheme.Shadows[shadowKey];
+             if (s != null) shadowClass = s;
         }
-        
-        var containerClass = cardTheme?.Container ?? "";
-        var headerClass = cardTheme?.Header ?? "";
-        var bodyClass = cardTheme?.Body ?? "";
-        var footerClass = cardTheme?.Footer ?? "";
+
+        var containerClass = "";
+        if (cardTheme != null) containerClass = cardTheme.Container;
+
+        var headerClass = "";
+        if (cardTheme != null) headerClass = cardTheme.Header;
+
+        var bodyClass = "";
+        if (cardTheme != null) bodyClass = cardTheme.Body;
+
+        var footerClass = "";
+        if (cardTheme != null) footerClass = cardTheme.Footer;
 
         // Build container class list safely to avoid "undefined" in JS
         var classes = new List<string>();
         if (!string.IsNullOrEmpty(containerClass)) classes.Add(containerClass);
         if (!string.IsNullOrEmpty(shadowClass)) classes.Add(shadowClass);
-        if (!string.IsNullOrEmpty(Width)) classes.Add(Width);
-        if (!string.IsNullOrEmpty(ClassName)) classes.Add(ClassName);
-        
+        if (!string.IsNullOrEmpty(this.Width)) classes.Add(this.Width);
+        if (!string.IsNullOrEmpty(this.ClassName)) classes.Add(this.ClassName);
+
         var cardContainer = new Box
         {
             ClassName = string.Join(" ", classes),
             Children = { }
         };
 
-        if (Header != null)
+        if (this.Header != null)
         {
             cardContainer.Children.Add(new Box
             {
                 ClassName = headerClass,
-                Children = { Header }
+                Children = { this.Header }
             });
         }
 
-        cardContainer.Children.Add(new Box
+        var textBody = new Text("");
+        if (this.Body != null)
         {
-            ClassName = bodyClass,
-            Children = { Body ?? new Text("") }
-        });
+            cardContainer.Children.Add(new Box
+            {
+                ClassName = bodyClass,
+                Children = { this.Body }
+            });
+        }
+        else
+        {
+             cardContainer.Children.Add(new Box
+            {
+                ClassName = bodyClass,
+                Children = { textBody }
+            });
+        }
 
-        if (Footer != null)
+        if (this.Footer != null)
         {
             cardContainer.Children.Add(new Box
             {
                 ClassName = footerClass,
-                Children = { Footer }
+                Children = { this.Footer }
             });
         }
 

@@ -142,10 +142,47 @@ public class InvocationStrategy : IConversionStrategy
             return $"Math.{ToCamelCase(methodName)}({args})";
         }
 
+        // Common String Methods
+        if (methodName == "ToLower" || methodName == "ToLowerInvariant")
+        {
+            if (methodExpression is MemberAccessExpressionSyntax access)
+            {
+                var caller = context.Converter.ConvertExpression(access.Expression);
+                return $"{caller}.toLowerCase()";
+            }
+        }
+        if (methodName == "ToUpper" || methodName == "ToUpperInvariant")
+        {
+            if (methodExpression is MemberAccessExpressionSyntax access)
+            {
+                var caller = context.Converter.ConvertExpression(access.Expression);
+                return $"{caller}.toUpperCase()";
+            }
+        }
+        if (methodName == "Trim")
+        {
+            if (methodExpression is MemberAccessExpressionSyntax access)
+            {
+                var caller = context.Converter.ConvertExpression(access.Expression);
+                return $"{caller}.trim()";
+            }
+        }
+
         // HtmlNode.Text
         if (libraryMethodName == "eQuantic.UI.Core.HtmlNode.Text" || fullMethodName.EndsWith("HtmlNode.Text"))
         {
              return $"{{ tag: '#text', textContent: {argsList[0]} }}";
+        }
+
+        // Dictionary ContainsKey
+        if (methodName == "ContainsKey" && argsList.Count > 0)
+        {
+             if (methodExpression is MemberAccessExpressionSyntax access)
+             {
+                 var caller = context.Converter.ConvertExpression(access.Expression);
+                 var key = argsList[0];
+                 return $"{key} in {caller}";
+             }
         }
 
         // Dictionary TryGetValue
@@ -224,8 +261,9 @@ public class InvocationStrategy : IConversionStrategy
         // Use semantic resolution if available
         if (symbol != null && !symbol.IsStatic)
         {
-            if (symbol.ContainingType?.TypeKind == TypeKind.Class)
+            if (symbol.ContainingType != null)
             {
+                // If it's a member of a class and not an extension method call (though extensions are usually MemberAccess)
                 needsThis = true;
             }
         }
@@ -234,7 +272,6 @@ public class InvocationStrategy : IConversionStrategy
         if (!needsThis && !string.IsNullOrEmpty(context.CurrentClassName))
         {
             // If the method name starts with Uppercase, it's likely a member method
-            // UNLESS it's a known global function or local variable (handled by symbol check above)
             if (char.IsUpper(methodName[0]) && symbol == null)
             {
                  needsThis = true;

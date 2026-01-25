@@ -75,6 +75,12 @@ public class ObjectCreationStrategy : IConversionStrategy
         {
             return string.IsNullOrEmpty(arguments) ? "{}" : arguments;
         }
+        
+        // RenderContext -> Mock or Plain Object (since it's a TS interface)
+        if (typeName == "RenderContext")
+        {
+            return "{ getService: () => null }";
+        }
 
         return $"new {typeName}({arguments})";
     }

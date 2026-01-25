@@ -51,6 +51,8 @@ public class CSharpToJsConverter
         _context.CurrentClassName = className;
     }
 
+    public HashSet<string> UsedHelpers => _context.UsedHelpers;
+
     private void RegisterStrategies()
     {
         _strategyRegistry.Register<AnyStrategy>();
@@ -72,6 +74,7 @@ public class CSharpToJsConverter
         // Expression Strategies
         _strategyRegistry.Register<InvocationStrategy>();
         _strategyRegistry.Register<MemberAccessStrategy>();
+        _strategyRegistry.Register<ElementAccessStrategy>();
         _strategyRegistry.Register<ObjectCreationStrategy>();
         _strategyRegistry.Register<BinaryExpressionStrategy>();
         _strategyRegistry.Register<SwitchExpressionStrategy>();
@@ -251,7 +254,6 @@ public class CSharpToJsConverter
         // Map 'Component' property (in State classes) to 'this._component'
         if (name == "Component") return "this._component";
 
-        // Map 'Console' to global 'console'
         // Priority: Semantic Check > String Check (Fallback)
         var symbol = _context.SemanticHelper.GetSymbol(identifier);
         
@@ -262,17 +264,27 @@ public class CSharpToJsConverter
         if (_semanticModel == null && name == "Console") return "console";
         
         // Resolve member access prefix (this.) using semantic model
-        if (symbol != null && !symbol.IsStatic)
+        if (symbol != null)
         {
-             if (symbol.Kind == SymbolKind.Field || symbol.Kind == SymbolKind.Property)
-             {
-                 if (symbol.ContainingType?.TypeKind == TypeKind.Class)
-                 {
-                     // Map private field _name to this._name, otherwise to this.name (camelCase)
-                     if (name.StartsWith("_")) return $"this.{name}";
-                     return $"this.{ToCamelCase(name)}";
-                 }
-             }
+            if (symbol.Kind == SymbolKind.Field || symbol.Kind == SymbolKind.Property || symbol.Kind == SymbolKind.Method)
+            {
+                // If it's a member of the current class and not static, add 'this.'
+                if (!symbol.IsStatic && symbol.ContainingType != null)
+                {
+                    // Check if it's a member of the currently compiling class or its bases
+                    // Note: CurrentClassName might be null if we are not inside a class definition context
+                    // but usually we set it in Emitter.
+                    
+                    // IMPROVEMENT: Check if the identifier is part of a member access already.
+                    // If it's 'other.Property', identifier 'Property' shouldn't get 'this.'
+                    if (identifier.Parent is MemberAccessExpressionSyntax ma && ma.Name == identifier)
+                    {
+                        return ToCamelCase(name);
+                    }
+
+                    return $"this.{ToCamelCase(name)}";
+                }
+            }
         }
 
         // Fallback Heuristics
@@ -281,9 +293,10 @@ public class CSharpToJsConverter
             return $"this.{name}";
         }
         
-        // If it starts with Uppercase, it's likely a property of the component
+        // If it starts with Uppercase and not obviously a local/param, it's likely a property
         if (char.IsUpper(name[0]))
         {
+            // Simple check: is it in local scopes? (If we had scope tracking)
             return $"this.{ToCamelCase(name)}";
         }
         
@@ -390,11 +403,28 @@ public class CSharpToJsConverter
             switch (content)
             {
                 case InterpolatedStringTextSyntax text:
-                    sb.Append(text.TextToken.Text);
+                    // Escape backticks in template literal
+                    sb.Append(text.TextToken.Text.Replace("`", "\\`"));
                     break;
                 case InterpolationSyntax interpolation:
                     sb.Append("${");
-                    sb.Append(ConvertExpression(interpolation.Expression));
+                    var expr = ConvertExpression(interpolation.Expression);
+                    
+                    var format = interpolation.FormatClause?.FormatStringToken.ValueText;
+                    var alignment = interpolation.AlignmentClause?.Value.ToString();
+                    
+                    if (format != null || alignment != null)
+                    {
+                        _context.UsedHelpers.Add("format");
+                        var fmtArg = format != null ? $"'{format}'" : "null";
+                        var alignArg = alignment != null ? $", {alignment}" : "";
+                        sb.Append($"format({expr}, {fmtArg}{alignArg})");
+                    }
+                    else
+                    {
+                        sb.Append(expr);
+                    }
+
                     sb.Append('}');
                     break;
             }

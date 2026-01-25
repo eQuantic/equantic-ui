@@ -72,7 +72,8 @@ public class ComponentParser
                 SourcePath = sourcePath,
                 SyntaxTree = tree,
                 Namespace = ns ?? "",
-                TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>()
+                TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
+                IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword)
             };
 
             if (baseType == "StatefulComponent")
@@ -117,32 +118,66 @@ public class ComponentParser
                 definition.IsStateful = false;
                 definition.BaseClassName = baseType;
                 ParsePageAttributes(classDecl, definition);
-                
+
                 // Parse Build method for stateless component
                 var buildMethod = classDecl.DescendantNodes()
                     .OfType<MethodDeclarationSyntax>()
                     .FirstOrDefault(m => m.Identifier.Text == "Build");
-                
+
                 if (buildMethod != null)
                 {
                     definition.BuildMethodNode = buildMethod;
-                    
+
                     var returnStatement = buildMethod.DescendantNodes()
                         .OfType<ReturnStatementSyntax>()
                         .FirstOrDefault();
-                    
+
                     if (returnStatement?.Expression != null)
                     {
                         definition.BuildTree = ParseComponentExpression(returnStatement.Expression);
                     }
                 }
+
+                // Parse constructors (for components with positional args like Text, Heading)
+                ParseConstructors(classDecl, definition);
             }
-            else if (baseType == "HtmlElement" || isComp)
+            else if (baseType == "HtmlElement")
             {
                 definition.IsPrimitive = true;
                 definition.IsStateful = false;
                 definition.BaseClassName = baseType;
                 ParsePrimitiveClass(classDecl, definition);
+            }
+            else if (isComp)
+            {
+                // Component that extends another component (not directly StatelessComponent/HtmlElement)
+                // Check if it has its own Build method
+                definition.IsStateful = false;
+                definition.BaseClassName = baseType;
+
+                var buildMethod = classDecl.Members
+                    .OfType<MethodDeclarationSyntax>()
+                    .FirstOrDefault(m => m.Identifier.Text == "Build");
+
+                if (buildMethod != null)
+                {
+                    definition.BuildMethodNode = buildMethod;
+
+                    var returnStatement = buildMethod.DescendantNodes()
+                        .OfType<ReturnStatementSyntax>()
+                        .FirstOrDefault();
+
+                    if (returnStatement?.Expression != null)
+                    {
+                        definition.BuildTree = ParseComponentExpression(returnStatement.Expression);
+                    }
+                }
+                else
+                {
+                    // No Build method, treat as primitive (extends another component without overriding)
+                    definition.IsPrimitive = true;
+                    ParsePrimitiveClass(classDecl, definition);
+                }
             }
 
             results.Add(definition);
@@ -296,6 +331,35 @@ public class ComponentParser
                 ReturnType = "void",
                 Body = ctor.Body?.ToString() ?? ctor.ExpressionBody?.Expression.ToString() ?? "",
                 SyntaxNode = null // Marker for constructor helper
+            };
+
+            foreach (var param in ctor.ParameterList.Parameters)
+            {
+                ctorDef.Parameters.Add(new ParameterDefinition
+                {
+                    Name = param.Identifier.Text,
+                    Type = param.Type?.ToString() ?? "object"
+                });
+            }
+
+            definition.Constructors.Add(ctorDef);
+        }
+    }
+
+    private void ParseConstructors(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
+    {
+        var constructors = classDecl.Members
+            .OfType<ConstructorDeclarationSyntax>()
+            .Where(c => c.ParameterList.Parameters.Count > 0); // Only non-default constructors
+
+        foreach (var ctor in constructors)
+        {
+            var ctorDef = new MethodDefinition
+            {
+                Name = ctor.Identifier.Text,
+                ReturnType = "void",
+                Body = ctor.Body?.ToString() ?? ctor.ExpressionBody?.Expression.ToString() ?? "",
+                SyntaxNode = null
             };
 
             foreach (var param in ctor.ParameterList.Parameters)
