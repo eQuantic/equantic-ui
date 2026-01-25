@@ -39,32 +39,32 @@ public class Card : StatelessComponent
             _ => "shadow-md"
         };
         
-        var cardContainer = new Column
+        var cardContainer = new Box
         {
-            ClassName = $"bg-white dark:bg-zinc-800 rounded-lg {shadowClass} overflow-hidden border border-gray-200 dark:border-zinc-700 {Width} {ClassName}",
+            ClassName = $"flex flex-col bg-white dark:bg-zinc-800 rounded-lg {shadowClass} overflow-hidden border border-gray-200 dark:border-zinc-700 {Width} {ClassName}",
             Children = { }
         };
 
         if (Header != null)
         {
-            cardContainer.Children.Add(new Container
+            cardContainer.Children.Add(new Box
             {
-                ClassName = "px-6 py-4 border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50",
+                ClassName = "w-full px-6 py-4 border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50",
                 Children = { Header }
             });
         }
 
-        cardContainer.Children.Add(new Container
+        cardContainer.Children.Add(new Box
         {
-            ClassName = "p-6",
+            ClassName = "w-full p-6",
             Children = { Body ?? new Text("") }
         });
 
         if (Footer != null)
         {
-            cardContainer.Children.Add(new Container
+            cardContainer.Children.Add(new Box
             {
-                ClassName = "px-6 py-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-200 dark:border-zinc-700",
+                ClassName = "w-full px-6 py-4 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-200 dark:border-zinc-700",
                 Children = { Footer }
             });
         }

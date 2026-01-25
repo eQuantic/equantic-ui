@@ -156,7 +156,7 @@ public class TodoListState : ComponentState<TodoList>
         
         if (!filteredTodos.Any())
         {
-            todoList.Children.Add(new Container {
+            todoList.Children.Add(new Box {
                 ClassName = "py-8 text-center text-gray-500 italic",
                 Children = { new Text("No tasks found in this view.") }
             });
@@ -197,12 +197,12 @@ public class TodoListState : ComponentState<TodoList>
             }
         }
 
-        return new Container
+        return new Box
         {
-            ClassName = "min-h-screen bg-gray-50 dark:bg-zinc-900 p-8 flex justify-center",
+            ClassName = "min-h-screen bg-gray-50 dark:bg-zinc-900 p-8 grid place-items-center",
             Children = {
                 // Header Actions
-                new Container {
+                new Box {
                     ClassName = "absolute top-4 right-4",
                     Children = {
                         new Button {
@@ -218,12 +218,12 @@ public class TodoListState : ComponentState<TodoList>
                 {
                     Width = "w-full max-w-md",
                     Shadow = Shadow.Large,
-                    Header = new Column {
-                        Gap = "15px",
+                    Header = new Box {
+                        ClassName = "w-full flex flex-col gap-[15px]",
                         Children = {
-                            new Row 
+                            new Box 
                             { 
-                                ClassName = "items-center justify-between",
+                                ClassName = "w-full flex flex-row items-center justify-between",
                                 Children = { 
                                     new Heading("Tasks", 2) { ClassName = "text-xl font-bold text-gray-800 dark:text-white" },
                                     new Text($"{_todos.Count(t => !t.IsCompleted)} remaining") { ClassName = "text-sm text-gray-500" }

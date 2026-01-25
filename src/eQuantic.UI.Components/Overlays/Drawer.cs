@@ -20,17 +20,17 @@ public class Drawer : StatelessComponent
         var sideClass = Side == DrawerSide.Right ? "right-0 border-l" : "left-0 border-r";
         var slideAnim = Side == DrawerSide.Right ? "slide-in-from-right" : "slide-in-from-left";
 
-        return new Container
+        return new Box
         {
             ClassName = "fixed inset-0 z-50 z-[100]", // High z-index
             Children = {
                 // Backdrop
-                new Container {
+                new Box {
                     ClassName = "absolute inset-0 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300",
                     OnClick = () => OnClose?.Invoke()
                 },
                 // Drawer Panel
-                new Container {
+                new Box {
                     ClassName = $"absolute inset-y-0 {sideClass} {Width} bg-white dark:bg-zinc-900 shadow-2xl animate-in {slideAnim} duration-300 border-gray-100 dark:border-zinc-800 flex flex-col",
                     OnClick = () => {}, // Stop propagation
                     Children = {
@@ -46,7 +46,7 @@ public class Drawer : StatelessComponent
                             }
                         },
                         // Content
-                        new Container {
+                        new Box {
                             ClassName = "flex-1 overflow-y-auto p-4",
                             Children = { Content ?? new NullComponent() }
                         }
