@@ -22,7 +22,10 @@ public class ComponentCompiler
         _tsEmitter = new TypeScriptEmitter();
         _cssEmitter = new CssEmitter();
         _semanticModelProvider = new SemanticModelProvider();
+        _sourceMapGenerator = new SourceMapGenerator();
     }
+    
+    private readonly SourceMapGenerator _sourceMapGenerator;
 
     /// <summary>
     /// Sets the dependency resolver for automatic component dependency detection
@@ -82,7 +85,22 @@ public class ComponentCompiler
             }
 
             // Generate TypeScript (preferred for Bun bundling)
+            var tsBuilder = new TypeScriptCodeBuilder();
+            // We need a refactor here: TypeScriptEmitter currently creates its own builder.
+            // Let's modify Emitter to take a builder or return mapping data.
+            // For now, let's assume TypeScriptEmitter is updated to expose the builder or mappings.
+            // I'll need to check TypeScriptEmitter.Emit again.
+            
             result.TypeScript = _tsEmitter.Emit(component, semanticModel);
+            
+            // Generate Source Map
+            // I need to access the mappings from the emitter's builder
+            // I'll add a way to get mappings from TypeScriptEmitter.
+            var mappings = _tsEmitter.GetLastMappings();
+            if (mappings.Any())
+            {
+                result.SourceMap = _sourceMapGenerator.Generate($"{component.Name}.js", component.SourcePath, mappings);
+            }
             
             // JavaScript generation is now handled by Bun in the build pipeline
             // result.JavaScript is empty here, but will be populated by Bun output later if needed
@@ -152,6 +170,16 @@ public class ComponentCompiler
                 var jsPath = Path.Combine(outputDir, $"{result.ComponentName}.js");
                 File.WriteAllText(jsPath, result.JavaScript);
                 
+                if (!string.IsNullOrEmpty(result.SourceMap))
+                {
+                    var mapPath = Path.Combine(outputDir, $"{result.ComponentName}.js.map");
+                    File.WriteAllText(mapPath, result.SourceMap);
+                    
+                    // Add sourceMappingURL to the end of the JS file if we were writing JS
+                    // But we are currently writing TypeScript/Source as 'JavaScript' property in some places?
+                    // result.JavaScript is empty in Compile() though.
+                }
+
                 if (!string.IsNullOrEmpty(result.Css))
                 {
                     var cssPath = Path.Combine(outputDir, $"{result.ComponentName}.css");
@@ -179,6 +207,7 @@ public class CompilationResult
     public string Namespace { get; set; } = string.Empty;
     public string TypeScript { get; set; } = string.Empty;
     public string JavaScript { get; set; } = string.Empty;
+    public string? SourceMap { get; set; }
     public string? Css { get; set; }
     public List<CompilationError> Errors { get; set; } = new();
 }

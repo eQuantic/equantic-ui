@@ -83,8 +83,19 @@ public class SwitchExpressionStrategy : IConversionStrategy
                 // Type check if present
                 if (recursive.Type != null)
                 {
-                    // Reuse declaration logic logic or simple null check
                     checks.Add($"{varName} != null");
+                }
+
+                // Positional patterns (a, b)
+                if (recursive.PositionalPatternClause != null)
+                {
+                    for (int i = 0; i < recursive.PositionalPatternClause.Subpatterns.Count; i++)
+                    {
+                        var sub = recursive.PositionalPatternClause.Subpatterns[i];
+                        // Assuming target is an array or has indexed properties
+                        var subVar = $"{varName}[{i}]";
+                        checks.Add(ConvertPattern(sub.Pattern, subVar, context));
+                    }
                 }
 
                 // Property patterns { Prop: 1 }
@@ -101,7 +112,14 @@ public class SwitchExpressionStrategy : IConversionStrategy
                     }
                 }
                 
-                return checks.Count > 0 ? string.Join(" && ", checks) : "true";
+                return checks.Count > 0 ? string.Join(" && ", checks) : $"{varName} != null";
+
+            case UnaryPatternSyntax unary:
+                if (unary.OperatorToken.IsKind(SyntaxKind.NotKeyword))
+                {
+                    return $"!({ConvertPattern(unary.Pattern, varName, context)})";
+                }
+                return "false";
 
             case VarPatternSyntax _:
                 return "true"; // Always matches
@@ -109,7 +127,7 @@ public class SwitchExpressionStrategy : IConversionStrategy
             case BinaryPatternSyntax binary:
                  var left = ConvertPattern(binary.Left, varName, context);
                  var rightPattern = ConvertPattern(binary.Right, varName, context);
-                 var logicOp = binary.OperatorToken.Text == "or" ? "||" : "&&";
+                 var logicOp = binary.OperatorToken.IsKind(SyntaxKind.OrKeyword) ? "||" : "&&";
                  return $"({left} {logicOp} {rightPattern})";
 
             default:

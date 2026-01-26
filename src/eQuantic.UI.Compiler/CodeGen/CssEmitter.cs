@@ -70,20 +70,28 @@ public class CssEmitter
             sb.AppendLine($"  margin: {properties.Margin};");
         if (properties.BorderRadius.HasValue)
             sb.AppendLine($"  border-radius: {properties.BorderRadius}px;");
+        if (!string.IsNullOrEmpty(properties.BorderColor))
+            sb.AppendLine($"  border-color: {properties.BorderColor};");
+        if (!string.IsNullOrEmpty(properties.Border))
+            sb.AppendLine($"  border: {properties.Border};");
         if (!string.IsNullOrEmpty(properties.FontSize))
             sb.AppendLine($"  font-size: {properties.FontSize};");
         if (!string.IsNullOrEmpty(properties.FontWeight))
             sb.AppendLine($"  font-weight: {properties.FontWeight};");
+        if (!string.IsNullOrEmpty(properties.TextAlign))
+            sb.AppendLine($"  text-align: {properties.TextAlign};");
         if (!string.IsNullOrEmpty(properties.Cursor))
             sb.AppendLine($"  cursor: {properties.Cursor};");
         if (!string.IsNullOrEmpty(properties.BoxShadow))
             sb.AppendLine($"  box-shadow: {properties.BoxShadow};");
         if (!string.IsNullOrEmpty(properties.Transition))
             sb.AppendLine($"  transition: {properties.Transition};");
+        if (!string.IsNullOrEmpty(properties.Transform))
+            sb.AppendLine($"  transform: {properties.Transform};");
         
         sb.AppendLine("}");
         
-        // Hover pseudo-class
+        // Pseudo-classes
         if (properties.Hover != null)
         {
             sb.AppendLine($".{className}:hover {{");
@@ -104,6 +112,14 @@ public class CssEmitter
         {
             sb.AppendLine($".{className}:focus {{");
             EmitPseudoClassProperties(sb, properties.Focus);
+            sb.AppendLine("}");
+        }
+
+        // Disabled pseudo-class
+        if (properties.Disabled != null)
+        {
+            sb.AppendLine($".{className}:disabled {{");
+            EmitPseudoClassProperties(sb, properties.Disabled);
             sb.AppendLine("}");
         }
         
@@ -173,13 +189,25 @@ public class StyleClassProperties
 {
     public string? Display { get; set; }
     public string? Position { get; set; }
+    public string? FlexDirection { get; set; }
+    public string? JustifyContent { get; set; }
+    public string? AlignItems { get; set; }
+    public string? Gap { get; set; }
+    public string? Width { get; set; }
+    public string? Height { get; set; }
+    public string? MaxWidth { get; set; }
+    public string? MinHeight { get; set; }
     public string? BackgroundColor { get; set; }
-    public string? Color { get; set; }
+    public string? Background { get; set; }
+    public string? Border { get; set; }
+    public int? BorderRadius { get; set; }
+    public string? BorderColor { get; set; }
     public string? Padding { get; set; }
     public string? Margin { get; set; }
-    public int? BorderRadius { get; set; }
+    public string? Color { get; set; }
     public string? FontSize { get; set; }
     public string? FontWeight { get; set; }
+    public string? TextAlign { get; set; }
     public string? Cursor { get; set; }
     public string? BoxShadow { get; set; }
     public string? Transition { get; set; }
@@ -188,6 +216,7 @@ public class StyleClassProperties
     public StyleClassProperties? Hover { get; set; }
     public StyleClassProperties? Active { get; set; }
     public StyleClassProperties? Focus { get; set; }
+    public StyleClassProperties? Disabled { get; set; }
     
     public Dictionary<int, StyleClassProperties>? MediaQueries { get; set; }
 }

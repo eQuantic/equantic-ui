@@ -22,7 +22,16 @@ public class LocalDeclarationStrategy : IStatementStrategy
         var name = variable.Identifier.Text;
         var init = variable.Initializer != null 
             ? context.Converter.ConvertExpression(variable.Initializer.Value) 
-            : "null"; // Default to null if no initializer to ensure defined-ness in JS logic
+            : "null";
+
+        if (decl.UsingKeyword.IsKind(SyntaxKind.UsingKeyword))
+        {
+            // For a 'using var', we should ideally wrap the remainder of the block.
+            // Since this strategy only sees the statement, we'll emit a declaration
+            // and a comment. The true 100% implementation requires block-aware conversion.
+            // For now, let's at least emit the declaration.
+            return $"const {name} = {init}; /* using */";
+        }
 
         return $"let {name} = {init};";
     }

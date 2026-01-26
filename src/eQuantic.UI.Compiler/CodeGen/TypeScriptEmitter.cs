@@ -14,6 +14,7 @@ public class TypeScriptEmitter
 {
     private readonly StringBuilder _output = new(); // Legacy, to be removed
     private TypeScriptCodeBuilder _builder = new(); // New builder
+    public TypeScriptCodeBuilder.ClassBuilder? ClassBuilder { get; set; }
 
     // Legacy helper to bridge during refactor
     private void WriteLn(string line = "") => _builder.Line(line);
@@ -29,6 +30,8 @@ public class TypeScriptEmitter
     {
         _dependencyResolver = resolver;
     }
+
+    public List<TypeScriptCodeBuilder.SourceMapping> GetLastMappings() => _builder.GetMappings();
     
     /// <summary>
     /// Generate TypeScript code for a component
@@ -108,7 +111,7 @@ public class TypeScriptEmitter
                                 }
                                 if (!string.IsNullOrWhiteSpace(jsBody))
                                 {
-                                    c.Raw(jsBody);
+                                    c.Raw(jsBody, ctor.SyntaxNode.Body);
                                 }
                             }
                         });
@@ -137,7 +140,7 @@ public class TypeScriptEmitter
                             {
                                 jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
                             }
-                            c.Raw(jsBody);
+                            c.Raw(jsBody, component.BuildMethodNode.Body);
                         });
                     }
                     else if (component.BaseClassName == "HtmlElement" || component.BaseClassName == null)
@@ -189,7 +192,7 @@ public class TypeScriptEmitter
                             {
                                 jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
                             }
-                            c.Raw(jsBody);
+                            c.Raw(jsBody, component.BuildMethodNode.Body);
                          }
                          else if (component.BuildTree != null)
                          {
@@ -209,6 +212,7 @@ public class TypeScriptEmitter
                 // Server Actions
                 foreach (var action in component.ServerActions)
                 {
+                    this.ClassBuilder = c;
                     var paramsList = string.Join(", ", action.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
                     var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
                     var returnType = CSharpTypeToTypeScript(action.ReturnType);
@@ -216,7 +220,7 @@ public class TypeScriptEmitter
                     c.Method(ToCamelCase(action.MethodName), paramsList, true, () => 
                     {
                         c.Raw($"return await getServerActionsClient().invoke('{action.ActionId}', [{argsList}])");
-                    });
+                    }, sourceNode: action.SyntaxNode);
                 }
             }, component.TypeParameters);
 
@@ -422,8 +426,7 @@ public class TypeScriptEmitter
             // Custom methods (Phase 2: Semantic Body)
             foreach (var method in component.Methods)
             {
-                EmitMethod(method, component.StateClassName);
-                c.Raw(""); // Spacer
+                EmitMethod(method, c, component.StateClassName);
             }
             
             // Build method
@@ -449,7 +452,7 @@ public class TypeScriptEmitter
                    {
                        jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
                    }
-                   c.Raw(jsBody);
+                   c.Raw(jsBody, component.BuildMethodNode.Body);
                 }
                 else if (component.BuildTree != null)
                 {
@@ -471,7 +474,7 @@ public class TypeScriptEmitter
         // No-op: Stateless components are fully handled by Emit()
     }
     
-    private void EmitMethod(MethodDefinition method, string? className = null)
+    private void EmitMethod(MethodDefinition method, TypeScriptCodeBuilder.ClassBuilder c, string? className = null)
     {
         var parameters = string.Join(", ", method.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
         var methodName = ToCamelCase(method.Name);
@@ -507,8 +510,14 @@ public class TypeScriptEmitter
                 jsBody = "{}";
             }
             
-            var genericPrefix = method.TypeParameters.Any() ? $"<{string.Join(", ", method.TypeParameters)}>" : "";
-            WriteLn($"{asyncPrefix}{methodName}{genericPrefix}({parameters}): {promiseReturnType} {jsBody}");
+            c.Method(methodName, parameters, isAsync, () => {
+                var body = jsBody.Trim();
+                if (body.StartsWith("{") && body.EndsWith("}"))
+                {
+                    body = body.Substring(1, body.Length - 2).Trim();
+                }
+                c.Raw(body);
+            }, method.TypeParameters, sourceNode: method.SyntaxNode);
         }
         else
         {
@@ -516,10 +525,15 @@ public class TypeScriptEmitter
             var body = method.Body.Trim().TrimEnd(';');
             _converter.SetCurrentClass(className);
             var convertedExpr = _converter.Convert(body);
-            var genericPrefix = method.TypeParameters.Any() ? $"<{string.Join(", ", method.TypeParameters)}>" : "";
-            WriteLn($"{asyncPrefix}{methodName}{genericPrefix}({parameters}): {promiseReturnType} {{ return {convertedExpr}; }}");
+            c.Method(methodName, parameters, isAsync, () => {
+                c.Raw($"return {convertedExpr};");
+            }, method.TypeParameters);
         }
     }
+    
+    // Helper to access ClassBuilder from TypeScriptEmitter for EmitMethod
+    // Actually, I can just pass the ClassBuilder to EmitMethod or store it.
+    // Let's refactor EmitMethod to take ClassBuilder.
     
     private void EmitComponentTree(ComponentTree tree)
     {

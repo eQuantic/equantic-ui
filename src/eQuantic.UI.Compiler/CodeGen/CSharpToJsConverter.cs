@@ -198,26 +198,75 @@ public class CSharpToJsConverter
     private string ConvertIsPattern(IsPatternExpressionSyntax isPattern)
     {
         var expr = ConvertExpression(isPattern.Expression);
-        if (isPattern.Pattern is DeclarationPatternSyntax decl)
-        {
-            var type = decl.Type.ToString();
-            var name = decl.Designation is SingleVariableDesignationSyntax variable ? variable.Identifier.Text : "_";
-            
-            // Very simplified conversion: (name = expr, typeof expr === 'type')
-            var jsType = type switch
-            {
-                "string" => "'string'",
-                "int" or "double" or "float" or "long" or "decimal" or "number" => "'number'",
-                "bool" or "boolean" => "'boolean'",
-                _ => null
-            };
+        
+        // Use the robust pattern conversion logic
+        // We need to find a way to reuse the ConvertPattern from SwitchExpressionStrategy.
+        // I'll create a shared utility or just implement it here for now.
+        return ConvertPattern(isPattern.Pattern, expr);
+    }
 
-            if (jsType != null)
+    private string ConvertPattern(PatternSyntax pattern, string varName)
+    {
+        return pattern switch
+        {
+            ConstantPatternSyntax constant => $"{varName} === {ConvertExpression(constant.Expression)}",
+            RelationalPatternSyntax relational => $"{varName} {relational.OperatorToken.Text} {ConvertExpression(relational.Expression)}",
+            DeclarationPatternSyntax declaration => ConvertDeclarationPattern(declaration, varName),
+            RecursivePatternSyntax recursive => ConvertRecursivePattern(recursive, varName),
+            UnaryPatternSyntax unary when unary.OperatorToken.IsKind(SyntaxKind.NotKeyword) => $"!({ConvertPattern(unary.Pattern, varName)})",
+            BinaryPatternSyntax binary => $"({ConvertPattern(binary.Left, varName)} {(binary.OperatorToken.IsKind(SyntaxKind.OrKeyword) ? "||" : "&&")} {ConvertPattern(binary.Right, varName)})",
+            DiscardPatternSyntax or VarPatternSyntax => "true",
+            _ => "false"
+        };
+    }
+
+    private string ConvertDeclarationPattern(DeclarationPatternSyntax declaration, string varName)
+    {
+        var type = declaration.Type.ToString();
+        var name = declaration.Designation is SingleVariableDesignationSyntax variable ? variable.Identifier.Text : null;
+        
+        string typeCheck = type switch
+        {
+            "string" => $"typeof {varName} === 'string'",
+            "int" or "double" or "float" or "long" or "decimal" or "number" => $"typeof {varName} === 'number'",
+            "bool" or "boolean" => $"typeof {varName} === 'boolean'",
+            _ => $"{varName} != null"
+        };
+
+        if (name != null && name != "_")
+        {
+            // IIFE to allow assignment and check
+            return $"((() => {{ {name} = {varName}; return {typeCheck}; }})())";
+        }
+        return typeCheck;
+    }
+
+    private string ConvertRecursivePattern(RecursivePatternSyntax recursive, string varName)
+    {
+        var checks = new List<string>();
+        if (recursive.Type != null) checks.Add($"{varName} != null");
+        
+        if (recursive.PositionalPatternClause != null)
+        {
+            for (int i = 0; i < recursive.PositionalPatternClause.Subpatterns.Count; i++)
             {
-                return $"((() => {{ {name} = {expr}; return typeof {expr} === {jsType}; }})())";
+                checks.Add(ConvertPattern(recursive.PositionalPatternClause.Subpatterns[i].Pattern, $"{varName}[{i}]"));
             }
         }
-        return "false";
+
+        if (recursive.PropertyPatternClause != null)
+        {
+            foreach (var sub in recursive.PropertyPatternClause.Subpatterns)
+            {
+                var propName = sub.NameColon?.Name.ToString();
+                if (propName != null)
+                {
+                    checks.Add(ConvertPattern(sub.Pattern, $"{varName}.{ToCamelCase(propName)}"));
+                }
+            }
+        }
+
+        return checks.Count > 0 ? string.Join(" && ", checks) : $"{varName} != null";
     }
 
     public string ConvertBlock(BlockSyntax block)
