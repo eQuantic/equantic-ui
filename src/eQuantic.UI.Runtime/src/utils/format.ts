@@ -5,7 +5,7 @@
  * @param alignment Optional alignment width
  */
 export function format(value: any, format: string | null, alignment?: number): string {
-  if (value === null || value === undefined) return "";
+  if (value === null || value === undefined) return '';
 
   let result = String(value);
 
@@ -20,7 +20,7 @@ export function format(value: any, format: string | null, alignment?: number): s
   if (alignment) {
     const width = Math.abs(alignment);
     if (result.length < width) {
-      const padding = " ".repeat(width - result.length);
+      const padding = ' '.repeat(width - result.length);
       return alignment > 0 ? padding + result : result + padding;
     }
   }
@@ -34,11 +34,23 @@ function formatNumber(value: number, format: string): string {
 
   switch (specifier) {
     case 'C': // Currency
-      return value.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: precision, maximumFractionDigits: precision });
+      return value.toLocaleString(undefined, {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: precision,
+        maximumFractionDigits: precision,
+      });
     case 'N': // Number
-      return value.toLocaleString(undefined, { minimumFractionDigits: precision, maximumFractionDigits: precision });
+      return value.toLocaleString(undefined, {
+        minimumFractionDigits: precision,
+        maximumFractionDigits: precision,
+      });
     case 'P': // Percentage
-      return (value).toLocaleString(undefined, { style: 'percent', minimumFractionDigits: precision, maximumFractionDigits: precision });
+      return value.toLocaleString(undefined, {
+        style: 'percent',
+        minimumFractionDigits: precision,
+        maximumFractionDigits: precision,
+      });
     case 'F': // Fixed point
       return value.toFixed(precision);
     case 'D': // Decimal (integer pad)

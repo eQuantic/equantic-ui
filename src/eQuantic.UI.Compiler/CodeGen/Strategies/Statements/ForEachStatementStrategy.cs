@@ -18,7 +18,10 @@ public class ForEachStatementStrategy : IStatementStrategy
         var collection = context.Converter.ConvertExpression(foreachStmt.Expression);
         var body = context.Converter.Convert(foreachStmt.Statement);
         
-        return $"for (const {item} of {collection}) {body}";
+        var isAsync = foreachStmt.AwaitKeyword.Value != null;
+        var loopType = isAsync ? "for await" : "for";
+
+        return $"{loopType} (const {item} of {collection}) {body}";
     }
 
     public int Priority => 0;

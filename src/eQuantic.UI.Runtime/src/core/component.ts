@@ -16,7 +16,8 @@ export abstract class StatelessComponent extends Component {
 
   render(): HtmlNode {
     const context: RenderContext = {
-      getService: <T>(key: import('./types').ServiceKey<T>) => this.serviceProvider.getService<T>(key),
+      getService: <T>(key: import('./types').ServiceKey<T>) =>
+        this.serviceProvider.getService<T>(key),
       serviceProvider: this.serviceProvider,
     };
     const component = this.build(context);
@@ -39,22 +40,25 @@ export abstract class StatefulComponent extends Component {
   get state(): ComponentState {
     if (!this._state) {
       if (typeof this.createState !== 'function') {
-         throw new Error(`Component ${this.constructor.name} does not implement createState()`);
+        throw new Error(`Component ${this.constructor.name} does not implement createState()`);
       }
       this._state = this.createState();
-      
+
       if (!this._state) {
         throw new Error(`createState() returned null/undefined for ${this.constructor.name}`);
       }
 
       if (typeof this._state.setComponent === 'function') {
-         this._state.setComponent(this);
+        this._state.setComponent(this);
       } else {
-         console.warn(`State object for ${this.constructor.name} missing setComponent method.`, this._state);
-         // Fallback legacy name check
-         if (typeof (this._state as any)._setComponent === 'function') {
-            (this._state as any)._setComponent(this);
-         }
+        console.warn(
+          `State object for ${this.constructor.name} missing setComponent method.`,
+          this._state,
+        );
+        // Fallback legacy name check
+        if (typeof (this._state as any)._setComponent === 'function') {
+          (this._state as any)._setComponent(this);
+        }
       }
       this._state.onInit();
     }
@@ -63,7 +67,8 @@ export abstract class StatefulComponent extends Component {
 
   render(): HtmlNode {
     const context: RenderContext = {
-      getService: <T>(key: import('./types').ServiceKey<T>) => this.serviceProvider.getService<T>(key),
+      getService: <T>(key: import('./types').ServiceKey<T>) =>
+        this.serviceProvider.getService<T>(key),
       serviceProvider: this.serviceProvider,
     };
     this.state._context = context;
@@ -78,7 +83,9 @@ export abstract class StatefulComponent extends Component {
     if (this._renderManager.canHydrate(container)) {
       const result = this._renderManager.hydrate(node, container);
       if (result.success) {
-        console.debug(`[eQuantic.UI] Hydrated ${this.constructor.name} with ${result.attachedListeners} event listeners`);
+        console.debug(
+          `[eQuantic.UI] Hydrated ${this.constructor.name} with ${result.attachedListeners} event listeners`,
+        );
       }
     } else {
       this._renderManager.mount(node, container);
@@ -153,5 +160,3 @@ export abstract class ComponentState {
   onUpdate(): void {}
   onDispose(): void {}
 }
-
-

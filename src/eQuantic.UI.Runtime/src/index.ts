@@ -6,13 +6,24 @@
 export { Component, HtmlElement } from './core/types';
 export type { IComponent, HtmlNode, RenderContext, StyleClass, EventHandler } from './core/types';
 export { StatelessComponent, StatefulComponent, ComponentState } from './core/component';
-export { ServiceProvider, ServiceCollectionBuilder, getRootServiceProvider, configureServices, resetServiceProvider } from './core/service-provider';
+export {
+  ServiceProvider,
+  ServiceCollectionBuilder,
+  getRootServiceProvider,
+  configureServices,
+  resetServiceProvider,
+} from './core/service-provider';
 export type { ServiceKey } from './core/service-provider';
 export { ServiceLifetime } from './core/service-provider';
 export { HtmlStyle } from './core/html-style';
 
 // Server Actions
-export { ServerActionsClient, getServerActionsClient, configureServerActions, resetServerActionsClient } from './core/server-actions';
+export {
+  ServerActionsClient,
+  getServerActionsClient,
+  configureServerActions,
+  resetServerActionsClient,
+} from './core/server-actions';
 export type { ServerActionResponse } from './core/server-actions';
 
 // Utils
@@ -28,7 +39,10 @@ export { RenderManager } from './dom/renderer';
 /**
  * Mount a component to a DOM element
  */
-export function mount(component: import('./core/component').StatefulComponent, selector: string): void {
+export function mount(
+  component: import('./core/component').StatefulComponent,
+  selector: string,
+): void {
   const container = document.querySelector(selector);
   if (!container) {
     throw new Error(`Container not found: ${selector}`);
@@ -41,7 +55,7 @@ export function mount(component: import('./core/component').StatefulComponent, s
  */
 export function createApp<T extends import('./core/component').StatefulComponent>(
   ComponentClass: new () => T,
-  selector: string
+  selector: string,
 ): T {
   const component = new ComponentClass();
   mount(component, selector);

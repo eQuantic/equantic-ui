@@ -125,20 +125,20 @@ export abstract class Component implements IComponent {
 
   protected buildEvents(): Record<string, EventHandler> {
     const events: Record<string, EventHandler> = {};
-    
+
     // Dynamic discovery of events (all props starting with 'on')
     for (const prop of Object.keys(this)) {
       if (prop.startsWith('on') && prop.length > 2) {
         // e.g. onClick -> click, onMouseEnter -> mouseenter
         const eventName = prop.substring(2).toLowerCase();
-        
+
         const handler = (this as any)[prop];
         if (handler && typeof handler === 'function') {
-           events[eventName] = handler as EventHandler;
+          events[eventName] = handler as EventHandler;
         }
       }
     }
-    
+
     return events;
   }
 }
@@ -156,8 +156,7 @@ export abstract class HtmlElement extends Component {
         if (!(this as any).attributes) (this as any).attributes = {};
         (this as any).attributes[name] = value;
         return this.htmlNode;
-      }
+      },
     };
   }
 }
-

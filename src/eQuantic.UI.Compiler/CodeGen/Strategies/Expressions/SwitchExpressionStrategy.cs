@@ -18,39 +18,103 @@ public class SwitchExpressionStrategy : IConversionStrategy
         var governingExpr = context.Converter.ConvertExpression(switchExpr.GoverningExpression);
         
         var sb = new StringBuilder();
-        // C# switch expression can be mapped to a series of nested ternary operators 
-        // or a self-invoking function with a switch.
-        // Nested ternaries are cleaner for simple expressions.
         
-        int openParens = 0;
-        for (int i = 0; i < switchExpr.Arms.Count; i++)
+        // Wrap in IIFE to allow complex logic blocks
+        sb.Append("(() => {");
+        sb.Append($" const _s = {governingExpr};");
+
+        foreach (var arm in switchExpr.Arms)
         {
-            var arm = switchExpr.Arms[i];
-            var armExpr = context.Converter.ConvertExpression(arm.Expression);
-            
-            if (arm.Pattern is ConstantPatternSyntax constantPattern)
+            if (arm.Pattern is DiscardPatternSyntax)
             {
-                var patternVal = context.Converter.ConvertExpression(constantPattern.Expression);
-                sb.Append($"({governingExpr} === {patternVal} ? {armExpr} : ");
-                openParens++;
+                var result = context.Converter.ConvertExpression(arm.Expression);
+                sb.Append($" return {result};");
+                // Discard matches everything, so we stop here
+                break;
             }
-            else if (arm.Pattern is DiscardPatternSyntax)
+
+            var condition = ConvertPattern(arm.Pattern, "_s", context);
+            if (arm.WhenClause != null)
             {
-                sb.Append(armExpr);
-                break; // Discard is always the last active arm
+                var whenCond = context.Converter.ConvertExpression(arm.WhenClause.Condition);
+                condition = $"({condition}) && ({whenCond})";
             }
-            
-            // If it's the last arm and didn't catch (and no discard was found), provide a null fallback
-            if (i == switchExpr.Arms.Count - 1 && arm.Pattern is not DiscardPatternSyntax)
-            {
-                sb.Append("null");
-            }
+
+            var armResult = context.Converter.ConvertExpression(arm.Expression);
+            sb.Append($" if ({condition}) return {armResult};");
         }
         
-        // Close all open parentheses
-        sb.Append(new string(')', openParens));
-        
+        // Default fallback if no discard pattern exists
+        if (!switchExpr.Arms.Any(a => a.Pattern is DiscardPatternSyntax))
+        {
+            sb.Append(" return null;");
+        }
+
+        sb.Append(" })()");
         return sb.ToString();
+    }
+
+    private string ConvertPattern(PatternSyntax pattern, string varName, ConversionContext context)
+    {
+        switch (pattern)
+        {
+            case ConstantPatternSyntax constant:
+                var val = context.Converter.ConvertExpression(constant.Expression);
+                return $"{varName} === {val}";
+
+            case RelationalPatternSyntax relational:
+                var op = relational.OperatorToken.Text;
+                var right = context.Converter.ConvertExpression(relational.Expression);
+                return $"{varName} {op} {right}";
+
+            case DeclarationPatternSyntax declaration:
+                var type = declaration.Type.ToString();
+                // Simple type check for primitives
+                if (type == "string") return $"typeof {varName} === 'string'";
+                if (type == "int" || type == "double") return $"typeof {varName} === 'number'";
+                if (type == "bool") return $"typeof {varName} === 'boolean'";
+                // For classes, we might check instance? But in JS everything is object.
+                // Assuming truthy check for object presence
+                return $"{varName} != null";
+
+            case RecursivePatternSyntax recursive:
+                var checks = new List<string>();
+                
+                // Type check if present
+                if (recursive.Type != null)
+                {
+                    // Reuse declaration logic logic or simple null check
+                    checks.Add($"{varName} != null");
+                }
+
+                // Property patterns { Prop: 1 }
+                if (recursive.PropertyPatternClause != null)
+                {
+                    foreach (var subPattern in recursive.PropertyPatternClause.Subpatterns)
+                    {
+                        var propName = subPattern.NameColon?.Name.ToString();
+                        if (propName != null) 
+                        {
+                            var subVar = $"{varName}.{char.ToLowerInvariant(propName[0])}{propName.Substring(1)}";
+                            checks.Add(ConvertPattern(subPattern.Pattern, subVar, context));
+                        }
+                    }
+                }
+                
+                return checks.Count > 0 ? string.Join(" && ", checks) : "true";
+
+            case VarPatternSyntax _:
+                return "true"; // Always matches
+
+            case BinaryPatternSyntax binary:
+                 var left = ConvertPattern(binary.Left, varName, context);
+                 var rightPattern = ConvertPattern(binary.Right, varName, context);
+                 var logicOp = binary.OperatorToken.Text == "or" ? "||" : "&&";
+                 return $"({left} {logicOp} {rightPattern})";
+
+            default:
+                return "false"; 
+        }
     }
 
     public int Priority => 0;

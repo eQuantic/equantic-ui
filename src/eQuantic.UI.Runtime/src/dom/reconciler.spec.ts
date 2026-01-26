@@ -1,5 +1,4 @@
-
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Reconciler } from './reconciler';
 import { HtmlNode } from '../core/types';
 
@@ -32,7 +31,7 @@ class MockNode {
       this.childNodes.push(newNode);
     } else {
       const index = this.childNodes.indexOf(referenceNode);
-      if (index === -1) throw new Error("Reference node not found");
+      if (index === -1) throw new Error('Reference node not found');
       this.childNodes.splice(index, 0, newNode);
     }
     this._updateSiblings();
@@ -41,7 +40,7 @@ class MockNode {
 
   removeChild(child: MockNode) {
     const index = this.childNodes.indexOf(child);
-    if (index === -1) throw new Error("Child not found");
+    if (index === -1) throw new Error('Child not found');
     this.childNodes.splice(index, 1);
     child.parentNode = null;
     this._updateSiblings();
@@ -84,7 +83,7 @@ class MockElement extends MockNode {
     this.events[event] = handler;
   }
 
-  removeEventListener(event: string, handler: any) {
+  removeEventListener(event: string, _handler: any) {
     delete this.events[event];
   }
 
@@ -97,7 +96,7 @@ class MockElement extends MockNode {
   }
 
   get firstElementChild() {
-    return this.childNodes.find(n => n.nodeType === 1) || null;
+    return this.childNodes.find((n) => n.nodeType === 1) || null;
   }
 }
 
@@ -109,10 +108,10 @@ class MockText extends MockNode {
 }
 
 class MockComment extends MockNode {
-    constructor(text: string) {
-        super('#comment', 8); // COMMENT_NODE
-        this.textContent = text;
-    }
+  constructor(text: string) {
+    super('#comment', 8); // COMMENT_NODE
+    this.textContent = text;
+  }
 }
 
 // Global Setup
@@ -138,7 +137,7 @@ describe('Reconciler Keyed Diffing', () => {
       createTextNode: (text: string) => new MockText(text),
       createComment: (text: string) => new MockComment(text),
     } as any;
-    
+
     global.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 } as any;
     global.HTMLElement = MockElement as any;
     global.Text = MockText as any;
@@ -157,32 +156,27 @@ describe('Reconciler Keyed Diffing', () => {
     global.Comment = originalComment;
   });
 
-  // Helpers
-  const getHtml = (el: MockNode) => el.childNodes.map(c => 
-     c.nodeType === 3 ? c.textContent : (c as MockElement).tagName + ((c as MockElement).attributes['key'] ? `:${(c as MockElement).attributes['key']}` : '')
-  ).join(',');
-
   it('should mount children', () => {
     const vdom = h('div', null, [h('span', 'A'), h('span', 'B')]);
     // Create dom elements manually to simulate initial state is empty
     reconciler.reconcile(parent as any, null, vdom);
-    
+
     // Actually our test helper calls createDomElement recursively.
     // Parent should have 2 children
-    // Wait, reconcile is (parent, old, new). 
+    // Wait, reconcile is (parent, old, new).
     // Usually we pass the 'root' node.
     // If we want to test reconcileChildren, we need to invoke it or simulate update.
     // Reconciler.reconcile handles a single node.
     // We want to test a list update.
-    
+
     // Strategy: Create a wrapper 'div' and update its children.
     const oldV = h('div', 'root', []);
     reconciler.reconcile(parent as any, null, oldV);
     const rootEl = parent.childNodes[0] as MockElement;
-    
+
     const newV = h('div', 'root', [h('span', 'A'), h('span', 'B')]);
     reconciler.reconcile(parent as any, oldV, newV, 0);
-    
+
     expect(rootEl.childNodes.length).toBe(2);
     expect((rootEl.childNodes[0] as MockElement).tagName).toBe('SPAN');
   });
@@ -193,7 +187,7 @@ describe('Reconciler Keyed Diffing', () => {
     reconciler.reconcile(parent as any, null, oldV);
     const rootEl = parent.childNodes[0] as MockElement;
     const [nodeA, nodeB] = rootEl.childNodes;
-    
+
     // Update: B, A
     const newV = h('div', 'root', [h('span', 'B'), h('span', 'A')]);
     reconciler.reconcile(parent as any, oldV, newV, 0);
@@ -242,7 +236,11 @@ describe('Reconciler Keyed Diffing', () => {
   it('should handle complex LIS reorder', () => {
     // Initial: A, B, C, D, E
     const oldV = h('div', 'root', [
-      h('span', 'A'), h('span', 'B'), h('span', 'C'), h('span', 'D'), h('span', 'E')
+      h('span', 'A'),
+      h('span', 'B'),
+      h('span', 'C'),
+      h('span', 'D'),
+      h('span', 'E'),
     ]);
     reconciler.reconcile(parent as any, null, oldV);
     const rootEl = parent.childNodes[0] as MockElement;
@@ -250,7 +248,11 @@ describe('Reconciler Keyed Diffing', () => {
 
     // Update: A, C, E, B, D (Mix of moves)
     const newV = h('div', 'root', [
-      h('span', 'A'), h('span', 'C'), h('span', 'E'), h('span', 'B'), h('span', 'D')
+      h('span', 'A'),
+      h('span', 'C'),
+      h('span', 'E'),
+      h('span', 'B'),
+      h('span', 'D'),
     ]);
     reconciler.reconcile(parent as any, oldV, newV, 0);
 
@@ -275,17 +277,16 @@ describe('Reconciler Keyed Diffing', () => {
     reconciler.reconcile(parent as any, oldV, newV, 0);
 
     expect(rootEl.childNodes.length).toBe(3);
-    const newD = rootEl.childNodes[2] as MockElement;
     // D should be new, C removed
     // Since we check tags match (span == span), it actually updates C in place if keys match.
-    // Wait, keys: 'C' vs 'D'? 
+    // Wait, keys: 'C' vs 'D'?
     // I put key in second arg of `h`.
     // So h('span', 'C') has key 'C'. h('span', 'D') has key 'D'.
     // Keys don't match -> Differs -> Replace.
-    
+
     // Actually, Reconciler.reconcile replaces if key changes.
     // So C is removed, D is created.
-    expect((rootEl.childNodes[2] as MockElement)).not.toBeNull();
+    expect(rootEl.childNodes[2] as MockElement).not.toBeNull();
     // But how to verify instance changed?
     // In our Mock, we can't easily check strict equality against old C unless we kept reference.
     // But `reconciler.reconcile` (line 64 in file) calls `isDifferentNodeType`.

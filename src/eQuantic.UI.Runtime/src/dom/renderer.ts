@@ -94,7 +94,11 @@ export class RenderManager {
       console.warn('[eQuantic.UI] Falling back to full re-render');
       // Fallback: do a full mount if hydration fails
       this.mount(node, container);
-      return { success: false, attachedListeners: 0, warnings: [...result.warnings, 'Fell back to full re-render'] };
+      return {
+        success: false,
+        attachedListeners: 0,
+        warnings: [...result.warnings, 'Fell back to full re-render'],
+      };
     }
 
     return result;

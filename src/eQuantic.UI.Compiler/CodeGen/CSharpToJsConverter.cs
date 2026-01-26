@@ -8,7 +8,6 @@ using eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Special;
-using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 using eQuantic.UI.Compiler.CodeGen.Registry;
 
@@ -88,6 +87,7 @@ public class CSharpToJsConverter
         _statementRegistry.Register<SwitchStatementStrategy>();
         _statementRegistry.Register<WhileStatementStrategy>();
         _statementRegistry.Register<TryStatementStrategy>();
+        _statementRegistry.Register<UsingStatementStrategy>();
     }
 
     /// <summary>
@@ -220,7 +220,7 @@ public class CSharpToJsConverter
         return "false";
     }
 
-    private string ConvertBlock(BlockSyntax block)
+    public string ConvertBlock(BlockSyntax block)
     {
         var sb = new StringBuilder();
         sb.Append("{"); // Use standard formatting
@@ -232,7 +232,7 @@ public class CSharpToJsConverter
         return sb.ToString();
     }
     
-    private string ConvertStatement(StatementSyntax stmt)
+    public string ConvertStatement(StatementSyntax stmt)
     {
         var strategy = _statementRegistry.FindStrategy(stmt, _context);
         if (strategy != null)

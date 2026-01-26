@@ -7,8 +7,6 @@
 
 import { HtmlNode, EventHandler } from '../core/types';
 
-
-
 /**
  * Hydration result for debugging
  */
@@ -31,7 +29,7 @@ export class Reconciler {
     parentElement: HTMLElement,
     oldNode: HtmlNode | null,
     newNode: HtmlNode | null,
-    index: number = 0
+    index: number = 0,
   ): void {
     const currentElement = parentElement.childNodes[index] as HTMLElement | Text | null;
 
@@ -137,7 +135,7 @@ export class Reconciler {
     this.attachEventListeners(element, node.events);
 
     // Render children
-    for (const child of (node.children || [])) {
+    for (const child of node.children || []) {
       element.appendChild(this.createDomElement(child));
     }
 
@@ -150,10 +148,13 @@ export class Reconciler {
   private applyAttribute(element: HTMLElement, key: string, value: any): void {
     if (value === undefined || value === null) {
       element.removeAttribute(key);
-      if (key === 'value' && (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+      if (
+        key === 'value' &&
+        (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)
+      ) {
         element.value = '';
       }
-      if (key === 'checked' && (element instanceof HTMLInputElement)) {
+      if (key === 'checked' && element instanceof HTMLInputElement) {
         element.checked = false;
       }
       return;
@@ -162,9 +163,12 @@ export class Reconciler {
     const strValue = String(value);
     element.setAttribute(key, strValue);
 
-    if (key === 'value' && (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+    if (
+      key === 'value' &&
+      (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)
+    ) {
       element.value = strValue;
-    } else if (key === 'checked' && (element instanceof HTMLInputElement)) {
+    } else if (key === 'checked' && element instanceof HTMLInputElement) {
       element.checked = true;
     }
   }
@@ -175,7 +179,7 @@ export class Reconciler {
   private updateAttributes(
     element: HTMLElement,
     oldAttrs: Record<string, string | undefined>,
-    newAttrs: Record<string, string | undefined>
+    newAttrs: Record<string, string | undefined>,
   ): void {
     // Remove old attributes
     for (const key of Object.keys(oldAttrs)) {
@@ -205,9 +209,9 @@ export class Reconciler {
       element.addEventListener(eventName, wrappedHandler as unknown as EventListener);
       elementListeners.set(eventName, wrappedHandler as unknown as EventHandler);
     }
-    
+
     if (elementListeners.size > 0) {
-       this.eventListeners.set(element, elementListeners);
+      this.eventListeners.set(element, elementListeners);
     }
   }
 
@@ -217,7 +221,7 @@ export class Reconciler {
   private updateEventListeners(
     element: HTMLElement,
     oldEvents: Record<string, EventHandler>,
-    newEvents: Record<string, EventHandler>
+    newEvents: Record<string, EventHandler>,
   ): void {
     const elementListeners = this.eventListeners.get(element) || new Map<string, EventHandler>();
 
@@ -271,22 +275,22 @@ export class Reconciler {
         const value = this.extractEventValue(e);
         (handler as (value: any) => void)(value);
         return;
-      } 
-      
+      }
+
       // 2. Void Events (Click, Submit) - typically often defined as Action() not Action(e)
-      // We assume if it's a void C# action, we don't pass arguments, 
+      // We assume if it's a void C# action, we don't pass arguments,
       // but TypeScript handler might be (e) => ... or () => ...
       // For safety, generic handlers pass the event.
       // Specific simplified handlers (like typical button clicks) might just be invoked.
       if (eventName === 'click' || eventName === 'submit') {
-         // Try to detect if handler expects args? Hard in JS.
-         // Pass event if it's a standard handler, but C# generation usually expects no args for simple Actions.
-         // However, our unified type EventHandler might be Function.
-         // Let's pass 'e' for general correctness, C# wrappers/bridging usually ignore extra args if not mapped.
-         // BUT existing logic used: (handler as () => void)();
-         // Let's keep that pattern for click for now to avoid breaking existing void callbacks.
-         (handler as any)(); 
-         return;
+        // Try to detect if handler expects args? Hard in JS.
+        // Pass event if it's a standard handler, but C# generation usually expects no args for simple Actions.
+        // However, our unified type EventHandler might be Function.
+        // Let's pass 'e' for general correctness, C# wrappers/bridging usually ignore extra args if not mapped.
+        // BUT existing logic used: (handler as () => void)();
+        // Let's keep that pattern for click for now to avoid breaking existing void callbacks.
+        (handler as any)();
+        return;
       }
 
       // 3. General Events
@@ -319,7 +323,7 @@ export class Reconciler {
 
     if (target instanceof HTMLSelectElement) {
       if (target.multiple) {
-        return Array.from(target.selectedOptions).map(opt => opt.value);
+        return Array.from(target.selectedOptions).map((opt) => opt.value);
       }
       return target.value;
     }
@@ -342,7 +346,7 @@ export class Reconciler {
   private reconcileChildren(
     parentElement: HTMLElement,
     oldChildren: HtmlNode[],
-    newChildren: HtmlNode[]
+    newChildren: HtmlNode[],
   ): void {
     const oldCh = oldChildren || [];
     const newCh = newChildren || [];
@@ -400,7 +404,7 @@ export class Reconciler {
         // Wait, `oldEndIdx` was decremented. So `oldEndIdx + 1` points to the first node of the suffix.
         const anchorIndex = oldEndIdx + 1;
         const anchor = anchorIndex < childNodes.length ? childNodes[anchorIndex] : null;
-        
+
         while (newStartIdx <= newEndIdx) {
           const newNode = newCh[newStartIdx++];
           const dom = this.createDomElement(newNode);
@@ -419,12 +423,11 @@ export class Reconciler {
         }
         oldEndIdx--;
       }
-    }
-    else {
+    } else {
       // 5. Unknown sequence - efficient move using LIS
       // s1 (old length) unused
       const s2 = newEndIdx - newStartIdx + 1;
-      
+
       const keyMap = new Map<string | number, number>();
       for (let i = newStartIdx; i <= newEndIdx; i++) {
         const key = newCh[i].key;
@@ -434,11 +437,10 @@ export class Reconciler {
       // 0 means new node must be mounted
       // >0 means (oldIndex + 1)
       const newIndexToOldIndexMap = new Int32Array(s2);
-      
+
       // Map to store reference to DOM nodes for new indices (needed for moves)
       const newIndexToNodeMap = new Map<number, Node>();
-      
-      let patched = 0;
+
       let moved = false;
       let maxNewIndexSoFar = 0;
 
@@ -448,7 +450,7 @@ export class Reconciler {
       for (let i = oldStartIdx; i <= oldEndIdx; i++) {
         const oldNode = oldCh[i];
         let newIndex: number | undefined;
-        
+
         if (oldNode.key != null) {
           newIndex = keyMap.get(oldNode.key);
         } else {
@@ -473,13 +475,12 @@ export class Reconciler {
           // Store DOM node for logic later (i corresponds to childNodes index before removals)
           const domNode = childNodes[i];
           newIndexToNodeMap.set(newIndex, domNode);
-          
+
           this.reconcile(parentElement, oldNode, newCh[newIndex], i);
-          patched++;
         } else {
           // No match, mark for removal
           const node = childNodes[i];
-          if(node) toRemove.push(node);
+          if (node) toRemove.push(node);
         }
       }
 
@@ -493,7 +494,7 @@ export class Reconciler {
       if (moved) {
         const seq = this.getSequence(newIndexToOldIndexMap);
         let j = seq.length - 1;
-        
+
         // Find the initial anchor (start of Suffix)
         // Since we removed unrelated nodes, Suffix is at childNodes[something].
         // But simpler: just initialize nextAnchor from suffix.
@@ -501,54 +502,54 @@ export class Reconciler {
         // If we look at childNodes, it is: [Prefix (stable), Middle (mixed), Suffix (stable)].
         // oldStartIdx now points to start of middle (after prefix).
         // Since we removed nodes, indices changed.
-        
+
         // Standard Vue 3 approach:
         // iterate i from s2-1 to 0.
         // next node index = newStartIdx + i + 1.
-        // If next node index < newCh.length, anchor = newIndexToNodeMap.get(next index)? 
+        // If next node index < newCh.length, anchor = newIndexToNodeMap.get(next index)?
         // OR we can just keep a `nextAnchor` var that we update every iteration.
-        
+
         let nextAnchor: Node | null = null;
         if (newEndIdx + 1 < newCh.length) {
-            // Suffix exists.
-            // The first node of suffix is...
-            // We can't easily find it via map because it wasn't mapped (skipped in step 2).
-            // But we know it's at the end of the current DOM list?
-            // Actually, if we use `childNodes.item(childNodes.length - suffixLength)`, we can find it.
-            // OR simpler:
-            // Since we know Suffix is stable at the end.
-            // `childNodes[childNodes.length - (newCh.length - 1 - newEndIdx)]`
-            // Let's rely on `nextAnchor` updating in the loop.
-            // For the first iteration (last item in middle), anchor is first item of suffix.
-            // Which is `childNodes[end]`.
-            // Because we only removed items from middle.
-            // `childNodes` has: Prefix + RemainingMiddle + Suffix.
-            // We are inserting/moving Middle items before Suffix.
-            // So `nextAnchor` initially = `childNodes[childNodes.length - suffixCount]`?
-            // Or simpler: `nextAnchor = parentElement.childNodes[oldEndIdx + 1 - removedCount]`.
-            // Hard to calculate.
-            
-            // Better: `nextAnchor` = parentElement.childNodes[parentElement.childNodes.length - (newCh.length - 1 - newEndIdx)] ? No.
-            
-            // Let's rely on reference from `newIndexToNodeMap`? No, Suffix not in map.
-            
-            // WAIT. If we assume Suffix optimization logic worked, 
-            // `oldEndIdx` points to the last element of the Middle.
-            // `oldEndIdx + 1` is start of Suffix.
-            // But we removed nodes using `removeChild`.
-            // However, `childNodes` list shrinks. Suffix shifts left.
-            // But Suffix nodes are still effectively at the end.
-            // Can we just grab `childNodes[childNodes.length - countOfSuffix]`? YES.
-             const suffixCount = newCh.length - 1 - newEndIdx;
-             if (suffixCount > 0) {
-                 nextAnchor = childNodes[childNodes.length - suffixCount];
-             }
+          // Suffix exists.
+          // The first node of suffix is...
+          // We can't easily find it via map because it wasn't mapped (skipped in step 2).
+          // But we know it's at the end of the current DOM list?
+          // Actually, if we use `childNodes.item(childNodes.length - suffixLength)`, we can find it.
+          // OR simpler:
+          // Since we know Suffix is stable at the end.
+          // `childNodes[childNodes.length - (newCh.length - 1 - newEndIdx)]`
+          // Let's rely on `nextAnchor` updating in the loop.
+          // For the first iteration (last item in middle), anchor is first item of suffix.
+          // Which is `childNodes[end]`.
+          // Because we only removed items from middle.
+          // `childNodes` has: Prefix + RemainingMiddle + Suffix.
+          // We are inserting/moving Middle items before Suffix.
+          // So `nextAnchor` initially = `childNodes[childNodes.length - suffixCount]`?
+          // Or simpler: `nextAnchor = parentElement.childNodes[oldEndIdx + 1 - removedCount]`.
+          // Hard to calculate.
+
+          // Better: `nextAnchor` = parentElement.childNodes[parentElement.childNodes.length - (newCh.length - 1 - newEndIdx)] ? No.
+
+          // Let's rely on reference from `newIndexToNodeMap`? No, Suffix not in map.
+
+          // WAIT. If we assume Suffix optimization logic worked,
+          // `oldEndIdx` points to the last element of the Middle.
+          // `oldEndIdx + 1` is start of Suffix.
+          // But we removed nodes using `removeChild`.
+          // However, `childNodes` list shrinks. Suffix shifts left.
+          // But Suffix nodes are still effectively at the end.
+          // Can we just grab `childNodes[childNodes.length - countOfSuffix]`? YES.
+          const suffixCount = newCh.length - 1 - newEndIdx;
+          if (suffixCount > 0) {
+            nextAnchor = childNodes[childNodes.length - suffixCount];
+          }
         }
 
         // Iterate backwards
         for (let i = s2 - 1; i >= 0; i--) {
           const currentNewIndex = newStartIdx + i;
-          
+
           if (newIndexToOldIndexMap[i] === 0) {
             // New node - Mount
             const newNode = newCh[currentNewIndex];
@@ -558,18 +559,18 @@ export class Reconciler {
             newIndexToNodeMap.set(currentNewIndex, dom);
             nextAnchor = dom;
           } else {
-             // Move or Stay
-             const dom = newIndexToNodeMap.get(currentNewIndex);
-             if (dom) {
-                if (j < 0 || i !== seq[j]) {
-                    // Move!
-                    parentElement.insertBefore(dom, nextAnchor);
-                } else {
-                    // Stay (in LIS)
-                    j--;
-                }
-                nextAnchor = dom;
-             }
+            // Move or Stay
+            const dom = newIndexToNodeMap.get(currentNewIndex);
+            if (dom) {
+              if (j < 0 || i !== seq[j]) {
+                // Move!
+                parentElement.insertBefore(dom, nextAnchor);
+              } else {
+                // Stay (in LIS)
+                j--;
+              }
+              nextAnchor = dom;
+            }
           }
         }
       } else {
@@ -590,29 +591,29 @@ export class Reconciler {
         // So we enter `else`.
         // We MUST verify insertions in `else` block.
         // Iterate backwards and insert missing ones.
-        
+
         let nextAnchor: Node | null = null;
         // Same anchor logic as above
         const suffixCount = newCh.length - 1 - newEndIdx;
         if (suffixCount > 0) {
-             nextAnchor = childNodes[childNodes.length - suffixCount];
+          nextAnchor = childNodes[childNodes.length - suffixCount];
         }
 
         for (let i = s2 - 1; i >= 0; i--) {
-           const currentNewIndex = newStartIdx + i;
-           if (newIndexToOldIndexMap[i] === 0) {
-              const newNode = newCh[currentNewIndex];
-              const dom = this.createDomElement(newNode);
-              parentElement.insertBefore(dom, nextAnchor);
-              nextAnchor = dom;
-           } else {
-               // Update anchor
-               // We need the DOM element to be the anchor for the *previous* item.
-               // Since it's not moved, it is in the DOM.
-               // We can get it from Map.
-               const dom = newIndexToNodeMap.get(currentNewIndex);
-               if (dom) nextAnchor = dom;
-           }
+          const currentNewIndex = newStartIdx + i;
+          if (newIndexToOldIndexMap[i] === 0) {
+            const newNode = newCh[currentNewIndex];
+            const dom = this.createDomElement(newNode);
+            parentElement.insertBefore(dom, nextAnchor);
+            nextAnchor = dom;
+          } else {
+            // Update anchor
+            // We need the DOM element to be the anchor for the *previous* item.
+            // Since it's not moved, it is in the DOM.
+            // We can get it from Map.
+            const dom = newIndexToNodeMap.get(currentNewIndex);
+            if (dom) nextAnchor = dom;
+          }
         }
       }
     }
@@ -622,9 +623,9 @@ export class Reconciler {
   // Redefining just the block 5 logic to be actually runnable
   // Note: I will replace the whole method content in the tool call, this comment is just internal thought.
   // The actual replacement string will contain the corrected logic.
-  
+
   private isSameKey(n1: HtmlNode, n2: HtmlNode): boolean {
-     return n1.tag === n2.tag && n1.key === n2.key;
+    return n1.tag === n2.tag && n1.key === n2.key;
   }
 
   private getSequence(arr: Int32Array): number[] {
@@ -633,41 +634,40 @@ export class Reconciler {
     let i, j, u, v, c;
     const len = arr.length;
     for (i = 0; i < len; i++) {
-        const arrI = arr[i];
-        if (arrI !== 0) {
-            j = result[result.length - 1];
-            if (arr[j] < arrI) {
-                p[i] = j;
-                result.push(i);
-                continue;
-            }
-            u = 0;
-            v = result.length - 1;
-            while (u < v) {
-                c = ((u + v) / 2) | 0;
-                if (arr[result[c]] < arrI) {
-                    u = c + 1;
-                } else {
-                    v = c;
-                }
-            }
-            if (arrI < arr[result[u]]) {
-                if (u > 0) {
-                    p[i] = result[u - 1];
-                }
-                result[u] = i;
-            }
+      const arrI = arr[i];
+      if (arrI !== 0) {
+        j = result[result.length - 1];
+        if (arr[j] < arrI) {
+          p[i] = j;
+          result.push(i);
+          continue;
         }
+        u = 0;
+        v = result.length - 1;
+        while (u < v) {
+          c = ((u + v) / 2) | 0;
+          if (arr[result[c]] < arrI) {
+            u = c + 1;
+          } else {
+            v = c;
+          }
+        }
+        if (arrI < arr[result[u]]) {
+          if (u > 0) {
+            p[i] = result[u - 1];
+          }
+          result[u] = i;
+        }
+      }
     }
     u = result.length;
     v = result[u - 1];
     while (u-- > 0) {
-        result[u] = v;
-        v = p[v];
+      result[u] = v;
+      v = p[v];
     }
     return result;
   }
-
 
   /**
    * Cleanup event listeners for element and its children
@@ -698,7 +698,7 @@ export class Reconciler {
   hydrate(
     existingElement: Node,
     virtualNode: HtmlNode,
-    result: HydrationResult = { success: true, attachedListeners: 0, warnings: [] }
+    result: HydrationResult = { success: true, attachedListeners: 0, warnings: [] },
   ): HydrationResult {
     // Text node - nothing to hydrate
     if (virtualNode.tag === '#text') {
@@ -716,14 +716,18 @@ export class Reconciler {
 
     // Element node - attach events and recurse children
     if (!(existingElement instanceof HTMLElement)) {
-      result.warnings.push(`Expected HTMLElement for tag '${virtualNode.tag}', found ${existingElement.nodeName}`);
+      result.warnings.push(
+        `Expected HTMLElement for tag '${virtualNode.tag}', found ${existingElement.nodeName}`,
+      );
       result.success = false;
       return result;
     }
 
     // Validate tag match
     if (existingElement.tagName.toLowerCase() !== virtualNode.tag.toLowerCase()) {
-      result.warnings.push(`Tag mismatch: expected '${virtualNode.tag}', found '${existingElement.tagName.toLowerCase()}'`);
+      result.warnings.push(
+        `Tag mismatch: expected '${virtualNode.tag}', found '${existingElement.tagName.toLowerCase()}'`,
+      );
       result.success = false;
       return result;
     }
@@ -737,8 +741,9 @@ export class Reconciler {
     // Recursively hydrate children
     const virtualChildren = virtualNode.children || [];
     const existingChildren = Array.from(existingElement.childNodes).filter(
-      node => node.nodeType === Node.ELEMENT_NODE ||
-              (node.nodeType === Node.TEXT_NODE && node.textContent?.trim())
+      (node) =>
+        node.nodeType === Node.ELEMENT_NODE ||
+        (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()),
     );
 
     for (let i = 0; i < virtualChildren.length; i++) {

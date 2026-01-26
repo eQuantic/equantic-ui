@@ -73,13 +73,13 @@ public class ExpressionStrategyTests
     public void SwitchExpression_MapsTo_NestedTernary()
     {
         var result = TestHelper.ConvertExpression("status switch { 0 => \"Pending\", 1 => \"Active\", _ => \"Unknown\" }");
-        result.Should().Be("(status === 0 ? 'Pending' : (status === 1 ? 'Active' : 'Unknown'))");
+        result.Should().Be("(() => { const _s = status; if (_s === 0) return 'Pending'; if (_s === 1) return 'Active'; return 'Unknown'; })()");
     }
     [Fact]
     public void SwitchExpression_NoDiscard_MapsToNestedTernaryWithNull()
     {
         var result = TestHelper.ConvertExpression("val switch { 0 => \"A\" }");
-        result.Should().Be("(val === 0 ? 'A' : null)");
+        result.Should().Be("(() => { const _s = val; if (_s === 0) return 'A'; return null; })()");
     }
     [Fact]
     public void Any_NoArgs_MapsToLengthGreaterThanZeroWithParens()
