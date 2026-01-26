@@ -1,40 +1,46 @@
 using System.Collections.Generic;
+using System.Linq;
 using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Display;
 
-public enum BadgeVariant
+/// <summary>
+/// Badge component for status indicators.
+/// </summary>
+public class Badge : StatelessComponent
 {
-    Primary,
-    Secondary,
-    Success,
-    Danger,
-    Warning,
-    Info,
-    Light,
-    Dark
-}
+    public string? Text { get; set; }
+    public string Variant { get; set; } = "default";
 
-public class Badge : HtmlElement
-{
-    public string Text { get; set; } = string.Empty;
-    public BadgeVariant Variant { get; set; } = BadgeVariant.Primary;
-    public bool Pill { get; set; }
+    public Badge() { }
+    public Badge(string text) => Text = text;
 
-    public override HtmlNode Render()
+    public override IComponent Build(RenderContext context)
     {
-        var attrs = BuildAttributes();
-        var classes = $"badge bg-{Variant.ToString().ToLowerInvariant()}";
-        if (Pill) classes += " rounded-pill";
-        
-        var existingClass = attrs.GetValueOrDefault("class");
-        attrs["class"] = string.IsNullOrEmpty(existingClass) ? classes : $"{existingClass} {classes}";
+        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var badgeTheme = theme?.Badge;
 
-        return new HtmlNode
+        var baseStyle = badgeTheme?.Base ?? "";
+        var variantStyle = badgeTheme?.GetVariant(this.Variant) ?? "";
+        
+        var element = new DynamicElement
         {
-            Tag = "span",
-            Attributes = attrs,
-            Children = { HtmlNode.Text(Text) }
+            TagName = "div",
+            CustomAttributes = new Dictionary<string, string>
+            {
+                ["class"] = $"{baseStyle} {variantStyle} {this.ClassName}".Trim()
+            }
         };
+
+        if (this.Children.Any())
+        {
+            foreach (var child in this.Children) element.Children.Add(child);
+        }
+        else if (this.Text != null)
+        {
+            element.Children.Add(new Text(this.Text));
+        }
+
+        return element;
     }
 }

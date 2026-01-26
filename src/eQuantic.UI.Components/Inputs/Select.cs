@@ -15,8 +15,8 @@ public class Select : InputComponent<string>
     public override IComponent Build(RenderContext context)
     {
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
-        var inputTheme = theme?.Input;
-        var baseStyle = inputTheme?.Base ?? "";
+        var selectTheme = theme?.Select;
+        var baseStyle = selectTheme?.Base ?? "";
 
         var attrs = new Dictionary<string, string>
         {

@@ -1,0 +1,21 @@
+{
+  "name": "equantic-ui-vscode",
+  "displayName": "eQuantic UI Tools",
+  "description": "Productivity tools for eQuantic UI development",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Snippets",
+    "Programming Languages"
+  ],
+  "contributes": {
+    "snippets": [
+      {
+        "language": "csharp",
+        "path": "./snippets/csharp.json"
+      }
+    ]
+  }
+}

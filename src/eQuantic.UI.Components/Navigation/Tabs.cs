@@ -13,89 +13,94 @@ public class TabItem
     public bool Disabled { get; set; }
 }
 
-public class Tabs : HtmlElement
+public class Tabs : StatelessComponent
 {
     public List<TabItem> Items { get; set; } = new();
     public string? ActiveTabId { get; set; }
-    public bool Pills { get; set; }
+    public bool Pills { get; set; } // Kept for API compatibility, but distinct style depends on theme
     public bool Vertical { get; set; }
     public Action<string>? OnTabChange { get; set; }
 
-    public override HtmlNode Render()
+    public override IComponent Build(RenderContext context)
     {
-        var attrs = BuildAttributes();
-        
+        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var tabsTheme = theme?.Tabs;
         var activeId = ActiveTabId ?? Items.FirstOrDefault()?.Id;
+
+        // Container (List)
+        var listClass = tabsTheme?.List ?? "";
+        if (Vertical) listClass += " flex-col h-auto";
+
+        var triggerBase = tabsTheme?.Trigger ?? "";
+        var activeTrigger = tabsTheme?.ActiveTrigger ?? "";
+        var inactiveTrigger = tabsTheme?.InactiveTrigger ?? "";
         
-        // Nav tabs
-        var navClasses = Pills ? "nav nav-pills" : "nav nav-tabs";
-        if (Vertical) navClasses += " flex-column";
+        var contentBase = tabsTheme?.Content ?? "";
+
+        var triggers = new List<IComponent>();
+        var contents = new List<IComponent>();
+
+        foreach (var tab in Items)
+        {
+            var isActive = tab.Id == activeId;
+            var triggerStyle = $"{triggerBase} {(isActive ? activeTrigger : inactiveTrigger)}";
+            if (tab.Disabled) triggerStyle += " opacity-50 pointer-events-none";
+
+            var triggerAttrs = new Dictionary<string, string>
+            {
+                ["class"] = triggerStyle,
+                ["data-tab-id"] = tab.Id,
+                ["data-state"] = isActive ? "active" : "inactive",
+                ["type"] = "button"
+            };
+
+            triggers.Add(new DynamicElement
+            {
+                TagName = "button",
+                CustomAttributes = triggerAttrs,
+                Children = { new Text(tab.Label) }
+                // OnClick handling for client-side switching would go here if not handled by global runtime/delegate
+            });
+
+            var contentStyle = $"{contentBase} {(isActive ? "" : "hidden")}";
+            var contentAttrs = new Dictionary<string, string>
+            {
+                ["class"] = contentStyle,
+                ["id"] = $"tab-{tab.Id}",
+                ["data-state"] = isActive ? "active" : "inactive"
+            };
+
+            var pane = new DynamicElement
+            {
+                TagName = "div",
+                CustomAttributes = contentAttrs
+            };
+            if (tab.Content != null) pane.Children.Add(tab.Content);
+            
+            contents.Add(pane);
+        }
+
+        var listElement = new DynamicElement
+        {
+            TagName = "div",
+            CustomAttributes = new Dictionary<string, string> 
+            { 
+                ["class"] = listClass,
+                ["role"] = "tablist"
+            }
+        };
+        foreach(var t in triggers) listElement.Children.Add(t);
+
+        var container = new DynamicElement
+        {
+            TagName = "div",
+            CustomAttributes = new Dictionary<string, string> { ["class"] = $"tabs-container {ClassName}".Trim() },
+            Children = { listElement }
+        };
         
-        var tabHeaders = Items.Select(tab =>
-        {
-            var linkClasses = "nav-link";
-            if (tab.Id == activeId) linkClasses += " active";
-            if (tab.Disabled) linkClasses += " disabled";
+        // Append all content panes
+        foreach (var c in contents) container.Children.Add(c);
 
-            return new HtmlNode
-            {
-                Tag = "li",
-                Attributes = new Dictionary<string, string?> { ["class"] = "nav-item" },
-                Children = {
-                    new HtmlNode
-                    {
-                        Tag = "button",
-                        Attributes = new Dictionary<string, string?>
-                        {
-                            ["class"] = linkClasses,
-                            ["data-tab-id"] = tab.Id,
-                            ["type"] = "button"
-                        },
-                        Children = { HtmlNode.Text(tab.Label) }
-                    }
-                }
-            };
-        }).ToList();
-
-        var nav = new HtmlNode
-        {
-            Tag = "ul",
-            Attributes = new Dictionary<string, string?> { ["class"] = navClasses, ["role"] = "tablist" },
-            Children = tabHeaders
-        };
-
-        // Tab content
-        var tabPanes = Items.Select(tab =>
-        {
-            var paneClasses = "tab-pane fade";
-            if (tab.Id == activeId) paneClasses += " show active";
-
-            return new HtmlNode
-            {
-                Tag = "div",
-                Attributes = new Dictionary<string, string?>
-                {
-                    ["class"] = paneClasses,
-                    ["id"] = $"tab-{tab.Id}"
-                },
-                Children = tab.Content != null ? new List<HtmlNode> { tab.Content.Render() } : new()
-            };
-        }).ToList();
-
-        var content = new HtmlNode
-        {
-            Tag = "div",
-            Attributes = new Dictionary<string, string?> { ["class"] = "tab-content" },
-            Children = tabPanes
-        };
-
-        attrs["class"] = (attrs.GetValueOrDefault("class") + " tabs-container").Trim();
-
-        return new HtmlNode
-        {
-            Tag = "div",
-            Attributes = attrs,
-            Children = { nav, content }
-        };
+        return container;
     }
 }

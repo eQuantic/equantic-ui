@@ -16,36 +16,50 @@ public class Modal : StatelessComponent
     {
         if (!IsOpen) return new NullComponent();
 
+        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var dialogTheme = theme?.Dialog;
+
+        var overlayClass = dialogTheme?.Overlay ?? "";
+        var contentClass = dialogTheme?.Content ?? "";
+        var headerClass = dialogTheme?.Header ?? "";
+        var titleClass = dialogTheme?.Title ?? "";
+        var descriptorClass = dialogTheme?.Description ?? "";
+        var footerClass = dialogTheme?.Footer ?? "";
+
+        // Combine width with content class nicely
+        var contentStyle = $"{contentClass} {Width}".Trim();
+
         return new Box
         {
-            ClassName = "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200",
+            ClassName = overlayClass,
             OnClick = () => OnClose?.Invoke(), // Click outside to close
             Children = {
                 new Box
                 {
-                    ClassName = $"bg-white dark:bg-zinc-800 rounded-xl shadow-2xl overflow-hidden {Width} animate-in zoom-in-95 duration-200",
+                    ClassName = contentStyle,
                     OnClick = () => {}, // Stop propagation (prevent closing when clicking inside)
                     Children = {
                         // Header
                         new Row {
-                            ClassName = "px-6 py-4 border-b border-gray-100 dark:border-zinc-700 items-center justify-between",
+                            ClassName = headerClass,
                             Children = {
-                                new Heading(Title ?? "Modal", 3) { ClassName = "text-lg font-semibold text-gray-900 dark:text-white" },
+                                new Heading(Title ?? "Modal", 3) { ClassName = titleClass },
                                 new Button {
                                     Text = "✕",
-                                    ClassName = "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                    Variant = "ghost",
+                                    ClassName = "h-6 w-6 p-0", // Close button small
                                     OnClick = () => OnClose?.Invoke()
                                 }
                             }
                         },
                         // Body
                         new Box {
-                            ClassName = "p-6",
+                            ClassName = "py-4", // Some internal padding might be needed or handled by grid
                             Children = { Body ?? new NullComponent() }
                         },
                         // Footer
                         Footer != null ? new Box {
-                            ClassName = "px-6 py-4 bg-gray-50 dark:bg-zinc-900/50 border-t border-gray-100 dark:border-zinc-700 flex justify-end gap-2",
+                            ClassName = footerClass,
                             Children = { Footer }
                         } : new NullComponent()
                     }

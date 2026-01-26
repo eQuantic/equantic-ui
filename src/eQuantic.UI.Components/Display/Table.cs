@@ -14,7 +14,7 @@ public class TableColumn
     public string? Width { get; set; }
 }
 
-public class Table<T> : HtmlElement
+public class Table<T> : StatelessComponent
 {
     public List<T> Data { get; set; } = new();
     public List<TableColumn> Columns { get; set; } = new();
@@ -23,74 +23,113 @@ public class Table<T> : HtmlElement
     public bool Hoverable { get; set; } = true;
     public Action<T>? OnRowClick { get; set; }
 
-    public override HtmlNode Render()
+    public override IComponent Build(RenderContext context)
     {
-        var attrs = BuildAttributes();
-        var classes = "table";
-        if (Striped) classes += " table-striped";
-        if (Bordered) classes += " table-bordered";
-        if (Hoverable) classes += " table-hover";
-        
-        var existingClass = attrs.GetValueOrDefault("class");
-        attrs["class"] = string.IsNullOrEmpty(existingClass) ? classes : $"{existingClass} {classes}";
+        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var tableTheme = theme?.Table;
+
+        var wrapperClass = tableTheme?.Wrapper ?? "";
+        var tableClass = tableTheme?.Table ?? "";
+        var headerClass = tableTheme?.Header ?? "";
+        var rowClass = tableTheme?.Row ?? "";
+        var headCellClass = tableTheme?.HeadCell ?? "";
+        var cellClass = tableTheme?.Cell ?? "";
+
+        var attrs = new Dictionary<string, string>
+        {
+            ["class"] = $"{tableClass} {ClassName}".Trim()
+        };
 
         // Header
-        var headerCells = Columns.Select(col => new HtmlNode
+        var headerCells = new List<IComponent>();
+        foreach(var col in Columns)
         {
-            Tag = "th",
-            Attributes = col.Width != null 
-                ? new Dictionary<string, string?> { ["style"] = $"width: {col.Width}" } 
-                : new Dictionary<string, string?>(),
-            Children = { HtmlNode.Text(col.Header) }
-        }).ToList();
+            var thAttrs = new Dictionary<string, string> { ["class"] = headCellClass };
+            if (col.Width != null) thAttrs["style"] = $"width: {col.Width}";
+            
+            var th = new DynamicElement 
+            { 
+                TagName = "th", 
+                CustomAttributes = thAttrs
+            };
+            th.Children.Add(new Text(col.Header));
+            headerCells.Add(th);
+        }
 
-        var thead = new HtmlNode
+        var headerRow = new DynamicElement
         {
-            Tag = "thead",
-            Children = {
-                new HtmlNode
-                {
-                    Tag = "tr",
-                    Children = headerCells
-                }
-            }
+            TagName = "tr",
+            CustomAttributes = new Dictionary<string, string> { ["class"] = "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted" }
+        };
+        foreach(var h in headerCells) headerRow.Children.Add(h);
+
+        var thead = new DynamicElement
+        {
+            TagName = "thead",
+            CustomAttributes = new Dictionary<string, string> { ["class"] = headerClass },
+            Children = { headerRow }
         };
 
         // Body
-        var rows = Data.Select(item =>
+        var rows = new List<IComponent>();
+        foreach(var item in Data)
         {
-            var cells = Columns.Select(col =>
+            var cells = new List<IComponent>();
+            foreach(var col in Columns)
             {
                 var value = GetPropertyValue(item, col.Field);
                 var displayValue = col.Formatter != null && value != null
                     ? col.Formatter(value)
                     : value?.ToString() ?? "";
 
-                return new HtmlNode
+                var cell = new DynamicElement
                 {
-                    Tag = "td",
-                    Children = { HtmlNode.Text(displayValue) }
+                    TagName = "td",
+                    CustomAttributes = new Dictionary<string, string> { ["class"] = cellClass }
                 };
-            }).ToList();
+                cell.Children.Add(new Text(displayValue));
+                cells.Add(cell);
+            }
 
-            return new HtmlNode
+            var trAttrs = new Dictionary<string, string> { ["class"] = rowClass };
+            // Row click handling logic would require binding an event, but DynamicElement OnClick is simple delegate.
+            var events = new Dictionary<string, Delegate>();
+            if (OnRowClick != null)
             {
-                Tag = "tr",
-                Children = cells
-            };
-        }).ToList();
+                 // We can use a trick to capture 'item' 
+                 events["click"] = (Action)(() => OnRowClick(item));
+                 trAttrs["class"] += " cursor-pointer";
+            }
 
-        var tbody = new HtmlNode
+            var rowElement = new DynamicElement
+            {
+                TagName = "tr",
+                CustomAttributes = trAttrs,
+                CustomEvents = events
+            };
+            foreach(var c in cells) rowElement.Children.Add(c);
+            rows.Add(rowElement);
+        }
+
+        var tbody = new DynamicElement
         {
-            Tag = "tbody",
-            Children = rows
+            TagName = "tbody"
+        };
+        foreach(var r in rows) tbody.Children.Add(r);
+
+        var tableElement = new DynamicElement
+        {
+            TagName = "table",
+            CustomAttributes = attrs,
+            Children = { thead, tbody }
         };
 
-        return new HtmlNode
+        // Wrap in div
+        return new DynamicElement
         {
-            Tag = "table",
-            Attributes = attrs,
-            Children = { thead, tbody }
+            TagName = "div",
+            CustomAttributes = new Dictionary<string, string> { ["class"] = wrapperClass },
+            Children = { tableElement }
         };
     }
 

@@ -1,0 +1,57 @@
+{
+  "eQuantic Page": {
+    "prefix": "eq-page",
+    "body": [
+      "[Page(\"/${1:route}\")]",
+      "public class ${2:Name} : StatefulComponent",
+      "{",
+      "    public override ComponentState CreateState() => new ${2}State(this);",
+      "}",
+      "",
+      "public class ${2}State : ComponentState<${2}>",
+      "{",
+      "    public override void Build(BuildContext context)",
+      "    {",
+      "        return new Container",
+      "        {",
+      "            Children = {",
+      "                new Text(\"Hello ${2}\")",
+      "            }",
+      "        };",
+      "    }",
+      "}"
+    ],
+    "description": "Create a new eQuantic UI Page"
+  },
+  "eQuantic Component": {
+    "prefix": "eq-comp",
+    "body": [
+      "public class ${1:Name} : StatelessComponent",
+      "{",
+      "    protected override ComponentTree Build()",
+      "    {",
+      "        return new Container",
+      "        {",
+      "            $0",
+      "        };",
+      "    }",
+      "}"
+    ],
+    "description": "Create a new eQuantic UI Stateless Component"
+  },
+  "eQuantic Style": {
+    "prefix": "eq-style",
+    "body": [
+      "public static class ${1:Name}Styles",
+      "{",
+      "    public static Style Main => new()",
+      "    {",
+      "        BackgroundColor = \"white\",",
+      "        Padding = \"16px\",",
+      "        $0",
+      "    };",
+      "}"
+    ],
+    "description": "Create a new eQuantic UI Style Class"
+  }
+}
