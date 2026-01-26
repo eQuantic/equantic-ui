@@ -1,5 +1,6 @@
 using System;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Theme.Types;
 
 namespace eQuantic.UI.Components.Overlays;
 
@@ -40,7 +41,7 @@ public class Drawer : StatelessComponent
                             Children = {
                                 new Button {
                                     Text = "✕",
-                                    Variant = "ghost",
+                                    Variant = Variant.Ghost,
                                     ClassName = "h-10 w-10 p-0 rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 relative z-50",
                                     OnClick = () => OnClose?.Invoke()
                                 }

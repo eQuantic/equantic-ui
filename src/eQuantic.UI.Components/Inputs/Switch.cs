@@ -9,8 +9,7 @@ namespace eQuantic.UI.Components.Inputs;
 public class Switch : Checkbox
 {
     public string? Label { get; set; }
-    public string? Name { get; set; }
-    public bool IsNative { get; set; } = false;
+    public Switch() => IsNative = false;
 
     public override IComponent Build(RenderContext context)
     {

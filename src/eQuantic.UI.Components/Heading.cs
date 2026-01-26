@@ -32,20 +32,13 @@ public class Heading : StatelessComponent
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
         var textTheme = theme?.Typography;
         
-        var baseStyle = "";
-        if (textTheme != null) baseStyle = textTheme.Base;
-        
-        var variantStyle = "";
+        var baseStyle = textTheme?.Base ?? "";
         var variantKey = "h" + this.Level;
-        if (textTheme != null && textTheme.Variants != null)
-        {
-             var v = textTheme.Variants[variantKey];
-             if (v != null) variantStyle = v;
-        }
+        var variantStyle = textTheme?.GetVariant(variantKey) ?? "";
 
         var attrs = new Dictionary<string, string>
         {
-            ["class"] = baseStyle + " " + variantStyle + " " + (this.ClassName != null ? this.ClassName : "")
+            ["class"] = $"{baseStyle} {variantStyle} {ClassName}".Trim()
         };
 
         return new DynamicElement

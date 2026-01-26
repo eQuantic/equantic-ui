@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Theme;
+using eQuantic.UI.Core.Theme.Types;
 
 namespace eQuantic.UI.Components;
 
@@ -12,33 +14,25 @@ public class Button : StatelessComponent
     public string Type { get; set; } = "button";
     public bool Disabled { get; set; }
     public string? Text { get; set; }
-    public string Variant { get; set; } = "primary";
+    public Variant Variant { get; set; } = Variant.Primary;
+    public Size Size { get; set; } = Size.Medium;
 
     public override IComponent Build(RenderContext context)
     {
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
-        var buttonTheme = theme != null ? theme.Button : null;
-
-        var baseStyle = "";
-        if (buttonTheme != null) baseStyle = buttonTheme.Base;
-        
-        var variantStyle = "";
-        if (buttonTheme != null && buttonTheme.Variants != null && this.Variant != null)
-        {
-             var v = buttonTheme.Variants[this.Variant];
-             if (v != null) variantStyle = v;
-        }
+        var buttonTheme = theme?.Button;
 
         var attrs = new Dictionary<string, string>
         {
             ["type"] = this.Type,
-            ["class"] = baseStyle + " " + variantStyle + " " + (this.ClassName != null ? this.ClassName : "")
+            ["class"] = StyleBuilder.Create(buttonTheme?.Base)
+                            .Add(buttonTheme?.GetVariant(Variant))
+                            .Add(buttonTheme?.GetSize(Size))
+                            .Add(ClassName)
+                            .Build()
         };
 
         if (this.Disabled) attrs["disabled"] = "true";
-
-        // We need to pass children to the DynamicElement
-        // inherited Children property contains the input children.
 
         var element = new DynamicElement
         {

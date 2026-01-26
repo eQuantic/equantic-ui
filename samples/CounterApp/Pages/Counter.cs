@@ -1,6 +1,7 @@
 // Counter.cs - Sample eQuantic.UI Page Component
 using eQuantic.UI.Core;
 using eQuantic.UI.Components;
+using eQuantic.UI.Components.Inputs;
 
 namespace CounterApp.Pages;
 
@@ -18,7 +19,7 @@ public class Counter : StatefulComponent
         await Task.Delay(100);
         return current + 1;
     }
-    
+
     public override ComponentState CreateState() => new CounterState();
 }
 
@@ -43,7 +44,7 @@ public class CounterState : ComponentState<Counter>
                 {
                     ClassName = "title"
                 },
-                
+
                 new TextInput
                 {
                     Id = "message-input",
@@ -52,7 +53,7 @@ public class CounterState : ComponentState<Counter>
                     OnChange = (value) => SetState(() => _message = value),
                     AriaAttributes = new() { ["label"] = "Message input" }
                 },
-                
+
                 new Row
                 {
                     Gap = "8px",
@@ -66,12 +67,12 @@ public class CounterState : ComponentState<Counter>
                             OnClick = _decrement,
                             Text = "-"
                         },
-                        
+
                         new Text($"{_count}")
                         {
                             ClassName = "count-display"
                         },
-                        
+
                         new Button
                         {
                             Id = "increment-btn",
@@ -81,7 +82,7 @@ public class CounterState : ComponentState<Counter>
                         }
                     }
                 },
-                
+
                 _count > 0
                     ? new Text($"Message: {_message}")
                         { ClassName = "message-display" }

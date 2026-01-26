@@ -1,5 +1,6 @@
 using System;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Theme.Types;
 
 namespace eQuantic.UI.Components.Overlays;
 
@@ -46,7 +47,7 @@ public class Modal : StatelessComponent
                                 new Heading(Title ?? "Modal", 3) { ClassName = titleClass },
                                 new Button {
                                     Text = "✕",
-                                    Variant = "ghost",
+                                    Variant = Variant.Ghost,
                                     ClassName = "h-6 w-6 p-0", // Close button small
                                     OnClick = () => OnClose?.Invoke()
                                 }

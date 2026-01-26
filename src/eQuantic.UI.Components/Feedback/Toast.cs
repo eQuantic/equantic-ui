@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Theme.Types;
 
 namespace eQuantic.UI.Components.Feedback;
 
@@ -19,7 +20,7 @@ public class Toast : HtmlElement
 {
     public new string? Title { get; set; }
     public string? Message { get; set; }
-    public AlertType Variant { get; set; } = AlertType.Info;
+    public Variant Variant { get; set; } = Variant.Info;
     public bool AutoHide { get; set; } = true;
     public int DelayMs { get; set; } = 5000;
     public Action? OnClose { get; set; }

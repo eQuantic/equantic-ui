@@ -1,25 +1,15 @@
 using System.Collections.Generic;
-using System.Linq;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Theme.Types;
 
 namespace eQuantic.UI.Components.Feedback;
-
-public enum AlertType
-{
-    Default,
-    Info,
-    Success,
-    Warning,
-    Error,
-    Destructive
-}
 
 /// <summary>
 /// Alert component for user feedback.
 /// </summary>
 public class Alert : StatelessComponent
 {
-    public string Variant { get; set; } = "default";
+    public Variant Variant { get; set; } = Variant.Default;
 
     public override IComponent Build(RenderContext context)
     {
@@ -28,7 +18,7 @@ public class Alert : StatelessComponent
 
         var baseStyle = alertTheme?.Base ?? "";
         var variantStyle = alertTheme?.GetVariant(this.Variant) ?? "";
-        
+
         var element = new DynamicElement
         {
             TagName = "div",

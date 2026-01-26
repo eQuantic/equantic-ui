@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Theme.Types;
 
 namespace eQuantic.UI.Components.Display;
 
@@ -10,7 +11,7 @@ namespace eQuantic.UI.Components.Display;
 public class Badge : StatelessComponent
 {
     public string? Text { get; set; }
-    public string Variant { get; set; } = "default";
+    public Variant Variant { get; set; } = Variant.Default;
 
     public Badge() { }
     public Badge(string text) => Text = text;
@@ -22,7 +23,7 @@ public class Badge : StatelessComponent
 
         var baseStyle = badgeTheme?.Base ?? "";
         var variantStyle = badgeTheme?.GetVariant(this.Variant) ?? "";
-        
+
         var element = new DynamicElement
         {
             TagName = "div",

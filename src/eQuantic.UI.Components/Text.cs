@@ -35,19 +35,12 @@ public class Text : StatelessComponent
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
         var textTheme = theme?.Typography;
         
-        var baseStyle = "";
-        if (textTheme != null) baseStyle = textTheme.Base;
-
-        var variantStyle = "";
-        if (textTheme != null && textTheme.Variants != null && this.Variant != null)
-        {
-             var v = textTheme.Variants[this.Variant];
-             if (v != null) variantStyle = v;
-        }
+        var baseStyle = textTheme?.Base ?? "";
+        var variantStyle = (this.Variant != null) ? (textTheme?.GetVariant(this.Variant) ?? "") : "";
 
         var attrs = new Dictionary<string, string>
         {
-            ["class"] = baseStyle + " " + variantStyle + " " + (ClassName != null ? ClassName : "")
+            ["class"] = $"{baseStyle} {variantStyle} {ClassName}".Trim()
         };
 
         return new DynamicElement
