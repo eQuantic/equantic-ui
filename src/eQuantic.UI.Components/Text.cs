@@ -1,5 +1,6 @@
-using System.Collections.Generic;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Theme;
+using eQuantic.UI.Core.Theme.Types;
 
 namespace eQuantic.UI.Components;
 
@@ -19,9 +20,9 @@ public class Text : StatelessComponent
     public bool Paragraph { get; set; }
     
     /// <summary>
-    /// Style variant (e.g. "large", "small", "muted", "lead")
+    /// Style variant
     /// </summary>
-    public string? Variant { get; set; }
+    public Variant Variant { get; set; } = Variant.Default;
 
     public Text() { }
 
@@ -35,12 +36,12 @@ public class Text : StatelessComponent
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
         var textTheme = theme?.Typography;
         
-        var baseStyle = textTheme?.Base ?? "";
-        var variantStyle = (this.Variant != null) ? (textTheme?.GetVariant(this.Variant) ?? "") : "";
-
         var attrs = new Dictionary<string, string>
         {
-            ["class"] = $"{baseStyle} {variantStyle} {ClassName}".Trim()
+            ["class"] = StyleBuilder.Create(textTheme?.Base)
+                            .Add(textTheme?.GetVariant(Variant))
+                            .Add(ClassName)
+                            .Build()
         };
 
         return new DynamicElement

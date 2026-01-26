@@ -10,13 +10,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="eQuantic.UI.Core" Version="1.0.0-dev" />
-        <PackageReference Include="eQuantic.UI.Components" Version="1.0.0-dev" />
-        <PackageReference Include="eQuantic.UI.Server" Version="1.0.0-dev" />
-        <PackageReference Include="eQuantic.UI.Sdk" Version="1.0.0-dev" PrivateAssets="all" />
+        <ProjectReference Include="../../src/eQuantic.UI.Core/eQuantic.UI.Core.csproj" />
+        <ProjectReference Include="../../src/eQuantic.UI.Components/eQuantic.UI.Components.csproj" />
+        <ProjectReference Include="../../src/eQuantic.UI.Server/eQuantic.UI.Server.csproj" />
+        <ProjectReference Include="../../src/eQuantic.UI.Tailwind/eQuantic.UI.Tailwind.csproj" />
+        <!-- Sdk might still need to be a PackageReference if it's a tool, but for now let's see -->
+        <PackageReference Include="eQuantic.UI.Sdk" Version="1.0.0-dev" />
         <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="1.0.0-dev"
             GeneratePathProperty="true" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
-        <PackageReference Include="eQuantic.UI.Tailwind" Version="1.0.0-dev" PrivateAssets="all" />
     </ItemGroup>
 
 </Project>

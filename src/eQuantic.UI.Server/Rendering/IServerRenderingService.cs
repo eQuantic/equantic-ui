@@ -2,6 +2,8 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
+using eQuantic.UI.Core.Metadata;
+
 namespace eQuantic.UI.Server.Rendering;
 
 /// <summary>
@@ -51,10 +53,11 @@ public interface IServerRenderingService
 /// </summary>
 public sealed class ServerRenderResult
 {
-    private ServerRenderResult(bool success, string? html, string? error)
+    private ServerRenderResult(bool success, string? html, MetadataCollection? metadata, string? error)
     {
         Success = success;
         Html = html;
+        Metadata = metadata;
         Error = error;
     }
 
@@ -69,6 +72,11 @@ public sealed class ServerRenderResult
     public string? Html { get; }
 
     /// <summary>
+    /// The extracted metadata from the component (if implemented).
+    /// </summary>
+    public MetadataCollection? Metadata { get; }
+
+    /// <summary>
     /// Error message (if unsuccessful).
     /// </summary>
     public string? Error { get; }
@@ -76,15 +84,15 @@ public sealed class ServerRenderResult
     /// <summary>
     /// Creates a successful render result.
     /// </summary>
-    public static ServerRenderResult Ok(string html) => new(true, html, null);
+    public static ServerRenderResult Ok(string html, MetadataCollection? metadata = null) => new(true, html, metadata, null);
 
     /// <summary>
     /// Creates a failed render result.
     /// </summary>
-    public static ServerRenderResult Fail(string error) => new(false, null, error);
+    public static ServerRenderResult Fail(string error) => new(false, null, null, error);
 
     /// <summary>
     /// Creates a result indicating SSR is not available for this page.
     /// </summary>
-    public static ServerRenderResult NotAvailable() => new(false, null, "SSR not available");
+    public static ServerRenderResult NotAvailable() => new(false, null, null, "SSR not available");
 }

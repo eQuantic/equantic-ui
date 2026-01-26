@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Theme;
 
 namespace eQuantic.UI.Components;
 
@@ -32,13 +33,12 @@ public class Heading : StatelessComponent
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
         var textTheme = theme?.Typography;
         
-        var baseStyle = textTheme?.Base ?? "";
-        var variantKey = "h" + this.Level;
-        var variantStyle = textTheme?.GetVariant(variantKey) ?? "";
-
         var attrs = new Dictionary<string, string>
         {
-            ["class"] = $"{baseStyle} {variantStyle} {ClassName}".Trim()
+            ["class"] = StyleBuilder.Create(textTheme?.Base)
+                            .Add(textTheme?.GetHeading(Level))
+                            .Add(ClassName)
+                            .Build()
         };
 
         return new DynamicElement

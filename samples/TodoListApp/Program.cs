@@ -7,8 +7,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<TodoListApp.Services.ITodoService, TodoListApp.Services.TodoService>();
 builder.Services.AddUI(options =>
 {
-    // Configure your UI options here
-    options.ScanAssembly(typeof(Program).Assembly);
+    options.ScanAssembly(typeof(Program).Assembly)
+           .WithSsr()
+           .ConfigureHtmlShell(shell =>
+           {
+               shell.SetTitle("Todo List App | eQuantic.UI")
+                    .AddHeadTag("<meta name=\"theme-color\" content=\"#3b82f6\">");
+           });
 });
 
 var app = builder.Build();

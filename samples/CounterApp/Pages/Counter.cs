@@ -2,13 +2,20 @@
 using eQuantic.UI.Core;
 using eQuantic.UI.Components;
 using eQuantic.UI.Components.Inputs;
+using eQuantic.UI.Core.Theme.Types;
+using eQuantic.UI.Core.Metadata;
 
 namespace CounterApp.Pages;
 
 [Page("/", Title = "Counter Demo")]
 [Page("/counter")]
-public class Counter : StatefulComponent
+public class Counter : StatefulComponent, IHandleMetadata
 {
+    public void ConfigureMetadata(SeoBuilder seo)
+    {
+        seo.Title("Live Counter | eQuantic.UI")
+           .Description("A fast and interactive counter built with C# and eQuantic.UI");
+    }
     /// <summary>
     /// Example Server Action - processes on the server and returns result.
     /// </summary>
@@ -63,7 +70,7 @@ public class CounterState : ComponentState<Counter>
                         new Button
                         {
                             Id = "decrement-btn",
-                            ClassName = "btn btn-secondary",
+                            Variant = Variant.Secondary,
                             OnClick = _decrement,
                             Text = "-"
                         },
@@ -76,7 +83,7 @@ public class CounterState : ComponentState<Counter>
                         new Button
                         {
                             Id = "increment-btn",
-                            ClassName = "btn btn-primary",
+                            Variant = Variant.Primary,
                             OnClick = _increment,
                             Text = "+"
                         }

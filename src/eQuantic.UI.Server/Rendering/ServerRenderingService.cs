@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Metadata;
 using eQuantic.UI.Core.Rendering;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -89,6 +90,14 @@ public class ServerRenderingService : IServerRenderingService
             // Create the component instance with DI
             var component = CreateComponentInstance(pageType);
 
+            // Handle Metadata
+            MetadataCollection? metadata = null;
+            if (component is IHandleMetadata metadataHandler)
+            {
+                metadata = new MetadataCollection();
+                metadataHandler.ConfigureMetadata(new SeoBuilder(metadata));
+            }
+
             // For stateful components, we need to initialize state
             if (component is StatefulComponent stateful)
             {
@@ -120,7 +129,7 @@ public class ServerRenderingService : IServerRenderingService
             _logger.LogDebug("SSR completed for page: {PageType}, HTML length: {Length}",
                 pageTypeName, html.Length);
 
-            return ServerRenderResult.Ok(html);
+            return ServerRenderResult.Ok(html, metadata);
         }
         catch (Exception ex)
         {

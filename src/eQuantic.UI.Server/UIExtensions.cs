@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using eQuantic.UI.Core.Metadata;
 using eQuantic.UI.Server.Authorization;
 using eQuantic.UI.Server.Rendering;
 using Microsoft.AspNetCore.Builder;
@@ -188,6 +189,10 @@ public static class UIExtensions
         var shell = options.HtmlShell;
         var pageValue = pageName != null ? $"'{pageName}'" : "null";
 
+        // Initialize Metadata
+        var metadata = new MetadataCollection { Title = shell.Title };
+        var seo = new SeoBuilder(metadata);
+
         // Attempt SSR if page name is provided and SSR is enabled
         var ssrContent = "<div class=\"loading\">Loading...</div>";
         var ssrEnabled = false;
@@ -204,6 +209,16 @@ public static class UIExtensions
                     {
                         ssrContent = result.Html;
                         ssrEnabled = true;
+
+                        // Merge metadata from SSR
+                        if (result.Metadata != null)
+                        {
+                            if (!string.IsNullOrEmpty(result.Metadata.Title))
+                                metadata.Title = result.Metadata.Title;
+                            
+                            foreach(var tag in result.Metadata.Tags)
+                                metadata.AddOrUpdate(tag);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -214,25 +229,21 @@ public static class UIExtensions
             }
         }
 
-        // Get page metadata for SEO
-        var pageTitle = shell.Title;
-        var pageDescription = "";
+        // Apply PageAttribute metadata if not already set by SSR
         if (pageName != null)
         {
-            foreach (var assembly in options.AssembliesToScan)
-            {
-                var pageType = assembly.GetTypes()
-                    .FirstOrDefault(t => t.Name == pageName && t.GetCustomAttribute<Core.PageAttribute>() != null);
+            var pageType = options.AssembliesToScan
+                .SelectMany(a => a.GetTypes())
+                .FirstOrDefault(t => t.Name == pageName && t.GetCustomAttribute<Core.PageAttribute>() != null);
 
-                if (pageType != null)
-                {
-                    var attr = pageType.GetCustomAttribute<Core.PageAttribute>()!;
-                    if (!string.IsNullOrEmpty(attr.Title))
-                        pageTitle = attr.Title;
-                    if (!string.IsNullOrEmpty(attr.Description))
-                        pageDescription = attr.Description;
-                    break;
-                }
+            if (pageType != null)
+            {
+                var attr = pageType.GetCustomAttribute<Core.PageAttribute>()!;
+                if (!string.IsNullOrEmpty(attr.Title) && string.IsNullOrEmpty(metadata.Title))
+                    seo.Title(attr.Title);
+                
+                if (!string.IsNullOrEmpty(attr.Description) && !metadata.Tags.Any(t => t.Key == "name:description"))
+                    seo.Description(attr.Description);
             }
         }
 
@@ -243,22 +254,13 @@ public static class UIExtensions
             ssr: {ssrEnabled.ToString().ToLowerInvariant()}
         }}";
 
-        // Build meta tags for SEO
-        var metaTags = new List<string>();
-        if (!string.IsNullOrEmpty(pageDescription))
-        {
-            metaTags.Add($"<meta name=\"description\" content=\"{System.Web.HttpUtility.HtmlAttributeEncode(pageDescription)}\">");
-            metaTags.Add($"<meta property=\"og:description\" content=\"{System.Web.HttpUtility.HtmlAttributeEncode(pageDescription)}\">");
-        }
-        metaTags.Add($"<meta property=\"og:title\" content=\"{System.Web.HttpUtility.HtmlAttributeEncode(pageTitle)}\">");
-
         var html = $@"<!DOCTYPE html>
 <html lang=""en"">
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>{System.Web.HttpUtility.HtmlEncode(pageTitle)}</title>
-    {string.Join("\n    ", metaTags)}
+    <title>{System.Web.HttpUtility.HtmlEncode(metadata.Title)}</title>
+    {metadata.RenderTags()}
     <style>
         {shell.BaseStyles}
     </style>
@@ -323,6 +325,18 @@ public class UIOptions
     /// </remarks>
     public bool EnableSsr { get; set; } = true;
 
+    public UIOptions WithSsr(bool enabled = true)
+    {
+        EnableSsr = enabled;
+        return this;
+    }
+
+    public UIOptions ConfigureHtmlShell(Action<HtmlShellOptions> configure)
+    {
+        configure(HtmlShell);
+        return this;
+    }
+
     /// <summary>
     /// Scan an assembly for components with [Page] and [ServerAction] attributes.
     /// </summary>
@@ -344,4 +358,22 @@ public class HtmlShellOptions
         .loading { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.5rem; }
     ";
     public List<string> HeadTags { get; } = new();
+
+    public HtmlShellOptions SetTitle(string title)
+    {
+        Title = title;
+        return this;
+    }
+
+    public HtmlShellOptions AddHeadTag(string tag)
+    {
+        HeadTags.Add(tag);
+        return this;
+    }
+
+    public HtmlShellOptions SetBaseStyles(string styles)
+    {
+        BaseStyles = styles;
+        return this;
+    }
 }
