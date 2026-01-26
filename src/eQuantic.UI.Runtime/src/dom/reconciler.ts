@@ -331,21 +331,343 @@ export class Reconciler {
   /**
    * Reconcile children arrays
    */
+  /**
+   * Reconcile children using Keyed Diffing (Longest Increasing Subsequence)
+   * This algorithm is optimized for moving nodes instead of recreating them.
+   */
+  /**
+   * Reconcile children using Keyed Diffing (Longest Increasing Subsequence)
+   * This algorithm is optimized for moving nodes instead of recreating them.
+   */
   private reconcileChildren(
     parentElement: HTMLElement,
     oldChildren: HtmlNode[],
     newChildren: HtmlNode[]
   ): void {
-    const safeOld = oldChildren || [];
-    const safeNew = newChildren || [];
-    const maxLength = Math.max(safeOld.length, safeNew.length);
+    const oldCh = oldChildren || [];
+    const newCh = newChildren || [];
 
-    for (let i = 0; i < maxLength; i++) {
-        const oldChild = safeOld[i];
-        const newChild = safeNew[i];
-        this.reconcile(parentElement, oldChild, newChild, i);
+    let oldStartIdx = 0;
+    let newStartIdx = 0;
+    let oldEndIdx = oldCh.length - 1;
+    let newEndIdx = newCh.length - 1;
+
+    let oldStartNode = oldCh[0];
+    let newStartNode = newCh[0];
+    let oldEndNode = oldCh[oldEndIdx];
+    let newEndNode = newCh[newEndIdx];
+
+    const childNodes = parentElement.childNodes;
+
+    // 1. Sync head (prefix optimization)
+    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+      if (!this.isSameKey(oldStartNode, newStartNode)) break;
+      this.reconcile(parentElement, oldStartNode, newStartNode, oldStartIdx);
+      oldStartNode = oldCh[++oldStartIdx];
+      newStartNode = newCh[++newStartIdx];
+    }
+
+    // 2. Sync tail (suffix optimization)
+    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+      if (!this.isSameKey(oldEndNode, newEndNode)) break;
+      // Note: Reconcile uses index. For suffix, we need to pass the *actual* DOM index.
+      // Since we haven't modified the list yet, `childNode[index]` works if index is from start.
+      // But `oldEndIdx` is relative to the *whole* list.
+      // Correct reconciliation needs the DOM element.
+      // Ideally, `reconcile` should accept the element directly to avoid index lookup ambiguity.
+      // However, reusing existing `reconcile`: it looks up `childNodes[index]`.
+      // `childNodes` length matches `oldCh.length` currently.
+      // So `oldEndIdx` is valid.
+      this.reconcile(parentElement, oldEndNode, newEndNode, oldEndIdx);
+      oldEndNode = oldCh[--oldEndIdx];
+      newEndNode = newCh[--newEndIdx];
+    }
+
+    // 3. Mount new nodes if old list is exhausted
+    if (oldStartIdx > oldEndIdx) {
+      if (newStartIdx <= newEndIdx) {
+        // Anchor is the node *after* the new range we are inserting.
+        // Logic: newEndIdx has been decremented. So the node at `newEndIdx + 1` (in the new List)
+        // corresponds to a node that is already consistent in the DOM (the start of the suffix).
+        // BUT we need the DOM node anchor.
+        // We know `newEndIdx + 1` in `newCh` is `newCh[newEndIdx + 1]`.
+        // Where is it in the DOM?
+        // It's the node currently at `oldEndIdx + 1`?
+        // Since we processed the tail, `childNodes` at the end are sync'd.
+        // So `childNodes[newEndIdx + 1]` relative to current DOM state?
+        // Actually, `childNodes.length` is static so far.
+        // The anchor node is `childNodes[oldEndIdx + 1]`.
+        // Wait, `oldEndIdx` was decremented. So `oldEndIdx + 1` points to the first node of the suffix.
+        const anchorIndex = oldEndIdx + 1;
+        const anchor = anchorIndex < childNodes.length ? childNodes[anchorIndex] : null;
+        
+        while (newStartIdx <= newEndIdx) {
+          const newNode = newCh[newStartIdx++];
+          const dom = this.createDomElement(newNode);
+          parentElement.insertBefore(dom, anchor);
+        }
+      }
+    }
+    // 4. Remove old nodes if new list is exhausted
+    else if (newStartIdx > newEndIdx) {
+      // Remove backwards to avoid index shifting issues
+      while (oldStartIdx <= oldEndIdx) {
+        const nodeToRemove = childNodes[oldEndIdx];
+        if (nodeToRemove) {
+          this.cleanupEventListeners(nodeToRemove);
+          parentElement.removeChild(nodeToRemove);
+        }
+        oldEndIdx--;
+      }
+    }
+    else {
+      // 5. Unknown sequence - efficient move using LIS
+      // s1 (old length) unused
+      const s2 = newEndIdx - newStartIdx + 1;
+      
+      const keyMap = new Map<string | number, number>();
+      for (let i = newStartIdx; i <= newEndIdx; i++) {
+        const key = newCh[i].key;
+        if (key != null) keyMap.set(key, i);
+      }
+
+      // 0 means new node must be mounted
+      // >0 means (oldIndex + 1)
+      const newIndexToOldIndexMap = new Int32Array(s2);
+      
+      // Map to store reference to DOM nodes for new indices (needed for moves)
+      const newIndexToNodeMap = new Map<number, Node>();
+      
+      let patched = 0;
+      let moved = false;
+      let maxNewIndexSoFar = 0;
+
+      // Map matching nodes and Patch
+      const toRemove: Node[] = [];
+
+      for (let i = oldStartIdx; i <= oldEndIdx; i++) {
+        const oldNode = oldCh[i];
+        let newIndex: number | undefined;
+        
+        if (oldNode.key != null) {
+          newIndex = keyMap.get(oldNode.key);
+        } else {
+          // Try to find keyless match
+          for (let j = 0; j < s2; j++) {
+            if (newIndexToOldIndexMap[j] === 0 && newCh[newStartIdx + j].key == null) {
+              newIndex = newStartIdx + j;
+              break;
+            }
+          }
+        }
+
+        if (newIndex !== undefined) {
+          // Match found
+          newIndexToOldIndexMap[newIndex - newStartIdx] = i + 1;
+          if (newIndex >= maxNewIndexSoFar) {
+            maxNewIndexSoFar = newIndex;
+          } else {
+            moved = true;
+          }
+          // Patch using the current DOM index (i)
+          // Store DOM node for logic later (i corresponds to childNodes index before removals)
+          const domNode = childNodes[i];
+          newIndexToNodeMap.set(newIndex, domNode);
+          
+          this.reconcile(parentElement, oldNode, newCh[newIndex], i);
+          patched++;
+        } else {
+          // No match, mark for removal
+          const node = childNodes[i];
+          if(node) toRemove.push(node);
+        }
+      }
+
+      // Remove unmatched nodes
+      for (const node of toRemove) {
+        this.cleanupEventListeners(node);
+        parentElement.removeChild(node);
+      }
+
+      // Move and Mount
+      if (moved) {
+        const seq = this.getSequence(newIndexToOldIndexMap);
+        let j = seq.length - 1;
+        
+        // Find the initial anchor (start of Suffix)
+        // Since we removed unrelated nodes, Suffix is at childNodes[something].
+        // But simpler: just initialize nextAnchor from suffix.
+        // We know suffix moves backwards from oldEndIdx (original).
+        // If we look at childNodes, it is: [Prefix (stable), Middle (mixed), Suffix (stable)].
+        // oldStartIdx now points to start of middle (after prefix).
+        // Since we removed nodes, indices changed.
+        
+        // Standard Vue 3 approach:
+        // iterate i from s2-1 to 0.
+        // next node index = newStartIdx + i + 1.
+        // If next node index < newCh.length, anchor = newIndexToNodeMap.get(next index)? 
+        // OR we can just keep a `nextAnchor` var that we update every iteration.
+        
+        let nextAnchor: Node | null = null;
+        if (newEndIdx + 1 < newCh.length) {
+            // Suffix exists.
+            // The first node of suffix is...
+            // We can't easily find it via map because it wasn't mapped (skipped in step 2).
+            // But we know it's at the end of the current DOM list?
+            // Actually, if we use `childNodes.item(childNodes.length - suffixLength)`, we can find it.
+            // OR simpler:
+            // Since we know Suffix is stable at the end.
+            // `childNodes[childNodes.length - (newCh.length - 1 - newEndIdx)]`
+            // Let's rely on `nextAnchor` updating in the loop.
+            // For the first iteration (last item in middle), anchor is first item of suffix.
+            // Which is `childNodes[end]`.
+            // Because we only removed items from middle.
+            // `childNodes` has: Prefix + RemainingMiddle + Suffix.
+            // We are inserting/moving Middle items before Suffix.
+            // So `nextAnchor` initially = `childNodes[childNodes.length - suffixCount]`?
+            // Or simpler: `nextAnchor = parentElement.childNodes[oldEndIdx + 1 - removedCount]`.
+            // Hard to calculate.
+            
+            // Better: `nextAnchor` = parentElement.childNodes[parentElement.childNodes.length - (newCh.length - 1 - newEndIdx)] ? No.
+            
+            // Let's rely on reference from `newIndexToNodeMap`? No, Suffix not in map.
+            
+            // WAIT. If we assume Suffix optimization logic worked, 
+            // `oldEndIdx` points to the last element of the Middle.
+            // `oldEndIdx + 1` is start of Suffix.
+            // But we removed nodes using `removeChild`.
+            // However, `childNodes` list shrinks. Suffix shifts left.
+            // But Suffix nodes are still effectively at the end.
+            // Can we just grab `childNodes[childNodes.length - countOfSuffix]`? YES.
+             const suffixCount = newCh.length - 1 - newEndIdx;
+             if (suffixCount > 0) {
+                 nextAnchor = childNodes[childNodes.length - suffixCount];
+             }
+        }
+
+        // Iterate backwards
+        for (let i = s2 - 1; i >= 0; i--) {
+          const currentNewIndex = newStartIdx + i;
+          
+          if (newIndexToOldIndexMap[i] === 0) {
+            // New node - Mount
+            const newNode = newCh[currentNewIndex];
+            const dom = this.createDomElement(newNode);
+            parentElement.insertBefore(dom, nextAnchor);
+            // Update map for future anchors?
+            newIndexToNodeMap.set(currentNewIndex, dom);
+            nextAnchor = dom;
+          } else {
+             // Move or Stay
+             const dom = newIndexToNodeMap.get(currentNewIndex);
+             if (dom) {
+                if (j < 0 || i !== seq[j]) {
+                    // Move!
+                    parentElement.insertBefore(dom, nextAnchor);
+                } else {
+                    // Stay (in LIS)
+                    j--;
+                }
+                nextAnchor = dom;
+             }
+          }
+        }
+      } else {
+        // Not moved, just mount new ones (fallback for non-moved but inserted items)
+        // Wait, if !moved, logic above doesn't run?
+        // But what if we have insertions?
+        // `if (moved)` covers reordering.
+        // If not moved, we still might have `0` in `newIndexToOldIndexMap` (insertions).
+        // Does `moved` track insertions?
+        // `moved` tracks `newIndex < pos`. Order violation.
+        // If we just insert `[A, B]` -> `[A, C, B]`.
+        // A(0->0). C(new). B(1->2).
+        // B index 2. pos = 0. 2 > 0. moved = false?
+        // `pos` tracks `maxNewIndex`.
+        // A: 0. pos=0.
+        // B: 2. pos=2.
+        // `moved` false.
+        // So we enter `else`.
+        // We MUST verify insertions in `else` block.
+        // Iterate backwards and insert missing ones.
+        
+        let nextAnchor: Node | null = null;
+        // Same anchor logic as above
+        const suffixCount = newCh.length - 1 - newEndIdx;
+        if (suffixCount > 0) {
+             nextAnchor = childNodes[childNodes.length - suffixCount];
+        }
+
+        for (let i = s2 - 1; i >= 0; i--) {
+           const currentNewIndex = newStartIdx + i;
+           if (newIndexToOldIndexMap[i] === 0) {
+              const newNode = newCh[currentNewIndex];
+              const dom = this.createDomElement(newNode);
+              parentElement.insertBefore(dom, nextAnchor);
+              nextAnchor = dom;
+           } else {
+               // Update anchor
+               // We need the DOM element to be the anchor for the *previous* item.
+               // Since it's not moved, it is in the DOM.
+               // We can get it from Map.
+               const dom = newIndexToNodeMap.get(currentNewIndex);
+               if (dom) nextAnchor = dom;
+           }
+        }
+      }
     }
   }
+
+  // Optimized reconcile function for the 'Unknown Sequence' block with DOM mapping
+  // Redefining just the block 5 logic to be actually runnable
+  // Note: I will replace the whole method content in the tool call, this comment is just internal thought.
+  // The actual replacement string will contain the corrected logic.
+  
+  private isSameKey(n1: HtmlNode, n2: HtmlNode): boolean {
+     return n1.tag === n2.tag && n1.key === n2.key;
+  }
+
+  private getSequence(arr: Int32Array): number[] {
+    const p = arr.slice();
+    const result = [0];
+    let i, j, u, v, c;
+    const len = arr.length;
+    for (i = 0; i < len; i++) {
+        const arrI = arr[i];
+        if (arrI !== 0) {
+            j = result[result.length - 1];
+            if (arr[j] < arrI) {
+                p[i] = j;
+                result.push(i);
+                continue;
+            }
+            u = 0;
+            v = result.length - 1;
+            while (u < v) {
+                c = ((u + v) / 2) | 0;
+                if (arr[result[c]] < arrI) {
+                    u = c + 1;
+                } else {
+                    v = c;
+                }
+            }
+            if (arrI < arr[result[u]]) {
+                if (u > 0) {
+                    p[i] = result[u - 1];
+                }
+                result[u] = i;
+            }
+        }
+    }
+    u = result.length;
+    v = result[u - 1];
+    while (u-- > 0) {
+        result[u] = v;
+        v = p[v];
+    }
+    return result;
+  }
+
 
   /**
    * Cleanup event listeners for element and its children
