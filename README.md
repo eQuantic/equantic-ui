@@ -14,7 +14,8 @@
 
 - ⚛️ **Component-based** - Build complex UIs using the Composite Pattern.
 - 🌐 **HTML-native** - Components map directly to HTML elements with standard attributes (`id`, `className`, `style`).
-- 🎨 **CSS-in-C#** - Type-safe styling system compiled to optimized CSS.
+- 🎨 **Theme Maturity** - Standardized `Variant` and `Size` enums for consistent look & feel.
+- 🛠️ **StyleBuilder** - Type-safe, CVA-inspired utility for managing conditional CSS classes.
 - 🚀 **Compiler-First** - C# code is transpiled to efficient JavaScript via a Roslyn-based compiler.
 - 📦 **SDK Integration** - Seamless integration via `eQuantic.UI.Sdk` and standard `.csproj` files.
 - 📉 **Minimal Runtime** - Ultra-lightweight runtime (<30kb) compared to WASM-based solutions.
