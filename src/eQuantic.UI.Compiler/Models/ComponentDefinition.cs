@@ -116,6 +116,7 @@ public class ServerActionInfo
     public List<string> TypeParameters { get; set; } = new();
     public List<ParameterDefinition> Parameters { get; set; } = new();
     public bool IsAsync { get; set; }
+    public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? SyntaxNode { get; set; }
 }
 
 /// <summary>

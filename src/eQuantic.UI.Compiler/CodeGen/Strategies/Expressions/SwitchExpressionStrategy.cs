@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -16,9 +17,9 @@ public class SwitchExpressionStrategy : IConversionStrategy
     {
         var switchExpr = (SwitchExpressionSyntax)node;
         var governingExpr = context.Converter.ConvertExpression(switchExpr.GoverningExpression);
-        
+
         var sb = new StringBuilder();
-        
+
         // Wrap in IIFE to allow complex logic blocks
         sb.Append("(() => {");
         sb.Append($" const _s = {governingExpr};");
@@ -43,7 +44,7 @@ public class SwitchExpressionStrategy : IConversionStrategy
             var armResult = context.Converter.ConvertExpression(arm.Expression);
             sb.Append($" if ({condition}) return {armResult};");
         }
-        
+
         // Default fallback if no discard pattern exists
         if (!switchExpr.Arms.Any(a => a.Pattern is DiscardPatternSyntax))
         {
@@ -79,7 +80,7 @@ public class SwitchExpressionStrategy : IConversionStrategy
 
             case RecursivePatternSyntax recursive:
                 var checks = new List<string>();
-                
+
                 // Type check if present
                 if (recursive.Type != null)
                 {
@@ -104,14 +105,14 @@ public class SwitchExpressionStrategy : IConversionStrategy
                     foreach (var subPattern in recursive.PropertyPatternClause.Subpatterns)
                     {
                         var propName = subPattern.NameColon?.Name.ToString();
-                        if (propName != null) 
+                        if (propName != null)
                         {
                             var subVar = $"{varName}.{char.ToLowerInvariant(propName[0])}{propName.Substring(1)}";
                             checks.Add(ConvertPattern(subPattern.Pattern, subVar, context));
                         }
                     }
                 }
-                
+
                 return checks.Count > 0 ? string.Join(" && ", checks) : $"{varName} != null";
 
             case UnaryPatternSyntax unary:
@@ -131,7 +132,7 @@ public class SwitchExpressionStrategy : IConversionStrategy
                  return $"({left} {logicOp} {rightPattern})";
 
             default:
-                return "false"; 
+                return "false";
         }
     }
 

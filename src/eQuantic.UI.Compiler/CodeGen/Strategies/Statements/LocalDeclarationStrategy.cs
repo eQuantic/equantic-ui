@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
@@ -17,11 +18,11 @@ public class LocalDeclarationStrategy : IStatementStrategy
         // Simplified: only taking the first variable (C# allows 'int x, y;')
         // JS often uses one line per var or 'let x, y;'
         // We will assume standard single declaration for now or iterate
-        
+
         var variable = decl.Declaration.Variables.First();
         var name = variable.Identifier.Text;
-        var init = variable.Initializer != null 
-            ? context.Converter.ConvertExpression(variable.Initializer.Value) 
+        var init = variable.Initializer != null
+            ? context.Converter.ConvertExpression(variable.Initializer.Value)
             : "null";
 
         if (decl.UsingKeyword.IsKind(SyntaxKind.UsingKeyword))

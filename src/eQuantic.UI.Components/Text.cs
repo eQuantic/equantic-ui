@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using eQuantic.UI.Core;
 using eQuantic.UI.Core.Theme;
 using eQuantic.UI.Core.Theme.Types;
@@ -18,7 +19,7 @@ public class Text : StatelessComponent
     /// Whether to render as paragraph (p) instead of span
     /// </summary>
     public bool Paragraph { get; set; }
-    
+
     /// <summary>
     /// Style variant
     /// </summary>
@@ -35,7 +36,7 @@ public class Text : StatelessComponent
     {
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
         var textTheme = theme?.Typography;
-        
+
         var attrs = new Dictionary<string, string>
         {
             ["class"] = StyleBuilder.Create(textTheme?.Base)

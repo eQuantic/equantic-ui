@@ -251,7 +251,8 @@ public class ComponentParser
                     ActionId = $"{definition.Name}/{actionName}",
                     ReturnType = method.ReturnType.ToString(),
                     TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
-                    IsAsync = method.Modifiers.Any(m => m.ValueText == "async")
+                    IsAsync = method.Modifiers.Any(m => m.ValueText == "async"),
+                    SyntaxNode = method
                 };
                 
                 foreach (var param in method.ParameterList.Parameters)

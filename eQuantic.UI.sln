@@ -31,9 +31,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.UI.Server", "src\e
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TodoListApp", "samples\TodoListApp\TodoListApp.csproj", "{017F2EDC-15C7-44AA-9081-EAAAEAD8ED3F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.UI.Compiler.Tests", "src\eQuantic.UI.Compiler.Tests\eQuantic.UI.Compiler.Tests.csproj", "{E7B02B0C-9E6D-4359-B509-0F3041B1A40B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.UI.Compiler.Tests", "tests\eQuantic.UI.Compiler.Tests\eQuantic.UI.Compiler.Tests.csproj", "{E7B02B0C-9E6D-4359-B509-0F3041B1A40B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.UI.Server.Tests", "src\eQuantic.UI.Server.Tests\eQuantic.UI.Server.Tests.csproj", "{D4C71A89-4168-4AA2-A2A1-42089187A1A6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.UI.Server.Tests", "tests\eQuantic.UI.Server.Tests\eQuantic.UI.Server.Tests.csproj", "{D4C71A89-4168-4AA2-A2A1-42089187A1A6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1EBDA820-0C68-4246-AB87-F1D9814EC64D}"
 EndProject
