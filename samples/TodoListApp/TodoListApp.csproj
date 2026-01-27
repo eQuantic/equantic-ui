@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <!-- Simulation Hack: Hardcode path because Pkg property generation is flaky in local
         restore -->
-        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.osx64/1.0.0-dev/tools/bun/bun-darwin.zip</BunZipPath>
+        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.osx64/0.1.1/tools/bun/bun-darwin.zip</BunZipPath>
     </PropertyGroup>
 
     <ItemGroup>

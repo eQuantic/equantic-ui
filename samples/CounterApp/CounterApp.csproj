@@ -7,14 +7,14 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.osx64/1.0.0-dev/tools/bun/bun-darwin.zip</BunZipPath>
+        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.osx64/0.1.1/tools/bun/bun-darwin.zip</BunZipPath>
     </PropertyGroup>
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.win64/1.0.0-dev/tools/bun/bun.exe.zip</BunZipPath>
+        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.win64/0.1.1/tools/bun/bun.exe.zip</BunZipPath>
     </PropertyGroup>
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
         <BunZipPath>
-            $(NuGetPackageRoot)/equantic.ui.runtime.linux64/1.0.0-dev/tools/bun/bun-linux.zip</BunZipPath>
+            $(NuGetPackageRoot)/equantic.ui.runtime.linux64/0.1.1/tools/bun/bun-linux.zip</BunZipPath>
     </PropertyGroup>
 
     <ItemGroup>
