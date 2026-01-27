@@ -4,9 +4,17 @@
         <Authors>eQuantic</Authors>
         <Company>eQuantic</Company>
         <Product>eQuantic.UI</Product>
-        <Copyright>Copyright © 2025 eQuantic</Copyright>
+        <Copyright>Copyright © 2026 eQuantic</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <RepositoryUrl>https://github.com/equantic/equantic-ui</RepositoryUrl>
+        <RepositoryUrl>https://github.com/eQuantic/equantic-ui</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
+        <PackageIcon>Icon.png</PackageIcon>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)assets\Icon.png" Pack="true" PackagePath="\" />
+        <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="\" />
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
 </Project>

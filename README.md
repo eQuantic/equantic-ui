@@ -99,18 +99,23 @@ public class CounterState : ComponentState<Counter>
 
 ## Roadmap
 
-We are currently in **Phase 5** of development.
+We are currently in **Beta** release.
 
-- ✅ **Phase 1:** Core Architecture & Foundation
-- ✅ **Phase 2:** Compiler & SDK Implementation
-- ✅ **Phase 3:** CI/CD & Packaging
-- ✅ **Phase 4:** Runtime & State Management
-- 🚧 **Phase 5:** Interactive Demo & Polish (Current)
+- ✅ Core Architecture & Foundation
+- ✅ Compiler & SDK Implementation
+- ✅ CI/CD & Packaging
+- ✅ Runtime & State Management
+- 🚧 Ecosystem Maturity (Current)
 
-See the [Implementation Plan](./IMPLEMENTATION_PLAN.md) for detailed progress.
+## Community
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [License](LICENSE)
 
 ---
 
 ## License
 
-MIT © [eQuantic](https://github.com/equantic)
+MIT © [eQuantic](https://github.com/eQuantic)

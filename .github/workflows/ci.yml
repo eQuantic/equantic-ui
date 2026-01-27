@@ -9,7 +9,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -30,14 +33,15 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      # TODO: Enable when tests are added
-      # - name: Test
-      #   run: dotnet test --no-build --verbosity normal
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
 
       - name: Pack
+        if: matrix.os == 'ubuntu-latest' # Only pack on one OS to avoid duplicates
         run: dotnet pack --no-build --configuration Release --output nupkgs
 
       - name: Upload NuGet Packages
+        if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: nupkgs
