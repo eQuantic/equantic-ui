@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="eQuantic.UI.Sdk/0.1.1">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -10,14 +10,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../../src/eQuantic.UI.Core/eQuantic.UI.Core.csproj" />
-        <ProjectReference Include="../../src/eQuantic.UI.Components/eQuantic.UI.Components.csproj" />
-        <ProjectReference Include="../../src/eQuantic.UI.Server/eQuantic.UI.Server.csproj" />
-        <ProjectReference Include="../../src/eQuantic.UI.Tailwind/eQuantic.UI.Tailwind.csproj" />
-        <!-- Sdk might still need to be a PackageReference if it's a tool, but for now let's see -->
-        <PackageReference Include="eQuantic.UI.Sdk" Version="1.0.0-dev" />
-        <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="1.0.0-dev"
-            GeneratePathProperty="true" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+        <PackageReference Include="eQuantic.UI.Core" Version="0.1.1" />
+        <PackageReference Include="eQuantic.UI.Components" Version="0.1.1" />
+        <PackageReference Include="eQuantic.UI.Server" Version="0.1.1" />
+        <PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.1" />
+
+        <PackageReference Include="eQuantic.UI.Runtime" Version="0.1.1" />
     </ItemGroup>
 
 </Project>

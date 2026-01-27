@@ -6,12 +6,13 @@
         <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
         <!-- Metadata -->
         <PackageId>eQuantic.UI.Runtime.Win64</PackageId>
-        <Version>0.1.0</Version>
-        <Description>Bun runtime for Windows (x64) used by eQuantic.UI</Description>
+        <Version>0.1.1</Version>
+        <Description>eQuantic UI Runtime for Windows (x64).</Description>
         <Authors>eQuantic Tech</Authors>
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="tools\bun\bun.exe.zip" PackagePath="tools\bun\bun.exe.zip" />
+        <Content Include="tools\**" PackagePath="tools" />
+        <Content Include="build\**" PackagePath="build" />
     </ItemGroup>
 </Project>

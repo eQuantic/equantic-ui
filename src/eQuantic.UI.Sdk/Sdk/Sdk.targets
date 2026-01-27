@@ -39,13 +39,20 @@
                 $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip</BunZipPath>
 
             <!-- Package Cache Resolution -->
-            <BunZipPath Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">
-                $($(BunPkgRef))/tools/bun/bun-darwin.zip</BunZipPath>
-            <BunZipPath Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">
-                $($(BunPkgRef))/tools/bun/bun.exe.zip</BunZipPath>
-            <BunZipPath Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">
-                $($(BunPkgRef))/tools/bun/bun-linux.zip</BunZipPath>
+            <BunZipPath
+                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('OSX')) and '$(PkgeQuantic_UI_Runtime_Osx64)' != ''">
+                $(PkgeQuantic_UI_Runtime_Osx64)/tools/bun/bun-darwin.zip</BunZipPath>
+            <BunZipPath
+                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Windows')) and '$(PkgeQuantic_UI_Runtime_Win64)' != ''">
+                $(PkgeQuantic_UI_Runtime_Win64)/tools/bun/bun.exe.zip</BunZipPath>
+            <BunZipPath
+                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Linux')) and '$(PkgeQuantic_UI_Runtime_Linux64)' != ''">
+                $(PkgeQuantic_UI_Runtime_Linux64)/tools/bun/bun-linux.zip</BunZipPath>
+
+            <!-- Removed crashing dynamic resolution -->
         </PropertyGroup>
+        <Warning
+            Text="DEBUG: OS='$([MSBuild]::IsOSPlatform('OSX'))' PkgOsx='$(PkgeQuantic_UI_Runtime_Osx64)'" />
     </Target>
 
     <Target Name="EnsureBunExtracted" BeforeTargets="ResolveBunPath"

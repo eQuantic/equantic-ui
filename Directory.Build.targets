@@ -5,41 +5,47 @@
         <LocalPackageOutputPath>$(MSBuildThisFileDirectory)artifacts/packages</LocalPackageOutputPath>
 
         <!-- Projects that should be auto-packed -->
-        <IsPackableProject Condition="
+        <IsPackableProject
+            Condition="
             '$(MSBuildProjectName)' == 'eQuantic.UI.Core' Or
             '$(MSBuildProjectName)' == 'eQuantic.UI.Components' Or
             '$(MSBuildProjectName)' == 'eQuantic.UI.Compiler' Or
             '$(MSBuildProjectName)' == 'eQuantic.UI.Server' Or
             '$(MSBuildProjectName)' == 'eQuantic.UI.Sdk' Or
+            '$(MSBuildProjectName)' == 'eQuantic.UI.Runtime' Or
             '$(MSBuildProjectName)' == 'eQuantic.UI.Tailwind'
-        ">true</IsPackableProject>
+        ">
+            true</IsPackableProject>
     </PropertyGroup>
 
     <!-- Auto-pack after successful build for packable projects -->
     <Target Name="AutoPackAfterBuild"
-            AfterTargets="Build"
-            Condition="'$(IsPackableProject)' == 'true' And '$(Configuration)' == 'Debug'">
+        AfterTargets="Build"
+        Condition="'$(IsPackableProject)' == 'true' And '$(Configuration)' == 'Debug'">
 
-        <Message Importance="high" Text="Auto-packing $(MSBuildProjectName) to $(LocalPackageOutputPath)..." />
+        <Message Importance="high"
+            Text="Auto-packing $(MSBuildProjectName) to $(LocalPackageOutputPath)..." />
 
         <!-- SDK project needs full pack (has special dependencies), others can skip rebuild -->
-        <Exec Command="dotnet pack &quot;$(MSBuildProjectFullPath)&quot; -o &quot;$(LocalPackageOutputPath)&quot; -p:PackageVersion=$(LocalPackageVersion)"
-              WorkingDirectory="$(MSBuildProjectDirectory)"
-              Condition="'$(MSBuildProjectName)' == 'eQuantic.UI.Sdk'"
-              ContinueOnError="true" />
+        <Exec
+            Command="dotnet pack &quot;$(MSBuildProjectFullPath)&quot; -o &quot;$(LocalPackageOutputPath)&quot; -p:PackageVersion=$(LocalPackageVersion)"
+            WorkingDirectory="$(MSBuildProjectDirectory)"
+            Condition="'$(MSBuildProjectName)' == 'eQuantic.UI.Sdk'"
+            ContinueOnError="true" />
 
-        <Exec Command="dotnet pack &quot;$(MSBuildProjectFullPath)&quot; --no-build -o &quot;$(LocalPackageOutputPath)&quot; -p:PackageVersion=$(LocalPackageVersion)"
-              WorkingDirectory="$(MSBuildProjectDirectory)"
-              Condition="'$(MSBuildProjectName)' != 'eQuantic.UI.Sdk'"
-              ContinueOnError="true" />
+        <Exec
+            Command="dotnet pack &quot;$(MSBuildProjectFullPath)&quot; --no-build -o &quot;$(LocalPackageOutputPath)&quot; -p:PackageVersion=$(LocalPackageVersion)"
+            WorkingDirectory="$(MSBuildProjectDirectory)"
+            Condition="'$(MSBuildProjectName)' != 'eQuantic.UI.Sdk'"
+            ContinueOnError="true" />
     </Target>
 
     <!-- Clean old packages when cleaning -->
     <Target Name="CleanLocalPackages"
-            AfterTargets="Clean"
-            Condition="'$(IsPackableProject)' == 'true'">
+        AfterTargets="Clean"
+        Condition="'$(IsPackableProject)' == 'true'">
 
         <Delete Files="$(LocalPackageOutputPath)/$(MSBuildProjectName).$(LocalPackageVersion).nupkg"
-                ContinueOnError="true" />
+            ContinueOnError="true" />
     </Target>
 </Project>

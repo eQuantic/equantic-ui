@@ -1,0 +1,6 @@
+<Project>
+    <PropertyGroup>
+        <PkgeQuantic_UI_Runtime_Win64 Condition="'$(PkgeQuantic_UI_Runtime_Win64)' == ''">
+            $(MSBuildThisFileDirectory)..</PkgeQuantic_UI_Runtime_Win64>
+    </PropertyGroup>
+</Project>

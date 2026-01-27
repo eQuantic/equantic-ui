@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
-        <Version>0.1.0</Version>
+        <Version>0.1.1</Version>
         <Authors>eQuantic</Authors>
         <Company>eQuantic</Company>
         <Product>eQuantic.UI</Product>
@@ -15,6 +15,6 @@
     <ItemGroup>
         <None Include="$(MSBuildThisFileDirectory)assets\Icon.png" Pack="true" PackagePath="\" />
         <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="\" />
-        <None Include="README.md" Pack="true" PackagePath="\" />
+        <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 </Project>

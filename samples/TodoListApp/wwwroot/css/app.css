@@ -20,6 +20,7 @@
     --color-yellow-900: oklch(0.421 0.095 57.708);
     --color-green-50: oklch(0.982 0.018 155.826);
     --color-green-200: oklch(0.925 0.084 155.995);
+    --color-green-300: oklch(0.871 0.15 154.449);
     --color-green-800: oklch(0.448 0.119 151.328);
     --color-green-900: oklch(0.393 0.095 152.535);
     --color-blue-50: oklch(0.97 0.014 254.604);
@@ -1466,6 +1467,11 @@
   .dark\:text-green-200 {
     @media (prefers-color-scheme: dark) {
       color: var(--color-green-200);
+    }
+  }
+  .dark\:text-green-300 {
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-green-300);
     }
   }
   .dark\:text-red-200 {

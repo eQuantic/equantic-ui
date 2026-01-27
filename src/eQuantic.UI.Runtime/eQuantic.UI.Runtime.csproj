@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <IsPackable>true</IsPackable>
+        <PackageId>eQuantic.UI.Runtime</PackageId>
+        <Description>eQuantic UI Runtime environment (Meta-package)</Description>
+        <PackageType>Dependency</PackageType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="$(Version)"
+            Condition="$([MSBuild]::IsOSPlatform('OSX'))" PrivateAssets="None" />
+        <PackageReference Include="eQuantic.UI.Runtime.Win64" Version="$(Version)"
+            Condition="$([MSBuild]::IsOSPlatform('Windows'))" PrivateAssets="None" />
+        <PackageReference Include="eQuantic.UI.Runtime.Linux64" Version="$(Version)"
+            Condition="$([MSBuild]::IsOSPlatform('Linux'))" PrivateAssets="None" />
+    </ItemGroup>
+
+</Project>

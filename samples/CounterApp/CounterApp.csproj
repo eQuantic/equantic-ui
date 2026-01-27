@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="eQuantic.UI.Sdk/0.1.1">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -6,15 +6,24 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <!-- eQuantic.UI SDK integration (inherits Web SDK) -->
-    <Import Project="..\..\src\eQuantic.UI.Sdk\Sdk\Sdk.props" />
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.osx64/1.0.0-dev/tools/bun/bun-darwin.zip</BunZipPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.win64/1.0.0-dev/tools/bun/bun.exe.zip</BunZipPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+        <BunZipPath>
+            $(NuGetPackageRoot)/equantic.ui.runtime.linux64/1.0.0-dev/tools/bun/bun-linux.zip</BunZipPath>
+    </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
-        <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
-        <ProjectReference Include="..\..\src\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
+        <PackageReference Include="eQuantic.UI.Core" Version="0.1.1" />
+        <PackageReference Include="eQuantic.UI.Components" Version="0.1.1" />
+        <PackageReference Include="eQuantic.UI.Server" Version="0.1.1" />
+
+        <PackageReference Include="eQuantic.UI.Runtime" Version="0.1.1" />
     </ItemGroup>
 
-    <Import Project="..\..\src\eQuantic.UI.Sdk\Sdk\Sdk.targets" />
-
+    <!-- NOTE: Simulating Consumer experience as requested -->
 </Project>

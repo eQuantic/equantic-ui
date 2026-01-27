@@ -41,3 +41,5 @@ npm-debug.log*
 # Test results
 TestResults/
 coverage/
+
+artifacts/global-packages/**/*
