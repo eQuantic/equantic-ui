@@ -48,4 +48,32 @@
         <Delete Files="$(LocalPackageOutputPath)/$(MSBuildProjectName).$(LocalPackageVersion).nupkg"
             ContinueOnError="true" />
     </Target>
+
+    <!--
+      Development helper target: clears NuGet cache for eQuantic packages
+      Usage: dotnet msbuild -t:ClearEQuanticCache
+    -->
+    <Target Name="ClearEQuanticCache">
+        <PropertyGroup>
+            <_NuGetCache>$(NuGetPackageRoot)</_NuGetCache>
+            <_NuGetCache Condition="'$(_NuGetCache)' == ''">$(HOME)/.nuget/packages</_NuGetCache>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.core" />
+            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.components" />
+            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.compiler" />
+            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.server" />
+            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.sdk" />
+            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.runtime" />
+            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.runtime.osx64" />
+            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.runtime.win64" />
+            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.runtime.linux64" />
+            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.tailwind" />
+        </ItemGroup>
+
+        <RemoveDir Directories="@(_EQuanticCacheDirs)" />
+        <Message Text="Cleared eQuantic packages from NuGet cache: $(_NuGetCache)" Importance="high" />
+    </Target>
+
 </Project>

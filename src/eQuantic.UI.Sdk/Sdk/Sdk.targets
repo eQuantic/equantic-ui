@@ -49,10 +49,7 @@
                 Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Linux')) and '$(PkgeQuantic_UI_Runtime_Linux64)' != ''">
                 $(PkgeQuantic_UI_Runtime_Linux64)/tools/bun/bun-linux.zip</BunZipPath>
 
-            <!-- Removed crashing dynamic resolution -->
         </PropertyGroup>
-        <Warning
-            Text="DEBUG: OS='$([MSBuild]::IsOSPlatform('OSX'))' PkgOsx='$(PkgeQuantic_UI_Runtime_Osx64)'" />
     </Target>
 
     <Target Name="EnsureBunExtracted" BeforeTargets="ResolveBunPath"
@@ -111,6 +108,13 @@
                 Condition="'$(_StandardComponentsDir)' == '' And Exists('$(_DevComponentsDir)')">
                 $(_DevComponentsDir)</_StandardComponentsDir>
         </PropertyGroup>
+        <!-- Clean old generated files before compiling -->
+        <ItemGroup>
+            <_OldGeneratedFiles Include="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)*.js" />
+            <_OldGeneratedFiles Include="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)*.js.map" />
+        </ItemGroup>
+        <Delete Files="@(_OldGeneratedFiles)" Condition="'@(_OldGeneratedFiles)' != ''" />
+
         <Message Text="eQuantic.UI: Compiling components..." Importance="high" />
         <MakeDir Directories="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)" />
         <Exec

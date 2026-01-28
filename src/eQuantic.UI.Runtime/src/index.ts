@@ -28,6 +28,7 @@ export type { ServerActionResponse } from './core/server-actions';
 
 // Utils
 export { format } from './utils/format';
+export { StyleBuilder } from './utils/style-builder';
 
 // DOM
 export { Reconciler, getReconciler, resetReconciler } from './dom/reconciler';
@@ -65,15 +66,16 @@ export function createApp<T extends import('./core/component').StatefulComponent
 /**
  * Configuration object set by the server in window.__EQ_CONFIG
  */
-interface EqConfig {
-  page: string | null;
-  version: string;
-  ssr: boolean;
+export interface EqConfig {
+  page?: string | null;
+  version?: string;
+  ssr?: boolean;
 }
 
 declare global {
   interface Window {
     __EQ_CONFIG?: EqConfig;
+    __EQ_DEV__?: boolean;
   }
 }
 

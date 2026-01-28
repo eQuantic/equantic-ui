@@ -6,24 +6,11 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.osx64/0.1.1/tools/bun/bun-darwin.zip</BunZipPath>
-    </PropertyGroup>
-    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-        <BunZipPath>$(NuGetPackageRoot)/equantic.ui.runtime.win64/0.1.1/tools/bun/bun.exe.zip</BunZipPath>
-    </PropertyGroup>
-    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-        <BunZipPath>
-            $(NuGetPackageRoot)/equantic.ui.runtime.linux64/0.1.1/tools/bun/bun-linux.zip</BunZipPath>
-    </PropertyGroup>
-
     <ItemGroup>
         <PackageReference Include="eQuantic.UI.Core" Version="0.1.1" />
         <PackageReference Include="eQuantic.UI.Components" Version="0.1.1" />
         <PackageReference Include="eQuantic.UI.Server" Version="0.1.1" />
-
         <PackageReference Include="eQuantic.UI.Runtime" Version="0.1.1" />
     </ItemGroup>
 
-    <!-- NOTE: Simulating Consumer experience as requested -->
 </Project>

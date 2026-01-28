@@ -342,6 +342,7 @@ public class TypeScriptEmitter
             "Component" or "BuildContext" or "HtmlElement" => true,
             "StatefulComponent" or "StatelessComponent" or "ComponentState" => true,
             "getServerActionsClient" or "getRootServiceProvider" => true,
+            "StyleBuilder" or "format" => true,
             _ => false
         };
     }
@@ -382,6 +383,22 @@ public class TypeScriptEmitter
         foreach (var creation in creations)
         {
              types.Add(creation.Type.ToString());
+        }
+
+        var invocations = node.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax>();
+        foreach (var invocation in invocations)
+        {
+            if (invocation.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax memberAccess)
+            {
+                if (memberAccess.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax identifier)
+                {
+                     var name = identifier.Identifier.Text;
+                     if (!string.IsNullOrEmpty(name) && char.IsUpper(name[0])) 
+                     {
+                         types.Add(name);
+                     }
+                }
+            }
         }
         return types;
     }
@@ -593,11 +610,23 @@ public class TypeScriptEmitter
             PropertyValueType.Number => value.StringValue ?? "0",
             PropertyValueType.Boolean => value.StringValue?.ToLower() ?? "false",
             PropertyValueType.Expression => value.ExpressionNode != null ? _converter.Convert(value.ExpressionNode) : _converter.Convert(value.Expression ?? ""),
-            PropertyValueType.EventHandler => value.ExpressionNode != null ? _converter.Convert(value.ExpressionNode) : _converter.Convert(value.Expression ?? ""),
+            PropertyValueType.EventHandler => ConvertEventHandler(value),
             PropertyValueType.StyleClass => value.Expression ?? "null",
             PropertyValueType.Component when value.ComponentValue != null => EmitComponentToString(value.ComponentValue),
             _ => "null"
         };
+    }
+
+    private string ConvertEventHandler(PropertyValue value)
+    {
+        var expr = value.ExpressionNode != null ? _converter.Convert(value.ExpressionNode) : _converter.Convert(value.Expression ?? "");
+        
+        // Automatically bind method groups on 'this' (e.g. this.handleClick -> this.handleClick.bind(this))
+        if (expr.StartsWith("this.") && !expr.Contains("(") && !expr.Contains("=>") && !expr.Contains(".bind("))
+        {
+            return $"{expr}.bind(this)";
+        }
+        return expr;
     }
     
     private string EmitComponentToString(ComponentTree tree)

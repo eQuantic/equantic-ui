@@ -62,6 +62,27 @@ dotnet pack src/eQuantic.UI.Server/eQuantic.UI.Server.csproj --configuration Rel
 dotnet pack src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj --configuration Release
 ```
 
+### Development Workflow (rebuilding with samples)
+
+When making changes to the framework and testing with samples, the full build chain must be rebuilt:
+
+```bash
+# Option 1: Use the dev-rebuild script (recommended)
+./scripts/dev-rebuild.sh              # Rebuilds all and tests with CounterApp
+./scripts/dev-rebuild.sh TodoListApp  # Specify different sample
+
+# Option 2: Manual steps
+cd src/eQuantic.UI.Runtime && npm run build  # If TypeScript changed
+dotnet pack -c Release                        # Pack all packages
+dotnet msbuild -t:ClearEQuanticCache          # Clear NuGet cache (eQuantic only)
+cd samples/CounterApp && dotnet restore --force && dotnet build
+
+# Option 3: Clear only NuGet cache
+dotnet msbuild -t:ClearEQuanticCache
+```
+
+**Why is this needed?** The samples use NuGet packages (like a real consumer would). Changes to the framework must flow through: source → pack → NuGet cache → restore → build sample.
+
 ## Architecture
 
 ### Project Structure

@@ -96,17 +96,21 @@ public static class UIExtensions
         foreach (var assembly in options.AssembliesToScan)
         {
             var pageTypes = assembly.GetTypes()
-                .Where(t => t.GetCustomAttribute<Core.PageAttribute>() != null);
+                .Where(t => t.GetCustomAttributes<Core.PageAttribute>().Any());
 
             foreach (var pageType in pageTypes)
             {
-                var pageAttr = pageType.GetCustomAttribute<Core.PageAttribute>()!;
-                var route = pageAttr.Route;
-
-                endpoints.MapGet(route, async context =>
+                var pageAttrs = pageType.GetCustomAttributes<Core.PageAttribute>();
+                
+                foreach (var pageAttr in pageAttrs) 
                 {
-                    await ServeAppShell(context, pageType.Name);
-                });
+                    var route = pageAttr.Route;
+
+                    endpoints.MapGet(route, async context =>
+                    {
+                        await ServeAppShell(context, pageType.Name);
+                    });
+                }
             }
         }
 
@@ -234,11 +238,11 @@ public static class UIExtensions
         {
             var pageType = options.AssembliesToScan
                 .SelectMany(a => a.GetTypes())
-                .FirstOrDefault(t => t.Name == pageName && t.GetCustomAttribute<Core.PageAttribute>() != null);
+                .FirstOrDefault(t => t.Name == pageName && t.GetCustomAttributes<Core.PageAttribute>().Any());
 
             if (pageType != null)
             {
-                var attr = pageType.GetCustomAttribute<Core.PageAttribute>()!;
+                var attr = pageType.GetCustomAttributes<Core.PageAttribute>().FirstOrDefault()!;
                 if (!string.IsNullOrEmpty(attr.Title) && string.IsNullOrEmpty(metadata.Title))
                     seo.Title(attr.Title);
                 

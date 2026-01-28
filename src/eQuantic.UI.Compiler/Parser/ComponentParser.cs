@@ -485,7 +485,7 @@ public class ComponentParser
         {
             var firstArg = objectCreation.ArgumentList.Arguments[0];
             // For Text("content"), store as Content property
-            tree.Properties["Content"] = ParsePropertyValue(firstArg.Expression);
+            tree.Properties["Content"] = ParsePropertyValue(firstArg.Expression, "Content");
         }
         
         // Parse initializer properties
@@ -519,7 +519,7 @@ public class ComponentParser
             if (expr is AssignmentExpressionSyntax assignment)
             {
                 var propName = assignment.Left.ToString();
-                var propValue = ParsePropertyValue(assignment.Right);
+                var propValue = ParsePropertyValue(assignment.Right, propName);
                 tree.Properties[propName] = propValue;
                 
                 // Handle Children specially
@@ -538,9 +538,9 @@ public class ComponentParser
         }
     }
     
-    private PropertyValue ParsePropertyValue(ExpressionSyntax expression)
+    private PropertyValue ParsePropertyValue(ExpressionSyntax expression, string? propName = null)
     {
-        return expression switch
+        var value = expression switch
         {
             LiteralExpressionSyntax literal => new PropertyValue
             {
@@ -607,5 +607,13 @@ public class ComponentParser
                 ExpressionNode = expression
             }
         };
+
+        // Heuristic: automatically treat "On*" properties as handlers if they ended up as expressions
+        if (propName != null && propName.StartsWith("On") && value.Type == PropertyValueType.Expression)
+        {
+            value.Type = PropertyValueType.EventHandler;
+        }
+
+        return value;
     }
 }

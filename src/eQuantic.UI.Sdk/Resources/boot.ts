@@ -1,161 +1,211 @@
 // eQuantic.UI Client Runtime
 // Handles dynamic imports and component mounting
 
-// Re-export Runtime Components
 export * from '../../eQuantic.UI.Runtime/src/index';
 
-declare global {
-    interface Window {
-        __EQ_CONFIG?: {
-            page?: string;
-            version?: string;
-        };
-    }
+import {
+  StyleBuilder,
+  getReconciler,
+  type EqConfig,
+  type HtmlNode,
+} from '../../eQuantic.UI.Runtime/src/index';
+
+// --- Constants ---
+const APP_ROOT_ID = 'app';
+const MODULE_PATH_PREFIX = '/_equantic/';
+
+// --- Types ---
+interface MountableComponent {
+  mount?(root: HTMLElement): void;
+  render?(root: HTMLElement): void;
+  getVirtualNode?(): HtmlNode;
 }
 
-let __initialized = false;
+declare global {
+  interface Window {
+    StyleBuilder: typeof StyleBuilder;
+  }
+}
+
+// --- Helpers ---
+function isDev(): boolean {
+  return typeof window !== 'undefined' && window.__EQ_DEV__ === true;
+}
+
+// --- Initialization ---
+let initialized = false;
+
+// Expose StyleBuilder globally for generated code
+if (typeof window !== 'undefined') {
+  window.StyleBuilder = StyleBuilder;
+}
 
 /**
  * Bootstraps the eQuantic application
  */
-export async function boot() {
-    if (__initialized) return;
-    __initialized = true;
+export async function boot(): Promise<void> {
+  if (initialized) return;
+  initialized = true;
 
-    console.log('eQuantic.UI Runtime (v2.1) initializing...');
+  if (isDev()) {
+    console.log('eQuantic.UI Runtime initializing...');
+  }
 
-    try {
-        const config = window.__EQ_CONFIG || {};
-        const pageName = resolvePageName(config);
-        
-        if (!pageName) {
-            handleNoPage();
-            return;
-        }
+  const root = document.getElementById(APP_ROOT_ID);
+  if (!root) {
+    console.error(`Root element #${APP_ROOT_ID} not found`);
+    return;
+  }
 
-        await loadAndMountPage(pageName, config.version);
-    } catch (err) {
-        handleGlobalError(err as Error);
+  try {
+    const config = window.__EQ_CONFIG ?? {};
+    const pageName = resolvePageName(config);
+
+    if (!pageName) {
+      renderNoPage(root);
+      return;
     }
+
+    await loadAndMountPage(root, pageName, config);
+  } catch (error) {
+    renderError(root, error as Error);
+  }
 }
 
 /**
- * Resolves the page name from Server Injection or Query String
+ * Resolves the page name from config or query string
  */
-function resolvePageName(config: any): string | null {
-    // 1. Server Injection (Preferred for Clean URLs)
-    if (config.page) {
-        return config.page;
-    }
+function resolvePageName(config: EqConfig): string | null {
+  // 1. Server injection (preferred)
+  if (config.page) {
+    return config.page;
+  }
 
-    // 2. Query String (Legacy/Debug)
-    const params = new URLSearchParams(window.location.search);
-    return params.get('page');
+  // 2. Query string (debug/legacy)
+  const params = new URLSearchParams(window.location.search);
+  return params.get('page');
 }
 
 /**
  * Loads the page module and mounts the component
  */
-async function loadAndMountPage(pageName: string, version?: string) {
-    const root = document.getElementById('app');
-    if (!root) throw new Error("Root element #app not found");
+async function loadAndMountPage(
+  root: HTMLElement,
+  pageName: string,
+  config: EqConfig,
+): Promise<void> {
+  const hasSSRContent = root.children.length > 0;
 
-    root.innerHTML = '<div class="loading">Loading resource...</div>';
+  // Show loading only if no SSR content
+  if (!hasSSRContent) {
+    root.innerHTML = '<div class="eq-loading">Loading...</div>';
+  }
 
-    try {
-        const cacheBuster = version ? `?v=${version}` : '';
-        const modulePath = `/_equantic/${pageName}.js${cacheBuster}`;
-        console.log(`eQuantic.UI: Loading module '${modulePath}'...`);
-        
-        // Dynamic import with cache busting
-        const module = await import(modulePath);
-        
-        const ComponentClass = module[pageName];
-        if (!ComponentClass) {
-            throw new Error(`Module ${pageName} does not export class '${pageName}'`);
-        }
+  const cacheBuster = config.version ? `?v=${config.version}` : '';
+  const modulePath = `${MODULE_PATH_PREFIX}${pageName}.js${cacheBuster}`;
 
-        console.log(`eQuantic.UI: Mounting ${pageName}...`);
-        const app = new ComponentClass();
+  if (isDev()) {
+    console.log(`Loading module: ${modulePath}`);
+  }
 
-        // Check for mount/render methods
-        if (typeof app.mount === 'function') {
-            root.innerHTML = '';
-            app.mount(root);
-        } else if (typeof app.render === 'function') {
-            root.innerHTML = '';
-            app.render(root);
-        } else {
-            console.warn("Component missing mount/render method", app);
-            root.innerHTML = `
-                <div style="padding: 2rem; color: #166534; background: #dcfce7; border-radius: 8px;">
-                    <h1 style="margin:0">✅ Loaded ${pageName}</h1>
-                    <p>Instance created but no <code>mount()</code> method found.</p>
-                </div>
-            `;
-        }
+  let module: Record<string, unknown>;
+  try {
+    module = await import(/* @vite-ignore */ modulePath);
+  } catch {
+    render404(root, pageName);
+    return;
+  }
 
-    } catch (e: any) {
-        // Handle 404s specifically
-        if (e.message?.includes('Failed to fetch') || e.message?.includes('Cannot find module')) {
-            render404(root, pageName);
-        } else {
-            throw e;
-        }
+  const ComponentClass = module[pageName] as new () => MountableComponent;
+  if (!ComponentClass) {
+    throw new Error(`Module '${pageName}' does not export class '${pageName}'`);
+  }
+
+  const component = new ComponentClass();
+
+  // Hydration: attach events to existing SSR HTML
+  if (hasSSRContent && config.ssr !== false && component.getVirtualNode) {
+    if (isDev()) {
+      console.log(`Hydrating: ${pageName}`);
     }
+    const reconciler = getReconciler();
+    const virtualNode = component.getVirtualNode();
+    const result = reconciler.hydrateRoot(root, virtualNode);
+
+    if (!result.success && isDev()) {
+      console.warn('Hydration warnings:', result.warnings);
+    }
+    return;
+  }
+
+  // Full mount
+  root.innerHTML = '';
+
+  if (typeof component.mount === 'function') {
+    component.mount(root);
+  } else if (typeof component.render === 'function') {
+    component.render(root);
+  } else {
+    renderMountError(root, pageName);
+  }
+
+  if (isDev()) {
+    console.log(`Mounted: ${pageName}`);
+  }
 }
 
-function handleNoPage() {
-    if (window.location.pathname === '/' || window.location.pathname === '') {
-        renderWelcome(document.getElementById('app')!);
-    } else {
-        render404(document.getElementById('app')!, window.location.pathname);
-    }
-}
+// --- UI Renderers ---
 
-function handleGlobalError(error: Error) {
-    console.error("Runtime Error:", error);
-    const root = document.getElementById('app');
-    if (root) {
-        root.innerHTML = `
-            <div style="color: #991b1b; padding: 20px; text-align: center; font-family: system-ui;">
-                <h3>Application Error</h3>
-                <pre style="background: #fef2f2; padding: 10px; border-radius: 4px; display: inline-block; text-align: left;">${error.message}</pre>
-            </div>
-        `;
-    }
-}
+function renderNoPage(root: HTMLElement): void {
+  const isHome = window.location.pathname === '/' || window.location.pathname === '';
 
-// UI Renderers (Keep simple HTML/CSS for now)
-
-function render404(root: HTMLElement, resource: string) {
+  if (isHome) {
     root.innerHTML = `
-        <div style='display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: system-ui, sans-serif; text-align: center;'>
-            <h1 style='font-size: 6rem; margin: 0; color: #cbd5e1;'>404</h1>
-            <h2 style='font-size: 2rem; margin: 1rem 0; color: #1e293b;'>Page Not Found</h2>
-            <p style='color: #64748b; font-size: 1.2rem;'>The resource '<strong>${escapeHtml(resource)}</strong>' does not exist.</p>
-            <a href='/' style='margin-top: 2rem; padding: 0.75rem 1.5rem; background: #2563eb; color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 500;'>Go Home</a>
-        </div>
+      <div class="eq-welcome">
+        <h1>Welcome to eQuantic.UI</h1>
+        <p>No default page configured.</p>
+      </div>
     `;
+  } else {
+    render404(root, window.location.pathname);
+  }
 }
 
-function renderWelcome(root: HTMLElement) {
-    root.innerHTML = `
-        <div style='text-align:center; padding: 2rem; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;'>
-            <h1 style="color: #2563eb; font-size: 2.5rem;">Welcome to eQuantic.UI</h1>
-            <p style="color: #64748b;">No default page configured.</p>
-        </div>
-    `;
+function render404(root: HTMLElement, resource: string): void {
+  root.innerHTML = `
+    <div class="eq-error-page">
+      <h1 class="eq-error-code">404</h1>
+      <h2>Page Not Found</h2>
+      <p>The resource '<strong>${escapeHtml(resource)}</strong>' does not exist.</p>
+      <a href="/" class="eq-btn">Go Home</a>
+    </div>
+  `;
 }
 
-function escapeHtml(unsafe: string) {
-    return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
+function renderError(root: HTMLElement, error: Error): void {
+  console.error('Runtime Error:', error);
+  root.innerHTML = `
+    <div class="eq-error-page eq-error-page--critical">
+      <h2>Application Error</h2>
+      <pre>${escapeHtml(error.message)}</pre>
+    </div>
+  `;
 }
 
-// function escapeHtml(unsafe: string) { ... } (already defined above)
+function renderMountError(root: HTMLElement, pageName: string): void {
+  root.innerHTML = `
+    <div class="eq-error-page eq-error-page--warning">
+      <h2>Loaded: ${escapeHtml(pageName)}</h2>
+      <p>Component created but no <code>mount()</code> or <code>render()</code> method found.</p>
+    </div>
+  `;
+}
 
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}

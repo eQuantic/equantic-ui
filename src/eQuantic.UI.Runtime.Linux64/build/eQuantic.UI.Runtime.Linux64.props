@@ -1,6 +1,6 @@
 <Project>
-    <PropertyGroup>
-        <PkgeQuantic_UI_Runtime_Linux64 Condition="'$(PkgeQuantic_UI_Runtime_Linux64)' == ''">
-            $(MSBuildThisFileDirectory)..</PkgeQuantic_UI_Runtime_Linux64>
-    </PropertyGroup>
+    <!--
+        NuGet automatically generates PkgeQuantic_UI_Runtime_Linux64 property.
+        This file exists only to ensure the build folder is included in the package.
+    -->
 </Project>

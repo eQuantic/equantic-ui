@@ -125,14 +125,18 @@ export class Reconciler {
     const element = document.createElement(node.tag);
 
     // Set attributes
-    for (const [key, value] of Object.entries(node.attributes)) {
-      if (value !== undefined && value !== null) {
-        this.applyAttribute(element as HTMLElement, key, value);
+    if (node.attributes) {
+      for (const [key, value] of Object.entries(node.attributes)) {
+        if (value !== undefined && value !== null) {
+          this.applyAttribute(element as HTMLElement, key, value);
+        }
       }
     }
 
     // Attach event handlers
-    this.attachEventListeners(element, node.events);
+    if (node.events) {
+      this.attachEventListeners(element, node.events);
+    }
 
     // Render children
     for (const child of node.children || []) {

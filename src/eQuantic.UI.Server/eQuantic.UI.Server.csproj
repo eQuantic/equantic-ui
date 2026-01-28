@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <None Remove="wwwroot/runtime.js" />
     <EmbeddedResource Include="wwwroot/runtime.js">
@@ -22,17 +23,62 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <Target Name="BundleRuntime" BeforeTargets="BeforeBuild">
+  <!-- Resolve Bun path from embedded runtime packages -->
+  <Target Name="ResolveBunForServer" BeforeTargets="BundleRuntime">
+    <PropertyGroup>
+      <!-- Dev paths (source tree) -->
+      <_BunOsxPath>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin</_BunOsxPath>
+      <_BunWinPath>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe</_BunWinPath>
+      <_BunLinuxPath>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux</_BunLinuxPath>
+
+      <!-- Resolve based on OS -->
+      <_BunPath Condition="$([MSBuild]::IsOSPlatform('OSX')) And Exists('$(_BunOsxPath)')">$(_BunOsxPath)</_BunPath>
+      <_BunPath Condition="$([MSBuild]::IsOSPlatform('Windows')) And Exists('$(_BunWinPath)')">$(_BunWinPath)</_BunPath>
+      <_BunPath Condition="$([MSBuild]::IsOSPlatform('Linux')) And Exists('$(_BunLinuxPath)')">$(_BunLinuxPath)</_BunPath>
+    </PropertyGroup>
+
+    <!-- Extract from zip if executable doesn't exist -->
+    <PropertyGroup Condition="'$(_BunPath)' == ''">
+      <_BunZipOsx>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin.zip</_BunZipOsx>
+      <_BunZipWin>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe.zip</_BunZipWin>
+      <_BunZipLinux>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip</_BunZipLinux>
+    </PropertyGroup>
+
+    <!-- Unzip Bun if needed -->
+    <Unzip
+      SourceFiles="$(_BunZipOsx)"
+      DestinationFolder="$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Osx64/tools/bun"
+      Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_BunPath)' == '' And Exists('$(_BunZipOsx)')" />
+    <Unzip
+      SourceFiles="$(_BunZipWin)"
+      DestinationFolder="$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Win64/tools/bun"
+      Condition="$([MSBuild]::IsOSPlatform('Windows')) And '$(_BunPath)' == '' And Exists('$(_BunZipWin)')" />
+    <Unzip
+      SourceFiles="$(_BunZipLinux)"
+      DestinationFolder="$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Linux64/tools/bun"
+      Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(_BunPath)' == '' And Exists('$(_BunZipLinux)')" />
+
+    <!-- Re-resolve after extraction -->
+    <PropertyGroup>
+      <_BunPath Condition="'$(_BunPath)' == '' And $([MSBuild]::IsOSPlatform('OSX')) And Exists('$(_BunOsxPath)')">$(_BunOsxPath)</_BunPath>
+      <_BunPath Condition="'$(_BunPath)' == '' And $([MSBuild]::IsOSPlatform('Windows')) And Exists('$(_BunWinPath)')">$(_BunWinPath)</_BunPath>
+      <_BunPath Condition="'$(_BunPath)' == '' And $([MSBuild]::IsOSPlatform('Linux')) And Exists('$(_BunLinuxPath)')">$(_BunLinuxPath)</_BunPath>
+    </PropertyGroup>
+
+    <!-- Make executable on Unix -->
+    <Exec Command="chmod +x &quot;$(_BunPath)&quot;"
+      Condition="'$(_BunPath)' != '' And !$([MSBuild]::IsOSPlatform('Windows'))" />
+
+    <Error Condition="'$(_BunPath)' == ''"
+      Text="Bun runtime not found. Ensure eQuantic.UI.Runtime.* projects are built first." />
+
+    <Message Text="Using Bun from: $(_BunPath)" Importance="high" />
+  </Target>
+
+  <Target Name="BundleRuntime" BeforeTargets="BeforeBuild" DependsOnTargets="ResolveBunForServer">
     <Message Text="Bundling eQuantic UI Runtime..." Importance="high" />
     <MakeDir Directories="wwwroot" />
-    <!-- Try global bun first, simpler for dev environment -->
-    <Exec
-      Command="bun build ../eQuantic.UI.Sdk/Resources/boot.ts --outfile wwwroot/runtime.js --minify-syntax --minify-whitespace"
-      IgnoreExitCode="true">
-      <Output TaskParameter="ExitCode" PropertyName="BunExitCode" />
-    </Exec>
-    <Error Condition="'$(BunExitCode)' != '0'"
-      Text="Failed to bundle runtime. Ensure 'bun' is installed and in PATH." />
+    <Exec Command="&quot;$(_BunPath)&quot; build ../eQuantic.UI.Sdk/Resources/boot.ts --outfile wwwroot/runtime.js --minify-syntax --minify-whitespace" />
   </Target>
 
 </Project>
