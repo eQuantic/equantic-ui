@@ -93,7 +93,7 @@ public class CounterState : ComponentState<Counter>
                 _count > 0
                     ? new Text($"Message: {_message}")
                         { ClassName = "message-display" }
-                    : null
+                    : new Text("")
             }
         };
     }
