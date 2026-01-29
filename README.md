@@ -331,7 +331,7 @@ src/
 
 ## Documentation
 
-- [Build Flow](docs/build-flow.md) - How the compilation pipeline works
+- [Build Flow](https://github.com/equantic/equantic-ui/wiki/BuildFlow) - How the compilation pipeline works
 - [CLAUDE.md](CLAUDE.md) - Technical reference for contributors
 
 ---
