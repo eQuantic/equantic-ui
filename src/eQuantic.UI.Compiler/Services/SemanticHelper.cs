@@ -67,6 +67,24 @@ public class SemanticHelper
         return _semanticModel?.GetTypeInfo(node).Type;
     }
 
+    public bool IsLinqMethod(SyntaxNode node, string methodName)
+    {
+        if (node is not Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax invocation) return false;
+        if (invocation.Expression is not Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax memberAccess) return false;
+        if (memberAccess.Name.Identifier.Text != methodName) return false;
+
+        var symbol = GetSymbol(node); // Invocation symbol (MethodSymbol)
+        if (symbol == null) return true; // Loose check if semantic model missing
+        
+        return IsLinqExtension(symbol.ContainingType);
+    }
+
+    public bool IsStatic(SyntaxNode node)
+    {
+        var symbol = GetSymbol(node);
+        return symbol?.IsStatic ?? false;
+    }
+
     private bool IsNamespace(ISymbol? symbol, string namespaceStart)
     {
         if (symbol == null) return false;

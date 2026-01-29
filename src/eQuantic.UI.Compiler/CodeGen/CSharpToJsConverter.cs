@@ -12,6 +12,7 @@ using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Special;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Async;   
 using eQuantic.UI.Compiler.CodeGen.Registry;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -82,10 +83,15 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<AverageStrategy>();
         _strategyRegistry.Register<MinMaxStrategy>();
         _strategyRegistry.Register<ReverseStrategy>();
+        _strategyRegistry.Register<GroupByStrategy>();
+        _strategyRegistry.Register<AggregateStrategy>();
+        _strategyRegistry.Register<ToDictionaryStrategy>();
+        _strategyRegistry.Register<JoinStrategy>();
+        _strategyRegistry.Register<ZipStrategy>();
         
         // Primitive Type Strategies (Low Priority than new Invocation Strategies but higher than fallback)
         _strategyRegistry.Register<StringMethodStrategy>();
-        _strategyRegistry.Register<StringStaticStrategy>();
+        _strategyRegistry.Register<StringStaticStrategy>(); // New Phase 7
         _strategyRegistry.Register<ListMethodStrategy>();
 
         // === Invocation Strategies (Priority 10) ===
@@ -110,8 +116,24 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<InitializerExpressionStrategy>();
         _strategyRegistry.Register<IsPatternStrategy>();
         _strategyRegistry.Register<DeclarationExpressionStrategy>();
+        _strategyRegistry.Register<CollectionExpressionStrategy>();
         _strategyRegistry.Register<AssignmentExpressionStrategy>();
         _strategyRegistry.Register<IdentifierStrategy>();
+        _strategyRegistry.Register<RangeExpressionStrategy>();
+        _strategyRegistry.Register<ThrowExpressionStrategy>();
+        _strategyRegistry.Register<StackAllocArrayCreationStrategy>();
+        
+        // Additional Types
+        _strategyRegistry.Register<DateTimeStrategy>();
+        _strategyRegistry.Register<TimeSpanStrategy>();
+        _strategyRegistry.Register<RegexStrategy>();
+        _strategyRegistry.Register<HashSetStrategy>();
+        
+        // Phase 7: Static Helpers & Async
+        _strategyRegistry.Register<TaskMethodStrategy>();
+        _strategyRegistry.Register<NumberMethodStrategy>();
+        // StringStaticStrategy is registered in primitives block? Checking order logic.
+        // It's a Primitive strategy, so lets check where StringMethodStrategy is.
 
         // Legacy Expression Strategies
         _strategyRegistry.Register<MemberAccessStrategy>();
@@ -142,6 +164,9 @@ public class CSharpToJsConverter
         _statementRegistry.Register<ThrowStatementStrategy>();
         _statementRegistry.Register<TryStatementStrategy>();
         _statementRegistry.Register<UsingStatementStrategy>();
+        _statementRegistry.Register<LockStatementStrategy>();
+        _statementRegistry.Register<YieldStatementStrategy>();
+        _statementRegistry.Register<FixedStatementStrategy>();
     }
 
     /// <summary>
