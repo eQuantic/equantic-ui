@@ -45,7 +45,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         var initializer = "";
         if (creation.Initializer != null)
         {
-            initializer = context.Converter.ConvertInitializer(creation.Initializer);
+            initializer = context.Converter.ConvertExpression(creation.Initializer);
             // Append initializer to arguments if likely a UI component
             if (string.IsNullOrEmpty(arguments))
             {
@@ -95,7 +95,7 @@ public class ObjectCreationStrategy : IConversionStrategy
     {
         if (creation.Initializer != null)
         {
-             return context.Converter.ConvertInitializer(creation.Initializer);
+             return context.Converter.ConvertExpression(creation.Initializer);
         }
 
         // Try to get type from semantic model
