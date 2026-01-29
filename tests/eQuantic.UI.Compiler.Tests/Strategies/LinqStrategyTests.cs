@@ -131,7 +131,7 @@ public class LinqStrategyTests
     public void Contains_MapsTo_Includes()
     {
         var result = TestHelper.ConvertExpression("list.Contains(item)");
-        result.Should().Be("this.list.includes(item)");
+        result.Should().Be("this.list.includes(this.item)");
     }
 
     [Fact]

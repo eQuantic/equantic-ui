@@ -9,6 +9,7 @@ using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Special;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 using eQuantic.UI.Compiler.CodeGen.Registry;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -81,6 +82,11 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<MinMaxStrategy>();
         _strategyRegistry.Register<ReverseStrategy>();
         
+        // Primitive Type Strategies (higher priority than InvocationStrategy)
+        _strategyRegistry.Register<StringMethodStrategy>();
+        _strategyRegistry.Register<StringStaticStrategy>();
+        _strategyRegistry.Register<ListMethodStrategy>();
+
         // Expression Strategies
         _strategyRegistry.Register<InvocationStrategy>();
         _strategyRegistry.Register<MemberAccessStrategy>();

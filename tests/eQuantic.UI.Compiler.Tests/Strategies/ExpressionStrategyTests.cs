@@ -16,7 +16,7 @@ public class ExpressionStrategyTests
     public void ListAdd_MapsTo_Push()
     {
         var result = TestHelper.ConvertExpression("list.Add(item)");
-        result.Should().Be("this.list.push(item)");
+        result.Should().Be("this.list.push(this.item)");
     }
 
     [Fact]
@@ -44,30 +44,24 @@ public class ExpressionStrategyTests
     public void BinaryExpression_Equality_MapsTo_StrictEquality()
     {
         var result = TestHelper.ConvertExpression("a == b");
-        // 'a' and 'b' are not properties in TestHelper by default, 
-        // but if TestHelper context treats unresolvable identifiers as local vars, they stay 'a' and 'b'.
-        // However, if they resolve to nothing in SemanticModel, fallback might apply.
-        // Let's assume TestHelper setup makes them locals or parameters in some scope?
-        // Actually TestHelper wraps code in a method. 'a' and 'b' are implicitly locals if not defined as props.
-        // Wait, TestHelper wrapper class does NOT define 'a' and 'b'. 
-        // So they are unknown. Heuristic: lowercase start -> local var -> no this.
-        result.Should().Be("a === b");
+        // 'a' and 'b' are properties in TestHelper, so they get 'this.' prefix
+        result.Should().Be("this.a === this.b");
     }
-    
+
     [Fact]
     public void MemberAccess_Length_MapsTo_Length()
     {
         var result = TestHelper.ConvertExpression("str.Length");
-        // str is unknown -> local -> str
-        // Length -> length (standard mapping)
-        result.Should().Be("str.length");
+        // str is a property in TestHelper
+        result.Should().Be("this.str.length");
     }
 
     [Fact]
     public void NullCoalescing_MapsTo_QuestionQuestion()
     {
         var result = TestHelper.ConvertExpression("a ?? b");
-        result.Should().Be("a ?? b");
+        // 'a' and 'b' are properties in TestHelper
+        result.Should().Be("this.a ?? this.b");
     }
 
     [Fact]

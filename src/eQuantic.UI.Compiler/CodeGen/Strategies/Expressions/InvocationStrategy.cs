@@ -6,13 +6,14 @@ using eQuantic.UI.Compiler.Services;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// General strategy for method invocations.
+/// General strategy for method invocations (fallback).
 /// Handles:
 /// - Console.WriteLine -> console.log
-/// - String methods (Join, IsNullOrEmpty)
 /// - Math methods
-/// - Dictionary methods (TryGetValue)
+/// - Dictionary methods (TryGetValue, ContainsKey)
+/// - Service provider methods (GetService, GetRequiredService)
 /// - General method calls
+/// Note: String and List methods are handled by dedicated strategies in Primitives/
 /// </summary>
 public class InvocationStrategy : IConversionStrategy
 {
@@ -76,33 +77,13 @@ public class InvocationStrategy : IConversionStrategy
              }
         }
 
-        // List Methods
-        if (methodName == "Add" || methodName == "AddRange")
-        {
-             if (methodExpression is MemberAccessExpressionSyntax access)
-             {
-                 var caller = context.Converter.ConvertExpression(access.Expression);
-                 return $"{caller}.push({args})";
-             }
-        }
-        
-        // AddChild -> Children.push
+        // AddChild -> Children.push (UI-specific)
         if (methodName == "AddChild")
         {
              if (methodExpression is MemberAccessExpressionSyntax access)
              {
                  var caller = context.Converter.ConvertExpression(access.Expression);
                  return $"{caller}.Children.push({args})";
-             }
-        }
-        
-        // List.Insert -> splice
-        if (methodName == "Insert" && argsList.Count >= 2)
-        {
-             if (methodExpression is MemberAccessExpressionSyntax access)
-             {
-                 var caller = context.Converter.ConvertExpression(access.Expression);
-                 return $"{caller}.splice({argsList[0]}, 0, {argsList[1]})";
              }
         }
 
@@ -120,28 +101,6 @@ public class InvocationStrategy : IConversionStrategy
             }
         }
 
-        // String.Join
-        if (methodName == "Join" && (libraryMethodName == "System.String.Join" || fullMethodName.Contains("String.Join") || fullMethodName.Contains("string.Join")))
-        {
-            if (argsList.Count >= 2)
-            {
-                return $"{argsList[1]}.join({argsList[0]})";
-            }
-        }
-
-        // String.IsNullOrEmpty / IsNullOrWhiteSpace
-        if (methodName == "IsNullOrEmpty" || methodName == "IsNullOrWhiteSpace")
-        {
-             bool isStringMethod = libraryMethodName?.StartsWith("System.String") == true || fullMethodName.Contains("String") || fullMethodName.Contains("string");
-             if (isStringMethod && argsList.Count > 0)
-             {
-                 var arg = argsList[0];
-                 if (methodName == "IsNullOrWhiteSpace")
-                     return $"(!{arg} || {arg}.trim() === '')";
-                 return $"(!{arg} || {arg} === '')";
-             }
-        }
-
         // Math Methods
         if (libraryMethodName?.StartsWith("System.Math") == true || fullMethodName.StartsWith("Math."))
         {
@@ -152,32 +111,6 @@ public class InvocationStrategy : IConversionStrategy
             return $"Math.{ToCamelCase(methodName)}({args})";
         }
 
-        // Common String Methods
-        if (methodName == "ToLower" || methodName == "ToLowerInvariant")
-        {
-            if (methodExpression is MemberAccessExpressionSyntax access)
-            {
-                var caller = context.Converter.ConvertExpression(access.Expression);
-                return $"{caller}.toLowerCase()";
-            }
-        }
-        if (methodName == "ToUpper" || methodName == "ToUpperInvariant")
-        {
-            if (methodExpression is MemberAccessExpressionSyntax access)
-            {
-                var caller = context.Converter.ConvertExpression(access.Expression);
-                return $"{caller}.toUpperCase()";
-            }
-        }
-        if (methodName == "Trim")
-        {
-            if (methodExpression is MemberAccessExpressionSyntax access)
-            {
-                var caller = context.Converter.ConvertExpression(access.Expression);
-                return $"{caller}.trim()";
-            }
-        }
-        
         // ToString
         if (methodName == "ToString")
         {

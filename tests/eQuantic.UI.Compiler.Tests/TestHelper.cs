@@ -28,10 +28,16 @@ public static class TestHelper
                 public List<TestClass> list {{ get; set; }}
                 public List<TestClass> otherList {{ get; set; }}
                 public List<Order> Orders {{ get; set; }}
+                public List<string> items {{ get; set; }}
                 public int Id {{ get; set; }}
                 public string Name {{ get; set; }}
+                public string str {{ get; set; }}
                 public bool Active {{ get; set; }}
-                
+                public string a {{ get; set; }}
+                public string b {{ get; set; }}
+                public string c {{ get; set; }}
+                public TestClass item {{ get; set; }}
+
                 public void Method() {{
                     {code};
                 }}
