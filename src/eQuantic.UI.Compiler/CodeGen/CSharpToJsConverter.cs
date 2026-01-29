@@ -65,10 +65,21 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<SelectStrategy>();
         _strategyRegistry.Register<WhereStrategy>();
         _strategyRegistry.Register<FirstStrategy>();
+        _strategyRegistry.Register<LastStrategy>();
+        _strategyRegistry.Register<SingleStrategy>();
         _strategyRegistry.Register<AllStrategy>();
         _strategyRegistry.Register<AnyStrategy>();
         _strategyRegistry.Register<CountStrategy>();
         _strategyRegistry.Register<OrderByStrategy>();
+        _strategyRegistry.Register<SkipStrategy>();
+        _strategyRegistry.Register<TakeStrategy>();
+        _strategyRegistry.Register<DistinctStrategy>();
+        _strategyRegistry.Register<ContainsStrategy>();
+        _strategyRegistry.Register<SelectManyStrategy>();
+        _strategyRegistry.Register<SumStrategy>();
+        _strategyRegistry.Register<AverageStrategy>();
+        _strategyRegistry.Register<MinMaxStrategy>();
+        _strategyRegistry.Register<ReverseStrategy>();
         
         // Expression Strategies
         _strategyRegistry.Register<InvocationStrategy>();
@@ -77,15 +88,23 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<ObjectCreationStrategy>();
         _strategyRegistry.Register<BinaryExpressionStrategy>();
         _strategyRegistry.Register<SwitchExpressionStrategy>();
+        _strategyRegistry.Register<NullCoalescingStrategy>();
+        _strategyRegistry.Register<ConditionalAccessStrategy>();
+        _strategyRegistry.Register<IndexFromEndStrategy>();
         
         // Statement Strategies
         _statementRegistry.Register<IfStatementStrategy>();
+        _statementRegistry.Register<ForStatementStrategy>();
         _statementRegistry.Register<ForEachStatementStrategy>();
         _statementRegistry.Register<ReturnStatementStrategy>();
         _statementRegistry.Register<LocalDeclarationStrategy>();
         _statementRegistry.Register<ExpressionStatementStrategy>();
         _statementRegistry.Register<SwitchStatementStrategy>();
         _statementRegistry.Register<WhileStatementStrategy>();
+        _statementRegistry.Register<DoWhileStatementStrategy>();
+        _statementRegistry.Register<BreakStatementStrategy>();
+        _statementRegistry.Register<ContinueStatementStrategy>();
+        _statementRegistry.Register<ThrowStatementStrategy>();
         _statementRegistry.Register<TryStatementStrategy>();
         _statementRegistry.Register<UsingStatementStrategy>();
     }

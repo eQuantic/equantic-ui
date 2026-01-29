@@ -82,6 +82,12 @@ public class ObjectCreationStrategy : IConversionStrategy
             return "{ getService: () => null }";
         }
 
+        // Exception types -> JavaScript Error
+        if (typeName.EndsWith("Exception") || typeName == "Exception")
+        {
+            return $"new Error({arguments})";
+        }
+
         return $"new {typeName}({arguments})";
     }
 

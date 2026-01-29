@@ -303,13 +303,13 @@ The compiler supports modern C# constructs:
 
 | Category | Supported |
 |----------|-----------|
-| **Expressions** | Arithmetic, logical, ternary, string interpolation |
-| **Control Flow** | `if`, `switch`, `for`, `foreach`, `while` |
+| **Expressions** | Arithmetic, logical, ternary, string interpolation, `??`, `?.`, `?[]`, `^n` (index from end) |
+| **Control Flow** | `if`, `switch`, `for`, `foreach`, `while`, `do-while`, `break`, `continue`, `throw` |
 | **Pattern Matching** | Type, property, positional, relational patterns (C# 9-12) |
-| **LINQ** | `Where` → `filter`, `Select` → `map`, `First` → `find`, etc. |
+| **LINQ** | `Select`, `SelectMany`, `Where`, `First`, `Last`, `Single`, `Any`, `All`, `Count`, `Sum`, `Average`, `Min`, `Max`, `OrderBy`, `Skip`, `Take`, `Distinct`, `Contains`, `Reverse` |
 | **Async/Await** | `Task<T>` → `Promise<T>` |
 | **Resources** | `using` statements and declarations |
-| **Exceptions** | `try-catch-finally` |
+| **Exceptions** | `try-catch-finally`, `throw` (Exception → Error) |
 
 ---
 

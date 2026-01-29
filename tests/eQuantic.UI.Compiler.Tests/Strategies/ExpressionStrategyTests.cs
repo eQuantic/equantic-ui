@@ -69,6 +69,62 @@ public class ExpressionStrategyTests
         var result = TestHelper.ConvertExpression("a ?? b");
         result.Should().Be("a ?? b");
     }
+
+    [Fact]
+    public void NullCoalescing_WithExpression_MapsCorrectly()
+    {
+        var result = TestHelper.ConvertExpression("name ?? \"default\"");
+        result.Should().Be("name ?? 'default'");
+    }
+
+    [Fact]
+    public void ConditionalAccess_MemberAccess_MapsTo_OptionalChaining()
+    {
+        var result = TestHelper.ConvertExpression("user?.Name");
+        result.Should().Be("user?.name");
+    }
+
+    [Fact]
+    public void ConditionalAccess_MethodCall_MapsTo_OptionalChaining()
+    {
+        var result = TestHelper.ConvertExpression("user?.GetName()");
+        result.Should().Be("user?.getName()");
+    }
+
+    [Fact]
+    public void ConditionalAccess_ElementAccess_MapsTo_OptionalChaining()
+    {
+        var result = TestHelper.ConvertExpression("list?[0]");
+        result.Should().Be("this.list?.[0]");
+    }
+
+    [Fact]
+    public void ConditionalAccess_Chained_MapsTo_OptionalChaining()
+    {
+        var result = TestHelper.ConvertExpression("user?.Address?.City");
+        result.Should().Be("user?.address?.city");
+    }
+
+    [Fact]
+    public void ConditionalAccess_WithNullCoalescing_MapsCorrectly()
+    {
+        var result = TestHelper.ConvertExpression("user?.Name ?? \"Unknown\"");
+        result.Should().Be("user?.name ?? 'Unknown'");
+    }
+
+    [Fact]
+    public void IndexFromEnd_SingleElement_MapsToLengthMinus()
+    {
+        var result = TestHelper.ConvertExpression("list[^1]");
+        result.Should().Be("this.list[this.list.length - 1]");
+    }
+
+    [Fact]
+    public void IndexFromEnd_SecondLast_MapsCorrectly()
+    {
+        var result = TestHelper.ConvertExpression("list[^2]");
+        result.Should().Be("this.list[this.list.length - 2]");
+    }
     [Fact]
     public void SwitchExpression_MapsTo_NestedTernary()
     {
