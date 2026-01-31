@@ -426,6 +426,7 @@ The compiler supports modern C# constructs:
 | **List Methods** | `Add`, `Remove`, `Clear`, `Insert`, `Find`, `FindAll`, `Exists`, `Sort`, `ForEach`, `GetRange` |
 | **Enum Methods** | `Enum.Parse<T>`, `Enum.TryParse<T>`, `Enum.GetValues<T>`, `Enum.GetNames<T>`, `Enum.IsDefined` |
 | **Dictionary Methods** | `ContainsKey`, `TryGetValue`, `Add`, `Remove`, `Clear`, `Keys`, `Values` |
+| **LINQ Set Operations** | `Concat`, `Union`, `Intersect`, `Except` - Full set theory operations for collections |
 | **LINQ** | `Select`, `SelectMany`, `Where`, `First`, `Last`, `Single`, `Any`, `All`, `Count`, `Sum`, `Average`, `Min`, `Max`, `OrderBy`, `Skip`, `Take`, `Distinct`, `Contains`, `Reverse` |
 | **Async/Await** | `Task<T>` → `Promise<T>` |
 | **Resources** | `using` statements and declarations |

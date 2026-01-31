@@ -140,6 +140,41 @@ public class StringStrategyTests
         result.Should().Be("(this.str.slice(0, 5) + this.str.slice(5 + 3))");
     }
 
+    [Fact]
+    public void Trim_MapsToTrim()
+    {
+        var result = TestHelper.ConvertExpression("str.Trim()");
+        result.Should().Be("this.str.trim()");
+    }
+
+    [Fact]
+    public void ToUpper_MapsToToUpperCase()
+    {
+        var result = TestHelper.ConvertExpression("str.ToUpper()");
+        result.Should().Be("this.str.toUpperCase()");
+    }
+
+    [Fact]
+    public void ToLower_MapsToToLowerCase()
+    {
+        var result = TestHelper.ConvertExpression("str.ToLower()");
+        result.Should().Be("this.str.toLowerCase()");
+    }
+
+    [Fact]
+    public void ToUpperInvariant_MapsToToUpperCase()
+    {
+        var result = TestHelper.ConvertExpression("str.ToUpperInvariant()");
+        result.Should().Be("this.str.toUpperCase()");
+    }
+
+    [Fact]
+    public void ToLowerInvariant_MapsToToLowerCase()
+    {
+        var result = TestHelper.ConvertExpression("str.ToLowerInvariant()");
+        result.Should().Be("this.str.toLowerCase()");
+    }
+
     // ============ Static Methods ============
 
     [Fact]

@@ -25,7 +25,8 @@ public class StringMethodStrategy : IConversionStrategy
     {
         "Split", "Replace", "StartsWith", "EndsWith", "Contains",
         "Substring", "IndexOf", "LastIndexOf", "PadLeft", "PadRight",
-        "TrimStart", "TrimEnd", "ToCharArray", "Insert", "Remove"
+        "TrimStart", "TrimEnd", "Trim", "ToCharArray", "Insert", "Remove",
+        "ToUpper", "ToLower", "ToUpperInvariant", "ToLowerInvariant"
     };
 
     public bool CanConvert(SyntaxNode node, ConversionContext context)
@@ -81,6 +82,11 @@ public class StringMethodStrategy : IConversionStrategy
             "PadRight" => ConvertPadRight(caller, args),
             "TrimStart" => $"{caller}.trimStart()",
             "TrimEnd" => $"{caller}.trimEnd()",
+            "Trim" => $"{caller}.trim()",
+            "ToUpper" => $"{caller}.toUpperCase()",
+            "ToLower" => $"{caller}.toLowerCase()",
+            "ToUpperInvariant" => $"{caller}.toUpperCase()",
+            "ToLowerInvariant" => $"{caller}.toLowerCase()",
             "ToCharArray" => $"[...{caller}]",
             "Insert" => ConvertInsert(caller, args),
             "Remove" => ConvertRemove(caller, args),

@@ -65,6 +65,8 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<TupleExpressionStrategy>();
         _strategyRegistry.Register<GuidTypeStrategy>();
         _strategyRegistry.Register<NamespaceRemovalStrategy>();
+        _strategyRegistry.Register<NameofStrategy>(); // Priority 15
+        _strategyRegistry.Register<DefaultKeywordStrategy>(); // Priority 15
         
         // LINQ Strategies
         _strategyRegistry.Register<SelectStrategy>();
@@ -89,11 +91,18 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<ToDictionaryStrategy>();
         _strategyRegistry.Register<JoinStrategy>();
         _strategyRegistry.Register<ZipStrategy>();
-        
+        _strategyRegistry.Register<ConcatStrategy>();
+        _strategyRegistry.Register<UnionStrategy>();
+        _strategyRegistry.Register<IntersectStrategy>();
+        _strategyRegistry.Register<ExceptStrategy>();
+        _strategyRegistry.Register<CastStrategy>();
+        _strategyRegistry.Register<OfTypeStrategy>();
+
         // Primitive Type Strategies (Low Priority than new Invocation Strategies but higher than fallback)
         _strategyRegistry.Register<StringMethodStrategy>();
         _strategyRegistry.Register<StringStaticStrategy>(); // New Phase 7
         _strategyRegistry.Register<ListMethodStrategy>();
+        _strategyRegistry.Register<ArrayStaticStrategy>();
 
         // === Invocation Strategies (Priority 10) ===
         _strategyRegistry.Register<ConsoleStrategy>();
@@ -118,6 +127,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<IsPatternStrategy>();
         _strategyRegistry.Register<DeclarationExpressionStrategy>();
         _strategyRegistry.Register<CollectionExpressionStrategy>();
+        _strategyRegistry.Register<NullCoalescingAssignmentStrategy>(); // Priority 15 - before AssignmentExpressionStrategy
         _strategyRegistry.Register<AssignmentExpressionStrategy>();
         _strategyRegistry.Register<IdentifierStrategy>();
         _strategyRegistry.Register<RangeExpressionStrategy>();
