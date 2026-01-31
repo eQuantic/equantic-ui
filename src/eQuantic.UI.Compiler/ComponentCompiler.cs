@@ -1,8 +1,8 @@
 using eQuantic.UI.Compiler.Parser;
 using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.Models;
-
 using eQuantic.UI.Compiler.Services;
+using Microsoft.CodeAnalysis;
 
 namespace eQuantic.UI.Compiler;
 
@@ -15,7 +15,8 @@ public class ComponentCompiler
     private readonly TypeScriptEmitter _tsEmitter;
     private readonly CssEmitter _cssEmitter;
     private readonly SemanticModelProvider _semanticModelProvider;
-    
+    private readonly SourceMapGenerator _sourceMapGenerator;
+
     public ComponentCompiler()
     {
         _parser = new ComponentParser();
@@ -24,8 +25,24 @@ public class ComponentCompiler
         _semanticModelProvider = new SemanticModelProvider();
         _sourceMapGenerator = new SourceMapGenerator();
     }
-    
-    private readonly SourceMapGenerator _sourceMapGenerator;
+
+    /// <summary>
+    /// Sets the full project compilation to enable resolution of external types.
+    /// When set, the compiler can resolve types defined in other files in the project.
+    /// </summary>
+    /// <param name="projectCompilation">The full Roslyn compilation of the project</param>
+    public void SetProjectCompilation(Compilation projectCompilation)
+    {
+        _semanticModelProvider.SetProjectCompilation(projectCompilation);
+    }
+
+    /// <summary>
+    /// Clears the project compilation, reverting to minimal compilation mode.
+    /// </summary>
+    public void ClearProjectCompilation()
+    {
+        _semanticModelProvider.ClearProjectCompilation();
+    }
 
     /// <summary>
     /// Sets the dependency resolver for automatic component dependency detection
