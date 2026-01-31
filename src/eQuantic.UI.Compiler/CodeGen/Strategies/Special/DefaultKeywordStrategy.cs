@@ -17,9 +17,15 @@ public class DefaultKeywordStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        // Handle both default literal and default(T) expressions
-        return node is DefaultExpressionSyntax or LiteralExpressionSyntax literal
-            && literal.Kind() == SyntaxKind.DefaultLiteralExpression;
+        // Handle default(T) expression
+        if (node is DefaultExpressionSyntax)
+            return true;
+
+        // Handle default literal
+        if (node is LiteralExpressionSyntax literal && literal.Kind() == SyntaxKind.DefaultLiteralExpression)
+            return true;
+
+        return false;
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
