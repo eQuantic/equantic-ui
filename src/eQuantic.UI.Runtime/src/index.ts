@@ -27,7 +27,7 @@ export {
 export type { ServerActionResponse } from './core/server-actions';
 
 // Utils
-export { format } from './utils/format';
+export { format, parseEnum } from './utils/format';
 export { StyleBuilder } from './utils/style-builder';
 
 // DOM

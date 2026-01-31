@@ -36,7 +36,7 @@ public class InvocationStrategyTests
     {
         var code = "dict.ContainsKey(\"key\")";
         var js = ConvertExpression(code);
-        Assert.Equal("'key' in dict", js);
+        Assert.Equal("('key' in dict)", js);
     }
     
     [Fact]

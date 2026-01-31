@@ -69,8 +69,8 @@ public class ComplexScenarioTests
         // Verify key casing handling (should preserve 'timeout' as it's a string literal key)
         Assert.Contains("let config = { 'timeout': 1000, 'retries': 3 };", js);
 
-        // 3. Dictionary ContainsKey
-        Assert.Contains("if ('timeout' in config)", js);
+        // 3. Dictionary ContainsKey (now with parentheses for safety)
+        Assert.Contains("if (('timeout' in config))", js);
 
         // 4. Math.Clamp -> Math.min(Math.max(val, min), max)
         Assert.Contains("let safeTimeout = Math.min(Math.max(config['timeout'], 100), 5000);", js);
@@ -91,7 +91,7 @@ public class ComplexScenarioTests
         // 8. Unary
         Assert.Contains("count++;", js);
 
-        // 9. Ternary
-        Assert.Contains("let status = 'retries' in config ? 'Ready' : 'Error';", js);
+        // 9. Ternary (ContainsKey now wrapped in parentheses)
+        Assert.Contains("let status = ('retries' in config) ? 'Ready' : 'Error';", js);
     }
 }

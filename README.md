@@ -226,6 +226,121 @@ public class TodoList : StatefulComponent
 }
 ```
 
+### Type-Safe Enum Operations
+
+Full support for enum parsing, validation, and enumeration — perfect for dropdowns, filters, and status management:
+
+```csharp
+public enum OrderStatus { Pending, Processing, Shipped, Delivered, Cancelled }
+
+[Page("/orders")]
+public class OrderFilter : StatefulComponent
+{
+    private OrderStatus? _selectedStatus;
+
+    public override IComponent Build(RenderContext context)
+    {
+        // Get all enum values for dropdown options
+        var statusOptions = Enum.GetValues<OrderStatus>()
+            .Select(s => new { Value = s, Label = s.ToString() });
+
+        return new Container
+        {
+            Children =
+            {
+                new Select
+                {
+                    Options = statusOptions,
+                    Value = _selectedStatus,
+                    OnChange = (string value) =>
+                    {
+                        // Type-safe parsing with TryParse
+                        if (Enum.TryParse<OrderStatus>(value, out var status))
+                        {
+                            SetState(() => _selectedStatus = status);
+                        }
+                    }
+                },
+
+                // Validate enum from user input
+                new Input
+                {
+                    Placeholder = "Enter status",
+                    OnBlur = (string input) =>
+                    {
+                        if (Enum.IsDefined(typeof(OrderStatus), input))
+                        {
+                            var status = Enum.Parse<OrderStatus>(input);
+                            Console.WriteLine($"Valid status: {status}");
+                        }
+                    }
+                }
+            }
+        };
+    }
+}
+```
+
+### Dictionary Operations
+
+Full Dictionary support for state management, caching, and lookup tables:
+
+```csharp
+[Page("/settings")]
+public class UserSettings : StatefulComponent
+{
+    private Dictionary<string, object> _settings = new();
+
+    public override IComponent Build(RenderContext context)
+    {
+        return new Container
+        {
+            Children =
+            {
+                new Button
+                {
+                    Text = "Load Settings",
+                    OnClick = async () =>
+                    {
+                        // Add settings
+                        _settings.Add("theme", "dark");
+                        _settings.Add("notifications", true);
+                        _settings.Add("maxItems", 50);
+
+                        // Check if key exists
+                        if (_settings.ContainsKey("theme"))
+                        {
+                            var theme = _settings["theme"];
+                            Console.WriteLine($"Current theme: {theme}");
+                        }
+
+                        // Safe retrieval with TryGetValue
+                        if (_settings.TryGetValue("maxItems", out var max))
+                        {
+                            Console.WriteLine($"Max items: {max}");
+                        }
+
+                        // Iterate keys and values
+                        foreach (var key in _settings.Keys)
+                        {
+                            Console.WriteLine($"{key} = {_settings[key]}");
+                        }
+
+                        SetState(() => { }); // Trigger re-render
+                    }
+                },
+
+                new Button
+                {
+                    Text = "Clear Settings",
+                    OnClick = () => SetState(() => _settings.Clear())
+                }
+            }
+        };
+    }
+}
+```
+
 ### Theming System
 
 Consistent styling with type-safe variants:
@@ -306,6 +421,11 @@ The compiler supports modern C# constructs:
 | **Expressions** | Arithmetic, logical, ternary, string interpolation, `??`, `?.`, `?[]`, `^n` (index from end) |
 | **Control Flow** | `if`, `switch`, `for`, `foreach`, `while`, `do-while`, `break`, `continue`, `throw` |
 | **Pattern Matching** | Type, property, positional, relational patterns (C# 9-12) |
+| **String Methods** | `Split`, `Replace`, `StartsWith`, `EndsWith`, `Contains`, `Substring`, `IndexOf`, `PadLeft/Right`, `Trim*`, `IsNullOrEmpty`, `Join`, `Concat`, `Compare`, `Equals`, `Format` |
+| **Number Methods** | `int.Parse`, `double.Parse`, `float.Parse`, `decimal.Parse`, `int.TryParse`, `double.TryParse` |
+| **List Methods** | `Add`, `Remove`, `Clear`, `Insert`, `Find`, `FindAll`, `Exists`, `Sort`, `ForEach`, `GetRange` |
+| **Enum Methods** | `Enum.Parse<T>`, `Enum.TryParse<T>`, `Enum.GetValues<T>`, `Enum.GetNames<T>`, `Enum.IsDefined` |
+| **Dictionary Methods** | `ContainsKey`, `TryGetValue`, `Add`, `Remove`, `Clear`, `Keys`, `Values` |
 | **LINQ** | `Select`, `SelectMany`, `Where`, `First`, `Last`, `Single`, `Any`, `All`, `Count`, `Sum`, `Average`, `Min`, `Max`, `OrderBy`, `Skip`, `Take`, `Distinct`, `Contains`, `Reverse` |
 | **Async/Await** | `Task<T>` → `Promise<T>` |
 | **Resources** | `using` statements and declarations |

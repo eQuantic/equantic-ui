@@ -60,6 +60,7 @@ public class CSharpToJsConverter
     {
         _strategyRegistry.Register<AnyStrategy>();
         _strategyRegistry.Register<EnumStrategy>();
+        _strategyRegistry.Register<EnumMethodStrategy>();
         _strategyRegistry.Register<NullableStrategy>();
         _strategyRegistry.Register<TupleExpressionStrategy>();
         _strategyRegistry.Register<GuidTypeStrategy>();

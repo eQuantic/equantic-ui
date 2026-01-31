@@ -29,6 +29,7 @@ public static class TestHelper
                 public List<TestClass> otherList {{ get; set; }}
                 public List<Order> Orders {{ get; set; }}
                 public List<string> items {{ get; set; }}
+                public Dictionary<string, string> dict {{ get; set; }}
                 public int Id {{ get; set; }}
                 public string Name {{ get; set; }}
                 public string str {{ get; set; }}

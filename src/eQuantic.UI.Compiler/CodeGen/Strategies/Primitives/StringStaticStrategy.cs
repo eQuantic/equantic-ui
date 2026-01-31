@@ -32,7 +32,10 @@ public class StringStaticStrategy : IConversionStrategy
             "IsNullOrEmpty" => true,
             "IsNullOrWhiteSpace" => true,
             "Join" => true,
+            "Concat" => true,
             "Format" => true,
+            "Compare" => true,
+            "Equals" => true,
             _ => false
         };
     }
@@ -65,21 +68,61 @@ public class StringStaticStrategy : IConversionStrategy
             return $"{values}.join({separator})";
         }
         
+        if (methodName == "Concat")
+        {
+            if (args.Count == 0) return "''";
+            // string.Concat(a, b, c) -> a + b + c
+            // But if it's an array, use join
+            if (args.Count == 1)
+            {
+                var arg = context.Converter.ConvertExpression(args[0].Expression);
+                return $"[...{arg}].join('')";
+            }
+            var concatenated = string.Join(" + ", args.Select(a => context.Converter.ConvertExpression(a.Expression)));
+            return $"({concatenated})";
+        }
+
         if (methodName == "Format")
         {
              // Simple fallback: if 1st arg is string literal, we might do replacement, but for now
              // we return a simplified template literal approach if just 1 arg?
              // Or rely on a helper `stringFormat(fmt, ...args)` which we assume exists or emit inline?
-             
+
              // Implementing simple replacement: format(fmt, ...args)
              var fmt = context.Converter.ConvertExpression(args[0].Expression);
              var restArgs = string.Join(", ", args.Skip(1).Select(a => context.Converter.ConvertExpression(a.Expression)));
-             
+
              // Emitting a runtime helper call since replace matches need regex
              // "fmt".replace(/{(\d+)}/g, (match, number) => typeof args[number] != 'undefined' ? args[number] : match)
              return $"(function(f, ...a) {{ return f.replace(/{{(\\d+)}}/g, (m, n) => typeof a[n] != 'undefined' ? a[n] : m); }})({fmt}, {restArgs})";
         }
-        
+
+        if (methodName == "Compare")
+        {
+            if (args.Count < 2) return "0";
+            // string.Compare(a, b) -> a.localeCompare(b)
+            var first = context.Converter.ConvertExpression(args[0].Expression);
+            var second = context.Converter.ConvertExpression(args[1].Expression);
+            return $"{first}.localeCompare({second})";
+        }
+
+        if (methodName == "Equals")
+        {
+            if (args.Count < 2) return "false";
+            // string.Equals(a, b) -> a === b
+            // string.Equals(a, b, StringComparison.OrdinalIgnoreCase) -> a.toLowerCase() === b.toLowerCase()
+            var first = context.Converter.ConvertExpression(args[0].Expression);
+            var second = context.Converter.ConvertExpression(args[1].Expression);
+
+            if (args.Count >= 3)
+            {
+                var comparison = args[2].Expression.ToString();
+                if (comparison.Contains("IgnoreCase"))
+                    return $"({first}.toLowerCase() === {second}.toLowerCase())";
+            }
+            return $"({first} === {second})";
+        }
+
         return node.ToString();
     }
 

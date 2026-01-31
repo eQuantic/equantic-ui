@@ -146,14 +146,14 @@ public class StringStrategyTests
     public void IsNullOrEmpty_MapsToFalsyCheck()
     {
         var result = TestHelper.ConvertExpression("string.IsNullOrEmpty(str)");
-        result.Should().Be("(!this.str || this.str === '')");
+        result.Should().Be("!this.str");
     }
 
     [Fact]
     public void IsNullOrWhiteSpace_MapsToTrimCheck()
     {
         var result = TestHelper.ConvertExpression("string.IsNullOrWhiteSpace(str)");
-        result.Should().Be("(!this.str || this.str.trim() === '')");
+        result.Should().Be("(!this.str || !this.str.trim())");
     }
 
     [Fact]

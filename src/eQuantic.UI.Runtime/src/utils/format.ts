@@ -80,3 +80,42 @@ function formatDate(value: Date, format: string): string {
     .replace(/mm/g, mm)
     .replace(/ss/g, ss);
 }
+
+/**
+ * Parse enum value from string (case-insensitive)
+ * @param value The string value to parse
+ * @param enumType The enum object
+ * @returns The enum value if found, undefined otherwise
+ */
+export function parseEnum<T extends Record<string, any>>(value: string | number, enumType: T): T[keyof T] | undefined {
+  if (typeof value === 'number') {
+    return enumType[value] !== undefined ? enumType[value] : undefined;
+  }
+
+  const strValue = String(value);
+
+  // Try exact match first (case-sensitive)
+  if (enumType[strValue] !== undefined) {
+    return enumType[strValue];
+  }
+
+  // Try case-insensitive match
+  const keys = Object.keys(enumType);
+  const matchedKey = keys.find(k => k.toLowerCase() === strValue.toLowerCase());
+
+  if (matchedKey) {
+    return enumType[matchedKey];
+  }
+
+  // Try matching by value (reverse lookup for numeric enums)
+  const values = Object.values(enumType);
+  const matchedValue = values.find(v =>
+    String(v).toLowerCase() === strValue.toLowerCase()
+  );
+
+  if (matchedValue !== undefined) {
+    return matchedValue as T[keyof T];
+  }
+
+  return undefined;
+}
