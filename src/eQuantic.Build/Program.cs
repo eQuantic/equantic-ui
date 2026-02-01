@@ -1,6 +1,8 @@
 // CLI entry point for eQuantic.UI Compiler
 using System.Diagnostics;
 using eQuantic.UI.Compiler;
+using eQuantic.UI.Compiler.Services;
+using Microsoft.CodeAnalysis;
 
 if (args.Length < 2)
 {
@@ -18,6 +20,88 @@ var primarySourceDir = sourceDirs[0];
 var intermediateDir = Path.Combine(primarySourceDir, "obj", "eQuantic", "ts");
 
 var compiler = new ComponentCompiler();
+
+// Create full project compilation for better type resolution
+// This enables the compiler to resolve types defined in external files
+Compilation? projectCompilation = null;
+try
+{
+    // Write to a log file for debugging since MSBuild might not show console output
+    var logPath = Path.Combine(intermediateDir, "compilation.log");
+    Directory.CreateDirectory(intermediateDir);
+    File.WriteAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] Starting compilation setup\n");
+
+    Console.WriteLine("🔍 Attempting to load project compilation...");
+
+    // Collect source files only from the PRIMARY source directory (user's project)
+    // Skip standard components directory as those are already compiled
+    var allSourceFiles = new List<string>();
+
+    if (Directory.Exists(primarySourceDir))
+    {
+        Console.WriteLine($"   Scanning project directory: {primarySourceDir}");
+        var files = ProjectCompilationHelper.GetProjectSourceFiles(primarySourceDir).ToList();
+        Console.WriteLine($"   Found {files.Count} source files in project");
+        allSourceFiles.AddRange(files);
+    }
+
+    if (allSourceFiles.Count > 0)
+    {
+        // Find referenced assemblies
+        var assemblyPaths = new List<string>();
+
+        // Add standard .NET assemblies
+        assemblyPaths.Add(typeof(object).Assembly.Location); // System.Private.CoreLib
+        assemblyPaths.Add(typeof(System.Linq.Enumerable).Assembly.Location); // System.Linq
+        assemblyPaths.Add(typeof(System.Collections.Generic.List<>).Assembly.Location); // System.Collections
+
+        // Try to find eQuantic.UI assemblies in bin folder
+        var binFolder = Path.Combine(primarySourceDir, "bin", "Debug", "net8.0");
+        if (Directory.Exists(binFolder))
+        {
+            var eqDlls = Directory.GetFiles(binFolder, "eQuantic.UI.*.dll", SearchOption.TopDirectoryOnly);
+            foreach (var dll in eqDlls)
+            {
+                assemblyPaths.Add(dll);
+            }
+            Console.WriteLine($"   Found {eqDlls.Length} eQuantic.UI assemblies in bin folder");
+        }
+
+        Console.WriteLine($"   Creating compilation for {allSourceFiles.Count} files with {assemblyPaths.Count} references...");
+
+        // Get project name from .csproj
+        var csprojFiles = Directory.GetFiles(primarySourceDir, "*.csproj", SearchOption.TopDirectoryOnly);
+        var assemblyName = csprojFiles.Length > 0 ? Path.GetFileNameWithoutExtension(csprojFiles[0]) : "DynamicAssembly";
+
+        // Create compilation with all sources
+        projectCompilation = ProjectCompilationHelper.CreateCompilationFromSources(
+            allSourceFiles,
+            assemblyPaths,
+            assemblyName: assemblyName
+        );
+
+        compiler.SetProjectCompilation(projectCompilation);
+        Console.WriteLine($"📚 Loaded project compilation: {assemblyName} ({allSourceFiles.Count} files, {assemblyPaths.Count} refs)");
+
+        // Log success
+        File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] SUCCESS: Loaded {assemblyName} with {allSourceFiles.Count} files\n");
+    }
+    else
+    {
+        Console.WriteLine("⚠️  No source files found for project compilation");
+        File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] WARNING: No source files found\n");
+    }
+}
+catch (Exception ex)
+{
+    // If project compilation fails, continue with minimal compilation
+    Console.WriteLine($"⚠️  Project compilation failed: {ex.Message}");
+    Console.WriteLine($"   Stack: {ex.StackTrace}");
+    Console.WriteLine("   Using minimal compilation per file");
+
+    var logPath = Path.Combine(intermediateDir, "compilation.log");
+    File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n{ex.StackTrace}\n");
+}
 
 // Initialize dependency resolver by scanning component directories
 var dependencyResolver = new eQuantic.UI.Compiler.Services.ComponentDependencyResolver();

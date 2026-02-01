@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,20 +36,71 @@ public static class TailwindExtensions
  
         // Inject AppTheme as JS service
         var theme = new eQuantic.UI.Tailwind.Theme.AppTheme();
-        
-        // Use CamelCase naming policy to match transpiler (button, card, etc.)
-        var jsonOptions = new System.Text.Json.JsonSerializerOptions 
-        { 
+
+        // Serialize theme methods as lookup dictionaries
+        var themeData = new
+        {
+            button = new
+            {
+                @base = theme.Button.Base,
+                variants = new Dictionary<string, string>
+                {
+                    ["primary"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Primary),
+                    ["secondary"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Secondary),
+                    ["outline"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Outline),
+                    ["ghost"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Ghost),
+                    ["destructive"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Destructive),
+                    ["link"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Link),
+                    ["success"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Success),
+                    ["warning"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Warning),
+                    ["info"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Info)
+                },
+                sizes = new Dictionary<string, string>
+                {
+                    ["small"] = theme.Button.GetSize(Core.Theme.Types.Size.Small),
+                    ["medium"] = theme.Button.GetSize(Core.Theme.Types.Size.Medium),
+                    ["large"] = theme.Button.GetSize(Core.Theme.Types.Size.Large),
+                    ["xlarge"] = theme.Button.GetSize(Core.Theme.Types.Size.XLarge)
+                }
+            },
+            typography = new
+            {
+                @base = theme.Typography.Base
+            }
+            // TODO: Add other theme components (Input, Checkbox, etc.) as needed
+        };
+
+        var jsonOptions = new System.Text.Json.JsonSerializerOptions
+        {
             PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
             WriteIndented = false
         };
-        var themeJson = System.Text.Json.JsonSerializer.Serialize(theme, jsonOptions);
- 
-        // Register with both Short Name and Full Name to ensure compatibility
+        var themeJson = System.Text.Json.JsonSerializer.Serialize(themeData, jsonOptions);
+
+        // Register theme with method wrappers to match C# interface
         var script = $@"
 <script type=""module"">
     import {{ getRootServiceProvider }} from '/_equantic/runtime.js?v={buildId}';
-    const theme = {themeJson};
+    const themeData = {themeJson};
+
+    // Add method wrappers to match IButtonTheme interface
+    const theme = {{
+        button: {{
+            base: themeData.button.base,
+            getVariant: (variant) => {{
+                const key = typeof variant === 'string' ? variant : variant.toString();
+                return themeData.button.variants[key.toLowerCase()] || themeData.button.variants.primary;
+            }},
+            getSize: (size) => {{
+                const key = typeof size === 'string' ? size : size.toString();
+                return themeData.button.sizes[key.toLowerCase()] || themeData.button.sizes.medium;
+            }}
+        }},
+        typography: {{
+            base: themeData.typography.base
+        }}
+    }};
+
     getRootServiceProvider().registerInstance('IAppTheme', theme);
     getRootServiceProvider().registerInstance('eQuantic.UI.Core.Theme.IAppTheme', theme);
 </script>";

@@ -40,6 +40,10 @@ rm -rf "$NUGET_CACHE/equantic.ui.tailwind"
 
 echo "   Cleared eQuantic packages from: $NUGET_CACHE"
 
+# Also clear NuGet http cache to prevent stale package restoration
+echo "🧹 Clearing NuGet HTTP cache..."
+dotnet nuget locals http-cache --clear > /dev/null
+
 # Step 4: Restore and build sample (default: CounterApp)
 SAMPLE="${1:-CounterApp}"
 echo ""
