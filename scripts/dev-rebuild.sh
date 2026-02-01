@@ -16,18 +16,28 @@ cd "$ROOT_DIR/src/eQuantic.UI.Runtime"
 
 # Detect platform and use embedded Bun
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    BUN_PATH="$ROOT_DIR/src/eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin"
+    BUN_PLATFORM="Osx64"
+    BUN_BINARY="bun-darwin"
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    BUN_PATH="$ROOT_DIR/src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux"
+    BUN_PLATFORM="Linux64"
+    BUN_BINARY="bun-linux"
 else
     echo "❌ Unsupported platform: $OSTYPE"
     exit 1
 fi
 
-# Check if Bun exists
+BUN_DIR="$ROOT_DIR/src/eQuantic.UI.Runtime.$BUN_PLATFORM/tools/bun"
+BUN_PATH="$BUN_DIR/$BUN_BINARY"
+
+# Extract Bun binary if it's still zipped
 if [ ! -f "$BUN_PATH" ]; then
-    echo "❌ Embedded Bun not found at: $BUN_PATH"
-    exit 1
+    echo "   Extracting Bun binary..."
+    if [ -f "$BUN_DIR/$BUN_BINARY.zip" ]; then
+        unzip -q "$BUN_DIR/$BUN_BINARY.zip" -d "$BUN_DIR/"
+    else
+        echo "❌ Embedded Bun not found at: $BUN_PATH"
+        exit 1
+    fi
 fi
 
 # Make Bun executable

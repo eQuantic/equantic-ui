@@ -31,10 +31,10 @@ jobs:
           if [ ! -f "src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux" ]; then
             echo "Extracting Bun binary..."
             unzip -q src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip -d src/eQuantic.UI.Runtime.Linux64/tools/bun/
+            chmod +x src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux
           fi
 
           BUN_PATH="src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux"
-          chmod +x "$BUN_PATH"
 
           cd src/eQuantic.UI.Runtime
           "$BUN_PATH" install

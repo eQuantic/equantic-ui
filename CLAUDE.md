@@ -37,11 +37,15 @@ dotnet pack --configuration Release --output nupkgs
 
 ### TypeScript Runtime (src/eQuantic.UI.Runtime)
 
+The TypeScript runtime is built using **embedded Bun** (bundled in platform-specific runtime packages). Bun binaries are stored as `.zip` files and auto-extracted during build.
+
 ```bash
 cd src/eQuantic.UI.Runtime
 
-# Build TypeScript runtime
-npm run build          # tsc && vite build
+# Build TypeScript runtime (using embedded Bun - auto-extracted if needed)
+# macOS:   uses src/eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin
+# Linux:   uses src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux
+# Windows: uses src/eQuantic.UI.Runtime.Win64/tools/bun/bun.exe
 
 # Run TypeScript tests
 npm run test           # vitest
