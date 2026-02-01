@@ -27,6 +27,12 @@ jobs:
       - name: Build Runtime TypeScript (using embedded Bun)
         shell: bash
         run: |
+          # Extract Bun binary if it's still zipped
+          if [ ! -f "src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux" ]; then
+            echo "Extracting Bun binary..."
+            unzip -q src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip -d src/eQuantic.UI.Runtime.Linux64/tools/bun/
+          fi
+
           BUN_PATH="src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux"
           chmod +x "$BUN_PATH"
 
