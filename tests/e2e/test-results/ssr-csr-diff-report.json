@@ -1,0 +1,164 @@
+{
+  "timestamp": "2026-02-01T21:42:10.938Z",
+  "summary": {
+    "totalButtons": 10,
+    "differences": 0,
+    "identical": 10
+  },
+  "logs": {
+    "total": 17,
+    "unique": 17,
+    "bootLogs": [
+      "[boot] Starting...",
+      "[boot] Config: {page: TodoList, version: 8de61d779a66500, ssr: true}",
+      "[boot] Config OK, continuing...",
+      "[boot] Checking __registerTheme: function",
+      "[boot] Calling __registerTheme...",
+      "[boot] __registerTheme done"
+    ],
+    "themeLogs": [
+      "[boot] Checking __registerTheme: function",
+      "[boot] Calling __registerTheme...",
+      "[__registerTheme] Called",
+      "[__registerTheme] THEME_READY: false",
+      "[__registerTheme] getRootServiceProvider: function",
+      "[__registerTheme] Registering theme: {button: Object, typography: Object}",
+      "[__registerTheme] Done, THEME_READY: true",
+      "[boot] __registerTheme done"
+    ],
+    "serviceProviderLogs": [
+      "[__registerTheme] getRootServiceProvider: function",
+      "[ServiceProvider.registerInstance] IAppTheme {button: Object, typography: Object}",
+      "[ServiceProvider.registerInstance] eQuantic.UI.Core.Theme.IAppTheme {button: Object, typography: Object}",
+      "[ServiceProvider.getService] IAppTheme → {button: Object, typography: Object}"
+    ]
+  },
+  "errors": [],
+  "differences": [],
+  "allButtons": {
+    "ssr": [
+      {
+        "index": 0,
+        "text": "⚙️ Settings (21:42)",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 border-gray-200 dark:border-zinc-800 bg-transparent hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-zinc-800 h-10 px-4 py-2 text-sm bg-white dark:bg-zinc-800 text-sm",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 border-gray-200 dark:border-zinc-800 bg-transparent hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-zinc-800 h-10 px-4 py-2 text-sm bg-white dark:bg-zinc-800 text-sm\"><span class=\"text-gray-900 dark:text-gray-100\">⚙️ Settings (21:42)</span></button>"
+      },
+      {
+        "index": 1,
+        "text": "All",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow dark:hover:bg-blue-500 h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all shadow-sm",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow dark:hover:bg-blue-500 h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all shadow-sm\"><span class=\"text-gray-900 dark:text-gray-100\">All</span></button>"
+      },
+      {
+        "index": 2,
+        "text": "Active",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all hover:bg-gray-200 dark:hover:bg-zinc-700/50",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all hover:bg-gray-200 dark:hover:bg-zinc-700/50\"><span class=\"text-gray-900 dark:text-gray-100\">Active</span></button>"
+      },
+      {
+        "index": 3,
+        "text": "Completed",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all hover:bg-gray-200 dark:hover:bg-zinc-700/50",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all hover:bg-gray-200 dark:hover:bg-zinc-700/50\"><span class=\"text-gray-900 dark:text-gray-100\">Completed</span></button>"
+      },
+      {
+        "index": 4,
+        "text": "Add",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow dark:hover:bg-blue-500 h-10 px-4 py-2 text-sm",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow dark:hover:bg-blue-500 h-10 px-4 py-2 text-sm\"><span class=\"text-gray-900 dark:text-gray-100\">Add</span></button>"
+      },
+      {
+        "index": 5,
+        "text": "Edit",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-blue-600 hover:text-blue-700",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-blue-600 hover:text-blue-700\"><span class=\"text-gray-900 dark:text-gray-100\">Edit</span></button>"
+      },
+      {
+        "index": 6,
+        "text": "Delete",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-red-600 hover:text-red-700",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-red-600 hover:text-red-700\"><span class=\"text-gray-900 dark:text-gray-100\">Delete</span></button>"
+      },
+      {
+        "index": 7,
+        "text": "Edit",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-blue-600 hover:text-blue-700",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-blue-600 hover:text-blue-700\"><span class=\"text-gray-900 dark:text-gray-100\">Edit</span></button>"
+      },
+      {
+        "index": 8,
+        "text": "Delete",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-red-600 hover:text-red-700",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-red-600 hover:text-red-700\"><span class=\"text-gray-900 dark:text-gray-100\">Delete</span></button>"
+      },
+      {
+        "index": 9,
+        "text": "Clear Completed",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 text-blue-600 underline-offset-4 hover:underline dark:text-blue-400 h-10 px-4 py-2 text-sm text-xs uppercase font-semibold tracking-wider text-red-500 hover:text-red-700",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 text-blue-600 underline-offset-4 hover:underline dark:text-blue-400 h-10 px-4 py-2 text-sm text-xs uppercase font-semibold tracking-wider text-red-500 hover:text-red-700\"><span class=\"text-gray-900 dark:text-gray-100\">Clear Completed</span></button>"
+      }
+    ],
+    "csr": [
+      {
+        "index": 0,
+        "text": "⚙️ Settings (21:42)",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 border-gray-200 dark:border-zinc-800 bg-transparent hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-zinc-800 h-10 px-4 py-2 text-sm bg-white dark:bg-zinc-800 text-sm",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 border-gray-200 dark:border-zinc-800 bg-transparent hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-zinc-800 h-10 px-4 py-2 text-sm bg-white dark:bg-zinc-800 text-sm\"><span class=\"text-gray-900 dark:text-gray-100\">⚙️ Settings (21:42)</span></button>"
+      },
+      {
+        "index": 1,
+        "text": "All",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow dark:hover:bg-blue-500 h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all shadow-sm",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow dark:hover:bg-blue-500 h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all shadow-sm\"><span class=\"text-gray-900 dark:text-gray-100\">All</span></button>"
+      },
+      {
+        "index": 2,
+        "text": "Active",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all hover:bg-gray-200 dark:hover:bg-zinc-700/50",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all hover:bg-gray-200 dark:hover:bg-zinc-700/50\"><span class=\"text-gray-900 dark:text-gray-100\">Active</span></button>"
+      },
+      {
+        "index": 3,
+        "text": "Completed",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all hover:bg-gray-200 dark:hover:bg-zinc-700/50",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all hover:bg-gray-200 dark:hover:bg-zinc-700/50\"><span class=\"text-gray-900 dark:text-gray-100\">Completed</span></button>"
+      },
+      {
+        "index": 4,
+        "text": "Add",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow dark:hover:bg-blue-500 h-10 px-4 py-2 text-sm",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow dark:hover:bg-blue-500 h-10 px-4 py-2 text-sm\"><span class=\"text-gray-900 dark:text-gray-100\">Add</span></button>"
+      },
+      {
+        "index": 5,
+        "text": "Edit",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-blue-600 hover:text-blue-700",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-blue-600 hover:text-blue-700\"><span class=\"text-gray-900 dark:text-gray-100\">Edit</span></button>"
+      },
+      {
+        "index": 6,
+        "text": "Delete",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-red-600 hover:text-red-700",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-red-600 hover:text-red-700\"><span class=\"text-gray-900 dark:text-gray-100\">Delete</span></button>"
+      },
+      {
+        "index": 7,
+        "text": "Edit",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-blue-600 hover:text-blue-700",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-blue-600 hover:text-blue-700\"><span class=\"text-gray-900 dark:text-gray-100\">Edit</span></button>"
+      },
+      {
+        "index": 8,
+        "text": "Delete",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-red-600 hover:text-red-700",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white h-10 px-4 py-2 text-sm px-2 py-1 text-xs text-red-600 hover:text-red-700\"><span class=\"text-gray-900 dark:text-gray-100\">Delete</span></button>"
+      },
+      {
+        "index": 9,
+        "text": "Clear Completed",
+        "classes": "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 text-blue-600 underline-offset-4 hover:underline dark:text-blue-400 h-10 px-4 py-2 text-sm text-xs uppercase font-semibold tracking-wider text-red-500 hover:text-red-700",
+        "html": "<button type=\"button\" class=\"inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 text-blue-600 underline-offset-4 hover:underline dark:text-blue-400 h-10 px-4 py-2 text-sm text-xs uppercase font-semibold tracking-wider text-red-500 hover:text-red-700\"><span class=\"text-gray-900 dark:text-gray-100\">Clear Completed</span></button>"
+      }
+    ]
+  }
+}

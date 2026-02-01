@@ -81,6 +81,8 @@ export class ServiceProvider {
    * Register an existing instance as singleton
    */
   registerInstance<T>(key: ServiceKey<T>, instance: T): this {
+    const keyName = typeof key === 'string' ? key : key.name;
+    console.log('[ServiceProvider.registerInstance]', keyName, instance);
     this.services.set(key, {
       factory: () => instance,
       lifetime: ServiceLifetime.Singleton,
@@ -93,11 +95,15 @@ export class ServiceProvider {
    * Get a service instance
    */
   getService<T>(key: ServiceKey<T>): T | undefined {
+    const keyName = typeof key === 'string' ? key : key.name;
+
     // Try to find in current provider
     const descriptor = this.services.get(key) as ServiceDescriptor<T> | undefined;
 
     if (descriptor) {
-      return this.resolveService(key, descriptor);
+      const result = this.resolveService(key, descriptor);
+      console.log('[ServiceProvider.getService]', keyName, '→', result);
+      return result;
     }
 
     // Try parent provider
@@ -105,6 +111,7 @@ export class ServiceProvider {
       return this.parent.getService<T>(key);
     }
 
+    console.log('[ServiceProvider.getService]', keyName, '→ undefined (not found)');
     return undefined;
   }
 

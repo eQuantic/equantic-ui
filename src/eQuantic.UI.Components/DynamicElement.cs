@@ -15,7 +15,7 @@ public class DynamicElement : HtmlElement
     public override HtmlNode Render()
     {
         var children = Children.Select(c => c.Render()).ToList();
-        
+
         if (!string.IsNullOrEmpty(InnerText))
         {
             children.Insert(0, HtmlNode.Text(InnerText));

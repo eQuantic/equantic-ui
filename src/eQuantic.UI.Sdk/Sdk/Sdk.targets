@@ -122,6 +122,25 @@
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
     </Target>
+
+    <!-- Copy runtime.js after component compilation -->
+    <Target Name="CopyEQuanticRuntime" AfterTargets="CompileEQuanticUI"
+        Condition="'$(EnableEQuanticUICompilation)' == 'true'">
+        <PropertyGroup>
+            <!-- Runtime is packaged in SDK at tools/runtime/runtime.js -->
+            <_RuntimeSourcePath>$(MSBuildThisFileDirectory)../tools/runtime/runtime.js</_RuntimeSourcePath>
+            <_RuntimeDestPath>$(MSBuildProjectDirectory)/$(EQuanticOutputPath)runtime.js</_RuntimeDestPath>
+        </PropertyGroup>
+
+        <Error Text="eQuantic.UI: Runtime not found at '$(_RuntimeSourcePath)'. The SDK package may be corrupted. Try running 'dotnet restore --force'."
+            Condition="!Exists('$(_RuntimeSourcePath)')" />
+
+        <Message Text="eQuantic.UI: Copying runtime.js to output..."
+            Importance="High" />
+
+        <Copy SourceFiles="$(_RuntimeSourcePath)" DestinationFiles="$(_RuntimeDestPath)" />
+    </Target>
+
     <Target Name="WarnNoCli" BeforeTargets="Build"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' == ''">
         <Warning

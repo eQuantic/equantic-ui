@@ -103,6 +103,10 @@ public static class TailwindExtensions
 
     // Register theme function (called by runtime after it loads)
     window.__registerTheme = function() {{
+        console.log('[__registerTheme] Called');
+        console.log('[__registerTheme] THEME_READY:', window.__EQUANTIC_THEME_READY);
+        console.log('[__registerTheme] getRootServiceProvider:', typeof getRootServiceProvider);
+
         if (window.__EQUANTIC_THEME_READY) return;
 
         const themeData = window.__EQUANTIC_THEME_DATA;
@@ -133,9 +137,11 @@ public static class TailwindExtensions
             }}
         }};
 
+        console.log('[__registerTheme] Registering theme:', theme);
         getRootServiceProvider().registerInstance('IAppTheme', theme);
         getRootServiceProvider().registerInstance('eQuantic.UI.Core.Theme.IAppTheme', theme);
         window.__EQUANTIC_THEME_READY = true;
+        console.log('[__registerTheme] Done, THEME_READY:', window.__EQUANTIC_THEME_READY);
     }};
 </script>";
         options.HtmlShell.HeadTags.Add(script);

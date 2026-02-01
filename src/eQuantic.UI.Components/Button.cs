@@ -22,14 +22,16 @@ public class Button : StatelessComponent
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
         var buttonTheme = theme?.Button;
 
-        var attrs = new Dictionary<string, string>
-        {
-            ["type"] = this.Type,
-            ["class"] = StyleBuilder.Create(buttonTheme?.Base)
+        var classValue = StyleBuilder.Create(buttonTheme?.Base)
                             .Add(buttonTheme?.GetVariant(Variant))
                             .Add(buttonTheme?.GetSize(Size))
                             .Add(ClassName)
-                            .Build()
+                            .Build();
+
+        var attrs = new Dictionary<string, string>
+        {
+            ["type"] = this.Type,
+            ["class"] = classValue
         };
 
         if (this.Disabled) attrs["disabled"] = "true";

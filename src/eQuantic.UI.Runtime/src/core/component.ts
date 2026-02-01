@@ -10,7 +10,9 @@ import { getRootServiceProvider, ServiceProvider } from './service-provider';
  * Base class for stateless components
  */
 export abstract class StatelessComponent extends Component {
-  protected serviceProvider: ServiceProvider = getRootServiceProvider();
+  protected get serviceProvider(): ServiceProvider {
+    return getRootServiceProvider();
+  }
 
   abstract build(context: RenderContext): Component;
 
@@ -33,7 +35,9 @@ export abstract class StatefulComponent extends Component {
   private _mounted = false;
   private _renderScheduled = false;
   private _renderManager: RenderManager = new RenderManager();
-  protected serviceProvider: ServiceProvider = getRootServiceProvider();
+  protected get serviceProvider(): ServiceProvider {
+    return getRootServiceProvider();
+  }
 
   abstract createState(): ComponentState;
 

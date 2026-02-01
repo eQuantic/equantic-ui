@@ -15,6 +15,9 @@
         <Content Include="Sdk\Sdk.targets" PackagePath="build\eQuantic.UI.Sdk.targets" />
         <!-- Embed Standard Components Source for Compiler -->
         <Content Include="..\eQuantic.UI.Components\**\*.cs" PackagePath="tools\StandardComponents" />
+        <!-- Embed runtime.js -->
+        <Content Include="..\eQuantic.UI.Runtime\dist\index.js" PackagePath="tools\runtime\runtime.js"
+            Condition="Exists('..\eQuantic.UI.Runtime\dist\index.js')" />
     </ItemGroup>
 
     <!-- Build tools (do not flow to consuming projects) -->

@@ -76,6 +76,7 @@ declare global {
   interface Window {
     __EQ_CONFIG?: EqConfig;
     __EQ_DEV__?: boolean;
+    __registerTheme?: () => void;
   }
 }
 
@@ -98,21 +99,30 @@ declare global {
  * ```
  */
 export async function boot(): Promise<void> {
+  // Import error overlay in development
+  if (window.__EQ_DEV__) {
+    await import('./dev/error-overlay');
+  }
+
+  const { logger } = await import('./utils/logger');
+
+  logger.debug('Starting boot process...');
   const config = window.__EQ_CONFIG;
 
   if (!config || !config.page) {
-    console.warn('[eQuantic.UI] No page configured in __EQ_CONFIG');
+    logger.warn('No page configured in __EQ_CONFIG');
     return;
   }
 
   const container = document.getElementById('app');
   if (!container) {
-    console.error('[eQuantic.UI] Container #app not found');
+    logger.error('Container #app not found');
     return;
   }
 
   // Register theme before hydration (if available)
   if (typeof (window as any).__registerTheme === 'function') {
+    logger.debug('Registering theme...');
     (window as any).__registerTheme();
   }
 
