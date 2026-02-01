@@ -126,6 +126,9 @@ jobs:
           path: .local-packages/
           merge-multiple: true
 
+      - name: Create artifacts directory for NuGet
+        run: mkdir -p artifacts/packages
+
       - name: Determine Version
         id: version
         shell: bash
