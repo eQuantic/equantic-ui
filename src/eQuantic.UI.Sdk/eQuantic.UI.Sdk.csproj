@@ -17,22 +17,10 @@
         <Content Include="..\eQuantic.UI.Components\**\*.cs" PackagePath="tools\StandardComponents" />
     </ItemGroup>
 
-    <!-- Bundle Runtimes based on OS (Meta-Packages) -->
-    <!-- Using ProjectReference for local development -->
-    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-        <ProjectReference Include="..\eQuantic.UI.Runtime.Win64\eQuantic.UI.Runtime.Win64.csproj" />
-    </ItemGroup>
-    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-        <ProjectReference
-            Include="..\eQuantic.UI.Runtime.Linux64\eQuantic.UI.Runtime.Linux64.csproj" />
-    </ItemGroup>
-    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-        <ProjectReference Include="..\eQuantic.UI.Runtime.Osx64\eQuantic.UI.Runtime.Osx64.csproj" />
-    </ItemGroup>
-
+    <!-- Build tools (do not flow to consuming projects) -->
     <ItemGroup>
         <ProjectReference Include="..\eQuantic.Build\eQuantic.Build.csproj"
-            ReferenceOutputAssembly="false" />
+            ReferenceOutputAssembly="false" PrivateAssets="All" />
     </ItemGroup>
 
     <PropertyGroup>

@@ -12,6 +12,36 @@
         <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     </PropertyGroup>
 
+    <!--
+        Determine eQuantic.UI version to use.
+        Priority:
+        1. User-specified EQuanticUIVersion property
+        2. SDK package version (extracted from MSBuildThisFileDirectory)
+        3. Fallback to wildcard (latest) - not recommended for production
+    -->
+    <PropertyGroup>
+        <_EQuanticSdkPath>$(MSBuildThisFileDirectory)..\</_EQuanticSdkPath>
+        <_EQuanticSdkNuspecPath>$(_EQuanticSdkPath)equantic.ui.sdk.nuspec</_EQuanticSdkNuspecPath>
+    </PropertyGroup>
+
+    <!-- Extract version from SDK package's own version -->
+    <PropertyGroup Condition="'$(EQuanticUIVersion)' == '' AND Exists('$(_EQuanticSdkNuspecPath)')">
+        <EQuanticUIVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_EQuanticSdkNuspecPath)')), '&lt;version&gt;(.+?)&lt;/version&gt;').Groups[1].Value)</EQuanticUIVersion>
+    </PropertyGroup>
+
+    <!-- Fallback to wildcard if version still not determined -->
+    <PropertyGroup Condition="'$(EQuanticUIVersion)' == ''">
+        <EQuanticUIVersion>*</EQuanticUIVersion>
+    </PropertyGroup>
+
+    <!-- Core eQuantic.UI packages (automatically included by SDK) -->
+    <ItemGroup>
+        <PackageReference Include="eQuantic.UI.Core" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Runtime" Version="$(EQuanticUIVersion)" />
+    </ItemGroup>
+
     <ItemGroup>
         <!-- Include all .cs files in Pages/ as UIComponents -->
         <UIComponent Include="Pages/**/*.cs" Exclude="obj/**;bin/**" />

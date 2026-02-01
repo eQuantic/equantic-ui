@@ -65,7 +65,23 @@ public static class TailwindExtensions
             },
             typography = new
             {
-                @base = theme.Typography.Base
+                @base = theme.Typography.Base,
+                variants = new Dictionary<string, string>
+                {
+                    ["primary"] = theme.Typography.GetVariant(Core.Theme.Types.Variant.Primary),
+                    ["secondary"] = theme.Typography.GetVariant(Core.Theme.Types.Variant.Secondary),
+                    ["ghost"] = theme.Typography.GetVariant(Core.Theme.Types.Variant.Ghost),
+                    ["custom"] = theme.Typography.GetVariant(Core.Theme.Types.Variant.Custom)
+                },
+                headings = new Dictionary<string, string>
+                {
+                    ["h1"] = theme.Typography.GetHeading(1),
+                    ["h2"] = theme.Typography.GetHeading(2),
+                    ["h3"] = theme.Typography.GetHeading(3),
+                    ["h4"] = theme.Typography.GetHeading(4),
+                    ["h5"] = theme.Typography.GetHeading(5),
+                    ["h6"] = theme.Typography.GetHeading(6)
+                }
             }
             // TODO: Add other theme components (Input, Checkbox, etc.) as needed
         };
@@ -78,34 +94,70 @@ public static class TailwindExtensions
         var themeJson = System.Text.Json.JsonSerializer.Serialize(themeData, jsonOptions);
 
         // Register theme with method wrappers to match C# interface
+        // Use inline script (not module) to ensure theme is available before hydration
         var script = $@"
-<script type=""module"">
-    import {{ getRootServiceProvider }} from '/_equantic/runtime.js?v={buildId}';
-    const themeData = {themeJson};
+<script>
+    // Store theme data globally to be registered after runtime loads
+    window.__EQUANTIC_THEME_DATA = {themeJson};
+    window.__EQUANTIC_THEME_READY = false;
 
-    // Add method wrappers to match IButtonTheme interface
-    const theme = {{
-        button: {{
-            base: themeData.button.base,
-            getVariant: (variant) => {{
-                const key = typeof variant === 'string' ? variant : variant.toString();
-                return themeData.button.variants[key.toLowerCase()] || themeData.button.variants.primary;
+    // Register theme function (called by runtime after it loads)
+    window.__registerTheme = function() {{
+        if (window.__EQUANTIC_THEME_READY) return;
+
+        const themeData = window.__EQUANTIC_THEME_DATA;
+
+        // Add method wrappers to match IButtonTheme interface
+        const theme = {{
+            button: {{
+                base: themeData.button.base,
+                getVariant: (variant) => {{
+                    const key = typeof variant === 'string' ? variant : variant.toString();
+                    return themeData.button.variants[key.toLowerCase()] || themeData.button.variants.primary;
+                }},
+                getSize: (size) => {{
+                    const key = typeof size === 'string' ? size : size.toString();
+                    return themeData.button.sizes[key.toLowerCase()] || themeData.button.sizes.medium;
+                }}
             }},
-            getSize: (size) => {{
-                const key = typeof size === 'string' ? size : size.toString();
-                return themeData.button.sizes[key.toLowerCase()] || themeData.button.sizes.medium;
+            typography: {{
+                base: themeData.typography.base,
+                getVariant: (variant) => {{
+                    const key = typeof variant === 'string' ? variant : variant.toString();
+                    return themeData.typography.variants[key.toLowerCase()] || '';
+                }},
+                getHeading: (level) => {{
+                    const key = `h${{level}}`;
+                    return themeData.typography.headings[key] || '';
+                }}
             }}
-        }},
-        typography: {{
-            base: themeData.typography.base
-        }}
-    }};
+        }};
 
-    getRootServiceProvider().registerInstance('IAppTheme', theme);
-    getRootServiceProvider().registerInstance('eQuantic.UI.Core.Theme.IAppTheme', theme);
+        getRootServiceProvider().registerInstance('IAppTheme', theme);
+        getRootServiceProvider().registerInstance('eQuantic.UI.Core.Theme.IAppTheme', theme);
+        window.__EQUANTIC_THEME_READY = true;
+    }};
 </script>";
         options.HtmlShell.HeadTags.Add(script);
- 
+
+        // Add dark mode support script
+        var darkModeScript = @"
+<script>
+    // Tailwind dark mode support - add 'dark' class based on system preference
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+    }
+    // Listen for changes in system preference
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (e.matches) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    });
+</script>";
+        options.HtmlShell.HeadTags.Add(darkModeScript);
+
         return app;
     }
 

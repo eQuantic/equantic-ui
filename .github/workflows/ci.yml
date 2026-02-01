@@ -6,13 +6,53 @@ on:
   pull_request:
     branches: ["main"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 1.2.3)'
+        required: false
+        default: '0.1.1'
 
 jobs:
-  build:
+  # Build TypeScript Runtime once (platform-agnostic)
+  build-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build Runtime TypeScript (using embedded Bun)
+        shell: bash
+        run: |
+          BUN_PATH="src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux"
+          chmod +x "$BUN_PATH"
+
+          cd src/eQuantic.UI.Runtime
+          "$BUN_PATH" install
+          "$BUN_PATH" x tsc && "$BUN_PATH" x vite build
+
+      - name: Upload Runtime Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-build
+          path: src/eQuantic.UI.Runtime/dist/
+
+  # Build platform-specific runtime packages
+  build-platform-runtimes:
+    needs: build-runtime
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            runtime: Linux64
+          - os: windows-latest
+            runtime: Win64
+          - os: macos-latest
+            runtime: Osx64
 
     steps:
       - uses: actions/checkout@v4
@@ -22,39 +62,123 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Download Runtime Build
+        uses: actions/download-artifact@v4
         with:
-          bun-version: latest
+          name: runtime-build
+          path: src/eQuantic.UI.Runtime/dist/
 
-      - name: Bootstrap Build (Pack Sdk)
+      - name: Determine Version
+        id: version
+        shell: bash
         run: |
-          dotnet pack src/eQuantic.UI.Core/eQuantic.UI.Core.csproj --configuration Release
-          dotnet pack src/eQuantic.UI.Components/eQuantic.UI.Components.csproj --configuration Release
-          dotnet pack src/eQuantic.UI.Server/eQuantic.UI.Server.csproj --configuration Release
-          dotnet pack src/eQuantic.UI.Tailwind/eQuantic.UI.Tailwind.csproj --configuration Release
-          dotnet pack src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj --configuration Release
-          dotnet pack src/eQuantic.UI.Runtime/eQuantic.UI.Runtime.csproj --configuration Release
-          dotnet pack src/eQuantic.UI.Runtime.Osx64/eQuantic.UI.Runtime.Osx64.csproj --configuration Release
-          dotnet pack src/eQuantic.UI.Runtime.Win64/eQuantic.UI.Runtime.Win64.csproj --configuration Release
-          dotnet pack src/eQuantic.UI.Runtime.Linux64/eQuantic.UI.Runtime.Linux64.csproj --configuration Release
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=0.1.1" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Build and Pack Runtime.${{ matrix.runtime }}
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          dotnet build src/eQuantic.UI.Runtime.${{ matrix.runtime }}/eQuantic.UI.Runtime.${{ matrix.runtime }}.csproj -c Release -p:Version=$VERSION
+          dotnet pack src/eQuantic.UI.Runtime.${{ matrix.runtime }}/eQuantic.UI.Runtime.${{ matrix.runtime }}.csproj -c Release --no-build -p:Version=$VERSION
 
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+      - name: Upload Runtime.${{ matrix.runtime }} Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-${{ matrix.runtime }}-package
+          path: src/eQuantic.UI.Runtime.${{ matrix.runtime }}/bin/Release/*.nupkg
+
+  # Build core packages (platform-agnostic)
+  build-packages:
+    needs: build-platform-runtimes
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Download Runtime Build
+        uses: actions/download-artifact@v4
+        with:
+          name: runtime-build
+          path: src/eQuantic.UI.Runtime/dist/
+
+      - name: Download Platform Runtime Packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: runtime-*-package
+          path: .local-packages/
+          merge-multiple: true
+
+      - name: Determine Version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=0.1.1" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and Pack All Packages
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+
+          # Build core packages
+          dotnet build src/eQuantic.UI.Core/eQuantic.UI.Core.csproj -c Release -p:Version=$VERSION
+          dotnet build src/eQuantic.UI.Components/eQuantic.UI.Components.csproj -c Release -p:Version=$VERSION
+          dotnet build src/eQuantic.UI.Compiler/eQuantic.UI.Compiler.csproj -c Release -p:Version=$VERSION
+          dotnet build src/eQuantic.UI.Server/eQuantic.UI.Server.csproj -c Release -p:Version=$VERSION
+          dotnet build src/eQuantic.UI.Tailwind/eQuantic.UI.Tailwind.csproj -c Release -p:Version=$VERSION
+          dotnet build src/eQuantic.UI.SDK/eQuantic.UI.Sdk.csproj -c Release -p:Version=$VERSION
+
+          # Pack meta-package Runtime (references platform-specific packages)
+          dotnet pack src/eQuantic.UI.Runtime/eQuantic.UI.Runtime.csproj -c Release -p:Version=$VERSION
+
+          # Pack core packages
+          dotnet pack src/eQuantic.UI.Core/eQuantic.UI.Core.csproj -c Release --no-build -p:Version=$VERSION
+          dotnet pack src/eQuantic.UI.Components/eQuantic.UI.Components.csproj -c Release --no-build -p:Version=$VERSION
+          dotnet pack src/eQuantic.UI.Compiler/eQuantic.UI.Compiler.csproj -c Release --no-build -p:Version=$VERSION
+          dotnet pack src/eQuantic.UI.Server/eQuantic.UI.Server.csproj -c Release --no-build -p:Version=$VERSION
+          dotnet pack src/eQuantic.UI.Tailwind/eQuantic.UI.Tailwind.csproj -c Release --no-build -p:Version=$VERSION
+          dotnet pack src/eQuantic.UI.SDK/eQuantic.UI.Sdk.csproj -c Release -p:Version=$VERSION
 
       - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal
+        run: dotnet test --configuration Release --verbosity normal
 
-      - name: Pack
-        if: matrix.os == 'ubuntu-latest' # Only pack on one OS to avoid duplicates
-        run: dotnet pack --no-build --configuration Release --output nupkgs
+      - name: Collect All NuGet Packages
+        shell: bash
+        run: |
+          mkdir -p nupkgs
+          # Copy platform runtime packages
+          cp .local-packages/*.nupkg nupkgs/
+          # Copy core packages
+          find src -name "*.nupkg" -path "*/bin/Release/*" -exec cp {} nupkgs/ \;
 
-      - name: Upload NuGet Packages
-        if: matrix.os == 'ubuntu-latest'
+      - name: Upload All NuGet Packages
         uses: actions/upload-artifact@v4
         with:
           name: nupkgs
           path: nupkgs/*.nupkg
+
+      - name: Publish to GitHub Packages
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for package in nupkgs/*.nupkg; do
+            echo "Publishing $package to GitHub Packages..."
+            dotnet nuget push "$package" \
+              --source "https://nuget.pkg.github.com/eQuantic/index.json" \
+              --api-key "$GITHUB_TOKEN" \
+              --skip-duplicate
+          done

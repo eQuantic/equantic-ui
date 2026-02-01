@@ -7,11 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="eQuantic.UI.Core" Version="0.1.1" />
-        <PackageReference Include="eQuantic.UI.Components" Version="0.1.1" />
-        <PackageReference Include="eQuantic.UI.Server" Version="0.1.1" />
+        <!-- Only UI library choice needs to be explicit -->
         <PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.1" />
-        <PackageReference Include="eQuantic.UI.Runtime" Version="0.1.1" />
     </ItemGroup>
 
 </Project>

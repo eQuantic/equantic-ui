@@ -126,10 +126,24 @@ public class ServerRenderingService : IServerRenderingService
             // Render the component to HTML
             var html = RenderComponent(component);
 
+            // Serialize state for hydration (if component is stateful)
+            string? serializedState = null;
+            if (component is StatefulComponent statefulComp)
+            {
+                var state = statefulComp.GetType()
+                    .GetProperty("State", BindingFlags.Instance | BindingFlags.NonPublic)?
+                    .GetValue(statefulComp);
+
+                if (state != null)
+                {
+                    serializedState = SerializeState(state);
+                }
+            }
+
             _logger.LogDebug("SSR completed for page: {PageType}, HTML length: {Length}",
                 pageTypeName, html.Length);
 
-            return ServerRenderResult.Ok(html, metadata);
+            return ServerRenderResult.Ok(html, metadata, serializedState);
         }
         catch (Exception ex)
         {
@@ -183,5 +197,27 @@ public class ServerRenderingService : IServerRenderingService
         }
 
         throw new InvalidOperationException($"Cannot create instance of component type: {componentType.Name}");
+    }
+
+    /// <summary>
+    /// Serializes component state to JSON for client-side hydration.
+    /// </summary>
+    private string? SerializeState(object state)
+    {
+        try
+        {
+            var options = new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            };
+
+            return System.Text.Json.JsonSerializer.Serialize(state, options);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to serialize state for hydration");
+            return null;
+        }
     }
 }

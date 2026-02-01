@@ -53,12 +53,13 @@ public interface IServerRenderingService
 /// </summary>
 public sealed class ServerRenderResult
 {
-    private ServerRenderResult(bool success, string? html, MetadataCollection? metadata, string? error)
+    private ServerRenderResult(bool success, string? html, MetadataCollection? metadata, string? error, string? serializedState)
     {
         Success = success;
         Html = html;
         Metadata = metadata;
         Error = error;
+        SerializedState = serializedState;
     }
 
     /// <summary>
@@ -82,17 +83,23 @@ public sealed class ServerRenderResult
     public string? Error { get; }
 
     /// <summary>
+    /// Serialized state for client-side hydration (JSON).
+    /// </summary>
+    public string? SerializedState { get; }
+
+    /// <summary>
     /// Creates a successful render result.
     /// </summary>
-    public static ServerRenderResult Ok(string html, MetadataCollection? metadata = null) => new(true, html, metadata, null);
+    public static ServerRenderResult Ok(string html, MetadataCollection? metadata = null, string? serializedState = null) =>
+        new(true, html, metadata, null, serializedState);
 
     /// <summary>
     /// Creates a failed render result.
     /// </summary>
-    public static ServerRenderResult Fail(string error) => new(false, null, null, error);
+    public static ServerRenderResult Fail(string error) => new(false, null, null, error, null);
 
     /// <summary>
     /// Creates a result indicating SSR is not available for this page.
     /// </summary>
-    public static ServerRenderResult NotAvailable() => new(false, null, null, "SSR not available");
+    public static ServerRenderResult NotAvailable() => new(false, null, null, "SSR not available", null);
 }

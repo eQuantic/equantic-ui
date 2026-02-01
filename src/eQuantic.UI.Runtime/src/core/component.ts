@@ -60,6 +60,16 @@ export abstract class StatefulComponent extends Component {
           (this._state as any)._setComponent(this);
         }
       }
+
+      // Hydrate state from SSR if available
+      if (typeof window !== 'undefined' && (window as any).__INITIAL_STATE__) {
+        const initialState = (window as any).__INITIAL_STATE__;
+        // Copy all properties from initial state to current state
+        Object.assign(this._state, initialState);
+        // Clear initial state to prevent reuse
+        delete (window as any).__INITIAL_STATE__;
+      }
+
       this._state.onInit();
     }
     return this._state;

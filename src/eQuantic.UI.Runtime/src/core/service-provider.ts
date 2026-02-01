@@ -215,6 +215,11 @@ export function resetServiceProvider(): void {
   rootServiceProvider = null;
 }
 
+// Expose getRootServiceProvider globally for inline scripts (theme registration)
+if (typeof window !== 'undefined') {
+  (window as any).getRootServiceProvider = getRootServiceProvider;
+}
+
 /**
  * Service collection builder (fluent API)
  */

@@ -5,6 +5,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add UI services
 builder.Services.AddSingleton<TodoListApp.Services.ITodoService, TodoListApp.Services.TodoService>();
+
+// Add Tailwind theme services (must be before AddUI for SSR)
+builder.Services.AddTailwind();
+
 builder.Services.AddUI(options =>
 {
     options.ScanAssembly(typeof(Program).Assembly)

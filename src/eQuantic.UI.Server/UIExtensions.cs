@@ -200,6 +200,7 @@ public static class UIExtensions
         // Attempt SSR if page name is provided and SSR is enabled
         var ssrContent = "<div class=\"loading\">Loading...</div>";
         var ssrEnabled = false;
+        string? serializedState = null;
 
         if (pageName != null && options.EnableSsr)
         {
@@ -213,13 +214,14 @@ public static class UIExtensions
                     {
                         ssrContent = result.Html;
                         ssrEnabled = true;
+                        serializedState = result.SerializedState;
 
                         // Merge metadata from SSR
                         if (result.Metadata != null)
                         {
                             if (!string.IsNullOrEmpty(result.Metadata.Title))
                                 metadata.Title = result.Metadata.Title;
-                            
+
                             foreach(var tag in result.Metadata.Tags)
                                 metadata.AddOrUpdate(tag);
                         }
@@ -289,6 +291,7 @@ public static class UIExtensions
     <!-- eQuantic.UI Runtime (Static Asset) -->
     <script>
         window.__EQ_CONFIG = {configJson};
+        {(serializedState != null ? $"window.__INITIAL_STATE__ = {serializedState};" : "")}
     </script>
     <script type=""module"">
         import {{ boot }} from ""@equantic/runtime"";

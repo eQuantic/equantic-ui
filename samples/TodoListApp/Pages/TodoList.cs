@@ -83,7 +83,7 @@ public class TodoListState : ComponentState<TodoList>
     private List<Todo> _todos = new();
     private string _newTodoTitle = "";
     private TodoFilter _currentFilter = TodoFilter.All;
-    
+
     // Modal State
     private bool _isEditing = false;
     private Guid _editingId;
@@ -92,9 +92,32 @@ public class TodoListState : ComponentState<TodoList>
     // Drawer State
     private bool _isDrawerOpen = false;
 
+    public override void OnInit()
+    {
+        // OnInit is called during SSR on the server AND during client initialization
+        // Load data ONLY if we're on the server (not hydrating on client)
+        // We detect this by checking if _todos is empty - the client will hydrate from __INITIAL_STATE__
+        if (_todos.Count == 0)
+        {
+            try
+            {
+                _todos = Component.GetTodos().GetAwaiter().GetResult();
+            }
+            catch
+            {
+                // Ignore errors during client-side init - data will load in OnMount
+            }
+        }
+    }
+
     public override void OnMount()
     {
-        _ = LoadTodos();
+        // OnMount is called ONLY on the client after DOM is ready
+        // Only load if we don't have data (means we're not hydrating from SSR)
+        if (_todos.Count == 0)
+        {
+            _ = LoadTodos();
+        }
     }
 
     private async Task LoadTodos()

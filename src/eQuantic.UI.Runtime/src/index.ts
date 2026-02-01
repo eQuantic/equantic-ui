@@ -111,6 +111,11 @@ export async function boot(): Promise<void> {
     return;
   }
 
+  // Register theme before hydration (if available)
+  if (typeof (window as any).__registerTheme === 'function') {
+    (window as any).__registerTheme();
+  }
+
   try {
     // Import the page component module dynamically
     // The version query string ensures cache busting on new builds
