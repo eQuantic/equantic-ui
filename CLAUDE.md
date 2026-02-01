@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git Commit Guidelines
+
+**CRITICAL**: NEVER add co-authorship lines to commit messages. Do NOT include:
+
+```text
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+```
+
+All commits must be authored solely by the repository owner without any co-author attribution.
+
 ## Project Overview
 
 **eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a minimal runtime (<30KB).
