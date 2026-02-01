@@ -170,7 +170,7 @@ jobs:
         run: |
           for test_project in tests/**/*.csproj; do
             echo "Testing $test_project..."
-            dotnet test "$test_project" --configuration Release --verbosity normal --no-build
+            dotnet test "$test_project" --configuration Release --verbosity normal
           done
 
       - name: Collect All NuGet Packages
