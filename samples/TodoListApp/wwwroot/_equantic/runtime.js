@@ -1358,26 +1358,24 @@ function createApp(ComponentClass, selector) {
   return component;
 }
 async function boot() {
-  console.log("[boot] Starting...");
+  if (window.__EQ_DEV__) {
+    await import("./error-overlay-CTXK214B.js");
+  }
+  const { logger } = await import("./logger-p0dJrFBM.js");
+  logger.debug("Starting boot process...");
   const config = window.__EQ_CONFIG;
-  console.log("[boot] Config:", config);
   if (!config || !config.page) {
-    console.warn("[eQuantic.UI] No page configured in __EQ_CONFIG");
+    logger.warn("No page configured in __EQ_CONFIG");
     return;
   }
-  console.log("[boot] Config OK, continuing...");
   const container = document.getElementById("app");
   if (!container) {
-    console.error("[eQuantic.UI] Container #app not found");
+    logger.error("Container #app not found");
     return;
   }
-  console.log("[boot] Checking __registerTheme:", typeof window.__registerTheme);
   if (typeof window.__registerTheme === "function") {
-    console.log("[boot] Calling __registerTheme...");
+    logger.debug("Registering theme...");
     window.__registerTheme();
-    console.log("[boot] __registerTheme done");
-  } else {
-    console.warn("[boot] __registerTheme not found!");
   }
   try {
     const modulePath = `/_equantic/${config.page}.js?v=${config.version}`;

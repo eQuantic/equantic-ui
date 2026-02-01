@@ -291,6 +291,7 @@ public static class UIExtensions
     <!-- eQuantic.UI Runtime (Static Asset) -->
     <script>
         window.__EQ_CONFIG = {configJson};
+        window.__EQ_DEV__ = {(context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>().IsDevelopment() ? "true" : "false")};
         {(serializedState != null ? $"window.__INITIAL_STATE__ = {serializedState};" : "")}
     </script>
     <script type=""module"">
