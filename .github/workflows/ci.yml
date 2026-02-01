@@ -167,7 +167,7 @@ jobs:
           dotnet pack src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj -c Release -p:Version=$VERSION
 
       - name: Test
-        run: dotnet test --configuration Release --verbosity normal
+        run: dotnet test tests/**/*.csproj --configuration Release --verbosity normal
 
       - name: Collect All NuGet Packages
         shell: bash
