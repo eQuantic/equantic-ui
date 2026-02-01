@@ -167,7 +167,11 @@ jobs:
           dotnet pack src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj -c Release -p:Version=$VERSION
 
       - name: Test
-        run: dotnet test tests/**/*.csproj --configuration Release --verbosity normal
+        run: |
+          for test_project in tests/**/*.csproj; do
+            echo "Testing $test_project..."
+            dotnet test "$test_project" --configuration Release --verbosity normal --no-build
+          done
 
       - name: Collect All NuGet Packages
         shell: bash
