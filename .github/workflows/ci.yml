@@ -127,7 +127,10 @@ jobs:
           merge-multiple: true
 
       - name: Create artifacts directory for NuGet
-        run: mkdir -p artifacts/packages
+        run: |
+          mkdir -p artifacts/packages
+          # Copy platform runtime packages to artifacts for NuGet resolution
+          cp .local-packages/*.nupkg artifacts/packages/
 
       - name: Determine Version
         id: version
