@@ -6,7 +6,7 @@
         <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
         <!-- Metadata -->
         <PackageId>eQuantic.UI.Runtime.Linux64</PackageId>
-        <Version>0.1.1</Version>
+        <Version>0.1.2</Version>
         <Description>eQuantic UI Runtime for Linux (x64).</Description>
         <Authors>eQuantic Tech</Authors>
     </PropertyGroup>

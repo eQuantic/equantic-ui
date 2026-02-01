@@ -62,15 +62,26 @@ export abstract class StatefulComponent extends Component {
       }
 
       // Hydrate state from SSR if available
-      if (typeof window !== 'undefined' && (window as any).__INITIAL_STATE__) {
+      let hydrated = false;
+      if (typeof window !== 'undefined' && (window as any).__INITIAL_STATE__ && this._state) {
         const initialState = (window as any).__INITIAL_STATE__;
-        // Copy all properties from initial state to current state
-        Object.assign(this._state, initialState);
+
+        // Copy data properties from SSR state to client state
+        // Server preserves original field names (including underscore prefix)
+        Object.keys(initialState).forEach((key) => {
+          if (this._state && typeof initialState[key] !== 'function' && key in this._state) {
+            (this._state as unknown as Record<string, unknown>)[key] = initialState[key];
+          }
+        });
         // Clear initial state to prevent reuse
         delete (window as any).__INITIAL_STATE__;
+        hydrated = true;
       }
 
-      this._state.onInit();
+      // Only call onInit if we didn't hydrate (client-only render or SSR on server)
+      if (!hydrated) {
+        this._state.onInit();
+      }
     }
     return this._state;
   }
@@ -82,27 +93,32 @@ export abstract class StatefulComponent extends Component {
       serviceProvider: this.serviceProvider,
     };
     this.state._context = context;
+
     const component = this.state.build(context);
     return component.render();
   }
 
   mount(container: HTMLElement): void {
-    const node = this.render();
-
     // Check if we should hydrate (SSR content exists)
     if (this._renderManager.canHydrate(container)) {
+      // For hydration, render to get the virtual DOM for event attachment
+      const node = this.render();
       const result = this._renderManager.hydrate(node, container);
       if (result.success) {
         console.debug(
           `[eQuantic.UI] Hydrated ${this.constructor.name} with ${result.attachedListeners} event listeners`,
         );
       }
+      // After successful hydration, set this._mounted BEFORE onMount to prevent render loops
+      this._mounted = true;
+      this.state.onMount();
     } else {
+      // For client-only rendering, render first then mount
+      const node = this.render();
       this._renderManager.mount(node, container);
+      this._mounted = true;
+      this.state.onMount();
     }
-
-    this._mounted = true;
-    this.state.onMount();
   }
 
   _scheduleRender(): void {

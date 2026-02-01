@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
@@ -43,6 +44,39 @@ public class EnumStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)node;
         var member = memberAccess.Name.Identifier.Text;
 
+        // Try to get the actual enum value from semantic model
+        var symbol = context.SemanticHelper.GetSymbol(node);
+
+        // Check if this is an enum field
+        if (symbol is IFieldSymbol fieldSymbol &&
+            fieldSymbol.ContainingType?.TypeKind == TypeKind.Enum)
+        {
+            // Try to get constant value
+            if (fieldSymbol.HasConstantValue)
+            {
+                return fieldSymbol.ConstantValue?.ToString() ?? "0";
+            }
+
+            // Fallback: calculate enum value by position (most enums start at 0 and increment)
+            var enumType = fieldSymbol.ContainingType;
+            var members = enumType.GetMembers().OfType<IFieldSymbol>()
+                .Where(f => f.IsConst && f.HasConstantValue)
+                .ToList();
+
+            var index = members.FindIndex(m => m.Name == member);
+            if (index >= 0)
+            {
+                // Try to get the actual constant value
+                var enumMember = members[index];
+                if (enumMember.ConstantValue != null)
+                {
+                    return enumMember.ConstantValue.ToString() ?? index.ToString();
+                }
+                return index.ToString();
+            }
+        }
+
+        // Fallback to string (for enums used as string values like CSS classes)
         return $"'{ToCamelCase(member)}'";
     }
 

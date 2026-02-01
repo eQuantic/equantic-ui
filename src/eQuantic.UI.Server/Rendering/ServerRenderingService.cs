@@ -206,13 +206,62 @@ public class ServerRenderingService : IServerRenderingService
     {
         try
         {
+            // Use reflection to extract all fields (including private) into a dictionary
+            var stateDict = new Dictionary<string, object?>();
+            var stateType = state.GetType();
+
+            var fields = stateType.GetFields(
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+
+            foreach (var field in fields)
+            {
+                // Skip readonly fields like Component getter
+                if (field.IsInitOnly) continue;
+
+                // Skip fields that start with '<' (compiler-generated backing fields)
+                if (field.Name.StartsWith("<")) continue;
+
+                var value = field.GetValue(state);
+
+                // Skip null values and functions
+                if (value != null && !value.GetType().IsSubclassOf(typeof(Delegate)))
+                {
+                    // Convert enums to lowercase string (matching JS compilation)
+                    if (value.GetType().IsEnum)
+                    {
+                        var enumName = value.ToString() ?? "";
+                        _logger.LogInformation($"[SSR Enum] Converting enum {field.Name}: {value} ({value.GetType().Name}) -> '{enumName}'");
+
+                        if (!string.IsNullOrEmpty(enumName))
+                        {
+                            var jsEnumValue = char.ToLowerInvariant(enumName[0]) + enumName.Substring(1);
+                            _logger.LogInformation($"[SSR Enum] Final value: '{jsEnumValue}'");
+                            stateDict[field.Name] = jsEnumValue;
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"[SSR Enum] Empty enum name for {field.Name}, using '0'");
+                            stateDict[field.Name] = "0";
+                        }
+                    }
+                    else
+                    {
+                        stateDict[field.Name] = value;
+                    }
+                }
+            }
+
             var options = new System.Text.Json.JsonSerializerOptions
             {
                 PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
                 WriteIndented = false
             };
 
-            return System.Text.Json.JsonSerializer.Serialize(state, options);
+            var json = System.Text.Json.JsonSerializer.Serialize(stateDict, options);
+            _logger.LogInformation($"[SSR Hydration] Serialized state: {json}");
+            return json;
         }
         catch (Exception ex)
         {

@@ -1,4 +1,4 @@
-<Project Sdk="eQuantic.UI.Sdk/0.1.1">
+<Project Sdk="eQuantic.UI.Sdk/0.1.2">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -8,7 +8,7 @@
 
     <ItemGroup>
         <!-- Only UI library choice needs to be explicit -->
-        <PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.1" />
+        <PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.2" />
     </ItemGroup>
 
 </Project>

@@ -29,8 +29,12 @@ public class ServiceProviderStrategy : IConversionStrategy
         if (symbol != null)
         {
             var containingType = symbol.ContainingType.ToDisplayString();
-            return containingType.Contains("IServiceProvider") || 
-                   containingType.Contains("ServiceProvider");
+
+            // Check both the short name and full name
+            return containingType.Contains("IServiceProvider") ||
+                   containingType.Contains("ServiceProvider") ||
+                   containingType == "eQuantic.UI.Core.RenderContext" ||
+                   containingType.EndsWith(".RenderContext");
         }
 
         // Allow fallback - these method names are specific enough
@@ -44,15 +48,25 @@ public class ServiceProviderStrategy : IConversionStrategy
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var methodName = memberAccess.Name.Identifier.Text;
         var jsMethodName = methodName == "GetRequiredService" ? "getService" : ToCamelCase(methodName);
-        
+
         // Check if generic: GetService<T>()
-        if (memberAccess.Name is GenericNameSyntax genericName && 
+        if (memberAccess.Name is GenericNameSyntax genericName &&
             genericName.TypeArgumentList.Arguments.Count > 0)
         {
-            var typeName = genericName.TypeArgumentList.Arguments[0].ToString();
-            return $"{caller}.{jsMethodName}('{typeName}')";
+            var typeArg = genericName.TypeArgumentList.Arguments[0];
+            var typeName = typeArg.ToString();
+
+            // Extract the simple interface name (e.g., IAppTheme from eQuantic.UI.Core.Theme.IAppTheme)
+            var simpleTypeName = typeName;
+            if (typeName.Contains('.'))
+            {
+                var parts = typeName.Split('.');
+                simpleTypeName = parts[^1]; // Get last part
+            }
+
+            return $"{caller}.{jsMethodName}('{simpleTypeName}')";
         }
-        
+
         // Check for typeof(T) argument: GetService(typeof(T))
         var args = invocation.ArgumentList.Arguments;
         if (args.Count > 0)
@@ -61,13 +75,24 @@ public class ServiceProviderStrategy : IConversionStrategy
             if (argExpr.StartsWith("typeof("))
             {
                 var typeName = argExpr.Substring(7, argExpr.Length - 8);
-                return $"{caller}.{jsMethodName}('{typeName}')";
+
+                // Extract simple name
+                var simpleTypeName = typeName;
+                if (typeName.Contains('.'))
+                {
+                    var parts = typeName.Split('.');
+                    simpleTypeName = parts[^1];
+                }
+
+                return $"{caller}.{jsMethodName}('{simpleTypeName}')";
             }
-            
+
             var arg = context.Converter.ConvertExpression(args[0].Expression);
             return $"{caller}.{jsMethodName}({arg})";
         }
-        
+
+        // If no generic type or argument, this is an error - we should warn
+        // But fallback to empty call for backwards compatibility
         return $"{caller}.{jsMethodName}()";
     }
 

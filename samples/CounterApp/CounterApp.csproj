@@ -1,4 +1,4 @@
-<Project Sdk="eQuantic.UI.Sdk/0.1.1">
+<Project Sdk="eQuantic.UI.Sdk/0.1.2">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
