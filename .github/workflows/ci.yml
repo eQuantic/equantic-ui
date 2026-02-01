@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (e.g., 1.2.3)'
+        description: 'Version to build (leave empty to use Directory.Build.props)'
         required: false
-        default: '0.1.1'
+        default: ''
 
 jobs:
   # Build TypeScript Runtime once (platform-agnostic)
@@ -85,7 +85,10 @@ jobs:
           if [ "${{ github.event.inputs.version }}" != "" ]; then
             echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
-            echo "VERSION=0.1.1" >> $GITHUB_OUTPUT
+            # Read version from Directory.Build.props (single source of truth)
+            VERSION=$(grep -o '<Version>[^<]*</Version>' Directory.Build.props | sed 's/<Version>//;s/<\/Version>//')
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+            echo "Using version from Directory.Build.props: $VERSION"
           fi
 
       - name: Build and Pack Runtime.${{ matrix.runtime }}
@@ -139,7 +142,10 @@ jobs:
           if [ "${{ github.event.inputs.version }}" != "" ]; then
             echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
-            echo "VERSION=0.1.1" >> $GITHUB_OUTPUT
+            # Read version from Directory.Build.props (single source of truth)
+            VERSION=$(grep -o '<Version>[^<]*</Version>' Directory.Build.props | sed 's/<Version>//;s/<\/Version>//')
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+            echo "Using version from Directory.Build.props: $VERSION"
           fi
 
       - name: Build and Pack All Packages
