@@ -28,13 +28,17 @@ jobs:
         shell: bash
         run: |
           # Extract Bun binary if it's still zipped
-          if [ ! -f "src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux" ]; then
+          BUN_PATH="$GITHUB_WORKSPACE/src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux"
+
+          if [ ! -f "$BUN_PATH" ]; then
             echo "Extracting Bun binary..."
-            unzip -q src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip -d src/eQuantic.UI.Runtime.Linux64/tools/bun/
-            chmod +x src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux
+            unzip -q "$GITHUB_WORKSPACE/src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip" \
+                  -d "$GITHUB_WORKSPACE/src/eQuantic.UI.Runtime.Linux64/tools/bun/"
+            chmod +x "$BUN_PATH"
           fi
 
-          BUN_PATH="src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux"
+          echo "Using Bun at: $BUN_PATH"
+          ls -lh "$BUN_PATH"
 
           cd src/eQuantic.UI.Runtime
           "$BUN_PATH" install
