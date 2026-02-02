@@ -65,20 +65,18 @@ cd MyApp
 Update your `.csproj`:
 
 ```xml
-<Project Sdk="eQuantic.UI.Sdk/0.1.1">
+<Project Sdk="eQuantic.UI.Sdk/0.1.2">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="eQuantic.UI.Core" Version="0.1.1" />
-    <PackageReference Include="eQuantic.UI.Components" Version="0.1.1" />
-    <PackageReference Include="eQuantic.UI.Server" Version="0.1.1" />
-  </ItemGroup>
+  <!-- No manual package references needed - SDK includes everything automatically -->
 
 </Project>
 ```
+
+> The SDK automatically includes `eQuantic.UI.Core`, `eQuantic.UI.Components`, `eQuantic.UI.Server`, and `eQuantic.UI.Runtime` packages.
 
 ### 3. Create your first component
 
@@ -359,7 +357,7 @@ new Button
 First-class Tailwind support with automatic CSS generation:
 
 ```xml
-<PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.1" />
+<PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.2" />
 ```
 
 ```csharp
@@ -390,13 +388,14 @@ new Container
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                        RUNTIME (<30KB)                           │
+│                        RUNTIME (~49KB)                           │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │   • Virtual DOM with keyed reconciliation                       │
 │   • Event delegation and state management                       │
 │   • Server Actions RPC bridge                                   │
 │   • SSR hydration support                                       │
+│   • Development tools (logger, error overlay)                   │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -409,6 +408,23 @@ The entire toolchain is embedded in NuGet packages:
 - **No npm** packages to manage
 - **No global tools** to install
 - Just `dotnet build` — everything works
+
+### Self-Contained Package Architecture
+
+eQuantic.UI uses a **self-contained package architecture** where each package manages its own artifacts:
+
+- **Runtime Package** (`eQuantic.UI.Runtime`) contains `runtime.js` (~49KB)
+- **Components Package** (`eQuantic.UI.Components`) contains C# source for type resolution
+- **SDK Package** (`eQuantic.UI.Sdk`) orchestrates build via NuGet references
+
+This design ensures:
+
+- ✅ **No tight coupling** between packages
+- ✅ **Independent versioning** (use Runtime 0.1.3 with SDK 0.1.2)
+- ✅ **No artifact duplication** across packages
+- ✅ **Flexible updates** without republishing all packages
+
+[Learn more about the package architecture →](https://github.com/equantic/equantic-ui/wiki/PackageArchitecture)
 
 ---
 
@@ -452,7 +468,11 @@ src/
 
 ## Documentation
 
-- [Build Flow](https://github.com/equantic/equantic-ui/wiki/BuildFlow) - How the compilation pipeline works
+- [📚 Wiki Home](https://github.com/equantic/equantic-ui/wiki) - Complete documentation
+- [🏗️ Package Architecture](https://github.com/equantic/equantic-ui/wiki/PackageArchitecture) - Self-contained package design
+- [🔨 Build Flow](https://github.com/equantic/equantic-ui/wiki/BuildFlow) - How the compilation pipeline works
+- [⚡ Runtime](https://github.com/equantic/equantic-ui/wiki/Runtime) - Virtual DOM and browser runtime
+- [🐛 Debugging Tools](https://github.com/equantic/equantic-ui/wiki/Debug) - Professional debugging with logger and error overlay
 - [CLAUDE.md](CLAUDE.md) - Technical reference for contributors
 
 ---
