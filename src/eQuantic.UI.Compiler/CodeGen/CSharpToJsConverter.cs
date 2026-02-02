@@ -58,6 +58,9 @@ public class CSharpToJsConverter
 
     private void RegisterStrategies()
     {
+        // Compile-Time Evaluation Strategy (Highest Priority - 100)
+        _strategyRegistry.Register<CompileTimeEvaluatedExpressionStrategy>();
+
         _strategyRegistry.Register<AnyStrategy>();
         _strategyRegistry.Register<EnumStrategy>();
         _strategyRegistry.Register<EnumMethodStrategy>();

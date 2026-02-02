@@ -240,11 +240,7 @@ public class TodoListState : ComponentState<TodoList>
 
         return new Box
         {
-            ClassName = TW.Size.MinHScreen +
-                        TW.Bg.GradientToBr +
-                        TW.From.Blue50 + TW.Via.Indigo50 + TW.To.Purple50 +
-                        TW.Dark(TW.From.Zinc950) + TW.Dark(TW.Via.Zinc900) + TW.Dark(TW.To.Zinc950) +
-                        TW.P(8) + TW.Display.Grid + TW.Grid.PlaceItemsCenter,
+            ClassName = "min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 p-8 grid place-items-center",
             Children = {
                 // Floating Header with Badge
                 new Box {

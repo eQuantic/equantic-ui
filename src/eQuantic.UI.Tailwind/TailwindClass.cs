@@ -1,11 +1,14 @@
 #nullable enable
 
+using eQuantic.UI.Core.Styling;
+
 namespace eQuantic.UI.Tailwind;
 
 /// <summary>
 /// Represents a Tailwind CSS class with type safety and implicit string conversion.
 /// Supports combining multiple classes with the + operator.
 /// </summary>
+[CompileTimeEvaluate]
 public readonly struct TailwindClass
 {
     private readonly string _value;
@@ -67,6 +70,7 @@ public readonly struct TailwindClass
 /// <summary>
 /// Conditional Tailwind class that only includes the class if the condition is true.
 /// </summary>
+[CompileTimeEvaluate]
 public readonly struct ConditionalTailwindClass
 {
     private readonly string _value;

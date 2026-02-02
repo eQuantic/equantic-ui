@@ -110,6 +110,8 @@ public static partial class TW
         // Blue scale
         public static readonly TailwindClass Blue50 = new("bg-blue-50");
         public static readonly TailwindClass Blue100 = new("bg-blue-100");
+        public static readonly TailwindClass Blue200 = new("bg-blue-200");
+        public static readonly TailwindClass Blue400 = new("bg-blue-400");
         public static readonly TailwindClass Blue500 = new("bg-blue-500");
         public static readonly TailwindClass Blue600 = new("bg-blue-600");
         public static readonly TailwindClass Blue700 = new("bg-blue-700");
@@ -127,13 +129,19 @@ public static partial class TW
         public static readonly TailwindClass Red50 = new("bg-red-50");
         public static readonly TailwindClass Red100 = new("bg-red-100");
         public static readonly TailwindClass Green50 = new("bg-green-50");
+        public static readonly TailwindClass Green100 = new("bg-green-100");
+        public static readonly TailwindClass Green200 = new("bg-green-200");
         public static readonly TailwindClass Green600 = new("bg-green-600");
+        public static readonly TailwindClass Green800 = new("bg-green-800");
 
         // Gradients
         public static readonly TailwindClass GradientToR = new("bg-gradient-to-r");
         public static readonly TailwindClass GradientToL = new("bg-gradient-to-l");
         public static readonly TailwindClass GradientToBr = new("bg-gradient-to-br");
         public static readonly TailwindClass GradientToBl = new("bg-gradient-to-bl");
+
+        // Clip
+        public static readonly TailwindClass ClipText = new("bg-clip-text");
     }
 
     /// <summary>
@@ -142,13 +150,26 @@ public static partial class TW
     public static class Text
     {
         // Colors
+        public static readonly TailwindClass Transparent = new("text-transparent");
         public static readonly TailwindClass White = new("text-white");
+        public static readonly TailwindClass Gray300 = new("text-gray-300");
         public static readonly TailwindClass Gray400 = new("text-gray-400");
+        public static readonly TailwindClass Gray500 = new("text-gray-500");
         public static readonly TailwindClass Gray600 = new("text-gray-600");
         public static readonly TailwindClass Gray700 = new("text-gray-700");
+        public static readonly TailwindClass Gray800 = new("text-gray-800");
         public static readonly TailwindClass Gray900 = new("text-gray-900");
+        public static readonly TailwindClass Blue400 = new("text-blue-400");
         public static readonly TailwindClass Blue600 = new("text-blue-600");
+        public static readonly TailwindClass Blue700 = new("text-blue-700");
+        public static readonly TailwindClass Purple400 = new("text-purple-400");
         public static readonly TailwindClass Purple600 = new("text-purple-600");
+        public static readonly TailwindClass Red400 = new("text-red-400");
+        public static readonly TailwindClass Red600 = new("text-red-600");
+        public static readonly TailwindClass Green300 = new("text-green-300");
+        public static readonly TailwindClass Green400 = new("text-green-400");
+        public static readonly TailwindClass Green600 = new("text-green-600");
+        public static readonly TailwindClass Green800 = new("text-green-800");
 
         // Sizes
         public static readonly TailwindClass Xs = new("text-xs");
@@ -169,6 +190,9 @@ public static partial class TW
         public static readonly TailwindClass Uppercase = new("uppercase");
         public static readonly TailwindClass Lowercase = new("lowercase");
         public static readonly TailwindClass Capitalize = new("capitalize");
+
+        // Decoration
+        public static readonly TailwindClass LineThrough = new("line-through");
     }
 
     /// <summary>
@@ -195,8 +219,13 @@ public static partial class TW
     public static class Border
     {
         public static readonly TailwindClass Base = new("border");
-        public static readonly TailwindClass Border2 = new("border-2");
-        public static readonly TailwindClass Border4 = new("border-4");
+        public static readonly TailwindClass B2 = new("border-2");
+        public static readonly TailwindClass B4 = new("border-4");
+        public static readonly TailwindClass T = new("border-t");
+        public static readonly TailwindClass B = new("border-b");
+        public static readonly TailwindClass L = new("border-l");
+        public static readonly TailwindClass R = new("border-r");
+        public static readonly TailwindClass None = new("border-none");
 
         public static readonly TailwindClass Transparent = new("border-transparent");
         public static readonly TailwindClass Gray200 = new("border-gray-200");
@@ -259,7 +288,43 @@ public static partial class TW
     {
         public static readonly TailwindClass Scale105 = new("scale-105");
         public static readonly TailwindClass Scale110 = new("scale-110");
+        public static readonly TailwindClass Scale125 = new("scale-125");
+        public static readonly TailwindClass Scale150 = new("scale-150");
         public static readonly TailwindClass Rotate90 = new("rotate-90");
+    }
+
+    /// <summary>
+    /// Tracking utilities
+    /// </summary>
+    public static class Tracking
+    {
+        public static readonly TailwindClass Tighter = new("tracking-tighter");
+        public static readonly TailwindClass Tight = new("tracking-tight");
+        public static readonly TailwindClass Normal = new("tracking-normal");
+        public static readonly TailwindClass Wide = new("tracking-wide");
+        public static readonly TailwindClass Wider = new("tracking-wider");
+        public static readonly TailwindClass Widest = new("tracking-widest");
+    }
+
+    /// <summary>
+    /// Ring utilities (focus rings)
+    /// </summary>
+    public static class Ring
+    {
+        public static readonly TailwindClass R0 = new("ring-0");
+        public static readonly TailwindClass R1 = new("ring-1");
+        public static readonly TailwindClass R2 = new("ring-2");
+        public static readonly TailwindClass R4 = new("ring-4");
+        public static readonly TailwindClass Base = new("ring");
+    }
+
+    /// <summary>
+    /// Placeholder utilities
+    /// </summary>
+    public static class Placeholder
+    {
+        public static readonly TailwindClass Gray400 = new("placeholder:text-gray-400");
+        public static readonly TailwindClass Gray600 = new("placeholder:text-gray-600");
     }
 
     /// <summary>
@@ -352,14 +417,21 @@ public static partial class TW
     /// </summary>
     public static class From
     {
+        public static readonly TailwindClass White = new("from-white");
+        public static readonly TailwindClass Gray50 = new("from-gray-50");
+        public static readonly TailwindClass Gray100 = new("from-gray-100");
+        public static readonly TailwindClass Gray300 = new("from-gray-300");
+        public static readonly TailwindClass Gray700 = new("from-gray-700");
+        public static readonly TailwindClass Gray900 = new("from-gray-900");
         public static readonly TailwindClass Blue50 = new("from-blue-50");
+        public static readonly TailwindClass Blue400 = new("from-blue-400");
         public static readonly TailwindClass Blue600 = new("from-blue-600");
         public static readonly TailwindClass Blue700 = new("from-blue-700");
         public static readonly TailwindClass Indigo50 = new("from-indigo-50");
         public static readonly TailwindClass Purple50 = new("from-purple-50");
         public static readonly TailwindClass Purple600 = new("from-purple-600");
         public static readonly TailwindClass Purple700 = new("from-purple-700");
-        public static readonly TailwindClass White = new("from-white");
+        public static readonly TailwindClass Zinc800 = new("from-zinc-800");
         public static readonly TailwindClass Zinc900 = new("from-zinc-900");
         public static readonly TailwindClass Zinc950 = new("from-zinc-950");
     }
@@ -373,12 +445,18 @@ public static partial class TW
 
     public static class To
     {
+        public static readonly TailwindClass White = new("to-white");
+        public static readonly TailwindClass Gray300 = new("to-gray-300");
+        public static readonly TailwindClass Gray700 = new("to-gray-700");
+        public static readonly TailwindClass Blue50 = new("to-blue-50");
+        public static readonly TailwindClass Blue400 = new("to-blue-400");
         public static readonly TailwindClass Blue600 = new("to-blue-600");
         public static readonly TailwindClass Blue700 = new("to-blue-700");
         public static readonly TailwindClass Purple50 = new("to-purple-50");
+        public static readonly TailwindClass Purple400 = new("to-purple-400");
         public static readonly TailwindClass Purple600 = new("to-purple-600");
         public static readonly TailwindClass Purple700 = new("to-purple-700");
-        public static readonly TailwindClass White = new("to-white");
+        public static readonly TailwindClass Zinc800 = new("to-zinc-800");
         public static readonly TailwindClass Zinc900 = new("to-zinc-900");
         public static readonly TailwindClass Zinc950 = new("to-zinc-950");
     }
@@ -450,4 +528,10 @@ public static partial class TW
         public static readonly TailwindClass MaxWFull = new("max-w-full");
         public static readonly TailwindClass MaxWScreen = new("max-w-screen");
     }
+
+    /// <summary>
+    /// Special effects and utilities
+    /// </summary>
+    public static readonly TailwindClass Group = new("group");
+    public static readonly TailwindClass SelfCenter = new("self-center");
 }
