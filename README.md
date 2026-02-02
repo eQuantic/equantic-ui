@@ -354,19 +354,58 @@ new Button
 
 ### Tailwind CSS Integration (Optional)
 
-First-class Tailwind support with automatic CSS generation:
+First-class Tailwind support with three approaches for maximum flexibility:
 
 ```xml
 <PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.2" />
 ```
 
+#### 1. Type-Safe Typed Objects with + Operator (Recommended)
+
+```csharp
+using eQuantic.UI.Tailwind;
+
+new Container
+{
+    // Clean syntax with compile-time safety and IntelliSense
+    ClassName = TW.Display.Flex + TW.Flex.ItemsCenter + TW.Gap(4) + TW.P(6) +
+                TW.Bg.White + TW.Rounded.Lg + TW.Shadow.Md +
+                TW.Hover(TW.Bg.Gray100) +
+                TW.Dark(TW.Bg.Zinc900)
+}
+```
+
+#### 2. Fluent Builder API
+
 ```csharp
 new Container
 {
-    ClassName = "flex items-center gap-4 p-6 bg-white rounded-lg shadow-md",
-    Children = { /* ... */ }
+    ClassName = TW.Build()
+        .Add(TW.Display.Flex, TW.Flex.ItemsCenter, TW.Gap(4), TW.P(6))
+        .Add(TW.Bg.White, TW.Rounded.Lg, TW.Shadow.Md)
+        .Hover(TW.Bg.Gray100)
+        .Dark(TW.Bg.Zinc900)
+        .Build()
 }
 ```
+
+#### 3. Raw Strings (when needed)
+
+```csharp
+new Container
+{
+    ClassName = "flex items-center gap-4 p-6 bg-white rounded-lg shadow-md"
+}
+```
+
+#### Key Benefits
+
+- ✅ Full IntelliSense autocomplete
+- ✅ Compile-time type checking
+- ✅ Refactoring support (rename, find usages)
+- ✅ Zero runtime overhead (value types)
+- ✅ Mix typed objects with raw strings for arbitrary values
+- ✅ Generic `ClassBuilder` in Core for any CSS framework
 
 ---
 

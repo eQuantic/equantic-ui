@@ -7,10 +7,12 @@ using eQuantic.UI.Core.Metadata;
 using eQuantic.UI.Server.Authorization;
 using eQuantic.UI.Server.Rendering;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace eQuantic.UI.Server;
@@ -261,7 +263,7 @@ public static class UIExtensions
         }}";
 
         var html = $@"<!DOCTYPE html>
-<html lang=""en"">
+<html lang=""en"" class=""{shell.HtmlClass}"">
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
@@ -361,6 +363,7 @@ public class UIOptions
 public class HtmlShellOptions
 {
     public string Title { get; set; } = "eQuantic.UI App";
+    public string HtmlClass { get; set; } = "";
     public string BaseStyles { get; set; } = @"
         body { font-family: system-ui, sans-serif; margin: 0; padding: 0; }
         .loading { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.5rem; }
@@ -370,6 +373,12 @@ public class HtmlShellOptions
     public HtmlShellOptions SetTitle(string title)
     {
         Title = title;
+        return this;
+    }
+
+    public HtmlShellOptions SetHtmlClass(string htmlClass)
+    {
+        HtmlClass = htmlClass;
         return this;
     }
 

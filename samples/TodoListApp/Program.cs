@@ -16,6 +16,7 @@ builder.Services.AddUI(options =>
            .ConfigureHtmlShell(shell =>
            {
                shell.SetTitle("Todo List App | eQuantic.UI")
+                    .SetHtmlClass("dark")
                     .AddHeadTag("<meta name=\"theme-color\" content=\"#3b82f6\">");
            });
 });
