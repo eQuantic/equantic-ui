@@ -99,15 +99,17 @@
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' != ''">
         <PropertyGroup>
-            <!-- Try package location first, then dev fallback -->
-            <_PkgComponentsDir>$(MSBuildThisFileDirectory)../tools/StandardComponents</_PkgComponentsDir>
-            <_DevComponentsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Components</_DevComponentsDir>
+            <!-- Standard components source files are packaged in eQuantic.UI.Components package -->
+            <!-- Try NuGet cache first (consumer scenario) -->
+            <_StandardComponentsDir Condition="'$(PkgeQuantic_UI_Components)' != ''">$(PkgeQuantic_UI_Components)/tools/source</_StandardComponentsDir>
 
-            <_StandardComponentsDir Condition="Exists('$(_PkgComponentsDir)')">$(_PkgComponentsDir)</_StandardComponentsDir>
-            <_StandardComponentsDir
-                Condition="'$(_StandardComponentsDir)' == '' And Exists('$(_DevComponentsDir)')">
-                $(_DevComponentsDir)</_StandardComponentsDir>
+            <!-- Fallback to source tree (development scenario) -->
+            <_DevComponentsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Components</_DevComponentsDir>
+            <_StandardComponentsDir Condition="'$(_StandardComponentsDir)' == '' And Exists('$(_DevComponentsDir)')">$(_DevComponentsDir)</_StandardComponentsDir>
         </PropertyGroup>
+
+        <Error Text="eQuantic.UI: Standard components not found. Ensure the eQuantic.UI.Components package (version $(EQuanticUIVersion)) is installed."
+            Condition="'$(_StandardComponentsDir)' == '' Or !Exists('$(_StandardComponentsDir)')" />
         <!-- Clean old generated files before compiling -->
         <ItemGroup>
             <_OldGeneratedFiles Include="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)*.js" />
@@ -127,15 +129,20 @@
     <Target Name="CopyEQuanticRuntime" AfterTargets="CompileEQuanticUI"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <PropertyGroup>
-            <!-- Runtime is packaged in SDK at tools/runtime/runtime.js -->
-            <_RuntimeSourcePath>$(MSBuildThisFileDirectory)../tools/runtime/runtime.js</_RuntimeSourcePath>
+            <!-- Runtime.js is packaged in eQuantic.UI.Runtime package -->
+            <!-- Try NuGet cache first (consumer scenario) -->
+            <_RuntimeSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">$(PkgeQuantic_UI_Runtime)/tools/runtime/runtime.js</_RuntimeSourcePath>
+
+            <!-- Fallback to source tree (development scenario) -->
+            <_RuntimeSourcePath Condition="'$(_RuntimeSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/dist/index.js')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/dist/index.js</_RuntimeSourcePath>
+
             <_RuntimeDestPath>$(MSBuildProjectDirectory)/$(EQuanticOutputPath)runtime.js</_RuntimeDestPath>
         </PropertyGroup>
 
-        <Error Text="eQuantic.UI: Runtime not found at '$(_RuntimeSourcePath)'. The SDK package may be corrupted. Try running 'dotnet restore --force'."
-            Condition="!Exists('$(_RuntimeSourcePath)')" />
+        <Error Text="eQuantic.UI: Runtime not found. Ensure the eQuantic.UI.Runtime package (version $(Version)) is installed. Try running 'dotnet restore --force'."
+            Condition="'$(_RuntimeSourcePath)' == '' Or !Exists('$(_RuntimeSourcePath)')" />
 
-        <Message Text="eQuantic.UI: Copying runtime.js to output..."
+        <Message Text="eQuantic.UI: Copying runtime.js from '$(_RuntimeSourcePath)' to output..."
             Importance="High" />
 
         <Copy SourceFiles="$(_RuntimeSourcePath)" DestinationFiles="$(_RuntimeDestPath)" />

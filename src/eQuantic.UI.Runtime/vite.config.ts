@@ -15,6 +15,8 @@ export default defineConfig({
       output: {
         // Provide global variables to use in the UMD build
         globals: {},
+        // Disable code splitting - create single bundle for distribution
+        inlineDynamicImports: true,
       },
     },
     minify: 'terser',

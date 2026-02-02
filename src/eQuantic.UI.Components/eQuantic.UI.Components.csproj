@@ -11,4 +11,9 @@
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
 
+    <!-- Package source files for compiler type resolution -->
+    <ItemGroup>
+        <Content Include="**\*.cs" Exclude="obj\**;bin\**" PackagePath="tools\source\" />
+    </ItemGroup>
+
 </Project>

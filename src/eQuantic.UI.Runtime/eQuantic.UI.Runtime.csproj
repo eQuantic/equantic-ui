@@ -18,4 +18,10 @@
             Condition="$([MSBuild]::IsOSPlatform('Linux'))" PrivateAssets="None" />
     </ItemGroup>
 
+    <!-- Package the compiled runtime.js for consumer projects -->
+    <ItemGroup>
+        <Content Include="dist\index.js" PackagePath="tools\runtime\runtime.js"
+            Condition="Exists('dist\index.js')" />
+    </ItemGroup>
+
 </Project>

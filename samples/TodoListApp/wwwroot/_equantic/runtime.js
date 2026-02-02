@@ -1359,22 +1359,22 @@ function createApp(ComponentClass, selector) {
 }
 async function boot() {
   if (window.__EQ_DEV__) {
-    await import("./error-overlay-CTXK214B.js");
+    await Promise.resolve().then(() => errorOverlay$1);
   }
-  const { logger } = await import("./logger-p0dJrFBM.js");
-  logger.debug("Starting boot process...");
+  const { logger: logger2 } = await Promise.resolve().then(() => logger$1);
+  logger2.debug("Starting boot process...");
   const config = window.__EQ_CONFIG;
   if (!config || !config.page) {
-    logger.warn("No page configured in __EQ_CONFIG");
+    logger2.warn("No page configured in __EQ_CONFIG");
     return;
   }
   const container = document.getElementById("app");
   if (!container) {
-    logger.error("Container #app not found");
+    logger2.error("Container #app not found");
     return;
   }
   if (typeof window.__registerTheme === "function") {
-    logger.debug("Registering theme...");
+    logger2.debug("Registering theme...");
     window.__registerTheme();
   }
   try {
@@ -1405,6 +1405,173 @@ async function boot() {
     }
   }
 }
+const isDev$1 = typeof window !== "undefined" && window.__EQ_DEV__;
+class ErrorOverlay {
+  constructor() {
+    __publicField(this, "overlay", null);
+    __publicField(this, "errors", []);
+  }
+  show(error) {
+    if (!isDev$1) return;
+    this.errors.push(error);
+    this.render();
+  }
+  clear() {
+    this.errors = [];
+    if (this.overlay) {
+      this.overlay.remove();
+      this.overlay = null;
+    }
+  }
+  render() {
+    if (!this.overlay) {
+      this.overlay = document.createElement("div");
+      this.overlay.id = "equantic-error-overlay";
+      document.body.appendChild(this.overlay);
+    }
+    const error = this.errors[this.errors.length - 1];
+    this.overlay.innerHTML = `
+      <style>
+        #equantic-error-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.9);
+          color: #fff;
+          z-index: 999999;
+          display: flex;
+          flex-direction: column;
+          font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+          font-size: 14px;
+        }
+
+        #equantic-error-overlay .header {
+          background: #e53e3e;
+          padding: 20px 30px;
+          font-size: 18px;
+          font-weight: bold;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        #equantic-error-overlay .close {
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          color: white;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+
+        #equantic-error-overlay .close:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+
+        #equantic-error-overlay .content {
+          flex: 1;
+          overflow: auto;
+          padding: 30px;
+        }
+
+        #equantic-error-overlay .message {
+          font-size: 16px;
+          margin-bottom: 20px;
+          line-height: 1.6;
+        }
+
+        #equantic-error-overlay .stack {
+          background: rgba(255, 255, 255, 0.05);
+          border-left: 3px solid #e53e3e;
+          padding: 15px;
+          overflow-x: auto;
+          white-space: pre-wrap;
+          word-break: break-word;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        #equantic-error-overlay .footer {
+          background: rgba(255, 255, 255, 0.05);
+          padding: 15px 30px;
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.6);
+        }
+      </style>
+
+      <div class="header">
+        <span>⚠️ Build Error</span>
+        <button class="close" onclick="document.getElementById('equantic-error-overlay').remove()">
+          Close (Esc)
+        </button>
+      </div>
+
+      <div class="content">
+        <div class="message">${this.escapeHtml(error.message)}</div>
+        ${error.stack ? `<div class="stack">${this.escapeHtml(error.stack)}</div>` : ""}
+      </div>
+
+      <div class="footer">
+        This error overlay only appears in development. Fix the error to continue.
+      </div>
+    `;
+    const closeHandler = (e) => {
+      if (e.key === "Escape") {
+        this.clear();
+        document.removeEventListener("keydown", closeHandler);
+      }
+    };
+    document.addEventListener("keydown", closeHandler);
+  }
+  escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+}
+const errorOverlay = new ErrorOverlay();
+if (isDev$1 && typeof window !== "undefined") {
+  window.addEventListener("error", (event) => {
+    var _a;
+    errorOverlay.show({
+      message: event.message,
+      stack: (_a = event.error) == null ? void 0 : _a.stack
+    });
+  });
+  window.addEventListener("unhandledrejection", (event) => {
+    var _a;
+    errorOverlay.show({
+      message: `Unhandled Promise Rejection: ${event.reason}`,
+      stack: (_a = event.reason) == null ? void 0 : _a.stack
+    });
+  });
+}
+const errorOverlay$1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  errorOverlay
+}, Symbol.toStringTag, { value: "Module" }));
+const isDev = typeof window !== "undefined" && window.__EQ_DEV__;
+const logger = {
+  debug(...args) {
+    if (isDev) console.debug("[eQuantic.UI]", ...args);
+  },
+  info(...args) {
+    if (isDev) console.info("[eQuantic.UI]", ...args);
+  },
+  warn(...args) {
+    console.warn("[eQuantic.UI]", ...args);
+  },
+  error(...args) {
+    console.error("[eQuantic.UI]", ...args);
+  }
+};
+const logger$1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  logger
+}, Symbol.toStringTag, { value: "Module" }));
 export {
   Component,
   ComponentState,
