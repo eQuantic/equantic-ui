@@ -100,6 +100,9 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<ExceptStrategy>();
         _strategyRegistry.Register<CastStrategy>();
         _strategyRegistry.Register<OfTypeStrategy>();
+        _strategyRegistry.Register<TakeWhileStrategy>();
+        _strategyRegistry.Register<SkipWhileStrategy>();
+        _strategyRegistry.Register<DistinctByStrategy>();
 
         // Primitive Type Strategies (Low Priority than new Invocation Strategies but higher than fallback)
         _strategyRegistry.Register<StringMethodStrategy>();
@@ -136,6 +139,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<RangeExpressionStrategy>();
         _strategyRegistry.Register<ThrowExpressionStrategy>();
         _strategyRegistry.Register<StackAllocArrayCreationStrategy>();
+        _strategyRegistry.Register<WithExpressionStrategy>();
         
         // Additional Types
         _strategyRegistry.Register<DateTimeStrategy>();
@@ -181,6 +185,7 @@ public class CSharpToJsConverter
         _statementRegistry.Register<LockStatementStrategy>();
         _statementRegistry.Register<YieldStatementStrategy>();
         _statementRegistry.Register<FixedStatementStrategy>();
+        _statementRegistry.Register<LocalFunctionStatementStrategy>();
     }
 
     /// <summary>
@@ -191,15 +196,28 @@ public class CSharpToJsConverter
         // Legacy/Fallback string conversion (compiles new tree)
         var parsed = CSharpSyntaxTree.ParseText(code).GetRoot();
         
-        // Try to find the best node to convert
-        var expr = parsed.DescendantNodes().OfType<ExpressionSyntax>().FirstOrDefault();
-        if (expr != null) return ConvertExpression(expr);
+        // Check for Global Statements (Top Level)
+        var globalStatement = parsed.DescendantNodes().OfType<GlobalStatementSyntax>().FirstOrDefault();
+        if (globalStatement != null)
+        {
+            return ConvertStatement(globalStatement.Statement);
+        }
+
+        // Check for specific statements that might be parsed without GlobalStatement wrapper in some contexts?
+        // Actually ParseText wraps top-level statements in GlobalStatementSyntax.
         
+        // If no global statement, maybe it's just an expression?
+        // Note: "x + 1" is parsed as GlobalStatement -> ExpressionStatement -> Expression
+        // So the above check handles "x + 1" too if we redirect ExpressionStatement to ConvertExpression?
+        // ExpressionStatementStrategy usually handles this.
+        
+        // Fallback to searching for Block
         var block = parsed.DescendantNodes().OfType<BlockSyntax>().FirstOrDefault();
         if (block != null) return ConvertBlock(block);
-        
-        var stmt = parsed.DescendantNodes().OfType<StatementSyntax>().FirstOrDefault();
-        if (stmt != null) return ConvertStatement(stmt);
+
+        // Fallback to searching for standalone Expression if parsing was partial
+        var expr = parsed.DescendantNodes().OfType<ExpressionSyntax>().FirstOrDefault();
+        if (expr != null) return ConvertExpression(expr);
         
         return code;
     }

@@ -36,18 +36,10 @@ public class CompileTimeEvaluator
         // Check if type is marked with [CompileTimeEvaluate]
         var typeInfo = _semanticModel.GetTypeInfo(expression);
         if (typeInfo.Type == null)
-        {
-            Console.WriteLine($"[DEBUG] Type is null for expression: {expression}");
             return null;
-        }
 
         if (!IsCompileTimeEvaluatable(typeInfo.Type))
-        {
-            Console.WriteLine($"[DEBUG] Type {typeInfo.Type.Name} is not marked with [CompileTimeEvaluate]");
             return null;
-        }
-
-        Console.WriteLine($"[DEBUG] Evaluating: {expression} (Type: {typeInfo.Type.Name})");
 
         // Try different evaluation strategies
         var result = EvaluateMemberAccess(expression)
@@ -57,14 +49,7 @@ public class CompileTimeEvaluator
             ?? EvaluateConstantValue(expression);
 
         if (result != null)
-        {
-            Console.WriteLine($"[DEBUG] Successfully evaluated to: '{result}'");
             _cache[key] = result;
-        }
-        else
-        {
-            Console.WriteLine($"[DEBUG] Failed to evaluate: {expression}");
-        }
 
         return result;
     }
@@ -88,35 +73,19 @@ public class CompileTimeEvaluator
         if (expression is not MemberAccessExpressionSyntax memberAccess)
             return null;
 
-        Console.WriteLine($"[DEBUG] EvaluateMemberAccess: {memberAccess}");
 
         var symbol = _semanticModel.GetSymbolInfo(memberAccess).Symbol;
-
         if (symbol == null)
-        {
-            Console.WriteLine($"[DEBUG] Symbol is null for: {memberAccess}");
             return null;
-        }
-
-        Console.WriteLine($"[DEBUG] Symbol: {symbol.Name} (Kind: {symbol.Kind})");
 
         // Handle static readonly fields
         if (symbol is IFieldSymbol { IsReadOnly: true, IsStatic: true } fieldSymbol)
-        {
-            Console.WriteLine($"[DEBUG] Found static readonly field: {fieldSymbol.Name}");
-            var result = ExtractFieldValue(fieldSymbol);
-            Console.WriteLine($"[DEBUG] ExtractFieldValue returned: {result ?? "null"}");
-            return result;
-        }
+            return ExtractFieldValue(fieldSymbol);
 
         // Handle static properties with constant getters
         if (symbol is IPropertySymbol { IsStatic: true } propSymbol)
-        {
-            Console.WriteLine($"[DEBUG] Found static property: {propSymbol.Name}");
             return ExtractPropertyValue(propSymbol);
-        }
 
-        Console.WriteLine($"[DEBUG] Symbol is neither static readonly field nor static property");
         return null;
     }
 
@@ -127,7 +96,16 @@ public class CompileTimeEvaluator
     {
         // Get field declaration syntax
         var syntaxRef = fieldSymbol.DeclaringSyntaxReferences.FirstOrDefault();
-        if (syntaxRef == null) return null;
+
+        // If syntax reference is null, the symbol comes from an external assembly
+        // Try to extract value through runtime reflection or naming conventions
+        if (syntaxRef == null)
+        {
+
+            // For TailwindClass fields, try to invoke the implicit string operator via reflection
+            var result = TryExtractFromExternalAssembly(fieldSymbol);
+            return result;
+        }
 
         var declaration = syntaxRef.GetSyntax();
 
@@ -140,6 +118,192 @@ public class CompileTimeEvaluator
 
         // Recursively evaluate the initializer
         return TryEvaluate(variableDeclarator.Initializer.Value);
+    }
+
+    /// <summary>
+    /// Tries to invoke a method from external assembly using reflection.
+    /// </summary>
+    private string? TryInvokeMethodViaReflection(IMethodSymbol methodSymbol, List<object?> args)
+    {
+        try
+        {
+            var assembly = methodSymbol.ContainingAssembly;
+
+            // Try to load the assembly
+            var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == assembly.Name);
+
+            if (loadedAssembly == null && _semanticModel?.Compilation != null)
+            {
+                var reference = _semanticModel.Compilation.References
+                    .OfType<PortableExecutableReference>()
+                    .FirstOrDefault(r => r.Display != null && r.Display.Contains(assembly.Name));
+
+                if (reference?.FilePath != null && File.Exists(reference.FilePath))
+                {
+                    loadedAssembly = System.Reflection.Assembly.LoadFrom(reference.FilePath);
+                }
+            }
+
+            if (loadedAssembly == null)
+            {
+                return null;
+            }
+
+            // Get the type containing the method
+            var typeName = methodSymbol.ContainingType.ToDisplayString();
+            var type = FindTypeInAssembly(loadedAssembly, typeName);
+
+            if (type == null)
+            {
+                return null;
+            }
+
+            // Get the method
+            var paramTypes = args.Select(a => a?.GetType() ?? typeof(object)).ToArray();
+            var method = type.GetMethod(methodSymbol.Name,
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+            if (method == null)
+            {
+                return null;
+            }
+
+            // Invoke the method
+            var result = method.Invoke(null, args.ToArray());
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            var stringValue = result.ToString();
+            return stringValue;
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Helper to find a type in an assembly, handling nested types.
+    /// </summary>
+    private System.Type? FindTypeInAssembly(System.Reflection.Assembly assembly, string typeName)
+    {
+        // Try with the display string first
+        var type = assembly.GetType(typeName);
+        if (type != null) return type;
+
+        // Try converting nested class notation
+        var parts = typeName.Split('.');
+        for (int i = parts.Length - 2; i >= 0; i--)
+        {
+            var nsPart = string.Join(".", parts.Take(i + 1));
+            var classPart = string.Join("+", parts.Skip(i + 1));
+            var reflectionTypeName = $"{nsPart}.{classPart}";
+
+            type = assembly.GetType(reflectionTypeName);
+            if (type != null) return type;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Tries to extract field value from external assembly using reflection.
+    /// </summary>
+    private string? TryExtractFromExternalAssembly(IFieldSymbol fieldSymbol)
+    {
+        try
+        {
+            // Get the assembly where the field is defined
+            var assembly = fieldSymbol.ContainingAssembly;
+
+            // Try to load the actual .NET assembly
+            var loadedAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == assembly.Name);
+
+            // If not already loaded, try to load it from the compilation references
+            if (loadedAssembly == null && _semanticModel?.Compilation != null)
+            {
+                var reference = _semanticModel.Compilation.References
+                    .OfType<PortableExecutableReference>()
+                    .FirstOrDefault(r => r.Display != null && r.Display.Contains(assembly.Name));
+
+                if (reference?.FilePath != null && File.Exists(reference.FilePath))
+                {
+                    loadedAssembly = System.Reflection.Assembly.LoadFrom(reference.FilePath);
+                }
+            }
+
+            if (loadedAssembly == null)
+            {
+                return null;
+            }
+
+            // Get the type containing the field
+            // Roslyn gives us: "eQuantic.UI.Tailwind.TW.Display"
+            // Reflection needs: "eQuantic.UI.Tailwind.TW+Display"
+            var typeName = fieldSymbol.ContainingType.ToDisplayString();
+
+            // Try with the display string first (in case it's not nested)
+            var type = loadedAssembly.GetType(typeName);
+
+            // If not found, convert nested class notation
+            if (type == null)
+            {
+                // Split into namespace and class parts
+                // For "eQuantic.UI.Tailwind.TW.Display", we need "eQuantic.UI.Tailwind.TW+Display"
+                var parts = typeName.Split('.');
+
+                // Try different combinations to find where the class nesting starts
+                for (int i = parts.Length - 2; i >= 0; i--)
+                {
+                    var nsPart = string.Join(".", parts.Take(i + 1));
+                    var classPart = string.Join("+", parts.Skip(i + 1));
+                    var reflectionTypeName = $"{nsPart}.{classPart}";
+
+                    type = loadedAssembly.GetType(reflectionTypeName);
+
+                    if (type != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (type == null)
+            {
+                return null;
+            }
+
+            // Get the field
+            var field = type.GetField(fieldSymbol.Name,
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.Static);
+
+            if (field == null)
+            {
+                return null;
+            }
+
+            // Get the field value
+            var value = field.GetValue(null);
+
+            if (value == null)
+            {
+                return null;
+            }
+
+            // Convert to string using implicit operator or ToString()
+            var stringValue = value.ToString();
+            return stringValue;
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -231,7 +395,12 @@ public class CompileTimeEvaluator
     {
         // Get method syntax
         var syntaxRef = method.DeclaringSyntaxReferences.FirstOrDefault();
-        if (syntaxRef == null) return null;
+
+        // If no syntax reference, try to invoke via reflection (external assembly)
+        if (syntaxRef == null)
+        {
+            return TryInvokeMethodViaReflection(method, args);
+        }
 
         var methodDecl = syntaxRef.GetSyntax() as MethodDeclarationSyntax;
         if (methodDecl == null) return null;

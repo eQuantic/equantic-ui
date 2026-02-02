@@ -55,16 +55,24 @@ try
         assemblyPaths.Add(typeof(System.Linq.Enumerable).Assembly.Location); // System.Linq
         assemblyPaths.Add(typeof(System.Collections.Generic.List<>).Assembly.Location); // System.Collections
 
-        // Try to find eQuantic.UI assemblies in bin folder
+        // Try to find ALL assemblies in bin folder (including NuGet packages)
         var binFolder = Path.Combine(primarySourceDir, "bin", "Debug", "net8.0");
         if (Directory.Exists(binFolder))
         {
-            var eqDlls = Directory.GetFiles(binFolder, "eQuantic.UI.*.dll", SearchOption.TopDirectoryOnly);
-            foreach (var dll in eqDlls)
+            // Get all DLLs in bin folder
+            var allDlls = Directory.GetFiles(binFolder, "*.dll", SearchOption.TopDirectoryOnly);
+            foreach (var dll in allDlls)
             {
-                assemblyPaths.Add(dll);
+                var fileName = Path.GetFileName(dll);
+                // Include eQuantic.UI assemblies and common dependencies
+                if (fileName.StartsWith("eQuantic.UI", StringComparison.OrdinalIgnoreCase) ||
+                    fileName.StartsWith("Microsoft.CodeAnalysis", StringComparison.OrdinalIgnoreCase) ||
+                    fileName.StartsWith("System.", StringComparison.OrdinalIgnoreCase))
+                {
+                    assemblyPaths.Add(dll);
+                }
             }
-            Console.WriteLine($"   Found {eqDlls.Length} eQuantic.UI assemblies in bin folder");
+            Console.WriteLine($"   Found {assemblyPaths.Count - 3} assemblies in bin folder");
         }
 
         Console.WriteLine($"   Creating compilation for {allSourceFiles.Count} files with {assemblyPaths.Count} references...");
