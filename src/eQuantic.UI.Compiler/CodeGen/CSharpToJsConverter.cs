@@ -103,6 +103,9 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<TakeWhileStrategy>();
         _strategyRegistry.Register<SkipWhileStrategy>();
         _strategyRegistry.Register<DistinctByStrategy>();
+        _strategyRegistry.Register<ElementAtStrategy>();
+        _strategyRegistry.Register<SequenceEqualStrategy>();
+        _strategyRegistry.Register<DefaultIfEmptyStrategy>();
 
         // Primitive Type Strategies (Low Priority than new Invocation Strategies but higher than fallback)
         _strategyRegistry.Register<StringMethodStrategy>();
@@ -140,6 +143,13 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<ThrowExpressionStrategy>();
         _strategyRegistry.Register<StackAllocArrayCreationStrategy>();
         _strategyRegistry.Register<WithExpressionStrategy>();
+        _strategyRegistry.Register<TypeofExpressionStrategy>();
+        _strategyRegistry.Register<BaseExpressionStrategy>();
+        _strategyRegistry.Register<CastExpressionStrategy>();
+        _strategyRegistry.Register<AsExpressionStrategy>();
+        _strategyRegistry.Register<ParenthesizedExpressionStrategy>();
+        _strategyRegistry.Register<SizeOfExpressionStrategy>();
+        _strategyRegistry.Register<AnonymousMethodExpressionStrategy>();
         
         // Additional Types
         _strategyRegistry.Register<DateTimeStrategy>();
@@ -186,6 +196,7 @@ public class CSharpToJsConverter
         _statementRegistry.Register<YieldStatementStrategy>();
         _statementRegistry.Register<FixedStatementStrategy>();
         _statementRegistry.Register<LocalFunctionStatementStrategy>();
+        _statementRegistry.Register<CheckedStatementStrategy>();
     }
 
     /// <summary>
@@ -251,7 +262,6 @@ public class CSharpToJsConverter
 
         return expression switch
         {
-            ParenthesizedExpressionSyntax parens => $"({ConvertExpression(parens.Expression)})",
             _ => expression.ToString()
         };
     }

@@ -21,10 +21,16 @@ public class ElementAccessStrategy : IConversionStrategy
         var expr = context.Converter.ConvertExpression(elementAccess.Expression);
         
         // Convert indexer arguments
-        var args = string.Join(", ", elementAccess.ArgumentList.Arguments
-            .Select(arg => context.Converter.ConvertExpression(arg.Expression)));
+        // If multiple args: arr[1, 2] -> arr[1][2]
+        var args = elementAccess.ArgumentList.Arguments;
+        var sb = new System.Text.StringBuilder(expr);
+        
+        foreach (var arg in args)
+        {
+            sb.Append("[").Append(context.Converter.ConvertExpression(arg.Expression)).Append("]");
+        }
 
-        return $"{expr}[{args}]";
+        return sb.ToString();
     }
 
     public int Priority => 1;
