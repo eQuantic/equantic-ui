@@ -275,6 +275,10 @@ public static partial class TW
         public static readonly TailwindClass None = new("transition-none");
         public static readonly TailwindClass All = new("transition-all");
         public static readonly TailwindClass Base = new("transition");
+        public static readonly TailwindClass Colors = new("transition-colors");
+        public static readonly TailwindClass Opacity = new("transition-opacity");
+        public static readonly TailwindClass Shadow = new("transition-shadow");
+        public static readonly TailwindClass Transform = new("transition-transform");
 
         public static readonly TailwindClass Duration200 = new("duration-200");
         public static readonly TailwindClass Duration300 = new("duration-300");
@@ -530,8 +534,72 @@ public static partial class TW
     }
 
     /// <summary>
+    /// Items (align-items) namespace
+    /// </summary>
+    public static class Items
+    {
+        public static readonly TailwindClass Start = new("items-start");
+        public static readonly TailwindClass End = new("items-end");
+        public static readonly TailwindClass Center = new("items-center");
+        public static readonly TailwindClass Baseline = new("items-baseline");
+        public static readonly TailwindClass Stretch = new("items-stretch");
+    }
+
+    /// <summary>
+    /// MinH namespace
+    /// </summary>
+    public static class MinH
+    {
+        public static readonly TailwindClass Screen = new("min-h-screen");
+        public static readonly TailwindClass Full = new("min-h-full");
+    }
+
+    /// <summary>
+    /// MaxW namespace
+    /// </summary>
+    public static class MaxW
+    {
+        public static readonly TailwindClass Xs = new("max-w-xs");
+        public static readonly TailwindClass Sm = new("max-w-sm");
+        public static readonly TailwindClass Md = new("max-w-md");
+        public static readonly TailwindClass Lg = new("max-w-lg");
+        public static readonly TailwindClass Xl = new("max-w-xl");
+        public static readonly TailwindClass MaxW2xl = new("max-w-2xl");
+        public static readonly TailwindClass MaxW3xl = new("max-w-3xl");
+        public static readonly TailwindClass MaxW4xl = new("max-w-4xl");
+        public static readonly TailwindClass Full = new("max-w-full");
+        public static readonly TailwindClass Screen = new("max-w-screen");
+    }
+
+    /// <summary>
+    /// Duration (transition-duration) namespace
+    /// </summary>
+    public static class Duration
+    {
+        public static readonly TailwindClass _75 = new("duration-75");
+        public static readonly TailwindClass _100 = new("duration-100");
+        public static readonly TailwindClass _150 = new("duration-150");
+        public static readonly TailwindClass _200 = new("duration-200");
+        public static readonly TailwindClass _300 = new("duration-300");
+        public static readonly TailwindClass _500 = new("duration-500");
+        public static readonly TailwindClass _700 = new("duration-700");
+        public static readonly TailwindClass _1000 = new("duration-1000");
+    }
+
+    /// <summary>
+    /// Helper methods for flex direction
+    /// </summary>
+    public static TailwindClass FlexRow() => Flex.Row;
+    public static TailwindClass FlexCol() => Flex.Col;
+
+    /// <summary>
     /// Special effects and utilities
     /// </summary>
     public static readonly TailwindClass Group = new("group");
     public static readonly TailwindClass SelfCenter = new("self-center");
+
+    /// <summary>
+    /// Adds opacity to a Tailwind class (e.g., WithOpacity("bg-white", 80) => "bg-white/80").
+    /// </summary>
+    public static TailwindClass WithOpacity(string className, int opacity) => new($"{className}/{opacity}");
 }

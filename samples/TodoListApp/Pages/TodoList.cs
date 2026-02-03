@@ -190,9 +190,12 @@ public class TodoListState : ComponentState<TodoList>
         if (!filteredTodos.Any())
         {
             todoList.Children.Add(new Box {
-                ClassName = "py-8 text-center",
-                Children = { 
-                    new Text("No tasks found in this view.") { Variant = Variant.Custom, ClassName = "text-gray-400" } 
+                ClassName = TW.Py(8) + TW.Text.Center,
+                Children = {
+                    new Text("No tasks found in this view.") {
+                        Variant = Variant.Custom,
+                        ClassName = TW.Text.Gray400
+                    }
                 }
             });
         }
@@ -249,7 +252,7 @@ public class TodoListState : ComponentState<TodoList>
                         new Box {
                             ClassName = "flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl rounded-full shadow-lg border border-white/20 dark:border-zinc-700/50",
                             Children = {
-                                new Text("✨") { ClassName = "text-xl" },
+                                new Text("✨") { ClassName = TW.Text.Xl },
                                 new Text("TodoList") {
                                     ClassName = "font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400"
                                 }

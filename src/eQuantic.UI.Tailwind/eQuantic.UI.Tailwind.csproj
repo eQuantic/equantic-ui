@@ -20,4 +20,10 @@
         <Content Include="Build\**" PackagePath="build" />
     </ItemGroup>
 
+    <!-- Package the compiled tailwind.js for consumer projects -->
+    <ItemGroup>
+        <Content Include="typescript\dist\index.js" PackagePath="tools\runtime\tailwind.js"
+            Condition="Exists('typescript\dist\index.js')" />
+    </ItemGroup>
+
 </Project>

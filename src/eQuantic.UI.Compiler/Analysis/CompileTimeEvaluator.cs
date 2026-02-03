@@ -66,17 +66,26 @@ public class CompileTimeEvaluator
     }
 
     /// <summary>
-    /// Evaluates member access expressions like TW.Display.Flex.
+    /// Evaluates member access expressions like TW.Display.Flex or TW.Text.Gray400.ToString().
     /// </summary>
     private string? EvaluateMemberAccess(ExpressionSyntax expression)
     {
         if (expression is not MemberAccessExpressionSyntax memberAccess)
             return null;
 
-
         var symbol = _semanticModel.GetSymbolInfo(memberAccess).Symbol;
         if (symbol == null)
             return null;
+
+        // Handle .ToString() calls on evaluable expressions
+        if (symbol is IMethodSymbol { Name: "ToString" } && memberAccess.Expression != null)
+        {
+            var baseValue = TryEvaluate(memberAccess.Expression);
+            if (baseValue != null)
+            {
+                return baseValue; // Already a string, ToString() is a no-op
+            }
+        }
 
         // Handle static readonly fields
         if (symbol is IFieldSymbol { IsReadOnly: true, IsStatic: true } fieldSymbol)
@@ -359,6 +368,14 @@ public class CompileTimeEvaluator
         var symbol = _semanticModel.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
         if (symbol == null || !symbol.IsStatic) return null;
 
+        // Special handling for TW.When() - check if first argument is runtime-evaluable
+        if (symbol.Name == "When" && symbol.ContainingType.Name == "TailwindClass")
+        {
+            // TW.When() with runtime condition cannot be evaluated at compile-time
+            // We need the condition value at runtime
+            return null;
+        }
+
         // Evaluate all arguments
         var argValues = new List<object?>();
         foreach (var arg in invocation.ArgumentList.Arguments)
@@ -379,6 +396,17 @@ public class CompileTimeEvaluator
                 }
                 else
                 {
+                    // Check if it's a .ToString() call on an evaluable expression
+                    if (arg.Expression is MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } toStringCall)
+                    {
+                        var baseValue = TryEvaluate(toStringCall.Expression);
+                        if (baseValue != null)
+                        {
+                            argValues.Add(baseValue);
+                            continue;
+                        }
+                    }
+
                     return null; // Cannot evaluate this argument
                 }
             }
@@ -495,6 +523,7 @@ public class CompileTimeEvaluator
 
     /// <summary>
     /// Evaluates binary expressions like left + right.
+    /// Optimized to handle long chains like TW.A + TW.B + TW.C + TW.D + ...
     /// </summary>
     private string? EvaluateBinaryExpression(ExpressionSyntax expression)
     {
@@ -504,19 +533,44 @@ public class CompileTimeEvaluator
         // Handle + operator for TailwindClass
         if (binary.IsKind(SyntaxKind.AddExpression))
         {
-            var leftValue = TryEvaluate(binary.Left);
-            var rightValue = TryEvaluate(binary.Right);
+            // Flatten the expression tree to avoid deep recursion
+            var parts = new List<string>();
+            if (!FlattenAddExpression(expression, parts))
+                return null;
 
-            if (leftValue == null || rightValue == null) return null;
-
-            // Simulate TailwindClass.operator+ behavior
-            if (string.IsNullOrEmpty(leftValue)) return rightValue;
-            if (string.IsNullOrEmpty(rightValue)) return leftValue;
-
-            return $"{leftValue} {rightValue}";
+            // Join all non-empty parts with spaces
+            var result = string.Join(" ", parts.Where(p => !string.IsNullOrEmpty(p)));
+            return string.IsNullOrEmpty(result) ? null : result;
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Flattens a tree of + expressions into a list of evaluated values.
+    /// Returns false if any sub-expression cannot be evaluated.
+    /// </summary>
+    private bool FlattenAddExpression(ExpressionSyntax expression, List<string> parts)
+    {
+        // If it's a binary + expression, recursively flatten both sides
+        if (expression is BinaryExpressionSyntax { OperatorToken.Text: "+" } binary)
+        {
+            if (!FlattenAddExpression(binary.Left, parts))
+                return false;
+            if (!FlattenAddExpression(binary.Right, parts))
+                return false;
+            return true;
+        }
+
+        // Otherwise, evaluate the expression
+        var value = TryEvaluate(expression);
+        if (value == null)
+            return false;
+
+        if (!string.IsNullOrEmpty(value))
+            parts.Add(value);
+
+        return true;
     }
 
     /// <summary>

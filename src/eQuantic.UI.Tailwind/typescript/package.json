@@ -1,0 +1,20 @@
+{
+  "name": "@equantic/tailwind-runtime",
+  "version": "0.1.1",
+  "description": "Tailwind CSS runtime helpers for eQuantic.UI",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target browser --minify --sourcemap=external",
+    "dev": "bun build src/index.ts --outdir dist --target browser --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "equantic",
+    "tailwind",
+    "css",
+    "runtime"
+  ],
+  "license": "MIT"
+}

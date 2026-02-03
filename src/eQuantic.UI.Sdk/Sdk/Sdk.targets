@@ -148,6 +148,28 @@
         <Copy SourceFiles="$(_RuntimeSourcePath)" DestinationFiles="$(_RuntimeDestPath)" />
     </Target>
 
+    <!-- Copy tailwind.js after component compilation (if Tailwind package is referenced) -->
+    <Target Name="CopyEQuanticTailwind" AfterTargets="CompileEQuanticUI"
+        Condition="'$(EnableEQuanticUICompilation)' == 'true'">
+        <PropertyGroup>
+            <!-- Tailwind.js is packaged in eQuantic.UI.Tailwind package -->
+            <!-- Try NuGet cache first (consumer scenario) -->
+            <_TailwindSourcePath Condition="'$(PkgeQuantic_UI_Tailwind)' != ''">$(PkgeQuantic_UI_Tailwind)/tools/runtime/tailwind.js</_TailwindSourcePath>
+
+            <!-- Fallback to source tree (development scenario) -->
+            <_TailwindSourcePath Condition="'$(_TailwindSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Tailwind/typescript/dist/index.js')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Tailwind/typescript/dist/index.js</_TailwindSourcePath>
+
+            <_TailwindDestPath>$(MSBuildProjectDirectory)/$(EQuanticOutputPath)tailwind.js</_TailwindDestPath>
+        </PropertyGroup>
+
+        <!-- Only copy if Tailwind package is referenced (optional dependency) -->
+        <Message Text="eQuantic.UI: Copying tailwind.js from '$(_TailwindSourcePath)' to output..."
+            Importance="High" Condition="'$(_TailwindSourcePath)' != '' And Exists('$(_TailwindSourcePath)')" />
+
+        <Copy SourceFiles="$(_TailwindSourcePath)" DestinationFiles="$(_TailwindDestPath)"
+            Condition="'$(_TailwindSourcePath)' != '' And Exists('$(_TailwindSourcePath)')" />
+    </Target>
+
     <Target Name="WarnNoCli" BeforeTargets="Build"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' == ''">
         <Warning
