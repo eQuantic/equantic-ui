@@ -121,7 +121,8 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<ToStringStrategy>();
         _strategyRegistry.Register<CollectionMaterializationStrategy>();
 
-        // === UI Strategies (Priority 10) ===
+        // === UI Strategies (Priority 10-50) ===
+        _strategyRegistry.Register<RuntimeUtilityStrategy>(); // Priority 50 - runtime utilities (ClassBuilder, etc.)
         _strategyRegistry.Register<HtmlNodeStrategy>();
         _strategyRegistry.Register<AddChildStrategy>();
 

@@ -6,6 +6,7 @@ using eQuantic.UI.Components.Feedback;
 using eQuantic.UI.Components.Overlays;
 using eQuantic.UI.Core.Theme.Types;
 using eQuantic.UI.Core.Metadata;
+using eQuantic.UI.Core.Styling;
 using eQuantic.UI.Tailwind;
 
 using TodoListApp.Models;
@@ -189,12 +190,30 @@ public class TodoListState : ComponentState<TodoList>
         
         if (!filteredTodos.Any())
         {
+            // Example using ClassBuilder with conditional logic, state variants, and responsive classes
+            var emptyStateClasses = ClassBuilder.Create()
+                .Add(TW.Py(8), TW.Text.Center)
+                .When(_currentFilter == TodoFilter.Active, TW.Bg.Blue50, TW.Bg.Gray50)
+                .Dark(TW.Bg.Zinc900)
+                .Add(TW.Rounded.Lg, TW.P(4))
+                .Hover(TW.Shadow.Lg)
+                .Build();
+
+            var emptyTextClasses = ClassBuilder.Create()
+                .Add(TW.Text.Gray400)
+                .When(_currentFilter == TodoFilter.Completed, TW.Text.Green400)
+                .Dark(TW.Text.Gray500)
+                .Add(TW.Font.Medium)
+                .Sm(TW.Text.Base)
+                .Md(TW.Text.Lg)
+                .Build();
+
             todoList.Children.Add(new Box {
-                ClassName = TW.Py(8) + TW.Text.Center,
+                ClassName = emptyStateClasses,
                 Children = {
                     new Text("No tasks found in this view.") {
                         Variant = Variant.Custom,
-                        ClassName = TW.Text.Gray400
+                        ClassName = emptyTextClasses
                     }
                 }
             });

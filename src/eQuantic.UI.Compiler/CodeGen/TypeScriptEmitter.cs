@@ -41,10 +41,13 @@ public class TypeScriptEmitter
         _builder = new TypeScriptCodeBuilder();
         _converter.SetSemanticModel(semanticModel);
         _output.Clear();
-        
-        EmitImports(component);
-        WriteLn();
-        
+
+        // Clear UsedHelpers from previous compilations
+        component.UsedHelpers.Clear();
+
+        // Note: We'll emit imports AFTER generating component code
+        // to ensure UsedHelpers is populated
+
         // Define component class
         var baseClass = component.BaseClassName ?? (component.IsPrimitive ? "HtmlElement" : (component.IsStateful ? "StatefulComponent" : "StatelessComponent"));
         
@@ -231,11 +234,24 @@ public class TypeScriptEmitter
         {
             EmitStatefulComponent(component); // This method needs update to NOT use WriteLn manually if we want full builder purity, but for now we mix.
         }
-        
-        return _builder.ToString();
+
+        // Transfer UsedHelpers from converter to component after all code generation
+        foreach (var helper in _converter.UsedHelpers)
+        {
+            component.UsedHelpers.Add(helper);
+        }
+
+        // Generate component code without imports
+        var componentCode = _builder.ToString();
+
+        // Generate imports based on populated UsedHelpers
+        var importsCode = GenerateImports(component);
+
+        // Return imports + component code
+        return importsCode + "\n" + componentCode;
     }
     
-    private void EmitImports(ComponentDefinition component)
+    private string GenerateImports(ComponentDefinition component)
     {
         // Core runtime imports
         var coreImports = new HashSet<string> { "Component", "BuildContext", "HtmlElement" };
@@ -302,10 +318,10 @@ public class TypeScriptEmitter
             if (cleanType == "HtmlNode")
                 continue;
 
-            if (IsRuntimeComponent(cleanType))
-            {
-                coreImports.Add(cleanType);
-            }
+            // Skip runtime utilities - they're added from UsedHelpers below
+            if (component.UsedHelpers.Contains(cleanType))
+                continue;
+
             if (IsRuntimeComponent(cleanType))
             {
                 coreImports.Add(cleanType);
@@ -322,14 +338,24 @@ public class TypeScriptEmitter
             coreImports.Add("format");
         }
 
-        _builder.Import(coreImports, "@equantic/runtime");
+        // Add all runtime utilities from UsedHelpers (tracked by RuntimeUtilityStrategy)
+        foreach (var helper in component.UsedHelpers)
+        {
+            coreImports.Add(helper);
+        }
+
+        // Create a temporary builder for imports only
+        var importsBuilder = new TypeScriptCodeBuilder();
+        importsBuilder.Import(coreImports, "@equantic/runtime");
 
         // Import user components
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
             if (userComp == component.Name) continue;
-            _builder.Import(new[] { userComp }, $"./{userComp}");
+            importsBuilder.Import(new[] { userComp }, $"./{userComp}");
         }
+
+        return importsBuilder.ToString();
     }
     
     private bool IsRuntimeComponent(string typeName)

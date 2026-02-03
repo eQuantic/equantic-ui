@@ -94,6 +94,11 @@ public class ComponentDefinition
     /// Roslyn Syntax Reference
     /// </summary>
     public Microsoft.CodeAnalysis.SyntaxTree? SyntaxTree { get; set; }
+
+    /// <summary>
+    /// Runtime helpers used by the component (ClassBuilder, StyleBuilder, etc.)
+    /// </summary>
+    public HashSet<string> UsedHelpers { get; set; } = new();
 }
 
 /// <summary>
