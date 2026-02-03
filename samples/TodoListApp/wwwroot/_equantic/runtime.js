@@ -1345,6 +1345,155 @@ class StyleBuilder {
     return this.build();
   }
 }
+class ClassBuilder {
+  constructor() {
+    __publicField(this, "classes", []);
+    __publicField(this, "added", /* @__PURE__ */ new Set());
+  }
+  /**
+   * Creates a new empty ClassBuilder instance.
+   */
+  static create(...initialClasses) {
+    const builder = new ClassBuilder();
+    if (initialClasses.length > 0) {
+      builder.add(...initialClasses);
+    }
+    return builder;
+  }
+  /**
+   * Adds one or more CSS classes.
+   * Duplicate classes are automatically ignored.
+   */
+  add(...classes) {
+    for (const className of classes) {
+      if (className && className.trim() && !this.added.has(className)) {
+        this.added.add(className);
+        this.classes.push(className);
+      }
+    }
+    return this;
+  }
+  when(condition, ...args) {
+    if (condition) {
+      if (typeof args[0] === "string" && args.length <= 2) {
+        this.add(args[0]);
+      } else {
+        this.add(...args);
+      }
+    } else if (args.length === 2 && typeof args[1] === "string") {
+      this.add(args[1]);
+    }
+    return this;
+  }
+  /**
+   * Adds classes with a custom prefix.
+   *
+   * @example
+   * .withPrefix("hover:", "bg-gray-100", "scale-110")
+   * // => "hover:bg-gray-100 hover:scale-110"
+   */
+  withPrefix(prefix, ...classes) {
+    for (const className of classes) {
+      if (className && className.trim()) {
+        this.add(`${prefix}${className}`);
+      }
+    }
+    return this;
+  }
+  /**
+   * Adds classes with the 'hover:' prefix.
+   */
+  hover(...classes) {
+    return this.withPrefix("hover:", ...classes);
+  }
+  /**
+   * Adds classes with the 'focus:' prefix.
+   */
+  focus(...classes) {
+    return this.withPrefix("focus:", ...classes);
+  }
+  /**
+   * Adds classes with the 'active:' prefix.
+   */
+  active(...classes) {
+    return this.withPrefix("active:", ...classes);
+  }
+  /**
+   * Adds classes with the 'dark:' prefix for dark mode.
+   */
+  dark(...classes) {
+    return this.withPrefix("dark:", ...classes);
+  }
+  /**
+   * Adds classes with the 'group-hover:' prefix.
+   */
+  groupHover(...classes) {
+    return this.withPrefix("group-hover:", ...classes);
+  }
+  /**
+   * Adds classes with the 'focus-within:' prefix.
+   */
+  focusWithin(...classes) {
+    return this.withPrefix("focus-within:", ...classes);
+  }
+  /**
+   * Adds responsive classes for the specified breakpoint.
+   *
+   * @param breakpoint Breakpoint prefix (sm, md, lg, xl, 2xl)
+   * @param classes Classes to apply at this breakpoint
+   */
+  responsive(breakpoint, ...classes) {
+    return this.withPrefix(`${breakpoint}:`, ...classes);
+  }
+  /**
+   * Adds classes for the 'sm' breakpoint (640px+).
+   */
+  sm(...classes) {
+    return this.responsive("sm", ...classes);
+  }
+  /**
+   * Adds classes for the 'md' breakpoint (768px+).
+   */
+  md(...classes) {
+    return this.responsive("md", ...classes);
+  }
+  /**
+   * Adds classes for the 'lg' breakpoint (1024px+).
+   */
+  lg(...classes) {
+    return this.responsive("lg", ...classes);
+  }
+  /**
+   * Adds classes for the 'xl' breakpoint (1280px+).
+   */
+  xl(...classes) {
+    return this.responsive("xl", ...classes);
+  }
+  /**
+   * Adds classes for the '2xl' breakpoint (1536px+).
+   */
+  xl2(...classes) {
+    return this.responsive("2xl", ...classes);
+  }
+  /**
+   * Builds the final class string by joining all classes with spaces.
+   */
+  build() {
+    return this.classes.join(" ");
+  }
+  /**
+   * Returns the built class string.
+   */
+  toString() {
+    return this.build();
+  }
+}
+function joinClasses(...classes) {
+  return classes.filter((c) => c && c.trim()).join(" ");
+}
+function whenClass(condition, className, fallback) {
+  return condition ? className : fallback;
+}
 function mount(component, selector) {
   const container = document.querySelector(selector);
   if (!container) {
@@ -1573,6 +1722,7 @@ const logger$1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProp
   logger
 }, Symbol.toStringTag, { value: "Module" }));
 export {
+  ClassBuilder,
   Component,
   ComponentState,
   HtmlElement,
@@ -1594,10 +1744,12 @@ export {
   getReconciler,
   getRootServiceProvider,
   getServerActionsClient,
+  joinClasses,
   mount,
   parseEnum,
   resetReconciler,
   resetServerActionsClient,
-  resetServiceProvider
+  resetServiceProvider,
+  whenClass
 };
 //# sourceMappingURL=index.js.map

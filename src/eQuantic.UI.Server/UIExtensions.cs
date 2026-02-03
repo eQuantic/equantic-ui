@@ -278,8 +278,7 @@ public static class UIExtensions
     <script type=""importmap"">
     {{
         ""imports"": {{
-            ""@equantic/runtime"": ""/_equantic/runtime.js?v={BuildId}"",
-            ""@equantic/tailwind"": ""/_equantic/tailwind.js?v={BuildId}""
+            ""@equantic/runtime"": ""/_equantic/runtime.js?v={BuildId}""
         }}
     }}
     </script>

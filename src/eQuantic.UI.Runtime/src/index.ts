@@ -29,6 +29,7 @@ export type { ServerActionResponse } from './core/server-actions';
 // Utils
 export { format, parseEnum } from './utils/format';
 export { StyleBuilder } from './utils/style-builder';
+export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
 // DOM
 export { Reconciler, getReconciler, resetReconciler } from './dom/reconciler';
