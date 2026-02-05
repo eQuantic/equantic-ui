@@ -125,18 +125,21 @@
             StandardOutputImportance="High" />
     </Target>
 
-    <!-- Copy runtime.js after component compilation -->
+    <!-- Copy runtime.js and CSS after component compilation -->
     <Target Name="CopyEQuanticRuntime" AfterTargets="CompileEQuanticUI"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <PropertyGroup>
             <!-- Runtime.js is packaged in eQuantic.UI.Runtime package -->
             <!-- Try NuGet cache first (consumer scenario) -->
             <_RuntimeSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">$(PkgeQuantic_UI_Runtime)/tools/runtime/runtime.js</_RuntimeSourcePath>
+            <_CssSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">$(PkgeQuantic_UI_Runtime)/tools/runtime/equantic.css</_CssSourcePath>
 
             <!-- Fallback to source tree (development scenario) -->
             <_RuntimeSourcePath Condition="'$(_RuntimeSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/dist/index.js')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/dist/index.js</_RuntimeSourcePath>
+            <_CssSourcePath Condition="'$(_CssSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/assets/equantic.css')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/assets/equantic.css</_CssSourcePath>
 
             <_RuntimeDestPath>$(MSBuildProjectDirectory)/$(EQuanticOutputPath)runtime.js</_RuntimeDestPath>
+            <_CssDestPath>$(MSBuildProjectDirectory)/$(EQuanticOutputPath)equantic.css</_CssDestPath>
         </PropertyGroup>
 
         <Error Text="eQuantic.UI: Runtime not found. Ensure the eQuantic.UI.Runtime package (version $(Version)) is installed. Try running 'dotnet restore --force'."
@@ -144,8 +147,13 @@
 
         <Message Text="eQuantic.UI: Copying runtime.js from '$(_RuntimeSourcePath)' to output..."
             Importance="High" />
+        <Message Text="eQuantic.UI: Copying equantic.css from '$(_CssSourcePath)' to output..."
+            Importance="High"
+            Condition="'$(_CssSourcePath)' != '' And Exists('$(_CssSourcePath)')" />
 
         <Copy SourceFiles="$(_RuntimeSourcePath)" DestinationFiles="$(_RuntimeDestPath)" />
+        <Copy SourceFiles="$(_CssSourcePath)" DestinationFiles="$(_CssDestPath)"
+            Condition="'$(_CssSourcePath)' != '' And Exists('$(_CssSourcePath)')" />
     </Target>
 
     <Target Name="WarnNoCli" BeforeTargets="Build"

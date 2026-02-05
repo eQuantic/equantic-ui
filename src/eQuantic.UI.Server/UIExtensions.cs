@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using eQuantic.UI.Core.Metadata;
+using eQuantic.UI.Core.Theme;
 using eQuantic.UI.Server.Authorization;
 using eQuantic.UI.Server.Rendering;
 using Microsoft.AspNetCore.Builder;
@@ -75,6 +76,10 @@ public static class UIExtensions
         // Add SignalR services
         services.AddSignalR();
 
+        // Register EQ theme as fallback if no other theme is registered
+        // This will be overridden if Tailwind theme is added via AddTailwind()
+        services.TryAddSingleton<Core.Theme.IAppTheme, Core.Theme.AppThemeEQ>();
+
         return services;
     }
 
@@ -126,7 +131,7 @@ public static class UIExtensions
             var assembly = typeof(UIExtensions).Assembly;
             var resourceName = "eQuantic.UI.Server.runtime.js";
             using var stream = assembly.GetManifestResourceStream(resourceName);
-            
+
             if (stream == null)
             {
                 context.Response.StatusCode = 404;
@@ -135,6 +140,33 @@ public static class UIExtensions
                 return;
             }
             await stream.CopyToAsync(context.Response.Body);
+        });
+
+        // Map eQuantic CSS (served from wwwroot/_equantic/equantic.css)
+        endpoints.MapGet("/_equantic/equantic.css", async context =>
+        {
+            context.Response.ContentType = "text/css";
+            var env = context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+            var path = System.IO.Path.Combine(env.WebRootPath, "_equantic", "equantic.css");
+
+            if (System.IO.File.Exists(path))
+            {
+                await context.Response.SendFileAsync(path);
+            }
+            else
+            {
+                // Fallback to local directory (Dev scenario)
+                var localPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", "_equantic", "equantic.css");
+                if (System.IO.File.Exists(localPath))
+                {
+                    await context.Response.SendFileAsync(localPath);
+                }
+                else
+                {
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsync($"/* 404: equantic.css not found at {path} or {localPath} */");
+                }
+            }
         });
 
         // Debug/Fallback: Manually serve component files if StaticFiles misses them
@@ -194,6 +226,22 @@ public static class UIExtensions
         var options = context.RequestServices.GetRequiredService<UIOptions>();
         var shell = options.HtmlShell;
         var pageValue = pageName != null ? $"'{pageName}'" : "null";
+
+        // Auto-inject theme initialization scripts if not already added by Tailwind
+        if (!shell.HeadTags.Any(t => t.Contains("__EQUANTIC_THEME_DATA")))
+        {
+            var themeScript = ThemeProvider.GetInitializationScript();
+            if (!string.IsNullOrEmpty(themeScript))
+            {
+                shell.HeadTags.Add(themeScript);
+            }
+
+            var darkModeScript = ThemeProvider.GetDarkModeScript();
+            if (!string.IsNullOrEmpty(darkModeScript) && !shell.HeadTags.Any(t => t.Contains("data-theme")))
+            {
+                shell.HeadTags.Add(darkModeScript);
+            }
+        }
 
         // Initialize Metadata
         var metadata = new MetadataCollection { Title = shell.Title };
@@ -269,6 +317,10 @@ public static class UIExtensions
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <title>{System.Web.HttpUtility.HtmlEncode(metadata.Title)}</title>
     {metadata.RenderTags()}
+
+    <!-- eQuantic Base Styles -->
+    <link rel=""stylesheet"" href=""/_equantic/equantic.css?v={BuildId}"">
+
     <style>
         {shell.BaseStyles}
     </style>

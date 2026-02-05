@@ -1,0 +1,675 @@
+/**
+ * eQuantic.UI Base Styles
+ * Default theme system - works without any external CSS framework
+ * ~8KB minified - zero external dependencies
+ */
+
+:root {
+  /* ===== Color Tokens - Light Theme ===== */
+
+  /* Surface Colors */
+  --eq-surface: #ffffff;
+  --eq-surface-hover: #f5f5f5;
+  --eq-surface-active: #e5e5e5;
+
+  /* Text Colors */
+  --eq-text-primary: #1a1a1a;
+  --eq-text-secondary: #6b7280;
+  --eq-text-tertiary: #9ca3af;
+  --eq-text-disabled: #d1d5db;
+
+  /* Primary Brand Colors */
+  --eq-primary: #3b82f6;
+  --eq-primary-hover: #2563eb;
+  --eq-primary-active: #1d4ed8;
+  --eq-primary-subtle: #eff6ff;
+
+  /* Secondary Colors */
+  --eq-secondary: #64748b;
+  --eq-secondary-hover: #475569;
+  --eq-secondary-active: #334155;
+  --eq-secondary-subtle: #f1f5f9;
+
+  /* Status Colors - Success */
+  --eq-success: #10b981;
+  --eq-success-hover: #059669;
+  --eq-success-subtle: #ecfdf5;
+
+  /* Status Colors - Warning */
+  --eq-warning: #f59e0b;
+  --eq-warning-hover: #d97706;
+  --eq-warning-subtle: #fffbeb;
+
+  /* Status Colors - Error */
+  --eq-error: #ef4444;
+  --eq-error-hover: #dc2626;
+  --eq-error-subtle: #fef2f2;
+
+  /* Status Colors - Info */
+  --eq-info: #3b82f6;
+  --eq-info-hover: #2563eb;
+  --eq-info-subtle: #eff6ff;
+
+  /* Border Colors */
+  --eq-border: #e5e7eb;
+  --eq-border-hover: #d1d5db;
+  --eq-border-focus: #3b82f6;
+
+  /* ===== Spacing Scale ===== */
+  --eq-spacing-xs: 0.25rem;   /* 4px */
+  --eq-spacing-sm: 0.5rem;    /* 8px */
+  --eq-spacing-md: 1rem;      /* 16px */
+  --eq-spacing-lg: 1.5rem;    /* 24px */
+  --eq-spacing-xl: 2rem;      /* 32px */
+  --eq-spacing-xxl: 3rem;     /* 48px */
+
+  /* ===== Border Radius ===== */
+  --eq-radius-sm: 0.25rem;
+  --eq-radius-md: 0.5rem;
+  --eq-radius-lg: 0.75rem;
+  --eq-radius-xl: 1rem;
+  --eq-radius-full: 9999px;
+
+  /* ===== Shadows ===== */
+  --eq-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --eq-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --eq-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --eq-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+
+  /* ===== Typography ===== */
+  --eq-font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --eq-font-family-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+
+  --eq-font-size-xs: 0.75rem;
+  --eq-font-size-sm: 0.875rem;
+  --eq-font-size-base: 1rem;
+  --eq-font-size-lg: 1.125rem;
+  --eq-font-size-xl: 1.25rem;
+  --eq-font-size-2xl: 1.5rem;
+  --eq-font-size-3xl: 1.875rem;
+
+  --eq-font-weight-normal: 400;
+  --eq-font-weight-medium: 500;
+  --eq-font-weight-semibold: 600;
+  --eq-font-weight-bold: 700;
+
+  /* ===== Transitions ===== */
+  --eq-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --eq-transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --eq-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Dark Theme ===== */
+[data-theme="dark"] {
+  /* Surface Colors */
+  --eq-surface: #1a1a1a;
+  --eq-surface-hover: #2a2a2a;
+  --eq-surface-active: #3a3a3a;
+
+  /* Text Colors */
+  --eq-text-primary: #f5f5f5;
+  --eq-text-secondary: #a1a1aa;
+  --eq-text-tertiary: #71717a;
+  --eq-text-disabled: #52525b;
+
+  /* Primary Brand Colors */
+  --eq-primary: #60a5fa;
+  --eq-primary-hover: #3b82f6;
+  --eq-primary-active: #2563eb;
+  --eq-primary-subtle: #1e3a8a;
+
+  /* Secondary Colors */
+  --eq-secondary: #94a3b8;
+  --eq-secondary-hover: #64748b;
+  --eq-secondary-active: #475569;
+  --eq-secondary-subtle: #334155;
+
+  /* Status Colors - Success */
+  --eq-success: #34d399;
+  --eq-success-hover: #10b981;
+  --eq-success-subtle: #064e3b;
+
+  /* Status Colors - Warning */
+  --eq-warning: #fbbf24;
+  --eq-warning-hover: #f59e0b;
+  --eq-warning-subtle: #78350f;
+
+  /* Status Colors - Error */
+  --eq-error: #f87171;
+  --eq-error-hover: #ef4444;
+  --eq-error-subtle: #7f1d1d;
+
+  /* Status Colors - Info */
+  --eq-info: #60a5fa;
+  --eq-info-hover: #3b82f6;
+  --eq-info-subtle: #1e3a8a;
+
+  /* Border Colors */
+  --eq-border: #3f3f46;
+  --eq-border-hover: #52525b;
+  --eq-border-focus: #60a5fa;
+}
+
+/* ===== Reset & Base ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ===== Layout Utilities ===== */
+.eq-flex { display: flex; }
+.eq-flex-col { flex-direction: column; }
+.eq-flex-row { flex-direction: row; }
+.eq-grid { display: grid; }
+.eq-block { display: block; }
+.eq-inline { display: inline; }
+.eq-inline-block { display: inline-block; }
+.eq-hidden { display: none; }
+
+.eq-items-start { align-items: flex-start; }
+.eq-items-center { align-items: center; }
+.eq-items-end { align-items: flex-end; }
+.eq-justify-start { justify-content: flex-start; }
+.eq-justify-center { justify-content: center; }
+.eq-justify-end { justify-content: flex-end; }
+.eq-justify-between { justify-content: space-between; }
+
+/* ===== Spacing Utilities ===== */
+.eq-p-1 { padding: var(--eq-spacing-xs); }
+.eq-p-2 { padding: var(--eq-spacing-sm); }
+.eq-p-4 { padding: var(--eq-spacing-md); }
+.eq-p-6 { padding: var(--eq-spacing-lg); }
+.eq-p-8 { padding: var(--eq-spacing-xl); }
+
+.eq-px-1 { padding-left: var(--eq-spacing-xs); padding-right: var(--eq-spacing-xs); }
+.eq-px-2 { padding-left: var(--eq-spacing-sm); padding-right: var(--eq-spacing-sm); }
+.eq-px-4 { padding-left: var(--eq-spacing-md); padding-right: var(--eq-spacing-md); }
+.eq-px-6 { padding-left: var(--eq-spacing-lg); padding-right: var(--eq-spacing-lg); }
+
+.eq-py-1 { padding-top: var(--eq-spacing-xs); padding-bottom: var(--eq-spacing-xs); }
+.eq-py-2 { padding-top: var(--eq-spacing-sm); padding-bottom: var(--eq-spacing-sm); }
+.eq-py-4 { padding-top: var(--eq-spacing-md); padding-bottom: var(--eq-spacing-md); }
+
+.eq-m-2 { margin: var(--eq-spacing-sm); }
+.eq-m-4 { margin: var(--eq-spacing-md); }
+.eq-mt-4 { margin-top: var(--eq-spacing-md); }
+.eq-mb-4 { margin-bottom: var(--eq-spacing-md); }
+
+.eq-gap-1 { gap: var(--eq-spacing-xs); }
+.eq-gap-2 { gap: var(--eq-spacing-sm); }
+.eq-gap-4 { gap: var(--eq-spacing-md); }
+.eq-gap-6 { gap: var(--eq-spacing-lg); }
+
+/* ===== Sizing Utilities ===== */
+.eq-w-full { width: 100%; }
+.eq-h-full { height: 100%; }
+
+/* ===== Typography Utilities ===== */
+.eq-text-xs { font-size: var(--eq-font-size-xs); }
+.eq-text-sm { font-size: var(--eq-font-size-sm); }
+.eq-text-base { font-size: var(--eq-font-size-base); }
+.eq-text-lg { font-size: var(--eq-font-size-lg); }
+.eq-text-xl { font-size: var(--eq-font-size-xl); }
+.eq-text-2xl { font-size: var(--eq-font-size-2xl); }
+.eq-text-3xl { font-size: var(--eq-font-size-3xl); }
+
+.eq-text-center { text-align: center; }
+.eq-text-left { text-align: left; }
+.eq-text-right { text-align: right; }
+
+.eq-font-normal { font-weight: var(--eq-font-weight-normal); }
+.eq-font-medium { font-weight: var(--eq-font-weight-medium); }
+.eq-font-semibold { font-weight: var(--eq-font-weight-semibold); }
+.eq-font-bold { font-weight: var(--eq-font-weight-bold); }
+
+/* ===== Border Radius ===== */
+.eq-rounded-sm { border-radius: var(--eq-radius-sm); }
+.eq-rounded-md { border-radius: var(--eq-radius-md); }
+.eq-rounded-lg { border-radius: var(--eq-radius-lg); }
+.eq-rounded-xl { border-radius: var(--eq-radius-xl); }
+.eq-rounded-full { border-radius: var(--eq-radius-full); }
+
+/* ===== Shadow ===== */
+.eq-shadow-sm { box-shadow: var(--eq-shadow-sm); }
+.eq-shadow-md { box-shadow: var(--eq-shadow-md); }
+.eq-shadow-lg { box-shadow: var(--eq-shadow-lg); }
+.eq-shadow-xl { box-shadow: var(--eq-shadow-xl); }
+
+/* ===== Transitions ===== */
+.eq-transition-all {
+  transition-property: all;
+  transition-duration: var(--eq-transition-base);
+}
+
+.eq-transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-duration: var(--eq-transition-base);
+}
+
+/* ===== Cursor ===== */
+.eq-cursor-pointer { cursor: pointer; }
+.eq-cursor-not-allowed { cursor: not-allowed; }
+
+/* ===== Component: Button ===== */
+.eq-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--eq-spacing-sm) var(--eq-spacing-md);
+  font-family: var(--eq-font-family);
+  font-size: var(--eq-font-size-base);
+  font-weight: var(--eq-font-weight-medium);
+  line-height: 1.5;
+  border-radius: var(--eq-radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--eq-transition-base);
+  user-select: none;
+}
+
+.eq-btn:focus-visible {
+  outline: 2px solid var(--eq-border-focus);
+  outline-offset: 2px;
+}
+
+.eq-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.eq-btn-primary {
+  background-color: var(--eq-primary);
+  color: white;
+}
+
+.eq-btn-primary:hover:not(:disabled) {
+  background-color: var(--eq-primary-hover);
+}
+
+.eq-btn-secondary {
+  background-color: var(--eq-secondary);
+  color: white;
+}
+
+.eq-btn-secondary:hover:not(:disabled) {
+  background-color: var(--eq-secondary-hover);
+}
+
+.eq-btn-outline {
+  background-color: transparent;
+  border-color: var(--eq-border);
+  color: var(--eq-text-primary);
+}
+
+.eq-btn-outline:hover:not(:disabled) {
+  background-color: var(--eq-surface-hover);
+  border-color: var(--eq-border-hover);
+}
+
+.eq-btn-ghost {
+  background-color: transparent;
+  color: var(--eq-text-primary);
+}
+
+.eq-btn-ghost:hover:not(:disabled) {
+  background-color: var(--eq-surface-hover);
+}
+
+.eq-btn-destructive {
+  background-color: var(--eq-error);
+  color: white;
+}
+
+.eq-btn-destructive:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+.eq-btn-success {
+  background-color: var(--eq-success);
+  color: white;
+}
+
+.eq-btn-success:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+.eq-btn-warning {
+  background-color: var(--eq-warning);
+  color: white;
+}
+
+.eq-btn-warning:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+.eq-btn-info {
+  background-color: var(--eq-info);
+  color: white;
+}
+
+.eq-btn-info:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+.eq-btn-link {
+  background-color: transparent;
+  color: var(--eq-primary);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.eq-btn-link:hover:not(:disabled) {
+  color: var(--eq-primary-hover);
+}
+
+.eq-btn-sm {
+  padding: var(--eq-spacing-xs) var(--eq-spacing-sm);
+  font-size: var(--eq-font-size-sm);
+}
+
+.eq-btn-lg {
+  padding: var(--eq-spacing-md) var(--eq-spacing-lg);
+  font-size: var(--eq-font-size-lg);
+}
+
+/* ===== Component: Input ===== */
+.eq-input {
+  display: block;
+  width: 100%;
+  padding: var(--eq-spacing-sm) var(--eq-spacing-md);
+  font-family: var(--eq-font-family);
+  font-size: var(--eq-font-size-base);
+  line-height: 1.5;
+  color: var(--eq-text-primary);
+  background-color: var(--eq-surface);
+  border: 1px solid var(--eq-border);
+  border-radius: var(--eq-radius-md);
+  transition: all var(--eq-transition-base);
+}
+
+.eq-input:hover:not(:disabled) {
+  border-color: var(--eq-border-hover);
+}
+
+.eq-input:focus {
+  outline: 2px solid var(--eq-border-focus);
+  outline-offset: 0;
+  border-color: var(--eq-border-focus);
+}
+
+.eq-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--eq-surface-hover);
+}
+
+.eq-input::placeholder {
+  color: var(--eq-text-secondary);
+}
+
+.eq-input-sm {
+  padding: var(--eq-spacing-xs) var(--eq-spacing-sm);
+  font-size: var(--eq-font-size-sm);
+}
+
+.eq-input-lg {
+  padding: var(--eq-spacing-md) var(--eq-spacing-lg);
+  font-size: var(--eq-font-size-lg);
+}
+
+/* ===== Component: Card ===== */
+.eq-card {
+  background-color: var(--eq-surface);
+  border: 1px solid var(--eq-border);
+  border-radius: var(--eq-radius-lg);
+  box-shadow: var(--eq-shadow-md);
+  overflow: hidden;
+}
+
+.eq-card-header {
+  padding: var(--eq-spacing-lg);
+  border-bottom: 1px solid var(--eq-border);
+}
+
+.eq-card-body {
+  padding: var(--eq-spacing-lg);
+}
+
+.eq-card-footer {
+  padding: var(--eq-spacing-lg);
+  border-top: 1px solid var(--eq-border);
+  background-color: var(--eq-surface-hover);
+}
+
+/* ===== Responsive Breakpoints ===== */
+/* Mobile-first approach: styles apply at breakpoint and above */
+
+/* Small devices (phones landscape, 640px and up) */
+@media (min-width: 640px) {
+  /* Breakpoint classes will be generated by framework */
+  /* Example: sm:eq-text-lg applies text-lg at sm breakpoint and above */
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+  /* md:* classes active here */
+}
+
+/* Large devices (laptops, 1024px and up) */
+@media (min-width: 1024px) {
+  /* lg:* classes active here */
+}
+
+/* Extra large devices (desktops, 1280px and up) */
+@media (min-width: 1280px) {
+  /* xl:* classes active here */
+}
+
+/* 2X large devices (large desktops, 1536px and up) */
+@media (min-width: 1536px) {
+  /* 2xl:* classes active here */
+}
+
+/* ===== Animations & Keyframes ===== */
+
+/* Fade animations */
+@keyframes eq-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes eq-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Slide animations */
+@keyframes eq-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes eq-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes eq-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes eq-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scale animations */
+@keyframes eq-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes eq-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+/* Bounce animation */
+@keyframes eq-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Pulse animation */
+@keyframes eq-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Spin animation */
+@keyframes eq-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Shake animation (for errors) */
+@keyframes eq-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Animation utility classes */
+.eq-animate-fade-in {
+  animation: eq-fade-in var(--eq-transition-base) var(--eq-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.eq-animate-fade-out {
+  animation: eq-fade-out var(--eq-transition-base) var(--eq-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.eq-animate-slide-up {
+  animation: eq-slide-up var(--eq-transition-base) var(--eq-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.eq-animate-slide-down {
+  animation: eq-slide-down var(--eq-transition-base) var(--eq-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.eq-animate-slide-left {
+  animation: eq-slide-left var(--eq-transition-base) var(--eq-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.eq-animate-slide-right {
+  animation: eq-slide-right var(--eq-transition-base) var(--eq-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.eq-animate-scale-in {
+  animation: eq-scale-in var(--eq-transition-base) var(--eq-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.eq-animate-scale-out {
+  animation: eq-scale-out var(--eq-transition-base) var(--eq-transition-easing, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.eq-animate-bounce {
+  animation: eq-bounce 1s infinite;
+}
+
+.eq-animate-pulse {
+  animation: eq-pulse 2s infinite;
+}
+
+.eq-animate-spin {
+  animation: eq-spin 1s linear infinite;
+}
+
+.eq-animate-shake {
+  animation: eq-shake 0.5s;
+}
+
+/* ===== Card Size Variants ===== */
+.eq-card-sm .eq-card-header,
+.eq-card-sm .eq-card-body,
+.eq-card-sm .eq-card-footer {
+  padding: var(--eq-spacing-sm);
+}
+
+.eq-card-lg .eq-card-header,
+.eq-card-lg .eq-card-body,
+.eq-card-lg .eq-card-footer {
+  padding: var(--eq-spacing-xl);
+}
+
+.eq-card-xl .eq-card-header,
+.eq-card-xl .eq-card-body,
+.eq-card-xl .eq-card-footer {
+  padding: var(--eq-spacing-xxl);
+}
+
+/* ===== Utility Border Colors ===== */
+.eq-border-primary {
+  border-color: var(--eq-primary);
+}
+
+.eq-border-secondary {
+  border-color: var(--eq-secondary);
+}
+
+.eq-border-success {
+  border-color: var(--eq-success);
+}
+
+.eq-border-warning {
+  border-color: var(--eq-warning);
+}
+
+.eq-border-error {
+  border-color: var(--eq-error);
+}
+
+.eq-border-none {
+  border: none;
+}
+
+.eq-shadow-none {
+  box-shadow: none;
+}

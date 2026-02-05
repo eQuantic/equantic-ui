@@ -18,10 +18,12 @@
             Condition="$([MSBuild]::IsOSPlatform('Linux'))" PrivateAssets="None" />
     </ItemGroup>
 
-    <!-- Package the compiled runtime.js for consumer projects -->
+    <!-- Package the compiled runtime.js and CSS for consumer projects -->
     <ItemGroup>
         <Content Include="dist\index.js" PackagePath="tools\runtime\runtime.js"
             Condition="Exists('dist\index.js')" />
+        <Content Include="assets\equantic.css" PackagePath="tools\runtime\equantic.css"
+            Condition="Exists('assets\equantic.css')" />
     </ItemGroup>
 
 </Project>
