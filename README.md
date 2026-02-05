@@ -339,6 +339,80 @@ public class UserSettings : StatefulComponent
 }
 ```
 
+### Production-Ready Components
+
+Components with enterprise-grade robustness matching shadcn/ui:
+
+#### Compound Components Pattern
+
+```csharp
+new Card {
+    Variant = CardVariant.Elevated,
+    Children = {
+        new CardHeader {
+            Children = {
+                new CardTitle { Text = "Q1 2026 Roadmap" },
+                new CardDescription { Text = "Key initiatives" }
+            }
+        },
+        new CardBody {
+            Children = { new Text("Launch mobile app...") }
+        },
+        new CardFooter {
+            Children = { new Button { Text = "View Details" } }
+        }
+    }
+}
+```
+
+#### Loading States
+
+```csharp
+new Button {
+    Text = "Save Changes",
+    Loading = isSaving,  // Automatic spinner + disabled state
+    OnClick = HandleSave
+}
+```
+
+#### Form Validation
+
+```csharp
+new FormField {
+    Label = "Email",
+    Required = true,
+    Error = validationError,
+    HelperText = "We'll never share your email",
+    Children = {
+        new TextInput { Type = "email", DefaultValue = "" }
+    }
+}
+```
+
+#### Input Groups
+
+```csharp
+new InputGroup {
+    Children = {
+        new InputAddon { Text = "https://" },
+        new TextInput { Placeholder = "example.com" },
+        new Button { Text = "Go" }
+    }
+}
+```
+
+**Features:**
+
+- ✅ 5+ Card variants (Default, Outline, Elevated, Subtle, Ghost)
+- ✅ Controlled/Uncontrolled inputs (DefaultValue, DefaultChecked)
+- ✅ FormField with error messages and helper text
+- ✅ Loading spinners on buttons
+- ✅ Input groups for composite inputs
+- ✅ Data & ARIA attributes support
+- ✅ Complete XML documentation
+
+[Learn more about Component Robustness →](https://github.com/equantic/equantic-ui/wiki/ComponentRobustness)
+
 ### Theming System
 
 Consistent styling with type-safe variants:
@@ -508,10 +582,16 @@ src/
 ## Documentation
 
 - [📚 Wiki Home](https://github.com/equantic/equantic-ui/wiki) - Complete documentation
-- [🏗️ Package Architecture](https://github.com/equantic/equantic-ui/wiki/PackageArchitecture) - Self-contained package design
+- [🏗️ Architecture](https://github.com/equantic/equantic-ui/wiki/Architecture) - DDD, CQRS, and Clean Architecture
+- [📦 Package Architecture](https://github.com/equantic/equantic-ui/wiki/PackageArchitecture) - Self-contained package design
+- [🧩 Core Components](https://github.com/equantic/equantic-ui/wiki/CoreComponents) - HtmlNode, HtmlElement, component types
+- [💪 Component Robustness](https://github.com/equantic/equantic-ui/wiki/ComponentRobustness) - Production-ready components
+- [🎨 Styling](https://github.com/equantic/equantic-ui/wiki/Styling) - Theme system and CSS integration
 - [🔨 Build Flow](https://github.com/equantic/equantic-ui/wiki/BuildFlow) - How the compilation pipeline works
+- [⚙️ Compiler](https://github.com/equantic/equantic-ui/wiki/Compiler) - C# to JavaScript transpilation
 - [⚡ Runtime](https://github.com/equantic/equantic-ui/wiki/Runtime) - Virtual DOM and browser runtime
 - [🐛 Debugging Tools](https://github.com/equantic/equantic-ui/wiki/Debug) - Professional debugging with logger and error overlay
+- [🗺️ Roadmap](https://github.com/equantic/equantic-ui/wiki/Roadmap) - Project progress and future plans
 - [CLAUDE.md](CLAUDE.md) - Technical reference for contributors
 
 ---
@@ -528,6 +608,7 @@ src/
 | ✅ Server Actions | RPC bridge with `[Authorize]` and payload validation |
 | ✅ SSR & Hydration | Server-side rendering with client hydration |
 | ✅ Theming System | `StyleBuilder` (CVA pattern), `Variant`/`Size` enums, `IAppTheme` |
+| ✅ Component Robustness | Compound components, variants, loading states, validation, input groups |
 | ✅ Developer Experience | Source Maps for C# debugging, HMR support |
 
 ### In Progress
