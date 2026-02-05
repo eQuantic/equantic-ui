@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace eQuantic.UI.Tailwind;
 
 /// <summary>
@@ -115,6 +117,7 @@ public static partial class TW
         public static readonly TailwindClass Blue500 = new("bg-blue-500");
         public static readonly TailwindClass Blue600 = new("bg-blue-600");
         public static readonly TailwindClass Blue700 = new("bg-blue-700");
+        public static readonly TailwindClass Blue800 = new("bg-blue-800");
 
         // Indigo scale
         public static readonly TailwindClass Indigo50 = new("bg-indigo-50");
@@ -128,6 +131,7 @@ public static partial class TW
         // Red/Green
         public static readonly TailwindClass Red50 = new("bg-red-50");
         public static readonly TailwindClass Red100 = new("bg-red-100");
+        public static readonly TailwindClass Red600 = new("bg-red-600");
         public static readonly TailwindClass Green50 = new("bg-green-50");
         public static readonly TailwindClass Green100 = new("bg-green-100");
         public static readonly TailwindClass Green200 = new("bg-green-200");
@@ -203,6 +207,7 @@ public static partial class TW
         public static readonly TailwindClass Sans = new("font-sans");
         public static readonly TailwindClass Serif = new("font-serif");
         public static readonly TailwindClass Mono = new("font-mono");
+        public static readonly TailwindClass Italic = new("italic");
 
         public static readonly TailwindClass Thin = new("font-thin");
         public static readonly TailwindClass Light = new("font-light");
@@ -228,9 +233,12 @@ public static partial class TW
         public static readonly TailwindClass None = new("border-none");
 
         public static readonly TailwindClass Transparent = new("border-transparent");
+        public static readonly TailwindClass Gray100 = new("border-gray-100");
         public static readonly TailwindClass Gray200 = new("border-gray-200");
         public static readonly TailwindClass Gray300 = new("border-gray-300");
         public static readonly TailwindClass Blue500 = new("border-blue-500");
+        public static readonly TailwindClass Green200 = new("border-green-200");
+        public static readonly TailwindClass Green800 = new("border-green-800");
         public static readonly TailwindClass Zinc700 = new("border-zinc-700");
         public static readonly TailwindClass Zinc800 = new("border-zinc-800");
 
@@ -602,4 +610,50 @@ public static partial class TW
     /// Adds opacity to a Tailwind class (e.g., WithOpacity("bg-white", 80) => "bg-white/80").
     /// </summary>
     public static TailwindClass WithOpacity(string className, int opacity) => new($"{className}/{opacity}");
+
+    /// <summary>
+    /// Adds opacity to a TailwindClass (e.g., WithOpacity(TW.Bg.White, 80) => "bg-white/80").
+    /// </summary>
+    public static TailwindClass WithOpacity(TailwindClass tailwindClass, int opacity) => new($"{(string)tailwindClass}/{opacity}");
+
+    /// <summary>
+    /// Dark mode variant for a single string class
+    /// </summary>
+    public static TailwindClass Dark(string className) => new($"dark:{className}");
+
+    /// <summary>
+    /// Dark mode variant for a single TailwindClass
+    /// </summary>
+    public static TailwindClass Dark(TailwindClass tailwindClass) => new($"dark:{(string)tailwindClass}");
+
+    /// <summary>
+    /// Hover variant for a single string class
+    /// </summary>
+    public static TailwindClass Hover(string className) => new($"hover:{className}");
+
+    /// <summary>
+    /// Hover variant for a single TailwindClass
+    /// </summary>
+    public static TailwindClass Hover(TailwindClass tailwindClass) => new($"hover:{(string)tailwindClass}");
+
+    /// <summary>
+    /// Focus-within variant for a single string class
+    /// </summary>
+    public static TailwindClass FocusWithin(string className) => new($"focus-within:{className}");
+
+    /// <summary>
+    /// Focus-within variant for a single TailwindClass
+    /// </summary>
+    public static TailwindClass FocusWithin(TailwindClass tailwindClass) => new($"focus-within:{(string)tailwindClass}");
+
+    /// <summary>
+    /// Group-hover variant for a single string class
+    /// </summary>
+    public static TailwindClass GroupHover(string className) => new($"group-hover:{className}");
+
+    /// <summary>
+    /// Group-hover variant for a single TailwindClass
+    /// </summary>
+    public static TailwindClass GroupHover(TailwindClass tailwindClass) => new($"group-hover:{(string)tailwindClass}");
 }
+

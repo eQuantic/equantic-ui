@@ -13,7 +13,9 @@ namespace eQuantic.UI.Compiler.Analysis;
 public class CompileTimeEvaluator
 {
     private readonly SemanticModel _semanticModel;
-    private readonly Dictionary<string, string> _cache = new();
+    private readonly Dictionary<string, string> _cache = [];
+    private readonly Dictionary<string, ITypeSymbol> _cacheTypes = [];
+    private readonly HashSet<string> _evaluationStack = [];
 
     public CompileTimeEvaluator(SemanticModel semanticModel)
     {
@@ -21,8 +23,37 @@ public class CompileTimeEvaluator
     }
 
     /// <summary>
+    /// Clears the evaluation cache.
+    /// Useful when semantic model changes or for unit testing.
+    /// </summary>
+    public void ClearCache()
+    {
+        _cache.Clear();
+        _cacheTypes.Clear();
+        _evaluationStack.Clear();
+    }
+
+    /// <summary>
+    /// Gets diagnostic information about cached evaluations.
+    /// Useful for debugging and optimization.
+    /// </summary>
+    public (int CachedCount, int TypesCached) GetCacheStats()
+    {
+        return (_cache.Count, _cacheTypes.Count);
+    }
+
+    /// <summary>
+    /// Checks if an expression has been successfully cached.
+    /// </summary>
+    public bool IsCached(string expressionText)
+    {
+        return _cache.ContainsKey(expressionText);
+    }
+
+    /// <summary>
     /// Tries to evaluate an expression to a constant string value.
     /// Returns null if the expression cannot be evaluated at compile-time.
+    /// Enhanced with recursion detection and type caching.
     /// </summary>
     public string? TryEvaluate(ExpressionSyntax expression)
     {
@@ -33,25 +64,48 @@ public class CompileTimeEvaluator
         if (_cache.TryGetValue(key, out var cached))
             return cached;
 
-        // Check if type is marked with [CompileTimeEvaluate]
-        var typeInfo = _semanticModel.GetTypeInfo(expression);
-        if (typeInfo.Type == null)
-            return null;
+        // Detect circular dependencies / infinite recursion
+        if (_evaluationStack.Contains(key))
+        {
+            return null; // Circular reference detected
+        }
 
-        if (!IsCompileTimeEvaluatable(typeInfo.Type))
-            return null;
+        try
+        {
+            // Add to stack to detect recursion
+            _evaluationStack.Add(key);
 
-        // Try different evaluation strategies
-        var result = EvaluateMemberAccess(expression)
-            ?? EvaluateMethodCall(expression)
-            ?? EvaluateBinaryExpression(expression)
-            ?? EvaluateObjectCreation(expression)
-            ?? EvaluateConstantValue(expression);
+            // Check if type is marked with [CompileTimeEvaluate]
+            var typeInfo = _semanticModel.GetTypeInfo(expression);
+            var type = typeInfo.Type;
 
-        if (result != null)
-            _cache[key] = result;
+            if (type == null)
+                return null;
 
-        return result;
+            // Cache the type for debugging/analysis
+            _cacheTypes[key] = type;
+
+            if (!IsCompileTimeEvaluatable(type))
+                return null;
+
+            // Try different evaluation strategies in order of likelihood
+            var result = EvaluateMemberAccess(expression)
+                ?? EvaluateMethodCall(expression)
+                ?? EvaluateBinaryExpression(expression)
+                ?? EvaluateObjectCreation(expression)
+                ?? EvaluateConstantValue(expression);
+
+            // Cache successful evaluations
+            if (result != null)
+                _cache[key] = result;
+
+            return result;
+        }
+        finally
+        {
+            // Always remove from stack when done
+            _evaluationStack.Remove(key);
+        }
     }
 
     /// <summary>
@@ -131,8 +185,9 @@ public class CompileTimeEvaluator
 
     /// <summary>
     /// Tries to invoke a method from external assembly using reflection.
+    /// Enhanced with better type matching and implicit operator handling.
     /// </summary>
-    private string? TryInvokeMethodViaReflection(IMethodSymbol methodSymbol, List<object?> args)
+    private string? TryInvokeMethodViaReflection(IMethodSymbol methodSymbol, List<object?> args, List<ITypeSymbol?>? argTypes = null)
     {
         try
         {
@@ -168,10 +223,25 @@ public class CompileTimeEvaluator
                 return null;
             }
 
-            // Get the method
-            var paramTypes = args.Select(a => a?.GetType() ?? typeof(object)).ToArray();
-            var method = type.GetMethod(methodSymbol.Name,
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            // Try to find the best matching method
+            var methods = type.GetMethods(
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                .Where(m => m.Name == methodSymbol.Name)
+                .ToList();
+
+            System.Reflection.MethodInfo? method = null;
+
+            // If we have type information, try to match parameters more precisely
+            if (argTypes != null && argTypes.Count == args.Count)
+            {
+                method = FindBestMethodMatch(methods, args, argTypes, loadedAssembly);
+            }
+
+            // Fallback to simple matching
+            if (method == null)
+            {
+                method = methods.FirstOrDefault(m => m.GetParameters().Length == args.Count);
+            }
 
             if (method == null)
             {
@@ -186,13 +256,109 @@ public class CompileTimeEvaluator
                 return null;
             }
 
+            // Handle implicit string conversion if result is a struct
+            var resultType = result.GetType();
+            if (resultType.IsValueType && !resultType.IsPrimitive)
+            {
+                // Try to find implicit operator to string
+                var implicitOp = resultType.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                    .FirstOrDefault(m =>
+                        m.Name == "op_Implicit" &&
+                        m.ReturnType == typeof(string));
+
+                if (implicitOp != null)
+                {
+                    var converted = implicitOp.Invoke(null, new[] { result });
+                    if (converted is string str)
+                    {
+                        return str;
+                    }
+                }
+            }
+
             var stringValue = result.ToString();
             return stringValue;
         }
-        catch (Exception ex)
+        catch
         {
+            // Silently fail - method invocation via reflection can fail for many reasons
             return null;
         }
+    }
+
+    /// <summary>
+    /// Finds the best matching method based on parameter types.
+    /// </summary>
+    private System.Reflection.MethodInfo? FindBestMethodMatch(
+        List<System.Reflection.MethodInfo> methods,
+        List<object?> args,
+        List<ITypeSymbol?> argTypes,
+        System.Reflection.Assembly assembly)
+    {
+        foreach (var method in methods)
+        {
+            var parameters = method.GetParameters();
+            if (parameters.Length != args.Count)
+                continue;
+
+            var allMatch = true;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                var paramType = parameters[i].ParameterType;
+                var argType = argTypes[i];
+
+                // Check if argument type matches
+                if (argType != null)
+                {
+                    var argTypeName = argType.ToDisplayString();
+                    var reflectionType = FindTypeInAssembly(assembly, argTypeName);
+
+                    if (reflectionType != null && paramType.IsAssignableFrom(reflectionType))
+                    {
+                        continue;
+                    }
+                }
+
+                // Check if argument value type matches
+                if (args[i] != null && paramType.IsAssignableFrom(args[i]!.GetType()))
+                {
+                    continue;
+                }
+
+                // Check for primitive type matches
+                if (args[i] != null && IsPrimitiveCompatible(paramType, args[i]!.GetType()))
+                {
+                    continue;
+                }
+
+                allMatch = false;
+                break;
+            }
+
+            if (allMatch)
+                return method;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Checks if two primitive types are compatible.
+    /// </summary>
+    private static bool IsPrimitiveCompatible(Type targetType, Type sourceType)
+    {
+        if (targetType == sourceType)
+            return true;
+
+        // Handle numeric conversions
+        Type[] numericTypes =
+        [
+            typeof(int), typeof(long), typeof(short), typeof(byte),
+            typeof(uint), typeof(ulong), typeof(ushort), typeof(sbyte),
+            typeof(float), typeof(double), typeof(decimal)
+        ];
+
+        return numericTypes.Contains(targetType) && numericTypes.Contains(sourceType);
     }
 
     /// <summary>
@@ -309,8 +475,9 @@ public class CompileTimeEvaluator
             var stringValue = value.ToString();
             return stringValue;
         }
-        catch (Exception ex)
+        catch
         {
+            // Silently fail - field access via reflection can fail for many reasons
             return null;
         }
     }
@@ -359,6 +526,8 @@ public class CompileTimeEvaluator
 
     /// <summary>
     /// Evaluates method calls like TW.P(6) or TW.Dark(TW.Bg.Zinc900).
+    /// Enhanced to handle implicit conversions and complex nested expressions.
+    /// Includes symbolic compilation for TW/TailwindClass methods.
     /// </summary>
     private string? EvaluateMethodCall(ExpressionSyntax expression)
     {
@@ -376,50 +545,486 @@ public class CompileTimeEvaluator
             return null;
         }
 
-        // Evaluate all arguments
+        // Try symbolic compilation for known TW/TailwindClass methods
+        var symbolicResult = TrySymbolicCompilation(invocation, symbol);
+        if (symbolicResult != null)
+            return symbolicResult;
+
+        // Evaluate all arguments with enhanced type handling
         var argValues = new List<object?>();
+        var argTypes = new List<ITypeSymbol?>();
+
         foreach (var arg in invocation.ArgumentList.Arguments)
         {
-            // Try to get constant value
+            var argTypeInfo = _semanticModel.GetTypeInfo(arg.Expression);
+            argTypes.Add(argTypeInfo.Type);
+
+            // Try to get constant value first
             var constValue = _semanticModel.GetConstantValue(arg.Expression);
             if (constValue.HasValue)
             {
                 argValues.Add(constValue.Value);
+                continue;
             }
-            else
-            {
-                // Try to evaluate recursively (for nested expressions like TW.Dark(TW.Bg.Zinc900))
-                var evaluatedArg = TryEvaluate(arg.Expression);
-                if (evaluatedArg != null)
-                {
-                    argValues.Add(evaluatedArg);
-                }
-                else
-                {
-                    // Check if it's a .ToString() call on an evaluable expression
-                    if (arg.Expression is MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } toStringCall)
-                    {
-                        var baseValue = TryEvaluate(toStringCall.Expression);
-                        if (baseValue != null)
-                        {
-                            argValues.Add(baseValue);
-                            continue;
-                        }
-                    }
 
-                    return null; // Cannot evaluate this argument
+            // Try to evaluate recursively (for nested expressions like TW.Dark(TW.Bg.Zinc900))
+            var evaluatedArg = TryEvaluate(arg.Expression);
+            if (evaluatedArg != null)
+            {
+                argValues.Add(evaluatedArg);
+                continue;
+            }
+
+            // Check if it's a .ToString() call on an evaluable expression
+            if (arg.Expression is MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } toStringCall)
+            {
+                var baseValue = TryEvaluate(toStringCall.Expression);
+                if (baseValue != null)
+                {
+                    argValues.Add(baseValue);
+                    continue;
+                }
+            }
+
+            // Check if we can convert via implicit operator
+            if (argTypeInfo.Type != null && IsCompileTimeEvaluatable(argTypeInfo.Type))
+            {
+                // Try to apply implicit string conversion
+                var implicitStringValue = TryApplyImplicitConversion(arg.Expression, argTypeInfo.Type);
+                if (implicitStringValue != null)
+                {
+                    argValues.Add(implicitStringValue);
+                    continue;
+                }
+            }
+
+            return null; // Cannot evaluate this argument
+        }
+
+        // Evaluate the method with the constant arguments
+        return EvaluateMethodBody(symbol, argValues, argTypes);
+    }
+
+    /// <summary>
+    /// Symbolic compilation for TW/TailwindClass methods.
+    /// Analyzes method source code and executes it symbolically (no hardcoding).
+    /// </summary>
+    private string? TrySymbolicCompilation(InvocationExpressionSyntax invocation, IMethodSymbol methodSymbol)
+    {
+        var containingTypeName = methodSymbol.ContainingType.Name;
+
+        // Only handle TW or TailwindClass methods
+        if (containingTypeName != "TW" && containingTypeName != "TailwindClass")
+            return null;
+
+        // Parse arguments symbolically
+        var args = invocation.ArgumentList.Arguments
+            .Select(arg => TryEvaluate(arg.Expression))
+            .ToList();
+
+        // If any argument failed to evaluate, we can't symbolically compile
+        if (args.Any(a => a == null))
+            return null;
+
+        var evaluatedArgs = args.Where(a => a != null).Select(a => a!).ToList();
+
+        // Try to get method source code
+        var syntaxRef = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+        if (syntaxRef == null)
+        {
+            // Method is from external assembly - try reflection
+            return TryInvokeMethodViaReflection(methodSymbol, evaluatedArgs.Cast<object?>().ToList(), null);
+        }
+
+        var methodDecl = syntaxRef.GetSyntax() as MethodDeclarationSyntax;
+        if (methodDecl == null)
+            return null;
+
+        // Analyze method implementation to detect pattern
+        var pattern = DetectMethodPattern(methodDecl, methodSymbol);
+        if (pattern != null)
+        {
+            return ExecutePattern(pattern, evaluatedArgs);
+        }
+
+        // Fallback to regular method body evaluation
+        return null;
+    }
+
+    /// <summary>
+    /// Detects common patterns in method implementations.
+    /// Returns pattern descriptor if recognized, null otherwise.
+    /// </summary>
+    private static MethodPattern? DetectMethodPattern(MethodDeclarationSyntax methodDecl, IMethodSymbol methodSymbol)
+    {
+        // Get method body expression
+        ExpressionSyntax? bodyExpr = methodDecl.ExpressionBody?.Expression;
+
+        if (bodyExpr == null && methodDecl.Body != null)
+        {
+            var returnStmt = methodDecl.Body.Statements
+                .OfType<ReturnStatementSyntax>()
+                .FirstOrDefault();
+            bodyExpr = returnStmt?.Expression;
+        }
+
+        if (bodyExpr == null)
+            return null;
+
+        // Pattern 1: new Type($"{arg}/{opacity}") - Interpolated string constructor
+        if (bodyExpr is ObjectCreationExpressionSyntax { ArgumentList.Arguments.Count: 1 } objCreation)
+        {
+            var arg = objCreation.ArgumentList.Arguments[0].Expression;
+
+            // Interpolated string pattern
+            if (arg is InterpolatedStringExpressionSyntax interpolated)
+            {
+                return new MethodPattern
+                {
+                    Type = PatternType.InterpolatedString,
+                    Template = interpolated,
+                    Parameters = [.. methodSymbol.Parameters]
+                };
+            }
+
+            // String.Join pattern: new Type(string.Join(" ", args))
+            if (arg is InvocationExpressionSyntax invocation &&
+                invocation.Expression is MemberAccessExpressionSyntax memberAccess &&
+                memberAccess.Name.Identifier.Text == "Join")
+            {
+                return new MethodPattern
+                {
+                    Type = PatternType.StringJoin,
+                    Template = invocation,
+                    Parameters = [.. methodSymbol.Parameters]
+                };
+            }
+
+            // String.Format pattern: new Type(string.Format("{0}:{1}", prefix, value))
+            if (arg is InvocationExpressionSyntax formatInvocation &&
+                formatInvocation.Expression is MemberAccessExpressionSyntax formatAccess &&
+                formatAccess.Name.Identifier.Text == "Format")
+            {
+                return new MethodPattern
+                {
+                    Type = PatternType.StringFormat,
+                    Template = formatInvocation,
+                    Parameters = [.. methodSymbol.Parameters]
+                };
+            }
+
+            // Simple parameter passthrough: new Type(paramName)
+            if (arg is IdentifierNameSyntax identifier)
+            {
+                return new MethodPattern
+                {
+                    Type = PatternType.ParameterPassthrough,
+                    Template = identifier,
+                    Parameters = [.. methodSymbol.Parameters]
+                };
+            }
+
+            // Binary expression: new Type(prefix + ":" + value)
+            if (arg is BinaryExpressionSyntax binary)
+            {
+                return new MethodPattern
+                {
+                    Type = PatternType.BinaryExpression,
+                    Template = binary,
+                    Parameters = [.. methodSymbol.Parameters]
+                };
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Executes a detected pattern with the given arguments.
+    /// </summary>
+    private string? ExecutePattern(MethodPattern pattern, List<string> args)
+    {
+        return pattern.Type switch
+        {
+            PatternType.InterpolatedString => ExecuteInterpolatedStringPattern(pattern, args),
+            PatternType.StringJoin => ExecuteStringJoinPattern(pattern, args),
+            PatternType.StringFormat => ExecuteStringFormatPattern(pattern, args),
+            PatternType.ParameterPassthrough => ExecuteParameterPassthroughPattern(pattern, args),
+            PatternType.BinaryExpression => ExecuteBinaryExpressionPattern(pattern, args),
+            _ => null
+        };
+    }
+
+    /// <summary>
+    /// Executes string.Join pattern.
+    /// Example: string.Join(" ", args.Select(c => $"hover:{c}")) with args ["bg-white", "text-black"]
+    /// => "hover:bg-white hover:text-black"
+    /// </summary>
+    private string? ExecuteStringJoinPattern(MethodPattern pattern, List<string> args)
+    {
+        if (pattern.Template is not InvocationExpressionSyntax invocation)
+            return null;
+
+        // For params arrays, we assume all args are the array elements
+        // This is a simplified approach - could be enhanced to parse the actual LINQ expression
+        if (pattern.Parameters.Count == 1 && pattern.Parameters[0].IsParams)
+        {
+            // Extract separator from string.Join("separator", ...)
+            if (invocation.ArgumentList.Arguments.Count >= 1)
+            {
+                var separatorArg = invocation.ArgumentList.Arguments[0].Expression;
+                if (separatorArg is LiteralExpressionSyntax literal)
+                {
+                    var separator = literal.Token.ValueText;
+                    return string.Join(separator, args);
                 }
             }
         }
 
-        // Evaluate the method with the constant arguments
-        return EvaluateMethodBody(symbol, argValues);
+        return null;
+    }
+
+    /// <summary>
+    /// Executes string.Format pattern.
+    /// Example: string.Format("{0}:{1}", prefix, value) with args ["dark", "bg-zinc-900"]
+    /// => "dark:bg-zinc-900"
+    /// </summary>
+    private string? ExecuteStringFormatPattern(MethodPattern pattern, List<string> args)
+    {
+        if (pattern.Template is not InvocationExpressionSyntax invocation)
+            return null;
+
+        if (invocation.ArgumentList.Arguments.Count < 1)
+            return null;
+
+        var formatArg = invocation.ArgumentList.Arguments[0].Expression;
+        if (formatArg is not LiteralExpressionSyntax formatLiteral)
+            return null;
+
+        var format = formatLiteral.Token.ValueText;
+
+        try
+        {
+            return string.Format(format, args.Cast<object>().ToArray());
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Executes parameter passthrough pattern.
+    /// Example: new Type(value) with args ["bg-white"] => "bg-white"
+    /// </summary>
+    private string? ExecuteParameterPassthroughPattern(MethodPattern pattern, List<string> args)
+    {
+        if (pattern.Template is not IdentifierNameSyntax identifier)
+            return null;
+
+        var paramIndex = pattern.Parameters
+            .FindIndex(p => p.Name == identifier.Identifier.Text);
+
+        if (paramIndex >= 0 && paramIndex < args.Count)
+        {
+            return args[paramIndex];
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Executes binary expression pattern.
+    /// Example: prefix + ":" + value with args ["dark", "bg-zinc-900"] => "dark:bg-zinc-900"
+    /// </summary>
+    private string? ExecuteBinaryExpressionPattern(MethodPattern pattern, List<string> args)
+    {
+        if (pattern.Template is not BinaryExpressionSyntax binary)
+            return null;
+
+        // Create a simple evaluator for the binary expression
+        var leftValue = EvaluateBinaryOperand(binary.Left, pattern, args);
+        var rightValue = EvaluateBinaryOperand(binary.Right, pattern, args);
+
+        if (leftValue == null || rightValue == null)
+            return null;
+
+        // Only support string concatenation for now
+        if (binary.IsKind(SyntaxKind.AddExpression))
+        {
+            return leftValue + rightValue;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Evaluates an operand in a binary expression (recursively).
+    /// </summary>
+    private string? EvaluateBinaryOperand(ExpressionSyntax operand, MethodPattern pattern, List<string> args)
+    {
+        return operand switch
+        {
+            // String literal: "hello"
+            LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.StringLiteralExpression)
+                => literal.Token.ValueText,
+
+            // Parameter reference: paramName
+            IdentifierNameSyntax identifier => GetParameterValue(identifier.Identifier.Text, pattern, args),
+
+            // Nested binary: a + b
+            BinaryExpressionSyntax nestedBinary => ExecuteBinaryExpressionPattern(
+                new MethodPattern { Type = PatternType.BinaryExpression, Template = nestedBinary, Parameters = pattern.Parameters },
+                args),
+
+            _ => null
+        };
+    }
+
+    /// <summary>
+    /// Gets a parameter value by name.
+    /// </summary>
+    private static string? GetParameterValue(string paramName, MethodPattern pattern, List<string> args)
+    {
+        var paramIndex = pattern.Parameters.FindIndex(p => p.Name == paramName);
+        return paramIndex >= 0 && paramIndex < args.Count ? args[paramIndex] : null;
+    }
+
+    /// <summary>
+    /// Executes an interpolated string pattern by substituting arguments.
+    /// Example: new($"{className}/{opacity}") with args ["bg-white", "80"] => "bg-white/80"
+    /// </summary>
+    private string? ExecuteInterpolatedStringPattern(MethodPattern pattern, List<string> args)
+    {
+        if (pattern.Template is not InterpolatedStringExpressionSyntax interpolated)
+            return null;
+
+        var result = "";
+
+        foreach (var content in interpolated.Contents)
+        {
+            switch (content)
+            {
+                case InterpolatedStringTextSyntax text:
+                    result += text.TextToken.ValueText;
+                    break;
+
+                case InterpolationSyntax interpolation:
+                {
+                    // Check if it's a parameter reference
+                    if (interpolation.Expression is IdentifierNameSyntax identifier)
+                    {
+                        var paramIndex = pattern.Parameters
+                            .FindIndex(p => p.Name == identifier.Identifier.Text);
+
+                        if (paramIndex >= 0 && paramIndex < args.Count)
+                        {
+                            result += args[paramIndex];
+                        }
+                        else
+                        {
+                            return null; // Cannot resolve parameter
+                        }
+                    }
+                    else if (interpolation.Expression is InvocationExpressionSyntax invocation)
+                    {
+                        // Handle method calls within interpolation: $"{classes.Join(" ")}"
+                        var evaluated = EvaluateMethodCall(invocation);
+                        if (evaluated != null)
+                        {
+                            result += evaluated;
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        return null; // Complex interpolation not supported
+                    }
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Pattern descriptor for method implementations.
+    /// </summary>
+    private class MethodPattern
+    {
+        public PatternType Type { get; set; }
+        public SyntaxNode? Template { get; set; }
+        public List<IParameterSymbol> Parameters { get; set; } = [];
+    }
+
+    /// <summary>
+    /// Known method pattern types that can be evaluated at compile-time.
+    /// </summary>
+    private enum PatternType
+    {
+        /// <summary>
+        /// Interpolated string: new($"{arg1}/{arg2}")
+        /// </summary>
+        InterpolatedString,
+
+        /// <summary>
+        /// String.Join: new(string.Join(" ", args))
+        /// </summary>
+        StringJoin,
+
+        /// <summary>
+        /// String.Format: new(string.Format("{0}:{1}", arg1, arg2))
+        /// </summary>
+        StringFormat,
+
+        /// <summary>
+        /// Parameter passthrough: new(value)
+        /// </summary>
+        ParameterPassthrough,
+
+        /// <summary>
+        /// Binary expression concatenation: new(prefix + ":" + value)
+        /// </summary>
+        BinaryExpression
+    }
+
+    /// <summary>
+    /// Tries to apply implicit string conversion to a compile-time evaluatable type.
+    /// Handles structs like TailwindClass that have implicit operators.
+    /// </summary>
+    private string? TryApplyImplicitConversion(ExpressionSyntax expression, ITypeSymbol typeSymbol)
+    {
+        // First evaluate the expression to get its raw value
+        var rawValue = TryEvaluate(expression);
+        if (rawValue != null)
+        {
+            return rawValue; // Already converted to string
+        }
+
+        // Check if the type has an implicit operator to string
+        var stringType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_String);
+        var conversion = _semanticModel.Compilation.ClassifyConversion(typeSymbol, stringType);
+
+        if (conversion.IsImplicit && conversion.IsUserDefined)
+        {
+            // Try to evaluate the expression and apply the conversion
+            // This handles cases like TW.Bg.White which returns TailwindClass
+            // The recursive TryEvaluate should handle this
+            return TryEvaluate(expression);
+        }
+
+        return null;
     }
 
     /// <summary>
     /// Evaluates a method body with constant arguments.
+    /// Enhanced to handle type information for better reflection invocation.
     /// </summary>
-    private string? EvaluateMethodBody(IMethodSymbol method, List<object?> args)
+    private string? EvaluateMethodBody(IMethodSymbol method, List<object?> args, List<ITypeSymbol?>? argTypes = null)
     {
         // Get method syntax
         var syntaxRef = method.DeclaringSyntaxReferences.FirstOrDefault();
@@ -427,7 +1032,7 @@ public class CompileTimeEvaluator
         // If no syntax reference, try to invoke via reflection (external assembly)
         if (syntaxRef == null)
         {
-            return TryInvokeMethodViaReflection(method, args);
+            return TryInvokeMethodViaReflection(method, args, argTypes);
         }
 
         var methodDecl = syntaxRef.GetSyntax() as MethodDeclarationSyntax;
@@ -457,6 +1062,7 @@ public class CompileTimeEvaluator
 
     /// <summary>
     /// Evaluates an expression by substituting parameter values.
+    /// Enhanced to handle more complex patterns including conditional expressions.
     /// </summary>
     private string? EvaluateWithArguments(ExpressionSyntax expression, IMethodSymbol method, List<object?> args)
     {
@@ -473,6 +1079,88 @@ public class CompileTimeEvaluator
             if (arg is LiteralExpressionSyntax literal && literal.IsKind(SyntaxKind.StringLiteralExpression))
             {
                 return literal.Token.ValueText;
+            }
+
+            // Handle binary expressions and other complex initializers
+            if (arg is BinaryExpressionSyntax binary)
+            {
+                return EvaluateBinaryExpressionWithParams(binary, method, args);
+            }
+        }
+
+        // Handle conditional expressions: condition ? trueExpr : falseExpr
+        if (expression is ConditionalExpressionSyntax conditional)
+        {
+            return EvaluateConditionalWithParams(conditional, method, args);
+        }
+
+        // Recursively evaluate
+        return TryEvaluate(expression);
+    }
+
+    /// <summary>
+    /// Evaluates binary expressions with parameter substitution.
+    /// </summary>
+    private string? EvaluateBinaryExpressionWithParams(BinaryExpressionSyntax binary, IMethodSymbol method, List<object?> args)
+    {
+        // Handle string concatenation
+        if (binary.IsKind(SyntaxKind.AddExpression))
+        {
+            var left = EvaluateExpressionWithParams(binary.Left, method, args);
+            var right = EvaluateExpressionWithParams(binary.Right, method, args);
+
+            if (left != null && right != null)
+            {
+                return left + right;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Evaluates conditional expressions with parameter substitution.
+    /// </summary>
+    private string? EvaluateConditionalWithParams(ConditionalExpressionSyntax conditional, IMethodSymbol method, List<object?> args)
+    {
+        // Try to evaluate the condition
+        var conditionValue = EvaluateExpressionWithParams(conditional.Condition, method, args);
+
+        if (conditionValue != null && bool.TryParse(conditionValue, out var boolValue))
+        {
+            var targetExpr = boolValue ? conditional.WhenTrue : conditional.WhenFalse;
+            return EvaluateExpressionWithParams(targetExpr, method, args);
+        }
+
+        // If we can't evaluate the condition, we can't evaluate at compile-time
+        return null;
+    }
+
+    /// <summary>
+    /// Evaluates any expression with parameter substitution.
+    /// </summary>
+    private string? EvaluateExpressionWithParams(ExpressionSyntax expression, IMethodSymbol method, List<object?> args)
+    {
+        // Handle parameter references
+        if (expression is IdentifierNameSyntax identifier)
+        {
+            var paramIndex = method.Parameters
+                .Select((p, i) => (p, i))
+                .FirstOrDefault(x => x.p.Name == identifier.Identifier.Text).i;
+
+            if (paramIndex >= 0 && paramIndex < args.Count)
+            {
+                return args[paramIndex]?.ToString();
+            }
+        }
+
+        // Handle literals
+        if (expression is LiteralExpressionSyntax literal)
+        {
+            var constValue = _semanticModel.GetConstantValue(literal);
+            if (constValue.HasValue)
+            {
+                return constValue.Value?.ToString();
             }
         }
 

@@ -222,35 +222,93 @@ public class TodoListState : ComponentState<TodoList>
         {
             foreach (var todo in filteredTodos)
             {
+                var itemClasses = ClassBuilder.Create()
+                    .Add(TW.Position.Relative, TW.Flex.Row, TW.Flex.ItemsCenter, TW.P(4))
+                    .Add(TW.Bg.GradientToR)
+                    .When(todo.IsCompleted, 
+                        "from-gray-50/50 to-gray-100/50", 
+                        TW.Dark("from-zinc-800/30 to-zinc-900/30"))
+                    .When(!todo.IsCompleted,
+                        "from-white to-blue-50/30",
+                        TW.Dark("from-zinc-800/80 to-zinc-800/50"))
+                    .Add(TW.Backdrop.BlurSm, TW.Rounded.Xl)
+                    .Add(TW.Transition.All, TW.Duration._300)
+                    .Hover(TW.Transform.Scale105 /* actually 1.02 */, "scale-[1.02]", TW.Shadow.Lg, "shadow-blue-500/10")
+                    .Dark(TW.Hover("shadow-purple-500/10"))
+                    .Add(TW.Group, "gap-[12px]")
+                    .Add(TW.Border.Base, "border-gray-200/50")
+                    .Dark("border-zinc-700/50")
+                    .Build();
+
+                var checkboxClasses = ClassBuilder.Create()
+                    .Add(TW.Transform.Scale125, TW.Cursor.Pointer)
+                    .Add(TW.Transition.Transform)
+                    .Hover(TW.Transform.Scale150)
+                    .Build();
+
+                var titleClasses = ClassBuilder.Create()
+                    .Add(TW.Flex.Flex1, TW.Transition.All, TW.Text.Base)
+                    .When(todo.IsCompleted, TW.Text.LineThrough, TW.Text.Gray400)
+                    .When(todo.IsCompleted, TW.Dark(TW.Text.Gray600))
+                    .When(!todo.IsCompleted, TW.Text.Gray900, TW.Font.Medium)
+                    .When(!todo.IsCompleted, TW.Dark(TW.Text.White))
+                    .Build();
+
                 todoList.Children.Add(new Box {
-                    ClassName = $"relative flex flex-row items-center p-4 bg-gradient-to-r {(todo.IsCompleted ? "from-gray-50/50 to-gray-100/50 dark:from-zinc-800/30 dark:to-zinc-900/30" : "from-white to-blue-50/30 dark:from-zinc-800/80 dark:to-zinc-800/50")} backdrop-blur-sm rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-blue-500/10 dark:hover:shadow-purple-500/10 group gap-[12px] border border-gray-200/50 dark:border-zinc-700/50",
+                    ClassName = itemClasses,
                     Children = {
                         new Checkbox {
                             Checked = todo.IsCompleted,
-                            ClassName = "scale-125 cursor-pointer transition-transform hover:scale-150",
+                            ClassName = checkboxClasses,
                             OnChange = _ => { HandleToggle(todo.Id); }
                         },
                         new Text(todo.Title) {
-                            ClassName = $"flex-1 transition-all text-base {(todo.IsCompleted ? "line-through text-gray-400 dark:text-gray-600" : "text-gray-900 dark:text-white font-medium")}",
+                            ClassName = titleClasses,
                             Variant = Variant.Custom,
                         },
                         // Time badge (mock - você pode adicionar CreatedAt no modelo)
                         new Text(todo.IsCompleted ? "✓" : "•") {
-                            ClassName = $"text-xs px-2 py-1 rounded-full {(todo.IsCompleted ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400")} font-semibold"
+                            ClassName = ClassBuilder.Create()
+                                .Add(TW.Text.Xs, TW.Px(2), TW.Py(1), TW.Rounded.Full, TW.Font.Semibold)
+                                .When(todo.IsCompleted, TW.Bg.Green100, TW.Text.Green600) // Adjusted colors slightly
+                                .When(todo.IsCompleted)
+                                    .Dark(TW.WithOpacity(TW.Bg.Green800, 30), TW.Text.Green400)
+                                .When(!todo.IsCompleted, TW.Bg.Blue100, TW.Text.Blue600)
+                                .When(!todo.IsCompleted)
+                                    .Dark(TW.WithOpacity(TW.Bg.Blue800, 30), TW.Text.Blue400)
+                                .Build()
                         },
                         new Box {
-                            ClassName = "flex flex-row gap-[6px] opacity-0 group-hover:opacity-100 transition-all duration-200",
+                            ClassName = ClassBuilder.Create()
+                                .Add(TW.Flex.Row, "gap-[6px]", TW.Opacity.Op0)
+                                .GroupHover(TW.Opacity.Op100)
+                                .Add(TW.Transition.All, TW.Duration._200)
+                                .Build(),
                             Children = {
                                 new Button {
                                     Text = "✏️",
                                     Variant = Variant.Ghost,
-                                    ClassName = "w-8 h-8 p-0 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 transition-all hover:scale-110",
+                                    ClassName = ClassBuilder.Create()
+                                        .Add(TW.W(8), TW.H(8), TW.P(0), TW.Rounded.Lg)
+                                        .Add(TW.Bg.Blue50)
+                                        .Hover(TW.Bg.Blue100)
+                                        .Dark(TW.WithOpacity(TW.Bg.Blue600, 30), TW.Hover(TW.WithOpacity(TW.Bg.Blue600, 50)))
+                                        .Add(TW.Transition.All)
+                                        .Hover(TW.Transform.Scale110)
+                                        .Build(),
                                     OnClick = () => { OpenEdit(todo); }
                                 },
                                 new Button {
                                     Text = "🗑️",
                                     Variant = Variant.Ghost,
-                                    ClassName = "w-8 h-8 p-0 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 transition-all hover:scale-110",
+                                    ClassName = ClassBuilder.Create()
+                                        .Add(TW.W(8), TW.H(8), TW.P(0), TW.Rounded.Lg)
+                                        .Add(TW.Bg.Red50)
+                                        .Hover(TW.Bg.Red100)
+                                        .Dark(TW.WithOpacity(TW.Bg.Red600, 30), TW.Hover(TW.WithOpacity(TW.Bg.Red600, 50)))
+                                        .Add(TW.Transition.All)
+                                        .Hover(TW.Transform.Scale110)
+                                        .Build(),
                                     OnClick = () => { HandleDelete(todo.Id); }
                                 }
                             }
@@ -260,20 +318,61 @@ public class TodoListState : ComponentState<TodoList>
             }
         }
 
+        var mainContainerClasses = ClassBuilder.Create()
+            .Add(TW.Size.MinHScreen, TW.P(8), TW.Display.Grid, TW.Grid.PlaceItemsCenter)
+            .Add(TW.Bg.GradientToBr)
+            .Add("from-blue-50 via-indigo-50 to-purple-50")
+            .Dark("from-zinc-950 via-zinc-900 to-zinc-950")
+            .Build();
+
+        var headerContainerClasses = ClassBuilder.Create()
+            .Add(TW.Position.Absolute, TW.Position.Top(6), TW.Position.Left(6))
+            .Add(TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(3))
+            .Build();
+
+        var badgeClasses = ClassBuilder.Create()
+            .Add(TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(2))
+            .Add(TW.Px(4), TW.Py(2), TW.Rounded.Full)
+            .Add(TW.WithOpacity(TW.Bg.White, 80), TW.Backdrop.BlurXl, TW.Shadow.Lg)
+            .Dark(TW.WithOpacity(TW.Bg.Zinc800, 80))
+            .Add(TW.Border.Base, "border-white/20")
+            .Dark("border-zinc-700/50")
+            .Build();
+
+        var headerTitleClasses = ClassBuilder.Create()
+            .Add(TW.Font.Bold, TW.Text.Transparent, TW.Bg.ClipText)
+            .Add(TW.Bg.GradientToR, "from-blue-600 to-purple-600")
+            .Dark("from-blue-400 to-purple-400")
+            .Build();
+
+        var settingsContainerClasses = ClassBuilder.Create()
+            .Add(TW.Position.Absolute, TW.Position.Top(6), TW.Position.Right(6))
+            .Build();
+
+        var settingsButtonClasses = ClassBuilder.Create()
+            .Add(TW.W(10), TW.H(10), TW.Rounded.Full)
+            .Add(TW.WithOpacity(TW.Bg.White, 80), TW.Backdrop.BlurXl, TW.Shadow.Lg)
+            .Dark(TW.WithOpacity(TW.Bg.Zinc800, 80))
+            .Add(TW.Border.Base, "border-white/20")
+            .Dark("border-zinc-700/50")
+            .Hover(TW.Transform.Scale110, TW.Transform.Rotate90)
+            .Add(TW.Transition.All, TW.Duration._300)
+            .Build();
+
         return new Box
         {
-            ClassName = "min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 p-8 grid place-items-center",
+            ClassName = mainContainerClasses,
             Children = {
                 // Floating Header with Badge
                 new Box {
-                    ClassName = "absolute top-6 left-6 flex items-center gap-3",
+                    ClassName = headerContainerClasses,
                     Children = {
                         new Box {
-                            ClassName = "flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl rounded-full shadow-lg border border-white/20 dark:border-zinc-700/50",
+                            ClassName = badgeClasses,
                             Children = {
                                 new Text("✨") { ClassName = TW.Text.Xl },
                                 new Text("TodoList") {
-                                    ClassName = "font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400"
+                                    ClassName = headerTitleClasses
                                 }
                             }
                         }
@@ -282,12 +381,12 @@ public class TodoListState : ComponentState<TodoList>
 
                 // Settings Button
                 new Box {
-                    ClassName = "absolute top-6 right-6",
+                    ClassName = settingsContainerClasses,
                     Children = {
                         new Button {
                             Text = "⚙️",
                             Variant = Variant.Ghost,
-                            ClassName = "w-10 h-10 rounded-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl shadow-lg border border-white/20 dark:border-zinc-700/50 hover:scale-110 hover:rotate-90 transition-all duration-300",
+                            ClassName = settingsButtonClasses,
                             OnClick = () => { SetState(() => { _isDrawerOpen = true; }); }
                         }
                     }
@@ -298,40 +397,69 @@ public class TodoListState : ComponentState<TodoList>
                 {
                     Width = "w-full max-w-2xl",
                     Shadow = Shadow.Large,
-                    ClassName = "bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-white/20 dark:border-zinc-800/50 shadow-2xl shadow-blue-500/10 dark:shadow-purple-500/10",
+                    ClassName = ClassBuilder.Create()
+                        .Add(TW.WithOpacity(TW.Bg.White, 95), TW.Backdrop.Blur2xl)
+                        .Dark(TW.WithOpacity(TW.Bg.Zinc900, 95))
+                        .Add(TW.Border.Base, "border-white/20")
+                        .Dark("border-zinc-800/50")
+                        .Add(TW.Shadow.Xl2, "shadow-blue-500/10")
+                        .Dark("shadow-purple-500/10")
+                        .Build(),
                     Header = new Box {
-                        ClassName = "w-full flex flex-col gap-[20px]",
+                        ClassName = ClassBuilder.Create()
+                            .Add(TW.WFull, TW.Flex.Col, "gap-[20px]")
+                            .Build(),
                         Children = {
                             new Box
                             {
-                                ClassName = "w-full flex flex-row items-center justify-between",
+                                ClassName = ClassBuilder.Create()
+                                    .Add(TW.WFull, TW.Flex.Row, TW.Flex.ItemsCenter, TW.Flex.JustifyBetween)
+                                    .Build(),
                                 Children = {
                                     new Box {
-                                        ClassName = "flex flex-col gap-1",
+                                        ClassName = ClassBuilder.Create().Add(TW.Flex.Col, TW.Gap(1)).Build(),
                                         Children = {
-                                            new Heading("My Tasks", 1) { ClassName = "text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent" },
+                                            new Heading("My Tasks", 1) { 
+                                                ClassName = ClassBuilder.Create()
+                                                    .Add(TW.Text.Xl3, TW.Font.Bold, TW.Bg.ClipText, TW.Text.Transparent)
+                                                    .Add(TW.Bg.GradientToR, "from-gray-900 to-gray-700")
+                                                    .Dark("from-white to-gray-300")
+                                                    .Build() 
+                                            },
                                             new Text(GetMotivationalMessage()) {
                                                 Variant = Variant.Custom,
-                                                ClassName = "text-sm text-gray-500 dark:text-gray-400 italic"
+                                                ClassName = ClassBuilder.Create()
+                                                    .Add(TW.Text.Sm, TW.Text.Gray500, TW.Font.Italic)
+                                                    .Dark(TW.Text.Gray400)
+                                                    .Build()
                                             }
                                         }
                                     },
                                     new Box {
-                                        ClassName = "flex flex-col items-end",
+                                        ClassName = ClassBuilder.Create().Add(TW.Flex.Col, TW.Flex.ItemsEnd).Build(),
                                         Children = {
                                             new Text($"{_todos.Count(t => !t.IsCompleted)}") {
-                                                ClassName = "text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400"
+                                                ClassName = ClassBuilder.Create()
+                                                    .Add(TW.Text.Xl4, TW.Font.Black, TW.Text.Transparent, TW.Bg.ClipText)
+                                                    .Add(TW.Bg.GradientToBr, "from-blue-600 to-purple-600")
+                                                    .Dark("from-blue-400 to-purple-400")
+                                                    .Build()
                                             },
                                             new Text("remaining") {
                                                 Variant = Variant.Custom,
-                                                ClassName = "text-xs text-gray-400 uppercase tracking-wider font-semibold"
+                                                ClassName = ClassBuilder.Create().Add(TW.Text.Xs, TW.Text.Gray400, TW.Tracking.Wider, TW.Font.Semibold, TW.Text.Uppercase).Build()
                                             }
                                         }
                                     }
                                 }
                             },
                             new Box {
-                                ClassName = "flex flex-row gap-[10px] bg-gradient-to-r from-gray-100/80 to-gray-50/50 dark:from-zinc-800/50 dark:to-zinc-900/30 p-1.5 rounded-xl backdrop-blur-sm",
+                                ClassName = ClassBuilder.Create()
+                                    .Add(TW.Flex.Row, "gap-[10px]")
+                                    .Add("bg-gradient-to-r from-gray-100/80 to-gray-50/50")
+                                    .Dark("from-zinc-800/50 to-zinc-900/30")
+                                    .Add(TW.P(2), TW.Rounded.Xl, TW.Backdrop.BlurSm)
+                                    .Build(),
                                 Children = {
                                     CreateFilterButton(TodoFilter.All, "📋 All", _todos.Count),
                                     CreateFilterButton(TodoFilter.Active, "⚡ Active", _todos.Count(t => !t.IsCompleted)),
@@ -345,19 +473,41 @@ public class TodoListState : ComponentState<TodoList>
                         ClassName = "flex flex-col gap-[24px]",
                         Children = {
                             new Box {
-                                ClassName = "flex flex-row gap-[12px] p-2 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-zinc-800/50 dark:to-zinc-900/50 rounded-xl border-2 border-dashed border-blue-200/50 dark:border-zinc-700/50 transition-all focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:shadow-lg focus-within:shadow-blue-500/20",
+                                ClassName = ClassBuilder.Create()
+                                    .Add(TW.Flex.Row, "gap-[12px]", TW.P(2))
+                                    .Add(TW.Bg.GradientToR, "from-blue-50/50 to-purple-50/50")
+                                    .Dark("from-zinc-800/50 to-zinc-900/50")
+                                    .Add(TW.Rounded.Xl, TW.Border.B2, TW.Border.Dashed)
+                                    .Add("border-blue-200/50")
+                                    .Dark("border-zinc-700/50")
+                                    .Add(TW.Transition.All)
+                                    .FocusWithin("border-blue-400", TW.Shadow.Lg, "shadow-blue-500/20")
+                                    .Dark(TW.FocusWithin("border-blue-500"))
+                                    .Build(),
                                 Children = {
-                                    new Text("➕") { ClassName = "text-2xl self-center ml-2" },
+                                    new Text("➕") { ClassName = ClassBuilder.Create().Add(TW.Text.Xl2, TW.SelfCenter, TW.Ml(2)).Build() },
                                     new TextInput {
                                         Value = _newTodoTitle,
                                         Placeholder = "Add a new task...",
-                                        ClassName = "flex-1 bg-transparent border-none focus:ring-0 text-base placeholder:text-gray-400 dark:placeholder:text-gray-600",
+                                        ClassName = ClassBuilder.Create()
+                                            .Add(TW.Flex.Flex1, TW.Bg.Transparent, TW.Border.None)
+                                            .Add("focus:ring-0", TW.Text.Base)
+                                            .Add(TW.Placeholder.Gray400)
+                                            .Dark(TW.Placeholder.Gray600)
+                                            .Build(),
                                         OnInput = val => { SetState(() => { _newTodoTitle = val; }); }
                                     },
                                     new Button {
                                         Text = "Add Task",
                                         Variant = Variant.Primary,
-                                        ClassName = "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 shadow-lg shadow-blue-500/30 transition-all hover:scale-105",
+                                        ClassName = ClassBuilder.Create()
+                                            .Add(TW.Bg.GradientToR, "from-blue-600 to-purple-600")
+                                            .Hover("from-blue-700 to-purple-700")
+                                            .Add(TW.Text.White, TW.Font.Semibold, TW.Px(6))
+                                            .Add(TW.Shadow.Lg, "shadow-blue-500/30")
+                                            .Add(TW.Transition.All)
+                                            .Hover(TW.Transform.Scale105)
+                                            .Build(),
                                         OnClick = () => { HandleAdd(); }
                                     }
                                 }
@@ -367,28 +517,32 @@ public class TodoListState : ComponentState<TodoList>
                         }
                     },
                     Footer = new Box {
-                        ClassName = "flex flex-row items-center justify-between pt-4 border-t border-gray-200/50 dark:border-zinc-800/50",
+                        ClassName = ClassBuilder.Create()
+                            .Add(TW.Flex.Row, TW.Flex.ItemsCenter, TW.Flex.JustifyBetween)
+                            .Add(TW.Pt(4), TW.Border.T, "border-gray-200/50")
+                            .Dark("border-zinc-800/50")
+                            .Build(),
                         Children = {
                             new Box {
-                                ClassName = "flex gap-4 text-sm",
+                                ClassName = ClassBuilder.Create().Add(TW.Flex.Row, TW.Gap(4), TW.Text.Sm).Build(),
                                 Children = {
                                     new Box {
-                                        ClassName = "flex items-center gap-2",
+                                        ClassName = ClassBuilder.Create().Add(TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(2)).Build(),
                                         Children = {
-                                            new Text("📊") { ClassName = "text-lg" },
+                                            new Text("📊") { ClassName = TW.Text.Lg },
                                             new Text($"Total: {_todos.Count}") {
                                                 Variant = Variant.Custom,
-                                                ClassName = "font-semibold text-gray-700 dark:text-gray-300"
+                                                ClassName = ClassBuilder.Create().Add(TW.Font.Semibold, TW.Text.Gray700).Dark(TW.Text.Gray300).Build()
                                             }
                                         }
                                     },
                                     new Box {
-                                        ClassName = "flex items-center gap-2",
+                                        ClassName = ClassBuilder.Create().Add(TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(2)).Build(),
                                         Children = {
-                                            new Text("✅") { ClassName = "text-lg" },
+                                            new Text("✅") { ClassName = TW.Text.Lg },
                                             new Text($"Completed: {_todos.Count(t => t.IsCompleted)}") {
                                                 Variant = Variant.Custom,
-                                                ClassName = "font-semibold text-green-600 dark:text-green-400"
+                                                ClassName = ClassBuilder.Create().Add(TW.Font.Semibold, TW.Text.Green600).Dark(TW.Text.Green400).Build()
                                             }
                                         }
                                     }
@@ -397,7 +551,16 @@ public class TodoListState : ComponentState<TodoList>
                             _todos.Any(t => t.IsCompleted) ? new Button {
                                 Text = "🧹 Clear Completed",
                                 Variant = Variant.Ghost,
-                                ClassName = "text-xs font-semibold px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 rounded-lg transition-all hover:scale-105",
+                                ClassName = ClassBuilder.Create()
+                                    .Add(TW.Text.Xs, TW.Font.Semibold, TW.Px(4), TW.Py(2))
+                                    .Add(TW.Bg.Red50)
+                                    .Hover(TW.Bg.Red100)
+                                    .Dark(TW.WithOpacity(TW.Bg.Red600, 20), TW.Hover(TW.WithOpacity(TW.Bg.Red600, 40)))
+                                    .Add(TW.Text.Red600)
+                                    .Dark(TW.Text.Red400)
+                                    .Add(TW.Rounded.Lg, TW.Transition.All)
+                                    .Hover(TW.Transform.Scale105)
+                                    .Build(),
                                 OnClick = () => { HandleClearCompleted(); }
                             } : null
                         }
@@ -411,9 +574,9 @@ public class TodoListState : ComponentState<TodoList>
                     Title = "Edit Task",
                     OnClose = () => { SetState(() => { _isEditing = false; }); },
                     Body = new Box {
-                        ClassName = "flex flex-col gap-[10px]",
+                        ClassName = ClassBuilder.Create().Add(TW.Flex.Col, "gap-[10px]").Build(),
                         Children = { 
-                            new Text("Update the task title:") { Variant = Variant.Custom, ClassName = "text-gray-400" },
+                            new Text("Update the task title:") { Variant = Variant.Custom, ClassName = TW.Text.Gray400 },
                             new TextInput {
                                 Value = _editingTitle,
                                 OnInput = val => { SetState(() => { _editingTitle = val; }); }
@@ -421,7 +584,7 @@ public class TodoListState : ComponentState<TodoList>
                         }
                     },
                     Footer = new Box {
-                        ClassName = "flex flex-row gap-[10px]",
+                        ClassName = ClassBuilder.Create().Add(TW.Flex.Row, "gap-[10px]").Build(),
                         Children = {
                             new Button {
                                 Text = "Cancel",
@@ -444,26 +607,33 @@ public class TodoListState : ComponentState<TodoList>
                     Side = DrawerSide.Right,
                     OnClose = () => { SetState(() => { _isDrawerOpen = false; }); },
                     Content = new Box {
-                        ClassName = "flex flex-col gap-[20px]",
+                        ClassName = ClassBuilder.Create().Add(TW.Flex.Col, "gap-[20px]").Build(),
                         Children = {
-                            new Heading("Settings", 3) { ClassName = "mb-4" },
+                            new Heading("Settings", 3) { ClassName = TW.Mb(4) },
                             new Text("Theme preferences and other settings will go here.") { Variant = Variant.Ghost },
                             new Box { 
-                                ClassName = "p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800",
+                                ClassName = ClassBuilder.Create()
+                                    .Add(TW.P(3), TW.Rounded.Lg)
+                                    .Add(TW.Bg.Green50, TW.Border.Base, TW.Border.Green200)
+                                    .Dark(TW.WithOpacity(TW.Bg.Green800, 20), TW.Border.Green800)
+                                    .Build(),
                                 Children = {
                                     new Text("eQuantic.UI is now running with Bun + Tailwind 100%!") { 
                                         Variant = Variant.Custom, 
-                                        ClassName = "text-sm text-green-800 dark:text-green-300 font-medium" 
+                                        ClassName = ClassBuilder.Create().Add(TW.Text.Sm, TW.Text.Green800, TW.Font.Medium).Dark(TW.Text.Green300).Build()
                                     }
                                 }
                             },
                             new Container {
-                                ClassName = "mt-auto pt-8 border-t border-gray-100 dark:border-zinc-800",
+                                ClassName = ClassBuilder.Create()
+                                    .Add(TW.Mt(10) /* mt-auto */, TW.Pt(8), TW.Border.T, TW.Border.Gray200)
+                                    .Dark("border-zinc-800")
+                                    .Build(),
                                 Children = {
                                     new Button {
                                         Text = "Back to List",
                                         Variant = Variant.Secondary,
-                                        ClassName = "w-full",
+                                        ClassName = TW.WFull,
                                         OnClick = () => { SetState(() => { _isDrawerOpen = false; }); }
                                     }
                                 }
@@ -489,13 +659,20 @@ public class TodoListState : ComponentState<TodoList>
     {
         var isActive = _currentFilter == filter;
 
+        var buttonClasses = ClassBuilder.Create()
+            .Add(TW.Flex.Flex1, TW.Px(4), "py-2.5", TW.Text.Sm, TW.Font.Semibold, TW.Rounded.Lg, TW.Transition.All)
+            .When(isActive, 
+                TW.Shadow.Lg, TW.Bg.GradientToR, "from-blue-600 to-purple-600", TW.Text.White)
+            .When(!isActive,
+                TW.Hover(TW.Bg.Gray200), TW.Text.Gray600)
+            .Dark(TW.Hover("bg-zinc-700/50"), TW.Text.Gray400)
+            .Build();
+
         return new Button
         {
             Text = $"{label} ({count})",
             Variant = isActive ? Variant.Primary : Variant.Ghost,
-            ClassName = "flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all " +
-                        (isActive ? "shadow-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white" :
-                                   "hover:bg-gray-200 dark:hover:bg-zinc-700/50 text-gray-600 dark:text-gray-400"),
+            ClassName = buttonClasses,
             OnClick = () => { SetState(() => { _currentFilter = filter; }); }
         };
     }

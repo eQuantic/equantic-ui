@@ -95,12 +95,13 @@ public class ClassBuilder
     /// <summary>
     /// Adds classes with the 'active:' prefix.
     /// </summary>
+
     public ClassBuilder Active(params string?[] classes) => WithPrefix("active:", classes);
 
     /// <summary>
-    /// Adds classes with the 'dark:' prefix for dark mode.
+    /// Adds classes with the 'focus-within:' prefix.
     /// </summary>
-    public ClassBuilder Dark(params string?[] classes) => WithPrefix("dark:", classes);
+    public ClassBuilder FocusWithin(params string?[] classes) => WithPrefix("focus-within:", classes);
 
     /// <summary>
     /// Adds classes with the 'group-hover:' prefix.
@@ -108,9 +109,11 @@ public class ClassBuilder
     public ClassBuilder GroupHover(params string?[] classes) => WithPrefix("group-hover:", classes);
 
     /// <summary>
-    /// Adds classes with the 'focus-within:' prefix.
+    /// Adds classes with the 'dark:' prefix for dark mode.
     /// </summary>
-    public ClassBuilder FocusWithin(params string?[] classes) => WithPrefix("focus-within:", classes);
+    public ClassBuilder Dark(params string?[] classes) => WithPrefix("dark:", classes);
+
+
 
     /// <summary>
     /// Adds responsive classes for the specified breakpoint.
