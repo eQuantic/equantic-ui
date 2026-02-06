@@ -277,12 +277,12 @@ public class ServerActionsMiddleware
             var genericDef = type.GetGenericTypeDefinition();
 
             // Allow common generic collections
-            if (genericDef == typeof(System.Collections.Generic.List<>) ||
-                genericDef == typeof(System.Collections.Generic.IList<>) ||
-                genericDef == typeof(System.Collections.Generic.IEnumerable<>) ||
-                genericDef == typeof(System.Collections.Generic.ICollection<>) ||
-                genericDef == typeof(System.Collections.Generic.Dictionary<,>) ||
-                genericDef == typeof(System.Collections.Generic.IDictionary<,>))
+            if (genericDef == typeof(List<>) ||
+                genericDef == typeof(IList<>) ||
+                genericDef == typeof(IEnumerable<>) ||
+                genericDef == typeof(ICollection<>) ||
+                genericDef == typeof(Dictionary<,>) ||
+                genericDef == typeof(IDictionary<,>))
             {
                 return type.GetGenericArguments().All(IsAllowedType);
             }

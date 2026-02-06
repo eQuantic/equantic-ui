@@ -28,7 +28,7 @@ public class InputGroup : StatelessComponent
             ClassName = $"eq-input-group {ClassName}".Trim()
         };
 
-        foreach (var child in this.Children)
+        foreach (var child in Children)
         {
             container.Children.Add(child);
         }
@@ -63,7 +63,7 @@ public class InputAddon : StatelessComponent
             addon.Children.Add(new Text(Text));
         }
 
-        foreach (var child in this.Children)
+        foreach (var child in Children)
         {
             addon.Children.Add(child);
         }

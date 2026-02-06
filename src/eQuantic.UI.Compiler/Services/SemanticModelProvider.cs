@@ -42,7 +42,7 @@ public class SemanticModelProvider
         {
             typeof(object).Assembly, // System.Private.CoreLib
             typeof(Console).Assembly, // System.Console
-            typeof(System.Linq.Enumerable).Assembly, // System.Linq
+            typeof(Enumerable).Assembly, // System.Linq
             typeof(List<>).Assembly, // System.Collections
             Assembly.Load("System.Runtime"),
             Assembly.Load("eQuantic.UI.Core") // eQuantic Core

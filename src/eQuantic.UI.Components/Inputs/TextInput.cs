@@ -72,7 +72,7 @@ public class TextInput : InputComponent<string>
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var inputTheme = theme?.Input;
         var baseStyle = inputTheme?.Base ?? "";
         var sizeStyle = inputTheme?.GetSize(Size) ?? "";

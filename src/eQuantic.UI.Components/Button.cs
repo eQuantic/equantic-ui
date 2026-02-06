@@ -66,7 +66,7 @@ public class Button : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<IAppTheme>();
         var buttonTheme = theme?.Button;
 
         var classValue = StyleBuilder.Create(buttonTheme?.Base)
@@ -82,8 +82,8 @@ public class Button : StatelessComponent
         };
 
         // Disable button when loading or explicitly disabled
-        if (this.Disabled || this.Loading) attrs["disabled"] = "true";
-        if (this.Loading) attrs["data-loading"] = "true";
+        if (Disabled || Loading) attrs["disabled"] = "true";
+        if (Loading) attrs["data-loading"] = "true";
 
         var element = new DynamicElement
         {
@@ -93,21 +93,21 @@ public class Button : StatelessComponent
         };
 
         // Add loading spinner if loading
-        if (this.Loading)
+        if (Loading)
         {
             element.Children.Add(CreateSpinner());
         }
 
-        if (this.Children.Any())
+        if (Children.Any())
         {
-            foreach (var child in this.Children)
+            foreach (var child in Children)
             {
                 element.Children.Add(child);
             }
         }
-        else if (this.Text != null)
+        else if (Text != null)
         {
-            element.Children.Add(new Text(this.Text));
+            element.Children.Add(new Text(Text));
         }
 
         return element;

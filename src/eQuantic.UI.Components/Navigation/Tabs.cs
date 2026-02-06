@@ -23,7 +23,7 @@ public class Tabs : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var tabsTheme = theme?.Tabs;
         var activeId = ActiveTabId ?? Items.FirstOrDefault()?.Id;
 

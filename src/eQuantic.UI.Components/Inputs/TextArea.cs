@@ -19,7 +19,7 @@ public class TextArea : InputComponent<string>
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var inputTheme = theme?.Input;
         var baseStyle = inputTheme?.Base ?? "";
         // Size might affect font size/padding even if height is determined by rows

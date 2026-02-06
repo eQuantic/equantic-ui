@@ -92,7 +92,7 @@ public class CompileTimeEvaluatedExpressionStrategy : IConversionStrategy
         switch (config.FallbackBehavior)
         {
             case "Error":
-                throw new System.Exception(
+                throw new Exception(
                     $"Cannot evaluate compile-time expression at {expression.GetLocation()}. " +
                     $"Expression: {expression}");
 
@@ -103,7 +103,7 @@ public class CompileTimeEvaluatedExpressionStrategy : IConversionStrategy
             default:
                 if (config.WarnOnFailure)
                 {
-                    System.Console.WriteLine(
+                    Console.WriteLine(
                         $"Warning: Could not evaluate compile-time expression at {expression.GetLocation()}. " +
                         $"Falling back to runtime code. Expression: {expression}");
                 }

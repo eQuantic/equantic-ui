@@ -15,7 +15,7 @@ public class CardFooter : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var cardTheme = theme?.Card;
 
         var footerClass = cardTheme?.Footer ?? "";
@@ -33,7 +33,7 @@ public class CardFooter : StatelessComponent
             ClassName = footerClass.Trim()
         };
 
-        foreach (var child in this.Children)
+        foreach (var child in Children)
         {
             box.Children.Add(child);
         }

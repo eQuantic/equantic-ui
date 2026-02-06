@@ -27,15 +27,15 @@ public static class TailwindExtensions
         }
 
         // Add the Tailwind link to the head tags
-        var buildId = eQuantic.UI.Server.UIExtensions.BuildId;
+        var buildId = UIExtensions.BuildId;
         var linkTag = $"<link rel=\"stylesheet\" href=\"{cssPath}?v={buildId}\">";
         if (!options.HtmlShell.HeadTags.Any(t => t.StartsWith($"<link rel=\"stylesheet\" href=\"{cssPath}")))
         {
             options.HtmlShell.HeadTags.Add(linkTag);
         }
- 
+
         // Inject AppTheme as JS service
-        var theme = new eQuantic.UI.Tailwind.Theme.AppTheme();
+        var theme = new Theme.AppTheme();
 
         // Serialize theme methods as lookup dictionaries
         var themeData = new
@@ -349,19 +349,19 @@ public static class TailwindExtensions
     public static IServiceCollection AddTailwind(this IServiceCollection services)
     {
         // Register main theme
-        services.AddSingleton<eQuantic.UI.Core.Theme.IAppTheme, eQuantic.UI.Tailwind.Theme.AppTheme>();
-        
+        services.AddSingleton<eQuantic.UI.Core.Theme.IAppTheme, Theme.AppTheme>();
+
         // Register color theme (required by other themes)
-        services.AddSingleton<eQuantic.UI.Core.Theme.IColorTheme, eQuantic.UI.Tailwind.Theme.ColorTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IColorTheme, Theme.ColorTheme>();
 
         // Register individual component themes
-        services.AddSingleton<eQuantic.UI.Core.Theme.IButtonTheme, eQuantic.UI.Tailwind.Theme.ButtonTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.ICardTheme, eQuantic.UI.Tailwind.Theme.CardTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.IInputTheme, eQuantic.UI.Tailwind.Theme.InputTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.ICheckboxTheme, eQuantic.UI.Tailwind.Theme.CheckboxTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.IBadgeTheme, eQuantic.UI.Tailwind.Theme.BadgeTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.IAlertTheme, eQuantic.UI.Tailwind.Theme.AlertTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.ITextTheme, eQuantic.UI.Tailwind.Theme.TextTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IButtonTheme, Theme.ButtonTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.ICardTheme, Theme.CardTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IInputTheme, Theme.InputTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.ICheckboxTheme, Theme.CheckboxTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IBadgeTheme, Theme.BadgeTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IAlertTheme, Theme.AlertTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.ITextTheme, Theme.TextTheme>();
 
         return services;
     }

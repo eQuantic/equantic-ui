@@ -13,7 +13,7 @@ public class Switch : Checkbox
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var switchTheme = theme?.Switch;
         var state = Value ? "checked" : "unchecked";
 

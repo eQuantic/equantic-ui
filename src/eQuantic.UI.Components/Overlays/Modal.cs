@@ -17,7 +17,7 @@ public class Modal : StatelessComponent
     {
         if (!IsOpen) return new NullComponent();
 
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var dialogTheme = theme?.Dialog;
 
         var overlayClass = dialogTheme?.Overlay ?? "";

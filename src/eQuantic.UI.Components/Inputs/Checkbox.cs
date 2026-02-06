@@ -46,7 +46,7 @@ public class Checkbox : InputComponent<bool>
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var checkboxTheme = theme?.Checkbox;
         
         var baseStyle = checkboxTheme?.Base ?? "";

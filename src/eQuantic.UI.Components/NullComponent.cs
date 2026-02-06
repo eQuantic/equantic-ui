@@ -1,5 +1,5 @@
 namespace eQuantic.UI.Components;
-using eQuantic.UI.Core;
+using Core;
 
 public class NullComponent : HtmlElement
 {

@@ -101,7 +101,7 @@ public class FormField : StatelessComponent
             ClassName = hasError ? "eq-form-input-wrapper eq-error" : "eq-form-input-wrapper"
         };
 
-        foreach (var child in this.Children)
+        foreach (var child in Children)
         {
             inputWrapper.Children.Add(child);
         }

@@ -57,7 +57,7 @@ public class Select : InputComponent<string>
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var selectTheme = theme?.Select;
 
         if (IsNative)

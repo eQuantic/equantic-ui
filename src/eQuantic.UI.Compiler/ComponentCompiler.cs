@@ -84,7 +84,7 @@ public class ComponentCompiler
         try
         {
             // Semantic Analysis
-            Microsoft.CodeAnalysis.SemanticModel? semanticModel = null;
+            SemanticModel? semanticModel = null;
             if (component.SyntaxTree != null)
             {
                 semanticModel = _semanticModelProvider.GetSemanticModel(component.SyntaxTree);

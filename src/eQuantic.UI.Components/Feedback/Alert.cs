@@ -13,11 +13,11 @@ public class Alert : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var alertTheme = theme?.Alert;
 
         var baseStyle = alertTheme?.Base ?? "";
-        var variantStyle = alertTheme?.GetVariant(this.Variant) ?? "";
+        var variantStyle = alertTheme?.GetVariant(Variant) ?? "";
 
         var element = new DynamicElement
         {
@@ -25,11 +25,11 @@ public class Alert : StatelessComponent
             CustomAttributes = new Dictionary<string, string>
             {
                 ["role"] = "alert",
-                ["class"] = $"{baseStyle} {variantStyle} {this.ClassName}".Trim()
+                ["class"] = $"{baseStyle} {variantStyle} {ClassName}".Trim()
             }
         };
 
-        foreach(var child in this.Children) element.Children.Add(child);
+        foreach(var child in Children) element.Children.Add(child);
         return element;
     }
 }
@@ -38,7 +38,7 @@ public class AlertTitle : StatelessComponent
 {
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var style = theme?.Alert.Title ?? "";
 
         var element = new DynamicElement
@@ -46,10 +46,10 @@ public class AlertTitle : StatelessComponent
             TagName = "h5",
             CustomAttributes = new Dictionary<string, string>
             {
-                ["class"] = $"{style} {this.ClassName}".Trim()
+                ["class"] = $"{style} {ClassName}".Trim()
             }
         };
-        foreach(var child in this.Children) element.Children.Add(child);
+        foreach(var child in Children) element.Children.Add(child);
         return element;
     }
 }
@@ -58,7 +58,7 @@ public class AlertDescription : StatelessComponent
 {
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var style = theme?.Alert.Description ?? "";
 
         var element = new DynamicElement
@@ -66,10 +66,10 @@ public class AlertDescription : StatelessComponent
             TagName = "div",
             CustomAttributes = new Dictionary<string, string>
             {
-                ["class"] = $"{style} {this.ClassName}".Trim()
+                ["class"] = $"{style} {ClassName}".Trim()
             }
         };
-        foreach(var child in this.Children) element.Children.Add(child);
+        foreach(var child in Children) element.Children.Add(child);
         return element;
     }
 }

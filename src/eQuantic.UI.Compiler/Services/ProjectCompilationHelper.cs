@@ -76,7 +76,7 @@ public static class ProjectCompilationHelper
         // Add standard references
         references.Add(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
         references.Add(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location));
-        references.Add(MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location));
+        references.Add(MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location));
         references.Add(MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location));
 
         try

@@ -27,13 +27,13 @@ public class Container : HtmlElement
         // Basic container styling
         var style = new List<string> { "margin-right: auto", "margin-left: auto", "padding-right: 15px", "padding-left: 15px", "width: 100%" };
 
-        if (this.Fluid)
+        if (Fluid)
         {
             // Already width: 100%
         }
-        else if (!string.IsNullOrEmpty(this.MaxWidth))
+        else if (!string.IsNullOrEmpty(MaxWidth))
         {
-            style.Add($"max-width: {this.MaxWidth}");
+            style.Add($"max-width: {MaxWidth}");
         }
         else
         {

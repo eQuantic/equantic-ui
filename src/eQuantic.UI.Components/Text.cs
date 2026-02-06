@@ -34,7 +34,7 @@ public class Text : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<IAppTheme>();
         var textTheme = theme?.Typography;
 
         var attrs = new Dictionary<string, string>

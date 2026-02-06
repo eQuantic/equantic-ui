@@ -86,26 +86,26 @@ public class Card : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var cardTheme = theme?.Card;
 
         // Check if using compound components (new pattern) or props (legacy)
-        var isCompoundPattern = this.Children.Any();
+        var isCompoundPattern = Children.Any();
 
         // Build shadow class
-        var shadowKey = this.Shadow.ToString().ToLower();
+        var shadowKey = Shadow.ToString().ToLower();
         var shadowClass = cardTheme?.GetShadowInfo(shadowKey) ?? "";
 
         // Build variant class
-        var variantClass = cardTheme?.GetVariant(this.Variant) ?? "";
+        var variantClass = cardTheme?.GetVariant(Variant) ?? "";
 
         // Build container class list
         var classes = new List<string>();
         if (!string.IsNullOrEmpty(cardTheme?.Container)) classes.Add(cardTheme.Container);
         if (!string.IsNullOrEmpty(variantClass)) classes.Add(variantClass);
         if (!string.IsNullOrEmpty(shadowClass)) classes.Add(shadowClass);
-        if (!string.IsNullOrEmpty(this.Width)) classes.Add(this.Width);
-        if (!string.IsNullOrEmpty(this.ClassName)) classes.Add(this.ClassName);
+        if (!string.IsNullOrEmpty(Width)) classes.Add(Width);
+        if (!string.IsNullOrEmpty(ClassName)) classes.Add(ClassName);
 
         var cardContainer = new Box
         {
@@ -116,7 +116,7 @@ public class Card : StatelessComponent
         if (isCompoundPattern)
         {
             // New pattern: Use Children directly (compound components)
-            foreach (var child in this.Children)
+            foreach (var child in Children)
             {
                 cardContainer.Children.Add(child);
             }
@@ -128,30 +128,30 @@ public class Card : StatelessComponent
             var bodyClass = cardTheme?.Body ?? "";
             var footerClass = cardTheme?.Footer ?? "";
 
-            if (this.Header != null)
+            if (Header != null)
             {
                 cardContainer.Children.Add(new Box
                 {
                     ClassName = headerClass,
-                    Children = { this.Header }
+                    Children = { Header }
                 });
             }
 
-            if (this.Body != null)
+            if (Body != null)
             {
                 cardContainer.Children.Add(new Box
                 {
                     ClassName = bodyClass,
-                    Children = { this.Body }
+                    Children = { Body }
                 });
             }
 
-            if (this.Footer != null)
+            if (Footer != null)
             {
                 cardContainer.Children.Add(new Box
                 {
                     ClassName = footerClass,
-                    Children = { this.Footer }
+                    Children = { Footer }
                 });
             }
         }

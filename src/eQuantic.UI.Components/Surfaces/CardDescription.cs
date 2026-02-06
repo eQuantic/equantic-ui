@@ -20,7 +20,7 @@ public class CardDescription : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var cardTheme = theme?.Card;
 
         var descClass = cardTheme?.Description ?? "";
@@ -45,7 +45,7 @@ public class CardDescription : StatelessComponent
         }
 
         // Add children components
-        foreach (var child in this.Children)
+        foreach (var child in Children)
         {
             element.Children.Add(child);
         }

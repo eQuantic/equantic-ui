@@ -364,7 +364,7 @@ public class CompileTimeEvaluator
     /// <summary>
     /// Helper to find a type in an assembly, handling nested types.
     /// </summary>
-    private System.Type? FindTypeInAssembly(System.Reflection.Assembly assembly, string typeName)
+    private Type? FindTypeInAssembly(System.Reflection.Assembly assembly, string typeName)
     {
         // Try with the display string first
         var type = assembly.GetType(typeName);

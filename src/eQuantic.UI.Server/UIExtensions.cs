@@ -36,7 +36,7 @@ public static class UIExtensions
             if (!string.IsNullOrEmpty(location))
             {
                 // Use hex timestamp for a short, unique, and ordered ID
-                return System.IO.File.GetLastWriteTimeUtc(location).Ticks.ToString("x");
+                return File.GetLastWriteTimeUtc(location).Ticks.ToString("x");
             }
         }
         catch { /* Fallback to random if file access fails */ }
@@ -78,7 +78,7 @@ public static class UIExtensions
 
         // Register EQ theme as fallback if no other theme is registered
         // This will be overridden if Tailwind theme is added via AddTailwind()
-        services.TryAddSingleton<Core.Theme.IAppTheme, Core.Theme.AppThemeEQ>();
+        services.TryAddSingleton<IAppTheme, AppThemeEQ>();
 
         return services;
     }
@@ -146,18 +146,18 @@ public static class UIExtensions
         endpoints.MapGet("/_equantic/equantic.css", async context =>
         {
             context.Response.ContentType = "text/css";
-            var env = context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
-            var path = System.IO.Path.Combine(env.WebRootPath, "_equantic", "equantic.css");
+            var env = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
+            var path = Path.Combine(env.WebRootPath, "_equantic", "equantic.css");
 
-            if (System.IO.File.Exists(path))
+            if (File.Exists(path))
             {
                 await context.Response.SendFileAsync(path);
             }
             else
             {
                 // Fallback to local directory (Dev scenario)
-                var localPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", "_equantic", "equantic.css");
-                if (System.IO.File.Exists(localPath))
+                var localPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic", "equantic.css");
+                if (File.Exists(localPath))
                 {
                     await context.Response.SendFileAsync(localPath);
                 }
@@ -173,9 +173,9 @@ public static class UIExtensions
         endpoints.MapGet("/_equantic/{name}.js", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
-            var path = System.IO.Path.Combine(context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>().WebRootPath, "_equantic", $"{name}.js");
+            var path = Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic", $"{name}.js");
             
-            if (System.IO.File.Exists(path))
+            if (File.Exists(path))
             {
                 context.Response.ContentType = "application/javascript";
                 await context.Response.SendFileAsync(path);
@@ -184,8 +184,8 @@ public static class UIExtensions
             {
                 context.Response.StatusCode = 404;
                 // Try finding it in the local directory (Dev scenario)
-                var localPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", "_equantic", $"{name}.js");
-                 if (System.IO.File.Exists(localPath))
+                var localPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic", $"{name}.js");
+                 if (File.Exists(localPath))
                 {
                     context.Response.ContentType = "application/javascript";
                     await context.Response.SendFileAsync(localPath);

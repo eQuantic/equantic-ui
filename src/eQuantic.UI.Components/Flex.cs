@@ -42,11 +42,11 @@ public class Flex : HtmlElement
         var layoutStyle = new HtmlStyle 
         { 
             Display = eQuantic.UI.Core.Display.Flex,
-            FlexDirection = this.Direction,
-            JustifyContent = this.Justify,
-            AlignItems = this.Align,
-            Gap = this.Gap,
-            FlexWrap = this.Wrap ? FlexWrap.Wrap : FlexWrap.NoWrap
+            FlexDirection = Direction,
+            JustifyContent = Justify,
+            AlignItems = Align,
+            Gap = Gap,
+            FlexWrap = Wrap ? FlexWrap.Wrap : FlexWrap.NoWrap
         };
         
         var s = attrs["style"];

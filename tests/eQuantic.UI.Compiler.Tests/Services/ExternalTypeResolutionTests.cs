@@ -125,7 +125,7 @@ public class ExternalTypeResolutionTests
             new[]
             {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
                 MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location)
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));

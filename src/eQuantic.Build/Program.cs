@@ -52,8 +52,8 @@ try
 
         // Add standard .NET assemblies
         assemblyPaths.Add(typeof(object).Assembly.Location); // System.Private.CoreLib
-        assemblyPaths.Add(typeof(System.Linq.Enumerable).Assembly.Location); // System.Linq
-        assemblyPaths.Add(typeof(System.Collections.Generic.List<>).Assembly.Location); // System.Collections
+        assemblyPaths.Add(typeof(Enumerable).Assembly.Location); // System.Linq
+        assemblyPaths.Add(typeof(List<>).Assembly.Location); // System.Collections
 
         // Try to find ALL assemblies in bin folder (including NuGet packages)
         var binFolder = Path.Combine(primarySourceDir, "bin", "Debug", "net8.0");
@@ -112,7 +112,7 @@ catch (Exception ex)
 }
 
 // Initialize dependency resolver by scanning component directories
-var dependencyResolver = new eQuantic.UI.Compiler.Services.ComponentDependencyResolver();
+var dependencyResolver = new ComponentDependencyResolver();
 var componentDirectories = new List<string>(sourceDirs);
 
 // Also scan standard component library locations relative to build tool

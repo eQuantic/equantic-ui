@@ -44,24 +44,24 @@ public class Grid : HtmlElement
         var attrs = BuildAttributes();
         var style = new List<string> { "display: grid" };
 
-        if (this.Columns is int cols)
+        if (Columns is int cols)
         {
             style.Add($"grid-template-columns: repeat({cols}, 1fr)");
         }
-        else if (this.Columns is string colStr)
+        else if (Columns is string colStr)
         {
             style.Add($"grid-template-columns: {colStr}");
         }
 
-        if (!string.IsNullOrEmpty(this.Gap)) style.Add($"gap: {this.Gap}");
-        if (!string.IsNullOrEmpty(this.Rows)) style.Add($"grid-template-rows: {this.Rows}");
+        if (!string.IsNullOrEmpty(Gap)) style.Add($"gap: {Gap}");
+        if (!string.IsNullOrEmpty(Rows)) style.Add($"grid-template-rows: {Rows}");
         
         // Use HtmlStyle for alignment and flow
         var layoutStyle = new HtmlStyle 
         { 
-            GridAutoFlow = this.Flow,
-            AlignItems = this.AlignItems,
-            JustifyItems = this.JustifyItems
+            GridAutoFlow = Flow,
+            AlignItems = AlignItems,
+            JustifyItems = JustifyItems
         };
         
         style.Add(layoutStyle.ToCssString());

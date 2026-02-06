@@ -127,7 +127,7 @@ public class TypeScriptEmitter
                         {
                             // Discover out variables
                             var outVars = component.BuildMethodNode.Body.DescendantNodes()
-                                .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.DeclarationExpressionSyntax>()
+                                .OfType<DeclarationExpressionSyntax>()
                                 .Select(d => d.Designation.ToString())
                                 .Distinct();
                             
@@ -215,7 +215,7 @@ public class TypeScriptEmitter
                 // Server Actions
                 foreach (var action in component.ServerActions)
                 {
-                    this.ClassBuilder = c;
+                    ClassBuilder = c;
                     var paramsList = string.Join(", ", action.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
                     var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
                     var returnType = CSharpTypeToTypeScript(action.ReturnType);
@@ -379,8 +379,8 @@ public class TypeScriptEmitter
         
         var root = component.SyntaxTree.GetRoot();
         return root.DescendantNodes()
-            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InterpolatedStringExpressionSyntax>()
-            .Any(i => i.Contents.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InterpolationSyntax>()
+            .OfType<InterpolatedStringExpressionSyntax>()
+            .Any(i => i.Contents.OfType<InterpolationSyntax>()
                 .Any(c => c.FormatClause != null || c.AlignmentClause != null));
     }
 
@@ -400,23 +400,23 @@ public class TypeScriptEmitter
         return types;
     }
 
-    private HashSet<string> CollectComponentTypesFromNode(Microsoft.CodeAnalysis.SyntaxNode? node)
+    private HashSet<string> CollectComponentTypesFromNode(SyntaxNode? node)
     {
         var types = new HashSet<string>();
         if (node == null) return types;
         
-        var creations = node.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ObjectCreationExpressionSyntax>();
+        var creations = node.DescendantNodes().OfType<ObjectCreationExpressionSyntax>();
         foreach (var creation in creations)
         {
              types.Add(creation.Type.ToString());
         }
 
-        var invocations = node.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax>();
+        var invocations = node.DescendantNodes().OfType<InvocationExpressionSyntax>();
         foreach (var invocation in invocations)
         {
-            if (invocation.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax memberAccess)
+            if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
             {
-                if (memberAccess.Expression is Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax identifier)
+                if (memberAccess.Expression is IdentifierNameSyntax identifier)
                 {
                      var name = identifier.Identifier.Text;
                      if (!string.IsNullOrEmpty(name) && char.IsUpper(name[0])) 

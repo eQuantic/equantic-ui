@@ -30,7 +30,7 @@ public class Heading : StatelessComponent
     
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<IAppTheme>();
         var textTheme = theme?.Typography;
         
         var attrs = new Dictionary<string, string>
@@ -43,8 +43,8 @@ public class Heading : StatelessComponent
 
         return new DynamicElement
         {
-            TagName = "h" + this.Level,
-            InnerText = this.Content,
+            TagName = "h" + Level,
+            InnerText = Content,
             CustomAttributes = attrs,
             CustomEvents = BuildEvents()
         };

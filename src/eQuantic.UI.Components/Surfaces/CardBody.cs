@@ -15,7 +15,7 @@ public class CardBody : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var cardTheme = theme?.Card;
 
         var bodyClass = cardTheme?.Body ?? "";
@@ -33,7 +33,7 @@ public class CardBody : StatelessComponent
             ClassName = bodyClass.Trim()
         };
 
-        foreach (var child in this.Children)
+        foreach (var child in Children)
         {
             box.Children.Add(child);
         }

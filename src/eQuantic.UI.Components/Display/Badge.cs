@@ -18,28 +18,28 @@ public class Badge : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
+        var theme = context.GetService<Core.Theme.IAppTheme>();
         var badgeTheme = theme?.Badge;
 
         var baseStyle = badgeTheme?.Base ?? "";
-        var variantStyle = badgeTheme?.GetVariant(this.Variant) ?? "";
+        var variantStyle = badgeTheme?.GetVariant(Variant) ?? "";
 
         var element = new DynamicElement
         {
             TagName = "div",
             CustomAttributes = new Dictionary<string, string>
             {
-                ["class"] = $"{baseStyle} {variantStyle} {this.ClassName}".Trim()
+                ["class"] = $"{baseStyle} {variantStyle} {ClassName}".Trim()
             }
         };
 
-        if (this.Children.Any())
+        if (Children.Any())
         {
-            foreach (var child in this.Children) element.Children.Add(child);
+            foreach (var child in Children) element.Children.Add(child);
         }
-        else if (this.Text != null)
+        else if (Text != null)
         {
-            element.Children.Add(new Text(this.Text));
+            element.Children.Add(new Text(Text));
         }
 
         return element;
