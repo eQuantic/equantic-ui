@@ -1,4 +1,5 @@
 using eQuantic.UI.Core.Styling;
+using eQuantic.UI.Core.Theme.Types;
 
 namespace eQuantic.UI.Core.Theme;
 
@@ -12,6 +13,8 @@ public class CardThemeEQ : ICardTheme
     public string Header => (string)EQ.Card.Header;
     public string Body => (string)EQ.Card.Body;
     public string Footer => (string)EQ.Card.Footer;
+    public string Title => "eq-text-lg eq-font-semibold eq-text-primary";
+    public string Description => "eq-text-sm eq-text-secondary";
 
     public Dictionary<string, string> Shadows => new()
     {
@@ -27,5 +30,18 @@ public class CardThemeEQ : ICardTheme
         return Shadows.TryGetValue(shadow.ToLowerInvariant(), out var value)
             ? value
             : "eq-shadow-md";  // Default to medium shadow
+    }
+
+    public string GetVariant(CardVariant variant)
+    {
+        return variant switch
+        {
+            CardVariant.Outline => "eq-bg-transparent eq-border eq-border-gray-200",
+            CardVariant.Elevated => "eq-bg-surface eq-shadow-lg",
+            CardVariant.Subtle => "eq-bg-surface-secondary eq-shadow-sm",
+            CardVariant.Ghost => "eq-bg-transparent eq-border-none eq-shadow-none",
+            CardVariant.Default => "",  // Use base styles
+            _ => ""
+        };
     }
 }

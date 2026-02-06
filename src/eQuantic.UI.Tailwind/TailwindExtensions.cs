@@ -168,13 +168,24 @@ public static class TailwindExtensions
     }
 
     /// <summary>
-    /// Registers Tailwind CSS services.
+    /// Registers Tailwind CSS services and component themes.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The service collection.</returns>
     public static IServiceCollection AddTailwind(this IServiceCollection services)
     {
+        // Register main theme
         services.AddSingleton<eQuantic.UI.Core.Theme.IAppTheme, eQuantic.UI.Tailwind.Theme.AppTheme>();
+
+        // Register individual component themes
+        services.AddSingleton<eQuantic.UI.Core.Theme.IButtonTheme, eQuantic.UI.Tailwind.Theme.ButtonTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.ICardTheme, eQuantic.UI.Tailwind.Theme.CardTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IInputTheme, eQuantic.UI.Tailwind.Theme.InputTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.ICheckboxTheme, eQuantic.UI.Tailwind.Theme.CheckboxTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IBadgeTheme, eQuantic.UI.Tailwind.Theme.BadgeTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IAlertTheme, eQuantic.UI.Tailwind.Theme.AlertTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.ITextTheme, eQuantic.UI.Tailwind.Theme.TextTheme>();
+
         return services;
     }
 }

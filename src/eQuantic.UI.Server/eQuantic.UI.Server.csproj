@@ -21,6 +21,9 @@
     <EmbeddedResource Include="wwwroot/runtime.js">
       <LogicalName>eQuantic.UI.Server.runtime.js</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="Templates\app-shell.html">
+      <LogicalName>eQuantic.UI.Server.Templates.app-shell.html</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <!-- Resolve Bun path from embedded runtime packages -->

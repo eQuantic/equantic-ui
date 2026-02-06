@@ -36,7 +36,7 @@
 
 | Challenge | Blazor WASM | JavaScript Frameworks | **eQuantic.UI** |
 |-----------|-------------|----------------------|-----------------|
-| **Bundle size** | ~2MB+ (runtime) | Varies (~100KB-500KB) | **<30KB** runtime |
+| **Bundle size** | ~2MB+ (runtime) | Varies (~100KB-500KB) | **~52KB** runtime |
 | **Language** | C# | JavaScript/TypeScript | **C#** |
 | **Type safety** | At runtime | Optional (TS) | **Compile-time** |
 | **Server actions** | SignalR setup | REST/GraphQL setup | **Built-in RPC** |
@@ -403,7 +403,7 @@ new InputGroup {
 
 **Features:**
 
-- ✅ 5+ Card variants (Default, Outline, Elevated, Subtle, Ghost)
+- ✅ 6 Card variants (Default, Outline, Elevated, Subtle, Ghost, and custom via theme)
 - ✅ Controlled/Uncontrolled inputs (DefaultValue, DefaultChecked)
 - ✅ FormField with error messages and helper text
 - ✅ Loading spinners on buttons

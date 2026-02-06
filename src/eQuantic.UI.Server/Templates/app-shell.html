@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" class="{{HtmlClass}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{Title}}</title>
+    {{MetadataTags}}
+
+    <!-- eQuantic Base Styles -->
+    <link rel="stylesheet" href="/_equantic/equantic.css?v={{BuildId}}">
+
+    {{?BaseStyles}}
+    <style>
+        {{BaseStyles}}
+    </style>
+    {{/BaseStyles}}
+
+    {{HeadTags}}
+
+    <!-- Import Map for bare modules -->
+    <script type="importmap">
+    {
+        "imports": {
+            "@equantic/runtime": "/_equantic/runtime.js?v={{BuildId}}"
+        }
+    }
+    </script>
+
+    {{#if HasServerActions}}
+    <!-- SignalR (for Server Actions RPC) -->
+    {{#if IsDevelopment}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    {{#else}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js" integrity="sha512-dtV69LdOeg+M+auEmjGaR/BR6XBovz7HpQXNIPdlKgk3sa+R6bn/s+ur5ysN3d+k23cNVaIKGhz4kKPVKYFZBA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    {{/if}}
+    {{/if}}
+
+    {{#if IsDevelopment}}
+    <!-- Development Mode -->
+    <script>
+        console.log('[eQuantic.UI] Running in DEVELOPMENT mode');
+        console.log('[eQuantic.UI] BuildId:', '{{BuildId}}');
+        console.log('[eQuantic.UI] SSR:', {{SsrEnabled}});
+        {{#if HasServerActions}}
+        console.log('[eQuantic.UI] Server Actions: ENABLED');
+        {{/if}}
+    </script>
+    {{/if}}
+</head>
+<body>
+    <div id="app" data-ssr="{{SsrEnabled}}">
+        {{SsrContent}}
+    </div>
+
+    <!-- eQuantic.UI Runtime (Static Asset) -->
+    <script>
+        window.__EQ_CONFIG = {{ConfigJson}};
+        window.__EQ_DEV__ = {{IsDevelopmentBool}};
+        {{?InitialState}}{{InitialState}}{{/InitialState}}
+    </script>
+    <script type="module">
+        import { boot } from "@equantic/runtime";
+        boot();
+    </script>
+
+    {{#if IsDevelopment}}
+    <!-- Development Tools -->
+    <script>
+        // Add development helpers
+        window.__EQ_DEBUG = {
+            getState: () => window.__INITIAL_STATE__,
+            getConfig: () => window.__EQ_CONFIG,
+            reload: () => location.reload()
+        };
+        console.log('[eQuantic.UI] Debug helpers available: window.__EQ_DEBUG');
+    </script>
+    {{/if}}
+</body>
+</html>

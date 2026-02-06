@@ -1,8 +1,13 @@
 using System.Collections.Generic;
+using System.Linq;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Theme.Types;
 
 namespace eQuantic.UI.Components.Surfaces;
 
+/// <summary>
+/// Shadow levels for card elevation
+/// </summary>
 public enum Shadow
 {
     None,
@@ -12,47 +17,92 @@ public enum Shadow
     XLarge
 }
 
+/// <summary>
+/// Card component with support for both props-based and compound component patterns.
+///
+/// Props-based usage (legacy):
+/// <code>
+/// new Card {
+///     Header = new Text("Title"),
+///     Body = new Text("Content"),
+///     Footer = new Button()
+/// }
+/// </code>
+///
+/// Compound components usage (recommended):
+/// <code>
+/// new Card {
+///     Variant = CardVariant.Outline,
+///     Children = {
+///         new CardHeader {
+///             Children = {
+///                 new CardTitle { Text = "Title" },
+///                 new CardDescription { Text = "Description" }
+///             }
+///         },
+///         new CardBody {
+///             Children = { new Text("Content") }
+///         },
+///         new CardFooter {
+///             Children = { new Button { Text = "Action" } }
+///         }
+///     }
+/// }
+/// </code>
+/// </summary>
 public class Card : StatelessComponent
 {
+    /// <summary>
+    /// [Legacy] Header component (for props-based usage)
+    /// </summary>
     public IComponent? Header { get; set; }
+
+    /// <summary>
+    /// [Legacy] Body component (for props-based usage)
+    /// </summary>
     public IComponent Body { get; set; } = new NullComponent();
+
+    /// <summary>
+    /// [Legacy] Footer component (for props-based usage)
+    /// </summary>
     public IComponent? Footer { get; set; }
+
+    /// <summary>
+    /// Shadow level for card elevation (default: Medium)
+    /// </summary>
     public Shadow Shadow { get; set; } = Shadow.Medium;
+
+    /// <summary>
+    /// Card visual variant (default: Default)
+    /// </summary>
+    public CardVariant Variant { get; set; } = CardVariant.Default;
+
+    /// <summary>
+    /// Width CSS class (default: w-full)
+    /// </summary>
     public string Width { get; set; } = "w-full";
 
-    // Constructor removed to fix JS interop with object initializers
-
-    // Parameterless constructor for composition
     public Card() { }
 
     public override IComponent Build(RenderContext context)
     {
         var theme = context.GetService<eQuantic.UI.Core.Theme.IAppTheme>();
-        var cardTheme = theme != null ? theme.Card : null;
+        var cardTheme = theme?.Card;
 
-        var shadowKey = (this.Shadow.ToString() ?? "medium").ToLower();
-        var shadowClass = "";
-        if (cardTheme != null && cardTheme.Shadows != null)
-        {
-             var s = cardTheme.Shadows[shadowKey];
-             if (s != null) shadowClass = s;
-        }
+        // Check if using compound components (new pattern) or props (legacy)
+        var isCompoundPattern = this.Children.Any();
 
-        var containerClass = "";
-        if (cardTheme != null) containerClass = cardTheme.Container;
+        // Build shadow class
+        var shadowKey = this.Shadow.ToString().ToLower();
+        var shadowClass = cardTheme?.GetShadowInfo(shadowKey) ?? "";
 
-        var headerClass = "";
-        if (cardTheme != null) headerClass = cardTheme.Header;
+        // Build variant class
+        var variantClass = cardTheme?.GetVariant(this.Variant) ?? "";
 
-        var bodyClass = "";
-        if (cardTheme != null) bodyClass = cardTheme.Body;
-
-        var footerClass = "";
-        if (cardTheme != null) footerClass = cardTheme.Footer;
-
-        // Build container class list safely to avoid "undefined" in JS
+        // Build container class list
         var classes = new List<string>();
-        if (!string.IsNullOrEmpty(containerClass)) classes.Add(containerClass);
+        if (!string.IsNullOrEmpty(cardTheme?.Container)) classes.Add(cardTheme.Container);
+        if (!string.IsNullOrEmpty(variantClass)) classes.Add(variantClass);
         if (!string.IsNullOrEmpty(shadowClass)) classes.Add(shadowClass);
         if (!string.IsNullOrEmpty(this.Width)) classes.Add(this.Width);
         if (!string.IsNullOrEmpty(this.ClassName)) classes.Add(this.ClassName);
@@ -63,40 +113,47 @@ public class Card : StatelessComponent
             Children = { }
         };
 
-        if (this.Header != null)
+        if (isCompoundPattern)
         {
-            cardContainer.Children.Add(new Box
+            // New pattern: Use Children directly (compound components)
+            foreach (var child in this.Children)
             {
-                ClassName = headerClass,
-                Children = { this.Header }
-            });
-        }
-
-        var textBody = new Text("");
-        if (this.Body != null)
-        {
-            cardContainer.Children.Add(new Box
-            {
-                ClassName = bodyClass,
-                Children = { this.Body }
-            });
+                cardContainer.Children.Add(child);
+            }
         }
         else
         {
-             cardContainer.Children.Add(new Box
-            {
-                ClassName = bodyClass,
-                Children = { textBody }
-            });
-        }
+            // Legacy pattern: Use Header/Body/Footer props
+            var headerClass = cardTheme?.Header ?? "";
+            var bodyClass = cardTheme?.Body ?? "";
+            var footerClass = cardTheme?.Footer ?? "";
 
-        if (this.Footer != null)
-        {
-            cardContainer.Children.Add(new Box
+            if (this.Header != null)
             {
-                ClassName = footerClass,
-                Children = { this.Footer }
-            });
+                cardContainer.Children.Add(new Box
+                {
+                    ClassName = headerClass,
+                    Children = { this.Header }
+                });
+            }
+
+            if (this.Body != null)
+            {
+                cardContainer.Children.Add(new Box
+                {
+                    ClassName = bodyClass,
+                    Children = { this.Body }
+                });
+            }
+
+            if (this.Footer != null)
+            {
+                cardContainer.Children.Add(new Box
+                {
+                    ClassName = footerClass,
+                    Children = { this.Footer }
+                });
+            }
         }
 
         return cardContainer;

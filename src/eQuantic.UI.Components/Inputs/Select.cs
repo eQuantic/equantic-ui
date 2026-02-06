@@ -5,15 +5,55 @@ using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Inputs;
 
+/// <summary>
+/// Select input component with support for both controlled and uncontrolled modes.
+///
+/// Controlled mode (manages value externally):
+/// <code>
+/// new Select { Value = selectedValue, OnChange = HandleChange }
+/// </code>
+///
+/// Uncontrolled mode (manages value internally):
+/// <code>
+/// new Select { DefaultValue = "option1" }
+/// </code>
+/// </summary>
 public class Select : InputComponent<string>
 {
+    /// <summary>
+    /// Form field name attribute
+    /// </summary>
     public string? Name { get; set; }
+
+    /// <summary>
+    /// Allow multiple selections
+    /// </summary>
     public bool Multiple { get; set; }
+
+    /// <summary>
+    /// Disable the select input
+    /// </summary>
     public bool Disabled { get; set; }
+
+    /// <summary>
+    /// Mark as required field
+    /// </summary>
     public bool Required { get; set; }
+
+    /// <summary>
+    /// Available options to select from
+    /// </summary>
     public List<SelectOption> Options { get; set; } = new();
 
-    public bool IsNative { get; set; } = true; // Default to native for now to ensure stability
+    /// <summary>
+    /// Default value for uncontrolled mode (initial value only)
+    /// </summary>
+    public string? DefaultValue { get; set; }
+
+    /// <summary>
+    /// Use native HTML select element (default: true)
+    /// </summary>
+    public bool IsNative { get; set; } = true;
 
     public override IComponent Build(RenderContext context)
     {
@@ -132,6 +172,19 @@ public class Select : InputComponent<string>
     private bool IsSelected(SelectOption opt)
     {
         if (Multiple) return false; // Basic check
-        return Value != null && opt.Value == Value || opt.Selected;
+
+        // Controlled mode: Use Value prop
+        if (Value != null)
+        {
+            return opt.Value == Value;
+        }
+
+        // Uncontrolled mode: Use DefaultValue or opt.Selected
+        if (DefaultValue != null)
+        {
+            return opt.Value == DefaultValue;
+        }
+
+        return opt.Selected;
     }
 }

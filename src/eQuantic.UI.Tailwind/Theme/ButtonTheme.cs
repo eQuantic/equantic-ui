@@ -13,7 +13,7 @@ public class ButtonTheme : IButtonTheme
         _colors = colors;
     }
 
-    public string Base => "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500";
+    public string Base => "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer ring-offset-white dark:ring-offset-zinc-950 focus-visible:ring-blue-500 data-[loading=true]:opacity-70 data-[loading=true]:cursor-not-allowed";
 
     public string GetVariant(Variant variant) => variant switch
     {

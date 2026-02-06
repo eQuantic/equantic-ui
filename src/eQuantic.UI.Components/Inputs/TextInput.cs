@@ -6,19 +6,69 @@ using eQuantic.UI.Core.Theme.Types;
 namespace eQuantic.UI.Components.Inputs;
 
 /// <summary>
-/// Text input component
+/// Text input component with support for both controlled and uncontrolled modes.
+///
+/// Controlled mode (manages value externally):
+/// <code>
+/// new TextInput { Value = inputValue, OnChange = HandleChange }
+/// </code>
+///
+/// Uncontrolled mode (manages value internally):
+/// <code>
+/// new TextInput { DefaultValue = "initial text" }
+/// </code>
 /// </summary>
 public class TextInput : InputComponent<string>
 {
+    /// <summary>
+    /// HTML input type (text, email, password, etc.)
+    /// </summary>
     public string Type { get; set; } = "text";
+
+    /// <summary>
+    /// Placeholder text to display when empty
+    /// </summary>
     public string? Placeholder { get; set; }
+
+    /// <summary>
+    /// Disable the input
+    /// </summary>
     public bool Disabled { get; set; }
+
+    /// <summary>
+    /// Make the input read-only
+    /// </summary>
     public bool ReadOnly { get; set; }
+
+    /// <summary>
+    /// Mark as required field
+    /// </summary>
     public bool Required { get; set; }
+
+    /// <summary>
+    /// Form field name attribute
+    /// </summary>
     public string? Name { get; set; }
+
+    /// <summary>
+    /// Maximum character length
+    /// </summary>
     public int? MaxLength { get; set; }
+
+    /// <summary>
+    /// Autocomplete hint for browsers
+    /// </summary>
     public string? AutoComplete { get; set; }
+
+    /// <summary>
+    /// Input size variant
+    /// </summary>
     public Size Size { get; set; } = Size.Medium;
+
+    /// <summary>
+    /// Default value for uncontrolled mode (initial value only)
+    /// </summary>
+    public string? DefaultValue { get; set; }
 
     public override IComponent Build(RenderContext context)
     {
@@ -33,7 +83,10 @@ public class TextInput : InputComponent<string>
             ["class"] = $"{baseStyle} {sizeStyle} {ClassName}".Trim()
         };
 
-        if (Value != null) attrs["value"] = Value;
+        // Controlled mode: Use Value prop
+        // Uncontrolled mode: Use DefaultValue
+        var initialValue = Value ?? DefaultValue;
+        if (initialValue != null) attrs["value"] = initialValue;
         if (Placeholder != null) attrs["placeholder"] = Placeholder;
         if (Disabled) attrs["disabled"] = "true";
         if (ReadOnly) attrs["readonly"] = "true";

@@ -245,7 +245,7 @@ Server Actions are C# methods invoked directly from browser via RPC:
 
 ```csharp
 [Page("/todos")]
-public class TodoList : StatefulWidget
+public class TodoList : StatefulComponent
 {
     [ServerAction]
     public async Task<List<Todo>> LoadTodos()
@@ -332,7 +332,7 @@ public class BlogPostPage : StatelessComponent, IHandleMetadata
 
 ## Version Management
 
-Global version is defined in `Directory.Build.props` (currently 0.1.1). Debug builds auto-pack to `artifacts/packages/` for local testing.
+Global version is defined in `Directory.Build.props` (currently 0.1.2). Debug builds auto-pack to `artifacts/packages/` for local testing.
 
 ## Compiler Boundaries (Server vs Client)
 

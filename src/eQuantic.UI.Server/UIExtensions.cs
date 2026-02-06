@@ -297,7 +297,7 @@ public static class UIExtensions
                 var attr = pageType.GetCustomAttributes<Core.PageAttribute>().FirstOrDefault()!;
                 if (!string.IsNullOrEmpty(attr.Title) && string.IsNullOrEmpty(metadata.Title))
                     seo.Title(attr.Title);
-                
+
                 if (!string.IsNullOrEmpty(attr.Description) && !metadata.Tags.Any(t => t.Key == "name:description"))
                     seo.Description(attr.Description);
             }
@@ -310,50 +310,37 @@ public static class UIExtensions
             ssr: {ssrEnabled.ToString().ToLowerInvariant()}
         }}";
 
-        var html = $@"<!DOCTYPE html>
-<html lang=""en"" class=""{shell.HtmlClass}"">
-<head>
-    <meta charset=""UTF-8"">
-    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>{System.Web.HttpUtility.HtmlEncode(metadata.Title)}</title>
-    {metadata.RenderTags()}
+        // Render HTML using template engine with conditionals
+        var isDevelopment = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
 
-    <!-- eQuantic Base Styles -->
-    <link rel=""stylesheet"" href=""/_equantic/equantic.css?v={BuildId}"">
+        // Check if any component uses Server Actions
+        var hasServerActions = options.AssembliesToScan
+            .SelectMany(a => a.GetTypes())
+            .SelectMany(t => t.GetMethods())
+            .Any(m => m.GetCustomAttributes(typeof(Core.ServerActionAttribute), false).Any());
 
-    <style>
-        {shell.BaseStyles}
-    </style>
-    {string.Join("\n    ", shell.HeadTags)}
+        var template = HtmlTemplateEngine.FromResource("eQuantic.UI.Server.Templates.app-shell.html");
+        var html = template.Render(ctx =>
+        {
+            // Variables
+            ctx.Set("HtmlClass", shell.HtmlClass)
+               .Set("Title", System.Web.HttpUtility.HtmlEncode(metadata.Title))
+               .Set("MetadataTags", metadata.RenderTags())
+               .Set("BuildId", BuildId)
+               .SetOrEmpty("BaseStyles", shell.BaseStyles)
+               .Set("HeadTags", string.Join("\n    ", shell.HeadTags))
+               .Set("SsrEnabled", ssrEnabled.ToString().ToLowerInvariant())
+               .Set("SsrContent", ssrContent)
+               .Set("ConfigJson", configJson)
+               .Set("IsDevelopmentBool", isDevelopment ? "true" : "false")
+               .SetOrEmpty("InitialState", serializedState != null ? $"window.__INITIAL_STATE__ = {serializedState};" : null);
 
-    <!-- Import Map for bare modules -->
-    <script type=""importmap"">
-    {{
-        ""imports"": {{
-            ""@equantic/runtime"": ""/_equantic/runtime.js?v={BuildId}""
-        }}
-    }}
-    </script>
-
-    <script src=""https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js""></script>
-</head>
-<body>
-    <div id=""app"" data-ssr=""{ssrEnabled.ToString().ToLowerInvariant()}"">
-        {ssrContent}
-    </div>
-
-    <!-- eQuantic.UI Runtime (Static Asset) -->
-    <script>
-        window.__EQ_CONFIG = {configJson};
-        window.__EQ_DEV__ = {(context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>().IsDevelopment() ? "true" : "false")};
-        {(serializedState != null ? $"window.__INITIAL_STATE__ = {serializedState};" : "")}
-    </script>
-    <script type=""module"">
-        import {{ boot }} from ""@equantic/runtime"";
-        boot();
-    </script>
-</body>
-</html>";
+            // Conditions
+            ctx.When("IsDevelopment", isDevelopment)
+               .When("HasInitialState", serializedState != null)
+               .When("SsrEnabled", ssrEnabled)
+               .When("HasServerActions", hasServerActions);
+        });
 
         context.Response.ContentType = "text/html";
         await context.Response.WriteAsync(html);

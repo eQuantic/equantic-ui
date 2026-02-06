@@ -4,12 +4,44 @@ using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Inputs;
 
+/// <summary>
+/// Checkbox input component with support for both controlled and uncontrolled modes.
+///
+/// Controlled mode (manages checked state externally):
+/// <code>
+/// new Checkbox { Checked = isChecked, OnChange = HandleChange }
+/// </code>
+///
+/// Uncontrolled mode (manages checked state internally):
+/// <code>
+/// new Checkbox { DefaultChecked = true }
+/// </code>
+/// </summary>
 public class Checkbox : InputComponent<bool>
 {
+    /// <summary>
+    /// Checked state (controlled mode). Alias for Value property.
+    /// </summary>
     public bool Checked { get => Value; set => Value = value; }
+
+    /// <summary>
+    /// Default checked state for uncontrolled mode (initial state only)
+    /// </summary>
+    public bool DefaultChecked { get; set; }
+
+    /// <summary>
+    /// Disable the checkbox
+    /// </summary>
     public bool Disabled { get; set; }
 
+    /// <summary>
+    /// Use native HTML checkbox element (default: true)
+    /// </summary>
     public bool IsNative { get; set; } = true;
+
+    /// <summary>
+    /// Form field name attribute
+    /// </summary>
     public string? Name { get; set; }
 
     public override IComponent Build(RenderContext context)
@@ -21,7 +53,10 @@ public class Checkbox : InputComponent<bool>
         var checkedStyle = checkboxTheme?.Checked ?? "";
         var uncheckedStyle = checkboxTheme?.Unchecked ?? "";
 
-        var stateStyle = Value ? checkedStyle : uncheckedStyle;
+        // Controlled mode: Use Value (Checked)
+        // Uncontrolled mode: Use DefaultChecked
+        var isChecked = Value || DefaultChecked;
+        var stateStyle = isChecked ? checkedStyle : uncheckedStyle;
 
         if (IsNative)
         {
@@ -30,8 +65,8 @@ public class Checkbox : InputComponent<bool>
                 ["type"] = "checkbox",
                 ["class"] = $"{baseStyle} {stateStyle} {ClassName}".Trim()
             };
-    
-            if (Value) attrs["checked"] = "true";
+
+            if (isChecked) attrs["checked"] = "true";
             if (Disabled) attrs["disabled"] = "true";
             if (Name != null) attrs["name"] = Name;
     
@@ -50,7 +85,7 @@ public class Checkbox : InputComponent<bool>
             // Rich Checkbox
             var rootStyle = checkboxTheme?.Root ?? "";
             var indicatorStyle = checkboxTheme?.Indicator ?? "";
-            var state = Value ? "checked" : "unchecked";
+            var state = isChecked ? "checked" : "unchecked";
 
             // Hidden input
             var inputAttrs = new Dictionary<string, string>
@@ -59,7 +94,7 @@ public class Checkbox : InputComponent<bool>
                 ["class"] = "sr-only",
                 ["name"] = Name ?? ""
             };
-            if (Value) inputAttrs["checked"] = "true";
+            if (isChecked) inputAttrs["checked"] = "true";
             
             var richEvents = BuildEvents();
             if (OnChange != null) richEvents["change"] = OnChange;
@@ -78,7 +113,7 @@ public class Checkbox : InputComponent<bool>
                 {
                     ["type"] = "button",
                     ["role"] = "checkbox",
-                    ["aria-checked"] = Value.ToString().ToLower(),
+                    ["aria-checked"] = isChecked.ToString().ToLower(),
                     ["data-state"] = state,
                     ["class"] = $"{rootStyle} {ClassName}".Trim()
                 },
@@ -88,7 +123,7 @@ public class Checkbox : InputComponent<bool>
             if (Disabled) button.CustomAttributes["disabled"] = "true";
 
             // Indicator
-            if (Value)
+            if (isChecked)
             {
                 var indicator = new DynamicElement
                 {
