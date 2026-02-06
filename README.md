@@ -487,29 +487,29 @@ new Container
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                        BUILD TIME                                │
+│                        BUILD TIME                               │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │   Counter.cs ──► Roslyn Parser ──► TypeScript ──► JavaScript    │
-│                                                                  │
+│                                                                 │
 │   • Type checking at compile time                               │
 │   • Tree-shaking removes unused code                            │
 │   • Code splitting per page/route                               │
 │   • Source maps for C# debugging in browser                     │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                        RUNTIME (~49KB)                           │
+│                        RUNTIME (~49KB)                          │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │   • Virtual DOM with keyed reconciliation                       │
 │   • Event delegation and state management                       │
 │   • Server Actions RPC bridge                                   │
 │   • SSR hydration support                                       │
 │   • Development tools (logger, error overlay)                   │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
