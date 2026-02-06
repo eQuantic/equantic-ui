@@ -9,13 +9,28 @@
         <PackageType>Dependency</PackageType>
     </PropertyGroup>
 
-    <ItemGroup>
+    <PropertyGroup>
+        <IsEQuanticDevMode
+            Condition="Exists('../eQuantic.UI.Runtime.Osx64/eQuantic.UI.Runtime.Osx64.csproj')">true</IsEQuanticDevMode>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(IsEQuanticDevMode)' != 'true'">
         <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="$(Version)"
             Condition="$([MSBuild]::IsOSPlatform('OSX'))" PrivateAssets="None" />
         <PackageReference Include="eQuantic.UI.Runtime.Win64" Version="$(Version)"
             Condition="$([MSBuild]::IsOSPlatform('Windows'))" PrivateAssets="None" />
         <PackageReference Include="eQuantic.UI.Runtime.Linux64" Version="$(Version)"
             Condition="$([MSBuild]::IsOSPlatform('Linux'))" PrivateAssets="None" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IsEQuanticDevMode)' == 'true'">
+        <ProjectReference Include="../eQuantic.UI.Runtime.Osx64/eQuantic.UI.Runtime.Osx64.csproj"
+            Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+        <ProjectReference Include="../eQuantic.UI.Runtime.Win64/eQuantic.UI.Runtime.Win64.csproj"
+            Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+        <ProjectReference
+            Include="../eQuantic.UI.Runtime.Linux64/eQuantic.UI.Runtime.Linux64.csproj"
+            Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
     </ItemGroup>
 
     <!-- Package the compiled runtime.js and CSS for consumer projects -->

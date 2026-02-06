@@ -1,4 +1,5 @@
-<Project Sdk="eQuantic.UI.Sdk/0.1.2">
+<Project>
+    <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.props" />
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -8,7 +9,8 @@
 
     <ItemGroup>
         <!-- Only UI library choice needs to be explicit -->
-        <PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.2" />
+        <ProjectReference Include="..\..\src\eQuantic.UI.Tailwind\eQuantic.UI.Tailwind.csproj" />
     </ItemGroup>
 
+    <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.targets" />
 </Project>

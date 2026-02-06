@@ -26,40 +26,30 @@ export class ClassBuilder {
 
   /**
    * Adds one or more CSS classes.
-   * Duplicate classes are automatically ignored.
+   * Duplicate classes are automatically ignored (based on the exact string provided).
    */
   add(...classes: (string | null | undefined)[]): this {
     for (const className of classes) {
-      if (className && className.trim() && !this.added.has(className)) {
-        this.added.add(className);
-        this.classes.push(className);
+      if (className && className.trim()) {
+        if (!this.added.has(className)) {
+          this.added.add(className);
+          this.classes.push(className);
+        }
       }
     }
     return this;
   }
 
+
   /**
    * Conditionally adds classes if the condition is true.
-   * Supports optional fallback classes when condition is false.
    *
    * @example
-   * .when(isActive, "bg-blue-600", "bg-gray-600")
-   * .when(isDisabled, "opacity-50")
+   * .when(isActive, "bg-blue-600", "text-white")
    */
-  when(condition: boolean, ...classes: (string | null | undefined)[]): this;
-  when(condition: boolean, whenTrue: string, whenFalse?: string): this;
-  when(condition: boolean, ...args: any[]): this {
+  when(condition: boolean, ...classes: (string | null | undefined)[]): this {
     if (condition) {
-      // If first arg is string and there are exactly 1-2 args, treat as whenTrue
-      if (typeof args[0] === 'string' && args.length <= 2) {
-        this.add(args[0]);
-      } else {
-        // Otherwise, treat as multiple classes
-        this.add(...args);
-      }
-    } else if (args.length === 2 && typeof args[1] === 'string') {
-      // Second argument is the fallback (whenFalse)
-      this.add(args[1]);
+      this.add(...classes);
     }
     return this;
   }

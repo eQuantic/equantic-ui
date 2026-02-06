@@ -1,26 +1,33 @@
 export class StyleBuilder {
   private classes: string[] = [];
+  private added: Set<string> = new Set();
 
   constructor(baseClass?: string | null) {
-    if (baseClass) this.classes.push(baseClass);
+    if (baseClass) this.add(baseClass);
   }
 
   static create(baseClass?: string | null): StyleBuilder {
     return new StyleBuilder(baseClass);
   }
 
-  add(className?: string | null, condition: boolean = true): StyleBuilder {
-    if (condition && className) {
-      // Split by space to handle multiple classes in one string
-      const parts = className.split(' ').filter((c) => c.trim().length > 0);
-      this.classes.push(...parts);
+  add(...styles: (string | null | undefined)[]): this {
+    for (const style of styles) {
+      if (style && style.trim()) {
+        if (!this.added.has(style)) {
+          this.added.add(style);
+          this.classes.push(style);
+        }
+      }
     }
     return this;
   }
 
   // Alias for legacy/generated code compatibility
   push(className?: string | null, condition: boolean = true): StyleBuilder {
-    return this.add(className, condition);
+    if (condition && className) {
+      return this.add(className);
+    }
+    return this;
   }
 
   addVariant<T>(key: T, lookup: (k: T) => string | null | undefined): StyleBuilder {

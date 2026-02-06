@@ -222,19 +222,16 @@ public class TodoListState : ComponentState<TodoList>
         {
             foreach (var todo in filteredTodos)
             {
+                // Original: "relative flex flex-row items-center p-4 bg-gradient-to-r {gradient} backdrop-blur-sm rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-blue-500/10 dark:hover:shadow-purple-500/10 group gap-[12px] border border-gray-200/50 dark:border-zinc-700/50"
                 var itemClasses = ClassBuilder.Create()
-                    .Add(TW.Position.Relative, TW.Flex.Row, TW.Flex.ItemsCenter, TW.P(4))
+                    .Add(TW.Position.Relative, TW.Display.Flex, TW.Flex.Row, TW.Flex.ItemsCenter, TW.P(4))
                     .Add(TW.Bg.GradientToR)
-                    .When(todo.IsCompleted, 
-                        "from-gray-50/50 to-gray-100/50", 
-                        TW.Dark("from-zinc-800/30 to-zinc-900/30"))
-                    .When(!todo.IsCompleted,
-                        "from-white to-blue-50/30",
-                        TW.Dark("from-zinc-800/80 to-zinc-800/50"))
+                    .When(todo.IsCompleted, "from-gray-50/50", "to-gray-100/50", "dark:from-zinc-800/30", "dark:to-zinc-900/30")
+                    .When(!todo.IsCompleted, "from-white", "to-blue-50/30", "dark:from-zinc-800/80", "dark:to-zinc-800/50")
                     .Add(TW.Backdrop.BlurSm, TW.Rounded.Xl)
                     .Add(TW.Transition.All, TW.Duration._300)
-                    .Hover(TW.Transform.Scale105 /* actually 1.02 */, "scale-[1.02]", TW.Shadow.Lg, "shadow-blue-500/10")
-                    .Dark(TW.Hover("shadow-purple-500/10"))
+                    .Hover("scale-[1.02]", TW.Shadow.Lg, "shadow-blue-500/10")
+                    .Dark("hover:shadow-purple-500/10")
                     .Add(TW.Group, "gap-[12px]")
                     .Add(TW.Border.Base, "border-gray-200/50")
                     .Dark("border-zinc-700/50")
@@ -280,7 +277,7 @@ public class TodoListState : ComponentState<TodoList>
                         },
                         new Box {
                             ClassName = ClassBuilder.Create()
-                                .Add(TW.Flex.Row, "gap-[6px]", TW.Opacity.Op0)
+                                .Add(TW.Display.Flex, TW.Flex.Row, "gap-[6px]", TW.Opacity.Op0)
                                 .GroupHover(TW.Opacity.Op100)
                                 .Add(TW.Transition.All, TW.Duration._200)
                                 .Build(),
@@ -327,11 +324,11 @@ public class TodoListState : ComponentState<TodoList>
 
         var headerContainerClasses = ClassBuilder.Create()
             .Add(TW.Position.Absolute, TW.Position.Top(6), TW.Position.Left(6))
-            .Add(TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(3))
+            .Add(TW.Display.Flex, TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(3))
             .Build();
 
         var badgeClasses = ClassBuilder.Create()
-            .Add(TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(2))
+            .Add(TW.Display.Flex, TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(2))
             .Add(TW.Px(4), TW.Py(2), TW.Rounded.Full)
             .Add(TW.WithOpacity(TW.Bg.White, 80), TW.Backdrop.BlurXl, TW.Shadow.Lg)
             .Dark(TW.WithOpacity(TW.Bg.Zinc800, 80))
@@ -407,17 +404,17 @@ public class TodoListState : ComponentState<TodoList>
                         .Build(),
                     Header = new Box {
                         ClassName = ClassBuilder.Create()
-                            .Add(TW.WFull, TW.Flex.Col, "gap-[20px]")
+                            .Add(TW.WFull, TW.Display.Flex, TW.Flex.Col, "gap-[20px]")
                             .Build(),
                         Children = {
                             new Box
                             {
                                 ClassName = ClassBuilder.Create()
-                                    .Add(TW.WFull, TW.Flex.Row, TW.Flex.ItemsCenter, TW.Flex.JustifyBetween)
+                                    .Add(TW.WFull, TW.Display.Flex, TW.Flex.Row, TW.Flex.ItemsCenter, TW.Flex.JustifyBetween)
                                     .Build(),
                                 Children = {
                                     new Box {
-                                        ClassName = ClassBuilder.Create().Add(TW.Flex.Col, TW.Gap(1)).Build(),
+                                        ClassName = ClassBuilder.Create().Add(TW.Display.Flex, TW.Flex.Col, TW.Gap(1)).Build(),
                                         Children = {
                                             new Heading("My Tasks", 1) { 
                                                 ClassName = ClassBuilder.Create()
@@ -436,7 +433,7 @@ public class TodoListState : ComponentState<TodoList>
                                         }
                                     },
                                     new Box {
-                                        ClassName = ClassBuilder.Create().Add(TW.Flex.Col, TW.Flex.ItemsEnd).Build(),
+                                        ClassName = ClassBuilder.Create().Add(TW.Display.Flex, TW.Flex.Col, TW.Flex.ItemsEnd).Build(),
                                         Children = {
                                             new Text($"{_todos.Count(t => !t.IsCompleted)}") {
                                                 ClassName = ClassBuilder.Create()
@@ -455,7 +452,7 @@ public class TodoListState : ComponentState<TodoList>
                             },
                             new Box {
                                 ClassName = ClassBuilder.Create()
-                                    .Add(TW.Flex.Row, "gap-[10px]")
+                                    .Add(TW.Display.Flex, TW.Flex.Row, "gap-[10px]")
                                     .Add("bg-gradient-to-r from-gray-100/80 to-gray-50/50")
                                     .Dark("from-zinc-800/50 to-zinc-900/30")
                                     .Add(TW.P(2), TW.Rounded.Xl, TW.Backdrop.BlurSm)
@@ -474,7 +471,7 @@ public class TodoListState : ComponentState<TodoList>
                         Children = {
                             new Box {
                                 ClassName = ClassBuilder.Create()
-                                    .Add(TW.Flex.Row, "gap-[12px]", TW.P(2))
+                                    .Add(TW.Display.Flex, TW.Flex.Row, "gap-[12px]", TW.P(2))
                                     .Add(TW.Bg.GradientToR, "from-blue-50/50 to-purple-50/50")
                                     .Dark("from-zinc-800/50 to-zinc-900/50")
                                     .Add(TW.Rounded.Xl, TW.Border.B2, TW.Border.Dashed)
@@ -518,16 +515,16 @@ public class TodoListState : ComponentState<TodoList>
                     },
                     Footer = new Box {
                         ClassName = ClassBuilder.Create()
-                            .Add(TW.Flex.Row, TW.Flex.ItemsCenter, TW.Flex.JustifyBetween)
+                            .Add(TW.Display.Flex, TW.Flex.Row, TW.Flex.ItemsCenter, TW.Flex.JustifyBetween)
                             .Add(TW.Pt(4), TW.Border.T, "border-gray-200/50")
                             .Dark("border-zinc-800/50")
                             .Build(),
                         Children = {
                             new Box {
-                                ClassName = ClassBuilder.Create().Add(TW.Flex.Row, TW.Gap(4), TW.Text.Sm).Build(),
+                                ClassName = ClassBuilder.Create().Add(TW.Display.Flex, TW.Flex.Row, TW.Gap(4), TW.Text.Sm).Build(),
                                 Children = {
                                     new Box {
-                                        ClassName = ClassBuilder.Create().Add(TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(2)).Build(),
+                                        ClassName = ClassBuilder.Create().Add(TW.Display.Flex, TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(2)).Build(),
                                         Children = {
                                             new Text("📊") { ClassName = TW.Text.Lg },
                                             new Text($"Total: {_todos.Count}") {
@@ -537,7 +534,7 @@ public class TodoListState : ComponentState<TodoList>
                                         }
                                     },
                                     new Box {
-                                        ClassName = ClassBuilder.Create().Add(TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(2)).Build(),
+                                        ClassName = ClassBuilder.Create().Add(TW.Display.Flex, TW.Flex.Row, TW.Flex.ItemsCenter, TW.Gap(2)).Build(),
                                         Children = {
                                             new Text("✅") { ClassName = TW.Text.Lg },
                                             new Text($"Completed: {_todos.Count(t => t.IsCompleted)}") {
@@ -574,7 +571,7 @@ public class TodoListState : ComponentState<TodoList>
                     Title = "Edit Task",
                     OnClose = () => { SetState(() => { _isEditing = false; }); },
                     Body = new Box {
-                        ClassName = ClassBuilder.Create().Add(TW.Flex.Col, "gap-[10px]").Build(),
+                        ClassName = ClassBuilder.Create().Add(TW.Display.Flex, TW.Flex.Col, "gap-[10px]").Build(),
                         Children = { 
                             new Text("Update the task title:") { Variant = Variant.Custom, ClassName = TW.Text.Gray400 },
                             new TextInput {
@@ -584,7 +581,7 @@ public class TodoListState : ComponentState<TodoList>
                         }
                     },
                     Footer = new Box {
-                        ClassName = ClassBuilder.Create().Add(TW.Flex.Row, "gap-[10px]").Build(),
+                        ClassName = ClassBuilder.Create().Add(TW.Display.Flex, TW.Flex.Row, "gap-[10px]").Build(),
                         Children = {
                             new Button {
                                 Text = "Cancel",
@@ -607,7 +604,7 @@ public class TodoListState : ComponentState<TodoList>
                     Side = DrawerSide.Right,
                     OnClose = () => { SetState(() => { _isDrawerOpen = false; }); },
                     Content = new Box {
-                        ClassName = ClassBuilder.Create().Add(TW.Flex.Col, "gap-[20px]").Build(),
+                        ClassName = ClassBuilder.Create().Add(TW.Display.Flex, TW.Flex.Col, "gap-[20px]").Build(),
                         Children = {
                             new Heading("Settings", 3) { ClassName = TW.Mb(4) },
                             new Text("Theme preferences and other settings will go here.") { Variant = Variant.Ghost },

@@ -1,4 +1,5 @@
-<Project Sdk="eQuantic.UI.Sdk/0.1.2">
+<Project>
+    <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.props" />
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -8,4 +9,5 @@
 
     <!-- No explicit package references needed - SDK includes all core packages -->
 
+    <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.targets" />
 </Project>

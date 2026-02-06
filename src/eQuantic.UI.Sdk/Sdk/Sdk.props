@@ -26,7 +26,8 @@
 
     <!-- Extract version from SDK package's own version -->
     <PropertyGroup Condition="'$(EQuanticUIVersion)' == '' AND Exists('$(_EQuanticSdkNuspecPath)')">
-        <EQuanticUIVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_EQuanticSdkNuspecPath)')), '&lt;version&gt;(.+?)&lt;/version&gt;').Groups[1].Value)</EQuanticUIVersion>
+        <EQuanticUIVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_EQuanticSdkNuspecPath)')),
+            '&lt;version&gt;(.+?)&lt;/version&gt;').Groups[1].Value)</EQuanticUIVersion>
     </PropertyGroup>
 
     <!-- Fallback to wildcard if version still not determined -->
@@ -34,12 +35,30 @@
         <EQuanticUIVersion>*</EQuanticUIVersion>
     </PropertyGroup>
 
+    <!--
+        Determine development mode (source tree).
+    -->
+    <PropertyGroup>
+        <_DevRootDir>$(MSBuildThisFileDirectory)../../</_DevRootDir>
+        <IsEQuanticDevMode
+            Condition="Exists('$(_DevRootDir)eQuantic.UI.Core/eQuantic.UI.Core.csproj')">true</IsEQuanticDevMode>
+    </PropertyGroup>
+
     <!-- Core eQuantic.UI packages (automatically included by SDK) -->
-    <ItemGroup>
+    <ItemGroup Condition="'$(IsEQuanticDevMode)' != 'true'">
         <PackageReference Include="eQuantic.UI.Core" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Runtime" Version="$(EQuanticUIVersion)" />
+    </ItemGroup>
+
+    <!-- Project references for Dev Mode -->
+    <ItemGroup Condition="'$(IsEQuanticDevMode)' == 'true'">
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
+        <ProjectReference
+            Include="$(_DevRootDir)eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Runtime\eQuantic.UI.Runtime.csproj" />
     </ItemGroup>
 
     <ItemGroup>

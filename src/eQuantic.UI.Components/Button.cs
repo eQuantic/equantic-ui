@@ -77,7 +77,7 @@ public class Button : StatelessComponent
 
         var attrs = new Dictionary<string, string>
         {
-            ["type"] = this.Type,
+            ["type"] = Type,
             ["class"] = classValue
         };
 

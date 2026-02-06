@@ -45,6 +45,7 @@ public static class TailwindExtensions
                 @base = theme.Button.Base,
                 variants = new Dictionary<string, string>
                 {
+                    ["default"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Default),
                     ["primary"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Primary),
                     ["secondary"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Secondary),
                     ["outline"] = theme.Button.GetVariant(Core.Theme.Types.Variant.Outline),
@@ -68,6 +69,7 @@ public static class TailwindExtensions
                 @base = theme.Typography.Base,
                 variants = new Dictionary<string, string>
                 {
+                    ["default"] = theme.Typography.GetVariant(Core.Theme.Types.Variant.Default),
                     ["primary"] = theme.Typography.GetVariant(Core.Theme.Types.Variant.Primary),
                     ["secondary"] = theme.Typography.GetVariant(Core.Theme.Types.Variant.Secondary),
                     ["ghost"] = theme.Typography.GetVariant(Core.Theme.Types.Variant.Ghost),
@@ -82,8 +84,80 @@ public static class TailwindExtensions
                     ["h5"] = theme.Typography.GetHeading(5),
                     ["h6"] = theme.Typography.GetHeading(6)
                 }
+            },
+            card = new
+            {
+                container = theme.Card.Container,
+                header = theme.Card.Header,
+                body = theme.Card.Body,
+                footer = theme.Card.Footer,
+                title = theme.Card.Title,
+                description = theme.Card.Description,
+                variants = new Dictionary<string, string>
+                {
+                    ["default"] = theme.Card.GetVariant(Core.Theme.Types.CardVariant.Default),
+                    ["outline"] = theme.Card.GetVariant(Core.Theme.Types.CardVariant.Outline),
+                    ["elevated"] = theme.Card.GetVariant(Core.Theme.Types.CardVariant.Elevated),
+                    ["subtle"] = theme.Card.GetVariant(Core.Theme.Types.CardVariant.Subtle),
+                    ["ghost"] = theme.Card.GetVariant(Core.Theme.Types.CardVariant.Ghost)
+                },
+                shadows = theme.Card.Shadows
+            },
+            input = new
+            {
+                @base = theme.Input.Base,
+                variants = new Dictionary<string, string>
+                {
+                    ["success"] = theme.Input.GetVariant(Core.Theme.Types.Variant.Success),
+                    ["warning"] = theme.Input.GetVariant(Core.Theme.Types.Variant.Warning),
+                    ["destructive"] = theme.Input.GetVariant(Core.Theme.Types.Variant.Destructive),
+                    ["ghost"] = theme.Input.GetVariant(Core.Theme.Types.Variant.Ghost)
+                },
+                sizes = new Dictionary<string, string>
+                {
+                    ["small"] = theme.Input.GetSize(Core.Theme.Types.Size.Small),
+                    ["medium"] = theme.Input.GetSize(Core.Theme.Types.Size.Medium),
+                    ["large"] = theme.Input.GetSize(Core.Theme.Types.Size.Large)
+                }
+            },
+            checkbox = new
+            {
+                @base = theme.Checkbox.Base,
+                root = theme.Checkbox.Root,
+                indicator = theme.Checkbox.Indicator,
+                @checked = theme.Checkbox.Checked,
+                @unchecked = theme.Checkbox.Unchecked
+            },
+            badge = new
+            {
+                @base = theme.Badge.Base,
+                variants = new Dictionary<string, string>
+                {
+                    ["default"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Default),
+                    ["primary"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Primary),
+                    ["secondary"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Secondary),
+                    ["outline"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Outline),
+                    ["destructive"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Destructive),
+                    ["success"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Success),
+                    ["warning"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Warning),
+                    ["info"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Info)
+                },
+            },
+            alert = new
+            {
+                @base = theme.Alert.Base,
+                title = theme.Alert.Title,
+                description = theme.Alert.Description,
+                icon = theme.Alert.Icon,
+                variants = new Dictionary<string, string>
+                {
+                    ["default"] = theme.Alert.GetVariant(Core.Theme.Types.Variant.Default),
+                    ["destructive"] = theme.Alert.GetVariant(Core.Theme.Types.Variant.Destructive),
+                    ["success"] = theme.Alert.GetVariant(Core.Theme.Types.Variant.Success),
+                    ["warning"] = theme.Alert.GetVariant(Core.Theme.Types.Variant.Warning),
+                    ["info"] = theme.Alert.GetVariant(Core.Theme.Types.Variant.Info)
+                }
             }
-            // TODO: Add other theme components (Input, Checkbox, etc.) as needed
         };
 
         var jsonOptions = new System.Text.Json.JsonSerializerOptions
@@ -104,47 +178,144 @@ public static class TailwindExtensions
     // Register theme function (called by runtime after it loads)
     window.__registerTheme = function() {{
         console.log('[__registerTheme] Called');
-        console.log('[__registerTheme] THEME_READY:', window.__EQUANTIC_THEME_READY);
-        console.log('[__registerTheme] getRootServiceProvider:', typeof getRootServiceProvider);
 
         if (window.__EQUANTIC_THEME_READY) return;
 
         const themeData = window.__EQUANTIC_THEME_DATA;
 
-        // Add method wrappers to match IButtonTheme interface
+        const variantMap = {{
+            0: 'default',
+            1: 'primary',
+            2: 'secondary',
+            3: 'destructive',
+            4: 'outline',
+            5: 'ghost',
+            6: 'link',
+            7: 'success',
+            8: 'warning',
+            9: 'info',
+            10: 'custom'
+        }};
+
+        const sizeMap = {{
+            0: 'small',
+            1: 'medium',
+            2: 'large',
+            3: 'xlarge',
+            4: 'custom'
+        }};
+
+        const shadowMap = {{
+            0: 'none',
+            1: 'small',
+            2: 'medium',
+            3: 'large',
+            4: 'xlarge'
+        }};
+
+        const cardVariantMap = {{
+            0: 'default',
+            1: 'outline',
+            2: 'elevated',
+            3: 'subtle',
+            4: 'ghost'
+        }};
+
+        // Helper to resolve stringified enum values from TS
+        const resolveKey = (val, map) => {{
+            if (val == null) return null;
+            if (typeof val === 'number') return map[val] || val.toString().toLowerCase();
+            if (typeof val === 'string') {{
+                // Handle stringified numbers (e.g. ""3"" -> 3 -> ""large"")
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && map[num]) return map[num];
+                return val.toLowerCase();
+            }}
+            return val.toString().toLowerCase();
+        }};
+
+        // Add method wrappers to match IAppTheme interface
         const theme = {{
             button: {{
                 base: themeData.button.base,
                 getVariant: (variant) => {{
-                    if (variant == null) return themeData.button.variants.primary;
-                    const key = typeof variant === 'string' ? variant : variant.toString();
-                    return themeData.button.variants[key.toLowerCase()] || themeData.button.variants.primary;
+                    const key = resolveKey(variant, variantMap) || 'primary';
+                    return themeData.button.variants[key] || themeData.button.variants.primary;
                 }},
                 getSize: (size) => {{
-                    if (size == null) return themeData.button.sizes.medium;
-                    const key = typeof size === 'string' ? size : size.toString();
-                    return themeData.button.sizes[key.toLowerCase()] || themeData.button.sizes.medium;
+                    const key = resolveKey(size, sizeMap) || 'medium';
+                    return themeData.button.sizes[key] || themeData.button.sizes.medium;
                 }}
             }},
             typography: {{
                 base: themeData.typography.base,
                 getVariant: (variant) => {{
-                    if (variant == null) return '';
-                    const key = typeof variant === 'string' ? variant : variant.toString();
-                    return themeData.typography.variants[key.toLowerCase()] || '';
+                    const key = resolveKey(variant, variantMap);
+                    return key ? (themeData.typography.variants[key] || '') : '';
                 }},
                 getHeading: (level) => {{
-                    const key = `h${{level}}`;
-                    return themeData.typography.headings[key] || '';
+                    // Default heading level is 1
+                    const key = `h${{level || 1}}`;
+                    return themeData.typography.headings[key] || themeData.typography.headings.h1;
+                }}
+            }},
+            card: {{
+                container: themeData.card.container,
+                header: themeData.card.header,
+                body: themeData.card.body,
+                footer: themeData.card.footer,
+                title: themeData.card.title,
+                description: themeData.card.description,
+                getVariant: (variant) => {{
+                    const key = resolveKey(variant, cardVariantMap) || 'default';
+                    return themeData.card.variants[key] || themeData.card.variants.default;
+                }},
+                getShadowInfo: (shadow) => {{
+                    const key = resolveKey(shadow, shadowMap) || 'medium';
+                    return themeData.card.shadows[key] || themeData.card.shadows.medium;
+                }}
+            }},
+            input: {{
+                base: themeData.input.base,
+                getVariant: (variant) => {{
+                    const key = resolveKey(variant, variantMap) || 'default';
+                    return themeData.input.variants[key] || '';
+                }},
+                getSize: (size) => {{
+                    const key = resolveKey(size, sizeMap) || 'medium';
+                    return themeData.input.sizes[key] || themeData.input.sizes.medium;
+                }}
+            }},
+            checkbox: {{
+                base: themeData.checkbox.base,
+                root: themeData.checkbox.root,
+                indicator: themeData.checkbox.indicator,
+                checked: themeData.checkbox.checked,
+                unchecked: themeData.checkbox.unchecked
+            }},
+            badge: {{
+                base: themeData.badge.base,
+                getVariant: (variant) => {{
+                    const key = resolveKey(variant, variantMap) || 'default';
+                    return themeData.badge.variants[key] || themeData.badge.variants.default;
+                }}
+            }},
+            alert: {{
+                base: themeData.alert.base,
+                title: themeData.alert.title,
+                description: themeData.alert.description,
+                icon: themeData.alert.icon,
+                getVariant: (variant) => {{
+                    const key = resolveKey(variant, variantMap) || 'default';
+                    return themeData.alert.variants[key] || themeData.alert.variants.default;
                 }}
             }}
         }};
 
-        console.log('[__registerTheme] Registering theme:', theme);
+        console.log('[__registerTheme] Registering theme');
         getRootServiceProvider().registerInstance('IAppTheme', theme);
         getRootServiceProvider().registerInstance('eQuantic.UI.Core.Theme.IAppTheme', theme);
         window.__EQUANTIC_THEME_READY = true;
-        console.log('[__registerTheme] Done, THEME_READY:', window.__EQUANTIC_THEME_READY);
     }};
 </script>";
         options.HtmlShell.HeadTags.Add(script);

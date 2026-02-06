@@ -210,18 +210,26 @@ public class ServerRenderingService : IServerRenderingService
             var stateDict = new Dictionary<string, object?>();
             var stateType = state.GetType();
 
-            var fields = stateType.GetFields(
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
-
+            // Current implementation skips backing fields for auto-properties (they start with <)
+            // We need to include them to preserve state during hydration
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+            var fields = state.GetType().GetFields(flags);
+            
             foreach (var field in fields)
             {
-                // Skip readonly fields like Component getter
-                if (field.IsInitOnly) continue;
-
-                // Skip fields that start with '<' (compiler-generated backing fields)
-                if (field.Name.StartsWith("<")) continue;
+                var fieldName = field.Name;
+                
+                // For auto-properties, the backing field name is typically <PropertyName>k__BackingField
+                // We want to use the PropertyName as the key in the JSON
+                if (fieldName.StartsWith("<") && fieldName.Contains(">k__BackingField"))
+                {
+                    fieldName = fieldName.Substring(1, fieldName.IndexOf(">") - 1);
+                }
+                else if (fieldName.StartsWith("_"))
+                {
+                    // but we can strip the underscore to be more consistent with JS if needed.
+                    // Actually, let's keep them so the JS side can match the field name if it's there.
+                }
 
                 var value = field.GetValue(state);
 
@@ -232,23 +240,21 @@ public class ServerRenderingService : IServerRenderingService
                     if (value.GetType().IsEnum)
                     {
                         var enumName = value.ToString() ?? "";
-                        _logger.LogInformation($"[SSR Enum] Converting enum {field.Name}: {value} ({value.GetType().Name}) -> '{enumName}'");
+                        _logger.LogDebug("[SSR Enum] Converting enum {FieldName}: {Value} -> '{EnumName}'", fieldName, value, enumName);
 
                         if (!string.IsNullOrEmpty(enumName))
                         {
                             var jsEnumValue = char.ToLowerInvariant(enumName[0]) + enumName.Substring(1);
-                            _logger.LogInformation($"[SSR Enum] Final value: '{jsEnumValue}'");
-                            stateDict[field.Name] = jsEnumValue;
+                            stateDict[fieldName] = jsEnumValue;
                         }
                         else
                         {
-                            _logger.LogWarning($"[SSR Enum] Empty enum name for {field.Name}, using '0'");
-                            stateDict[field.Name] = "0";
+                            stateDict[fieldName] = "0";
                         }
                     }
                     else
                     {
-                        stateDict[field.Name] = value;
+                        stateDict[fieldName] = value;
                     }
                 }
             }
