@@ -1,5 +1,8 @@
+using System;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using eQuantic.UI.CLI.Services;
 
 namespace eQuantic.UI.CLI.Commands;
@@ -19,17 +22,17 @@ public static class DevCommand
         Console.WriteLine($"   Port:  {port}");
         Console.WriteLine($"   Input: {fullInputPath}");
         Console.WriteLine();
-        
+
         // Create temp output directory
         var tempOutput = Path.Combine(Path.GetTempPath(), "eqx-dev", Guid.NewGuid().ToString()[..8]);
         Directory.CreateDirectory(tempOutput);
-        
+
         // Initial build
         PerformBuild(input, tempOutput);
-        
+
         // Generate index.html
         GenerateDevHtml(tempOutput, port);
-        
+
         // Start Watcher
         StartWatcher(input, tempOutput);
 
@@ -38,7 +41,7 @@ public static class DevCommand
 
         Console.WriteLine();
         Console.WriteLine("👀 Watching for changes... (Press Ctrl+C to stop)");
-        
+
         // Block main thread
         await Task.Delay(-1);
     }
@@ -55,10 +58,10 @@ public static class DevCommand
         {
             Console.Write("⚡ Change detected. Rebuilding... ");
             var sw = Stopwatch.StartNew();
-            
+
             // Re-run build command (incremental)
             BuildCommand.Execute(input, output, watch: false);
-            
+
             sw.Stop();
             Console.WriteLine($"Done in {sw.ElapsedMilliseconds}ms 🟢");
 
@@ -78,7 +81,7 @@ public static class DevCommand
     private static void StartWatcher(string input, string output)
     {
         var path = Path.GetDirectoryName(Path.GetFullPath(input)) ?? Directory.GetCurrentDirectory();
-        
+
         _watcher = new FileSystemWatcher(path)
         {
             IncludeSubdirectories = true,
@@ -90,12 +93,12 @@ public static class DevCommand
         _watcher.Filters.Add("*.cs");
 
         // Debounce logic (500ms)
-        _debounceTimer = new Timer(_ => 
+        _debounceTimer = new Timer(_ =>
         {
             PerformBuild(input, output);
         }, null, Timeout.Infinite, Timeout.Infinite);
 
-        FileSystemEventHandler onChanged = (s, e) => 
+        FileSystemEventHandler onChanged = (s, e) =>
         {
             // Ignore temporary files or bin/obj
             if (e.FullPath.Contains("bin") || e.FullPath.Contains("obj") || e.FullPath.Contains(".git")) return;
@@ -109,7 +112,7 @@ public static class DevCommand
         _watcher.Deleted += onChanged;
         _watcher.Renamed += (s, e) => onChanged(s, e);
     }
-    
+
     private static void GenerateDevHtml(string outputDir, int port)
     {
         // ... (Same CSS as before) ...
@@ -119,10 +122,10 @@ public static class DevCommand
             (function() {
                 console.log('[HMR] Connecting...');
                 const socket = new WebSocket('ws://' + window.location.host + '/hmr');
-                
+
                 socket.onopen = () => console.log('[HMR] Connected');
                 socket.onclose = () => console.log('[HMR] Disconnected');
-                
+
                 socket.onmessage = (event) => {
                     const msg = JSON.parse(event.data);
                     if (msg.type === 'reload') {
@@ -157,31 +160,31 @@ public static class DevCommand
             <p id=""message-display"" class=""message-display"" style=""display: none;""></p>
         </div>
     </div>
-    
+
     <script>
         // Simple counter demo (will be replaced by compiled JS)
         let count = 0;
         let message = '';
-        
+
         const countDisplay = document.getElementById('count-display');
         const messageDisplay = document.getElementById('message-display');
         const messageInput = document.getElementById('message-input');
-        
+
         document.getElementById('increment-btn').addEventListener('click', () => {{
             count++;
             render();
         }});
-        
+
         document.getElementById('decrement-btn').addEventListener('click', () => {{
             count--;
             render();
         }});
-        
+
         messageInput.addEventListener('input', (e) => {{
             message = e.target.value;
             render();
         }});
-        
+
         function render() {{
             countDisplay.textContent = count;
             if (count > 0 && message) {{
@@ -192,14 +195,14 @@ public static class DevCommand
             }}
         }}
     </script>
-    
+
     {hmrScript}
 </body>
 </html>";
 
         File.WriteAllText(Path.Combine(outputDir, "index.html"), html);
     }
-    
+
     private static string GetDefaultCss()
     {
         return @"<style>
@@ -216,7 +219,7 @@ public static class DevCommand
         .count-display { font-size: 2rem; margin: 0 1rem; font-weight: bold; }
         </style>";
     }
-    
+
     private static void StartHttpServer(string directory, int port)
     {
         try
@@ -231,9 +234,9 @@ public static class DevCommand
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
-            
+
             var process = Process.Start(pythonProcess);
-            
+
             if (process != null)
             {
                 Console.CancelKeyPress += (_, e) =>
@@ -241,7 +244,7 @@ public static class DevCommand
                     e.Cancel = true;
                     process.Kill();
                 };
-                
+
                 process.WaitForExit();
             }
         }
@@ -252,7 +255,7 @@ public static class DevCommand
             Console.WriteLine($"   cd {directory}");
             Console.WriteLine($"   npx serve -p {port}");
             Console.ResetColor();
-            
+
             // Keep running for file watching
             new ManualResetEvent(false).WaitOne();
         }

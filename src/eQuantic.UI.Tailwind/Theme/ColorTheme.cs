@@ -1,6 +1,8 @@
 using eQuantic.UI.Core.Theme;
 using eQuantic.UI.Core.Theme.Types;
 
+namespace eQuantic.UI.Tailwind.Theme;
+
 public class ColorTheme : IColorTheme
 {
     public ThemeColor Primary => new("Primary", "bg-blue-600 text-white");

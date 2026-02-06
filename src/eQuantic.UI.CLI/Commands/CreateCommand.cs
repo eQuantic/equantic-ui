@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+
 namespace eQuantic.UI.CLI.Commands;
 
 public static class CreateCommand
@@ -7,9 +10,9 @@ public static class CreateCommand
         Console.WriteLine($"📁 Creating new eQuantic.UI project: {name}");
         Console.WriteLine($"   Template: {template}");
         Console.WriteLine();
-        
+
         var projectDir = Path.Combine(Directory.GetCurrentDirectory(), name);
-        
+
         if (Directory.Exists(projectDir))
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -17,7 +20,7 @@ public static class CreateCommand
             Console.ResetColor();
             return;
         }
-        
+
         try
         {
             // Create directory structure
@@ -25,7 +28,7 @@ public static class CreateCommand
             Directory.CreateDirectory(Path.Combine(projectDir, "src"));
             Directory.CreateDirectory(Path.Combine(projectDir, "src", "components"));
             Directory.CreateDirectory(Path.Combine(projectDir, "src", "styles"));
-            
+
             // Create eqx.json project file
             var eqxJson = @"{
   ""name"": """ + name + @""",
@@ -36,22 +39,22 @@ public static class CreateCommand
 }";
             File.WriteAllText(Path.Combine(projectDir, "eqx.json"), eqxJson);
             Console.WriteLine("   ✓ Created eqx.json");
-            
+
             // Create App.eqx
             var appContent = template == "counter" ? GetCounterTemplate(name) : GetBlankTemplate(name);
             File.WriteAllText(Path.Combine(projectDir, "src", "App.eqx"), appContent);
             Console.WriteLine("   ✓ Created src/App.eqx");
-            
+
             // Create styles
             var stylesContent = GetStylesTemplate();
             File.WriteAllText(Path.Combine(projectDir, "src", "styles", "AppStyles.cs"), stylesContent);
             Console.WriteLine("   ✓ Created src/styles/AppStyles.cs");
-            
+
             // Create index.html
             var htmlContent = GetIndexHtml(name);
             File.WriteAllText(Path.Combine(projectDir, "index.html"), htmlContent);
             Console.WriteLine("   ✓ Created index.html");
-            
+
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("✅ Project created successfully!");
@@ -69,7 +72,7 @@ public static class CreateCommand
             Console.ResetColor();
         }
     }
-    
+
     private static string GetCounterTemplate(string name) => $@"// App.eqx - {name}
 using eQuantic.UI.Core;
 using eQuantic.UI.Components;
@@ -99,14 +102,14 @@ public class AppState : ComponentState<App>
             Children =
             {{
                 new Heading(""Welcome to {name}"", 1),
-                
+
                 new TextInput
                 {{
                     Value = _message,
                     Placeholder = ""Type something..."",
                     OnChange = (v) => SetState(() => _message = v)
                 }},
-                
+
                 new Row
                 {{
                     Gap = ""16px"",
@@ -118,7 +121,7 @@ public class AppState : ComponentState<App>
                         new Button {{ Text = ""+"", OnClick = _increment }}
                     }}
                 }},
-                
+
                 _count > 0 && !string.IsNullOrEmpty(_message)
                     ? new Text($""Message: {{_message}}"")
                     : null
@@ -165,7 +168,7 @@ public static class Styles
         Margin = Spacing.Horizontal(0), // auto
         Padding = Spacing.All(24)
     };
-    
+
     public static readonly StyleClass Button = new()
     {
         BackgroundColor = Colors.Blue[500],
@@ -173,7 +176,7 @@ public static class Styles
         Padding = Spacing.Symmetric(8, 16),
         BorderRadius = 8,
         Cursor = ""pointer"",
-        
+
         Hover = new()
         {
             BackgroundColor = Colors.Blue[600]

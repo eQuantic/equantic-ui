@@ -116,10 +116,12 @@ public static class TailwindExtensions
             button: {{
                 base: themeData.button.base,
                 getVariant: (variant) => {{
+                    if (variant == null) return themeData.button.variants.primary;
                     const key = typeof variant === 'string' ? variant : variant.toString();
                     return themeData.button.variants[key.toLowerCase()] || themeData.button.variants.primary;
                 }},
                 getSize: (size) => {{
+                    if (size == null) return themeData.button.sizes.medium;
                     const key = typeof size === 'string' ? size : size.toString();
                     return themeData.button.sizes[key.toLowerCase()] || themeData.button.sizes.medium;
                 }}
@@ -127,6 +129,7 @@ public static class TailwindExtensions
             typography: {{
                 base: themeData.typography.base,
                 getVariant: (variant) => {{
+                    if (variant == null) return '';
                     const key = typeof variant === 'string' ? variant : variant.toString();
                     return themeData.typography.variants[key.toLowerCase()] || '';
                 }},
@@ -176,6 +179,9 @@ public static class TailwindExtensions
     {
         // Register main theme
         services.AddSingleton<eQuantic.UI.Core.Theme.IAppTheme, eQuantic.UI.Tailwind.Theme.AppTheme>();
+        
+        // Register color theme (required by other themes)
+        services.AddSingleton<eQuantic.UI.Core.Theme.IColorTheme, eQuantic.UI.Tailwind.Theme.ColorTheme>();
 
         // Register individual component themes
         services.AddSingleton<eQuantic.UI.Core.Theme.IButtonTheme, eQuantic.UI.Tailwind.Theme.ButtonTheme>();

@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace eQuantic.UI.CLI.Services;
 
@@ -14,7 +18,7 @@ public static class BunBundler
     {
         var inputFileName = Path.GetFileName(inputPath);
         var inputDir = Path.GetDirectoryName(inputPath) ?? ".";
-        
+
         // Command: bun build ./Input.ts --outdir ./dist --target browser
         var processStartInfo = new ProcessStartInfo
         {
@@ -31,19 +35,19 @@ public static class BunBundler
         {
             using var process = new Process();
             process.StartInfo = processStartInfo;
-            
+
             var output = new List<string>();
             var errors = new List<string>();
-            
+
             process.OutputDataReceived += (_, e) => { if (e.Data != null) output.Add(e.Data); };
             process.ErrorDataReceived += (_, e) => { if (e.Data != null) errors.Add(e.Data); };
-            
+
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            
+
             await process.WaitForExitAsync();
-            
+
             if (process.ExitCode != 0)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
@@ -52,7 +56,7 @@ public static class BunBundler
                 Console.ResetColor();
                 return false;
             }
-            
+
             return true;
         }
         catch (Exception ex)

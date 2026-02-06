@@ -1,3 +1,7 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using eQuantic.UI.Compiler;
 
 namespace eQuantic.UI.CLI.Commands;
@@ -9,7 +13,7 @@ public static class BuildCommand
         Console.WriteLine("🔨 eQuantic.UI Compiler");
         Console.WriteLine($"   Input:  {Path.GetFullPath(input)}");
         Console.WriteLine($"   Output: {Path.GetFullPath(output)}");
-        
+
         if (!Directory.Exists(input) && !File.Exists(input))
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -17,23 +21,23 @@ public static class BuildCommand
             Console.ResetColor();
             return;
         }
-        
+
         var compiler = new ComponentCompiler();
         var outputDir = Path.GetFullPath(output);
         Directory.CreateDirectory(outputDir);
-        
+
         // Find all .cs files that look like components
         // In a real CLI this would use a proper project analysis, but for standalone CLI simple grep is fine
         var files = (Directory.Exists(input)
             ? Directory.GetFiles(input, "*.cs", SearchOption.AllDirectories)
             : new[] { input })
-            .Where(f => !f.Contains("/obj/") && !f.Contains("/bin/") && 
-                       (File.ReadAllText(f).Contains(": StatefulComponent") || 
-                        File.ReadAllText(f).Contains(": StatelessComponent") || 
-                        File.ReadAllText(f).Contains(": HtmlElement") || 
+            .Where(f => !f.Contains("/obj/") && !f.Contains("/bin/") &&
+                       (File.ReadAllText(f).Contains(": StatefulComponent") ||
+                        File.ReadAllText(f).Contains(": StatelessComponent") ||
+                        File.ReadAllText(f).Contains(": HtmlElement") ||
                         File.ReadAllText(f).Contains("[Component]")))
             .ToArray();
-        
+
         if (files.Length == 0)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -41,21 +45,21 @@ public static class BuildCommand
             Console.ResetColor();
             return;
         }
-        
+
         Console.WriteLine($"   Found {files.Length} component file(s)");
         Console.WriteLine();
-        
+
         var successCount = 0;
         var errorCount = 0;
-        
+
         foreach (var file in files)
         {
             Console.Write($"   ⚙️  Compiling {Path.GetFileName(file)}...");
-            
+
             try
             {
                 var results = compiler.CompileFile(file);
-                
+
                 foreach (var result in results)
                 {
                     if (result.Success)
@@ -63,14 +67,14 @@ public static class BuildCommand
                         // Create intermediate directory for TS files
                         var intermediateDir = Path.Combine(outputDir, "obj", "ts");
                         Directory.CreateDirectory(intermediateDir);
-                        
+
                         // Write TypeScript to intermediate folder
                         var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
                         File.WriteAllText(tsPath, result.TypeScript);
-                        
+
                         // Bundle with Bun to final output
                         var bundled = Services.BunBundler.BundleAsync(tsPath, outputDir).GetAwaiter().GetResult();
-                        
+
                         if (!bundled)
                         {
                             Console.ForegroundColor = ConsoleColor.Red;
@@ -79,14 +83,14 @@ public static class BuildCommand
                             errorCount++;
                             continue;
                         }
-                        
+
                         // Write CSS if present
                         if (!string.IsNullOrEmpty(result.Css))
                         {
                             var cssPath = Path.Combine(outputDir, $"{result.ComponentName}.css");
                             File.WriteAllText(cssPath, result.Css);
                         }
-                        
+
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine($" ✓ {result.ComponentName}");
                         Console.ResetColor();
@@ -113,10 +117,10 @@ public static class BuildCommand
                 errorCount++;
             }
         }
-        
+
         Console.WriteLine();
         Console.WriteLine($"   ✅ {successCount} compiled, ❌ {errorCount} errors");
-        
+
         if (watch)
         {
             Console.WriteLine();
@@ -124,7 +128,7 @@ public static class BuildCommand
             WatchForChanges(input, output, compiler);
         }
     }
-    
+
     private static void WatchForChanges(string input, string output, ComponentCompiler compiler)
     {
         var watcher = new FileSystemWatcher
@@ -134,10 +138,10 @@ public static class BuildCommand
             IncludeSubdirectories = true,
             EnableRaisingEvents = true
         };
-        
+
         watcher.Changed += (_, e) => RecompileFile(e.FullPath, output, compiler);
         watcher.Created += (_, e) => RecompileFile(e.FullPath, output, compiler);
-        
+
         // Keep the app running
         var exitEvent = new ManualResetEvent(false);
         Console.CancelKeyPress += (_, e) =>
@@ -147,19 +151,19 @@ public static class BuildCommand
         };
         exitEvent.WaitOne();
     }
-    
+
     private static void RecompileFile(string filePath, string output, ComponentCompiler compiler)
     {
         // Simple optimization check
         if (!File.ReadAllText(filePath).Contains("Component")) return;
 
         Console.WriteLine($"   🔄 Recompiling {Path.GetFileName(filePath)}...");
-        
+
         try
         {
             Thread.Sleep(100); // Debounce
             var results = compiler.CompileFile(filePath);
-            
+
             foreach (var result in results)
             {
                 if (result.Success)
@@ -168,9 +172,9 @@ public static class BuildCommand
                     Directory.CreateDirectory(intermediateDir);
                     var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
                     File.WriteAllText(tsPath, result.TypeScript);
-                    
+
                     Services.BunBundler.BundleAsync(tsPath, output).GetAwaiter().GetResult();
-                    
+
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine($"   ✓ {result.ComponentName} (from {Path.GetFileName(filePath)}) recompiled");
                     Console.ResetColor();

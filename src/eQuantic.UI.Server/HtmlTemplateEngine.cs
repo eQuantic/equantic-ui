@@ -74,6 +74,7 @@ public class HtmlTemplateEngine
     /// - {{#if Condition}}...{{/if}} - Conditional block (true/false)
     /// - {{#if Condition}}...{{#else}}...{{/if}} - Conditional with else
     /// - {{?Variable}}...{{/Variable}} - Optional section (rendered if variable has value)
+    /// Now properly supports nested conditionals.
     /// </summary>
     /// <param name="variables">Dictionary of variable names and their values.</param>
     /// <param name="conditions">Dictionary of condition names and their boolean values.</param>
@@ -83,28 +84,10 @@ public class HtmlTemplateEngine
         conditions ??= new Dictionary<string, bool>();
         var result = _template;
 
-        // 1. Process conditionals with else: {{#if Condition}}...{{#else}}...{{/if}}
-        result = _conditionalElseRegex.Replace(result, match =>
-        {
-            var conditionName = match.Groups[1].Value;
-            var trueContent = match.Groups[2].Value;
-            var falseContent = match.Groups[3].Value;
+        // 1. Process conditionals recursively (handles nested {{#if}}...{{/if}})
+        result = ProcessConditionalsRecursive(result, conditions);
 
-            var conditionValue = conditions.TryGetValue(conditionName, out var value) && value;
-            return conditionValue ? trueContent : falseContent;
-        });
-
-        // 2. Process conditionals: {{#if Condition}}...{{/if}}
-        result = _conditionalRegex.Replace(result, match =>
-        {
-            var conditionName = match.Groups[1].Value;
-            var content = match.Groups[2].Value;
-
-            var conditionValue = conditions.TryGetValue(conditionName, out var value) && value;
-            return conditionValue ? content : string.Empty;
-        });
-
-        // 3. Process optional sections: {{?Variable}}...{{/Variable}}
+        // 2. Process optional sections: {{?Variable}}...{{/Variable}}
         result = _optionalRegex.Replace(result, match =>
         {
             var variableName = match.Groups[1].Value;
@@ -114,7 +97,7 @@ public class HtmlTemplateEngine
             return hasValue ? content : string.Empty;
         });
 
-        // 4. Process simple variable substitutions: {{Variable}}
+        // 3. Process simple variable substitutions: {{Variable}}
         var builder = new StringBuilder(result);
         foreach (var kvp in variables)
         {
@@ -123,6 +106,165 @@ public class HtmlTemplateEngine
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// Recursively processes nested {{#if}} conditionals from innermost to outermost.
+    /// </summary>
+    private string ProcessConditionalsRecursive(string input, Dictionary<string, bool> conditions)
+    {
+        // Keep processing until no more conditionals are found
+        string result = input;
+        bool foundConditional;
+
+        do
+        {
+            foundConditional = false;
+            
+            // Find the innermost {{#if}} (one without nested {{#if}} inside)
+            var ifMatch = FindInnermostConditional(result);
+            if (ifMatch != null)
+            {
+                foundConditional = true;
+                result = ProcessSingleConditional(result, ifMatch, conditions);
+            }
+        } while (foundConditional);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Finds the innermost conditional (one that doesn't contain another {{#if}} inside).
+    /// </summary>
+    private static ConditionalMatch? FindInnermostConditional(string input)
+    {
+        const string ifPattern = "{{#if ";
+        const string elsePattern = "{{#else}}";
+        const string endifPattern = "{{/if}}";
+
+        int searchStart = 0;
+        while (true)
+        {
+            // Find the next {{#if
+            int ifStart = input.IndexOf(ifPattern, searchStart, StringComparison.Ordinal);
+            if (ifStart == -1) return null;
+
+            // Find the condition name (ends with }})
+            int conditionStart = ifStart + ifPattern.Length;
+            int conditionEnd = input.IndexOf("}}", conditionStart, StringComparison.Ordinal);
+            if (conditionEnd == -1) return null;
+
+            string conditionName = input.Substring(conditionStart, conditionEnd - conditionStart).Trim();
+            int contentStart = conditionEnd + 2;
+
+            // Find the matching {{/if}} - we need to track nesting
+            int depth = 1;
+            int pos = contentStart;
+            int? elsePos = null;
+            int? endifPos = null;
+
+            while (pos < input.Length && depth > 0)
+            {
+                int nextIf = input.IndexOf(ifPattern, pos, StringComparison.Ordinal);
+                int nextElse = input.IndexOf(elsePattern, pos, StringComparison.Ordinal);
+                int nextEndif = input.IndexOf(endifPattern, pos, StringComparison.Ordinal);
+
+                // Find the next relevant tag
+                int[] positions = new[] { nextIf, nextElse, nextEndif }
+                    .Where(p => p >= 0)
+                    .DefaultIfEmpty(int.MaxValue)
+                    .ToArray();
+                int nextPos = positions.Min();
+
+                if (nextPos == int.MaxValue) break;
+
+                if (nextPos == nextIf)
+                {
+                    depth++;
+                    pos = nextPos + ifPattern.Length;
+                }
+                else if (nextPos == nextEndif)
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        endifPos = nextPos;
+                    }
+                    pos = nextPos + endifPattern.Length;
+                }
+                else if (nextPos == nextElse && depth == 1)
+                {
+                    // Only track {{#else}} at our current nesting level
+                    elsePos = nextPos;
+                    pos = nextPos + elsePattern.Length;
+                }
+                else
+                {
+                    pos = nextPos + 1;
+                }
+            }
+
+            if (endifPos.HasValue)
+            {
+                // Check if this conditional has nested {{#if}} inside
+                string contentBefore = elsePos.HasValue 
+                    ? input.Substring(contentStart, elsePos.Value - contentStart)
+                    : input.Substring(contentStart, endifPos.Value - contentStart);
+                
+                string contentAfter = elsePos.HasValue 
+                    ? input.Substring(elsePos.Value + elsePattern.Length, endifPos.Value - (elsePos.Value + elsePattern.Length))
+                    : "";
+
+                bool hasNestedIf = contentBefore.Contains(ifPattern) || contentAfter.Contains(ifPattern);
+
+                if (!hasNestedIf)
+                {
+                    // This is an innermost conditional
+                    return new ConditionalMatch
+                    {
+                        Start = ifStart,
+                        End = endifPos.Value + endifPattern.Length,
+                        ConditionName = conditionName,
+                        TrueContent = contentBefore,
+                        FalseContent = contentAfter,
+                        HasElse = elsePos.HasValue
+                    };
+                }
+            }
+
+            // Move past this {{#if}} and look for the next one
+            searchStart = ifStart + 1;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Processes a single conditional match and returns the result.
+    /// </summary>
+    private static string ProcessSingleConditional(string input, ConditionalMatch match, Dictionary<string, bool> conditions)
+    {
+        var conditionValue = conditions.TryGetValue(match.ConditionName, out var value) && value;
+        var replacement = conditionValue ? match.TrueContent : (match.HasElse ? match.FalseContent : string.Empty);
+
+        return string.Concat(
+            input.AsSpan(0, match.Start),
+            replacement,
+            input.AsSpan(match.End)
+        );
+    }
+
+    /// <summary>
+    /// Represents a parsed conditional match.
+    /// </summary>
+    private class ConditionalMatch
+    {
+        public int Start { get; set; }
+        public int End { get; set; }
+        public string ConditionName { get; set; } = "";
+        public string TrueContent { get; set; } = "";
+        public string FalseContent { get; set; } = "";
+        public bool HasElse { get; set; }
     }
 
     /// <summary>

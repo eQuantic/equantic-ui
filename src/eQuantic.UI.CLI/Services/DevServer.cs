@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +12,8 @@ using Microsoft.Extensions.Logging;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace eQuantic.UI.CLI.Services;
 
@@ -20,8 +26,8 @@ public class DevServer
     {
         var builder = WebApplication.CreateBuilder();
         builder.Logging.ClearProviders(); // Keep CLI clean
-        
-        builder.WebHost.ConfigureKestrel(options => 
+
+        builder.WebHost.ConfigureKestrel(options =>
         {
             options.ListenLocalhost(port);
         });
@@ -49,9 +55,9 @@ public class DevServer
                         await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                     }
                 }
-                catch 
-                { 
-                    // Client disconnected 
+                catch
+                {
+                    // Client disconnected
                 }
                 finally
                 {
@@ -70,9 +76,9 @@ public class DevServer
             FileProvider = new PhysicalFileProvider(webRoot),
             RequestPath = ""
         });
-        
+
         // Serve index.html for root
-        app.MapGet("/", async context => 
+        app.MapGet("/", async context =>
         {
             var indexPath = Path.Combine(webRoot, "index.html");
             if (File.Exists(indexPath))
@@ -97,7 +103,7 @@ public class DevServer
         var arraySegment = new ArraySegment<byte>(bytes);
 
         List<WebSocket> activeClients;
-        lock (_clients) 
+        lock (_clients)
         {
             activeClients = _clients.Where(c => c.State == WebSocketState.Open).ToList();
         }
@@ -107,7 +113,7 @@ public class DevServer
              // Console.WriteLine($"Broadcast: {type}");
              foreach (var client in activeClients)
              {
-                 try 
+                 try
                  {
                      await client.SendAsync(arraySegment, WebSocketMessageType.Text, true, CancellationToken.None);
                  }

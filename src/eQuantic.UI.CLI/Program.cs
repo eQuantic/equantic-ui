@@ -1,4 +1,6 @@
+using System;
 using System.CommandLine;
+using System.Threading.Tasks;
 using eQuantic.UI.CLI.Commands;
 
 namespace eQuantic.UI.CLI;
@@ -19,17 +21,17 @@ class Program
             "Input directory or file path")
         { IsRequired = false };
         inputOption.SetDefaultValue("./src");
-        
+
         var outputOption = new Option<string>(
             new[] { "-o", "--output" },
             "Output directory")
         { IsRequired = false };
         outputOption.SetDefaultValue("./dist");
-        
+
         var watchOption = new Option<bool>(
             new[] { "-w", "--watch" },
             "Watch for changes");
-        
+
         buildCommand.AddOption(inputOption);
         buildCommand.AddOption(outputOption);
         buildCommand.AddOption(watchOption);
