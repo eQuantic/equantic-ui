@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
+
 @source "../wwwroot/_equantic/**/*.js";
 @source "../../../src/eQuantic.UI.Tailwind/**/*.cs";
 @source "../../../src/eQuantic.UI.Components/**/*.cs";
