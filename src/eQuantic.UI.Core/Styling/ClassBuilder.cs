@@ -69,6 +69,7 @@ public class ClassBuilder
     /// </summary>
     /// <example>
     /// .WithPrefix("hover:", "bg-gray-100", "scale-110") => "hover:bg-gray-100 hover:scale-110"
+    /// .WithPrefix("dark:", "from-zinc-950 via-zinc-900") => "dark:from-zinc-950 dark:via-zinc-900"
     /// </example>
     public ClassBuilder WithPrefix(string prefix, params string?[] classes)
     {
@@ -76,7 +77,12 @@ public class ClassBuilder
         {
             if (!string.IsNullOrWhiteSpace(className))
             {
-                Add($"{prefix}{className}");
+                // Split by whitespace to handle multi-class strings
+                var individualClasses = className.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var cls in individualClasses)
+                {
+                    Add($"{prefix}{cls}");
+                }
             }
         }
         return this;
@@ -95,13 +101,57 @@ public class ClassBuilder
     /// <summary>
     /// Adds classes with the 'active:' prefix.
     /// </summary>
-
     public ClassBuilder Active(params string?[] classes) => WithPrefix("active:", classes);
 
     /// <summary>
     /// Adds classes with the 'focus-within:' prefix.
     /// </summary>
     public ClassBuilder FocusWithin(params string?[] classes) => WithPrefix("focus-within:", classes);
+
+    /// <summary>
+    /// Adds classes with the 'placeholder:' prefix.
+    /// </summary>
+    public ClassBuilder Placeholder(params string?[] classes) => WithPrefix("placeholder:", classes);
+
+    /// <summary>
+    /// Adds classes with the 'visited:' prefix.
+    /// </summary>
+    public ClassBuilder Visited(params string?[] classes) => WithPrefix("visited:", classes);
+
+    /// <summary>
+    /// Adds classes with the 'disabled:' prefix.
+    /// </summary>
+    public ClassBuilder Disabled(params string?[] classes) => WithPrefix("disabled:", classes);
+
+    /// <summary>
+    /// Adds classes with the 'odd:' prefix.
+    /// </summary>
+    public ClassBuilder Odd(params string?[] classes) => WithPrefix("odd:", classes);
+
+    /// <summary>
+    /// Adds classes with the 'even:' prefix.
+    /// </summary>
+    public ClassBuilder Even(params string?[] classes) => WithPrefix("even:", classes);
+
+    /// <summary>
+    /// Adds classes with the 'first:' prefix.
+    /// </summary>
+    public ClassBuilder First(params string?[] classes) => WithPrefix("first:", classes);
+
+    /// <summary>
+    /// Adds classes with the 'last:' prefix.
+    /// </summary>
+    public ClassBuilder Last(params string?[] classes) => WithPrefix("last:", classes);
+
+    /// <summary>
+    /// Adds classes with the 'before:' prefix.
+    /// </summary>
+    public ClassBuilder Before(params string?[] classes) => WithPrefix("before:", classes);
+
+    /// <summary>
+    /// Adds classes with the 'after:' prefix.
+    /// </summary>
+    public ClassBuilder After(params string?[] classes) => WithPrefix("after:", classes);
 
     /// <summary>
     /// Adds classes with the 'group-hover:' prefix.
@@ -113,40 +163,30 @@ public class ClassBuilder
     /// </summary>
     public ClassBuilder Dark(params string?[] classes) => WithPrefix("dark:", classes);
 
-
+    /// <summary>
+    /// Adds classes with the 'sm:' prefix.
+    /// </summary>
+    public ClassBuilder Sm(params string?[] classes) => WithPrefix("sm:", classes);
 
     /// <summary>
-    /// Adds responsive classes for the specified breakpoint.
+    /// Adds classes with the 'md:' prefix.
     /// </summary>
-    /// <param name="breakpoint">Breakpoint prefix (sm, md, lg, xl, 2xl)</param>
-    /// <param name="classes">Classes to apply at this breakpoint</param>
-    public ClassBuilder Responsive(string breakpoint, params string?[] classes)
-        => WithPrefix($"{breakpoint}:", classes);
+    public ClassBuilder Md(params string?[] classes) => WithPrefix("md:", classes);
 
     /// <summary>
-    /// Adds classes for the 'sm' breakpoint (640px+).
+    /// Adds classes with the 'lg:' prefix.
     /// </summary>
-    public ClassBuilder Sm(params string?[] classes) => Responsive("sm", classes);
+    public ClassBuilder Lg(params string?[] classes) => WithPrefix("lg:", classes);
 
     /// <summary>
-    /// Adds classes for the 'md' breakpoint (768px+).
+    /// Adds classes with the 'xl:' prefix.
     /// </summary>
-    public ClassBuilder Md(params string?[] classes) => Responsive("md", classes);
+    public ClassBuilder Xl(params string?[] classes) => WithPrefix("xl:", classes);
 
     /// <summary>
-    /// Adds classes for the 'lg' breakpoint (1024px+).
+    /// Adds classes with the '2xl:' prefix.
     /// </summary>
-    public ClassBuilder Lg(params string?[] classes) => Responsive("lg", classes);
-
-    /// <summary>
-    /// Adds classes for the 'xl' breakpoint (1280px+).
-    /// </summary>
-    public ClassBuilder Xl(params string?[] classes) => Responsive("xl", classes);
-
-    /// <summary>
-    /// Adds classes for the '2xl' breakpoint (1536px+).
-    /// </summary>
-    public ClassBuilder Xl2(params string?[] classes) => Responsive("2xl", classes);
+    public ClassBuilder Xl2(params string?[] classes) => WithPrefix("2xl:", classes);
 
     /// <summary>
     /// Builds the final class string by joining all classes with spaces.

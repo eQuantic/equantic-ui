@@ -40,7 +40,7 @@ app.UseRouting();
 // Enable Server Actions
 app.UseServerActions();
 
-// Enable Tailwind CSS
+// Map Tailwind CSS dynamic endpoints (theme.js, dark-mode.js)
 app.UseTailwind();
 
 // Map UI (dynamic routing)

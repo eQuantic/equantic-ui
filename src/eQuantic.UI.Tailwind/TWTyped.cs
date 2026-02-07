@@ -1,15 +1,13 @@
 using System.Linq;
 
+using eQuantic.UI.Core.Styling;
+
 namespace eQuantic.UI.Tailwind;
 
 /// <summary>
-/// Type-safe Tailwind CSS classes using typed objects and implicit operators.
-/// Provides the cleanest syntax with full IntelliSense support and compile-time safety.
+/// Type-safe Tailwind classes.
+/// Values are annotated with [StyleClass] for compiler extraction.
 /// </summary>
-/// <example>
-/// // Ultra-clean syntax with + operator
-/// ClassName = TW.Flex.Row + TW.Flex.ItemsCenter + TW.Gap(4) + TW.Bg.White + TW.Rounded.Lg
-///
 /// // With variants
 /// ClassName = TW.Bg.Blue600 + TW.Hover(TW.Bg.Blue700) + TW.Dark(TW.Bg.Zinc900)
 ///

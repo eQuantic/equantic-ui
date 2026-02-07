@@ -86,13 +86,14 @@ public class SemanticModelProvider
 
             if (projectTree != null)
             {
-                // Return semantic model from the full project compilation
-                // This includes all types from the entire project!
-                return _projectCompilation.GetSemanticModel(projectTree);
+                // Found existing tree in project. We must REPLACE it with our new tree
+                // because the ComponentDefinition holds nodes from the 'tree' instance.
+                // If we used projectTree's model, we'd get "Syntax node not within syntax tree".
+                var updated = _projectCompilation.ReplaceSyntaxTree(projectTree, tree);
+                return updated.GetSemanticModel(tree);
             }
 
-            // If tree not found in project compilation, but we have one,
-            // we can add this tree to the project compilation
+            // If tree not found in project compilation, add it
             var updatedCompilation = _projectCompilation.AddSyntaxTrees(tree);
             return updatedCompilation.GetSemanticModel(tree);
         }

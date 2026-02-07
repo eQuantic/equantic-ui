@@ -24,7 +24,7 @@ public class ComponentParser
     /// </summary>
     public IEnumerable<ComponentDefinition> ParseSource(string sourceCode, string sourcePath = "")
     {
-        var tree = CSharpSyntaxTree.ParseText(sourceCode);
+        var tree = CSharpSyntaxTree.ParseText(sourceCode, path: sourcePath);
         var root = tree.GetCompilationUnitRoot();
         var results = new List<ComponentDefinition>();
         

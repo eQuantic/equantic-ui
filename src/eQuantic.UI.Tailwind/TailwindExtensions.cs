@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using eQuantic.UI.Server;
@@ -12,21 +13,29 @@ namespace eQuantic.UI.Tailwind;
 /// </summary>
 public static class TailwindExtensions
 {
+    private static string? _cachedThemeScript;
+    private static string? _cachedDarkModeScript;
+
     /// <summary>
-    /// Enables Tailwind CSS integration by adding the default stylesheet link to the HTML shell.
+    /// Enables Tailwind CSS integration by registering dynamic script endpoints.
+    /// Scripts are loaded from embedded resources and cached.
     /// </summary>
-    /// <param name="app">The application builder.</param>
+    /// <param name="app">The web application.</param>
     /// <param name="cssPath">The path to the generated CSS file. Defaults to "/css/app.css".</param>
-    /// <returns>The application builder.</returns>
-    public static IApplicationBuilder UseTailwind(this IApplicationBuilder app, string cssPath = "/css/app.css")
+    /// <returns>The web application.</returns>
+    public static WebApplication UseTailwind(this WebApplication app, string cssPath = "/css/app.css")
     {
-        var options = app.ApplicationServices.GetService<UIOptions>();
+        var options = app.Services.GetService<UIOptions>();
+        
         if (options == null)
         {
             throw new InvalidOperationException("UIOptions not found. Ensure AddUI() is called before UseTailwind().");
         }
 
-        // Add the Tailwind link to the head tags
+        // Disable default CSS injection since we use Tailwind
+        options.EnableDefaultCss = false;
+
+        // Add the Tailwind CSS link
         var buildId = UIExtensions.BuildId;
         var linkTag = $"<link rel=\"stylesheet\" href=\"{cssPath}?v={buildId}\">";
         if (!options.HtmlShell.HeadTags.Any(t => t.StartsWith($"<link rel=\"stylesheet\" href=\"{cssPath}")))
@@ -34,10 +43,75 @@ public static class TailwindExtensions
             options.HtmlShell.HeadTags.Add(linkTag);
         }
 
-        // Inject AppTheme as JS service
-        var theme = new Theme.AppTheme();
+        // Generate and cache theme script from embedded resource
+        if (_cachedThemeScript == null)
+        {
+            var theme = new Theme.AppTheme();
+            var themeJson = SerializeThemeData(theme);
+            
+            var themeTemplate = HtmlTemplateEngine.FromResource(
+                "eQuantic.UI.Tailwind.Scripts.theme.js",
+                typeof(TailwindExtensions).Assembly);
+            
+            _cachedThemeScript = themeTemplate.Render(new Dictionary<string, string>
+            {
+                ["themeJson"] = themeJson
+            });
+        }
 
-        // Serialize theme methods as lookup dictionaries
+        // Cache dark mode script from embedded resource
+        if (_cachedDarkModeScript == null)
+        {
+            var darkModeTemplate = HtmlTemplateEngine.FromResource(
+                "eQuantic.UI.Tailwind.Scripts.dark-mode.js",
+                typeof(TailwindExtensions).Assembly);
+            
+            _cachedDarkModeScript = darkModeTemplate.Render(new Dictionary<string, string>());
+        }
+
+        // Register dynamic script endpoints
+        var themeScript = _cachedThemeScript;
+        var darkModeScript = _cachedDarkModeScript;
+        
+        app.MapScriptJs("/_equantic/theme.js", () => themeScript);
+        app.MapScriptJs("/_equantic/dark-mode.js", () => darkModeScript);
+
+        // Add script references to head
+        options.HtmlShell.HeadTags.Add($"<script src=\"/_equantic/theme.js?v={buildId}\"></script>");
+        options.HtmlShell.HeadTags.Add($"<script src=\"/_equantic/dark-mode.js?v={buildId}\"></script>");
+
+        return app;
+    }
+
+    /// <summary>
+    /// Registers Tailwind CSS services and component themes.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection.</returns>
+    public static IServiceCollection AddTailwind(this IServiceCollection services)
+    {
+        // Register main theme
+        services.AddSingleton<eQuantic.UI.Core.Theme.IAppTheme, Theme.AppTheme>();
+
+        // Register color theme (required by other themes)
+        services.AddSingleton<eQuantic.UI.Core.Theme.IColorTheme, Theme.ColorTheme>();
+
+        // Register individual component themes
+        services.AddSingleton<eQuantic.UI.Core.Theme.IButtonTheme, Theme.ButtonTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.ICardTheme, Theme.CardTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IInputTheme, Theme.InputTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.ICheckboxTheme, Theme.CheckboxTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IBadgeTheme, Theme.BadgeTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.IAlertTheme, Theme.AlertTheme>();
+        services.AddSingleton<eQuantic.UI.Core.Theme.ITextTheme, Theme.TextTheme>();
+
+        return services;
+    }
+
+    #region Theme Serialization
+
+    private static string SerializeThemeData(Theme.AppTheme theme)
+    {
         var themeData = new
         {
             button = new
@@ -141,7 +215,7 @@ public static class TailwindExtensions
                     ["success"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Success),
                     ["warning"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Warning),
                     ["info"] = theme.Badge.GetVariant(Core.Theme.Types.Variant.Info)
-                },
+                }
             },
             alert = new
             {
@@ -160,209 +234,14 @@ public static class TailwindExtensions
             }
         };
 
-        var jsonOptions = new System.Text.Json.JsonSerializerOptions
+        var jsonOptions = new JsonSerializerOptions
         {
-            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = false
         };
-        var themeJson = System.Text.Json.JsonSerializer.Serialize(themeData, jsonOptions);
 
-        // Register theme with method wrappers to match C# interface
-        // Use inline script (not module) to ensure theme is available before hydration
-        var script = $@"
-<script>
-    // Store theme data globally to be registered after runtime loads
-    window.__EQUANTIC_THEME_DATA = {themeJson};
-    window.__EQUANTIC_THEME_READY = false;
-
-    // Register theme function (called by runtime after it loads)
-    window.__registerTheme = function() {{
-        console.log('[__registerTheme] Called');
-
-        if (window.__EQUANTIC_THEME_READY) return;
-
-        const themeData = window.__EQUANTIC_THEME_DATA;
-
-        const variantMap = {{
-            0: 'default',
-            1: 'primary',
-            2: 'secondary',
-            3: 'destructive',
-            4: 'outline',
-            5: 'ghost',
-            6: 'link',
-            7: 'success',
-            8: 'warning',
-            9: 'info',
-            10: 'custom'
-        }};
-
-        const sizeMap = {{
-            0: 'small',
-            1: 'medium',
-            2: 'large',
-            3: 'xlarge',
-            4: 'custom'
-        }};
-
-        const shadowMap = {{
-            0: 'none',
-            1: 'small',
-            2: 'medium',
-            3: 'large',
-            4: 'xlarge'
-        }};
-
-        const cardVariantMap = {{
-            0: 'default',
-            1: 'outline',
-            2: 'elevated',
-            3: 'subtle',
-            4: 'ghost'
-        }};
-
-        // Helper to resolve stringified enum values from TS
-        const resolveKey = (val, map) => {{
-            if (val == null) return null;
-            if (typeof val === 'number') return map[val] || val.toString().toLowerCase();
-            if (typeof val === 'string') {{
-                // Handle stringified numbers (e.g. ""3"" -> 3 -> ""large"")
-                const num = parseInt(val, 10);
-                if (!isNaN(num) && map[num]) return map[num];
-                return val.toLowerCase();
-            }}
-            return val.toString().toLowerCase();
-        }};
-
-        // Add method wrappers to match IAppTheme interface
-        const theme = {{
-            button: {{
-                base: themeData.button.base,
-                getVariant: (variant) => {{
-                    const key = resolveKey(variant, variantMap) || 'primary';
-                    return themeData.button.variants[key] || themeData.button.variants.primary;
-                }},
-                getSize: (size) => {{
-                    const key = resolveKey(size, sizeMap) || 'medium';
-                    return themeData.button.sizes[key] || themeData.button.sizes.medium;
-                }}
-            }},
-            typography: {{
-                base: themeData.typography.base,
-                getVariant: (variant) => {{
-                    const key = resolveKey(variant, variantMap);
-                    return key ? (themeData.typography.variants[key] || '') : '';
-                }},
-                getHeading: (level) => {{
-                    // Default heading level is 1
-                    const key = `h${{level || 1}}`;
-                    return themeData.typography.headings[key] || themeData.typography.headings.h1;
-                }}
-            }},
-            card: {{
-                container: themeData.card.container,
-                header: themeData.card.header,
-                body: themeData.card.body,
-                footer: themeData.card.footer,
-                title: themeData.card.title,
-                description: themeData.card.description,
-                getVariant: (variant) => {{
-                    const key = resolveKey(variant, cardVariantMap) || 'default';
-                    return themeData.card.variants[key] || themeData.card.variants.default;
-                }},
-                getShadowInfo: (shadow) => {{
-                    const key = resolveKey(shadow, shadowMap) || 'medium';
-                    return themeData.card.shadows[key] || themeData.card.shadows.medium;
-                }}
-            }},
-            input: {{
-                base: themeData.input.base,
-                getVariant: (variant) => {{
-                    const key = resolveKey(variant, variantMap) || 'default';
-                    return themeData.input.variants[key] || '';
-                }},
-                getSize: (size) => {{
-                    const key = resolveKey(size, sizeMap) || 'medium';
-                    return themeData.input.sizes[key] || themeData.input.sizes.medium;
-                }}
-            }},
-            checkbox: {{
-                base: themeData.checkbox.base,
-                root: themeData.checkbox.root,
-                indicator: themeData.checkbox.indicator,
-                checked: themeData.checkbox.checked,
-                unchecked: themeData.checkbox.unchecked
-            }},
-            badge: {{
-                base: themeData.badge.base,
-                getVariant: (variant) => {{
-                    const key = resolveKey(variant, variantMap) || 'default';
-                    return themeData.badge.variants[key] || themeData.badge.variants.default;
-                }}
-            }},
-            alert: {{
-                base: themeData.alert.base,
-                title: themeData.alert.title,
-                description: themeData.alert.description,
-                icon: themeData.alert.icon,
-                getVariant: (variant) => {{
-                    const key = resolveKey(variant, variantMap) || 'default';
-                    return themeData.alert.variants[key] || themeData.alert.variants.default;
-                }}
-            }}
-        }};
-
-        console.log('[__registerTheme] Registering theme');
-        getRootServiceProvider().registerInstance('IAppTheme', theme);
-        getRootServiceProvider().registerInstance('eQuantic.UI.Core.Theme.IAppTheme', theme);
-        window.__EQUANTIC_THEME_READY = true;
-    }};
-</script>";
-        options.HtmlShell.HeadTags.Add(script);
-
-        // Add dark mode support script
-        var darkModeScript = @"
-<script>
-    // Tailwind dark mode support - add 'dark' class based on system preference
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-    }
-    // Listen for changes in system preference
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        if (e.matches) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    });
-</script>";
-        options.HtmlShell.HeadTags.Add(darkModeScript);
-
-        return app;
+        return JsonSerializer.Serialize(themeData, jsonOptions);
     }
 
-    /// <summary>
-    /// Registers Tailwind CSS services and component themes.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection.</returns>
-    public static IServiceCollection AddTailwind(this IServiceCollection services)
-    {
-        // Register main theme
-        services.AddSingleton<eQuantic.UI.Core.Theme.IAppTheme, Theme.AppTheme>();
-
-        // Register color theme (required by other themes)
-        services.AddSingleton<eQuantic.UI.Core.Theme.IColorTheme, Theme.ColorTheme>();
-
-        // Register individual component themes
-        services.AddSingleton<eQuantic.UI.Core.Theme.IButtonTheme, Theme.ButtonTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.ICardTheme, Theme.CardTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.IInputTheme, Theme.InputTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.ICheckboxTheme, Theme.CheckboxTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.IBadgeTheme, Theme.BadgeTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.IAlertTheme, Theme.AlertTheme>();
-        services.AddSingleton<eQuantic.UI.Core.Theme.ITextTheme, Theme.TextTheme>();
-
-        return services;
-    }
+    #endregion
 }

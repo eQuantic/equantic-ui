@@ -420,7 +420,7 @@ public class TodoListState : ComponentState<TodoList>
                                                 ClassName = ClassBuilder.Create()
                                                     .Add(TW.Text.Xl3, TW.Font.Bold, TW.Bg.ClipText, TW.Text.Transparent)
                                                     .Add(TW.Bg.GradientToR, "from-gray-900 to-gray-700")
-                                                    .Dark("from-white to-gray-300")
+                                                    .Dark("from-gray-100 to-gray-400")
                                                     .Build() 
                                             },
                                             new Text(GetMotivationalMessage()) {
@@ -545,7 +545,7 @@ public class TodoListState : ComponentState<TodoList>
                                     }
                                 }
                             },
-                            _todos.Any(t => t.IsCompleted) ? new Button {
+                            _todos.Any(t => t.IsCompleted) ? (IComponent)new Button {
                                 Text = "🧹 Clear Completed",
                                 Variant = Variant.Ghost,
                                 ClassName = ClassBuilder.Create()
@@ -559,7 +559,7 @@ public class TodoListState : ComponentState<TodoList>
                                     .Hover(TW.Transform.Scale105)
                                     .Build(),
                                 OnClick = () => { HandleClearCompleted(); }
-                            } : null
+                            } : new NullComponent()
                         }
                     }
                 },
@@ -659,7 +659,7 @@ public class TodoListState : ComponentState<TodoList>
         var buttonClasses = ClassBuilder.Create()
             .Add(TW.Flex.Flex1, TW.Px(4), "py-2.5", TW.Text.Sm, TW.Font.Semibold, TW.Rounded.Lg, TW.Transition.All)
             .When(isActive, 
-                TW.Shadow.Lg, TW.Bg.GradientToR, "from-blue-600 to-purple-600", TW.Text.White)
+                TW.Shadow.Lg, TW.Bg.GradientToR, "from-blue-600 to-purple-600", "dark:from-blue-500", "dark:to-purple-500", TW.Text.White)
             .When(!isActive,
                 TW.Hover(TW.Bg.Gray200), TW.Text.Gray600)
             .Dark(TW.Hover("bg-zinc-700/50"), TW.Text.Gray400)

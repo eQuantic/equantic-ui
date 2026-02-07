@@ -16,6 +16,7 @@ public class ComponentCompiler
     private readonly CssEmitter _cssEmitter;
     private readonly SemanticModelProvider _semanticModelProvider;
     private readonly SourceMapGenerator _sourceMapGenerator;
+    private readonly StyleProviderRegistry _styleProviderRegistry;
 
     public ComponentCompiler()
     {
@@ -24,7 +25,14 @@ public class ComponentCompiler
         _cssEmitter = new CssEmitter();
         _semanticModelProvider = new SemanticModelProvider();
         _sourceMapGenerator = new SourceMapGenerator();
+        _styleProviderRegistry = new StyleProviderRegistry();
+        _styleProviderRegistry.DiscoverProviders();
     }
+
+    /// <summary>
+    /// Gets the style provider registry for manual provider registration.
+    /// </summary>
+    public StyleProviderRegistry StyleProviders => _styleProviderRegistry;
 
     /// <summary>
     /// Sets the full project compilation to enable resolution of external types.
@@ -127,6 +135,20 @@ public class ComponentCompiler
             {
                 result.Css = _cssEmitter.Emit(component.StyleUsages);
             }
+
+            // Extract Styles using registered providers
+            if (semanticModel != null && component.SyntaxTree != null)
+            {
+                foreach (var provider in _styleProviderRegistry.Providers)
+                {
+                    var extractor = provider.CreateExtractor(semanticModel);
+                    if (extractor != null)
+                    {
+                        extractor.Visit(component.SyntaxTree.GetRoot());
+                        result.ExtractedStyles.AddRange(extractor.GetClasses());
+                    }
+                }
+            }
             
             result.Success = true;
         }
@@ -227,6 +249,7 @@ public class CompilationResult
     public string? SourceMap { get; set; }
     public string? Css { get; set; }
     public List<CompilationError> Errors { get; set; } = new();
+    public List<string> ExtractedStyles { get; set; } = new();
 }
 
 /// <summary>

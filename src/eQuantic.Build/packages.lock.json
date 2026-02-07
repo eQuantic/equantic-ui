@@ -207,11 +207,24 @@
         "dependencies": {
           "Microsoft.CodeAnalysis.CSharp": "[5.0.0, )",
           "Microsoft.CodeAnalysis.Workspaces.MSBuild": "[5.0.0, )",
-          "eQuantic.UI.Core": "[0.1.1, )"
+          "eQuantic.UI.Core": "[0.1.2, )"
         }
       },
       "equantic.ui.core": {
         "type": "Project"
+      },
+      "equantic.ui.server": {
+        "type": "Project",
+        "dependencies": {
+          "eQuantic.UI.Core": "[0.1.2, )"
+        }
+      },
+      "equantic.ui.tailwind": {
+        "type": "Project",
+        "dependencies": {
+          "eQuantic.UI.Compiler": "[0.1.2, )",
+          "eQuantic.UI.Server": "[0.1.2, )"
+        }
       }
     }
   }

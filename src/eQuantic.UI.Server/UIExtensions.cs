@@ -339,7 +339,8 @@ public static class UIExtensions
             ctx.When("IsDevelopment", isDevelopment)
                .When("HasInitialState", serializedState != null)
                .When("SsrEnabled", ssrEnabled)
-               .When("HasServerActions", hasServerActions);
+               .When("HasServerActions", hasServerActions)
+               .When("EnableDefaultCss", options.EnableDefaultCss);
         });
 
         context.Response.ContentType = "text/html";
@@ -394,6 +395,13 @@ public class UIOptions
         AssembliesToScan.Add(assembly);
         return this;
     }
+
+    /// <summary>
+    /// Configuration to enable/disable the default eQuantic CSS injection.
+    /// Set to false if using a custom theme provider like Tailwind.
+    /// Default is true.
+    /// </summary>
+    public bool EnableDefaultCss { get; set; } = true;
 }
 
 /// <summary>

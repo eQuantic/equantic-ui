@@ -1,10 +1,12 @@
 @import "tailwindcss";
 @variant dark (&:where(.dark, .dark *));
 
+@source "../obj/eQuantic/ts/tailwind-safelist.txt";
+
 @source "../wwwroot/_equantic/**/*.js";
 @source "../../../src/eQuantic.UI.Tailwind/**/*.cs";
 @source "../../../src/eQuantic.UI.Components/**/*.cs";
-@source "../../**/*.cs";
+@source "../Pages/**/*.cs";
 
 @theme {
     --font-family-sans: "Inter", "sans-serif";

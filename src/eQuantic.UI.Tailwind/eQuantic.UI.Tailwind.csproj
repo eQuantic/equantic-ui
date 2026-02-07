@@ -14,10 +14,15 @@
 
     <ItemGroup>
         <ProjectReference Include="..\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
+        <ProjectReference Include="..\eQuantic.UI.Compiler\eQuantic.UI.Compiler.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="Build\**" PackagePath="build" />
+        <Content Include="Build\eQuantic.UI.Tailwind.targets" PackagePath="build" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Scripts\*.js" />
     </ItemGroup>
 
 </Project>

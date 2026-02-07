@@ -13,4 +13,7 @@
     </ItemGroup>
 
     <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.targets" />
+
+    <!-- Import Tailwind targets for CSS generation -->
+    <Import Project="../../src/eQuantic.UI.Tailwind/Build/eQuantic.UI.Tailwind.targets" />
 </Project>

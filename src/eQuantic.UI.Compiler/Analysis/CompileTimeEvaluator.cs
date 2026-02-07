@@ -1262,17 +1262,29 @@ public class CompileTimeEvaluator
     }
 
     /// <summary>
-    /// Evaluates object creation expressions like new TailwindClass("flex").
+    /// Evaluates object creation expressions like new TailwindClass("flex") or new("flex").
     /// </summary>
     private string? EvaluateObjectCreation(ExpressionSyntax expression)
     {
-        if (expression is not ObjectCreationExpressionSyntax creation)
+        ArgumentListSyntax? argumentList = null;
+
+        if (expression is ObjectCreationExpressionSyntax creation)
+        {
+            argumentList = creation.ArgumentList;
+        }
+        else if (expression is ImplicitObjectCreationExpressionSyntax implicitCreation)
+        {
+            argumentList = implicitCreation.ArgumentList;
+        }
+        else
+        {
             return null;
+        }
 
         // Handle: new TailwindClass("flex")
-        if (creation.ArgumentList?.Arguments.Count == 1)
+        if (argumentList?.Arguments.Count == 1)
         {
-            var arg = creation.ArgumentList.Arguments[0].Expression;
+            var arg = argumentList.Arguments[0].Expression;
 
             // Direct string literal
             if (arg is LiteralExpressionSyntax literal && literal.IsKind(SyntaxKind.StringLiteralExpression))
