@@ -36,29 +36,69 @@ public static class ThemeProvider
 
     // Register theme function (called by runtime after it loads)
     window.__registerTheme = function() {{
+        console.log('[eQuantic.UI] __registerTheme called');
         if (window.__EQUANTIC_THEME_READY) return;
 
         const themeData = window.__EQUANTIC_THEME_DATA;
+        if (!themeData) {{
+            console.error('[eQuantic.UI] No theme data found in window.__EQUANTIC_THEME_DATA');
+            return;
+        }}
 
-        // Add method wrappers to match IButtonTheme interface
-        const theme = {{
-            button: {{
-                base: themeData.button.base,
+        const createThemeHelper = (data) => {{
+            if (!data) return {{ base: '', getVariant: () => '', getSize: () => '' }};
+            return {{
+                base: data.base || '',
                 getVariant: (variant) => {{
-                    const key = typeof variant === 'string' ? variant : variant.toString();
-                    return themeData.button.variants[key.toLowerCase()] || themeData.button.variants.primary;
+                    if (variant === undefined || variant === null) return '';
+                    const key = variant.toString().toLowerCase();
+                    return data.variants[key] || '';
                 }},
                 getSize: (size) => {{
-                    const key = typeof size === 'string' ? size : size.toString();
-                    return themeData.button.sizes[key.toLowerCase()] || themeData.button.sizes.medium;
+                    if (size === undefined || size === null) return '';
+                    const key = size.toString().toLowerCase();
+                    return data.sizes[key] || '';
                 }}
-            }}
-            // TODO: Add other component themes as they are implemented
+            }};
         }};
 
-        getRootServiceProvider().registerInstance('IAppTheme', theme);
-        getRootServiceProvider().registerInstance('eQuantic.UI.Core.Theme.IAppTheme', theme);
-        window.__EQUANTIC_THEME_READY = true;
+        try {{
+            const theme = {{
+                button: createThemeHelper(themeData.button),
+                input: createThemeHelper(themeData.input),
+                card: themeData.card ? {{
+                    container: themeData.card.container || '',
+                    header: themeData.card.header || '',
+                    body: themeData.card.body || '',
+                    footer: themeData.card.footer || '',
+                    title: themeData.card.title || '',
+                    description: themeData.card.description || '',
+                    getShadow: (shadow) => themeData.card.shadows ? (themeData.card.shadows[shadow.toLowerCase()] || themeData.card.shadows['medium'] || '') : '',
+                    getVariant: (variant) => {{
+                        if (variant === undefined || variant === null) return '';
+                        const key = variant.toString().toLowerCase();
+                        return themeData.card.variants[key] || '';
+                    }}
+                }} : {{ container: '', header: '', body: '', footer: '', title: '', description: '', getShadow: () => '', getVariant: () => '' }},
+                typography: themeData.typography ? {{
+                    base: themeData.typography.base || '',
+                    getVariant: (variant) => {{
+                        if (variant === undefined || variant === null) return '';
+                        const key = variant.toString().toLowerCase();
+                        return themeData.typography.variants[key] || '';
+                    }},
+                    getHeading: (level) => themeData.typography.headings ? (themeData.typography.headings[level.toString()] || themeData.typography.base || '') : ''
+                }} : {{ base: '', getVariant: () => '', getHeading: () => '' }}
+            }};
+
+            console.log('[eQuantic.UI] Registering IAppTheme instance:', theme);
+            getRootServiceProvider().registerInstance('IAppTheme', theme);
+            getRootServiceProvider().registerInstance('eQuantic.UI.Core.Theme.IAppTheme', theme);
+            window.__EQUANTIC_THEME_READY = true;
+            console.log('[eQuantic.UI] Theme registered successfully');
+        }} catch (e) {{
+            console.error('[eQuantic.UI] Failed to register theme:', e);
+        }}
     }};
 </script>";
     }
@@ -88,32 +128,52 @@ public static class ThemeProvider
 
     private static string SerializeThemeData(IAppTheme theme)
     {
+        var variants = Enum.GetValues<Variant>();
+        var sizes = Enum.GetValues<Size>();
+
         var themeData = new
         {
             button = new
             {
                 @base = theme.Button.Base,
-                variants = new Dictionary<string, string>
-                {
-                    ["primary"] = theme.Button.GetVariant(Variant.Primary),
-                    ["secondary"] = theme.Button.GetVariant(Variant.Secondary),
-                    ["outline"] = theme.Button.GetVariant(Variant.Outline),
-                    ["ghost"] = theme.Button.GetVariant(Variant.Ghost),
-                    ["destructive"] = theme.Button.GetVariant(Variant.Destructive),
-                    ["link"] = theme.Button.GetVariant(Variant.Link),
-                    ["success"] = theme.Button.GetVariant(Variant.Success),
-                    ["warning"] = theme.Button.GetVariant(Variant.Warning),
-                    ["info"] = theme.Button.GetVariant(Variant.Info)
-                },
-                sizes = new Dictionary<string, string>
-                {
-                    ["small"] = theme.Button.GetSize(Size.Small),
-                    ["medium"] = theme.Button.GetSize(Size.Medium),
-                    ["large"] = theme.Button.GetSize(Size.Large),
-                    ["xlarge"] = theme.Button.GetSize(Size.XLarge)
-                }
+                variants = variants.ToDictionary(v => v.ToString().ToLowerInvariant(), v => theme.Button.GetVariant(v))
+                    .Concat(variants.ToDictionary(v => ((int)v).ToString(), v => theme.Button.GetVariant(v)))
+                    .ToDictionary(pair => pair.Key, pair => pair.Value),
+                sizes = sizes.ToDictionary(s => s.ToString().ToLowerInvariant(), s => theme.Button.GetSize(s))
+                    .Concat(sizes.ToDictionary(s => ((int)s).ToString(), s => theme.Button.GetSize(s)))
+                    .ToDictionary(pair => pair.Key, pair => pair.Value)
+            },
+            input = theme.Input == null ? null : new
+            {
+                @base = theme.Input.Base,
+                variants = variants.ToDictionary(v => v.ToString().ToLowerInvariant(), v => theme.Input.GetVariant(v))
+                    .Concat(variants.ToDictionary(v => ((int)v).ToString(), v => theme.Input.GetVariant(v)))
+                    .ToDictionary(pair => pair.Key, pair => pair.Value),
+                sizes = sizes.ToDictionary(s => s.ToString().ToLowerInvariant(), s => theme.Input.GetSize(s))
+                    .Concat(sizes.ToDictionary(s => ((int)s).ToString(), s => theme.Input.GetSize(s)))
+                    .ToDictionary(pair => pair.Key, pair => pair.Value)
+            },
+            card = theme.Card == null ? null : new
+            {
+                container = theme.Card.Container,
+                header = theme.Card.Header,
+                body = theme.Card.Body,
+                footer = theme.Card.Footer,
+                title = theme.Card.Title,
+                description = theme.Card.Description,
+                shadows = theme.Card.Shadows,
+                variants = Enum.GetValues<CardVariant>().ToDictionary(v => v.ToString().ToLowerInvariant(), v => theme.Card.GetVariant(v))
+                    .Concat(Enum.GetValues<CardVariant>().ToDictionary(v => ((int)v).ToString(), v => theme.Card.GetVariant(v)))
+                    .ToDictionary(pair => pair.Key, pair => pair.Value)
+            },
+            typography = theme.Typography == null ? null : new
+            {
+                @base = theme.Typography.Base,
+                variants = variants.ToDictionary(v => v.ToString().ToLowerInvariant(), v => theme.Typography.GetVariant(v))
+                    .Concat(variants.ToDictionary(v => ((int)v).ToString(), v => theme.Typography.GetVariant(v)))
+                    .ToDictionary(pair => pair.Key, pair => pair.Value),
+                headings = Enumerable.Range(1, 6).ToDictionary(l => l.ToString(), l => theme.Typography.GetHeading(l))
             }
-            // TODO: Add other theme components as they are implemented
         };
 
         var jsonOptions = new JsonSerializerOptions

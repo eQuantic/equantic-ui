@@ -32,11 +32,15 @@ public class AppThemeEQ : IAppTheme
         Button = ThemeRegistry.GetTheme<IButtonTheme>();
         Card = ThemeRegistry.GetTheme<ICardTheme>();
         Input = ThemeRegistry.GetTheme<IInputTheme>();
-
-        // TODO: Add other component themes as they are implemented
-        // Checkbox = ThemeRegistry.GetTheme<ICheckboxTheme>();
-        // Typography = ThemeRegistry.GetTheme<ITextTheme>();
-        // Badge = ThemeRegistry.GetTheme<IBadgeTheme>();
-        // ...
+        Typography = ThemeRegistry.GetTheme<ITextTheme>();
+        Checkbox = ThemeRegistry.GetTheme<ICheckboxTheme>();
+        Badge = ThemeRegistry.GetTheme<IBadgeTheme>();
+        Alert = ThemeRegistry.GetTheme<IAlertTheme>();
+        Switch = ThemeRegistry.GetTheme<ISwitchTheme>();
+        Select = ThemeRegistry.GetTheme<ISelectTheme>();
+        Table = ThemeRegistry.GetTheme<ITableTheme>();
+        Avatar = ThemeRegistry.GetTheme<IAvatarTheme>();
+        Dialog = ThemeRegistry.GetTheme<IDialogTheme>();
+        Tabs = ThemeRegistry.GetTheme<ITabsTheme>();
     }
 }

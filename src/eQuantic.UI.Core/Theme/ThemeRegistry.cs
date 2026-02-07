@@ -19,6 +19,16 @@ public static class ThemeRegistry
         RegisterEQTheme<IButtonTheme>(() => new ButtonThemeEQ());
         RegisterEQTheme<ICardTheme>(() => new CardThemeEQ());
         RegisterEQTheme<IInputTheme>(() => new InputThemeEQ());
+        RegisterEQTheme<ITextTheme>(() => new TextThemeEQ());
+        RegisterEQTheme<ICheckboxTheme>(() => new CheckboxThemeEQ());
+        RegisterEQTheme<IBadgeTheme>(() => new BadgeThemeEQ());
+        RegisterEQTheme<IAlertTheme>(() => new AlertThemeEQ());
+        RegisterEQTheme<ISwitchTheme>(() => new SwitchThemeEQ());
+        RegisterEQTheme<ISelectTheme>(() => new SelectThemeEQ());
+        RegisterEQTheme<ITableTheme>(() => new TableThemeEQ());
+        RegisterEQTheme<IAvatarTheme>(() => new AvatarThemeEQ());
+        RegisterEQTheme<IDialogTheme>(() => new DialogThemeEQ());
+        RegisterEQTheme<ITabsTheme>(() => new TabsThemeEQ());
     }
 
     /// <summary>

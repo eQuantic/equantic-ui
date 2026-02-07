@@ -77,6 +77,29 @@ public class InitializerExpressionStrategy : IConversionStrategy
                         }
                     }
                     
+                    // Event handler binding: Use semantic model to detect delegate/action assignments
+                    var isEventHandler = false;
+                    var leftType = context.SemanticHelper.GetType(assignment.Left);
+                    if (leftType != null)
+                    {
+                        if (leftType.TypeKind == TypeKind.Delegate) isEventHandler = true;
+                        else if ((leftType.Name == "Action" || leftType.Name == "Func") && context.SemanticHelper.IsSystemType(leftType))
+                            isEventHandler = true;
+                    }
+
+                    if (isEventHandler && value != null)
+                    {
+                        var rightSymbol = context.SemanticHelper.GetSymbol(assignment.Right);
+                        if (rightSymbol is IMethodSymbol methodSymbol && !methodSymbol.IsStatic)
+                        {
+                            // If it's an instance method reference and not already bound or a lambda
+                            if (!value.Contains("=>") && !value.Contains("function") && !value.Contains(".bind("))
+                            {
+                                value = $"{value}.bind(this)";
+                            }
+                        }
+                    }
+                    
                     props.Add($"{ToCamelCase(propName)}: {value}");
                 }
             }

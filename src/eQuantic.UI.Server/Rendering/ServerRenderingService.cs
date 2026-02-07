@@ -43,7 +43,7 @@ public class ServerRenderingService : IServerRenderingService
             try
             {
                 var pageTypes = assembly.GetTypes()
-                    .Where(t => t.GetCustomAttribute<PageAttribute>() != null &&
+                    .Where(t => t.GetCustomAttributes<PageAttribute>().Any() &&
                                !t.IsAbstract &&
                                (typeof(StatelessComponent).IsAssignableFrom(t) ||
                                 typeof(StatefulComponent).IsAssignableFrom(t)));
@@ -80,7 +80,7 @@ public class ServerRenderingService : IServerRenderingService
         try
         {
             // Check if SSR is disabled for this page
-            var pageAttr = pageType.GetCustomAttribute<PageAttribute>();
+            var pageAttr = pageType.GetCustomAttributes<PageAttribute>().FirstOrDefault();
             if (pageAttr?.DisableSsr == true)
             {
                 _logger.LogDebug("SSR disabled for page: {PageType}", pageTypeName);
@@ -169,7 +169,7 @@ public class ServerRenderingService : IServerRenderingService
         if (!_pageTypes.TryGetValue(pageTypeName, out var pageType))
             return false;
 
-        var pageAttr = pageType.GetCustomAttribute<PageAttribute>();
+        var pageAttr = pageType.GetCustomAttributes<PageAttribute>().FirstOrDefault();
         return pageAttr?.DisableSsr != true;
     }
 

@@ -66,6 +66,14 @@ export async function boot(): Promise<void> {
       return;
     }
 
+    // Register theme before hydration (if available)
+    if (typeof (window as any).__registerTheme === 'function') {
+      if (isDev()) {
+        console.log('[eQuantic.UI] Registering theme...');
+      }
+      (window as any).__registerTheme();
+    }
+
     await loadAndMountPage(root, pageName, config);
   } catch (error) {
     renderError(root, error as Error);

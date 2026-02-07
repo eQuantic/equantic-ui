@@ -157,6 +157,21 @@
   box-sizing: border-box;
 }
 
+body {
+  margin: 0;
+  font-family: var(--eq-font-family);
+  font-size: var(--eq-font-size-base);
+  line-height: 1.5;
+  color: var(--eq-text-primary);
+  background-color: var(--eq-surface-subtle, #f9fafb);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="dark"] body {
+  background-color: var(--eq-surface);
+}
+
 /* ===== Layout Utilities ===== */
 .eq-flex { display: flex; }
 .eq-flex-col { flex-direction: column; }
