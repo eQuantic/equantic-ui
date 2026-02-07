@@ -110,6 +110,11 @@
         @apply bg-background text-foreground;
     }
 
+    /* Global transitions for interactive elements */
+    button, a, input, select, textarea, [role="button"] {
+        @apply transition-all duration-300 ease-in-out;
+    }
+
     /* Scrollbar styles matching the design system */
     ::-webkit-scrollbar {
         width: 10px;
@@ -128,3 +133,5 @@
         @apply bg-muted-foreground/50;
     }
 }
+
+@plugin "tailwindcss-animate";

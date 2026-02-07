@@ -38,7 +38,7 @@ public class DrawerContent : DrawerSubComponent
         };
 
         var panel = new Box {
-            ClassName = $"absolute {sideClass} {panelWidth} bg-white dark:bg-zinc-950 shadow-2xl animate-in {slideAnim} duration-300 border-zinc-200 dark:border-zinc-800 flex flex-col"
+            ClassName = $"absolute {sideClass} {panelWidth} bg-background shadow-2xl animate-in {slideAnim} duration-300 border-border flex flex-col"
         };
         foreach(var child in Children) panel.Children.Add(child);
 
