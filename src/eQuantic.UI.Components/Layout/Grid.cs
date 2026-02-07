@@ -66,9 +66,15 @@ public class Grid : HtmlElement
         
         style.Add(layoutStyle.ToCssString());
 
-        var s = attrs["style"];
-        var existingStyle = s != null ? s + "; " : "";
-        attrs["style"] = existingStyle + string.Join("; ", style);
+        if (attrs.TryGetValue("style", out var s) && s != null)
+        {
+            var existingStyle = s.ToString() + "; ";
+            attrs["style"] = existingStyle + string.Join("; ", style);
+        }
+        else
+        {
+            attrs["style"] = string.Join("; ", style);
+        }
 
         return new HtmlNode
         {

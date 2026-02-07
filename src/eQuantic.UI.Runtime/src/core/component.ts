@@ -10,6 +10,8 @@ import { getRootServiceProvider, ServiceProvider } from './service-provider';
  * Base class for stateless components
  */
 export abstract class StatelessComponent extends Component {
+  private _renderManager: RenderManager = new RenderManager();
+
   protected get serviceProvider(): ServiceProvider {
     return getRootServiceProvider();
   }
@@ -24,6 +26,21 @@ export abstract class StatelessComponent extends Component {
     };
     const component = this.build(context);
     return component.render();
+  }
+
+  mount(container: HTMLElement): void {
+    // Check if we should hydrate (SSR content exists)
+    if (this._renderManager.canHydrate(container)) {
+      const node = this.render();
+      this._renderManager.hydrate(node, container);
+    } else {
+      const node = this.render();
+      this._renderManager.mount(node, container);
+    }
+  }
+
+  getVirtualNode(): HtmlNode {
+    return this.render();
   }
 }
 

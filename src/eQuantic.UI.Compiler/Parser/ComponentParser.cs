@@ -140,6 +140,9 @@ public class ComponentParser
 
                 // Parse constructors (for components with positional args like Text, Heading)
                 ParseConstructors(classDecl, definition);
+
+                // Parse other helper methods
+                ParseMethods(classDecl, definition);
             }
             else if (baseType == "HtmlElement")
             {
@@ -176,7 +179,7 @@ public class ComponentParser
                 {
                     // No Build method, treat as primitive (extends another component without overriding)
                     definition.IsPrimitive = true;
-                    ParsePrimitiveClass(classDecl, definition);
+                    ParseMethods(classDecl, definition);
                 }
             }
 
@@ -269,39 +272,49 @@ public class ComponentParser
         }
     }
     
-    private void ParsePrimitiveClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
+    private void ParseMethods(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
         // Extract properties
-        var properties = classDecl.DescendantNodes()
-            .OfType<PropertyDeclarationSyntax>()
-            .Where(p => p.Modifiers.Any(SyntaxKind.PublicKeyword));
+        var properties = classDecl.Members
+            .OfType<PropertyDeclarationSyntax>();
         
         foreach (var prop in properties)
         {
-            definition.Methods.Add(new MethodDefinition
+            var isPublic = prop.Modifiers.Any(SyntaxKind.PublicKeyword);
+            
+            if (definition.Properties.Any(p => p.Name == prop.Identifier.Text)) continue;
+
+            definition.Properties.Add(new PropertyDefinition
             {
                 Name = prop.Identifier.Text,
-                ReturnType = prop.Type.ToString(),
-                Body = "", // Properties don't have bodies in this context
-                SyntaxNode = null // Marker for property
+                Type = prop.Type.ToString(),
+                DefaultValue = prop.Initializer?.Value.ToString(),
+                DefaultValueNode = prop.Initializer?.Value,
+                IsPublic = isPublic
             });
         }
         
-        // Extract methods (including Render)
-        var methods = classDecl.DescendantNodes()
+        // Extract methods (excluding Render/Build which are handled separately)
+        var methods = classDecl.Members
             .OfType<MethodDeclarationSyntax>();
         
         foreach (var method in methods)
         {
-            if (method.Identifier.Text == "Render")
+            var methodName = method.Identifier.Text;
+            if (methodName == "Render" || methodName == "Build" || methodName == "CreateState")
             {
-                definition.BuildMethodNode = method;
+                if (methodName == "Render" || methodName == "Build")
+                {
+                    definition.BuildMethodNode = method;
+                }
                 continue;
             }
 
+            if (definition.Methods.Any(m => m.Name == methodName)) continue;
+
             var methodDef = new MethodDefinition
             {
-                Name = method.Identifier.Text,
+                Name = methodName,
                 ReturnType = method.ReturnType.ToString(),
                 TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
                 Body = method.Body?.ToString() ?? method.ExpressionBody?.Expression.ToString() ?? "",
@@ -319,9 +332,14 @@ public class ComponentParser
             
             definition.Methods.Add(methodDef);
         }
+    }
+
+    private void ParsePrimitiveClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
+    {
+        ParseMethods(classDecl, definition);
 
         // Extract constructors
-        var constructors = classDecl.DescendantNodes()
+        var constructors = classDecl.Members
             .OfType<ConstructorDeclarationSyntax>();
         
         foreach (var ctor in constructors)

@@ -210,12 +210,19 @@
           "eQuantic.UI.Core": "[0.1.2, )"
         }
       },
+      "equantic.ui.components": {
+        "type": "Project",
+        "dependencies": {
+          "eQuantic.UI.Core": "[0.1.2, )"
+        }
+      },
       "equantic.ui.core": {
         "type": "Project"
       },
       "equantic.ui.server": {
         "type": "Project",
         "dependencies": {
+          "eQuantic.UI.Components": "[0.1.2, )",
           "eQuantic.UI.Core": "[0.1.2, )"
         }
       },

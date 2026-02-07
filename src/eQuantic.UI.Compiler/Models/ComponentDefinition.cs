@@ -49,6 +49,11 @@ public class ComponentDefinition
     /// Methods defined in the state class
     /// </summary>
     public List<MethodDefinition> Methods { get; set; } = new();
+    
+    /// <summary>
+    /// Properties defined in the class
+    /// </summary>
+    public List<PropertyDefinition> Properties { get; set; } = new();
 
     /// <summary>
     /// Constructors defined in the class
@@ -146,6 +151,18 @@ public class MethodDefinition
     public List<ParameterDefinition> Parameters { get; set; } = new();
     public string Body { get; set; } = string.Empty;
     public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? SyntaxNode { get; set; }
+}
+
+/// <summary>
+/// Represents a property definition
+/// </summary>
+public class PropertyDefinition 
+{
+    public string Name { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string? DefaultValue { get; set; }
+    public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? DefaultValueNode { get; set; }
+    public bool IsPublic { get; set; }
 }
 
 /// <summary>

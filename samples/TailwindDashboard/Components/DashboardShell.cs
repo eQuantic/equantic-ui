@@ -26,15 +26,15 @@ public class DashboardShell : StatelessComponent
 
         return new Box
         {
-            ClassName = "flex min-h-screen w-full bg-white dark:bg-zinc-950",
+            ClassName = "flex min-h-screen w-full bg-background font-sans antialiased",
             Children = {
-                new Sidebar { ActivePath = ActivePath },
+                new AppSidebar { ActivePath = ActivePath },
                 new Box {
                     ClassName = "flex-1 flex flex-col min-h-screen",
                     Children = {
                         // Topbar
                         new Box {
-                            ClassName = "flex h-14 items-center gap-4 border-b bg-zinc-50/40 px-6 dark:bg-zinc-950/40 sticky top-0 z-30 backdrop-blur-sm",
+                            ClassName = "flex h-[60px] items-center gap-4 border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30",
                             Children = {
                                 new Link {
                                     Href = "#",
@@ -50,10 +50,10 @@ public class DashboardShell : StatelessComponent
                                                 new Box {
                                                     ClassName = "relative flex items-center",
                                                     Children = {
-                                                        new Text("🔍") { ClassName = "absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500 dark:text-zinc-400" },
+                                                        new Text("🔍") { ClassName = "absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" },
                                                         new DynamicElement {
                                                             TagName = "input",
-                                                            ClassName = "w-full appearance-none bg-white pl-8 shadow-none dark:bg-zinc-950 rounded-md border border-zinc-200 dark:border-zinc-800 h-9 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400",
+                                                            ClassName = "w-full appearance-none bg-muted/40 pl-8 shadow-none rounded-md border border-input h-9 text-sm focus:outline-none focus:ring-1 focus:ring-ring",
                                                             CustomAttributes = { ["placeholder"] = "Search components...", ["type"] = "search" }
                                                         }
                                                     }
@@ -71,7 +71,7 @@ public class DashboardShell : StatelessComponent
                                             ClassName = "rounded-full w-8 h-8 p-0"
                                         },
                                         new Box {
-                                            ClassName = "h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-800 border flex items-center justify-center font-bold text-xs",
+                                            ClassName = "h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center font-bold text-xs",
                                             Children = { new Text("EM") }
                                         }
                                     }

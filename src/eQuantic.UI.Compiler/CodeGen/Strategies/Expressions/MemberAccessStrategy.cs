@@ -53,7 +53,21 @@ public class MemberAccessStrategy : IConversionStrategy
 
         if (string.IsNullOrEmpty(name)) return expr;
 
-        return $"{expr}.{name}";
+        var result = $"{expr}.{name}";
+
+        // If it's a method reference (not being called), add .bind(expr)
+        if (symbol is IMethodSymbol)
+        {
+            var isDirectInvocation = memberAccess.Parent is InvocationExpressionSyntax invocation && 
+                                  invocation.Expression == memberAccess;
+            
+            if (!isDirectInvocation)
+            {
+                result += $".bind({expr})";
+            }
+        }
+
+        return result;
     }
 
     private string ToCamelCase(string name)

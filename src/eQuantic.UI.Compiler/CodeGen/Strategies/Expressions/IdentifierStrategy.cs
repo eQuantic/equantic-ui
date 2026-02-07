@@ -50,7 +50,21 @@ public class IdentifierStrategy : IConversionStrategy
                         return ToCamelCase(name);
                     }
 
-                    return $"this.{ToCamelCase(name)}";
+                    var result = $"this.{ToCamelCase(name)}";
+                    
+                    // If it's a method reference (not being called), add .bind(this)
+                    if (symbol is IMethodSymbol)
+                    {
+                        var isDirectInvocation = identifier.Parent is InvocationExpressionSyntax invocation && 
+                                              invocation.Expression == identifier;
+                        
+                        if (!isDirectInvocation)
+                        {
+                            result += ".bind(this)";
+                        }
+                    }
+
+                    return result;
                 }
             }
         }

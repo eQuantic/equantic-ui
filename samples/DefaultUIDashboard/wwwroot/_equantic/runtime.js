@@ -891,6 +891,10 @@ class ServiceCollectionBuilder {
   }
 }
 class StatelessComponent extends Component {
+  constructor() {
+    super(...arguments);
+    __publicField(this, "_renderManager", new RenderManager());
+  }
   get serviceProvider() {
     return getRootServiceProvider();
   }
@@ -901,6 +905,18 @@ class StatelessComponent extends Component {
     };
     const component = this.build(context);
     return component.render();
+  }
+  mount(container) {
+    if (this._renderManager.canHydrate(container)) {
+      const node = this.render();
+      this._renderManager.hydrate(node, container);
+    } else {
+      const node = this.render();
+      this._renderManager.mount(node, container);
+    }
+  }
+  getVirtualNode() {
+    return this.render();
   }
 }
 class StatefulComponent extends Component {
@@ -1517,8 +1533,10 @@ function createApp(ComponentClass, selector) {
   return component;
 }
 async function boot() {
-  if (window.__EQ_DEV__) {
-    await Promise.resolve().then(() => errorOverlay$1);
+  let overlay = null;
+  const isDev2 = window.__EQ_DEV__;
+  if (isDev2) {
+    overlay = await Promise.resolve().then(() => errorOverlay$1);
   }
   const { logger: logger2 } = await Promise.resolve().then(() => logger$1);
   logger2.debug("Starting boot process...");
@@ -1556,7 +1574,12 @@ async function boot() {
     component.mount(container);
   } catch (error) {
     console.error(`[eQuantic.UI] Failed to boot page '${config.page}':`, error);
-    if (container.dataset.ssr !== "true") {
+    if (isDev2 && overlay && container.dataset.ssr !== "true") {
+      overlay.errorOverlay.show({
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : void 0
+      });
+    } else if (container.dataset.ssr !== "true") {
       container.innerHTML = `<div style="color: red; padding: 20px;">
         <h2>Failed to load page</h2>
         <pre>${error instanceof Error ? error.message : String(error)}</pre>

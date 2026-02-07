@@ -42,7 +42,7 @@ export { RenderManager } from './dom/renderer';
  * Mount a component to a DOM element
  */
 export function mount(
-  component: import('./core/component').StatefulComponent,
+  component: { mount(container: HTMLElement): void },
   selector: string,
 ): void {
   const container = document.querySelector(selector);

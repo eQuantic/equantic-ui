@@ -26,7 +26,7 @@ public class Showcase : StatelessComponent
                     Children = {
                         // Navigation Menu
                         CreateSection("Navigation Menu", new NavigationMenu {
-                            ClassName = "border rounded-lg p-2 bg-zinc-50 dark:bg-zinc-900",
+                            ClassName = "border border-border rounded-lg p-2 bg-card",
                             Children = {
                                 new NavigationMenuList {
                                     Children = {
@@ -159,7 +159,7 @@ public class Showcase : StatelessComponent
             Children = {
                 new Heading(title, 2) { ClassName = "text-xl font-semibold border-b pb-2" },
                 new Box {
-                    ClassName = "p-6 rounded-xl border bg-zinc-50/50 dark:bg-zinc-900/50 flex justify-center",
+                    ClassName = "p-6 rounded-xl border border-border bg-muted/50 flex justify-center",
                     Children = { component }
                 }
             }

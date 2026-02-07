@@ -182,7 +182,7 @@ public class TodoListState : ComponentState<TodoList>
         if (!filteredTodos.Any())
         {
             todoList.Children.Add(new Box {
-                ClassName = "py-8 text-center text-zinc-500 bg-zinc-50 dark:bg-zinc-900 rounded-lg border-2 border-dashed",
+                ClassName = "py-8 text-center text-muted-foreground bg-muted/50 rounded-lg border-2 border-dashed border-border",
                 Children = { new Text("No tasks found in this view.") }
             });
         }
@@ -195,7 +195,7 @@ public class TodoListState : ComponentState<TodoList>
                 var isCompleted = todo.IsCompleted;
                 
                 todoList.Children.Add(new Box {
-                    ClassName = "flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-lg border shadow-sm",
+                    ClassName = "flex items-center justify-between p-4 bg-card rounded-lg border border-border shadow-sm",
                     Children = {
                         new Box {
                             ClassName = "flex items-center gap-3",
@@ -206,7 +206,7 @@ public class TodoListState : ComponentState<TodoList>
                                     OnChange = (bool val) => { _ = HandleToggle(todoId); }
                                 },
                                 new Text(todoTitle) {
-                                    ClassName = isCompleted ? "line-through text-zinc-400" : "font-medium"
+                                    ClassName = isCompleted ? "line-through text-muted-foreground" : "font-medium"
                                 }
                             }
                         },
@@ -248,9 +248,9 @@ public class TodoListState : ComponentState<TodoList>
                     }
                 },
                 new Card {
-                    ClassName = "bg-white dark:bg-zinc-900 border",
+                    ClassName = "bg-card border border-border",
                     Header = new Box {
-                        ClassName = "p-4 border-b flex gap-3",
+                        ClassName = "p-4 border-b border-border flex gap-3",
                         Children = {
                             new TextInput {
                                 Value = _newTodoTitle,
@@ -270,7 +270,7 @@ public class TodoListState : ComponentState<TodoList>
                         Children = { todoList }
                     },
                     Footer = _todos.Any(t => t.IsCompleted) ? new Box {
-                        ClassName = "p-4 border-t flex justify-end",
+                        ClassName = "p-4 border-t border-border flex justify-end",
                         Children = {
                             new Button {
                                 Text = "Clear Completed",
@@ -305,7 +305,7 @@ public class TodoListState : ComponentState<TodoList>
                         }
                     },
                     Footer = new Box {
-                        ClassName = "p-4 border-t flex justify-end gap-2",
+                        ClassName = "p-4 border-t border-border flex justify-end gap-2",
                         Children = {
                             new Button {
                                 Text = "Cancel",
@@ -331,7 +331,7 @@ public class TodoListState : ComponentState<TodoList>
         {
             Text = $"{label} ({count})",
             Variant = isActive ? Variant.Primary : Variant.Ghost,
-            ClassName = isActive ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900" : "",
+            ClassName = isActive ? "" : "",
             OnClick = () => { SetState(() => { _currentFilter = filter; }); }
         };
     }

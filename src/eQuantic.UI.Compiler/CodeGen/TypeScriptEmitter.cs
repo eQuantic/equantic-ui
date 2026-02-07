@@ -61,64 +61,72 @@ public class TypeScriptEmitter
             {
                 if (component.IsPrimitive)
                 {
-                    // Emit properties for primitive
-                    // WE DO NOT EMIT PROPERTIES AS FIELDS for primitives.
-                    // This is because we rely on the base Component constructor to Object.assign(this, props).
-                    // If we emit 'fieldName;', it initializes to undefined after super(), overwriting the assigned value.
-                    // Only emit methods and constructor.
+                    // Remove field declarations for primitives.
+                    // The base HtmlElement constructor calls Object.assign(this, props), 
+                    // which sets these properties. If we declare fields here without initializers,
+                    // they will be initialized to undefined AFTER super(), overwriting the values.
 
                     // Emit constructor for primitive
                     // ALWAYS accept props and pass to super, even if C# constructor has no params
                     // This is critical for Object.assign pattern in Component base class
-                    if (component.Constructors.Any())
-                    {
-                        var ctor = component.Constructors.OrderByDescending(c => c.Parameters.Count).First();
-                        var hasExplicitParams = ctor.Parameters.Count > 0;
+                    
+                    var ctor = component.IsPrimitive ? component.Constructors.OrderByDescending(ctr => ctr.Parameters.Count).FirstOrDefault() : null;
+                    var hasExplicitParams = ctor?.Parameters.Count > 0;
 
-                        string jsParams;
+                    string jsParams;
+                    if (hasExplicitParams)
+                    {
+                        // Constructor has explicit params (e.g., Heading(content, level))
+                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => $"{p.Name}: any"));
+                        jsParams = paramList;
+                    }
+                    else
+                    {
+                        // Constructor has no params - accept generic props for Object.assign
+                        jsParams = "props?: any";
+                    }
+
+                    c.Constructor(jsParams, () =>
+                    {
+                        // Pass props to super
+                        c.Raw(hasExplicitParams ? "super();" : "super(props);");
+
+                        // Assign explicit parameters as properties
                         if (hasExplicitParams)
                         {
-                            // Constructor has explicit params (e.g., Heading(content, level))
-                            var paramList = string.Join(", ", ctor.Parameters.Select(p => $"{p.Name}: any"));
-                            jsParams = paramList;
-                        }
-                        else
-                        {
-                            // Constructor has no params - accept generic props for Object.assign
-                            jsParams = "props?: any";
+                            foreach (var param in ctor!.Parameters)
+                            {
+                                c.Raw($"this.{ToCamelCase(param.Name)} = {param.Name};");
+                            }
                         }
 
-                        c.Constructor(jsParams, () =>
+                        // Apply defaults for properties not provided in props (only if still undefined)
+                        foreach (var prop in component.Properties.Where(p => p.IsPublic && p.DefaultValue != null))
                         {
-                            // Pass props to super
-                            c.Raw(hasExplicitParams ? "super();" : "super(props);");
+                            var camelName = ToCamelCase(prop.Name);
+                            var tsDefault = prop.DefaultValueNode != null 
+                                ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
+                                : ConvertToTsValue(prop.DefaultValue, prop.Type);
+                            
+                            c.Raw($"if (this.{camelName} === undefined) this.{camelName} = {tsDefault};");
+                        }
 
-                            // Assign explicit parameters as properties
-                            if (hasExplicitParams)
+                        // Execute C# constructor body (e.g., Direction = FlexDirection.Column)
+                        if (ctor?.SyntaxNode?.Body != null)
+                        {
+                            _converter.SetCurrentClass(component.Name);
+                            var jsBody = _converter.Convert(ctor.SyntaxNode.Body);
+                            jsBody = jsBody.Trim();
+                            if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
                             {
-                                foreach (var param in ctor.Parameters)
-                                {
-                                    c.Raw($"this.{ToCamelCase(param.Name)} = {param.Name};");
-                                }
+                                jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
                             }
-
-                            // Execute C# constructor body (e.g., Direction = FlexDirection.Column)
-                            if (ctor.SyntaxNode?.Body != null)
+                            if (!string.IsNullOrWhiteSpace(jsBody))
                             {
-                                _converter.SetCurrentClass(component.Name);
-                                var jsBody = _converter.Convert(ctor.SyntaxNode.Body);
-                                jsBody = jsBody.Trim();
-                                if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
-                                {
-                                    jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
-                                }
-                                if (!string.IsNullOrWhiteSpace(jsBody))
-                                {
-                                    c.Raw(jsBody, ctor.SyntaxNode.Body);
-                                }
+                                c.Raw(jsBody, ctor.SyntaxNode.Body);
                             }
-                        });
-                    }
+                        }
+                    });
 
                     // Emit Render method for primitive - ONLY if defined or it's the base primitive
                     if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
@@ -153,6 +161,13 @@ public class TypeScriptEmitter
                         {
                             c.Raw("return { tag: 'div', attributes: {}, events: {}, children: [] };");
                         });
+                    }
+
+                    // Emit helper methods
+                    foreach (var method in component.Methods)
+                    {
+                        if (method.Name == "Build" || method.Name == "Render") continue;
+                        EmitMethod(method, c, component.Name);
                     }
                 }
                 else if (component.IsStateful)
@@ -209,6 +224,13 @@ public class TypeScriptEmitter
                              c.Raw("throw new Error('Build method not implemented');");
                          }
                     });
+
+                    // Emit helper methods
+                    foreach (var method in component.Methods)
+                    {
+                        if (method.Name == "Build" || method.Name == "Render") continue;
+                        EmitMethod(method, c, component.Name);
+                    }
                 }
                 // Abstract classes: no build method emitted
                 
@@ -277,8 +299,30 @@ public class TypeScriptEmitter
         // Also scan procedural code in BuildMethodNode
         if (component.BuildMethodNode != null)
         {
-             var proceduralTypes = CollectComponentTypesFromNode(component.BuildMethodNode);
+             var localNames = new HashSet<string>(component.Properties.Select(p => p.Name));
+             foreach (var m in component.Methods) localNames.Add(m.Name);
+             localNames.Add(component.Name);
+
+             var proceduralTypes = CollectComponentTypesFromNode(component.BuildMethodNode, localNames);
              foreach (var t in proceduralTypes) componentTypes.Add(t);
+        }
+
+        // Add property types to imports
+        foreach (var prop in component.Properties)
+        {
+            var type = prop.Type;
+            if (type.Contains("<"))
+            {
+                var startIndex = type.IndexOf('<') + 1;
+                var endIndex = type.LastIndexOf('>');
+                if (endIndex > startIndex)
+                {
+                    type = type.Substring(startIndex, endIndex - startIndex);
+                }
+            }
+            if (type.EndsWith("?")) type = type.Substring(0, type.Length - 1);
+            
+            componentTypes.Add(type);
         }
 
         // CRITICAL: Add base class to component types (for inheritance like "Column extends Flex")
@@ -400,7 +444,7 @@ public class TypeScriptEmitter
         return types;
     }
 
-    private HashSet<string> CollectComponentTypesFromNode(SyntaxNode? node)
+    private HashSet<string> CollectComponentTypesFromNode(SyntaxNode? node, HashSet<string>? localNames = null)
     {
         var types = new HashSet<string>();
         if (node == null) return types;
@@ -408,7 +452,9 @@ public class TypeScriptEmitter
         var creations = node.DescendantNodes().OfType<ObjectCreationExpressionSyntax>();
         foreach (var creation in creations)
         {
-             types.Add(creation.Type.ToString());
+             var typeName = creation.Type.ToString();
+             if (typeName.Contains("<")) typeName = typeName.Split('<')[0];
+             types.Add(typeName);
         }
 
         var invocations = node.DescendantNodes().OfType<InvocationExpressionSyntax>();
@@ -421,7 +467,10 @@ public class TypeScriptEmitter
                      var name = identifier.Identifier.Text;
                      if (!string.IsNullOrEmpty(name) && char.IsUpper(name[0])) 
                      {
-                         types.Add(name);
+                         if (localNames == null || !localNames.Contains(name))
+                         {
+                             types.Add(name);
+                         }
                      }
                 }
             }

@@ -26,7 +26,7 @@ public class DictionaryStrategy : IConversionStrategy
                 return false;
 
             var methodName = memberAccess.Name.Identifier.Text;
-            if (methodName is not ("ContainsKey" or "TryGetValue" or "TryGetValueOrDefault" or "Add" or "Remove" or "Clear"))
+            if (methodName is not ("ContainsKey" or "TryGetValue" or "TryGetValueOrDefault" or "GetValueOrDefault" or "Add" or "Remove" or "Clear"))
                 return false;
 
             // Check via semantic model if available
@@ -34,8 +34,21 @@ public class DictionaryStrategy : IConversionStrategy
             if (symbol != null)
             {
                 var containingType = symbol.ContainingType.ToDisplayString();
-                return containingType.Contains("Dictionary") ||
-                       containingType.Contains("IDictionary");
+                if (containingType.Contains("Dictionary") || containingType.Contains("IDictionary") || containingType.Contains("CollectionExtensions"))
+                    return true;
+                
+                if (symbol.IsExtensionMethod && symbol.Parameters.Length > 0)
+                {
+                    var receiverType = symbol.Parameters[0].Type.ToDisplayString();
+                    if (receiverType.Contains("Dictionary") || receiverType.Contains("IDictionary"))
+                        return true;
+                }
+                
+                // For GetValueOrDefault, we trust the name even if semantic check is ambiguous 
+                // (could be a library method where containing type isn't clearly 'Dictionary')
+                if (methodName == "GetValueOrDefault") return true;
+
+                return false;
             }
 
             // Allow fallback for common patterns
@@ -125,6 +138,17 @@ public class DictionaryStrategy : IConversionStrategy
             }
 
             return $"({outVar} = {caller}[{key}]) !== undefined";
+        }
+
+        // GetValueOrDefault(key, defaultValue?) → (caller[key] ?? defaultValue)
+        if (methodName == "GetValueOrDefault" && args.Count > 0)
+        {
+            var key = context.Converter.ConvertExpression(args[0].Expression);
+            var defaultValue = args.Count > 1 
+                ? context.Converter.ConvertExpression(args[1].Expression)
+                : "null";
+
+            return $"({caller}[{key}] ?? {defaultValue})";
         }
 
         // Add(key, value) → obj[key] = value

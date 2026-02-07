@@ -1,1 +1,0 @@
-{"version":3,"mappings":"qxCAAA,6BAA+C,4CAExC,MAAM,uBAA+B,mBAAmB,CAC/D","names":[],"ignoreList":[],"sources":["../../obj/eQuantic/ts/InputComponent.ts"],"sourcesContent":["import { BuildContext, Component, HtmlElement, StatelessComponent } from \"@equantic/runtime\";\n\nexport class InputComponent<TValue> extends StatelessComponent {\n}\n\n"]}
