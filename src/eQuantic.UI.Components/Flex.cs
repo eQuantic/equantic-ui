@@ -49,9 +49,16 @@ public class Flex : HtmlElement
             FlexWrap = Wrap ? FlexWrap.Wrap : FlexWrap.NoWrap
         };
         
-        var s = attrs["style"];
-        var existingStyle = s != null ? s + "; " : "";
-        attrs["style"] = existingStyle + layoutStyle.ToCssString();
+        string? existingStyle = null;
+        if (attrs.TryGetValue("style", out var s))
+        {
+            existingStyle = s?.ToString();
+        }
+        
+        var css = layoutStyle.ToCssString();
+        attrs["style"] = !string.IsNullOrEmpty(existingStyle) 
+            ? $"{existingStyle}; {css}" 
+            : css;
         
         return new HtmlNode
         {

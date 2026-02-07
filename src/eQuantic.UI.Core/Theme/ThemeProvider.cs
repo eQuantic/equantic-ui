@@ -74,6 +74,7 @@ public static class ThemeProvider
                     title: themeData.card.title || '',
                     description: themeData.card.description || '',
                     getShadow: (shadow) => themeData.card.shadows ? (themeData.card.shadows[shadow.toLowerCase()] || themeData.card.shadows['medium'] || '') : '',
+                    getShadowInfo: (shadow) => themeData.card.shadows ? (themeData.card.shadows[shadow.toLowerCase()] || themeData.card.shadows['medium'] || '') : '',
                     getVariant: (variant) => {{
                         if (variant === undefined || variant === null) return '';
                         const key = variant.toString().toLowerCase();

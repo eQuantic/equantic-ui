@@ -123,27 +123,41 @@ public class ServerRenderingService : IServerRenderingService
                 }
             }
 
-            // Render the component to HTML
-            var html = RenderComponent(component);
+            // Set global provider for SSR context
+            // Note: This static property approach is not thread-safe for concurrent requests
+            // but is required by the current Core implementation of StatelessComponent.
+            // TODO: Refactor Core to pass context down the render tree.
+            var previousProvider = RenderContext.ServiceProvider;
+            RenderContext.ServiceProvider = context.RequestServices;
 
-            // Serialize state for hydration (if component is stateful)
-            string? serializedState = null;
-            if (component is StatefulComponent statefulComp)
+            try
             {
-                var state = statefulComp.GetType()
-                    .GetProperty("State", BindingFlags.Instance | BindingFlags.NonPublic)?
-                    .GetValue(statefulComp);
+                // Render the component to HTML
+                var html = RenderComponent(component);
 
-                if (state != null)
+                // Serialize state for hydration (if component is stateful)
+                string? serializedState = null;
+                if (component is StatefulComponent statefulComp)
                 {
-                    serializedState = SerializeState(state);
+                    var state = statefulComp.GetType()
+                        .GetProperty("State", BindingFlags.Instance | BindingFlags.NonPublic)?
+                        .GetValue(statefulComp);
+
+                    if (state != null)
+                    {
+                        serializedState = SerializeState(state);
+                    }
                 }
+
+                _logger.LogDebug("SSR completed for page: {PageType}, HTML length: {Length}",
+                    pageTypeName, html.Length);
+
+                return ServerRenderResult.Ok(html, metadata, serializedState);
             }
-
-            _logger.LogDebug("SSR completed for page: {PageType}, HTML length: {Length}",
-                pageTypeName, html.Length);
-
-            return ServerRenderResult.Ok(html, metadata, serializedState);
+            finally
+            {
+                RenderContext.ServiceProvider = previousProvider;
+            }
         }
         catch (Exception ex)
         {

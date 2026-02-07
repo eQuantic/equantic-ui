@@ -20,6 +20,7 @@ public class MaterialButtonTheme : IButtonTheme
             Variant.Destructive => "md-button--filled md-button--error",
             Variant.Outline => "md-button--outlined",
             Variant.Link => "md-button--text",
+            Variant.Default => "md-button--elevated",
             _ => "md-button--filled"
         };
     }

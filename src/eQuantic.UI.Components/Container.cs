@@ -41,9 +41,16 @@ public class Container : HtmlElement
             style.Add("max-width: 1320px");
         }
 
-        var s = attrs["style"];
-        var existingStyle = s != null ? s + "; " : "";
-        attrs["style"] = existingStyle + string.Join("; ", style);
+        string? existingStyle = null;
+        if (attrs.TryGetValue("style", out var s))
+        {
+            existingStyle = s?.ToString();
+        }
+
+        var styleString = string.Join("; ", style);
+        attrs["style"] = !string.IsNullOrEmpty(existingStyle) 
+            ? $"{existingStyle}; {styleString}" 
+            : styleString;
 
         return new HtmlNode
         {

@@ -36,7 +36,14 @@ public class EnumStrategy : IConversionStrategy
                            expr.Length > 0 &&
                            char.IsUpper(expr[0]) &&
                            char.IsUpper(member[0]);
-        return isPascalCase;
+                           
+        if (!isPascalCase) return false;
+
+        // Enums cannot be assigned to
+        if (node.Parent is AssignmentExpressionSyntax assignment && assignment.Left == node)
+            return false;
+
+        return true;
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

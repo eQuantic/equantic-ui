@@ -42,6 +42,20 @@ public class TailwindStyleExtractor : CSharpSyntaxWalker, IStyleExtractor
 
     public IEnumerable<string> GetClasses() => _extractedClasses;
 
+    public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
+    {
+        base.VisitAssignmentExpression(node);
+
+        // Check for assignments to "ClassName" or "className"
+        var target = node.Left.ToString();
+        // Console.WriteLine($"[TailwindExtractor] [{Path.GetFileName(filePath)}] Visiting Assignment: {target}");
+        if (target.EndsWith("ClassName") || target.EndsWith("className"))
+        {
+            // Console.WriteLine($"[TailwindExtractor] Found ClassName assignment: {target}");
+            ExtractFromExpression(node.Right, "");
+        }
+    }
+
     public override void VisitInvocationExpression(InvocationExpressionSyntax node)
     {
         base.VisitInvocationExpression(node);
@@ -65,36 +79,42 @@ public class TailwindStyleExtractor : CSharpSyntaxWalker, IStyleExtractor
     {
         foreach (var arg in node.ArgumentList.Arguments)
         {
-            string? val = null;
-            
-            // Strategy 1: Direct literal string extraction (most common case)
-            if (arg.Expression is LiteralExpressionSyntax literal && 
-                literal.IsKind(SyntaxKind.StringLiteralExpression))
+            ExtractFromExpression(arg.Expression, prefix);
+        }
+    }
+
+    private void ExtractFromExpression(ExpressionSyntax expression, string prefix)
+    {
+        string? val = null;
+        
+        // Strategy 1: Direct literal string extraction (most common case)
+        if (expression is LiteralExpressionSyntax literal && 
+            literal.IsKind(SyntaxKind.StringLiteralExpression))
+        {
+            val = literal.Token.ValueText;
+        }
+        // Strategy 2: Use the robust CompileTimeEvaluator for TW.* expressions
+        else
+        {
+            val = _evaluator.TryEvaluate(expression);
+        }
+        
+        // Strategy 3: Fallback to simple constant evaluation
+        if (val == null)
+        {
+            var constant = _semanticModel.GetConstantValue(expression);
+            if (constant.HasValue && constant.Value is string s)
+                val = s;
+        }
+        
+        if (!string.IsNullOrWhiteSpace(val))
+        {
+            // Split by whitespace to handle multi-class strings like "from-blue-600 to-purple-600"
+            var classes = val.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var cls in classes)
             {
-                val = literal.Token.ValueText;
-            }
-            // Strategy 2: Use the robust CompileTimeEvaluator for TW.* expressions
-            else
-            {
-                val = _evaluator.TryEvaluate(arg.Expression);
-            }
-            
-            // Strategy 3: Fallback to simple constant evaluation
-            if (val == null)
-            {
-                var constant = _semanticModel.GetConstantValue(arg.Expression);
-                if (constant.HasValue && constant.Value is string s)
-                    val = s;
-            }
-            
-            if (!string.IsNullOrWhiteSpace(val))
-            {
-                // Split by whitespace to handle multi-class strings like "from-blue-600 to-purple-600"
-                var classes = val.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var cls in classes)
-                {
-                    _extractedClasses.Add(prefix + cls);
-                }
+                // Console.WriteLine($"[TailwindExtractor] Extracted: {prefix + cls}");
+                _extractedClasses.Add(prefix + cls);
             }
         }
     }

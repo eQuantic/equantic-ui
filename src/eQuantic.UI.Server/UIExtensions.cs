@@ -50,6 +50,10 @@ public static class UIExtensions
     public static IServiceCollection AddUI(this IServiceCollection services, Action<UIOptions>? configure = null)
     {
         var options = new UIOptions();
+        
+        // Register default error pages first (can be overridden by user scanning)
+        options.ScanAssembly(typeof(UIExtensions).Assembly);
+        
         configure?.Invoke(options);
 
         services.AddSingleton(options);
@@ -302,6 +306,71 @@ public static class UIExtensions
                     seo.Description(attr.Description);
             }
         }
+        else
+        {
+            // 404 Not Found Handling
+            if (options.NotFoundPageType != null)
+            {
+                context.Response.StatusCode = 404;
+                pageName = options.NotFoundPageType.Name;
+                pageValue = $"'{pageName}'";
+                
+                // Try to render the 404 page via SSR
+                if (options.EnableSsr)
+                {
+                    try 
+                    {
+                        var renderingService = context.RequestServices.GetService<IServerRenderingService>();
+                        if (renderingService != null)
+                        {
+                            var result = await renderingService.RenderPageAsync(pageName, context);
+                            if (result.Success && result.Html != null)
+                            {
+                                ssrContent = result.Html;
+                                ssrEnabled = true;
+                                if (!string.IsNullOrEmpty(result.Metadata?.Title)) metadata.Title = result.Metadata.Title;
+                            }
+                        }
+                    }
+                    catch { /* Ignore 404 render errors */ }
+                }
+            }
+        }
+
+        // 500 Error Handling during SSR
+        if (!ssrEnabled && pageName != null && options.EnableSsr)
+        {
+            // If we are here, it means SSR failed or was disabled.
+            // We need to check if it failed due to an exception (which we can't easily track from here without earlier logic change)
+            // or if we should show the 500 page.
+            
+            // Actually, the SSR catch block above sets ssrEnabled = false.
+            // If we are in Production and SSR failed, we should render the 500 page.
+            var isDev = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
+            if (!isDev && options.ErrorPageType != null && ssrContent.Contains("Loading..."))
+            {
+                // Re-attempt SSR with the 500 page
+                try
+                {
+                    var errorPageName = options.ErrorPageType.Name;
+                    var renderingService = context.RequestServices.GetService<IServerRenderingService>();
+                    if (renderingService != null)
+                    {
+                         var result = await renderingService.RenderPageAsync(errorPageName, context);
+                         if (result.Success && result.Html != null)
+                         {
+                             context.Response.StatusCode = 500;
+                             pageName = errorPageName;
+                             pageValue = $"'{pageName}'";
+                             ssrContent = result.Html;
+                             ssrEnabled = true; // Enabled for the error page
+                             if (!string.IsNullOrEmpty(result.Metadata?.Title)) metadata.Title = result.Metadata.Title;
+                         }
+                    }
+                }
+                catch { /* Fallback to client-side error */ }
+            }
+        }
 
         // Inject configuration object
         var configJson = $@"{{
@@ -393,6 +462,17 @@ public class UIOptions
     public UIOptions ScanAssembly(Assembly assembly)
     {
         AssembliesToScan.Add(assembly);
+
+        // Scan for Error Pages
+        var pageTypes = assembly.GetTypes()
+            .Where(t => t.GetCustomAttributes<Core.PageAttribute>().Any());
+
+        foreach (var type in pageTypes)
+        {
+            var attr = type.GetCustomAttributes<Core.PageAttribute>().First();
+            RegisterErrorPage(type, attr.Route);
+        }
+
         return this;
     }
 
@@ -401,7 +481,21 @@ public class UIOptions
     /// Set to false if using a custom theme provider like Tailwind.
     /// Default is true.
     /// </summary>
+    /// <summary>
+    /// Configuration to enable/disable the default eQuantic CSS injection.
+    /// Set to false if using a custom theme provider like Tailwind.
+    /// Default is true.
+    /// </summary>
     public bool EnableDefaultCss { get; set; } = true;
+
+    internal Type? NotFoundPageType { get; private set; }
+    internal Type? ErrorPageType { get; private set; }
+
+    internal void RegisterErrorPage(Type type, string route)
+    {
+        if (route == "/404") NotFoundPageType = type;
+        if (route == "/500") ErrorPageType = type;
+    }
 }
 
 /// <summary>

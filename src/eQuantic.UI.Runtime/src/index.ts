@@ -100,9 +100,12 @@ declare global {
  * ```
  */
 export async function boot(): Promise<void> {
+  let overlay: typeof import('./dev/error-overlay') | null = null;
+  const isDev = window.__EQ_DEV__;
+
   // Import error overlay in development
-  if (window.__EQ_DEV__) {
-    await import('./dev/error-overlay');
+  if (isDev) {
+    overlay = await import('./dev/error-overlay');
   }
 
   const { logger } = await import('./utils/logger');
@@ -156,7 +159,12 @@ export async function boot(): Promise<void> {
     console.error(`[eQuantic.UI] Failed to boot page '${config.page}':`, error);
 
     // Show error to user in development
-    if (container.dataset.ssr !== 'true') {
+    if (isDev && overlay && container.dataset.ssr !== 'true') {
+      overlay.errorOverlay.show({
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+    } else if (container.dataset.ssr !== 'true') {
       container.innerHTML = `<div style="color: red; padding: 20px;">
         <h2>Failed to load page</h2>
         <pre>${error instanceof Error ? error.message : String(error)}</pre>
