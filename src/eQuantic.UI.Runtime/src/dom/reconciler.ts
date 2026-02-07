@@ -173,7 +173,7 @@ export class Reconciler {
     ) {
       element.value = strValue;
     } else if (key === 'checked' && element instanceof HTMLInputElement) {
-      element.checked = true;
+      element.checked = !!value || strValue === 'true' || strValue === 'checked';
     }
   }
 

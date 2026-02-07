@@ -47,14 +47,20 @@ public class TypeScriptCodeBuilder
 
     private void AppendLine(string line = "")
     {
+        string indent = new string(' ', _indentLevel * 4);
         if (!string.IsNullOrEmpty(line))
         {
-            _sb.Append(string.Concat(Enumerable.Repeat(IndentString, _indentLevel)));
+            _sb.Append(indent);
             _sb.AppendLine(line);
+            
+            _currentLine++;
+            _currentColumn = 1;
         }
         else
         {
             _sb.AppendLine();
+            _currentLine++;
+            _currentColumn = 1;
         }
     }
 

@@ -27,8 +27,8 @@ public class Modal : StatelessComponent
         var descriptorClass = dialogTheme?.Description ?? "";
         var footerClass = dialogTheme?.Footer ?? "";
 
-        // Combine width with content class nicely
-        var contentStyle = $"{contentClass} {Width}".Trim();
+        // Combine width with content class nicely and add relative for absolute positioning of close button
+        var contentStyle = $"{contentClass} {Width} relative".Trim();
 
         return new Box
         {
@@ -40,17 +40,18 @@ public class Modal : StatelessComponent
                     ClassName = contentStyle,
                     OnClick = () => {}, // Stop propagation (prevent closing when clicking inside)
                     Children = {
+                        // Close button (absolutely positioned)
+                        new Button {
+                            Text = "✕",
+                            Variant = Variant.Ghost,
+                            ClassName = "absolute right-4 top-4 h-6 w-6 p-0 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-zinc-100 data-[state=open]:text-zinc-500 dark:ring-offset-zinc-950 dark:focus:ring-zinc-300 dark:data-[state=open]:bg-zinc-800 dark:data-[state=open]:text-zinc-400",
+                            OnClick = () => OnClose?.Invoke()
+                        },
                         // Header
-                        new Row {
-                            ClassName = headerClass,
+                        new Box {
+                            ClassName = $"{headerClass} pr-9".Trim(), // pr-9 to avoid overlap with absolute close button
                             Children = {
-                                new Heading(Title ?? "Modal", 3) { ClassName = titleClass },
-                                new Button {
-                                    Text = "✕",
-                                    Variant = Variant.Ghost,
-                                    ClassName = "h-6 w-6 p-0", // Close button small
-                                    OnClick = () => OnClose?.Invoke()
-                                }
+                                new Heading(Title ?? "Modal", 3) { ClassName = titleClass }
                             }
                         },
                         // Body

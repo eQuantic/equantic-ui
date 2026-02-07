@@ -10,20 +10,31 @@ namespace eQuantic.UI.Compiler.Services;
 /// </summary>
 public class SourceMapGenerator
 {
-    public string Generate(string generatedFileName, string sourceFileName, List<TypeScriptCodeBuilder.SourceMapping> mappings)
+    public string Generate(string generatedFileName, string sourceFileName, List<TypeScriptCodeBuilder.SourceMapping> mappings, string? sourceContent = null)
     {
         var sb = new StringBuilder();
         sb.Append("{");
         sb.Append("\"version\": 3,");
         sb.Append($"\"file\": \"{generatedFileName}\",");
         sb.Append($"\"sourceRoot\": \"\",");
-        sb.Append($"\"sources\": [\"{sourceFileName}\"],");
+        sb.Append($"\"sources\": [\"{sourceFileName.Replace("\\", "/")}\"],");
+        
+        if (sourceContent != null)
+        {
+            sb.Append($"\"sourcesContent\": [\"{EscapeJson(sourceContent)}\"],");
+        }
+        
         sb.Append("\"names\": [],");
         sb.Append("\"mappings\": \"");
         sb.Append(EncodeMappings(mappings));
         sb.Append("\"");
         sb.Append("}");
         return sb.ToString();
+    }
+
+    private string EscapeJson(string s)
+    {
+        return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
     }
 
     private string EncodeMappings(List<TypeScriptCodeBuilder.SourceMapping> mappings)

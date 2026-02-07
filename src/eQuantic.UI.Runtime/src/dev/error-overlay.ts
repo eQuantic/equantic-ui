@@ -16,8 +16,7 @@ class ErrorOverlay {
   private errors: ErrorInfo[] = [];
 
   show(error: ErrorInfo) {
-    if (!isDev) return; // Only in development
-
+    if (!isDev) return;
     this.errors.push(error);
     this.render();
   }
@@ -47,84 +46,200 @@ class ErrorOverlay {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.9);
-          color: #fff;
+          background: rgba(10, 10, 12, 0.8);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          color: #f8fafc;
           z-index: 999999;
           display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Inter', -apple-system, system-ui, sans-serif;
+          padding: 40px;
+        }
+
+        #equantic-error-overlay .card {
+          background: rgba(30, 30, 35, 0.7);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 20px;
+          width: 100%;
+          max-width: 900px;
+          max-height: 90vh;
+          display: flex;
           flex-direction: column;
-          font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-          font-size: 14px;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          overflow: hidden;
+          animation: eq-fade-in 0.3s ease-out;
+        }
+
+        @keyframes eq-fade-in {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
         #equantic-error-overlay .header {
-          background: #e53e3e;
-          padding: 20px 30px;
-          font-size: 18px;
-          font-weight: bold;
+          padding: 24px 32px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
           display: flex;
           justify-content: space-between;
           align-items: center;
+          background: rgba(229, 62, 62, 0.1);
         }
 
-        #equantic-error-overlay .close {
-          background: rgba(255, 255, 255, 0.2);
-          border: none;
-          color: white;
+        #equantic-error-overlay .header-title {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-weight: 700;
+          font-size: 18px;
+          color: #feb2b2;
+        }
+
+        #equantic-error-overlay .header-title i {
+            font-style: normal;
+            background: #e53e3e;
+            color: white;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        #equantic-error-overlay .close-btn {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: #cbd5e1;
           padding: 8px 16px;
-          border-radius: 4px;
+          border-radius: 8px;
           cursor: pointer;
-          font-size: 14px;
+          font-size: 13px;
+          font-weight: 500;
+          transition: all 0.2s;
         }
 
-        #equantic-error-overlay .close:hover {
-          background: rgba(255, 255, 255, 0.3);
+        #equantic-error-overlay .close-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
         }
 
         #equantic-error-overlay .content {
           flex: 1;
           overflow: auto;
-          padding: 30px;
+          padding: 32px;
         }
 
-        #equantic-error-overlay .message {
-          font-size: 16px;
-          margin-bottom: 20px;
-          line-height: 1.6;
-        }
-
-        #equantic-error-overlay .stack {
-          background: rgba(255, 255, 255, 0.05);
-          border-left: 3px solid #e53e3e;
-          padding: 15px;
-          overflow-x: auto;
-          white-space: pre-wrap;
+        #equantic-error-overlay .error-message {
+          font-size: 20px;
+          font-weight: 600;
+          margin-bottom: 24px;
+          line-height: 1.4;
+          color: #fff;
           word-break: break-word;
-          font-size: 13px;
-          line-height: 1.5;
         }
+
+        #equantic-error-overlay .section-label {
+          text-transform: uppercase;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          color: #94a3b8;
+          margin-bottom: 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        #equantic-error-overlay .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #equantic-error-overlay .code-block {
+          background: #0f172a;
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 24px;
+          font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
+          font-size: 13px;
+          line-height: 1.6;
+          overflow-x: auto;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        #equantic-error-overlay .stack-trace {
+          color: #94a3b8;
+          font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
+          font-size: 12px;
+          line-height: 1.6;
+          white-space: pre-wrap;
+          word-break: break-all;
+        }
+
+        #equantic-error-overlay .stack-line {
+            display: block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+        }
+
+        #equantic-error-overlay .stack-line:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #cbd5e1;
+        }
+
+        #equantic-error-overlay .stack-file { color: #60a5fa; font-weight: 500; }
+        #equantic-error-overlay .stack-pos { color: #f472b6; }
+
+        /* Syntax Highlighting */
+        .eq-hl-keyword { color: #c678dd; }
+        .eq-hl-string { color: #98c379; }
+        .eq-hl-number { color: #d19a66; }
+        .eq-hl-comment { color: #5c6370; font-style: italic; }
+        .eq-hl-func { color: #61afef; }
+        .eq-hl-attr { color: #e06c75; }
 
         #equantic-error-overlay .footer {
-          background: rgba(255, 255, 255, 0.05);
-          padding: 15px 30px;
+          padding: 16px 32px;
+          background: rgba(0, 0, 0, 0.2);
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
           font-size: 12px;
-          color: rgba(255, 255, 255, 0.6);
+          color: #64748b;
+          display: flex;
+          justify-content: center;
         }
       </style>
 
-      <div class="header">
-        <span>⚠️ Build Error</span>
-        <button class="close" onclick="document.getElementById('equantic-error-overlay').remove()">
-          Close (Esc)
-        </button>
-      </div>
+      <div class="card">
+        <div class="header">
+          <div class="header-title">
+            <i>!</i>
+            <span>Build Error</span>
+          </div>
+          <button class="close-btn" onclick="document.getElementById('equantic-error-overlay').remove()">
+            Dismiss (Esc)
+          </button>
+        </div>
 
-      <div class="content">
-        <div class="message">${this.escapeHtml(error.message)}</div>
-        ${error.stack ? `<div class="stack">${this.escapeHtml(error.stack)}</div>` : ''}
-      </div>
+        <div class="content">
+          <div class="error-message">${this.escapeHtml(error.message)}</div>
+          
+          <div class="section-label">Source Context</div>
+          <div class="code-block">${this.highlightCode(error.stack || '')}</div>
 
-      <div class="footer">
-        This error overlay only appears in development. Fix the error to continue.
+          ${error.stack ? `
+            <div class="section-label">Call Stack</div>
+            <div class="stack-trace">${this.formatStack(error.stack)}</div>
+          ` : ''}
+        </div>
+
+        <div class="footer">
+          Dev Mode Overlay &bull; Fix the error above to resume.
+        </div>
       </div>
     `;
 
@@ -136,6 +251,49 @@ class ErrorOverlay {
       }
     };
     document.addEventListener('keydown', closeHandler);
+  }
+
+  private highlightCode(stack: string): string {
+    const lines = stack.split('\n');
+    const firstLine = lines[0] || '';
+    
+    // If it looks like a stack trace line, don't try to highlight as code
+    if (firstLine.trim().startsWith('at ')) {
+        return this.escapeHtml(firstLine);
+    }
+
+    // Basic regex highlighter
+    let highlighted = this.escapeHtml(firstLine);
+    
+    // Keywords
+    const keywords = ['function', 'class', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'return', 'async', 'await', 'import', 'export', 'public', 'private', 'protected', 'static', 'readonly', 'new', 'this', 'throw', 'try', 'catch', 'finally'];
+    const kwRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+    highlighted = highlighted.replace(kwRegex, '<span class="eq-hl-keyword">$1</span>');
+
+    // Strings
+    highlighted = highlighted.replace(/(["'`].*?["'`])/g, '<span class="eq-hl-string">$1</span>');
+
+    // Numbers
+    highlighted = highlighted.replace(/\b(\d+)\b/g, '<span class="eq-hl-number">$1</span>');
+
+    // Comments
+    highlighted = highlighted.replace(/(\/\/.*$)/g, '<span class="eq-hl-comment">$1</span>');
+
+    return highlighted;
+  }
+
+  private formatStack(stack: string): string {
+      return stack.split('\n')
+          .filter(line => line.trim().startsWith('at'))
+          .map(line => {
+              const match = line.match(/(at\s+)?(.*?)\s+\((.*?):(\d+):(\d+)\)/) || line.match(/(at\s+)?(.*?):(.*?):(\d+):(\d+)/);
+              if (match) {
+                  const [,, func, file, lineNum, col] = match;
+                  return `<span class="stack-line">at <span class="eq-hl-func">${this.escapeHtml(func)}</span> (<span class="stack-file">${this.escapeHtml(file)}</span>:<span class="stack-pos">${lineNum}</span>:<span class="stack-pos">${col}</span>)</span>`;
+              }
+              return `<span class="stack-line">${this.escapeHtml(line)}</span>`;
+          })
+          .join('');
   }
 
   private escapeHtml(text: string): string {

@@ -1,5 +1,6 @@
 // CLI entry point for eQuantic.UI Compiler
 using System.Diagnostics;
+using System.Text;
 using eQuantic.UI.Compiler;
 using eQuantic.UI.Compiler.Services;
 using Microsoft.CodeAnalysis;
@@ -217,6 +218,13 @@ void CompileAndBundle()
                         var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
                         File.WriteAllText(tsPath, result.TypeScript);
                         
+                        if (!string.IsNullOrEmpty(result.SourceMap))
+                        {
+                            var mapPath = tsPath + ".map";
+                            File.WriteAllText(mapPath, result.SourceMap);
+                            File.AppendAllText(tsPath, $"\n//# sourceMappingURL={result.ComponentName}.ts.map");
+                        }
+                        
                         var relativePath = Path.GetRelativePath(dir, file);
                         // Entry points are only from the primary source directory (the first one)
                         if (dir == sourceDirs[0] && (relativePath.StartsWith("Pages") || !relativePath.Contains(Path.DirectorySeparatorChar)))
@@ -279,6 +287,50 @@ void CompileAndBundle()
                 Console.Error.WriteLine("❌ Bun compilation failed:");
                 Console.Error.WriteLine(error);
                 return;
+            }
+
+            // Post-process source maps to merge C# -> TS and TS -> JS
+            var jsMapFiles = Directory.GetFiles(outputDir, "*.js.map", SearchOption.AllDirectories);
+            var mergeMapsScript = Path.Combine(AppContext.BaseDirectory, "Scripts", "merge-maps.js");
+
+            if (File.Exists(mergeMapsScript))
+            {
+                foreach (var mapFile in jsMapFiles)
+                {
+                    var nodePath = "node";
+                    var mergeProcess = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = nodePath,
+                            Arguments = $"\"{mergeMapsScript}\" \"{mapFile}\"",
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+                    
+                    try 
+                    {
+                        mergeProcess.Start();
+                    }
+                    catch
+                    {
+                        mergeProcess.StartInfo.FileName = bunPath!;
+                        mergeProcess.StartInfo.Arguments = $"run \"{mergeMapsScript}\" \"{mapFile}\"";
+                        mergeProcess.Start();
+                    }
+                    
+                    mergeProcess.WaitForExit();
+
+                    if (mergeProcess.ExitCode != 0)
+                    {
+                        var mergeError = mergeProcess.StandardError.ReadToEnd();
+                        Console.Error.WriteLine($"⚠️ Map merging failed for {Path.GetFileName(mapFile)}:");
+                        Console.Error.WriteLine(mergeError);
+                    }
+                }
             }
         }
 

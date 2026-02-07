@@ -119,12 +119,11 @@ public class ComponentCompiler
             result.TypeScript = _tsEmitter.Emit(component, semanticModel);
             
             // Generate Source Map
-            // I need to access the mappings from the emitter's builder
-            // I'll add a way to get mappings from TypeScriptEmitter.
             var mappings = _tsEmitter.GetLastMappings();
-            if (mappings.Any())
+            if (mappings.Any() && component.SyntaxTree != null)
             {
-                result.SourceMap = _sourceMapGenerator.Generate($"{component.Name}.js", component.SourcePath, mappings);
+                var sourceContent = component.SyntaxTree.GetText().ToString();
+                result.SourceMap = _sourceMapGenerator.Generate($"{component.Name}.ts", component.SourcePath, mappings, sourceContent);
             }
             
             // JavaScript generation is now handled by Bun in the build pipeline

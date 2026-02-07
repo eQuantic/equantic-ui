@@ -72,6 +72,47 @@ window.__registerTheme = function() {
             description: themeData.alert.description,
             icon: themeData.alert.icon,
             getVariant: (v) => themeData.alert.variants[resolveKey(v, variantMap) || 'default'] || themeData.alert.variants.default
+        },
+        dialog: {
+            overlay: themeData.dialog.overlay,
+            content: themeData.dialog.content,
+            header: themeData.dialog.header,
+            title: themeData.dialog.title,
+            description: themeData.dialog.description,
+            footer: themeData.dialog.footer
+        },
+        table: {
+            wrapper: themeData.table.wrapper,
+            table: themeData.table.table,
+            header: themeData.table.header,
+            row: themeData.table.row,
+            headCell: themeData.table.headCell,
+            cell: themeData.table.cell
+        },
+        tabs: {
+            list: themeData.tabs.list,
+            trigger: themeData.tabs.trigger,
+            content: themeData.tabs.content,
+            activeTrigger: themeData.tabs.activeTrigger,
+            inactiveTrigger: themeData.tabs.inactiveTrigger
+        },
+        avatar: {
+            root: themeData.avatar.root,
+            image: themeData.avatar.image,
+            fallback: themeData.avatar.fallback,
+            getSize: (s) => themeData.avatar.sizes[resolveKey(s, sizeMap) || 'medium'] || themeData.avatar.sizes.medium
+        },
+        switch: {
+            root: themeData.switch.root,
+            input: themeData.switch.input,
+            thumb: themeData.switch.thumb,
+            track: themeData.switch.track
+        },
+        select: {
+            trigger: themeData.select.trigger,
+            content: themeData.select.content,
+            item: themeData.select.item,
+            base: themeData.select.base
         }
     };
 

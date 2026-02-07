@@ -231,6 +231,59 @@ public static class TailwindExtensions
                     ["warning"] = theme.Alert.GetVariant(Core.Theme.Types.Variant.Warning),
                     ["info"] = theme.Alert.GetVariant(Core.Theme.Types.Variant.Info)
                 }
+            },
+            dialog = new
+            {
+                overlay = theme.Dialog.Overlay,
+                content = theme.Dialog.Content,
+                header = theme.Dialog.Header,
+                title = theme.Dialog.Title,
+                description = theme.Dialog.Description,
+                footer = theme.Dialog.Footer
+            },
+            table = new
+            {
+                wrapper = theme.Table.Wrapper,
+                table = theme.Table.Table,
+                header = theme.Table.Header,
+                row = theme.Table.Row,
+                headCell = theme.Table.HeadCell,
+                cell = theme.Table.Cell
+            },
+            tabs = new
+            {
+                list = theme.Tabs.List,
+                trigger = theme.Tabs.Trigger,
+                content = theme.Tabs.Content,
+                activeTrigger = theme.Tabs.ActiveTrigger,
+                inactiveTrigger = theme.Tabs.InactiveTrigger
+            },
+            avatar = new
+            {
+                root = theme.Avatar.Root,
+                image = theme.Avatar.Image,
+                fallback = theme.Avatar.Fallback,
+                sizes = new Dictionary<string, string>
+                {
+                    ["small"] = theme.Avatar.GetSize(Core.Theme.Types.Size.Small),
+                    ["medium"] = theme.Avatar.GetSize(Core.Theme.Types.Size.Medium),
+                    ["large"] = theme.Avatar.GetSize(Core.Theme.Types.Size.Large),
+                    ["xlarge"] = theme.Avatar.GetSize(Core.Theme.Types.Size.XLarge)
+                }
+            },
+            @switch = new
+            {
+                root = theme.Switch.Root,
+                input = theme.Switch.Input,
+                thumb = theme.Switch.Thumb,
+                track = theme.Switch.Track
+            },
+            select = new
+            {
+                trigger = theme.Select.Trigger,
+                content = theme.Select.Content,
+                item = theme.Select.Item,
+                @base = theme.Select.Base
             }
         };
 

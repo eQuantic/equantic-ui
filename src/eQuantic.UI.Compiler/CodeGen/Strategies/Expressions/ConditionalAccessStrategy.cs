@@ -39,7 +39,9 @@ public class ConditionalAccessStrategy : IConversionStrategy
 
             // ?.Method() -> ?.method()
             InvocationExpressionSyntax invocation when invocation.Expression is MemberBindingExpressionSyntax mb =>
-                $"?.{ToCamelCase(mb.Name.Identifier.Text)}({ConvertArguments(invocation.ArgumentList, context)})",
+                mb.Name.Identifier.Text == "Invoke" 
+                    ? $"?.({ConvertArguments(invocation.ArgumentList, context)})"
+                    : $"?.{ToCamelCase(mb.Name.Identifier.Text)}({ConvertArguments(invocation.ArgumentList, context)})",
 
             // Nested conditional access: a?.b?.c - The nested expression (b) is a MemberBindingExpression
             ConditionalAccessExpressionSyntax nested when nested.Expression is MemberBindingExpressionSyntax nestedMember =>

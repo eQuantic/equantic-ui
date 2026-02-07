@@ -256,6 +256,7 @@ public class TodoListState : ComponentState<TodoList>
                     Children = {
                         new Checkbox {
                             Checked = todo.IsCompleted,
+                            IsNative = true,
                             ClassName = checkboxClasses,
                             OnChange = _ => { HandleToggle(todo.Id); }
                         },

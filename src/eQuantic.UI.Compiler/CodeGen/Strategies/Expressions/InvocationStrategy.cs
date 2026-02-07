@@ -63,6 +63,12 @@ public class InvocationStrategy : IConversionStrategy
         {
             var caller = context.Converter.ConvertExpression(genAccess.Expression);
             
+            // Handle delegate/action Invoke() calls
+            if (methodName == "Invoke")
+            {
+                return $"{caller}({args})";
+            }
+
             // Local method call (this.Method)
             bool isLocal = false;
             if (symbol != null && !symbol.IsStatic)
