@@ -1,0 +1,58 @@
+/*
+ * Material Design 3 - Avatar Component
+ */
+
+/* ========================================
+ * BASE AVATAR
+ * ======================================== */
+.md-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--md-sys-shape-corner-full);
+  overflow: hidden;
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-family: var(--md-sys-typescale-font-family);
+  font-size: var(--md-sys-typescale-title-medium-font-size);
+  font-weight: var(--md-sys-typescale-title-medium-font-weight);
+}
+
+/* ========================================
+ * IMAGE
+ * ======================================== */
+.md-avatar__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ========================================
+ * FALLBACK
+ * ======================================== */
+.md-avatar__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-transform: uppercase;
+}
+
+/* ========================================
+ * SIZES
+ * ======================================== */
+.md-avatar--small {
+  width: 32px;
+  height: 32px;
+  font-size: var(--md-sys-typescale-label-large-font-size);
+}
+
+.md-avatar--large {
+  width: 56px;
+  height: 56px;
+  font-size: var(--md-sys-typescale-headline-small-font-size);
+}

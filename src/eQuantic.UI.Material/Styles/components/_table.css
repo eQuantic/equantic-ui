@@ -1,0 +1,87 @@
+/*
+ * Material Design 3 - Data Table Component
+ * https://m3.material.io/components/data-tables/overview
+ */
+
+/* ========================================
+ * TABLE WRAPPER
+ * ======================================== */
+.md-data-table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--md-sys-shape-corner-medium);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* ========================================
+ * TABLE
+ * ======================================== */
+.md-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--md-sys-color-surface);
+}
+
+/* ========================================
+ * HEADER
+ * ======================================== */
+.md-data-table__header {
+  background-color: var(--md-sys-color-surface-container);
+}
+
+.md-data-table__head-cell {
+  padding: 14px 16px;
+  text-align: left;
+  font-family: var(--md-sys-typescale-font-family);
+  font-size: var(--md-sys-typescale-title-small-font-size);
+  font-weight: var(--md-sys-typescale-title-small-font-weight);
+  line-height: var(--md-sys-typescale-title-small-line-height);
+  letter-spacing: var(--md-sys-typescale-title-small-letter-spacing);
+  color: var(--md-sys-color-on-surface-variant);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* ========================================
+ * ROW
+ * ======================================== */
+.md-data-table__row {
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.md-data-table__row:hover {
+  background-color: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+}
+
+.md-data-table__row:not(:last-child) {
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* ========================================
+ * CELL
+ * ======================================== */
+.md-data-table__cell {
+  padding: 14px 16px;
+  font-family: var(--md-sys-typescale-font-family);
+  font-size: var(--md-sys-typescale-body-medium-font-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-letter-spacing);
+  color: var(--md-sys-color-on-surface);
+}
+
+/* ========================================
+ * SELECTED ROW
+ * ======================================== */
+.md-data-table__row--selected {
+  background-color: var(--md-sys-color-secondary-container);
+}
+
+/* ========================================
+ * SORTABLE HEADER
+ * ======================================== */
+.md-data-table__head-cell--sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.md-data-table__head-cell--sortable:hover {
+  background-color: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+}

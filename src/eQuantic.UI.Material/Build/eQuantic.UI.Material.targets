@@ -1,0 +1,7 @@
+<Project>
+    <Target Name="MaterialBuildTarget" BeforeTargets="BeforeBuild">
+        <!-- Material Design 3 build targets will be added here -->
+        <Message Text="eQuantic.UI.Material: Processing Material Design 3 styles..."
+            Importance="high" />
+    </Target>
+</Project>
