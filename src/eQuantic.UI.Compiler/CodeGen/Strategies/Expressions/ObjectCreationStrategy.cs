@@ -57,15 +57,13 @@ public class ObjectCreationStrategy : IConversionStrategy
             }
         }
 
-        // Special handling for Collections
-        if (typeName.StartsWith("List<") || typeName.StartsWith("IEnumerable<"))
+        // Special handling for Collections (handle both short and fully-qualified names)
+        if (typeName.StartsWith("List<") || typeName.Contains(".List<")
+            || typeName.StartsWith("IEnumerable<") || typeName.Contains(".IEnumerable<"))
         {
-            // If argument is collection initializer { ... }, it's converted to [ ... ] by ConvertInitializer if it's a CollectionInitializer
-            // But if ConvertInitializer returns { ... } format, we might need adjustment? 
-            // Actually BaseConverter.ConvertInitializer handles Array/Collection initializers by returning [ ... ].
             return string.IsNullOrEmpty(arguments) || arguments == "{}" ? "[]" : arguments;
         }
-        if (typeName.StartsWith("Dictionary<"))
+        if (typeName.StartsWith("Dictionary<") || typeName.Contains(".Dictionary<"))
         {
             return string.IsNullOrEmpty(arguments) || arguments == "[]" ? "{}" : arguments;
         }

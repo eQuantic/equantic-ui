@@ -354,6 +354,8 @@ public class TypeScriptEmitter
         {
             var cleanType = type.Trim().Replace("?", "");
             if (cleanType.Contains("<")) cleanType = cleanType.Split('<')[0];
+            // Extract simple name from fully-qualified names (e.g., "eQuantic.UI.Components.Navigation.Breadcrumb" → "Breadcrumb")
+            if (cleanType.Contains('.')) cleanType = cleanType.Substring(cleanType.LastIndexOf('.') + 1);
 
             if (string.IsNullOrEmpty(cleanType) || cleanType == "string" || cleanType == "number" || cleanType == "boolean" || cleanType == "any")
                 continue;
@@ -392,10 +394,14 @@ public class TypeScriptEmitter
         var importsBuilder = new TypeScriptCodeBuilder();
         importsBuilder.Import(coreImports, "@equantic/runtime");
 
-        // Import user components
+        // Import user components (only those that are actual UI components with generated .ts files)
+        var knownComponents = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
             if (userComp == component.Name) continue;
+            // Skip data/POCO types that aren't UI components (e.g., SelectOption, BreadcrumbItem)
+            if (knownComponents.Count > 0 && !knownComponents.Contains(userComp))
+                continue;
             importsBuilder.Import(new[] { userComp }, $"./{userComp}");
         }
 
@@ -454,6 +460,8 @@ public class TypeScriptEmitter
         {
              var typeName = creation.Type.ToString();
              if (typeName.Contains("<")) typeName = typeName.Split('<')[0];
+             // Extract simple name from fully-qualified names (e.g., "System.Collections.Generic.List" → "List")
+             if (typeName.Contains('.')) typeName = typeName.Substring(typeName.LastIndexOf('.') + 1);
              types.Add(typeName);
         }
 

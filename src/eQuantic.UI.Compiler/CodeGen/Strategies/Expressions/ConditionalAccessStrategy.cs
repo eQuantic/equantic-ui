@@ -39,9 +39,17 @@ public class ConditionalAccessStrategy : IConversionStrategy
 
             // ?.Method() -> ?.method()
             InvocationExpressionSyntax invocation when invocation.Expression is MemberBindingExpressionSyntax mb =>
-                mb.Name.Identifier.Text == "Invoke" 
+                mb.Name.Identifier.Text == "Invoke"
                     ? $"?.({ConvertArguments(invocation.ArgumentList, context)})"
                     : $"?.{ToCamelCase(mb.Name.Identifier.Text)}({ConvertArguments(invocation.ArgumentList, context)})",
+
+            // ?.member.property -> ?.member.property (e.g., theme?.Alert.Title)
+            MemberAccessExpressionSyntax memberAccess when memberAccess.Expression is MemberBindingExpressionSyntax binding =>
+                $"?.{ToCamelCase(binding.Name.Identifier.Text)}.{ToCamelCase(memberAccess.Name.Identifier.Text)}",
+
+            // ?.member.property.deeper -> chain after conditional (recursive)
+            MemberAccessExpressionSyntax memberAccess =>
+                $"?.{ConvertMemberChain(memberAccess, context)}",
 
             // Nested conditional access: a?.b?.c - The nested expression (b) is a MemberBindingExpression
             ConditionalAccessExpressionSyntax nested when nested.Expression is MemberBindingExpressionSyntax nestedMember =>
@@ -53,6 +61,19 @@ public class ConditionalAccessStrategy : IConversionStrategy
 
             // Fallback
             _ => $"?.{context.Converter.ConvertExpression(whenNotNull)}"
+        };
+    }
+
+    private string ConvertMemberChain(MemberAccessExpressionSyntax memberAccess, ConversionContext context)
+    {
+        var name = ToCamelCase(memberAccess.Name.Identifier.Text);
+        return memberAccess.Expression switch
+        {
+            MemberBindingExpressionSyntax binding =>
+                $"{ToCamelCase(binding.Name.Identifier.Text)}.{name}",
+            MemberAccessExpressionSyntax nested =>
+                $"{ConvertMemberChain(nested, context)}.{name}",
+            _ => $"{context.Converter.ConvertExpression(memberAccess.Expression)}.{name}"
         };
     }
 
