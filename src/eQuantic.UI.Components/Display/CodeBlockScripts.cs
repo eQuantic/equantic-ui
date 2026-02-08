@@ -17,6 +17,7 @@ public class CodeBlockScripts : StatelessComponent
                     CustomAttributes = new Dictionary<string, string>
                     {
                         ["rel"] = "stylesheet",
+                        ["id"] = "prism-theme",
                         ["href"] = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
                     }
                 },
@@ -40,6 +41,30 @@ public class CodeBlockScripts : StatelessComponent
                 {
                     TagName = "script",
                     InnerText = """
+                        window.updatePrismTheme = function() {
+                            const isDark = document.documentElement.classList.contains('dark');
+                            const link = document.getElementById('prism-theme');
+                            if (link) {
+                                link.href = isDark 
+                                    ? 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css'
+                                    : 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css';
+                            }
+                        }
+
+                        // Initialize theme
+                        window.updatePrismTheme();
+
+                        // Watch for theme changes
+                        const observer = new MutationObserver((mutations) => {
+                            mutations.forEach((mutation) => {
+                                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                                    window.updatePrismTheme();
+                                }
+                            });
+                        });
+                        
+                        observer.observe(document.documentElement, { attributes: true });
+
                         window.copyToClipboard = function(id) {
                             const code = document.getElementById(id).innerText;
                             navigator.clipboard.writeText(code).then(() => {

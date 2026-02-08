@@ -2,6 +2,7 @@ using eQuantic.UI.Core;
 using eQuantic.UI.Core.Theme.Types;
 using eQuantic.UI.Components;
 using eQuantic.UI.Components.Layout;
+using eQuantic.UI.Components.Display;
 using eQuantic.UI.Components.Overlays;
 using eQuantic.UI.Components.Overlays.Drawer;
 using eQuantic.UI.Components.Overlays.ContextMenu;
@@ -72,7 +73,33 @@ public class OverlaysPage : StatelessComponent
                                         }
                                     }
                                 }
+                            },
+                            """
+                            new Drawer {
+                                Side = DrawerSide.Bottom,
+                                Children = {
+                                    new DrawerTrigger {
+                                        Children = { new Button { Text = "Open", Variant = Variant.Outline } }
+                                    },
+                                    new DrawerContent {
+                                        Children = {
+                                            new DrawerHeader {
+                                                Children = {
+                                                    new DrawerTitle { Text = "Title" },
+                                                    new DrawerDescription { Text = "Description" }
+                                                }
+                                            },
+                                            new DrawerFooter {
+                                                Children = {
+                                                    new Button { Text = "Save", Variant = Variant.Primary },
+                                                    new DrawerClose { Children = { new Button { Text = "Cancel" } } }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
+                            """
                         ),
 
                         // Drawer - Right
@@ -188,7 +215,17 @@ public class OverlaysPage : StatelessComponent
                                         }
                                     }
                                 }
+                            },
+                            """
+                            new ContextMenuTrigger { Children = { new Text("Right click here") } }
+                            new ContextMenuContent {
+                                Children = {
+                                    new ContextMenuItem { Children = { new Text("Copy") }, Shortcut = "⌘C" },
+                                    new ContextMenuSeparator(),
+                                    new ContextMenuItem { Children = { new Text("Delete") } }
+                                }
                             }
+                            """
                         ),
 
                         // Modal (static preview since it requires state)
@@ -227,9 +264,9 @@ public class OverlaysPage : StatelessComponent
         };
     }
 
-    private static IComponent CreateSection(string title, string description, IComponent content)
+    private static IComponent CreateSection(string title, string description, IComponent content, string? code = null)
     {
-        return new Box {
+        var section = new Box {
             ClassName = "space-y-3",
             Children = {
                 new Box {
@@ -245,5 +282,12 @@ public class OverlaysPage : StatelessComponent
                 }
             }
         };
+
+        if (code != null)
+        {
+            section.Children.Add(new CodeBlock(code.Trim(), "csharp") { Collapsible = true });
+        }
+
+        return section;
     }
 }

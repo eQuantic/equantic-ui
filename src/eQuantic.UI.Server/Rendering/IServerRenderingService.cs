@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
+using eQuantic.UI.Core.Assets;
 using eQuantic.UI.Core.Metadata;
 
 namespace eQuantic.UI.Server.Rendering;
@@ -53,13 +54,14 @@ public interface IServerRenderingService
 /// </summary>
 public sealed class ServerRenderResult
 {
-    private ServerRenderResult(bool success, string? html, MetadataCollection? metadata, string? error, string? serializedState)
+    private ServerRenderResult(bool success, string? html, MetadataCollection? metadata, string? error, string? serializedState, AssetCollection? assets = null)
     {
         Success = success;
         Html = html;
         Metadata = metadata;
         Error = error;
         SerializedState = serializedState;
+        Assets = assets;
     }
 
     /// <summary>
@@ -88,10 +90,15 @@ public sealed class ServerRenderResult
     public string? SerializedState { get; }
 
     /// <summary>
+    /// Asset dependencies collected from components during rendering.
+    /// </summary>
+    public AssetCollection? Assets { get; }
+
+    /// <summary>
     /// Creates a successful render result.
     /// </summary>
-    public static ServerRenderResult Ok(string html, MetadataCollection? metadata = null, string? serializedState = null) =>
-        new(true, html, metadata, null, serializedState);
+    public static ServerRenderResult Ok(string html, MetadataCollection? metadata = null, string? serializedState = null, AssetCollection? assets = null) =>
+        new(true, html, metadata, null, serializedState, assets);
 
     /// <summary>
     /// Creates a failed render result.

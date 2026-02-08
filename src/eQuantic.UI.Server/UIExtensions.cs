@@ -279,6 +279,16 @@ public static class UIExtensions
                             foreach(var tag in result.Metadata.Tags)
                                 metadata.AddOrUpdate(tag);
                         }
+
+                        // Merge asset dependencies from components
+                        if (result.Assets != null)
+                        {
+                            foreach (var tag in result.Assets.RenderTags())
+                            {
+                                if (!shell.HeadTags.Contains(tag))
+                                    shell.HeadTags.Add(tag);
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)

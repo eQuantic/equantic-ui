@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Assets;
 using eQuantic.UI.Core.Metadata;
 using eQuantic.UI.Core.Rendering;
 using Microsoft.AspNetCore.Http;
@@ -132,6 +133,10 @@ public class ServerRenderingService : IServerRenderingService
 
             try
             {
+                // Collect asset dependencies before rendering
+                var assets = new AssetCollection();
+                CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
+
                 // Render the component to HTML
                 var html = RenderComponent(component);
 
@@ -152,7 +157,7 @@ public class ServerRenderingService : IServerRenderingService
                 _logger.LogDebug("SSR completed for page: {PageType}, HTML length: {Length}",
                     pageTypeName, html.Length);
 
-                return ServerRenderResult.Ok(html, metadata, serializedState);
+                return ServerRenderResult.Ok(html, metadata, serializedState, assets.HasAssets ? assets : null);
             }
             finally
             {
@@ -185,6 +190,52 @@ public class ServerRenderingService : IServerRenderingService
 
         var pageAttr = pageType.GetCustomAttributes<PageAttribute>().FirstOrDefault();
         return pageAttr?.DisableSsr != true;
+    }
+
+    /// <summary>
+    /// Recursively walks the component tree to collect asset dependencies.
+    /// </summary>
+    private void CollectAssets(IComponent component, AssetCollection assets, IServiceProvider services, HashSet<Type> visited)
+    {
+        var type = component.GetType();
+
+        // Check IRequireAssets and DI providers (only once per type for dedup)
+        if (visited.Add(type))
+        {
+            if (component is IRequireAssets requireAssets)
+            {
+                requireAssets.ConfigureAssets(new AssetBuilder(assets));
+            }
+
+            // Check DI for IComponentAssetProvider<T>
+            var providerType = typeof(IComponentAssetProvider<>).MakeGenericType(type);
+            var provider = services.GetService(providerType);
+            if (provider != null)
+            {
+                var method = providerType.GetMethod("ConfigureAssets");
+                method?.Invoke(provider, new object[] { new AssetBuilder(assets) });
+            }
+        }
+
+        // Recurse into children
+        foreach (var child in component.Children)
+        {
+            CollectAssets(child, assets, services, visited);
+        }
+
+        // For StatelessComponent, also walk Build() result to find nested components
+        if (component is StatelessComponent stateless)
+        {
+            try
+            {
+                var built = stateless.Build(new RenderContext());
+                CollectAssets(built, assets, services, visited);
+            }
+            catch
+            {
+                // Build may fail for components requiring DI - skip gracefully
+            }
+        }
     }
 
     private IComponent CreateComponentInstance(Type componentType)

@@ -258,7 +258,7 @@ public class InputsPage : StatelessComponent
 
         if (code != null)
         {
-            section.Children.Add(new CodeBlock(code.Trim(), "csharp"));
+            section.Children.Add(new CodeBlock(code.Trim(), "csharp") { Collapsible = true });
         }
 
         return section;

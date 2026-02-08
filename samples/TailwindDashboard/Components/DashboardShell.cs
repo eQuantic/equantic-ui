@@ -20,7 +20,7 @@ public class DashboardShell : StatelessComponent
             Children = {
                 // Page header with title
                 new Box {
-                    ClassName = "flex-1 p-8 pt-6",
+                    ClassName = "flex-1 pt-6",
                     Children = {
                         new Heading(PageTitle ?? "", 1) { ClassName = "text-3xl font-bold tracking-tight text-foreground" },
                         new CodeBlockScripts()
@@ -70,8 +70,11 @@ public class DashboardShell : StatelessComponent
                                                 },
                                                 new DynamicElement {
                                                     TagName = "input",
-                                                    ClassName = "w-full h-9 rounded-lg border border-border/60 bg-background/50 pl-12 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring transition-colors",
-                                                    CustomAttributes = { ["placeholder"] = "Search components...", ["type"] = "search" }
+                                                    CustomAttributes = { 
+                                                        ["class"] = "w-full h-9 rounded-lg border border-border/60 bg-background/50 pl-12 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring transition-colors",
+                                                        ["placeholder"] = "Search components...", 
+                                                        ["type"] = "search" 
+                                                    }
                                                 }
                                             }
                                         }
@@ -79,14 +82,14 @@ public class DashboardShell : StatelessComponent
                                 },
                                 // Right side
                                 new Box {
-                                    ClassName = "flex items-center gap-2",
+                                    ClassName = "flex items-center gap-2 ml-auto",
                                     Children = {
                                         // Dark/Light mode toggle
                                         new DynamicElement {
                                             TagName = "button",
                                             Id = "theme-toggle",
-                                            ClassName = "inline-flex items-center justify-center rounded-lg h-9 w-9 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
                                             CustomAttributes = {
+                                                ["class"] = "inline-flex items-center justify-center rounded-lg h-9 w-9 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
                                                 ["onclick"] = "document.documentElement.classList.toggle('dark');localStorage.setItem('theme',document.documentElement.classList.contains('dark')?'dark':'light');document.getElementById('icon-sun').classList.toggle('hidden');document.getElementById('icon-moon').classList.toggle('hidden');",
                                                 ["aria-label"] = "Toggle dark mode"
                                             },
@@ -104,9 +107,12 @@ public class DashboardShell : StatelessComponent
                                                 }
                                             }
                                         },
-                                        new Button {
-                                            Variant = Variant.Ghost,
-                                            ClassName = "rounded-lg h-9 w-9 p-0",
+                                        new DynamicElement {
+                                            TagName = "button",
+                                            CustomAttributes = {
+                                                ["class"] = "inline-flex items-center justify-center rounded-lg h-9 w-9 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
+                                                ["aria-label"] = "Notifications"
+                                            },
                                             Children = { LucideIcons.Bell(size: 18, strokeWidth: 1.75) }
                                         },
                                         new Box {

@@ -1,6 +1,7 @@
 using eQuantic.UI.Core;
 using eQuantic.UI.Core.Theme.Types;
 using eQuantic.UI.Components;
+using eQuantic.UI.Components.Display;
 using eQuantic.UI.Components.Layout;
 using TailwindDashboard.Components;
 
@@ -66,7 +67,21 @@ public class LayoutPage : StatelessComponent
                                         }
                                     }
                                 }
+                            },
+                            """
+                            new Grid {
+                                Columns = 3,
+                                Gap = "1rem",
+                                Children = {
+                                    new Box { Children = { new Text("1") } },
+                                    new Box { Children = { new Text("2") } },
+                                    new GridItem {
+                                        ColSpan = 2,
+                                        Children = { new Box { Children = { new Text("Span 2") } } }
+                                    }
+                                }
                             }
+                            """
                         ),
 
                         // Flex
@@ -131,7 +146,16 @@ public class LayoutPage : StatelessComponent
                                         }
                                     }
                                 }
+                            },
+                            """
+                            new Flex {
+                                Direction = FlexDirection.Row,
+                                Gap = "0.5rem",
+                                Wrap = true,
+                                Justify = JustifyContent.SpaceBetween,
+                                Children = { ... }
                             }
+                            """
                         ),
 
                         // Stack / VStack
@@ -142,7 +166,16 @@ public class LayoutPage : StatelessComponent
                                     CreateFlexItem("Item 2"),
                                     CreateFlexItem("Item 3")
                                 }
+                            },
+                            """
+                            new VStack {
+                                Children = {
+                                    new Text("Item 1"),
+                                    new Text("Item 2"),
+                                    new Text("Item 3")
+                                }
                             }
+                            """
                         ),
 
                         // HStack
@@ -267,9 +300,9 @@ public class LayoutPage : StatelessComponent
         };
     }
 
-    private static IComponent CreateSection(string title, string description, IComponent content)
+    private static IComponent CreateSection(string title, string description, IComponent content, string? code = null)
     {
-        return new Box {
+        var section = new Box {
             ClassName = "space-y-3",
             Children = {
                 new Box {
@@ -285,5 +318,12 @@ public class LayoutPage : StatelessComponent
                 }
             }
         };
+
+        if (code != null)
+        {
+            section.Children.Add(new CodeBlock(code.Trim(), "csharp") { Collapsible = true });
+        }
+
+        return section;
     }
 }

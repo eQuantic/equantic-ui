@@ -18,7 +18,14 @@ public class DynamicElement : HtmlElement
 
         if (!string.IsNullOrEmpty(InnerText))
         {
-            children.Insert(0, HtmlNode.Text(InnerText));
+            var isRaw = TagName.Equals("script", StringComparison.OrdinalIgnoreCase) || 
+                       TagName.Equals("style", StringComparison.OrdinalIgnoreCase);
+            
+            children.Insert(0, new HtmlNode 
+            { 
+                Tag = isRaw ? "#raw" : "#text", 
+                TextContent = InnerText 
+            });
         }
 
         return new HtmlNode

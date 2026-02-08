@@ -2,6 +2,7 @@ using eQuantic.UI.Core;
 using eQuantic.UI.Core.Theme.Types;
 using eQuantic.UI.Components;
 using eQuantic.UI.Components.Layout;
+using eQuantic.UI.Components.Display;
 using eQuantic.UI.Components.Surfaces;
 using TailwindDashboard.Components;
 
@@ -32,7 +33,16 @@ public class SurfacesPage : StatelessComponent
                                     CreateDemoCard("Subtle", "A card with muted background tint.", CardVariant.Subtle),
                                     CreateDemoCard("Ghost", "A card with no border or shadow.", CardVariant.Ghost)
                                 }
+                            },
+                            """
+                            new Card {
+                                Variant = CardVariant.Default,
+                                Children = {
+                                    new CardHeader { Children = { new CardTitle { Text = "Title" } } },
+                                    new CardBody { Children = { new Text("Content") } }
+                                }
                             }
+                            """
                         ),
 
                         // Card Shadows
@@ -47,7 +57,11 @@ public class SurfacesPage : StatelessComponent
                                     CreateShadowCard("Large", Shadow.Large),
                                     CreateShadowCard("XLarge", Shadow.XLarge)
                                 }
-                            }
+                            },
+                            """
+                            new Card { Shadow = Shadow.Small }
+                            new Card { Shadow = Shadow.Large }
+                            """
                         ),
 
                         // Compound Components Pattern
@@ -112,7 +126,27 @@ public class SurfacesPage : StatelessComponent
                                         }
                                     }
                                 }
+                            },
+                            """
+                            new Card {
+                                Variant = CardVariant.Default,
+                                Children = {
+                                    new CardHeader {
+                                        Children = {
+                                            new CardTitle { Text = "Create Project" },
+                                            new CardDescription { Text = "Deploy your new project." }
+                                        }
+                                    },
+                                    new CardBody { Children = { new Text("Body content") } },
+                                    new CardFooter {
+                                        Children = {
+                                            new Button { Text = "Cancel", Variant = Variant.Ghost },
+                                            new Button { Text = "Deploy", Variant = Variant.Primary }
+                                        }
+                                    }
+                                }
                             }
+                            """
                         ),
 
                         // Cards with different widths
@@ -201,9 +235,9 @@ public class SurfacesPage : StatelessComponent
         };
     }
 
-    private static IComponent CreateSection(string title, string description, IComponent content)
+    private static IComponent CreateSection(string title, string description, IComponent content, string? code = null)
     {
-        return new Box {
+        var section = new Box {
             ClassName = "space-y-3",
             Children = {
                 new Box {
@@ -219,5 +253,12 @@ public class SurfacesPage : StatelessComponent
                 }
             }
         };
+
+        if (code != null)
+        {
+            section.Children.Add(new CodeBlock(code.Trim(), "csharp") { Collapsible = true });
+        }
+
+        return section;
     }
 }

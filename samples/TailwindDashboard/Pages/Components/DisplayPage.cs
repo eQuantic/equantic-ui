@@ -36,7 +36,13 @@ public class DisplayPage : StatelessComponent
                                     new Badge("Warning") { Variant = Variant.Warning },
                                     new Badge("Info") { Variant = Variant.Info }
                                 }
-                            }
+                            },
+                            """
+                            new Badge("Primary") { Variant = Variant.Primary }
+                            new Badge("Success") { Variant = Variant.Success }
+                            new Badge("Destructive") { Variant = Variant.Destructive }
+                            new Badge("Outline") { Variant = Variant.Outline }
+                            """
                         ),
 
                         // Avatar
@@ -76,7 +82,11 @@ public class DisplayPage : StatelessComponent
                                         }
                                     }
                                 }
-                            }
+                            },
+                            """
+                            new Avatar { Initials = "JD", Size = Size.Medium }
+                            new Avatar { ImageUrl = "https://example.com/photo.jpg", AltText = "User" }
+                            """
                         ),
 
                         // Spinner
@@ -114,7 +124,11 @@ public class DisplayPage : StatelessComponent
                                         }
                                     }
                                 }
-                            }
+                            },
+                            """
+                            new Spinner { Variant = SpinnerVariant.Border, Size = SpinnerSize.Normal }
+                            new Spinner { Variant = SpinnerVariant.Grow, Size = SpinnerSize.Small }
+                            """
                         ),
 
                         // Heading
@@ -129,7 +143,12 @@ public class DisplayPage : StatelessComponent
                                     new Heading("Heading 5", 5),
                                     new Heading("Heading 6", 6)
                                 }
-                            }
+                            },
+                            """
+                            new Heading("Page Title", 1)
+                            new Heading("Section Title", 2)
+                            new Heading("Subsection", 3)
+                            """
                         ),
 
                         // Text
@@ -187,9 +206,9 @@ public class DisplayPage : StatelessComponent
         };
     }
 
-    private static IComponent CreateSection(string title, string description, IComponent content)
+    private static IComponent CreateSection(string title, string description, IComponent content, string? code = null)
     {
-        return new Box {
+        var section = new Box {
             ClassName = "space-y-3",
             Children = {
                 new Box {
@@ -205,5 +224,12 @@ public class DisplayPage : StatelessComponent
                 }
             }
         };
+
+        if (code != null)
+        {
+            section.Children.Add(new CodeBlock(code.Trim(), "csharp") { Collapsible = true });
+        }
+
+        return section;
     }
 }

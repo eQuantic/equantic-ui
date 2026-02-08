@@ -2,6 +2,7 @@ using eQuantic.UI.Core;
 using eQuantic.UI.Core.Theme.Types;
 using eQuantic.UI.Components;
 using eQuantic.UI.Components.Layout;
+using eQuantic.UI.Components.Display;
 using eQuantic.UI.Components.Feedback;
 using TailwindDashboard.Components;
 
@@ -33,7 +34,16 @@ public class FeedbackPage : StatelessComponent
                                         }
                                     }
                                 }
+                            },
+                            """
+                            new Alert {
+                                Variant = Variant.Default,
+                                Children = {
+                                    new AlertTitle { Children = { new Text("Heads up!") } },
+                                    new AlertDescription { Children = { new Text("Description here.") } }
+                                }
                             }
+                            """
                         ),
 
                         // Alert - All Variants
@@ -91,7 +101,18 @@ public class FeedbackPage : StatelessComponent
                                         }
                                     }
                                 }
+                            },
+                            """
+                            new Alert {
+                                Variant = Variant.Success,
+                                Children = {
+                                    new AlertTitle { Children = { new Text("Success") } },
+                                    new AlertDescription { Children = { new Text("Saved!") } }
+                                }
                             }
+                            new Alert { Variant = Variant.Destructive, ... }
+                            new Alert { Variant = Variant.Warning, ... }
+                            """
                         ),
 
                         // Alert without title
@@ -175,9 +196,9 @@ public class FeedbackPage : StatelessComponent
         };
     }
 
-    private static IComponent CreateSection(string title, string description, IComponent content)
+    private static IComponent CreateSection(string title, string description, IComponent content, string? code = null)
     {
-        return new Box {
+        var section = new Box {
             ClassName = "space-y-3",
             Children = {
                 new Box {
@@ -193,5 +214,12 @@ public class FeedbackPage : StatelessComponent
                 }
             }
         };
+
+        if (code != null)
+        {
+            section.Children.Add(new CodeBlock(code.Trim(), "csharp") { Collapsible = true });
+        }
+
+        return section;
     }
 }

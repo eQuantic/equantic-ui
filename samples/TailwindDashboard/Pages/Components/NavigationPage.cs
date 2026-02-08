@@ -5,6 +5,7 @@ using eQuantic.UI.Components;
 using eQuantic.UI.Components.Layout;
 using eQuantic.UI.Components.Navigation;
 using eQuantic.UI.Components.Navigation.Tabs;
+using eQuantic.UI.Components.Display;
 using eQuantic.UI.Components.Display.Accordion;
 using eQuantic.UI.Components.Navigation.NavigationMenu;
 using TailwindDashboard.Components;
@@ -74,7 +75,28 @@ public class NavigationPage : StatelessComponent
                                         }
                                     }
                                 }
+                            },
+                            """
+                            new Tabs {
+                                DefaultValue = "account",
+                                Children = {
+                                    new TabsList {
+                                        Children = {
+                                            new TabsTrigger { Value = "account", Text = "Account" },
+                                            new TabsTrigger { Value = "password", Text = "Password" }
+                                        }
+                                    },
+                                    new TabsContent {
+                                        Value = "account",
+                                        Children = { new Text("Account settings.") }
+                                    },
+                                    new TabsContent {
+                                        Value = "password",
+                                        Children = { new Text("Password settings.") }
+                                    }
+                                }
                             }
+                            """
                         ),
 
                         // Tabs - Vertical
@@ -160,7 +182,22 @@ public class NavigationPage : StatelessComponent
                                         }
                                     }
                                 }
+                            },
+                            """
+                            new Accordion {
+                                Type = AccordionType.Single,
+                                Collapsible = true,
+                                Children = {
+                                    new AccordionItem {
+                                        Value = "item-1",
+                                        Children = {
+                                            new AccordionTrigger { Text = "Question?" },
+                                            new AccordionContent { Children = { new Text("Answer.") } }
+                                        }
+                                    }
+                                }
                             }
+                            """
                         ),
 
                         // Accordion - Multiple
@@ -262,7 +299,16 @@ public class NavigationPage : StatelessComponent
                                         }
                                     }
                                 }
+                            },
+                            """
+                            new Breadcrumb {
+                                Items = new List<BreadcrumbItem> {
+                                    new BreadcrumbItem { Label = "Home", Href = "/" },
+                                    new BreadcrumbItem { Label = "Components", Href = "/components" },
+                                    new BreadcrumbItem { Label = "Current", Active = true }
+                                }
                             }
+                            """
                         )
                     }
                 }
@@ -270,9 +316,9 @@ public class NavigationPage : StatelessComponent
         };
     }
 
-    private static IComponent CreateSection(string title, string description, IComponent content)
+    private static IComponent CreateSection(string title, string description, IComponent content, string? code = null)
     {
-        return new Box {
+        var section = new Box {
             ClassName = "space-y-3",
             Children = {
                 new Box {
@@ -288,5 +334,12 @@ public class NavigationPage : StatelessComponent
                 }
             }
         };
+
+        if (code != null)
+        {
+            section.Children.Add(new CodeBlock(code.Trim(), "csharp") { Collapsible = true });
+        }
+
+        return section;
     }
 }
