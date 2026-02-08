@@ -19,4 +19,7 @@ public class MaterialColorTheme : IColorTheme
     public ThemeColor Ring { get; } = new("Ring", "ring-[var(--md-sys-color-primary)]");
     public ThemeColor Background { get; } = new("Background", "bg-[var(--md-sys-color-surface)]");
     public ThemeColor Foreground { get; } = new("Foreground", "text-[var(--md-sys-color-on-surface)]");
+    public ThemeColor Success { get; }
+    public ThemeColor Warning { get; }
+    public ThemeColor Info { get; }
 }

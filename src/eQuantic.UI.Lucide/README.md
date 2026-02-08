@@ -20,6 +20,18 @@ using eQuantic.UI.Lucide;
 builder.Services.AddLucideIcons();
 ```
 
+### 🎨 Visual Bug Fixes (Buttons)
+
+Resolved issues with button variants in the Tailwind theme:
+
+- **Semantic Colors**: Added support for `Success`, `Warning`, and `Info` variants, which previously defaulted to the Primary color.
+- **Outline Variant**: Fixed the `Outline` variant by adding the missing border class, ensuring it's clearly distinguishable from the `Ghost` variant.
+- **Dark Mode Transparency**: Resolved an issue where nested `Text` components applied dark text colors inside colored buttons. This was fixed by making the `Text` component's base style transparent and setting the default color at the layout level (`DashboardShell`), ensuring perfect readability in both light and dark modes.
+
+![Buttons Dark Mode Fix](/Users/admin.edgar.a.mesquita/.gemini/antigravity/brain/86bdaa3b-a0cf-4eb6-92e2-ddbde8627d2e/buttons_dark_mode_verification_1770573731107.png)
+
+## Verification Results
+
 ## Usage
 
 There are two primary ways to consume icons in your components.

@@ -14,4 +14,7 @@ public interface IColorTheme
     ThemeColor Ring { get; }
     ThemeColor Background { get; }
     ThemeColor Foreground { get; }
+    ThemeColor Success { get; }
+    ThemeColor Warning { get; }
+    ThemeColor Info { get; }
 }

@@ -6,7 +6,7 @@ namespace eQuantic.UI.Tailwind.Theme;
 
 public class TextTheme : ITextTheme
 {
-    public string Base => "text-gray-900 dark:text-gray-100";
+    public string Base => "";
     
     public Dictionary<string, string> Variants { get; } = new Dictionary<string, string>
     {

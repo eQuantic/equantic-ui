@@ -10,6 +10,11 @@
     <ItemGroup>
         <!-- Only UI library choice needs to be explicit -->
         <ProjectReference Include="..\..\src\eQuantic.UI.Tailwind\eQuantic.UI.Tailwind.csproj" />
+        <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+        <ProjectReference Include="..\..\src\eQuantic.UI.Lucide\eQuantic.UI.Lucide.csproj" />
+        <ProjectReference Include="..\..\src\eQuantic.UI.Charts\eQuantic.UI.Charts.csproj" />
+        <ProjectReference Include="..\..\src\eQuantic.UI.Charts.ChartJs\eQuantic.UI.Charts.ChartJs.csproj" />
+        <ProjectReference Include="..\..\src\eQuantic.UI.Charts.ApexCharts\eQuantic.UI.Charts.ApexCharts.csproj" />
     </ItemGroup>
 
     <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.targets" />

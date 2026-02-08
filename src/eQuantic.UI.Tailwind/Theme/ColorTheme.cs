@@ -15,4 +15,7 @@ public class ColorTheme : IColorTheme
     public ThemeColor Ring => new("Ring", "ring-blue-600 dark:ring-blue-500");
     public ThemeColor Background => new("Background", "bg-white dark:bg-zinc-950");
     public ThemeColor Foreground => new("Foreground", "text-gray-950 dark:text-gray-50");
+    public ThemeColor Success => new("Success", "bg-emerald-600 text-white");
+    public ThemeColor Warning => new("Warning", "bg-amber-500 text-white");
+    public ThemeColor Info => new("Info", "bg-blue-500 text-white");
 }

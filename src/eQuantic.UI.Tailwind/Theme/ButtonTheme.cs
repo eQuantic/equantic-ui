@@ -25,10 +25,13 @@ public class ButtonTheme : IButtonTheme
         // "bg-blue-600". "Hover" is hard without knowing the color scale.
         // I will keep existing hover for now but use _colors.Primary for base.
         Variant.Secondary => $"{_colors.Secondary} hover:bg-gray-50 hover:text-gray-900 dark:bg-zinc-900 dark:text-gray-100 dark:border-zinc-800 dark:hover:bg-zinc-800",
-        Variant.Outline => $"{_colors.Border} bg-transparent hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-zinc-800", // Using Border color
+        Variant.Outline => $"border border-gray-200 bg-transparent hover:bg-gray-100 dark:text-gray-100 dark:border-zinc-800 dark:hover:bg-zinc-800",
         Variant.Ghost => "hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-zinc-800 dark:hover:text-white",
         Variant.Destructive => $"{_colors.Destructive} hover:bg-red-600 shadow-sm hover:shadow",
         Variant.Link => "text-blue-600 underline-offset-4 hover:underline dark:text-blue-400",
+        Variant.Success => $"{_colors.Success} hover:bg-emerald-700 shadow-sm hover:shadow",
+        Variant.Warning => $"{_colors.Warning} hover:bg-amber-600 shadow-sm hover:shadow",
+        Variant.Info => $"{_colors.Info} hover:bg-blue-600 shadow-sm hover:shadow",
         _ => $"{_colors.Primary} hover:bg-blue-700 shadow-sm hover:shadow"
     };
 

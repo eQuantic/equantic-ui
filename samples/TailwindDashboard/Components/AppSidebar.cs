@@ -1,25 +1,36 @@
 using eQuantic.UI.Core;
 using eQuantic.UI.Components;
 using eQuantic.UI.Components.Layout;
+using eQuantic.UI.Lucide;
 
 namespace TailwindDashboard.Components;
 
 public class SidebarItem : StatelessComponent
 {
     public string? Text { get; set; }
-    public string? Icon { get; set; }
+    public IComponent? Icon { get; set; }
     public string? Href { get; set; }
     public bool IsActive { get; set; }
 
     public override IComponent Build(RenderContext context)
     {
+        var baseClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors";
+        var stateClass = IsActive
+            ? "bg-primary/10 text-primary"
+            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground";
+
         return new Link
         {
             Href = Href ?? "#",
-            ClassName = $"flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-accent-foreground group {(IsActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground")}".Trim(),
+            ClassName = $"{baseClass} {stateClass}",
             Children = {
-                !string.IsNullOrEmpty(Icon) ? new Text(Icon) { ClassName = "h-4 w-4" } : new NullComponent(),
-                new Text(Text ?? "") { ClassName = "text-sm font-medium" }
+                Icon != null
+                    ? new Box {
+                        ClassName = "shrink-0",
+                        Children = { Icon }
+                    }
+                    : new NullComponent(),
+                new Text(Text ?? "")
             }
         };
     }
@@ -33,35 +44,53 @@ public class AppSidebar : StatelessComponent
     {
         return new Box
         {
-            ClassName = "hidden border-r border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:block w-[280px] h-screen sticky top-0",
+            ClassName = "hidden border-r border-border bg-card lg:block w-[260px] h-screen sticky top-0",
             Children = {
                 new Box {
-                    ClassName = "flex h-full max-h-screen flex-col gap-2",
+                    ClassName = "flex h-full max-h-screen flex-col",
                     Children = {
+                        // Logo header
                         new Box {
-                            ClassName = "flex h-[60px] items-center border-b border-border px-6",
+                            ClassName = "flex h-14 items-center border-b border-border px-5",
                             Children = {
                                 new Link {
                                     Href = "/",
-                                    ClassName = "flex items-center gap-3 font-semibold",
+                                    ClassName = "flex items-center gap-2.5 font-semibold text-foreground",
                                     Children = {
-                                        new Text("💠") { ClassName = "h-6 w-6" },
-                                        new Text("Tailwind UI")
+                                        new Box {
+                                            ClassName = "flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold",
+                                            Children = { new Text("eQ") }
+                                        },
+                                        new Text("Tailwind UI") { ClassName = "text-sm" }
                                     }
                                 }
                             }
                         },
+                        // Navigation
                         new Box {
-                            ClassName = "flex-1 overflow-auto py-2",
+                            ClassName = "flex-1 overflow-auto px-3 py-4",
                             Children = {
                                 new DynamicElement {
                                     TagName = "nav",
-                                    ClassName = "grid items-start px-4 text-sm font-medium",
+                                    ClassName = "flex flex-col gap-1",
                                     Children = {
-                                        new SidebarItem { Text = "Dashboard", Icon = "🏠", Href = "/", IsActive = ActivePath == "/" },
-                                        new SidebarItem { Text = "Tasks", Icon = "📋", Href = "/tasks", IsActive = ActivePath == "/tasks" },
-                                        new SidebarItem { Text = "Showcase", Icon = "✨", Href = "/showcase", IsActive = ActivePath == "/showcase" },
-                                        new SidebarItem { Text = "Analytics", Icon = "📈", Href = "/analytics", IsActive = ActivePath == "/analytics" }
+                                        // Main section
+                                        new Text("Menu") { ClassName = "px-3 pb-2 text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest" },
+                                        new SidebarItem { Text = "Dashboard", Icon = LucideIcons.LayoutDashboard(size: 18, strokeWidth: 1.75), Href = "/", IsActive = ActivePath == "/" },
+                                        new SidebarItem { Text = "Analytics", Icon = LucideIcons.TrendingUp(size: 18, strokeWidth: 1.75), Href = "/analytics", IsActive = ActivePath == "/analytics" },
+                                        new SidebarItem { Text = "Tasks", Icon = LucideIcons.ListTodo(size: 18, strokeWidth: 1.75), Href = "/tasks", IsActive = ActivePath == "/tasks" },
+
+                                        // Components section
+                                        new Box { ClassName = "mt-6 mb-1 border-t border-border/50 pt-4" },
+                                        new Text("Components") { ClassName = "px-3 pb-2 text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest" },
+                                        new SidebarItem { Text = "Buttons", Icon = LucideIcons.MousePointerClick(size: 18, strokeWidth: 1.75), Href = "/components/buttons", IsActive = ActivePath == "/components/buttons" },
+                                        new SidebarItem { Text = "Inputs", Icon = LucideIcons.TextCursorInput(size: 18, strokeWidth: 1.75), Href = "/components/inputs", IsActive = ActivePath == "/components/inputs" },
+                                        new SidebarItem { Text = "Display", Icon = LucideIcons.Eye(size: 18, strokeWidth: 1.75), Href = "/components/display", IsActive = ActivePath == "/components/display" },
+                                        new SidebarItem { Text = "Surfaces", Icon = LucideIcons.Layers3(size: 18, strokeWidth: 1.75), Href = "/components/surfaces", IsActive = ActivePath == "/components/surfaces" },
+                                        new SidebarItem { Text = "Feedback", Icon = LucideIcons.MessageCircleWarning(size: 18, strokeWidth: 1.75), Href = "/components/feedback", IsActive = ActivePath == "/components/feedback" },
+                                        new SidebarItem { Text = "Overlays", Icon = LucideIcons.PanelsTopLeft(size: 18, strokeWidth: 1.75), Href = "/components/overlays", IsActive = ActivePath == "/components/overlays" },
+                                        new SidebarItem { Text = "Navigation", Icon = LucideIcons.Compass(size: 18, strokeWidth: 1.75), Href = "/components/navigation", IsActive = ActivePath == "/components/navigation" },
+                                        new SidebarItem { Text = "Layout", Icon = LucideIcons.LayoutGrid(size: 18, strokeWidth: 1.75), Href = "/components/layout", IsActive = ActivePath == "/components/layout" }
                                     }
                                 }
                             }

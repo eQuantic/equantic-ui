@@ -10,7 +10,7 @@ public class DrawerHeader : DrawerSubComponent
     {
         var box = new Box
         {
-            ClassName = "flex flex-col space-y-1.5 p-6 text-center sm:text-left"
+            ClassName = "flex flex-col space-y-1.5 text-center sm:text-left"
         };
         foreach (var child in Children) box.Children.Add(child);
         return box;
@@ -23,7 +23,7 @@ public class DrawerFooter : DrawerSubComponent
     {
         var box = new Box
         {
-            ClassName = "mt-auto flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6"
+            ClassName = "mt-auto flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2"
         };
         foreach (var child in Children) box.Children.Add(child);
         return box;

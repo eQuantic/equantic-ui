@@ -18,4 +18,7 @@ public class ColorThemeEQ : IColorTheme
     public ThemeColor Ring => new("Ring", "eq-border-focus");
     public ThemeColor Background => new("Background", "eq-surface");
     public ThemeColor Foreground => new("Foreground", "eq-text-primary");
+    public ThemeColor Success => new("Success", "eq-btn-success");
+    public ThemeColor Warning => new("Warning", "eq-btn-warning");
+    public ThemeColor Info => new("Info", "eq-btn-info");
 }
