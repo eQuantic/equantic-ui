@@ -96,6 +96,54 @@
         <Message Text="eQuantic.UI: BunPath resolved to '$(BunPath)'" Importance="High" />
     </Target>
 
+    <!--
+        BunPackage: Declare npm packages directly in .csproj (zero package.json).
+        Usage: <BunPackage Include="tailwindcss-animate" Version="1.0.7" />
+        Packages are installed to obj/eQuantic/npm/ and symlinked for tool resolution.
+    -->
+    <Target Name="InstallBunPackages" AfterTargets="ResolveBunPath"
+        BeforeTargets="CompileEQuanticUI"
+        Condition="'@(BunPackage)' != '' And '$(BunPath)' != ''">
+
+        <PropertyGroup>
+            <_BunNpmDir>$(BaseIntermediateOutputPath)eQuantic/npm</_BunNpmDir>
+            <_BunNpmNodeModules>$(_BunNpmDir)/node_modules</_BunNpmNodeModules>
+        </PropertyGroup>
+
+        <!-- Skip if node_modules already exist (incremental build) -->
+        <Message Text="eQuantic.UI: npm packages already installed, skipping..."
+            Importance="Normal"
+            Condition="Exists('$(_BunNpmNodeModules)')" />
+
+        <!-- Install only if node_modules don't exist -->
+        <MakeDir Directories="$(_BunNpmDir)"
+            Condition="!Exists('$(_BunNpmNodeModules)')" />
+
+        <WriteLinesToFile
+            File="$(_BunNpmDir)/package.json"
+            Lines="{ &quot;private&quot;: true }"
+            Overwrite="true"
+            Condition="!Exists('$(_BunNpmNodeModules)')" />
+
+        <Message Text="eQuantic.UI: Installing npm packages: @(BunPackage -> '%(Identity)@%(Version)', ', ')..."
+            Importance="High"
+            Condition="!Exists('$(_BunNpmNodeModules)')" />
+
+        <Exec Command="&quot;$(BunPath)&quot; add %(BunPackage.Identity)@%(BunPackage.Version)"
+            WorkingDirectory="$(_BunNpmDir)"
+            Condition="!Exists('$(_BunNpmNodeModules)')" />
+
+        <!-- Create node_modules symlink at project root for tool resolution -->
+        <Exec Command="if [ ! -L &quot;node_modules&quot; ]; then ln -s &quot;$(_BunNpmDir)/node_modules&quot; &quot;node_modules&quot;; fi"
+            Condition="!$([MSBuild]::IsOSPlatform('Windows'))"
+            WorkingDirectory="$(MSBuildProjectDirectory)"
+            IgnoreExitCode="true" />
+        <Exec Command="if not exist &quot;node_modules&quot; mklink /D &quot;node_modules&quot; &quot;$(_BunNpmDir)\node_modules&quot;"
+            Condition="$([MSBuild]::IsOSPlatform('Windows'))"
+            WorkingDirectory="$(MSBuildProjectDirectory)"
+            IgnoreExitCode="true" />
+    </Target>
+
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' != ''">
         <PropertyGroup>

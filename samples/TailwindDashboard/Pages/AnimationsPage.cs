@@ -1,7 +1,9 @@
 using eQuantic.UI.Core;
 using eQuantic.UI.Components;
 using eQuantic.UI.Components.Layout;
+using eQuantic.UI.Components.Surfaces;
 using eQuantic.UI.Lottie;
+using TailwindDashboard.Components;
 
 namespace TailwindDashboard.Pages;
 
@@ -12,8 +14,7 @@ public class AnimationsPage : StatelessComponent
     {
         return new DashboardShell
         {
-            Title = "Animations",
-            Subtitle = "Lottie & dotLottie integrations",
+            PageTitle = "Animations",
             Children =
             {
                 new Container
@@ -23,32 +24,56 @@ public class AnimationsPage : StatelessComponent
                     {
                         new Card
                         {
-                            Title = "Basic Animation",
-                            Subtitle = "Simple loop from LottieFiles",
                             Children =
                             {
-                                new LottiePlayer
+                                new CardHeader
                                 {
-                                    Src = "https://assets10.lottiefiles.com/packages/lf20_m6cu9zbe.json",
-                                    Height = "300px",
-                                    Autoplay = true,
-                                    Loop = true
+                                    Children =
+                                    {
+                                        new CardTitle { Text = "Basic Animation" },
+                                        new CardDescription { Text = "Simple loop from LottieFiles" }
+                                    }
+                                },
+                                new CardBody
+                                {
+                                    Children =
+                                    {
+                                        new LottiePlayer
+                                        {
+                                            Src = "https://assets10.lottiefiles.com/packages/lf20_m6cu9zbe.json",
+                                            Height = "300px",
+                                            Autoplay = true,
+                                            Loop = true
+                                        }
+                                    }
                                 }
                             }
                         },
                         new Card
                         {
-                            Title = "dotLottie Format",
-                            Subtitle = "Efficient dotLottie file with controls",
                             Children =
                             {
-                                new LottiePlayer
+                                new CardHeader
                                 {
-                                    Src = "https://lottie.host/6ad395f3-c5c7-4340-9602-0e980f769c0d/D3eS0I7M1P.lottie",
-                                    Height = "300px",
-                                    Autoplay = true,
-                                    Loop = true,
-                                    Controls = true
+                                    Children =
+                                    {
+                                        new CardTitle { Text = "dotLottie Format" },
+                                        new CardDescription { Text = "Efficient dotLottie file with controls" }
+                                    }
+                                },
+                                new CardBody
+                                {
+                                    Children =
+                                    {
+                                        new LottiePlayer
+                                        {
+                                            Src = "https://lottie.host/6ad395f3-c5c7-4340-9602-0e980f769c0d/D3eS0I7M1P.lottie",
+                                            Height = "300px",
+                                            Autoplay = true,
+                                            Loop = true,
+                                            Controls = true
+                                        }
+                                    }
                                 }
                             }
                         }

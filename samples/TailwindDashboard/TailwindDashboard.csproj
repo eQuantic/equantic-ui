@@ -15,6 +15,12 @@
         <ProjectReference Include="..\..\src\eQuantic.UI.Charts\eQuantic.UI.Charts.csproj" />
         <ProjectReference Include="..\..\src\eQuantic.UI.Charts.ChartJs\eQuantic.UI.Charts.ChartJs.csproj" />
         <ProjectReference Include="..\..\src\eQuantic.UI.Charts.ApexCharts\eQuantic.UI.Charts.ApexCharts.csproj" />
+        <ProjectReference Include="..\..\src\eQuantic.UI.Lottie\eQuantic.UI.Lottie.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Tailwind CSS plugins (installed automatically via embedded Bun) -->
+        <BunPackage Include="tailwindcss-animate" Version="1.0.7" />
     </ItemGroup>
 
     <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.targets" />
