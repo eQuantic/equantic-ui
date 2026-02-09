@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using eQuantic.UI.Core.Assets;
 using eQuantic.UI.Core.Metadata;
 using eQuantic.UI.Core.Theme;
 using eQuantic.UI.Server.Authorization;
@@ -83,6 +84,36 @@ public static class UIExtensions
         // Register EQ theme as fallback if no other theme is registered
         // This will be overridden if Tailwind theme is added via AddTailwind()
         services.TryAddSingleton<IAppTheme, AppThemeEQ>();
+
+        // Register explicit asset providers first (WithAssetProvider<T> takes priority)
+        foreach (var (serviceType, implType) in options.AssetProviders)
+        {
+            services.TryAddSingleton(serviceType, implType);
+        }
+
+        // Auto-register IComponentAssetProvider<T> implementations from scanned assemblies
+        // TryAdd ensures explicit registrations above are not overridden
+        var providerInterfaceBase = typeof(IComponentAssetProvider<>);
+        foreach (var assembly in options.AssembliesToScan)
+        {
+            try
+            {
+                foreach (var type in assembly.GetTypes().Where(t => t is { IsAbstract: false, IsInterface: false }))
+                {
+                    foreach (var iface in type.GetInterfaces())
+                    {
+                        if (iface.IsGenericType && iface.GetGenericTypeDefinition() == providerInterfaceBase)
+                        {
+                            services.TryAddSingleton(iface, type);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Skip assemblies that fail to load types
+            }
+        }
 
         return services;
     }
@@ -433,6 +464,7 @@ public static class UIExtensions
 public class UIOptions
 {
     internal List<Assembly> AssembliesToScan { get; } = new();
+    internal List<(Type ServiceType, Type ImplementationType)> AssetProviders { get; } = new();
 
     /// <summary>
     /// Configuration for the HTML shell (index.html).
@@ -458,6 +490,27 @@ public class UIOptions
     {
         EnableSsr = enabled;
         return this;
+    }
+
+    /// <summary>
+    /// Registers an asset provider for a specific component type.
+    /// The provider will supply additional or overriding assets for the component.
+    /// </summary>
+    public UIOptions WithAssetProvider<TProvider>() where TProvider : class
+    {
+        var providerType = typeof(TProvider);
+        foreach (var iface in providerType.GetInterfaces())
+        {
+            if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IComponentAssetProvider<>))
+            {
+                AssetProviders.Add((iface, providerType));
+                return this;
+            }
+        }
+
+        throw new ArgumentException(
+            $"{providerType.Name} does not implement IComponentAssetProvider<T>.",
+            nameof(TProvider));
     }
 
     public UIOptions ConfigureHtmlShell(Action<HtmlShellOptions> configure)

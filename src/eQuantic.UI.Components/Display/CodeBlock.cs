@@ -36,16 +36,24 @@ public class CodeBlock : StatelessComponent, IRequireAssets
 
     public void ConfigureAssets(AssetBuilder assets)
     {
-        // Prism.js syntax highlighting
-        assets.AddStylesheet("https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css");
+        // Prism.js syntax highlighting with dark/light theme support
+        assets.AddStylesheet(
+            "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css",
+            id: "prism-theme");
         assets.AddScript("https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js");
         assets.AddScript("https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js");
 
-        // CodeBlock utility functions
+        // CodeBlock utility functions + theme switching + highlight trigger
         assets.AddInlineScript(
             "function copyToClipboard(id){var e=document.getElementById(id);if(e){navigator.clipboard.writeText(e.textContent||'').then(function(){var b=document.getElementById('btn-'+id);if(b){b.textContent='Copied!';setTimeout(function(){b.textContent='Copy'},2e3)}})}}" +
             "function toggleCodeBlock(id){var c=document.getElementById('container-'+id);var b=document.getElementById('expand-'+id);if(c){var ex=c.classList.contains('max-h-32');c.classList.toggle('max-h-32');c.classList.toggle('overflow-hidden');if(b)b.textContent=ex?'Collapse Code':'Expand Code'}}" +
-            "document.addEventListener('DOMContentLoaded',function(){if(typeof Prism!=='undefined')Prism.highlightAll()});"
+            "(function(){" +
+                "var base='https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/';" +
+                "function updateTheme(){var l=document.getElementById('prism-theme');if(l){var d=document.documentElement.classList.contains('dark');var h=base+(d?'prism-tomorrow.min.css':'prism.min.css');if(l.getAttribute('href')!==h)l.setAttribute('href',h)}}" +
+                "updateTheme();" +
+                "new MutationObserver(function(){updateTheme()}).observe(document.documentElement,{attributes:true,attributeFilter:['class']});" +
+                "document.addEventListener('DOMContentLoaded',function(){if(typeof Prism!=='undefined')Prism.highlightAll()});" +
+            "})();"
         );
     }
 
