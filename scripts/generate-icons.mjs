@@ -227,7 +227,11 @@ async function main() {
         { prefix: 'tabler', projectName: 'eQuantic.UI.TablerIcons', className: 'TablerIcons' },
         { prefix: 'fa6-solid', projectName: 'eQuantic.UI.FontAwesome6.Solid', className: 'FontAwesome6Solid' },
         { prefix: 'fa6-regular', projectName: 'eQuantic.UI.FontAwesome6.Regular', className: 'FontAwesome6Regular' },
-        { prefix: 'fa6-brands', projectName: 'eQuantic.UI.FontAwesome6.Brands', className: 'FontAwesome6Brands' }
+        { prefix: 'fa6-brands', projectName: 'eQuantic.UI.FontAwesome6.Brands', className: 'FontAwesome6Brands' },
+        { prefix: 'ph', projectName: 'eQuantic.UI.Phosphor', className: 'Phosphor' },
+        { prefix: 'simple-icons', projectName: 'eQuantic.UI.SimpleIcons', className: 'SimpleIcons' },
+        { prefix: 'bi', projectName: 'eQuantic.UI.BootstrapIcons', className: 'BootstrapIcons' },
+        { prefix: 'iconoir', projectName: 'eQuantic.UI.Iconoir', className: 'Iconoir' }
     ];
 
     const outputDir = './src';
