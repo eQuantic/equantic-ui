@@ -36,6 +36,11 @@ public class Alert : StatelessComponent
 
 public class AlertTitle : StatelessComponent
 {
+    /// <summary>
+    /// The title text to display
+    /// </summary>
+    public string? Text { get; set; }
+
     public override IComponent Build(RenderContext context)
     {
         var theme = context.GetService<Core.Theme.IAppTheme>();
@@ -49,6 +54,12 @@ public class AlertTitle : StatelessComponent
                 ["class"] = $"{style} {ClassName}".Trim()
             }
         };
+
+        if (!string.IsNullOrEmpty(Text))
+        {
+            element.Children.Add(new Text(Text));
+        }
+
         foreach(var child in Children) element.Children.Add(child);
         return element;
     }
@@ -56,6 +67,11 @@ public class AlertTitle : StatelessComponent
 
 public class AlertDescription : StatelessComponent
 {
+    /// <summary>
+    /// The description text to display
+    /// </summary>
+    public string? Text { get; set; }
+
     public override IComponent Build(RenderContext context)
     {
         var theme = context.GetService<Core.Theme.IAppTheme>();
@@ -69,6 +85,12 @@ public class AlertDescription : StatelessComponent
                 ["class"] = $"{style} {ClassName}".Trim()
             }
         };
+
+        if (!string.IsNullOrEmpty(Text))
+        {
+            element.Children.Add(new Text(Text));
+        }
+
         foreach(var child in Children) element.Children.Add(child);
         return element;
     }
