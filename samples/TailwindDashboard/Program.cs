@@ -3,6 +3,10 @@ using eQuantic.UI.Tailwind;
 using eQuantic.UI.Lucide;
 using eQuantic.UI.Charts.ChartJs;
 using eQuantic.UI.Charts.ApexCharts;
+using eQuantic.UI.Lottie;
+using eQuantic.UI.Components.Display;
+using eQuantic.UI.Core.Assets;
+using TailwindDashboard.Assets;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +22,7 @@ builder.Services.AddLucideIcons();
 // Add chart libraries
 builder.Services.AddChartJs();
 builder.Services.AddApexCharts();
+builder.Services.AddLottie();
 
 builder.Services.AddUI(options =>
 {
