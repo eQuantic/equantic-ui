@@ -3,9 +3,9 @@ using eQuantic.UI.Components;
 
 namespace eQuantic.UI.RadixIcons;
 
-public static class RadixIconsIcons
+public static class RadixIcons
 {
-    public static RadixIconsIcon Accessibility(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Accessibility(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "accessibility",
         Size = size,
@@ -19,7 +19,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ActivityLog(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ActivityLog(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "activity-log",
         Size = size,
@@ -33,7 +33,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignBaseline(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignBaseline(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-baseline",
         Size = size,
@@ -47,7 +47,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignBottom(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignBottom(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-bottom",
         Size = size,
@@ -61,7 +61,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignCenter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignCenter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-center",
         Size = size,
@@ -77,7 +77,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignCenterHorizontally(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignCenterHorizontally(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-center-horizontally",
         Size = size,
@@ -91,7 +91,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignCenterVertically(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignCenterVertically(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-center-vertically",
         Size = size,
@@ -105,7 +105,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignEnd(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignEnd(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-end",
         Size = size,
@@ -121,7 +121,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignHorizontalCenters(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignHorizontalCenters(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-horizontal-centers",
         Size = size,
@@ -137,7 +137,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-left",
         Size = size,
@@ -151,7 +151,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-right",
         Size = size,
@@ -165,7 +165,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignStart(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignStart(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-start",
         Size = size,
@@ -181,7 +181,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignStretch(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignStretch(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-stretch",
         Size = size,
@@ -197,7 +197,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignTop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignTop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-top",
         Size = size,
@@ -211,7 +211,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AlignVerticalCenters(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AlignVerticalCenters(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "align-vertical-centers",
         Size = size,
@@ -227,7 +227,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AllSides(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AllSides(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "all-sides",
         Size = size,
@@ -241,7 +241,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Angle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Angle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "angle",
         Size = size,
@@ -255,7 +255,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Archive(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Archive(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "archive",
         Size = size,
@@ -269,7 +269,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ArrowBottomLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ArrowBottomLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "arrow-bottom-left",
         Size = size,
@@ -283,7 +283,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ArrowBottomRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ArrowBottomRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "arrow-bottom-right",
         Size = size,
@@ -297,7 +297,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ArrowDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ArrowDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "arrow-down",
         Size = size,
@@ -311,7 +311,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ArrowLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ArrowLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "arrow-left",
         Size = size,
@@ -325,7 +325,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ArrowRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ArrowRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "arrow-right",
         Size = size,
@@ -339,7 +339,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ArrowTopLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ArrowTopLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "arrow-top-left",
         Size = size,
@@ -353,7 +353,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ArrowTopRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ArrowTopRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "arrow-top-right",
         Size = size,
@@ -367,7 +367,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ArrowUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ArrowUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "arrow-up",
         Size = size,
@@ -381,7 +381,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon AspectRatio(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon AspectRatio(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "aspect-ratio",
         Size = size,
@@ -395,7 +395,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Avatar(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Avatar(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "avatar",
         Size = size,
@@ -409,7 +409,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Backpack(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Backpack(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "backpack",
         Size = size,
@@ -423,7 +423,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Badge(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Badge(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "badge",
         Size = size,
@@ -437,7 +437,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BarChart(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BarChart(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "bar-chart",
         Size = size,
@@ -451,7 +451,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Bell(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Bell(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "bell",
         Size = size,
@@ -465,7 +465,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BlendingMode(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BlendingMode(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "blending-mode",
         Size = size,
@@ -479,7 +479,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Bookmark(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Bookmark(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "bookmark",
         Size = size,
@@ -493,7 +493,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BookmarkFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BookmarkFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "bookmark-filled",
         Size = size,
@@ -507,7 +507,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderAll(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderAll(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-all",
         Size = size,
@@ -532,7 +532,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderBottom(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderBottom(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-bottom",
         Size = size,
@@ -574,7 +574,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderDashed(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderDashed(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-dashed",
         Size = size,
@@ -588,7 +588,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderDotted(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderDotted(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-dotted",
         Size = size,
@@ -602,7 +602,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-left",
         Size = size,
@@ -644,7 +644,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-none",
         Size = size,
@@ -692,7 +692,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-right",
         Size = size,
@@ -734,7 +734,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderSolid(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderSolid(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-solid",
         Size = size,
@@ -748,7 +748,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderSplit(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderSplit(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-split",
         Size = size,
@@ -777,7 +777,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderStyle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderStyle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-style",
         Size = size,
@@ -791,7 +791,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderTop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderTop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-top",
         Size = size,
@@ -833,7 +833,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BorderWidth(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BorderWidth(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "border-width",
         Size = size,
@@ -847,7 +847,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Box(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Box(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "box",
         Size = size,
@@ -861,7 +861,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon BoxModel(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon BoxModel(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "box-model",
         Size = size,
@@ -875,7 +875,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Button(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Button(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "button",
         Size = size,
@@ -889,7 +889,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Calendar(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Calendar(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "calendar",
         Size = size,
@@ -903,7 +903,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Camera(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Camera(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "camera",
         Size = size,
@@ -917,7 +917,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CardStack(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CardStack(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "card-stack",
         Size = size,
@@ -931,7 +931,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CardStackMinus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CardStackMinus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "card-stack-minus",
         Size = size,
@@ -945,7 +945,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CardStackPlus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CardStackPlus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "card-stack-plus",
         Size = size,
@@ -959,7 +959,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CaretDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CaretDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "caret-down",
         Size = size,
@@ -973,7 +973,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CaretLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CaretLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "caret-left",
         Size = size,
@@ -987,7 +987,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CaretRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CaretRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "caret-right",
         Size = size,
@@ -1001,7 +1001,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CaretSort(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CaretSort(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "caret-sort",
         Size = size,
@@ -1015,7 +1015,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CaretUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CaretUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "caret-up",
         Size = size,
@@ -1029,7 +1029,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ChatBubble(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ChatBubble(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "chat-bubble",
         Size = size,
@@ -1043,7 +1043,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Check(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Check(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "check",
         Size = size,
@@ -1057,7 +1057,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CheckCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CheckCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "check-circled",
         Size = size,
@@ -1071,7 +1071,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Checkbox(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Checkbox(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "checkbox",
         Size = size,
@@ -1085,7 +1085,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ChevronDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ChevronDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "chevron-down",
         Size = size,
@@ -1099,7 +1099,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ChevronLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ChevronLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "chevron-left",
         Size = size,
@@ -1113,7 +1113,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ChevronRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ChevronRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "chevron-right",
         Size = size,
@@ -1127,7 +1127,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ChevronUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ChevronUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "chevron-up",
         Size = size,
@@ -1141,7 +1141,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Circle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Circle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "circle",
         Size = size,
@@ -1155,7 +1155,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CircleBackslash(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CircleBackslash(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "circle-backslash",
         Size = size,
@@ -1169,7 +1169,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Clipboard(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Clipboard(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "clipboard",
         Size = size,
@@ -1183,7 +1183,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ClipboardCopy(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ClipboardCopy(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "clipboard-copy",
         Size = size,
@@ -1197,7 +1197,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Clock(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Clock(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "clock",
         Size = size,
@@ -1211,7 +1211,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Code(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Code(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "code",
         Size = size,
@@ -1225,7 +1225,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CodesandboxLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CodesandboxLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "codesandbox-logo",
         Size = size,
@@ -1239,7 +1239,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ColorWheel(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ColorWheel(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "color-wheel",
         Size = size,
@@ -1253,7 +1253,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ColumnSpacing(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ColumnSpacing(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "column-spacing",
         Size = size,
@@ -1267,7 +1267,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Columns(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Columns(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "columns",
         Size = size,
@@ -1281,7 +1281,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Commit(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Commit(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "commit",
         Size = size,
@@ -1295,7 +1295,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Component1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Component1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "component-1",
         Size = size,
@@ -1309,7 +1309,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Component2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Component2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "component-2",
         Size = size,
@@ -1323,7 +1323,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ComponentBoolean(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ComponentBoolean(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "component-boolean",
         Size = size,
@@ -1337,7 +1337,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ComponentInstance(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ComponentInstance(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "component-instance",
         Size = size,
@@ -1351,7 +1351,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ComponentNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ComponentNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "component-none",
         Size = size,
@@ -1365,7 +1365,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ComponentPlaceholder(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ComponentPlaceholder(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "component-placeholder",
         Size = size,
@@ -1379,7 +1379,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Container(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Container(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "container",
         Size = size,
@@ -1393,7 +1393,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Cookie(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Cookie(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "cookie",
         Size = size,
@@ -1407,7 +1407,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Copy(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Copy(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "copy",
         Size = size,
@@ -1421,7 +1421,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CornerBottomLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CornerBottomLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "corner-bottom-left",
         Size = size,
@@ -1435,7 +1435,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CornerBottomRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CornerBottomRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "corner-bottom-right",
         Size = size,
@@ -1449,7 +1449,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CornerTopLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CornerTopLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "corner-top-left",
         Size = size,
@@ -1463,7 +1463,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CornerTopRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CornerTopRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "corner-top-right",
         Size = size,
@@ -1477,7 +1477,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Corners(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Corners(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "corners",
         Size = size,
@@ -1491,7 +1491,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CountdownTimer(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CountdownTimer(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "countdown-timer",
         Size = size,
@@ -1505,7 +1505,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CounterClockwiseClock(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CounterClockwiseClock(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "counter-clockwise-clock",
         Size = size,
@@ -1519,7 +1519,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Crop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Crop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "crop",
         Size = size,
@@ -1533,7 +1533,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Cross1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Cross1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "cross-1",
         Size = size,
@@ -1547,7 +1547,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Cross2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Cross2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "cross-2",
         Size = size,
@@ -1561,7 +1561,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CrossCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CrossCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "cross-circled",
         Size = size,
@@ -1575,7 +1575,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Crosshair1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Crosshair1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "crosshair-1",
         Size = size,
@@ -1589,7 +1589,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Crosshair2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Crosshair2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "crosshair-2",
         Size = size,
@@ -1603,7 +1603,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CrumpledPaper(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CrumpledPaper(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "crumpled-paper",
         Size = size,
@@ -1617,7 +1617,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Cube(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Cube(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "cube",
         Size = size,
@@ -1631,7 +1631,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CursorArrow(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CursorArrow(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "cursor-arrow",
         Size = size,
@@ -1645,7 +1645,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon CursorText(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon CursorText(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "cursor-text",
         Size = size,
@@ -1659,7 +1659,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Dash(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Dash(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "dash",
         Size = size,
@@ -1673,7 +1673,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Dashboard(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Dashboard(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "dashboard",
         Size = size,
@@ -1687,7 +1687,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Database(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Database(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "database",
         Size = size,
@@ -1701,7 +1701,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Desktop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Desktop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "desktop",
         Size = size,
@@ -1715,7 +1715,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Dimensions(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Dimensions(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "dimensions",
         Size = size,
@@ -1729,7 +1729,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Disc(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Disc(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "disc",
         Size = size,
@@ -1743,7 +1743,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DiscordLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DiscordLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "discord-logo",
         Size = size,
@@ -1757,7 +1757,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DividerHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DividerHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "divider-horizontal",
         Size = size,
@@ -1771,7 +1771,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DividerVertical(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DividerVertical(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "divider-vertical",
         Size = size,
@@ -1785,7 +1785,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Dot(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Dot(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "dot",
         Size = size,
@@ -1799,7 +1799,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DotFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DotFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "dot-filled",
         Size = size,
@@ -1813,7 +1813,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DotsHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DotsHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "dots-horizontal",
         Size = size,
@@ -1827,7 +1827,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DotsVertical(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DotsVertical(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "dots-vertical",
         Size = size,
@@ -1841,7 +1841,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DoubleArrowDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DoubleArrowDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "double-arrow-down",
         Size = size,
@@ -1855,7 +1855,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DoubleArrowLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DoubleArrowLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "double-arrow-left",
         Size = size,
@@ -1869,7 +1869,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DoubleArrowRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DoubleArrowRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "double-arrow-right",
         Size = size,
@@ -1883,7 +1883,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DoubleArrowUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DoubleArrowUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "double-arrow-up",
         Size = size,
@@ -1897,7 +1897,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Download(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Download(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "download",
         Size = size,
@@ -1911,7 +1911,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DragHandleDots1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DragHandleDots1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "drag-handle-dots-1",
         Size = size,
@@ -1950,7 +1950,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DragHandleDots2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DragHandleDots2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "drag-handle-dots-2",
         Size = size,
@@ -1964,7 +1964,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DragHandleHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DragHandleHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "drag-handle-horizontal",
         Size = size,
@@ -1978,7 +1978,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DragHandleVertical(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DragHandleVertical(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "drag-handle-vertical",
         Size = size,
@@ -1992,7 +1992,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DrawingPin(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DrawingPin(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "drawing-pin",
         Size = size,
@@ -2006,7 +2006,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DrawingPinFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DrawingPinFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "drawing-pin-filled",
         Size = size,
@@ -2026,7 +2026,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon DropdownMenu(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon DropdownMenu(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "dropdown-menu",
         Size = size,
@@ -2040,7 +2040,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Enter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Enter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "enter",
         Size = size,
@@ -2054,7 +2054,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon EnterFullScreen(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon EnterFullScreen(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "enter-full-screen",
         Size = size,
@@ -2068,7 +2068,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon EnvelopeClosed(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon EnvelopeClosed(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "envelope-closed",
         Size = size,
@@ -2082,7 +2082,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon EnvelopeOpen(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon EnvelopeOpen(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "envelope-open",
         Size = size,
@@ -2096,7 +2096,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Eraser(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Eraser(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "eraser",
         Size = size,
@@ -2110,7 +2110,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ExclamationCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ExclamationCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "exclamation-circled",
         Size = size,
@@ -2124,7 +2124,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ExclamationMark(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ExclamationMark(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "exclamation-mark",
         Size = size,
@@ -2138,7 +2138,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ExclamationTriangle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ExclamationTriangle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "exclamation-triangle",
         Size = size,
@@ -2152,7 +2152,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Exit(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Exit(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "exit",
         Size = size,
@@ -2166,7 +2166,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ExitFullScreen(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ExitFullScreen(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "exit-full-screen",
         Size = size,
@@ -2180,7 +2180,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ExternalLink(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ExternalLink(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "external-link",
         Size = size,
@@ -2194,7 +2194,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon EyeClosed(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon EyeClosed(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "eye-closed",
         Size = size,
@@ -2208,7 +2208,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon EyeNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon EyeNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "eye-none",
         Size = size,
@@ -2222,7 +2222,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon EyeOpen(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon EyeOpen(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "eye-open",
         Size = size,
@@ -2236,7 +2236,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Face(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Face(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "face",
         Size = size,
@@ -2250,7 +2250,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FigmaLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FigmaLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "figma-logo",
         Size = size,
@@ -2264,7 +2264,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon File(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon File(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "file",
         Size = size,
@@ -2278,7 +2278,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FileMinus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FileMinus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "file-minus",
         Size = size,
@@ -2292,7 +2292,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FilePlus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FilePlus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "file-plus",
         Size = size,
@@ -2306,7 +2306,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FileText(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FileText(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "file-text",
         Size = size,
@@ -2320,7 +2320,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Filter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Filter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "filter",
         Size = size,
@@ -2334,7 +2334,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FontBold(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FontBold(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "font-bold",
         Size = size,
@@ -2348,7 +2348,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FontFamily(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FontFamily(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "font-family",
         Size = size,
@@ -2362,7 +2362,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FontItalic(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FontItalic(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "font-italic",
         Size = size,
@@ -2376,7 +2376,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FontRoman(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FontRoman(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "font-roman",
         Size = size,
@@ -2390,7 +2390,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FontSize(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FontSize(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "font-size",
         Size = size,
@@ -2404,7 +2404,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FontStyle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FontStyle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "font-style",
         Size = size,
@@ -2418,7 +2418,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Frame(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Frame(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "frame",
         Size = size,
@@ -2432,7 +2432,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon FramerLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon FramerLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "framer-logo",
         Size = size,
@@ -2446,7 +2446,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Gear(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Gear(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "gear",
         Size = size,
@@ -2460,7 +2460,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon GithubLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon GithubLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "github-logo",
         Size = size,
@@ -2474,7 +2474,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Globe(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Globe(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "globe",
         Size = size,
@@ -2488,7 +2488,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Globe2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Globe2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "globe-2",
         Size = size,
@@ -2502,7 +2502,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Grid(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Grid(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "grid",
         Size = size,
@@ -2516,7 +2516,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Group(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Group(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "group",
         Size = size,
@@ -2530,7 +2530,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Half1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Half1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "half-1",
         Size = size,
@@ -2544,7 +2544,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Half2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Half2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "half-2",
         Size = size,
@@ -2558,7 +2558,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon HamburgerMenu(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon HamburgerMenu(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "hamburger-menu",
         Size = size,
@@ -2572,7 +2572,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Hand(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Hand(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "hand",
         Size = size,
@@ -2586,7 +2586,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Heading(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Heading(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "heading",
         Size = size,
@@ -2600,7 +2600,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Heart(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Heart(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "heart",
         Size = size,
@@ -2614,7 +2614,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon HeartFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon HeartFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "heart-filled",
         Size = size,
@@ -2628,7 +2628,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Height(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Height(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "height",
         Size = size,
@@ -2642,7 +2642,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon HobbyKnife(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon HobbyKnife(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "hobby-knife",
         Size = size,
@@ -2656,7 +2656,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Home(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Home(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "home",
         Size = size,
@@ -2670,7 +2670,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon IconjarLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon IconjarLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "iconjar-logo",
         Size = size,
@@ -2684,7 +2684,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon IdCard(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon IdCard(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "id-card",
         Size = size,
@@ -2698,7 +2698,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Image(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Image(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "image",
         Size = size,
@@ -2712,7 +2712,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon InfoCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon InfoCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "info-circled",
         Size = size,
@@ -2726,7 +2726,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Input(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Input(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "input",
         Size = size,
@@ -2740,7 +2740,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon InstagramLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon InstagramLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "instagram-logo",
         Size = size,
@@ -2754,7 +2754,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon JustifyCenter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon JustifyCenter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "justify-center",
         Size = size,
@@ -2770,7 +2770,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon JustifyEnd(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon JustifyEnd(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "justify-end",
         Size = size,
@@ -2786,7 +2786,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon JustifyStart(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon JustifyStart(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "justify-start",
         Size = size,
@@ -2802,7 +2802,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon JustifyStretch(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon JustifyStretch(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "justify-stretch",
         Size = size,
@@ -2818,7 +2818,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Keyboard(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Keyboard(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "keyboard",
         Size = size,
@@ -2832,7 +2832,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LapTimer(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LapTimer(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "lap-timer",
         Size = size,
@@ -2846,7 +2846,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Laptop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Laptop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "laptop",
         Size = size,
@@ -2860,7 +2860,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Layers(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Layers(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "layers",
         Size = size,
@@ -2874,7 +2874,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Layout(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Layout(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "layout",
         Size = size,
@@ -2888,7 +2888,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LetterCaseCapitalize(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LetterCaseCapitalize(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "letter-case-capitalize",
         Size = size,
@@ -2902,7 +2902,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LetterCaseLowercase(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LetterCaseLowercase(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "letter-case-lowercase",
         Size = size,
@@ -2916,7 +2916,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LetterCaseToggle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LetterCaseToggle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "letter-case-toggle",
         Size = size,
@@ -2930,7 +2930,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LetterCaseUppercase(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LetterCaseUppercase(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "letter-case-uppercase",
         Size = size,
@@ -2944,7 +2944,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LetterSpacing(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LetterSpacing(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "letter-spacing",
         Size = size,
@@ -2958,7 +2958,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LightningBolt(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LightningBolt(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "lightning-bolt",
         Size = size,
@@ -2972,7 +2972,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LineHeight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LineHeight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "line-height",
         Size = size,
@@ -2986,7 +2986,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Link1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Link1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "link-1",
         Size = size,
@@ -3000,7 +3000,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Link2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Link2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "link-2",
         Size = size,
@@ -3014,7 +3014,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LinkBreak1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LinkBreak1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "link-break-1",
         Size = size,
@@ -3028,7 +3028,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LinkBreak2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LinkBreak2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "link-break-2",
         Size = size,
@@ -3042,7 +3042,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LinkNone1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LinkNone1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "link-none-1",
         Size = size,
@@ -3056,7 +3056,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LinkNone2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LinkNone2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "link-none-2",
         Size = size,
@@ -3070,7 +3070,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LinkedinLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LinkedinLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "linkedin-logo",
         Size = size,
@@ -3084,7 +3084,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ListBullet(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ListBullet(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "list-bullet",
         Size = size,
@@ -3098,7 +3098,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LockClosed(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LockClosed(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "lock-closed",
         Size = size,
@@ -3112,7 +3112,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LockOpen1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LockOpen1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "lock-open-1",
         Size = size,
@@ -3126,7 +3126,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon LockOpen2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon LockOpen2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "lock-open-2",
         Size = size,
@@ -3140,7 +3140,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Loop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Loop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "loop",
         Size = size,
@@ -3154,7 +3154,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon MagicWand(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon MagicWand(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "magic-wand",
         Size = size,
@@ -3168,7 +3168,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon MagnifyingGlass(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon MagnifyingGlass(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "magnifying-glass",
         Size = size,
@@ -3182,7 +3182,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Margin(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Margin(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "margin",
         Size = size,
@@ -3196,7 +3196,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon MaskOff(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon MaskOff(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "mask-off",
         Size = size,
@@ -3210,7 +3210,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon MaskOn(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon MaskOn(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "mask-on",
         Size = size,
@@ -3224,7 +3224,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Minimize(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Minimize(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "minimize",
         Size = size,
@@ -3238,7 +3238,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Minus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Minus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "minus",
         Size = size,
@@ -3252,7 +3252,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon MinusCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon MinusCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "minus-circled",
         Size = size,
@@ -3266,7 +3266,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Mix(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Mix(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "mix",
         Size = size,
@@ -3280,7 +3280,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon MixerHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon MixerHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "mixer-horizontal",
         Size = size,
@@ -3294,7 +3294,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon MixerVertical(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon MixerVertical(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "mixer-vertical",
         Size = size,
@@ -3308,7 +3308,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Mobile(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Mobile(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "mobile",
         Size = size,
@@ -3322,7 +3322,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ModulzLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ModulzLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "modulz-logo",
         Size = size,
@@ -3336,7 +3336,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Moon(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Moon(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "moon",
         Size = size,
@@ -3350,7 +3350,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Move(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Move(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "move",
         Size = size,
@@ -3364,7 +3364,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon NotionLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon NotionLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "notion-logo",
         Size = size,
@@ -3378,7 +3378,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Opacity(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Opacity(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "opacity",
         Size = size,
@@ -3392,7 +3392,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon OpenInNewWindow(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon OpenInNewWindow(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "open-in-new-window",
         Size = size,
@@ -3406,7 +3406,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Overline(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Overline(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "overline",
         Size = size,
@@ -3420,7 +3420,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Padding(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Padding(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "padding",
         Size = size,
@@ -3434,7 +3434,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PanelBottom(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PanelBottom(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "panel-bottom",
         Size = size,
@@ -3457,7 +3457,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PanelBottomMinimized(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PanelBottomMinimized(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "panel-bottom-minimized",
         Size = size,
@@ -3480,7 +3480,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PanelLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PanelLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "panel-left",
         Size = size,
@@ -3503,7 +3503,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PanelLeftMinimized(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PanelLeftMinimized(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "panel-left-minimized",
         Size = size,
@@ -3526,7 +3526,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PanelRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PanelRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "panel-right",
         Size = size,
@@ -3549,7 +3549,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PanelRightMinimized(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PanelRightMinimized(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "panel-right-minimized",
         Size = size,
@@ -3572,7 +3572,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PaperPlane(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PaperPlane(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "paper-plane",
         Size = size,
@@ -3586,7 +3586,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Pause(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Pause(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "pause",
         Size = size,
@@ -3600,7 +3600,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Pencil1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Pencil1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "pencil-1",
         Size = size,
@@ -3614,7 +3614,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Pencil2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Pencil2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "pencil-2",
         Size = size,
@@ -3628,7 +3628,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon People(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon People(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "people",
         Size = size,
@@ -3642,7 +3642,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Person(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Person(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "person",
         Size = size,
@@ -3656,7 +3656,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PieChart(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PieChart(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "pie-chart",
         Size = size,
@@ -3670,7 +3670,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Pilcrow(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Pilcrow(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "pilcrow",
         Size = size,
@@ -3684,7 +3684,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PinBottom(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PinBottom(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "pin-bottom",
         Size = size,
@@ -3698,7 +3698,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PinLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PinLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "pin-left",
         Size = size,
@@ -3712,7 +3712,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PinRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PinRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "pin-right",
         Size = size,
@@ -3726,7 +3726,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PinTop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PinTop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "pin-top",
         Size = size,
@@ -3740,7 +3740,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Play(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Play(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "play",
         Size = size,
@@ -3754,7 +3754,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Plus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Plus(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "plus",
         Size = size,
@@ -3768,7 +3768,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon PlusCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon PlusCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "plus-circled",
         Size = size,
@@ -3782,7 +3782,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon QuestionMark(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon QuestionMark(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "question-mark",
         Size = size,
@@ -3796,7 +3796,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon QuestionMarkCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon QuestionMarkCircled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "question-mark-circled",
         Size = size,
@@ -3810,7 +3810,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Quote(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Quote(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "quote",
         Size = size,
@@ -3824,7 +3824,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Radiobutton(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Radiobutton(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "radiobutton",
         Size = size,
@@ -3838,7 +3838,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Reader(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Reader(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "reader",
         Size = size,
@@ -3852,7 +3852,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Reload(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Reload(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "reload",
         Size = size,
@@ -3866,7 +3866,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Reset(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Reset(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "reset",
         Size = size,
@@ -3880,7 +3880,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Resume(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Resume(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "resume",
         Size = size,
@@ -3894,7 +3894,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Rocket(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Rocket(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "rocket",
         Size = size,
@@ -3908,7 +3908,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon RotateCounterClockwise(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon RotateCounterClockwise(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "rotate-counter-clockwise",
         Size = size,
@@ -3922,7 +3922,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon RowSpacing(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon RowSpacing(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "row-spacing",
         Size = size,
@@ -3936,7 +3936,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Rows(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Rows(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "rows",
         Size = size,
@@ -3950,7 +3950,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon RulerHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon RulerHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "ruler-horizontal",
         Size = size,
@@ -3964,7 +3964,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon RulerSquare(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon RulerSquare(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "ruler-square",
         Size = size,
@@ -3978,7 +3978,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Scissors(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Scissors(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "scissors",
         Size = size,
@@ -3992,7 +3992,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Section(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Section(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "section",
         Size = size,
@@ -4006,7 +4006,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Server(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Server(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "server",
         Size = size,
@@ -4020,7 +4020,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SewingPin(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SewingPin(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "sewing-pin",
         Size = size,
@@ -4034,7 +4034,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SewingPinFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SewingPinFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "sewing-pin-filled",
         Size = size,
@@ -4048,7 +4048,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Shadow(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Shadow(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "shadow",
         Size = size,
@@ -4074,7 +4074,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ShadowInner(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ShadowInner(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "shadow-inner",
         Size = size,
@@ -4100,7 +4100,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ShadowNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ShadowNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "shadow-none",
         Size = size,
@@ -4126,7 +4126,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ShadowOuter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ShadowOuter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "shadow-outer",
         Size = size,
@@ -4147,7 +4147,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Share1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Share1(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "share-1",
         Size = size,
@@ -4161,7 +4161,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Share2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Share2(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "share-2",
         Size = size,
@@ -4175,7 +4175,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Shuffle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Shuffle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "shuffle",
         Size = size,
@@ -4189,7 +4189,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Size(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Size(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "size",
         Size = size,
@@ -4203,7 +4203,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SketchLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SketchLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "sketch-logo",
         Size = size,
@@ -4217,7 +4217,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Slash(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Slash(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "slash",
         Size = size,
@@ -4231,7 +4231,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Slider(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Slider(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "slider",
         Size = size,
@@ -4245,7 +4245,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SpaceBetweenHorizontally(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SpaceBetweenHorizontally(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "space-between-horizontally",
         Size = size,
@@ -4259,7 +4259,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SpaceBetweenVertically(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SpaceBetweenVertically(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "space-between-vertically",
         Size = size,
@@ -4273,7 +4273,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SpaceEvenlyHorizontally(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SpaceEvenlyHorizontally(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "space-evenly-horizontally",
         Size = size,
@@ -4287,7 +4287,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SpaceEvenlyVertically(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SpaceEvenlyVertically(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "space-evenly-vertically",
         Size = size,
@@ -4301,7 +4301,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SpeakerLoud(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SpeakerLoud(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "speaker-loud",
         Size = size,
@@ -4315,7 +4315,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SpeakerModerate(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SpeakerModerate(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "speaker-moderate",
         Size = size,
@@ -4329,7 +4329,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SpeakerOff(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SpeakerOff(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "speaker-off",
         Size = size,
@@ -4343,7 +4343,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon SpeakerQuiet(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon SpeakerQuiet(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "speaker-quiet",
         Size = size,
@@ -4357,7 +4357,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Square(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Square(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "square",
         Size = size,
@@ -4371,7 +4371,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Stack(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Stack(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "stack",
         Size = size,
@@ -4385,7 +4385,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Star(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Star(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "star",
         Size = size,
@@ -4399,7 +4399,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon StarFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon StarFilled(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "star-filled",
         Size = size,
@@ -4413,7 +4413,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon StitchesLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon StitchesLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "stitches-logo",
         Size = size,
@@ -4427,7 +4427,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Stop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Stop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "stop",
         Size = size,
@@ -4441,7 +4441,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Stopwatch(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Stopwatch(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "stopwatch",
         Size = size,
@@ -4455,7 +4455,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon StretchHorizontally(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon StretchHorizontally(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "stretch-horizontally",
         Size = size,
@@ -4469,7 +4469,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon StretchVertically(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon StretchVertically(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "stretch-vertically",
         Size = size,
@@ -4483,7 +4483,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Strikethrough(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Strikethrough(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "strikethrough",
         Size = size,
@@ -4497,7 +4497,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Sun(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Sun(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "sun",
         Size = size,
@@ -4511,7 +4511,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Switch(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Switch(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "switch",
         Size = size,
@@ -4525,7 +4525,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Symbol(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Symbol(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "symbol",
         Size = size,
@@ -4539,7 +4539,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Table(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Table(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "table",
         Size = size,
@@ -4553,7 +4553,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Target(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Target(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "target",
         Size = size,
@@ -4567,7 +4567,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Text(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Text(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "text",
         Size = size,
@@ -4581,7 +4581,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TextAlignBottom(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TextAlignBottom(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "text-align-bottom",
         Size = size,
@@ -4595,7 +4595,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TextAlignCenter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TextAlignCenter(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "text-align-center",
         Size = size,
@@ -4609,7 +4609,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TextAlignJustify(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TextAlignJustify(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "text-align-justify",
         Size = size,
@@ -4623,7 +4623,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TextAlignLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TextAlignLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "text-align-left",
         Size = size,
@@ -4637,7 +4637,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TextAlignMiddle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TextAlignMiddle(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "text-align-middle",
         Size = size,
@@ -4651,7 +4651,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TextAlignRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TextAlignRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "text-align-right",
         Size = size,
@@ -4665,7 +4665,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TextAlignTop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TextAlignTop(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "text-align-top",
         Size = size,
@@ -4679,7 +4679,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TextNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TextNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "text-none",
         Size = size,
@@ -4693,7 +4693,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ThickArrowDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ThickArrowDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "thick-arrow-down",
         Size = size,
@@ -4707,7 +4707,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ThickArrowLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ThickArrowLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "thick-arrow-left",
         Size = size,
@@ -4721,7 +4721,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ThickArrowRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ThickArrowRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "thick-arrow-right",
         Size = size,
@@ -4735,7 +4735,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ThickArrowUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ThickArrowUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "thick-arrow-up",
         Size = size,
@@ -4749,7 +4749,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Timer(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Timer(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "timer",
         Size = size,
@@ -4763,7 +4763,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Tokens(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Tokens(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "tokens",
         Size = size,
@@ -4777,7 +4777,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TrackNext(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TrackNext(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "track-next",
         Size = size,
@@ -4791,7 +4791,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TrackPrevious(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TrackPrevious(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "track-previous",
         Size = size,
@@ -4805,7 +4805,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Transform(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Transform(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "transform",
         Size = size,
@@ -4819,7 +4819,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TransparencyGrid(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TransparencyGrid(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "transparency-grid",
         Size = size,
@@ -4833,7 +4833,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Trash(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Trash(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "trash",
         Size = size,
@@ -4847,7 +4847,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TriangleDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TriangleDown(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "triangle-down",
         Size = size,
@@ -4861,7 +4861,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TriangleLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TriangleLeft(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "triangle-left",
         Size = size,
@@ -4875,7 +4875,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TriangleRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TriangleRight(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "triangle-right",
         Size = size,
@@ -4889,7 +4889,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TriangleUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TriangleUp(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "triangle-up",
         Size = size,
@@ -4903,7 +4903,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon TwitterLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon TwitterLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "twitter-logo",
         Size = size,
@@ -4917,7 +4917,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Underline(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Underline(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "underline",
         Size = size,
@@ -4931,7 +4931,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Update(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Update(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "update",
         Size = size,
@@ -4945,7 +4945,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Upload(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Upload(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "upload",
         Size = size,
@@ -4959,7 +4959,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Value(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Value(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "value",
         Size = size,
@@ -4973,7 +4973,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ValueNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ValueNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "value-none",
         Size = size,
@@ -4987,7 +4987,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon VercelLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon VercelLogo(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "vercel-logo",
         Size = size,
@@ -5001,7 +5001,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Video(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Video(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "video",
         Size = size,
@@ -5015,7 +5015,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ViewGrid(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ViewGrid(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "view-grid",
         Size = size,
@@ -5029,7 +5029,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ViewHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ViewHorizontal(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "view-horizontal",
         Size = size,
@@ -5043,7 +5043,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ViewNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ViewNone(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "view-none",
         Size = size,
@@ -5057,7 +5057,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ViewVertical(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ViewVertical(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "view-vertical",
         Size = size,
@@ -5071,7 +5071,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon Width(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon Width(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "width",
         Size = size,
@@ -5085,7 +5085,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ZoomIn(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ZoomIn(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "zoom-in",
         Size = size,
@@ -5099,7 +5099,7 @@ public static class RadixIconsIcons
         }
     };
 
-    public static RadixIconsIcon ZoomOut(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIconsIcon
+    public static RadixIcon ZoomOut(int size = 15, double strokeWidth = 2, string color = "currentColor", string? className = null) => new RadixIcon
     {
         Name = "zoom-out",
         Size = size,

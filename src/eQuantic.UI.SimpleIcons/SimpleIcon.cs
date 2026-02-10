@@ -1,9 +1,9 @@
 using eQuantic.UI.Core;
 using eQuantic.UI.Components;
 
-namespace eQuantic.UI.RadixIcons;
+namespace eQuantic.UI.SimpleIcons;
 
-public class RadixIconsIcon : StatelessComponent
+public class SimpleIcon : StatelessComponent
 {
     public string? Name { get; set; }
     public int Size { get; set; } = 24;
@@ -29,7 +29,7 @@ public class RadixIconsIcon : StatelessComponent
                 ["stroke-linecap"] = "round",
                 ["stroke-linejoin"] = "round",
                 ["style"] = $"color: {Color}",
-                ["class"] = $"icon icon-radix-icons icon-radix-icons-{Name} {ClassName}".Trim()
+                ["class"] = $"icon icon-simple-icons icon-simple-icons-{Name} {ClassName}".Trim()
             }
         };
 

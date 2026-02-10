@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using eQuantic.UI.Server;
 
@@ -26,12 +27,28 @@ public static class TailwindExtensions
     public static WebApplication UseTailwind(this WebApplication app, string cssPath = "/css/app.css")
     {
         var options = app.Services.GetService<UIOptions>();
-        
         if (options == null)
         {
             throw new InvalidOperationException("UIOptions not found. Ensure AddUI() is called before UseTailwind().");
         }
 
+        ConfigureTailwind(app, options, cssPath);
+        return app;
+    }
+
+    /// <summary>
+    /// Enables Tailwind CSS integration via UIOptions fluent API.
+    /// Registers services and endpoint mappings.
+    /// </summary>
+    public static UIOptions UseTailwind(this UIOptions options, string cssPath = "/css/app.css")
+    {
+        options.RegisterServices(services => services.AddTailwind());
+        options.RegisterEndpoints(endpoints => ConfigureTailwind(endpoints, options, cssPath));
+        return options;
+    }
+
+    private static void ConfigureTailwind(IEndpointRouteBuilder endpoints, UIOptions options, string cssPath)
+    {
         // Disable default CSS injection since we use Tailwind
         options.EnableDefaultCss = false;
 
@@ -73,14 +90,18 @@ public static class TailwindExtensions
         var themeScript = _cachedThemeScript;
         var darkModeScript = _cachedDarkModeScript;
         
-        app.MapScriptJs("/_equantic/theme.js", () => themeScript);
-        app.MapScriptJs("/_equantic/dark-mode.js", () => darkModeScript);
+        endpoints.MapScriptJs("/_equantic/theme.js", () => themeScript);
+        endpoints.MapScriptJs("/_equantic/dark-mode.js", () => darkModeScript);
 
         // Add script references to head
-        options.HtmlShell.HeadTags.Add($"<script src=\"/_equantic/theme.js?v={buildId}\"></script>");
-        options.HtmlShell.HeadTags.Add($"<script src=\"/_equantic/dark-mode.js?v={buildId}\"></script>");
-
-        return app;
+        if (!options.HtmlShell.HeadTags.Any(t => t.Contains("/_equantic/theme.js")))
+        {
+            options.HtmlShell.HeadTags.Add($"<script src=\"/_equantic/theme.js?v={buildId}\"></script>");
+        }
+        if (!options.HtmlShell.HeadTags.Any(t => t.Contains("/_equantic/dark-mode.js")))
+        {
+            options.HtmlShell.HeadTags.Add($"<script src=\"/_equantic/dark-mode.js?v={buildId}\"></script>");
+        }
     }
 
     /// <summary>

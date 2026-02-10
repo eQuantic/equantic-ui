@@ -1,4 +1,5 @@
 using eQuantic.UI.Core.Images;
+using eQuantic.UI.Server;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,16 +42,36 @@ public static class ImageExtensions
     public static WebApplication UseImageOptimization(this WebApplication app)
     {
         var options = app.Services.GetRequiredService<ImageOptimizationOptions>();
+        ConfigureImageOptimization(app, options);
+        return app;
+    }
 
+    /// <summary>
+    /// Enables server-side image optimization via UIOptions fluent API.
+    /// Registers services and the optimization endpoint mapping.
+    /// </summary>
+    public static UIOptions UseImageOptimization(
+        this UIOptions options, 
+        Action<ImageOptimizationOptions>? configure = null)
+    {
+        options.RegisterServices(services => services.AddImageOptimization(configure));
+        options.RegisterEndpoints(endpoints =>
+        {
+            var imgOptions = endpoints.ServiceProvider.GetRequiredService<ImageOptimizationOptions>();
+            ConfigureImageOptimization(endpoints, imgOptions);
+        });
+        return options;
+    }
+
+    private static void ConfigureImageOptimization(IEndpointRouteBuilder endpoints, ImageOptimizationOptions options)
+    {
         // Map the image optimization endpoint
-        app.MapGet("/_equantic/image", ImageOptimizationMiddleware.HandleAsync);
+        endpoints.MapGet("/_equantic/image", ImageOptimizationMiddleware.HandleAsync);
 
         // Set global state so the Image component knows optimization is available
         ImageOptimizationState.IsEnabled = true;
         ImageOptimizationState.DefaultQuality = options.DefaultQuality;
         ImageOptimizationState.DeviceSizes = options.DeviceSizes;
         ImageOptimizationState.ImageSizes = options.ImageSizes;
-
-        return app;
     }
 }

@@ -12250,10 +12250,9 @@ public static class LucideIcons
         Content = new List<IComponent>
         {
             new DynamicElement { TagName = "g", CustomAttributes = new Dictionary<string, string> { ["fill"] = "none", ["stroke"] = "currentColor", ["stroke-linecap"] = "round", ["stroke-linejoin"] = "round", ["stroke-width"] = strokeWidth.ToString() }, Children = { 
-                    new DynamicElement { TagName = "path", CustomAttributes = new Dictionary<string, string> { ["d"] = "M6 3v12" } },
+                    new DynamicElement { TagName = "path", CustomAttributes = new Dictionary<string, string> { ["d"] = "M15 6a9 9 0 0 0-9 9V3" } },
                     new DynamicElement { TagName = "circle", CustomAttributes = new Dictionary<string, string> { ["cx"] = "18", ["cy"] = "6", ["r"] = "3" } },
-                    new DynamicElement { TagName = "circle", CustomAttributes = new Dictionary<string, string> { ["cx"] = "6", ["cy"] = "18", ["r"] = "3" } },
-                    new DynamicElement { TagName = "path", CustomAttributes = new Dictionary<string, string> { ["d"] = "M18 9a9 9 0 0 1-9 9" } } 
+                    new DynamicElement { TagName = "circle", CustomAttributes = new Dictionary<string, string> { ["cx"] = "6", ["cy"] = "18", ["r"] = "3" } } 
             } }
         }
     };

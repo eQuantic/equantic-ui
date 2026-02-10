@@ -16,7 +16,7 @@ public static class ChartJsServiceExtensions
 
     /// <summary>
     /// Enables Chart.js integration by injecting CDN script and initialization logic into the HTML head.
-    /// Must be called after AddUI().
+    /// Must be called after AddUI() or via AddUI(options => options.UseChartJs()).
     /// </summary>
     public static WebApplication UseChartJs(this WebApplication app, string? version = null)
     {
@@ -27,6 +27,22 @@ public static class ChartJsServiceExtensions
             throw new InvalidOperationException("UIOptions not found. Ensure AddUI() is called before UseChartJs().");
         }
 
+        ConfigureChartJs(options, version);
+        return app;
+    }
+
+    /// <summary>
+    /// Enables Chart.js integration via UIOptions fluent API.
+    /// </summary>
+    public static UIOptions UseChartJs(this UIOptions options, string? version = null)
+    {
+        options.RegisterServices(services => services.AddChartJs());
+        ConfigureChartJs(options, version);
+        return options;
+    }
+
+    private static void ConfigureChartJs(UIOptions options, string? version = null)
+    {
         var ver = version ?? DefaultVersion;
         var cdnTag = $"<script src=\"https://cdn.jsdelivr.net/npm/chart.js@{ver}/dist/chart.umd.min.js\" defer></script>";
 
@@ -43,7 +59,5 @@ public static class ChartJsServiceExtensions
         {
             options.HtmlShell.HeadTags.Add(initTag);
         }
-
-        return app;
     }
 }

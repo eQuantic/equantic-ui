@@ -16,7 +16,7 @@ public static class ApexChartsServiceExtensions
 
     /// <summary>
     /// Enables ApexCharts integration by injecting CDN script and initialization logic into the HTML head.
-    /// Must be called after AddUI().
+    /// Must be called after AddUI() or via AddUI(options => options.UseApexCharts()).
     /// </summary>
     public static WebApplication UseApexCharts(this WebApplication app, string? version = null)
     {
@@ -27,6 +27,22 @@ public static class ApexChartsServiceExtensions
             throw new InvalidOperationException("UIOptions not found. Ensure AddUI() is called before UseApexCharts().");
         }
 
+        ConfigureApexCharts(options, version);
+        return app;
+    }
+
+    /// <summary>
+    /// Enables ApexCharts integration via UIOptions fluent API.
+    /// </summary>
+    public static UIOptions UseApexCharts(this UIOptions options, string? version = null)
+    {
+        options.RegisterServices(services => services.AddApexCharts());
+        ConfigureApexCharts(options, version);
+        return options;
+    }
+
+    private static void ConfigureApexCharts(UIOptions options, string? version = null)
+    {
         var ver = version ?? DefaultVersion;
         var cdnTag = $"<script src=\"https://cdn.jsdelivr.net/npm/apexcharts@{ver}/dist/apexcharts.min.js\" defer></script>";
 
@@ -43,7 +59,5 @@ public static class ApexChartsServiceExtensions
         {
             options.HtmlShell.HeadTags.Add(initTag);
         }
-
-        return app;
     }
 }

@@ -3,9 +3,9 @@ using eQuantic.UI.Components;
 
 namespace eQuantic.UI.Heroicons;
 
-public static class HeroiconsIcons
+public static class HeroIcons
 {
-    public static HeroiconsIcon AcademicCap(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AcademicCap(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "academic-cap",
         Size = size,
@@ -19,7 +19,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AcademicCap16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AcademicCap16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "academic-cap-16-solid",
         Size = size,
@@ -36,7 +36,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AcademicCap20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AcademicCap20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "academic-cap-20-solid",
         Size = size,
@@ -50,7 +50,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AcademicCapSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AcademicCapSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "academic-cap-solid",
         Size = size,
@@ -68,7 +68,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AdjustmentsHorizontal(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AdjustmentsHorizontal(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "adjustments-horizontal",
         Size = size,
@@ -82,7 +82,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AdjustmentsHorizontal16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AdjustmentsHorizontal16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "adjustments-horizontal-16-solid",
         Size = size,
@@ -96,7 +96,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AdjustmentsHorizontal20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AdjustmentsHorizontal20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "adjustments-horizontal-20-solid",
         Size = size,
@@ -110,7 +110,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AdjustmentsHorizontalSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AdjustmentsHorizontalSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "adjustments-horizontal-solid",
         Size = size,
@@ -124,7 +124,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AdjustmentsVertical(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AdjustmentsVertical(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "adjustments-vertical",
         Size = size,
@@ -138,7 +138,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AdjustmentsVertical16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AdjustmentsVertical16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "adjustments-vertical-16-solid",
         Size = size,
@@ -152,7 +152,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AdjustmentsVertical20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AdjustmentsVertical20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "adjustments-vertical-20-solid",
         Size = size,
@@ -166,7 +166,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AdjustmentsVerticalSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AdjustmentsVerticalSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "adjustments-vertical-solid",
         Size = size,
@@ -180,7 +180,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBox(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBox(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box",
         Size = size,
@@ -194,7 +194,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBox16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBox16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-16-solid",
         Size = size,
@@ -211,7 +211,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBox20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBox20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-20-solid",
         Size = size,
@@ -228,7 +228,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBoxArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBoxArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-arrow-down",
         Size = size,
@@ -242,7 +242,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBoxArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBoxArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-arrow-down-16-solid",
         Size = size,
@@ -259,7 +259,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBoxArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBoxArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-arrow-down-20-solid",
         Size = size,
@@ -273,7 +273,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBoxArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBoxArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-arrow-down-solid",
         Size = size,
@@ -290,7 +290,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBoxSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBoxSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-solid",
         Size = size,
@@ -307,7 +307,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBoxXMark(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBoxXMark(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-x-mark",
         Size = size,
@@ -321,7 +321,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBoxXMark16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBoxXMark16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-x-mark-16-solid",
         Size = size,
@@ -338,7 +338,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBoxXMark20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBoxXMark20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-x-mark-20-solid",
         Size = size,
@@ -355,7 +355,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArchiveBoxXMarkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArchiveBoxXMarkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "archive-box-x-mark-solid",
         Size = size,
@@ -372,7 +372,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down",
         Size = size,
@@ -386,7 +386,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-16-solid",
         Size = size,
@@ -400,7 +400,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-20-solid",
         Size = size,
@@ -414,7 +414,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-circle",
         Size = size,
@@ -428,7 +428,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-circle-16-solid",
         Size = size,
@@ -442,7 +442,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-circle-20-solid",
         Size = size,
@@ -456,7 +456,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-circle-solid",
         Size = size,
@@ -470,7 +470,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-left",
         Size = size,
@@ -484,7 +484,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-left-16-solid",
         Size = size,
@@ -498,7 +498,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-left-20-solid",
         Size = size,
@@ -512,7 +512,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-left-solid",
         Size = size,
@@ -526,7 +526,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownOnSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownOnSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-on-square",
         Size = size,
@@ -540,7 +540,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownOnSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownOnSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-on-square-16-solid",
         Size = size,
@@ -554,7 +554,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownOnSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownOnSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-on-square-20-solid",
         Size = size,
@@ -568,7 +568,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownOnSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownOnSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-on-square-solid",
         Size = size,
@@ -582,7 +582,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownOnSquareStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownOnSquareStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-on-square-stack",
         Size = size,
@@ -596,7 +596,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownOnSquareStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownOnSquareStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-on-square-stack-16-solid",
         Size = size,
@@ -613,7 +613,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownOnSquareStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownOnSquareStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-on-square-stack-20-solid",
         Size = size,
@@ -627,7 +627,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownOnSquareStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownOnSquareStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-on-square-stack-solid",
         Size = size,
@@ -644,7 +644,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-right",
         Size = size,
@@ -658,7 +658,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-right-16-solid",
         Size = size,
@@ -672,7 +672,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-right-20-solid",
         Size = size,
@@ -686,7 +686,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-right-solid",
         Size = size,
@@ -700,7 +700,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-solid",
         Size = size,
@@ -714,7 +714,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownTray(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownTray(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-tray",
         Size = size,
@@ -728,7 +728,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownTray16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownTray16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-tray-16-solid",
         Size = size,
@@ -745,7 +745,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownTray20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownTray20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-tray-20-solid",
         Size = size,
@@ -762,7 +762,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowDownTraySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowDownTraySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-down-tray-solid",
         Size = size,
@@ -776,7 +776,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left",
         Size = size,
@@ -790,7 +790,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-16-solid",
         Size = size,
@@ -804,7 +804,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-20-solid",
         Size = size,
@@ -818,7 +818,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-circle",
         Size = size,
@@ -832,7 +832,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-circle-16-solid",
         Size = size,
@@ -846,7 +846,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-circle-20-solid",
         Size = size,
@@ -860,7 +860,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-circle-solid",
         Size = size,
@@ -874,7 +874,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftEndOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftEndOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-end-on-rectangle",
         Size = size,
@@ -888,7 +888,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftEndOnRectangle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftEndOnRectangle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-end-on-rectangle-16-solid",
         Size = size,
@@ -905,7 +905,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftEndOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftEndOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-end-on-rectangle-20-solid",
         Size = size,
@@ -922,7 +922,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftEndOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftEndOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-end-on-rectangle-solid",
         Size = size,
@@ -936,7 +936,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-on-rectangle",
         Size = size,
@@ -950,7 +950,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-on-rectangle-20-solid",
         Size = size,
@@ -967,7 +967,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-on-rectangle-solid",
         Size = size,
@@ -981,7 +981,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-solid",
         Size = size,
@@ -995,7 +995,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftStartOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftStartOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-start-on-rectangle",
         Size = size,
@@ -1009,7 +1009,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftStartOnRectangle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftStartOnRectangle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-start-on-rectangle-16-solid",
         Size = size,
@@ -1023,7 +1023,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftStartOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftStartOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-start-on-rectangle-20-solid",
         Size = size,
@@ -1040,7 +1040,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLeftStartOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLeftStartOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-left-start-on-rectangle-solid",
         Size = size,
@@ -1054,7 +1054,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-down",
         Size = size,
@@ -1068,7 +1068,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-down-16-solid",
         Size = size,
@@ -1082,7 +1082,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-down-20-solid",
         Size = size,
@@ -1096,7 +1096,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-down-solid",
         Size = size,
@@ -1110,7 +1110,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-left",
         Size = size,
@@ -1124,7 +1124,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-left-16-solid",
         Size = size,
@@ -1138,7 +1138,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-left-20-solid",
         Size = size,
@@ -1152,7 +1152,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-left-solid",
         Size = size,
@@ -1166,7 +1166,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-right",
         Size = size,
@@ -1180,7 +1180,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-right-16-solid",
         Size = size,
@@ -1194,7 +1194,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-right-20-solid",
         Size = size,
@@ -1208,7 +1208,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-right-solid",
         Size = size,
@@ -1222,7 +1222,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-up",
         Size = size,
@@ -1236,7 +1236,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-up-16-solid",
         Size = size,
@@ -1250,7 +1250,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-up-20-solid",
         Size = size,
@@ -1264,7 +1264,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowLongUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowLongUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-long-up-solid",
         Size = size,
@@ -1278,7 +1278,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowPath(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowPath(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-path",
         Size = size,
@@ -1292,7 +1292,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowPath16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowPath16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-path-16-solid",
         Size = size,
@@ -1306,7 +1306,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowPath20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowPath20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-path-20-solid",
         Size = size,
@@ -1320,7 +1320,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowPathRoundedSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowPathRoundedSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-path-rounded-square",
         Size = size,
@@ -1334,7 +1334,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowPathRoundedSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowPathRoundedSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-path-rounded-square-16-solid",
         Size = size,
@@ -1348,7 +1348,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowPathRoundedSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowPathRoundedSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-path-rounded-square-20-solid",
         Size = size,
@@ -1362,7 +1362,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowPathRoundedSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowPathRoundedSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-path-rounded-square-solid",
         Size = size,
@@ -1376,7 +1376,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowPathSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowPathSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-path-solid",
         Size = size,
@@ -1390,7 +1390,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right",
         Size = size,
@@ -1404,7 +1404,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-16-solid",
         Size = size,
@@ -1418,7 +1418,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-20-solid",
         Size = size,
@@ -1432,7 +1432,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-circle",
         Size = size,
@@ -1446,7 +1446,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-circle-16-solid",
         Size = size,
@@ -1460,7 +1460,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-circle-20-solid",
         Size = size,
@@ -1474,7 +1474,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-circle-solid",
         Size = size,
@@ -1488,7 +1488,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightEndOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightEndOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-end-on-rectangle",
         Size = size,
@@ -1502,7 +1502,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightEndOnRectangle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightEndOnRectangle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-end-on-rectangle-16-solid",
         Size = size,
@@ -1519,7 +1519,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightEndOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightEndOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-end-on-rectangle-20-solid",
         Size = size,
@@ -1536,7 +1536,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightEndOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightEndOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-end-on-rectangle-solid",
         Size = size,
@@ -1550,7 +1550,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-on-rectangle",
         Size = size,
@@ -1564,7 +1564,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-on-rectangle-20-solid",
         Size = size,
@@ -1581,7 +1581,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-on-rectangle-solid",
         Size = size,
@@ -1595,7 +1595,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-solid",
         Size = size,
@@ -1609,7 +1609,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightStartOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightStartOnRectangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-start-on-rectangle",
         Size = size,
@@ -1623,7 +1623,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightStartOnRectangle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightStartOnRectangle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-start-on-rectangle-16-solid",
         Size = size,
@@ -1637,7 +1637,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightStartOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightStartOnRectangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-start-on-rectangle-20-solid",
         Size = size,
@@ -1654,7 +1654,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowRightStartOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowRightStartOnRectangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-right-start-on-rectangle-solid",
         Size = size,
@@ -1668,7 +1668,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-down",
         Size = size,
@@ -1682,7 +1682,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-down-20-solid",
         Size = size,
@@ -1696,7 +1696,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-down-solid",
         Size = size,
@@ -1710,7 +1710,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-left",
         Size = size,
@@ -1724,7 +1724,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-left-20-solid",
         Size = size,
@@ -1738,7 +1738,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-left-solid",
         Size = size,
@@ -1752,7 +1752,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-right",
         Size = size,
@@ -1766,7 +1766,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-right-20-solid",
         Size = size,
@@ -1780,7 +1780,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-right-solid",
         Size = size,
@@ -1794,7 +1794,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-up",
         Size = size,
@@ -1808,7 +1808,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-up-20-solid",
         Size = size,
@@ -1822,7 +1822,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowSmallUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowSmallUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-small-up-solid",
         Size = size,
@@ -1836,7 +1836,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTopRightOnSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTopRightOnSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-top-right-on-square",
         Size = size,
@@ -1850,7 +1850,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTopRightOnSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTopRightOnSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-top-right-on-square-16-solid",
         Size = size,
@@ -1867,7 +1867,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTopRightOnSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTopRightOnSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-top-right-on-square-20-solid",
         Size = size,
@@ -1884,7 +1884,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTopRightOnSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTopRightOnSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-top-right-on-square-solid",
         Size = size,
@@ -1898,7 +1898,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTrendingDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTrendingDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-trending-down",
         Size = size,
@@ -1912,7 +1912,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTrendingDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTrendingDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-trending-down-16-solid",
         Size = size,
@@ -1926,7 +1926,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTrendingDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTrendingDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-trending-down-20-solid",
         Size = size,
@@ -1940,7 +1940,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTrendingDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTrendingDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-trending-down-solid",
         Size = size,
@@ -1954,7 +1954,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTrendingUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTrendingUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-trending-up",
         Size = size,
@@ -1968,7 +1968,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTrendingUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTrendingUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-trending-up-16-solid",
         Size = size,
@@ -1982,7 +1982,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTrendingUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTrendingUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-trending-up-20-solid",
         Size = size,
@@ -1996,7 +1996,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTrendingUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTrendingUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-trending-up-solid",
         Size = size,
@@ -2010,7 +2010,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnDownLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnDownLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-down-left",
         Size = size,
@@ -2024,7 +2024,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnDownLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnDownLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-down-left-16-solid",
         Size = size,
@@ -2038,7 +2038,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnDownLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnDownLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-down-left-20-solid",
         Size = size,
@@ -2052,7 +2052,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnDownLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnDownLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-down-left-solid",
         Size = size,
@@ -2066,7 +2066,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnDownRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnDownRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-down-right",
         Size = size,
@@ -2080,7 +2080,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnDownRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnDownRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-down-right-16-solid",
         Size = size,
@@ -2094,7 +2094,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnDownRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnDownRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-down-right-20-solid",
         Size = size,
@@ -2108,7 +2108,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnDownRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnDownRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-down-right-solid",
         Size = size,
@@ -2122,7 +2122,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnLeftDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnLeftDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-left-down",
         Size = size,
@@ -2136,7 +2136,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnLeftDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnLeftDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-left-down-16-solid",
         Size = size,
@@ -2150,7 +2150,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnLeftDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnLeftDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-left-down-20-solid",
         Size = size,
@@ -2164,7 +2164,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnLeftDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnLeftDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-left-down-solid",
         Size = size,
@@ -2178,7 +2178,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnLeftUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnLeftUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-left-up",
         Size = size,
@@ -2192,7 +2192,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnLeftUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnLeftUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-left-up-16-solid",
         Size = size,
@@ -2206,7 +2206,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnLeftUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnLeftUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-left-up-20-solid",
         Size = size,
@@ -2220,7 +2220,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnLeftUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnLeftUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-left-up-solid",
         Size = size,
@@ -2234,7 +2234,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnRightDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnRightDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-right-down",
         Size = size,
@@ -2248,7 +2248,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnRightDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnRightDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-right-down-16-solid",
         Size = size,
@@ -2262,7 +2262,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnRightDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnRightDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-right-down-20-solid",
         Size = size,
@@ -2276,7 +2276,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnRightDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnRightDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-right-down-solid",
         Size = size,
@@ -2290,7 +2290,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnRightUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnRightUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-right-up",
         Size = size,
@@ -2304,7 +2304,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnRightUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnRightUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-right-up-16-solid",
         Size = size,
@@ -2318,7 +2318,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnRightUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnRightUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-right-up-20-solid",
         Size = size,
@@ -2332,7 +2332,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnRightUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnRightUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-right-up-solid",
         Size = size,
@@ -2346,7 +2346,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnUpLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnUpLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-up-left",
         Size = size,
@@ -2360,7 +2360,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnUpLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnUpLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-up-left-16-solid",
         Size = size,
@@ -2374,7 +2374,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnUpLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnUpLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-up-left-20-solid",
         Size = size,
@@ -2388,7 +2388,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnUpLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnUpLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-up-left-solid",
         Size = size,
@@ -2402,7 +2402,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnUpRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnUpRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-up-right",
         Size = size,
@@ -2416,7 +2416,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnUpRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnUpRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-up-right-16-solid",
         Size = size,
@@ -2430,7 +2430,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnUpRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnUpRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-up-right-20-solid",
         Size = size,
@@ -2444,7 +2444,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowTurnUpRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowTurnUpRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-turn-up-right-solid",
         Size = size,
@@ -2458,7 +2458,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up",
         Size = size,
@@ -2472,7 +2472,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-16-solid",
         Size = size,
@@ -2486,7 +2486,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-20-solid",
         Size = size,
@@ -2500,7 +2500,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-circle",
         Size = size,
@@ -2514,7 +2514,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-circle-16-solid",
         Size = size,
@@ -2528,7 +2528,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-circle-20-solid",
         Size = size,
@@ -2542,7 +2542,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-circle-solid",
         Size = size,
@@ -2556,7 +2556,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-left",
         Size = size,
@@ -2570,7 +2570,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-left-16-solid",
         Size = size,
@@ -2584,7 +2584,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-left-20-solid",
         Size = size,
@@ -2598,7 +2598,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-left-solid",
         Size = size,
@@ -2612,7 +2612,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpOnSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpOnSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-on-square",
         Size = size,
@@ -2626,7 +2626,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpOnSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpOnSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-on-square-16-solid",
         Size = size,
@@ -2640,7 +2640,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpOnSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpOnSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-on-square-20-solid",
         Size = size,
@@ -2654,7 +2654,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpOnSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpOnSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-on-square-solid",
         Size = size,
@@ -2668,7 +2668,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpOnSquareStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpOnSquareStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-on-square-stack",
         Size = size,
@@ -2682,7 +2682,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpOnSquareStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpOnSquareStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-on-square-stack-16-solid",
         Size = size,
@@ -2697,7 +2697,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpOnSquareStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpOnSquareStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-on-square-stack-20-solid",
         Size = size,
@@ -2711,7 +2711,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpOnSquareStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpOnSquareStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-on-square-stack-solid",
         Size = size,
@@ -2728,7 +2728,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-right",
         Size = size,
@@ -2742,7 +2742,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-right-16-solid",
         Size = size,
@@ -2756,7 +2756,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-right-20-solid",
         Size = size,
@@ -2770,7 +2770,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-right-solid",
         Size = size,
@@ -2784,7 +2784,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-solid",
         Size = size,
@@ -2798,7 +2798,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpTray(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpTray(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-tray",
         Size = size,
@@ -2812,7 +2812,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpTray16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpTray16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-tray-16-solid",
         Size = size,
@@ -2829,7 +2829,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpTray20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpTray20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-tray-20-solid",
         Size = size,
@@ -2846,7 +2846,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUpTraySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUpTraySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-up-tray-solid",
         Size = size,
@@ -2860,7 +2860,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-down",
         Size = size,
@@ -2874,7 +2874,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-down-16-solid",
         Size = size,
@@ -2888,7 +2888,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-down-20-solid",
         Size = size,
@@ -2902,7 +2902,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-down-solid",
         Size = size,
@@ -2916,7 +2916,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-left",
         Size = size,
@@ -2930,7 +2930,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-left-16-solid",
         Size = size,
@@ -2944,7 +2944,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-left-20-solid",
         Size = size,
@@ -2958,7 +2958,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-left-solid",
         Size = size,
@@ -2972,7 +2972,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-right",
         Size = size,
@@ -2986,7 +2986,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-right-16-solid",
         Size = size,
@@ -3000,7 +3000,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-right-20-solid",
         Size = size,
@@ -3014,7 +3014,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-right-solid",
         Size = size,
@@ -3028,7 +3028,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-up",
         Size = size,
@@ -3042,7 +3042,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-up-16-solid",
         Size = size,
@@ -3056,7 +3056,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-up-20-solid",
         Size = size,
@@ -3070,7 +3070,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowUturnUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowUturnUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrow-uturn-up-solid",
         Size = size,
@@ -3084,7 +3084,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsPointingIn(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsPointingIn(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-pointing-in",
         Size = size,
@@ -3098,7 +3098,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsPointingIn16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsPointingIn16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-pointing-in-16-solid",
         Size = size,
@@ -3112,7 +3112,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsPointingIn20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsPointingIn20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-pointing-in-20-solid",
         Size = size,
@@ -3126,7 +3126,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsPointingInSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsPointingInSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-pointing-in-solid",
         Size = size,
@@ -3140,7 +3140,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsPointingOut(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsPointingOut(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-pointing-out",
         Size = size,
@@ -3154,7 +3154,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsPointingOut16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsPointingOut16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-pointing-out-16-solid",
         Size = size,
@@ -3168,7 +3168,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsPointingOut20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsPointingOut20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-pointing-out-20-solid",
         Size = size,
@@ -3182,7 +3182,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsPointingOutSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsPointingOutSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-pointing-out-solid",
         Size = size,
@@ -3196,7 +3196,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsRightLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsRightLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-right-left",
         Size = size,
@@ -3210,7 +3210,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsRightLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsRightLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-right-left-16-solid",
         Size = size,
@@ -3224,7 +3224,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsRightLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsRightLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-right-left-20-solid",
         Size = size,
@@ -3238,7 +3238,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsRightLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsRightLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-right-left-solid",
         Size = size,
@@ -3252,7 +3252,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsUpDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsUpDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-up-down",
         Size = size,
@@ -3266,7 +3266,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsUpDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsUpDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-up-down-16-solid",
         Size = size,
@@ -3280,7 +3280,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsUpDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsUpDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-up-down-20-solid",
         Size = size,
@@ -3294,7 +3294,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ArrowsUpDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ArrowsUpDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "arrows-up-down-solid",
         Size = size,
@@ -3308,7 +3308,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AtSymbol(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AtSymbol(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "at-symbol",
         Size = size,
@@ -3322,7 +3322,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AtSymbol16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AtSymbol16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "at-symbol-16-solid",
         Size = size,
@@ -3336,7 +3336,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AtSymbol20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AtSymbol20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "at-symbol-20-solid",
         Size = size,
@@ -3350,7 +3350,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon AtSymbolSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon AtSymbolSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "at-symbol-solid",
         Size = size,
@@ -3364,7 +3364,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Backspace(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Backspace(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "backspace",
         Size = size,
@@ -3378,7 +3378,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Backspace16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Backspace16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "backspace-16-solid",
         Size = size,
@@ -3392,7 +3392,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Backspace20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Backspace20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "backspace-20-solid",
         Size = size,
@@ -3406,7 +3406,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BackspaceSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BackspaceSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "backspace-solid",
         Size = size,
@@ -3420,7 +3420,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Backward(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Backward(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "backward",
         Size = size,
@@ -3434,7 +3434,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Backward16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Backward16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "backward-16-solid",
         Size = size,
@@ -3448,7 +3448,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Backward20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Backward20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "backward-20-solid",
         Size = size,
@@ -3462,7 +3462,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BackwardSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BackwardSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "backward-solid",
         Size = size,
@@ -3476,7 +3476,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Banknotes(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Banknotes(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "banknotes",
         Size = size,
@@ -3490,7 +3490,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Banknotes16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Banknotes16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "banknotes-16-solid",
         Size = size,
@@ -3507,7 +3507,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Banknotes20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Banknotes20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "banknotes-20-solid",
         Size = size,
@@ -3521,7 +3521,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BanknotesSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BanknotesSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "banknotes-solid",
         Size = size,
@@ -3539,7 +3539,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars2(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars2(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-2",
         Size = size,
@@ -3553,7 +3553,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars216Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars216Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-2-16-solid",
         Size = size,
@@ -3567,7 +3567,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars220Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars220Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-2-20-solid",
         Size = size,
@@ -3581,7 +3581,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars2Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars2Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-2-solid",
         Size = size,
@@ -3595,7 +3595,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3",
         Size = size,
@@ -3609,7 +3609,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars316Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars316Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-16-solid",
         Size = size,
@@ -3623,7 +3623,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars320Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars320Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-20-solid",
         Size = size,
@@ -3637,7 +3637,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3BottomLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3BottomLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-bottom-left",
         Size = size,
@@ -3651,7 +3651,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3BottomLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3BottomLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-bottom-left-16-solid",
         Size = size,
@@ -3665,7 +3665,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3BottomLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3BottomLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-bottom-left-20-solid",
         Size = size,
@@ -3679,7 +3679,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3BottomLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3BottomLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-bottom-left-solid",
         Size = size,
@@ -3693,7 +3693,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3BottomRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3BottomRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-bottom-right",
         Size = size,
@@ -3707,7 +3707,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3BottomRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3BottomRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-bottom-right-16-solid",
         Size = size,
@@ -3721,7 +3721,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3BottomRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3BottomRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-bottom-right-20-solid",
         Size = size,
@@ -3735,7 +3735,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3BottomRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3BottomRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-bottom-right-solid",
         Size = size,
@@ -3749,7 +3749,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3CenterLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3CenterLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-center-left",
         Size = size,
@@ -3763,7 +3763,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3CenterLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3CenterLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-center-left-16-solid",
         Size = size,
@@ -3777,7 +3777,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3CenterLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3CenterLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-center-left-20-solid",
         Size = size,
@@ -3791,7 +3791,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3CenterLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3CenterLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-center-left-solid",
         Size = size,
@@ -3805,7 +3805,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars3Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars3Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-3-solid",
         Size = size,
@@ -3819,7 +3819,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars4(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars4(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-4",
         Size = size,
@@ -3833,7 +3833,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars416Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars416Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-4-16-solid",
         Size = size,
@@ -3847,7 +3847,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars420Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars420Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-4-20-solid",
         Size = size,
@@ -3861,7 +3861,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bars4Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bars4Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-4-solid",
         Size = size,
@@ -3875,7 +3875,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BarsArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BarsArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-arrow-down",
         Size = size,
@@ -3889,7 +3889,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BarsArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BarsArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-arrow-down-16-solid",
         Size = size,
@@ -3903,7 +3903,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BarsArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BarsArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-arrow-down-20-solid",
         Size = size,
@@ -3917,7 +3917,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BarsArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BarsArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-arrow-down-solid",
         Size = size,
@@ -3931,7 +3931,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BarsArrowUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BarsArrowUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-arrow-up",
         Size = size,
@@ -3945,7 +3945,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BarsArrowUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BarsArrowUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-arrow-up-16-solid",
         Size = size,
@@ -3959,7 +3959,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BarsArrowUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BarsArrowUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-arrow-up-20-solid",
         Size = size,
@@ -3973,7 +3973,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BarsArrowUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BarsArrowUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bars-arrow-up-solid",
         Size = size,
@@ -3987,7 +3987,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery0(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery0(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-0",
         Size = size,
@@ -4001,7 +4001,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery016Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery016Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-0-16-solid",
         Size = size,
@@ -4015,7 +4015,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery020Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery020Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-0-20-solid",
         Size = size,
@@ -4029,7 +4029,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery0Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery0Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-0-solid",
         Size = size,
@@ -4043,7 +4043,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery100(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery100(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-100",
         Size = size,
@@ -4057,7 +4057,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery10016Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery10016Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-100-16-solid",
         Size = size,
@@ -4074,7 +4074,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery10020Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery10020Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-100-20-solid",
         Size = size,
@@ -4091,7 +4091,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery100Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery100Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-100-solid",
         Size = size,
@@ -4105,7 +4105,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery50(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery50(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-50",
         Size = size,
@@ -4119,7 +4119,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery5016Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery5016Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-50-16-solid",
         Size = size,
@@ -4136,7 +4136,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery5020Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery5020Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-50-20-solid",
         Size = size,
@@ -4153,7 +4153,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Battery50Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Battery50Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "battery-50-solid",
         Size = size,
@@ -4170,7 +4170,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Beaker(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Beaker(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "beaker",
         Size = size,
@@ -4184,7 +4184,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Beaker16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Beaker16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "beaker-16-solid",
         Size = size,
@@ -4198,7 +4198,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Beaker20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Beaker20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "beaker-20-solid",
         Size = size,
@@ -4212,7 +4212,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BeakerSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BeakerSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "beaker-solid",
         Size = size,
@@ -4226,7 +4226,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bell(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bell(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell",
         Size = size,
@@ -4240,7 +4240,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bell16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bell16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-16-solid",
         Size = size,
@@ -4254,7 +4254,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bell20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bell20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-20-solid",
         Size = size,
@@ -4268,7 +4268,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellAlert(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellAlert(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-alert",
         Size = size,
@@ -4282,7 +4282,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellAlert16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellAlert16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-alert-16-solid",
         Size = size,
@@ -4299,7 +4299,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellAlert20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellAlert20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-alert-20-solid",
         Size = size,
@@ -4316,7 +4316,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellAlertSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellAlertSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-alert-solid",
         Size = size,
@@ -4333,7 +4333,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-slash",
         Size = size,
@@ -4347,7 +4347,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-slash-16-solid",
         Size = size,
@@ -4364,7 +4364,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-slash-20-solid",
         Size = size,
@@ -4378,7 +4378,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-slash-solid",
         Size = size,
@@ -4395,7 +4395,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellSnooze(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellSnooze(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-snooze",
         Size = size,
@@ -4409,7 +4409,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellSnooze16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellSnooze16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-snooze-16-solid",
         Size = size,
@@ -4423,7 +4423,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellSnooze20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellSnooze20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-snooze-20-solid",
         Size = size,
@@ -4437,7 +4437,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellSnoozeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellSnoozeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-snooze-solid",
         Size = size,
@@ -4451,7 +4451,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BellSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BellSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bell-solid",
         Size = size,
@@ -4465,7 +4465,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bold(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bold(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bold",
         Size = size,
@@ -4479,7 +4479,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bold16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bold16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bold-16-solid",
         Size = size,
@@ -4493,7 +4493,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bold20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bold20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bold-20-solid",
         Size = size,
@@ -4507,7 +4507,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BoldSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BoldSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bold-solid",
         Size = size,
@@ -4521,7 +4521,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bolt(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bolt(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bolt",
         Size = size,
@@ -4535,7 +4535,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bolt16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bolt16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bolt-16-solid",
         Size = size,
@@ -4549,7 +4549,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bolt20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bolt20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bolt-20-solid",
         Size = size,
@@ -4563,7 +4563,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BoltSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BoltSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bolt-slash",
         Size = size,
@@ -4577,7 +4577,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BoltSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BoltSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bolt-slash-16-solid",
         Size = size,
@@ -4591,7 +4591,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BoltSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BoltSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bolt-slash-20-solid",
         Size = size,
@@ -4608,7 +4608,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BoltSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BoltSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bolt-slash-solid",
         Size = size,
@@ -4622,7 +4622,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BoltSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BoltSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bolt-solid",
         Size = size,
@@ -4636,7 +4636,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookOpen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookOpen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "book-open",
         Size = size,
@@ -4650,7 +4650,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookOpen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookOpen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "book-open-16-solid",
         Size = size,
@@ -4664,7 +4664,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookOpen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookOpen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "book-open-20-solid",
         Size = size,
@@ -4678,7 +4678,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookOpenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookOpenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "book-open-solid",
         Size = size,
@@ -4692,7 +4692,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bookmark(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bookmark(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark",
         Size = size,
@@ -4706,7 +4706,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bookmark16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bookmark16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-16-solid",
         Size = size,
@@ -4720,7 +4720,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Bookmark20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Bookmark20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-20-solid",
         Size = size,
@@ -4734,7 +4734,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookmarkSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookmarkSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-slash",
         Size = size,
@@ -4748,7 +4748,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookmarkSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookmarkSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-slash-16-solid",
         Size = size,
@@ -4762,7 +4762,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookmarkSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookmarkSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-slash-20-solid",
         Size = size,
@@ -4776,7 +4776,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookmarkSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookmarkSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-slash-solid",
         Size = size,
@@ -4790,7 +4790,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookmarkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookmarkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-solid",
         Size = size,
@@ -4804,7 +4804,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookmarkSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookmarkSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-square",
         Size = size,
@@ -4818,7 +4818,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookmarkSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookmarkSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-square-16-solid",
         Size = size,
@@ -4832,7 +4832,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookmarkSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookmarkSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-square-20-solid",
         Size = size,
@@ -4846,7 +4846,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BookmarkSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BookmarkSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bookmark-square-solid",
         Size = size,
@@ -4860,7 +4860,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Briefcase(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Briefcase(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "briefcase",
         Size = size,
@@ -4874,7 +4874,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Briefcase16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Briefcase16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "briefcase-16-solid",
         Size = size,
@@ -4889,7 +4889,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Briefcase20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Briefcase20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "briefcase-20-solid",
         Size = size,
@@ -4906,7 +4906,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BriefcaseSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BriefcaseSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "briefcase-solid",
         Size = size,
@@ -4923,7 +4923,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BugAnt(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BugAnt(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bug-ant",
         Size = size,
@@ -4937,7 +4937,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BugAnt16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BugAnt16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bug-ant-16-solid",
         Size = size,
@@ -4951,7 +4951,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BugAnt20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BugAnt20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bug-ant-20-solid",
         Size = size,
@@ -4965,7 +4965,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BugAntSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BugAntSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "bug-ant-solid",
         Size = size,
@@ -4979,7 +4979,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingLibrary(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingLibrary(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-library",
         Size = size,
@@ -4993,7 +4993,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingLibrary16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingLibrary16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-library-16-solid",
         Size = size,
@@ -5007,7 +5007,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingLibrary20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingLibrary20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-library-20-solid",
         Size = size,
@@ -5021,7 +5021,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingLibrarySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingLibrarySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-library-solid",
         Size = size,
@@ -5039,7 +5039,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingOffice(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingOffice(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-office",
         Size = size,
@@ -5053,7 +5053,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingOffice16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingOffice16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-office-16-solid",
         Size = size,
@@ -5067,7 +5067,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingOffice2(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingOffice2(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-office-2",
         Size = size,
@@ -5081,7 +5081,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingOffice216Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingOffice216Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-office-2-16-solid",
         Size = size,
@@ -5095,7 +5095,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingOffice220Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingOffice220Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-office-2-20-solid",
         Size = size,
@@ -5109,7 +5109,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingOffice2Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingOffice2Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-office-2-solid",
         Size = size,
@@ -5123,7 +5123,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingOffice20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingOffice20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-office-20-solid",
         Size = size,
@@ -5137,7 +5137,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingOfficeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingOfficeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-office-solid",
         Size = size,
@@ -5151,7 +5151,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingStorefront(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingStorefront(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-storefront",
         Size = size,
@@ -5165,7 +5165,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingStorefront16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingStorefront16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-storefront-16-solid",
         Size = size,
@@ -5179,7 +5179,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingStorefront20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingStorefront20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-storefront-20-solid",
         Size = size,
@@ -5193,7 +5193,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon BuildingStorefrontSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon BuildingStorefrontSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "building-storefront-solid",
         Size = size,
@@ -5210,7 +5210,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cake(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cake(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cake",
         Size = size,
@@ -5224,7 +5224,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cake16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cake16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cake-16-solid",
         Size = size,
@@ -5238,7 +5238,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cake20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cake20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cake-20-solid",
         Size = size,
@@ -5252,7 +5252,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CakeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CakeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cake-solid",
         Size = size,
@@ -5266,7 +5266,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Calculator(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Calculator(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calculator",
         Size = size,
@@ -5280,7 +5280,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Calculator16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Calculator16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calculator-16-solid",
         Size = size,
@@ -5294,7 +5294,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Calculator20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Calculator20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calculator-20-solid",
         Size = size,
@@ -5308,7 +5308,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CalculatorSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CalculatorSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calculator-solid",
         Size = size,
@@ -5322,7 +5322,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Calendar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Calendar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar",
         Size = size,
@@ -5336,7 +5336,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Calendar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Calendar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-16-solid",
         Size = size,
@@ -5350,7 +5350,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Calendar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Calendar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-20-solid",
         Size = size,
@@ -5364,7 +5364,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CalendarDateRange(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CalendarDateRange(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-date-range",
         Size = size,
@@ -5378,7 +5378,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CalendarDateRange16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CalendarDateRange16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-date-range-16-solid",
         Size = size,
@@ -5393,7 +5393,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CalendarDateRange20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CalendarDateRange20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-date-range-20-solid",
         Size = size,
@@ -5408,7 +5408,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CalendarDateRangeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CalendarDateRangeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-date-range-solid",
         Size = size,
@@ -5423,7 +5423,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CalendarDays(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CalendarDays(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-days",
         Size = size,
@@ -5437,7 +5437,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CalendarDays16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CalendarDays16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-days-16-solid",
         Size = size,
@@ -5454,7 +5454,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CalendarDays20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CalendarDays20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-days-20-solid",
         Size = size,
@@ -5471,7 +5471,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CalendarDaysSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CalendarDaysSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-days-solid",
         Size = size,
@@ -5488,7 +5488,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CalendarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CalendarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "calendar-solid",
         Size = size,
@@ -5502,7 +5502,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Camera(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Camera(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "camera",
         Size = size,
@@ -5519,7 +5519,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Camera16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Camera16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "camera-16-solid",
         Size = size,
@@ -5534,7 +5534,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Camera20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Camera20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "camera-20-solid",
         Size = size,
@@ -5548,7 +5548,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CameraSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CameraSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "camera-solid",
         Size = size,
@@ -5565,7 +5565,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartBar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartBar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-bar",
         Size = size,
@@ -5579,7 +5579,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartBar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartBar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-bar-16-solid",
         Size = size,
@@ -5593,7 +5593,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartBar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartBar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-bar-20-solid",
         Size = size,
@@ -5607,7 +5607,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartBarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartBarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-bar-solid",
         Size = size,
@@ -5621,7 +5621,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartBarSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartBarSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-bar-square",
         Size = size,
@@ -5635,7 +5635,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartBarSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartBarSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-bar-square-16-solid",
         Size = size,
@@ -5649,7 +5649,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartBarSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartBarSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-bar-square-20-solid",
         Size = size,
@@ -5663,7 +5663,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartBarSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartBarSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-bar-square-solid",
         Size = size,
@@ -5677,7 +5677,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartPie(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartPie(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-pie",
         Size = size,
@@ -5694,7 +5694,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartPie16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartPie16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-pie-16-solid",
         Size = size,
@@ -5709,7 +5709,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartPie20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartPie20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-pie-20-solid",
         Size = size,
@@ -5726,7 +5726,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChartPieSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChartPieSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chart-pie-solid",
         Size = size,
@@ -5743,7 +5743,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleBottomCenter(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleBottomCenter(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-bottom-center",
         Size = size,
@@ -5757,7 +5757,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleBottomCenter16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleBottomCenter16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-bottom-center-16-solid",
         Size = size,
@@ -5771,7 +5771,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleBottomCenter20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleBottomCenter20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-bottom-center-20-solid",
         Size = size,
@@ -5785,7 +5785,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleBottomCenterSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleBottomCenterSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-bottom-center-solid",
         Size = size,
@@ -5799,7 +5799,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleBottomCenterText(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleBottomCenterText(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-bottom-center-text",
         Size = size,
@@ -5813,7 +5813,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleBottomCenterText16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleBottomCenterText16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-bottom-center-text-16-solid",
         Size = size,
@@ -5827,7 +5827,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleBottomCenterText20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleBottomCenterText20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-bottom-center-text-20-solid",
         Size = size,
@@ -5841,7 +5841,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleBottomCenterTextSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleBottomCenterTextSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-bottom-center-text-solid",
         Size = size,
@@ -5855,7 +5855,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left",
         Size = size,
@@ -5869,7 +5869,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-16-solid",
         Size = size,
@@ -5883,7 +5883,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-20-solid",
         Size = size,
@@ -5897,7 +5897,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeftEllipsis(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeftEllipsis(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-ellipsis",
         Size = size,
@@ -5911,7 +5911,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeftEllipsis16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeftEllipsis16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-ellipsis-16-solid",
         Size = size,
@@ -5925,7 +5925,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeftEllipsis20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeftEllipsis20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-ellipsis-20-solid",
         Size = size,
@@ -5939,7 +5939,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeftEllipsisSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeftEllipsisSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-ellipsis-solid",
         Size = size,
@@ -5953,7 +5953,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeftRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeftRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-right",
         Size = size,
@@ -5967,7 +5967,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeftRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeftRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-right-16-solid",
         Size = size,
@@ -5982,7 +5982,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeftRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeftRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-right-20-solid",
         Size = size,
@@ -5999,7 +5999,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeftRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeftRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-right-solid",
         Size = size,
@@ -6016,7 +6016,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-left-solid",
         Size = size,
@@ -6030,7 +6030,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleOvalLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleOvalLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-oval-left",
         Size = size,
@@ -6044,7 +6044,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleOvalLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleOvalLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-oval-left-16-solid",
         Size = size,
@@ -6058,7 +6058,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleOvalLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleOvalLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-oval-left-20-solid",
         Size = size,
@@ -6072,7 +6072,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleOvalLeftEllipsis(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleOvalLeftEllipsis(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-oval-left-ellipsis",
         Size = size,
@@ -6086,7 +6086,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleOvalLeftEllipsis16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleOvalLeftEllipsis16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-oval-left-ellipsis-16-solid",
         Size = size,
@@ -6100,7 +6100,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleOvalLeftEllipsis20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleOvalLeftEllipsis20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-oval-left-ellipsis-20-solid",
         Size = size,
@@ -6114,7 +6114,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleOvalLeftEllipsisSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleOvalLeftEllipsisSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-oval-left-ellipsis-solid",
         Size = size,
@@ -6128,7 +6128,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChatBubbleOvalLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChatBubbleOvalLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chat-bubble-oval-left-solid",
         Size = size,
@@ -6142,7 +6142,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Check(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Check(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check",
         Size = size,
@@ -6156,7 +6156,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Check16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Check16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-16-solid",
         Size = size,
@@ -6170,7 +6170,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Check20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Check20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-20-solid",
         Size = size,
@@ -6184,7 +6184,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CheckBadge(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CheckBadge(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-badge",
         Size = size,
@@ -6198,7 +6198,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CheckBadge16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CheckBadge16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-badge-16-solid",
         Size = size,
@@ -6212,7 +6212,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CheckBadge20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CheckBadge20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-badge-20-solid",
         Size = size,
@@ -6226,7 +6226,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CheckBadgeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CheckBadgeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-badge-solid",
         Size = size,
@@ -6240,7 +6240,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CheckCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CheckCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-circle",
         Size = size,
@@ -6254,7 +6254,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CheckCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CheckCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-circle-16-solid",
         Size = size,
@@ -6268,7 +6268,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CheckCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CheckCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-circle-20-solid",
         Size = size,
@@ -6282,7 +6282,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CheckCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CheckCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-circle-solid",
         Size = size,
@@ -6296,7 +6296,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CheckSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CheckSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "check-solid",
         Size = size,
@@ -6310,7 +6310,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-down",
         Size = size,
@@ -6324,7 +6324,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-down-16-solid",
         Size = size,
@@ -6338,7 +6338,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-down-20-solid",
         Size = size,
@@ -6352,7 +6352,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-down-solid",
         Size = size,
@@ -6369,7 +6369,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-left",
         Size = size,
@@ -6383,7 +6383,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-left-16-solid",
         Size = size,
@@ -6397,7 +6397,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-left-20-solid",
         Size = size,
@@ -6411,7 +6411,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-left-solid",
         Size = size,
@@ -6428,7 +6428,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-right",
         Size = size,
@@ -6442,7 +6442,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-right-16-solid",
         Size = size,
@@ -6456,7 +6456,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-right-20-solid",
         Size = size,
@@ -6470,7 +6470,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-right-solid",
         Size = size,
@@ -6487,7 +6487,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-up",
         Size = size,
@@ -6504,7 +6504,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-up-16-solid",
         Size = size,
@@ -6518,7 +6518,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-up-20-solid",
         Size = size,
@@ -6532,7 +6532,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDoubleUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDoubleUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-double-up-solid",
         Size = size,
@@ -6549,7 +6549,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-down",
         Size = size,
@@ -6563,7 +6563,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-down-16-solid",
         Size = size,
@@ -6577,7 +6577,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-down-20-solid",
         Size = size,
@@ -6591,7 +6591,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-down-solid",
         Size = size,
@@ -6605,7 +6605,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-left",
         Size = size,
@@ -6619,7 +6619,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-left-16-solid",
         Size = size,
@@ -6633,7 +6633,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-left-20-solid",
         Size = size,
@@ -6647,7 +6647,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-left-solid",
         Size = size,
@@ -6661,7 +6661,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-right",
         Size = size,
@@ -6675,7 +6675,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-right-16-solid",
         Size = size,
@@ -6689,7 +6689,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-right-20-solid",
         Size = size,
@@ -6703,7 +6703,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-right-solid",
         Size = size,
@@ -6717,7 +6717,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-up",
         Size = size,
@@ -6731,7 +6731,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-up-16-solid",
         Size = size,
@@ -6745,7 +6745,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-up-20-solid",
         Size = size,
@@ -6759,7 +6759,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronUpDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronUpDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-up-down",
         Size = size,
@@ -6773,7 +6773,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronUpDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronUpDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-up-down-16-solid",
         Size = size,
@@ -6787,7 +6787,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronUpDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronUpDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-up-down-20-solid",
         Size = size,
@@ -6801,7 +6801,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronUpDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronUpDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-up-down-solid",
         Size = size,
@@ -6815,7 +6815,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ChevronUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ChevronUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "chevron-up-solid",
         Size = size,
@@ -6829,7 +6829,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CircleStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CircleStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "circle-stack",
         Size = size,
@@ -6843,7 +6843,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CircleStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CircleStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "circle-stack-16-solid",
         Size = size,
@@ -6859,7 +6859,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CircleStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CircleStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "circle-stack-20-solid",
         Size = size,
@@ -6873,7 +6873,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CircleStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CircleStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "circle-stack-solid",
         Size = size,
@@ -6892,7 +6892,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Clipboard(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Clipboard(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard",
         Size = size,
@@ -6906,7 +6906,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Clipboard16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Clipboard16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-16-solid",
         Size = size,
@@ -6920,7 +6920,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Clipboard20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Clipboard20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-20-solid",
         Size = size,
@@ -6934,7 +6934,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocument(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocument(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document",
         Size = size,
@@ -6948,7 +6948,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocument16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocument16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-16-solid",
         Size = size,
@@ -6963,7 +6963,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocument20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocument20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-20-solid",
         Size = size,
@@ -6980,7 +6980,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocumentCheck(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocumentCheck(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-check",
         Size = size,
@@ -6994,7 +6994,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocumentCheck16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocumentCheck16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-check-16-solid",
         Size = size,
@@ -7011,7 +7011,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocumentCheck20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocumentCheck20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-check-20-solid",
         Size = size,
@@ -7028,7 +7028,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocumentCheckSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocumentCheckSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-check-solid",
         Size = size,
@@ -7045,7 +7045,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocumentList(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocumentList(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-list",
         Size = size,
@@ -7059,7 +7059,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocumentList16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocumentList16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-list-16-solid",
         Size = size,
@@ -7076,7 +7076,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocumentList20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocumentList20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-list-20-solid",
         Size = size,
@@ -7093,7 +7093,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocumentListSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocumentListSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-list-solid",
         Size = size,
@@ -7110,7 +7110,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardDocumentSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardDocumentSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-document-solid",
         Size = size,
@@ -7128,7 +7128,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClipboardSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClipboardSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clipboard-solid",
         Size = size,
@@ -7142,7 +7142,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Clock(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Clock(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clock",
         Size = size,
@@ -7156,7 +7156,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Clock16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Clock16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clock-16-solid",
         Size = size,
@@ -7170,7 +7170,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Clock20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Clock20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clock-20-solid",
         Size = size,
@@ -7184,7 +7184,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ClockSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ClockSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "clock-solid",
         Size = size,
@@ -7198,7 +7198,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cloud(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cloud(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud",
         Size = size,
@@ -7212,7 +7212,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cloud16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cloud16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-16-solid",
         Size = size,
@@ -7226,7 +7226,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cloud20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cloud20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-20-solid",
         Size = size,
@@ -7240,7 +7240,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CloudArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CloudArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-arrow-down",
         Size = size,
@@ -7254,7 +7254,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CloudArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CloudArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-arrow-down-16-solid",
         Size = size,
@@ -7268,7 +7268,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CloudArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CloudArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-arrow-down-20-solid",
         Size = size,
@@ -7282,7 +7282,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CloudArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CloudArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-arrow-down-solid",
         Size = size,
@@ -7296,7 +7296,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CloudArrowUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CloudArrowUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-arrow-up",
         Size = size,
@@ -7310,7 +7310,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CloudArrowUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CloudArrowUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-arrow-up-16-solid",
         Size = size,
@@ -7324,7 +7324,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CloudArrowUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CloudArrowUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-arrow-up-20-solid",
         Size = size,
@@ -7338,7 +7338,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CloudArrowUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CloudArrowUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-arrow-up-solid",
         Size = size,
@@ -7352,7 +7352,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CloudSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CloudSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cloud-solid",
         Size = size,
@@ -7366,7 +7366,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CodeBracket(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CodeBracket(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "code-bracket",
         Size = size,
@@ -7380,7 +7380,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CodeBracket16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CodeBracket16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "code-bracket-16-solid",
         Size = size,
@@ -7394,7 +7394,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CodeBracket20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CodeBracket20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "code-bracket-20-solid",
         Size = size,
@@ -7408,7 +7408,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CodeBracketSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CodeBracketSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "code-bracket-solid",
         Size = size,
@@ -7422,7 +7422,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CodeBracketSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CodeBracketSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "code-bracket-square",
         Size = size,
@@ -7436,7 +7436,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CodeBracketSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CodeBracketSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "code-bracket-square-16-solid",
         Size = size,
@@ -7450,7 +7450,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CodeBracketSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CodeBracketSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "code-bracket-square-20-solid",
         Size = size,
@@ -7464,7 +7464,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CodeBracketSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CodeBracketSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "code-bracket-square-solid",
         Size = size,
@@ -7478,7 +7478,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog",
         Size = size,
@@ -7492,7 +7492,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-16-solid",
         Size = size,
@@ -7506,7 +7506,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-20-solid",
         Size = size,
@@ -7523,7 +7523,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog6Tooth(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog6Tooth(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-6-tooth",
         Size = size,
@@ -7540,7 +7540,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog6Tooth16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog6Tooth16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-6-tooth-16-solid",
         Size = size,
@@ -7554,7 +7554,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog6Tooth20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog6Tooth20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-6-tooth-20-solid",
         Size = size,
@@ -7568,7 +7568,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog6ToothSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog6ToothSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-6-tooth-solid",
         Size = size,
@@ -7582,7 +7582,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog8Tooth(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog8Tooth(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-8-tooth",
         Size = size,
@@ -7599,7 +7599,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog8Tooth16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog8Tooth16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-8-tooth-16-solid",
         Size = size,
@@ -7613,7 +7613,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog8Tooth20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog8Tooth20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-8-tooth-20-solid",
         Size = size,
@@ -7627,7 +7627,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cog8ToothSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cog8ToothSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-8-tooth-solid",
         Size = size,
@@ -7641,7 +7641,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CogSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CogSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cog-solid",
         Size = size,
@@ -7658,7 +7658,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CommandLine(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CommandLine(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "command-line",
         Size = size,
@@ -7672,7 +7672,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CommandLine16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CommandLine16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "command-line-16-solid",
         Size = size,
@@ -7686,7 +7686,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CommandLine20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CommandLine20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "command-line-20-solid",
         Size = size,
@@ -7700,7 +7700,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CommandLineSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CommandLineSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "command-line-solid",
         Size = size,
@@ -7714,7 +7714,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ComputerDesktop(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ComputerDesktop(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "computer-desktop",
         Size = size,
@@ -7728,7 +7728,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ComputerDesktop16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ComputerDesktop16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "computer-desktop-16-solid",
         Size = size,
@@ -7742,7 +7742,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ComputerDesktop20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ComputerDesktop20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "computer-desktop-20-solid",
         Size = size,
@@ -7756,7 +7756,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ComputerDesktopSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ComputerDesktopSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "computer-desktop-solid",
         Size = size,
@@ -7770,7 +7770,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CpuChip(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CpuChip(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cpu-chip",
         Size = size,
@@ -7784,7 +7784,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CpuChip16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CpuChip16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cpu-chip-16-solid",
         Size = size,
@@ -7799,7 +7799,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CpuChip20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CpuChip20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cpu-chip-20-solid",
         Size = size,
@@ -7816,7 +7816,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CpuChipSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CpuChipSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cpu-chip-solid",
         Size = size,
@@ -7833,7 +7833,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CreditCard(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CreditCard(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "credit-card",
         Size = size,
@@ -7847,7 +7847,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CreditCard16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CreditCard16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "credit-card-16-solid",
         Size = size,
@@ -7864,7 +7864,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CreditCard20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CreditCard20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "credit-card-20-solid",
         Size = size,
@@ -7878,7 +7878,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CreditCardSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CreditCardSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "credit-card-solid",
         Size = size,
@@ -7895,7 +7895,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cube(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cube(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cube",
         Size = size,
@@ -7909,7 +7909,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cube16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cube16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cube-16-solid",
         Size = size,
@@ -7923,7 +7923,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Cube20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Cube20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cube-20-solid",
         Size = size,
@@ -7937,7 +7937,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CubeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CubeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cube-solid",
         Size = size,
@@ -7951,7 +7951,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CubeTransparent(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CubeTransparent(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cube-transparent",
         Size = size,
@@ -7965,7 +7965,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CubeTransparent16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CubeTransparent16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cube-transparent-16-solid",
         Size = size,
@@ -7979,7 +7979,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CubeTransparent20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CubeTransparent20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cube-transparent-20-solid",
         Size = size,
@@ -7993,7 +7993,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CubeTransparentSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CubeTransparentSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cube-transparent-solid",
         Size = size,
@@ -8007,7 +8007,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyBangladeshi(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyBangladeshi(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-bangladeshi",
         Size = size,
@@ -8021,7 +8021,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyBangladeshi16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyBangladeshi16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-bangladeshi-16-solid",
         Size = size,
@@ -8035,7 +8035,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyBangladeshi20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyBangladeshi20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-bangladeshi-20-solid",
         Size = size,
@@ -8049,7 +8049,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyBangladeshiSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyBangladeshiSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-bangladeshi-solid",
         Size = size,
@@ -8063,7 +8063,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyDollar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyDollar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-dollar",
         Size = size,
@@ -8077,7 +8077,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyDollar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyDollar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-dollar-16-solid",
         Size = size,
@@ -8092,7 +8092,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyDollar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyDollar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-dollar-20-solid",
         Size = size,
@@ -8109,7 +8109,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyDollarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyDollarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-dollar-solid",
         Size = size,
@@ -8126,7 +8126,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyEuro(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyEuro(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-euro",
         Size = size,
@@ -8140,7 +8140,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyEuro16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyEuro16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-euro-16-solid",
         Size = size,
@@ -8154,7 +8154,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyEuro20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyEuro20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-euro-20-solid",
         Size = size,
@@ -8168,7 +8168,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyEuroSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyEuroSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-euro-solid",
         Size = size,
@@ -8182,7 +8182,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyPound(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyPound(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-pound",
         Size = size,
@@ -8196,7 +8196,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyPound16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyPound16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-pound-16-solid",
         Size = size,
@@ -8210,7 +8210,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyPound20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyPound20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-pound-20-solid",
         Size = size,
@@ -8224,7 +8224,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyPoundSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyPoundSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-pound-solid",
         Size = size,
@@ -8238,7 +8238,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyRupee(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyRupee(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-rupee",
         Size = size,
@@ -8252,7 +8252,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyRupee16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyRupee16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-rupee-16-solid",
         Size = size,
@@ -8266,7 +8266,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyRupee20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyRupee20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-rupee-20-solid",
         Size = size,
@@ -8280,7 +8280,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyRupeeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyRupeeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-rupee-solid",
         Size = size,
@@ -8294,7 +8294,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyYen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyYen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-yen",
         Size = size,
@@ -8308,7 +8308,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyYen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyYen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-yen-16-solid",
         Size = size,
@@ -8322,7 +8322,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyYen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyYen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-yen-20-solid",
         Size = size,
@@ -8336,7 +8336,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CurrencyYenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CurrencyYenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "currency-yen-solid",
         Size = size,
@@ -8350,7 +8350,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CursorArrowRays(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CursorArrowRays(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cursor-arrow-rays",
         Size = size,
@@ -8364,7 +8364,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CursorArrowRays16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CursorArrowRays16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cursor-arrow-rays-16-solid",
         Size = size,
@@ -8378,7 +8378,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CursorArrowRays20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CursorArrowRays20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cursor-arrow-rays-20-solid",
         Size = size,
@@ -8392,7 +8392,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CursorArrowRaysSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CursorArrowRaysSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cursor-arrow-rays-solid",
         Size = size,
@@ -8406,7 +8406,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CursorArrowRipple(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CursorArrowRipple(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cursor-arrow-ripple",
         Size = size,
@@ -8420,7 +8420,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CursorArrowRipple16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CursorArrowRipple16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cursor-arrow-ripple-16-solid",
         Size = size,
@@ -8436,7 +8436,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CursorArrowRipple20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CursorArrowRipple20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cursor-arrow-ripple-20-solid",
         Size = size,
@@ -8454,7 +8454,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon CursorArrowRippleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon CursorArrowRippleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "cursor-arrow-ripple-solid",
         Size = size,
@@ -8468,7 +8468,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DevicePhoneMobile(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DevicePhoneMobile(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "device-phone-mobile",
         Size = size,
@@ -8482,7 +8482,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DevicePhoneMobile16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DevicePhoneMobile16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "device-phone-mobile-16-solid",
         Size = size,
@@ -8497,7 +8497,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DevicePhoneMobile20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DevicePhoneMobile20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "device-phone-mobile-20-solid",
         Size = size,
@@ -8514,7 +8514,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DevicePhoneMobileSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DevicePhoneMobileSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "device-phone-mobile-solid",
         Size = size,
@@ -8531,7 +8531,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DeviceTablet(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DeviceTablet(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "device-tablet",
         Size = size,
@@ -8545,7 +8545,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DeviceTablet16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DeviceTablet16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "device-tablet-16-solid",
         Size = size,
@@ -8562,7 +8562,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DeviceTablet20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DeviceTablet20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "device-tablet-20-solid",
         Size = size,
@@ -8576,7 +8576,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DeviceTabletSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DeviceTabletSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "device-tablet-solid",
         Size = size,
@@ -8593,7 +8593,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Divide(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Divide(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "divide",
         Size = size,
@@ -8607,7 +8607,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Divide16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Divide16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "divide-16-solid",
         Size = size,
@@ -8622,7 +8622,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Divide20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Divide20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "divide-20-solid",
         Size = size,
@@ -8636,7 +8636,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DivideSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DivideSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "divide-solid",
         Size = size,
@@ -8650,7 +8650,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Document(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Document(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document",
         Size = size,
@@ -8664,7 +8664,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Document16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Document16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-16-solid",
         Size = size,
@@ -8678,7 +8678,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Document20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Document20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-20-solid",
         Size = size,
@@ -8692,7 +8692,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-arrow-down",
         Size = size,
@@ -8706,7 +8706,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-arrow-down-16-solid",
         Size = size,
@@ -8720,7 +8720,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-arrow-down-20-solid",
         Size = size,
@@ -8734,7 +8734,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-arrow-down-solid",
         Size = size,
@@ -8751,7 +8751,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentArrowUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentArrowUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-arrow-up",
         Size = size,
@@ -8765,7 +8765,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentArrowUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentArrowUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-arrow-up-16-solid",
         Size = size,
@@ -8779,7 +8779,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentArrowUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentArrowUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-arrow-up-20-solid",
         Size = size,
@@ -8793,7 +8793,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentArrowUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentArrowUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-arrow-up-solid",
         Size = size,
@@ -8810,7 +8810,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentChartBar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentChartBar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-chart-bar",
         Size = size,
@@ -8824,7 +8824,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentChartBar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentChartBar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-chart-bar-16-solid",
         Size = size,
@@ -8838,7 +8838,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentChartBar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentChartBar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-chart-bar-20-solid",
         Size = size,
@@ -8852,7 +8852,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentChartBarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentChartBarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-chart-bar-solid",
         Size = size,
@@ -8869,7 +8869,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCheck(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCheck(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-check",
         Size = size,
@@ -8883,7 +8883,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCheck16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCheck16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-check-16-solid",
         Size = size,
@@ -8897,7 +8897,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCheck20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCheck20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-check-20-solid",
         Size = size,
@@ -8911,7 +8911,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCheckSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCheckSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-check-solid",
         Size = size,
@@ -8928,7 +8928,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyBangladeshi(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyBangladeshi(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-bangladeshi",
         Size = size,
@@ -8942,7 +8942,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyBangladeshi16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyBangladeshi16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-bangladeshi-16-solid",
         Size = size,
@@ -8956,7 +8956,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyBangladeshi20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyBangladeshi20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-bangladeshi-20-solid",
         Size = size,
@@ -8970,7 +8970,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyBangladeshiSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyBangladeshiSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-bangladeshi-solid",
         Size = size,
@@ -8984,7 +8984,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyDollar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyDollar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-dollar",
         Size = size,
@@ -8998,7 +8998,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyDollar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyDollar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-dollar-16-solid",
         Size = size,
@@ -9013,7 +9013,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyDollar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyDollar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-dollar-20-solid",
         Size = size,
@@ -9027,7 +9027,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyDollarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyDollarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-dollar-solid",
         Size = size,
@@ -9041,7 +9041,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyEuro(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyEuro(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-euro",
         Size = size,
@@ -9055,7 +9055,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyEuro16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyEuro16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-euro-16-solid",
         Size = size,
@@ -9069,7 +9069,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyEuro20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyEuro20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-euro-20-solid",
         Size = size,
@@ -9083,7 +9083,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyEuroSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyEuroSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-euro-solid",
         Size = size,
@@ -9098,7 +9098,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyPound(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyPound(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-pound",
         Size = size,
@@ -9112,7 +9112,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyPound16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyPound16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-pound-16-solid",
         Size = size,
@@ -9126,7 +9126,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyPound20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyPound20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-pound-20-solid",
         Size = size,
@@ -9140,7 +9140,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyPoundSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyPoundSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-pound-solid",
         Size = size,
@@ -9154,7 +9154,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyRupee(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyRupee(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-rupee",
         Size = size,
@@ -9168,7 +9168,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyRupee16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyRupee16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-rupee-16-solid",
         Size = size,
@@ -9182,7 +9182,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyRupee20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyRupee20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-rupee-20-solid",
         Size = size,
@@ -9196,7 +9196,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyRupeeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyRupeeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-rupee-solid",
         Size = size,
@@ -9210,7 +9210,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyYen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyYen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-yen",
         Size = size,
@@ -9224,7 +9224,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyYen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyYen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-yen-16-solid",
         Size = size,
@@ -9238,7 +9238,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyYen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyYen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-yen-20-solid",
         Size = size,
@@ -9252,7 +9252,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentCurrencyYenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentCurrencyYenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-currency-yen-solid",
         Size = size,
@@ -9266,7 +9266,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentDuplicate(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentDuplicate(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-duplicate",
         Size = size,
@@ -9280,7 +9280,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentDuplicate16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentDuplicate16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-duplicate-16-solid",
         Size = size,
@@ -9295,7 +9295,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentDuplicate20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentDuplicate20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-duplicate-20-solid",
         Size = size,
@@ -9312,7 +9312,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentDuplicateSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentDuplicateSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-duplicate-solid",
         Size = size,
@@ -9329,7 +9329,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentMagnifyingGlass(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentMagnifyingGlass(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-magnifying-glass",
         Size = size,
@@ -9343,7 +9343,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentMagnifyingGlass16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentMagnifyingGlass16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-magnifying-glass-16-solid",
         Size = size,
@@ -9358,7 +9358,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentMagnifyingGlass20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentMagnifyingGlass20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-magnifying-glass-20-solid",
         Size = size,
@@ -9375,7 +9375,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentMagnifyingGlassSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentMagnifyingGlassSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-magnifying-glass-solid",
         Size = size,
@@ -9393,7 +9393,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentMinus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentMinus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-minus",
         Size = size,
@@ -9407,7 +9407,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentMinus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentMinus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-minus-16-solid",
         Size = size,
@@ -9421,7 +9421,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentMinus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentMinus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-minus-20-solid",
         Size = size,
@@ -9435,7 +9435,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentMinusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentMinusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-minus-solid",
         Size = size,
@@ -9452,7 +9452,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentPlus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentPlus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-plus",
         Size = size,
@@ -9466,7 +9466,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentPlus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentPlus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-plus-16-solid",
         Size = size,
@@ -9480,7 +9480,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentPlus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentPlus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-plus-20-solid",
         Size = size,
@@ -9494,7 +9494,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentPlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentPlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-plus-solid",
         Size = size,
@@ -9511,7 +9511,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-solid",
         Size = size,
@@ -9528,7 +9528,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentText(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentText(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-text",
         Size = size,
@@ -9542,7 +9542,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentText16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentText16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-text-16-solid",
         Size = size,
@@ -9556,7 +9556,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentText20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentText20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-text-20-solid",
         Size = size,
@@ -9570,7 +9570,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon DocumentTextSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon DocumentTextSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "document-text-solid",
         Size = size,
@@ -9587,7 +9587,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisHorizontal(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisHorizontal(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-horizontal",
         Size = size,
@@ -9601,7 +9601,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisHorizontal16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisHorizontal16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-horizontal-16-solid",
         Size = size,
@@ -9615,7 +9615,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisHorizontal20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisHorizontal20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-horizontal-20-solid",
         Size = size,
@@ -9629,7 +9629,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisHorizontalCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisHorizontalCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-horizontal-circle",
         Size = size,
@@ -9643,7 +9643,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisHorizontalCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisHorizontalCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-horizontal-circle-16-solid",
         Size = size,
@@ -9657,7 +9657,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisHorizontalCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisHorizontalCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-horizontal-circle-20-solid",
         Size = size,
@@ -9671,7 +9671,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisHorizontalCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisHorizontalCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-horizontal-circle-solid",
         Size = size,
@@ -9685,7 +9685,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisHorizontalSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisHorizontalSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-horizontal-solid",
         Size = size,
@@ -9699,7 +9699,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisVertical(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisVertical(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-vertical",
         Size = size,
@@ -9713,7 +9713,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisVertical16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisVertical16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-vertical-16-solid",
         Size = size,
@@ -9727,7 +9727,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisVertical20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisVertical20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-vertical-20-solid",
         Size = size,
@@ -9741,7 +9741,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EllipsisVerticalSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EllipsisVerticalSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ellipsis-vertical-solid",
         Size = size,
@@ -9755,7 +9755,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Envelope(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Envelope(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "envelope",
         Size = size,
@@ -9769,7 +9769,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Envelope16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Envelope16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "envelope-16-solid",
         Size = size,
@@ -9786,7 +9786,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Envelope20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Envelope20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "envelope-20-solid",
         Size = size,
@@ -9803,7 +9803,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EnvelopeOpen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EnvelopeOpen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "envelope-open",
         Size = size,
@@ -9817,7 +9817,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EnvelopeOpen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EnvelopeOpen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "envelope-open-16-solid",
         Size = size,
@@ -9831,7 +9831,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EnvelopeOpen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EnvelopeOpen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "envelope-open-20-solid",
         Size = size,
@@ -9845,7 +9845,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EnvelopeOpenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EnvelopeOpenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "envelope-open-solid",
         Size = size,
@@ -9862,7 +9862,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EnvelopeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EnvelopeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "envelope-solid",
         Size = size,
@@ -9879,7 +9879,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Equals(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Equals(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "equals",
         Size = size,
@@ -9893,7 +9893,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Equals16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Equals16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "equals-16-solid",
         Size = size,
@@ -9907,7 +9907,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Equals20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Equals20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "equals-20-solid",
         Size = size,
@@ -9921,7 +9921,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EqualsSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EqualsSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "equals-solid",
         Size = size,
@@ -9935,7 +9935,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ExclamationCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ExclamationCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "exclamation-circle",
         Size = size,
@@ -9949,7 +9949,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ExclamationCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ExclamationCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "exclamation-circle-16-solid",
         Size = size,
@@ -9963,7 +9963,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ExclamationCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ExclamationCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "exclamation-circle-20-solid",
         Size = size,
@@ -9977,7 +9977,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ExclamationCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ExclamationCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "exclamation-circle-solid",
         Size = size,
@@ -9991,7 +9991,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ExclamationTriangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ExclamationTriangle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "exclamation-triangle",
         Size = size,
@@ -10005,7 +10005,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ExclamationTriangle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ExclamationTriangle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "exclamation-triangle-16-solid",
         Size = size,
@@ -10019,7 +10019,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ExclamationTriangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ExclamationTriangle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "exclamation-triangle-20-solid",
         Size = size,
@@ -10033,7 +10033,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ExclamationTriangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ExclamationTriangleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "exclamation-triangle-solid",
         Size = size,
@@ -10047,7 +10047,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Eye(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Eye(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye",
         Size = size,
@@ -10064,7 +10064,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Eye16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Eye16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-16-solid",
         Size = size,
@@ -10081,7 +10081,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Eye20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Eye20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-20-solid",
         Size = size,
@@ -10098,7 +10098,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EyeDropper(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EyeDropper(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-dropper",
         Size = size,
@@ -10112,7 +10112,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EyeDropper16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EyeDropper16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-dropper-16-solid",
         Size = size,
@@ -10126,7 +10126,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EyeDropper20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EyeDropper20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-dropper-20-solid",
         Size = size,
@@ -10140,7 +10140,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EyeDropperSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EyeDropperSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-dropper-solid",
         Size = size,
@@ -10154,7 +10154,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EyeSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EyeSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-slash",
         Size = size,
@@ -10168,7 +10168,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EyeSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EyeSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-slash-16-solid",
         Size = size,
@@ -10183,7 +10183,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EyeSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EyeSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-slash-20-solid",
         Size = size,
@@ -10200,7 +10200,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EyeSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EyeSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-slash-solid",
         Size = size,
@@ -10218,7 +10218,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon EyeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon EyeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "eye-solid",
         Size = size,
@@ -10235,7 +10235,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FaceFrown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FaceFrown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "face-frown",
         Size = size,
@@ -10249,7 +10249,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FaceFrown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FaceFrown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "face-frown-16-solid",
         Size = size,
@@ -10263,7 +10263,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FaceFrown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FaceFrown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "face-frown-20-solid",
         Size = size,
@@ -10277,7 +10277,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FaceFrownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FaceFrownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "face-frown-solid",
         Size = size,
@@ -10291,7 +10291,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FaceSmile(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FaceSmile(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "face-smile",
         Size = size,
@@ -10305,7 +10305,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FaceSmile16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FaceSmile16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "face-smile-16-solid",
         Size = size,
@@ -10319,7 +10319,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FaceSmile20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FaceSmile20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "face-smile-20-solid",
         Size = size,
@@ -10333,7 +10333,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FaceSmileSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FaceSmileSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "face-smile-solid",
         Size = size,
@@ -10347,7 +10347,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Film(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Film(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "film",
         Size = size,
@@ -10361,7 +10361,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Film16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Film16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "film-16-solid",
         Size = size,
@@ -10375,7 +10375,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Film20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Film20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "film-20-solid",
         Size = size,
@@ -10389,7 +10389,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FilmSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FilmSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "film-solid",
         Size = size,
@@ -10403,7 +10403,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FingerPrint(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FingerPrint(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "finger-print",
         Size = size,
@@ -10417,7 +10417,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FingerPrint16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FingerPrint16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "finger-print-16-solid",
         Size = size,
@@ -10431,7 +10431,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FingerPrint20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FingerPrint20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "finger-print-20-solid",
         Size = size,
@@ -10445,7 +10445,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FingerPrintSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FingerPrintSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "finger-print-solid",
         Size = size,
@@ -10459,7 +10459,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Fire(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Fire(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "fire",
         Size = size,
@@ -10476,7 +10476,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Fire16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Fire16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "fire-16-solid",
         Size = size,
@@ -10490,7 +10490,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Fire20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Fire20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "fire-20-solid",
         Size = size,
@@ -10504,7 +10504,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FireSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FireSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "fire-solid",
         Size = size,
@@ -10518,7 +10518,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Flag(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Flag(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "flag",
         Size = size,
@@ -10532,7 +10532,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Flag16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Flag16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "flag-16-solid",
         Size = size,
@@ -10546,7 +10546,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Flag20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Flag20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "flag-20-solid",
         Size = size,
@@ -10560,7 +10560,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FlagSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FlagSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "flag-solid",
         Size = size,
@@ -10574,7 +10574,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Folder(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Folder(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder",
         Size = size,
@@ -10588,7 +10588,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Folder16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Folder16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-16-solid",
         Size = size,
@@ -10602,7 +10602,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Folder20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Folder20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-20-solid",
         Size = size,
@@ -10616,7 +10616,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-arrow-down",
         Size = size,
@@ -10630,7 +10630,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-arrow-down-16-solid",
         Size = size,
@@ -10644,7 +10644,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-arrow-down-20-solid",
         Size = size,
@@ -10658,7 +10658,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-arrow-down-solid",
         Size = size,
@@ -10672,7 +10672,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderMinus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderMinus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-minus",
         Size = size,
@@ -10686,7 +10686,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderMinus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderMinus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-minus-16-solid",
         Size = size,
@@ -10700,7 +10700,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderMinus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderMinus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-minus-20-solid",
         Size = size,
@@ -10714,7 +10714,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderMinusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderMinusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-minus-solid",
         Size = size,
@@ -10728,7 +10728,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderOpen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderOpen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-open",
         Size = size,
@@ -10742,7 +10742,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderOpen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderOpen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-open-16-solid",
         Size = size,
@@ -10756,7 +10756,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderOpen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderOpen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-open-20-solid",
         Size = size,
@@ -10770,7 +10770,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderOpenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderOpenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-open-solid",
         Size = size,
@@ -10784,7 +10784,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderPlus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderPlus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-plus",
         Size = size,
@@ -10798,7 +10798,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderPlus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderPlus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-plus-16-solid",
         Size = size,
@@ -10812,7 +10812,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderPlus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderPlus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-plus-20-solid",
         Size = size,
@@ -10826,7 +10826,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderPlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderPlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-plus-solid",
         Size = size,
@@ -10840,7 +10840,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FolderSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FolderSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "folder-solid",
         Size = size,
@@ -10854,7 +10854,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Forward(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Forward(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "forward",
         Size = size,
@@ -10868,7 +10868,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Forward16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Forward16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "forward-16-solid",
         Size = size,
@@ -10882,7 +10882,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Forward20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Forward20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "forward-20-solid",
         Size = size,
@@ -10896,7 +10896,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ForwardSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ForwardSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "forward-solid",
         Size = size,
@@ -10910,7 +10910,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Funnel(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Funnel(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "funnel",
         Size = size,
@@ -10924,7 +10924,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Funnel16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Funnel16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "funnel-16-solid",
         Size = size,
@@ -10938,7 +10938,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Funnel20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Funnel20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "funnel-20-solid",
         Size = size,
@@ -10952,7 +10952,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon FunnelSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon FunnelSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "funnel-solid",
         Size = size,
@@ -10966,7 +10966,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Gif(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Gif(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gif",
         Size = size,
@@ -10980,7 +10980,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Gif16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Gif16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gif-16-solid",
         Size = size,
@@ -10994,7 +10994,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Gif20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Gif20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gif-20-solid",
         Size = size,
@@ -11008,7 +11008,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GifSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GifSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gif-solid",
         Size = size,
@@ -11022,7 +11022,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Gift(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Gift(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gift",
         Size = size,
@@ -11036,7 +11036,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Gift16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Gift16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gift-16-solid",
         Size = size,
@@ -11053,7 +11053,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Gift20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Gift20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gift-20-solid",
         Size = size,
@@ -11070,7 +11070,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GiftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GiftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gift-solid",
         Size = size,
@@ -11084,7 +11084,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GiftTop(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GiftTop(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gift-top",
         Size = size,
@@ -11098,7 +11098,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GiftTop16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GiftTop16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gift-top-16-solid",
         Size = size,
@@ -11113,7 +11113,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GiftTop20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GiftTop20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gift-top-20-solid",
         Size = size,
@@ -11127,7 +11127,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GiftTopSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GiftTopSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "gift-top-solid",
         Size = size,
@@ -11144,7 +11144,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAlt(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAlt(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-alt",
         Size = size,
@@ -11158,7 +11158,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAlt16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAlt16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-alt-16-solid",
         Size = size,
@@ -11172,7 +11172,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAlt20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAlt20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-alt-20-solid",
         Size = size,
@@ -11186,7 +11186,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAltSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAltSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-alt-solid",
         Size = size,
@@ -11200,7 +11200,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAmericas(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAmericas(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-americas",
         Size = size,
@@ -11214,7 +11214,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAmericas16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAmericas16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-americas-16-solid",
         Size = size,
@@ -11228,7 +11228,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAmericas20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAmericas20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-americas-20-solid",
         Size = size,
@@ -11242,7 +11242,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAmericasSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAmericasSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-americas-solid",
         Size = size,
@@ -11256,7 +11256,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAsiaAustralia(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAsiaAustralia(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-asia-australia",
         Size = size,
@@ -11270,7 +11270,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAsiaAustralia16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAsiaAustralia16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-asia-australia-16-solid",
         Size = size,
@@ -11284,7 +11284,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAsiaAustralia20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAsiaAustralia20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-asia-australia-20-solid",
         Size = size,
@@ -11298,7 +11298,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeAsiaAustraliaSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeAsiaAustraliaSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-asia-australia-solid",
         Size = size,
@@ -11315,7 +11315,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeEuropeAfrica(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeEuropeAfrica(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-europe-africa",
         Size = size,
@@ -11329,7 +11329,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeEuropeAfrica16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeEuropeAfrica16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-europe-africa-16-solid",
         Size = size,
@@ -11343,7 +11343,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeEuropeAfrica20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeEuropeAfrica20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-europe-africa-20-solid",
         Size = size,
@@ -11357,7 +11357,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon GlobeEuropeAfricaSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon GlobeEuropeAfricaSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "globe-europe-africa-solid",
         Size = size,
@@ -11371,7 +11371,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H1(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H1(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h1",
         Size = size,
@@ -11385,7 +11385,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H116Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H116Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h1-16-solid",
         Size = size,
@@ -11399,7 +11399,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H120Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H120Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h1-20-solid",
         Size = size,
@@ -11413,7 +11413,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H1Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H1Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h1-solid",
         Size = size,
@@ -11427,7 +11427,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H2(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H2(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h2",
         Size = size,
@@ -11441,7 +11441,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H216Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H216Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h2-16-solid",
         Size = size,
@@ -11455,7 +11455,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H220Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H220Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h2-20-solid",
         Size = size,
@@ -11469,7 +11469,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H2Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H2Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h2-solid",
         Size = size,
@@ -11483,7 +11483,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H3(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H3(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h3",
         Size = size,
@@ -11497,7 +11497,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H316Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H316Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h3-16-solid",
         Size = size,
@@ -11511,7 +11511,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H320Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H320Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h3-20-solid",
         Size = size,
@@ -11525,7 +11525,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon H3Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon H3Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "h3-solid",
         Size = size,
@@ -11539,7 +11539,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandRaised(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandRaised(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-raised",
         Size = size,
@@ -11553,7 +11553,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandRaised16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandRaised16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-raised-16-solid",
         Size = size,
@@ -11567,7 +11567,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandRaised20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandRaised20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-raised-20-solid",
         Size = size,
@@ -11581,7 +11581,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandRaisedSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandRaisedSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-raised-solid",
         Size = size,
@@ -11595,7 +11595,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandThumbDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandThumbDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-thumb-down",
         Size = size,
@@ -11609,7 +11609,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandThumbDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandThumbDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-thumb-down-16-solid",
         Size = size,
@@ -11623,7 +11623,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandThumbDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandThumbDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-thumb-down-20-solid",
         Size = size,
@@ -11637,7 +11637,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandThumbDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandThumbDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-thumb-down-solid",
         Size = size,
@@ -11651,7 +11651,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandThumbUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandThumbUp(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-thumb-up",
         Size = size,
@@ -11665,7 +11665,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandThumbUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandThumbUp16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-thumb-up-16-solid",
         Size = size,
@@ -11679,7 +11679,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandThumbUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandThumbUp20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-thumb-up-20-solid",
         Size = size,
@@ -11693,7 +11693,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HandThumbUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HandThumbUpSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hand-thumb-up-solid",
         Size = size,
@@ -11707,7 +11707,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Hashtag(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Hashtag(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hashtag",
         Size = size,
@@ -11721,7 +11721,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Hashtag16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Hashtag16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hashtag-16-solid",
         Size = size,
@@ -11735,7 +11735,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Hashtag20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Hashtag20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hashtag-20-solid",
         Size = size,
@@ -11749,7 +11749,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HashtagSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HashtagSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "hashtag-solid",
         Size = size,
@@ -11763,7 +11763,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Heart(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Heart(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "heart",
         Size = size,
@@ -11777,7 +11777,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Heart16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Heart16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "heart-16-solid",
         Size = size,
@@ -11791,7 +11791,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Heart20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Heart20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "heart-20-solid",
         Size = size,
@@ -11805,7 +11805,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HeartSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HeartSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "heart-solid",
         Size = size,
@@ -11819,7 +11819,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Home(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Home(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "home",
         Size = size,
@@ -11833,7 +11833,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Home16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Home16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "home-16-solid",
         Size = size,
@@ -11847,7 +11847,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Home20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Home20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "home-20-solid",
         Size = size,
@@ -11861,7 +11861,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HomeModern(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HomeModern(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "home-modern",
         Size = size,
@@ -11875,7 +11875,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HomeModern16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HomeModern16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "home-modern-16-solid",
         Size = size,
@@ -11889,7 +11889,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HomeModern20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HomeModern20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "home-modern-20-solid",
         Size = size,
@@ -11903,7 +11903,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HomeModernSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HomeModernSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "home-modern-solid",
         Size = size,
@@ -11920,7 +11920,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon HomeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon HomeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "home-solid",
         Size = size,
@@ -11937,7 +11937,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Identification(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Identification(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "identification",
         Size = size,
@@ -11951,7 +11951,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Identification16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Identification16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "identification-16-solid",
         Size = size,
@@ -11965,7 +11965,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Identification20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Identification20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "identification-20-solid",
         Size = size,
@@ -11979,7 +11979,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon IdentificationSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon IdentificationSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "identification-solid",
         Size = size,
@@ -11993,7 +11993,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Inbox(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Inbox(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox",
         Size = size,
@@ -12007,7 +12007,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Inbox16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Inbox16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-16-solid",
         Size = size,
@@ -12021,7 +12021,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Inbox20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Inbox20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-20-solid",
         Size = size,
@@ -12035,7 +12035,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InboxArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InboxArrowDown(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-arrow-down",
         Size = size,
@@ -12049,7 +12049,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InboxArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InboxArrowDown16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-arrow-down-16-solid",
         Size = size,
@@ -12064,7 +12064,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InboxArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InboxArrowDown20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-arrow-down-20-solid",
         Size = size,
@@ -12081,7 +12081,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InboxArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InboxArrowDownSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-arrow-down-solid",
         Size = size,
@@ -12098,7 +12098,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InboxSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InboxSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-solid",
         Size = size,
@@ -12112,7 +12112,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InboxStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InboxStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-stack",
         Size = size,
@@ -12126,7 +12126,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InboxStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InboxStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-stack-16-solid",
         Size = size,
@@ -12141,7 +12141,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InboxStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InboxStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-stack-20-solid",
         Size = size,
@@ -12158,7 +12158,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InboxStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InboxStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "inbox-stack-solid",
         Size = size,
@@ -12175,7 +12175,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InformationCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InformationCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "information-circle",
         Size = size,
@@ -12189,7 +12189,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InformationCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InformationCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "information-circle-16-solid",
         Size = size,
@@ -12203,7 +12203,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InformationCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InformationCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "information-circle-20-solid",
         Size = size,
@@ -12217,7 +12217,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon InformationCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon InformationCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "information-circle-solid",
         Size = size,
@@ -12231,7 +12231,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Italic(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Italic(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "italic",
         Size = size,
@@ -12245,7 +12245,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Italic16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Italic16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "italic-16-solid",
         Size = size,
@@ -12259,7 +12259,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Italic20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Italic20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "italic-20-solid",
         Size = size,
@@ -12273,7 +12273,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ItalicSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ItalicSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "italic-solid",
         Size = size,
@@ -12287,7 +12287,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Key(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Key(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "key",
         Size = size,
@@ -12301,7 +12301,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Key16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Key16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "key-16-solid",
         Size = size,
@@ -12315,7 +12315,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Key20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Key20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "key-20-solid",
         Size = size,
@@ -12329,7 +12329,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon KeySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon KeySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "key-solid",
         Size = size,
@@ -12343,7 +12343,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Language(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Language(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "language",
         Size = size,
@@ -12357,7 +12357,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Language16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Language16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "language-16-solid",
         Size = size,
@@ -12371,7 +12371,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Language20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Language20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "language-20-solid",
         Size = size,
@@ -12388,7 +12388,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LanguageSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LanguageSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "language-solid",
         Size = size,
@@ -12402,7 +12402,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Lifebuoy(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Lifebuoy(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lifebuoy",
         Size = size,
@@ -12416,7 +12416,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Lifebuoy16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Lifebuoy16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lifebuoy-16-solid",
         Size = size,
@@ -12430,7 +12430,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Lifebuoy20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Lifebuoy20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lifebuoy-20-solid",
         Size = size,
@@ -12444,7 +12444,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LifebuoySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LifebuoySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lifebuoy-solid",
         Size = size,
@@ -12458,7 +12458,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LightBulb(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LightBulb(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "light-bulb",
         Size = size,
@@ -12472,7 +12472,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LightBulb16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LightBulb16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "light-bulb-16-solid",
         Size = size,
@@ -12486,7 +12486,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LightBulb20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LightBulb20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "light-bulb-20-solid",
         Size = size,
@@ -12500,7 +12500,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LightBulbSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LightBulbSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "light-bulb-solid",
         Size = size,
@@ -12517,7 +12517,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Link(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Link(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "link",
         Size = size,
@@ -12531,7 +12531,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Link16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Link16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "link-16-solid",
         Size = size,
@@ -12548,7 +12548,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Link20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Link20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "link-20-solid",
         Size = size,
@@ -12565,7 +12565,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LinkSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LinkSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "link-slash",
         Size = size,
@@ -12579,7 +12579,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LinkSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LinkSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "link-slash-16-solid",
         Size = size,
@@ -12593,7 +12593,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LinkSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LinkSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "link-slash-20-solid",
         Size = size,
@@ -12607,7 +12607,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LinkSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LinkSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "link-slash-solid",
         Size = size,
@@ -12621,7 +12621,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LinkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LinkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "link-solid",
         Size = size,
@@ -12635,7 +12635,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ListBullet(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ListBullet(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "list-bullet",
         Size = size,
@@ -12649,7 +12649,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ListBullet16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ListBullet16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "list-bullet-16-solid",
         Size = size,
@@ -12663,7 +12663,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ListBullet20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ListBullet20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "list-bullet-20-solid",
         Size = size,
@@ -12677,7 +12677,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ListBulletSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ListBulletSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "list-bullet-solid",
         Size = size,
@@ -12691,7 +12691,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LockClosed(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LockClosed(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lock-closed",
         Size = size,
@@ -12705,7 +12705,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LockClosed16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LockClosed16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lock-closed-16-solid",
         Size = size,
@@ -12719,7 +12719,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LockClosed20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LockClosed20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lock-closed-20-solid",
         Size = size,
@@ -12733,7 +12733,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LockClosedSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LockClosedSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lock-closed-solid",
         Size = size,
@@ -12747,7 +12747,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LockOpen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LockOpen(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lock-open",
         Size = size,
@@ -12761,7 +12761,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LockOpen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LockOpen16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lock-open-16-solid",
         Size = size,
@@ -12775,7 +12775,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LockOpen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LockOpen20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lock-open-20-solid",
         Size = size,
@@ -12789,7 +12789,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon LockOpenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon LockOpenSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "lock-open-solid",
         Size = size,
@@ -12803,7 +12803,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlass(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlass(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass",
         Size = size,
@@ -12817,7 +12817,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlass16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlass16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-16-solid",
         Size = size,
@@ -12831,7 +12831,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlass20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlass20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-20-solid",
         Size = size,
@@ -12845,7 +12845,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-circle",
         Size = size,
@@ -12859,7 +12859,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-circle-16-solid",
         Size = size,
@@ -12876,7 +12876,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-circle-20-solid",
         Size = size,
@@ -12893,7 +12893,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-circle-solid",
         Size = size,
@@ -12910,7 +12910,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassMinus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassMinus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-minus",
         Size = size,
@@ -12924,7 +12924,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassMinus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassMinus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-minus-16-solid",
         Size = size,
@@ -12939,7 +12939,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassMinus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassMinus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-minus-20-solid",
         Size = size,
@@ -12956,7 +12956,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassMinusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassMinusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-minus-solid",
         Size = size,
@@ -12970,7 +12970,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassPlus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassPlus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-plus",
         Size = size,
@@ -12984,7 +12984,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassPlus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassPlus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-plus-16-solid",
         Size = size,
@@ -12999,7 +12999,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassPlus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassPlus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-plus-20-solid",
         Size = size,
@@ -13016,7 +13016,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassPlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassPlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-plus-solid",
         Size = size,
@@ -13030,7 +13030,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MagnifyingGlassSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MagnifyingGlassSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "magnifying-glass-solid",
         Size = size,
@@ -13044,7 +13044,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Map(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Map(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "map",
         Size = size,
@@ -13058,7 +13058,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Map16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Map16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "map-16-solid",
         Size = size,
@@ -13072,7 +13072,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Map20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Map20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "map-20-solid",
         Size = size,
@@ -13086,7 +13086,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MapPin(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MapPin(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "map-pin",
         Size = size,
@@ -13103,7 +13103,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MapPin16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MapPin16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "map-pin-16-solid",
         Size = size,
@@ -13117,7 +13117,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MapPin20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MapPin20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "map-pin-20-solid",
         Size = size,
@@ -13131,7 +13131,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MapPinSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MapPinSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "map-pin-solid",
         Size = size,
@@ -13145,7 +13145,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MapSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MapSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "map-solid",
         Size = size,
@@ -13159,7 +13159,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Megaphone(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Megaphone(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "megaphone",
         Size = size,
@@ -13173,7 +13173,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Megaphone16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Megaphone16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "megaphone-16-solid",
         Size = size,
@@ -13187,7 +13187,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Megaphone20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Megaphone20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "megaphone-20-solid",
         Size = size,
@@ -13201,7 +13201,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MegaphoneSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MegaphoneSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "megaphone-solid",
         Size = size,
@@ -13215,7 +13215,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Microphone(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Microphone(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "microphone",
         Size = size,
@@ -13229,7 +13229,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Microphone16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Microphone16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "microphone-16-solid",
         Size = size,
@@ -13244,7 +13244,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Microphone20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Microphone20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "microphone-20-solid",
         Size = size,
@@ -13261,7 +13261,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MicrophoneSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MicrophoneSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "microphone-solid",
         Size = size,
@@ -13278,7 +13278,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Minus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Minus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus",
         Size = size,
@@ -13292,7 +13292,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Minus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Minus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus-16-solid",
         Size = size,
@@ -13306,7 +13306,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Minus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Minus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus-20-solid",
         Size = size,
@@ -13320,7 +13320,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MinusCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MinusCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus-circle",
         Size = size,
@@ -13334,7 +13334,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MinusCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MinusCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus-circle-16-solid",
         Size = size,
@@ -13348,7 +13348,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MinusCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MinusCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus-circle-20-solid",
         Size = size,
@@ -13362,7 +13362,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MinusCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MinusCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus-circle-solid",
         Size = size,
@@ -13376,7 +13376,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MinusSmall(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MinusSmall(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus-small",
         Size = size,
@@ -13390,7 +13390,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MinusSmall20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MinusSmall20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus-small-20-solid",
         Size = size,
@@ -13404,7 +13404,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MinusSmallSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MinusSmallSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus-small-solid",
         Size = size,
@@ -13418,7 +13418,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MinusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MinusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "minus-solid",
         Size = size,
@@ -13432,7 +13432,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Moon(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Moon(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "moon",
         Size = size,
@@ -13446,7 +13446,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Moon16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Moon16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "moon-16-solid",
         Size = size,
@@ -13460,7 +13460,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Moon20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Moon20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "moon-20-solid",
         Size = size,
@@ -13474,7 +13474,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MoonSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MoonSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "moon-solid",
         Size = size,
@@ -13488,7 +13488,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MusicalNote(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MusicalNote(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "musical-note",
         Size = size,
@@ -13502,7 +13502,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MusicalNote16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MusicalNote16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "musical-note-16-solid",
         Size = size,
@@ -13516,7 +13516,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MusicalNote20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MusicalNote20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "musical-note-20-solid",
         Size = size,
@@ -13530,7 +13530,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon MusicalNoteSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon MusicalNoteSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "musical-note-solid",
         Size = size,
@@ -13544,7 +13544,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Newspaper(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Newspaper(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "newspaper",
         Size = size,
@@ -13558,7 +13558,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Newspaper16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Newspaper16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "newspaper-16-solid",
         Size = size,
@@ -13573,7 +13573,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Newspaper20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Newspaper20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "newspaper-20-solid",
         Size = size,
@@ -13590,7 +13590,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon NewspaperSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon NewspaperSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "newspaper-solid",
         Size = size,
@@ -13607,7 +13607,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon NoSymbol(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon NoSymbol(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "no-symbol",
         Size = size,
@@ -13621,7 +13621,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon NoSymbol16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon NoSymbol16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "no-symbol-16-solid",
         Size = size,
@@ -13635,7 +13635,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon NoSymbol20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon NoSymbol20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "no-symbol-20-solid",
         Size = size,
@@ -13649,7 +13649,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon NoSymbolSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon NoSymbolSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "no-symbol-solid",
         Size = size,
@@ -13663,7 +13663,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon NumberedList(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon NumberedList(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "numbered-list",
         Size = size,
@@ -13677,7 +13677,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon NumberedList16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon NumberedList16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "numbered-list-16-solid",
         Size = size,
@@ -13691,7 +13691,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon NumberedList20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon NumberedList20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "numbered-list-20-solid",
         Size = size,
@@ -13705,7 +13705,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon NumberedListSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon NumberedListSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "numbered-list-solid",
         Size = size,
@@ -13719,7 +13719,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaintBrush(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaintBrush(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paint-brush",
         Size = size,
@@ -13733,7 +13733,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaintBrush16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaintBrush16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paint-brush-16-solid",
         Size = size,
@@ -13747,7 +13747,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaintBrush20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaintBrush20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paint-brush-20-solid",
         Size = size,
@@ -13761,7 +13761,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaintBrushSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaintBrushSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paint-brush-solid",
         Size = size,
@@ -13775,7 +13775,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaperAirplane(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaperAirplane(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paper-airplane",
         Size = size,
@@ -13789,7 +13789,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaperAirplane16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaperAirplane16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paper-airplane-16-solid",
         Size = size,
@@ -13803,7 +13803,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaperAirplane20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaperAirplane20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paper-airplane-20-solid",
         Size = size,
@@ -13817,7 +13817,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaperAirplaneSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaperAirplaneSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paper-airplane-solid",
         Size = size,
@@ -13831,7 +13831,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaperClip(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaperClip(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paper-clip",
         Size = size,
@@ -13845,7 +13845,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaperClip16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaperClip16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paper-clip-16-solid",
         Size = size,
@@ -13859,7 +13859,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaperClip20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaperClip20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paper-clip-20-solid",
         Size = size,
@@ -13873,7 +13873,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PaperClipSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PaperClipSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "paper-clip-solid",
         Size = size,
@@ -13887,7 +13887,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Pause(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Pause(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pause",
         Size = size,
@@ -13901,7 +13901,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Pause16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Pause16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pause-16-solid",
         Size = size,
@@ -13915,7 +13915,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Pause20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Pause20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pause-20-solid",
         Size = size,
@@ -13929,7 +13929,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PauseCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PauseCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pause-circle",
         Size = size,
@@ -13943,7 +13943,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PauseCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PauseCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pause-circle-16-solid",
         Size = size,
@@ -13957,7 +13957,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PauseCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PauseCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pause-circle-20-solid",
         Size = size,
@@ -13971,7 +13971,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PauseCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PauseCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pause-circle-solid",
         Size = size,
@@ -13985,7 +13985,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PauseSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PauseSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pause-solid",
         Size = size,
@@ -13999,7 +13999,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Pencil(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Pencil(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pencil",
         Size = size,
@@ -14013,7 +14013,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Pencil16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Pencil16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pencil-16-solid",
         Size = size,
@@ -14027,7 +14027,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Pencil20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Pencil20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pencil-20-solid",
         Size = size,
@@ -14041,7 +14041,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PencilSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PencilSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pencil-solid",
         Size = size,
@@ -14055,7 +14055,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PencilSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PencilSquare(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pencil-square",
         Size = size,
@@ -14069,7 +14069,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PencilSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PencilSquare16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pencil-square-16-solid",
         Size = size,
@@ -14086,7 +14086,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PencilSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PencilSquare20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pencil-square-20-solid",
         Size = size,
@@ -14103,7 +14103,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PencilSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PencilSquareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "pencil-square-solid",
         Size = size,
@@ -14120,7 +14120,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PercentBadge(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PercentBadge(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "percent-badge",
         Size = size,
@@ -14134,7 +14134,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PercentBadge16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PercentBadge16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "percent-badge-16-solid",
         Size = size,
@@ -14148,7 +14148,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PercentBadge20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PercentBadge20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "percent-badge-20-solid",
         Size = size,
@@ -14162,7 +14162,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PercentBadgeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PercentBadgeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "percent-badge-solid",
         Size = size,
@@ -14176,7 +14176,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Phone(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Phone(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone",
         Size = size,
@@ -14190,7 +14190,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Phone16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Phone16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-16-solid",
         Size = size,
@@ -14204,7 +14204,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Phone20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Phone20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-20-solid",
         Size = size,
@@ -14218,7 +14218,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneArrowDownLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneArrowDownLeft(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-arrow-down-left",
         Size = size,
@@ -14232,7 +14232,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneArrowDownLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneArrowDownLeft16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-arrow-down-left-16-solid",
         Size = size,
@@ -14249,7 +14249,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneArrowDownLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneArrowDownLeft20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-arrow-down-left-20-solid",
         Size = size,
@@ -14263,7 +14263,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneArrowDownLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneArrowDownLeftSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-arrow-down-left-solid",
         Size = size,
@@ -14280,7 +14280,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneArrowUpRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneArrowUpRight(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-arrow-up-right",
         Size = size,
@@ -14294,7 +14294,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneArrowUpRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneArrowUpRight16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-arrow-up-right-16-solid",
         Size = size,
@@ -14311,7 +14311,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneArrowUpRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneArrowUpRight20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-arrow-up-right-20-solid",
         Size = size,
@@ -14325,7 +14325,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneArrowUpRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneArrowUpRightSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-arrow-up-right-solid",
         Size = size,
@@ -14342,7 +14342,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-solid",
         Size = size,
@@ -14356,7 +14356,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneXMark(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneXMark(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-x-mark",
         Size = size,
@@ -14370,7 +14370,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneXMark16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneXMark16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-x-mark-16-solid",
         Size = size,
@@ -14385,7 +14385,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneXMark20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneXMark20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-x-mark-20-solid",
         Size = size,
@@ -14399,7 +14399,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhoneXMarkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhoneXMarkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "phone-x-mark-solid",
         Size = size,
@@ -14413,7 +14413,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Photo(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Photo(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "photo",
         Size = size,
@@ -14427,7 +14427,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Photo16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Photo16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "photo-16-solid",
         Size = size,
@@ -14441,7 +14441,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Photo20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Photo20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "photo-20-solid",
         Size = size,
@@ -14455,7 +14455,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PhotoSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PhotoSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "photo-solid",
         Size = size,
@@ -14469,7 +14469,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Play(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Play(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play",
         Size = size,
@@ -14483,7 +14483,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Play16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Play16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-16-solid",
         Size = size,
@@ -14497,7 +14497,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Play20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Play20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-20-solid",
         Size = size,
@@ -14511,7 +14511,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlayCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlayCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-circle",
         Size = size,
@@ -14528,7 +14528,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlayCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlayCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-circle-16-solid",
         Size = size,
@@ -14542,7 +14542,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlayCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlayCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-circle-20-solid",
         Size = size,
@@ -14556,7 +14556,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlayCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlayCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-circle-solid",
         Size = size,
@@ -14570,7 +14570,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlayPause(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlayPause(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-pause",
         Size = size,
@@ -14584,7 +14584,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlayPause16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlayPause16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-pause-16-solid",
         Size = size,
@@ -14598,7 +14598,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlayPause20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlayPause20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-pause-20-solid",
         Size = size,
@@ -14612,7 +14612,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlayPauseSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlayPauseSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-pause-solid",
         Size = size,
@@ -14626,7 +14626,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlaySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlaySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "play-solid",
         Size = size,
@@ -14640,7 +14640,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Plus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Plus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus",
         Size = size,
@@ -14654,7 +14654,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Plus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Plus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus-16-solid",
         Size = size,
@@ -14668,7 +14668,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Plus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Plus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus-20-solid",
         Size = size,
@@ -14682,7 +14682,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlusCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlusCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus-circle",
         Size = size,
@@ -14696,7 +14696,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlusCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlusCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus-circle-16-solid",
         Size = size,
@@ -14710,7 +14710,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlusCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlusCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus-circle-20-solid",
         Size = size,
@@ -14724,7 +14724,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlusCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlusCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus-circle-solid",
         Size = size,
@@ -14738,7 +14738,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlusSmall(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlusSmall(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus-small",
         Size = size,
@@ -14752,7 +14752,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlusSmall20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlusSmall20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus-small-20-solid",
         Size = size,
@@ -14766,7 +14766,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlusSmallSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlusSmallSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus-small-solid",
         Size = size,
@@ -14780,7 +14780,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "plus-solid",
         Size = size,
@@ -14794,7 +14794,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Power(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Power(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "power",
         Size = size,
@@ -14808,7 +14808,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Power16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Power16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "power-16-solid",
         Size = size,
@@ -14822,7 +14822,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Power20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Power20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "power-20-solid",
         Size = size,
@@ -14836,7 +14836,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PowerSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PowerSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "power-solid",
         Size = size,
@@ -14850,7 +14850,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PresentationChartBar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PresentationChartBar(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "presentation-chart-bar",
         Size = size,
@@ -14864,7 +14864,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PresentationChartBar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PresentationChartBar16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "presentation-chart-bar-16-solid",
         Size = size,
@@ -14878,7 +14878,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PresentationChartBar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PresentationChartBar20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "presentation-chart-bar-20-solid",
         Size = size,
@@ -14892,7 +14892,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PresentationChartBarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PresentationChartBarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "presentation-chart-bar-solid",
         Size = size,
@@ -14906,7 +14906,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PresentationChartLine(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PresentationChartLine(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "presentation-chart-line",
         Size = size,
@@ -14920,7 +14920,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PresentationChartLine16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PresentationChartLine16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "presentation-chart-line-16-solid",
         Size = size,
@@ -14934,7 +14934,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PresentationChartLine20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PresentationChartLine20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "presentation-chart-line-20-solid",
         Size = size,
@@ -14948,7 +14948,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PresentationChartLineSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PresentationChartLineSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "presentation-chart-line-solid",
         Size = size,
@@ -14962,7 +14962,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Printer(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Printer(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "printer",
         Size = size,
@@ -14976,7 +14976,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Printer16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Printer16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "printer-16-solid",
         Size = size,
@@ -14990,7 +14990,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Printer20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Printer20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "printer-20-solid",
         Size = size,
@@ -15004,7 +15004,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PrinterSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PrinterSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "printer-solid",
         Size = size,
@@ -15018,7 +15018,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PuzzlePiece(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PuzzlePiece(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "puzzle-piece",
         Size = size,
@@ -15032,7 +15032,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PuzzlePiece16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PuzzlePiece16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "puzzle-piece-16-solid",
         Size = size,
@@ -15046,7 +15046,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PuzzlePiece20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PuzzlePiece20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "puzzle-piece-20-solid",
         Size = size,
@@ -15060,7 +15060,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon PuzzlePieceSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon PuzzlePieceSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "puzzle-piece-solid",
         Size = size,
@@ -15074,7 +15074,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QrCode(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QrCode(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "qr-code",
         Size = size,
@@ -15091,7 +15091,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QrCode16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QrCode16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "qr-code-16-solid",
         Size = size,
@@ -15113,7 +15113,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QrCode20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QrCode20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "qr-code-20-solid",
         Size = size,
@@ -15127,7 +15127,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QrCodeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QrCodeSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "qr-code-solid",
         Size = size,
@@ -15141,7 +15141,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QuestionMarkCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QuestionMarkCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "question-mark-circle",
         Size = size,
@@ -15155,7 +15155,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QuestionMarkCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QuestionMarkCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "question-mark-circle-16-solid",
         Size = size,
@@ -15169,7 +15169,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QuestionMarkCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QuestionMarkCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "question-mark-circle-20-solid",
         Size = size,
@@ -15183,7 +15183,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QuestionMarkCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QuestionMarkCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "question-mark-circle-solid",
         Size = size,
@@ -15197,7 +15197,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QueueList(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QueueList(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "queue-list",
         Size = size,
@@ -15211,7 +15211,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QueueList16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QueueList16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "queue-list-16-solid",
         Size = size,
@@ -15225,7 +15225,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QueueList20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QueueList20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "queue-list-20-solid",
         Size = size,
@@ -15239,7 +15239,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon QueueListSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon QueueListSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "queue-list-solid",
         Size = size,
@@ -15253,7 +15253,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Radio(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Radio(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "radio",
         Size = size,
@@ -15267,7 +15267,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Radio16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Radio16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "radio-16-solid",
         Size = size,
@@ -15281,7 +15281,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Radio20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Radio20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "radio-20-solid",
         Size = size,
@@ -15295,7 +15295,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RadioSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RadioSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "radio-solid",
         Size = size,
@@ -15309,7 +15309,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ReceiptPercent(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ReceiptPercent(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "receipt-percent",
         Size = size,
@@ -15323,7 +15323,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ReceiptPercent16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ReceiptPercent16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "receipt-percent-16-solid",
         Size = size,
@@ -15337,7 +15337,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ReceiptPercent20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ReceiptPercent20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "receipt-percent-20-solid",
         Size = size,
@@ -15351,7 +15351,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ReceiptPercentSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ReceiptPercentSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "receipt-percent-solid",
         Size = size,
@@ -15365,7 +15365,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ReceiptRefund(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ReceiptRefund(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "receipt-refund",
         Size = size,
@@ -15379,7 +15379,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ReceiptRefund16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ReceiptRefund16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "receipt-refund-16-solid",
         Size = size,
@@ -15393,7 +15393,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ReceiptRefund20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ReceiptRefund20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "receipt-refund-20-solid",
         Size = size,
@@ -15407,7 +15407,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ReceiptRefundSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ReceiptRefundSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "receipt-refund-solid",
         Size = size,
@@ -15421,7 +15421,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RectangleGroup(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RectangleGroup(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rectangle-group",
         Size = size,
@@ -15435,7 +15435,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RectangleGroup16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RectangleGroup16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rectangle-group-16-solid",
         Size = size,
@@ -15449,7 +15449,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RectangleGroup20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RectangleGroup20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rectangle-group-20-solid",
         Size = size,
@@ -15463,7 +15463,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RectangleGroupSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RectangleGroupSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rectangle-group-solid",
         Size = size,
@@ -15477,7 +15477,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RectangleStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RectangleStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rectangle-stack",
         Size = size,
@@ -15491,7 +15491,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RectangleStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RectangleStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rectangle-stack-16-solid",
         Size = size,
@@ -15505,7 +15505,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RectangleStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RectangleStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rectangle-stack-20-solid",
         Size = size,
@@ -15519,7 +15519,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RectangleStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RectangleStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rectangle-stack-solid",
         Size = size,
@@ -15533,7 +15533,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RocketLaunch(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RocketLaunch(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rocket-launch",
         Size = size,
@@ -15547,7 +15547,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RocketLaunch16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RocketLaunch16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rocket-launch-16-solid",
         Size = size,
@@ -15562,7 +15562,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RocketLaunch20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RocketLaunch20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rocket-launch-20-solid",
         Size = size,
@@ -15579,7 +15579,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RocketLaunchSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RocketLaunchSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rocket-launch-solid",
         Size = size,
@@ -15596,7 +15596,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Rss(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Rss(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rss",
         Size = size,
@@ -15610,7 +15610,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Rss16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Rss16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rss-16-solid",
         Size = size,
@@ -15624,7 +15624,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Rss20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Rss20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rss-20-solid",
         Size = size,
@@ -15641,7 +15641,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon RssSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon RssSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "rss-solid",
         Size = size,
@@ -15655,7 +15655,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Scale(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Scale(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "scale",
         Size = size,
@@ -15669,7 +15669,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Scale16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Scale16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "scale-16-solid",
         Size = size,
@@ -15683,7 +15683,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Scale20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Scale20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "scale-20-solid",
         Size = size,
@@ -15697,7 +15697,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ScaleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ScaleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "scale-solid",
         Size = size,
@@ -15711,7 +15711,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Scissors(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Scissors(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "scissors",
         Size = size,
@@ -15725,7 +15725,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Scissors16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Scissors16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "scissors-16-solid",
         Size = size,
@@ -15740,7 +15740,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Scissors20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Scissors20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "scissors-20-solid",
         Size = size,
@@ -15757,7 +15757,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ScissorsSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ScissorsSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "scissors-solid",
         Size = size,
@@ -15774,7 +15774,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Server(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Server(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "server",
         Size = size,
@@ -15788,7 +15788,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Server16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Server16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "server-16-solid",
         Size = size,
@@ -15803,7 +15803,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Server20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Server20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "server-20-solid",
         Size = size,
@@ -15820,7 +15820,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ServerSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ServerSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "server-solid",
         Size = size,
@@ -15837,7 +15837,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ServerStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ServerStack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "server-stack",
         Size = size,
@@ -15851,7 +15851,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ServerStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ServerStack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "server-stack-16-solid",
         Size = size,
@@ -15866,7 +15866,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ServerStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ServerStack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "server-stack-20-solid",
         Size = size,
@@ -15883,7 +15883,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ServerStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ServerStackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "server-stack-solid",
         Size = size,
@@ -15900,7 +15900,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Share(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Share(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "share",
         Size = size,
@@ -15914,7 +15914,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Share16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Share16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "share-16-solid",
         Size = size,
@@ -15928,7 +15928,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Share20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Share20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "share-20-solid",
         Size = size,
@@ -15942,7 +15942,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShareSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "share-solid",
         Size = size,
@@ -15956,7 +15956,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShieldCheck(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShieldCheck(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shield-check",
         Size = size,
@@ -15970,7 +15970,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShieldCheck16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShieldCheck16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shield-check-16-solid",
         Size = size,
@@ -15984,7 +15984,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShieldCheck20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShieldCheck20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shield-check-20-solid",
         Size = size,
@@ -15998,7 +15998,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShieldCheckSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShieldCheckSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shield-check-solid",
         Size = size,
@@ -16012,7 +16012,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShieldExclamation(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShieldExclamation(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shield-exclamation",
         Size = size,
@@ -16026,7 +16026,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShieldExclamation16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShieldExclamation16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shield-exclamation-16-solid",
         Size = size,
@@ -16040,7 +16040,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShieldExclamation20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShieldExclamation20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shield-exclamation-20-solid",
         Size = size,
@@ -16054,7 +16054,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShieldExclamationSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShieldExclamationSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shield-exclamation-solid",
         Size = size,
@@ -16068,7 +16068,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShoppingBag(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShoppingBag(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shopping-bag",
         Size = size,
@@ -16082,7 +16082,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShoppingBag16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShoppingBag16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shopping-bag-16-solid",
         Size = size,
@@ -16096,7 +16096,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShoppingBag20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShoppingBag20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shopping-bag-20-solid",
         Size = size,
@@ -16110,7 +16110,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShoppingBagSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShoppingBagSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shopping-bag-solid",
         Size = size,
@@ -16124,7 +16124,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShoppingCart(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShoppingCart(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shopping-cart",
         Size = size,
@@ -16138,7 +16138,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShoppingCart16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShoppingCart16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shopping-cart-16-solid",
         Size = size,
@@ -16152,7 +16152,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShoppingCart20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShoppingCart20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shopping-cart-20-solid",
         Size = size,
@@ -16166,7 +16166,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ShoppingCartSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ShoppingCartSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "shopping-cart-solid",
         Size = size,
@@ -16180,7 +16180,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Signal(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Signal(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "signal",
         Size = size,
@@ -16194,7 +16194,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Signal16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Signal16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "signal-16-solid",
         Size = size,
@@ -16210,7 +16210,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Signal20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Signal20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "signal-20-solid",
         Size = size,
@@ -16227,7 +16227,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SignalSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SignalSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "signal-slash",
         Size = size,
@@ -16241,7 +16241,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SignalSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SignalSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "signal-slash-16-solid",
         Size = size,
@@ -16255,7 +16255,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SignalSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SignalSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "signal-slash-20-solid",
         Size = size,
@@ -16269,7 +16269,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SignalSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SignalSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "signal-slash-solid",
         Size = size,
@@ -16283,7 +16283,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SignalSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SignalSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "signal-solid",
         Size = size,
@@ -16297,7 +16297,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Slash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Slash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "slash",
         Size = size,
@@ -16311,7 +16311,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Slash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Slash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "slash-16-solid",
         Size = size,
@@ -16325,7 +16325,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Slash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Slash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "slash-20-solid",
         Size = size,
@@ -16339,7 +16339,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "slash-solid",
         Size = size,
@@ -16353,7 +16353,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Sparkles(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Sparkles(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "sparkles",
         Size = size,
@@ -16367,7 +16367,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Sparkles16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Sparkles16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "sparkles-16-solid",
         Size = size,
@@ -16381,7 +16381,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Sparkles20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Sparkles20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "sparkles-20-solid",
         Size = size,
@@ -16395,7 +16395,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SparklesSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SparklesSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "sparkles-solid",
         Size = size,
@@ -16409,7 +16409,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SpeakerWave(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SpeakerWave(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "speaker-wave",
         Size = size,
@@ -16423,7 +16423,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SpeakerWave16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SpeakerWave16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "speaker-wave-16-solid",
         Size = size,
@@ -16438,7 +16438,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SpeakerWave20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SpeakerWave20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "speaker-wave-20-solid",
         Size = size,
@@ -16455,7 +16455,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SpeakerWaveSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SpeakerWaveSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "speaker-wave-solid",
         Size = size,
@@ -16472,7 +16472,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SpeakerXMark(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SpeakerXMark(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "speaker-x-mark",
         Size = size,
@@ -16486,7 +16486,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SpeakerXMark16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SpeakerXMark16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "speaker-x-mark-16-solid",
         Size = size,
@@ -16500,7 +16500,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SpeakerXMark20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SpeakerXMark20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "speaker-x-mark-20-solid",
         Size = size,
@@ -16514,7 +16514,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SpeakerXMarkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SpeakerXMarkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "speaker-x-mark-solid",
         Size = size,
@@ -16528,7 +16528,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Square2Stack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Square2Stack(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "square-2-stack",
         Size = size,
@@ -16542,7 +16542,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Square2Stack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Square2Stack16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "square-2-stack-16-solid",
         Size = size,
@@ -16559,7 +16559,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Square2Stack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Square2Stack20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "square-2-stack-20-solid",
         Size = size,
@@ -16576,7 +16576,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Square2StackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Square2StackSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "square-2-stack-solid",
         Size = size,
@@ -16593,7 +16593,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Square3Stack3d(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Square3Stack3d(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "square-3-stack-3d",
         Size = size,
@@ -16607,7 +16607,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Square3Stack3d16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Square3Stack3d16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "square-3-stack-3d-16-solid",
         Size = size,
@@ -16623,7 +16623,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Square3Stack3d20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Square3Stack3d20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "square-3-stack-3d-20-solid",
         Size = size,
@@ -16641,7 +16641,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Square3Stack3dSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Square3Stack3dSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "square-3-stack-3d-solid",
         Size = size,
@@ -16659,7 +16659,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Squares2x2(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Squares2x2(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "squares-2x2",
         Size = size,
@@ -16673,7 +16673,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Squares2x216Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Squares2x216Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "squares-2x2-16-solid",
         Size = size,
@@ -16687,7 +16687,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Squares2x220Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Squares2x220Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "squares-2x2-20-solid",
         Size = size,
@@ -16701,7 +16701,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Squares2x2Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Squares2x2Solid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "squares-2x2-solid",
         Size = size,
@@ -16715,7 +16715,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SquaresPlus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SquaresPlus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "squares-plus",
         Size = size,
@@ -16729,7 +16729,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SquaresPlus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SquaresPlus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "squares-plus-16-solid",
         Size = size,
@@ -16743,7 +16743,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SquaresPlus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SquaresPlus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "squares-plus-20-solid",
         Size = size,
@@ -16757,7 +16757,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SquaresPlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SquaresPlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "squares-plus-solid",
         Size = size,
@@ -16771,7 +16771,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Star(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Star(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "star",
         Size = size,
@@ -16785,7 +16785,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Star16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Star16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "star-16-solid",
         Size = size,
@@ -16799,7 +16799,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Star20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Star20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "star-20-solid",
         Size = size,
@@ -16813,7 +16813,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon StarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon StarSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "star-solid",
         Size = size,
@@ -16827,7 +16827,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Stop(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Stop(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "stop",
         Size = size,
@@ -16841,7 +16841,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Stop16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Stop16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "stop-16-solid",
         Size = size,
@@ -16855,7 +16855,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Stop20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Stop20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "stop-20-solid",
         Size = size,
@@ -16869,7 +16869,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon StopCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon StopCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "stop-circle",
         Size = size,
@@ -16886,7 +16886,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon StopCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon StopCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "stop-circle-16-solid",
         Size = size,
@@ -16900,7 +16900,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon StopCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon StopCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "stop-circle-20-solid",
         Size = size,
@@ -16914,7 +16914,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon StopCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon StopCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "stop-circle-solid",
         Size = size,
@@ -16928,7 +16928,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon StopSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon StopSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "stop-solid",
         Size = size,
@@ -16942,7 +16942,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Strikethrough(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Strikethrough(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "strikethrough",
         Size = size,
@@ -16956,7 +16956,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Strikethrough16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Strikethrough16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "strikethrough-16-solid",
         Size = size,
@@ -16970,7 +16970,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Strikethrough20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Strikethrough20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "strikethrough-20-solid",
         Size = size,
@@ -16984,7 +16984,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon StrikethroughSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon StrikethroughSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "strikethrough-solid",
         Size = size,
@@ -16998,7 +16998,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Sun(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Sun(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "sun",
         Size = size,
@@ -17012,7 +17012,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Sun16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Sun16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "sun-16-solid",
         Size = size,
@@ -17026,7 +17026,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Sun20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Sun20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "sun-20-solid",
         Size = size,
@@ -17040,7 +17040,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SunSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SunSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "sun-solid",
         Size = size,
@@ -17054,7 +17054,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Swatch(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Swatch(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "swatch",
         Size = size,
@@ -17068,7 +17068,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Swatch16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Swatch16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "swatch-16-solid",
         Size = size,
@@ -17083,7 +17083,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Swatch20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Swatch20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "swatch-20-solid",
         Size = size,
@@ -17097,7 +17097,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon SwatchSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon SwatchSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "swatch-solid",
         Size = size,
@@ -17114,7 +17114,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon TableCells(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon TableCells(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "table-cells",
         Size = size,
@@ -17128,7 +17128,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon TableCells16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon TableCells16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "table-cells-16-solid",
         Size = size,
@@ -17142,7 +17142,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon TableCells20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon TableCells20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "table-cells-20-solid",
         Size = size,
@@ -17156,7 +17156,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon TableCellsSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon TableCellsSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "table-cells-solid",
         Size = size,
@@ -17170,7 +17170,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Tag(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Tag(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "tag",
         Size = size,
@@ -17187,7 +17187,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Tag16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Tag16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "tag-16-solid",
         Size = size,
@@ -17201,7 +17201,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Tag20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Tag20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "tag-20-solid",
         Size = size,
@@ -17215,7 +17215,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon TagSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon TagSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "tag-solid",
         Size = size,
@@ -17229,7 +17229,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Ticket(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Ticket(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ticket",
         Size = size,
@@ -17243,7 +17243,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Ticket16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Ticket16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ticket-16-solid",
         Size = size,
@@ -17257,7 +17257,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Ticket20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Ticket20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ticket-20-solid",
         Size = size,
@@ -17271,7 +17271,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon TicketSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon TicketSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "ticket-solid",
         Size = size,
@@ -17285,7 +17285,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Trash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Trash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "trash",
         Size = size,
@@ -17299,7 +17299,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Trash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Trash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "trash-16-solid",
         Size = size,
@@ -17313,7 +17313,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Trash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Trash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "trash-20-solid",
         Size = size,
@@ -17327,7 +17327,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon TrashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon TrashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "trash-solid",
         Size = size,
@@ -17341,7 +17341,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Trophy(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Trophy(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "trophy",
         Size = size,
@@ -17355,7 +17355,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Trophy16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Trophy16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "trophy-16-solid",
         Size = size,
@@ -17369,7 +17369,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Trophy20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Trophy20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "trophy-20-solid",
         Size = size,
@@ -17383,7 +17383,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon TrophySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon TrophySolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "trophy-solid",
         Size = size,
@@ -17397,7 +17397,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Truck(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Truck(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "truck",
         Size = size,
@@ -17411,7 +17411,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Truck16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Truck16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "truck-16-solid",
         Size = size,
@@ -17427,7 +17427,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Truck20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Truck20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "truck-20-solid",
         Size = size,
@@ -17444,7 +17444,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon TruckSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon TruckSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "truck-solid",
         Size = size,
@@ -17462,7 +17462,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Tv(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Tv(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "tv",
         Size = size,
@@ -17476,7 +17476,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Tv16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Tv16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "tv-16-solid",
         Size = size,
@@ -17491,7 +17491,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Tv20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Tv20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "tv-20-solid",
         Size = size,
@@ -17508,7 +17508,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon TvSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon TvSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "tv-solid",
         Size = size,
@@ -17525,7 +17525,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Underline(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Underline(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "underline",
         Size = size,
@@ -17539,7 +17539,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Underline16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Underline16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "underline-16-solid",
         Size = size,
@@ -17553,7 +17553,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Underline20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Underline20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "underline-20-solid",
         Size = size,
@@ -17567,7 +17567,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UnderlineSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UnderlineSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "underline-solid",
         Size = size,
@@ -17581,7 +17581,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon User(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon User(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user",
         Size = size,
@@ -17595,7 +17595,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon User16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon User16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-16-solid",
         Size = size,
@@ -17609,7 +17609,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon User20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon User20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-20-solid",
         Size = size,
@@ -17623,7 +17623,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-circle",
         Size = size,
@@ -17637,7 +17637,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-circle-16-solid",
         Size = size,
@@ -17651,7 +17651,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-circle-20-solid",
         Size = size,
@@ -17665,7 +17665,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-circle-solid",
         Size = size,
@@ -17679,7 +17679,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserGroup(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserGroup(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-group",
         Size = size,
@@ -17693,7 +17693,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserGroup16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserGroup16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-group-16-solid",
         Size = size,
@@ -17707,7 +17707,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserGroup20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserGroup20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-group-20-solid",
         Size = size,
@@ -17721,7 +17721,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserGroupSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserGroupSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-group-solid",
         Size = size,
@@ -17738,7 +17738,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserMinus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserMinus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-minus",
         Size = size,
@@ -17752,7 +17752,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserMinus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserMinus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-minus-16-solid",
         Size = size,
@@ -17766,7 +17766,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserMinus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserMinus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-minus-20-solid",
         Size = size,
@@ -17780,7 +17780,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserMinusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserMinusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-minus-solid",
         Size = size,
@@ -17794,7 +17794,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserPlus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserPlus(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-plus",
         Size = size,
@@ -17808,7 +17808,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserPlus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserPlus16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-plus-16-solid",
         Size = size,
@@ -17822,7 +17822,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserPlus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserPlus20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-plus-20-solid",
         Size = size,
@@ -17836,7 +17836,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserPlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserPlusSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-plus-solid",
         Size = size,
@@ -17850,7 +17850,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UserSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UserSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "user-solid",
         Size = size,
@@ -17864,7 +17864,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Users(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Users(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "users",
         Size = size,
@@ -17878,7 +17878,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Users16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Users16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "users-16-solid",
         Size = size,
@@ -17892,7 +17892,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Users20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Users20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "users-20-solid",
         Size = size,
@@ -17906,7 +17906,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon UsersSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon UsersSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "users-solid",
         Size = size,
@@ -17920,7 +17920,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Variable(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Variable(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "variable",
         Size = size,
@@ -17934,7 +17934,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Variable16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Variable16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "variable-16-solid",
         Size = size,
@@ -17948,7 +17948,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Variable20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Variable20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "variable-20-solid",
         Size = size,
@@ -17962,7 +17962,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon VariableSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon VariableSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "variable-solid",
         Size = size,
@@ -17976,7 +17976,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon VideoCamera(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon VideoCamera(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "video-camera",
         Size = size,
@@ -17990,7 +17990,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon VideoCamera16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon VideoCamera16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "video-camera-16-solid",
         Size = size,
@@ -18004,7 +18004,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon VideoCamera20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon VideoCamera20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "video-camera-20-solid",
         Size = size,
@@ -18018,7 +18018,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon VideoCameraSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon VideoCameraSlash(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "video-camera-slash",
         Size = size,
@@ -18032,7 +18032,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon VideoCameraSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon VideoCameraSlash16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "video-camera-slash-16-solid",
         Size = size,
@@ -18046,7 +18046,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon VideoCameraSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon VideoCameraSlash20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "video-camera-slash-20-solid",
         Size = size,
@@ -18060,7 +18060,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon VideoCameraSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon VideoCameraSlashSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "video-camera-slash-solid",
         Size = size,
@@ -18074,7 +18074,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon VideoCameraSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon VideoCameraSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "video-camera-solid",
         Size = size,
@@ -18088,7 +18088,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ViewColumns(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ViewColumns(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "view-columns",
         Size = size,
@@ -18102,7 +18102,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ViewColumns16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ViewColumns16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "view-columns-16-solid",
         Size = size,
@@ -18116,7 +18116,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ViewColumns20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ViewColumns20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "view-columns-20-solid",
         Size = size,
@@ -18130,7 +18130,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ViewColumnsSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ViewColumnsSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "view-columns-solid",
         Size = size,
@@ -18144,7 +18144,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ViewfinderCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ViewfinderCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "viewfinder-circle",
         Size = size,
@@ -18158,7 +18158,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ViewfinderCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ViewfinderCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "viewfinder-circle-16-solid",
         Size = size,
@@ -18172,7 +18172,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ViewfinderCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ViewfinderCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "viewfinder-circle-20-solid",
         Size = size,
@@ -18186,7 +18186,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon ViewfinderCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon ViewfinderCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "viewfinder-circle-solid",
         Size = size,
@@ -18200,7 +18200,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Wallet(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Wallet(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wallet",
         Size = size,
@@ -18214,7 +18214,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Wallet16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Wallet16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wallet-16-solid",
         Size = size,
@@ -18228,7 +18228,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Wallet20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Wallet20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wallet-20-solid",
         Size = size,
@@ -18242,7 +18242,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon WalletSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon WalletSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wallet-solid",
         Size = size,
@@ -18256,7 +18256,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Wifi(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Wifi(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wifi",
         Size = size,
@@ -18270,7 +18270,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Wifi16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Wifi16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wifi-16-solid",
         Size = size,
@@ -18284,7 +18284,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Wifi20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Wifi20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wifi-20-solid",
         Size = size,
@@ -18298,7 +18298,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon WifiSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon WifiSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wifi-solid",
         Size = size,
@@ -18312,7 +18312,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Window(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Window(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "window",
         Size = size,
@@ -18326,7 +18326,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Window16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Window16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "window-16-solid",
         Size = size,
@@ -18340,7 +18340,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Window20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Window20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "window-20-solid",
         Size = size,
@@ -18354,7 +18354,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon WindowSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon WindowSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "window-solid",
         Size = size,
@@ -18368,7 +18368,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Wrench(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Wrench(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wrench",
         Size = size,
@@ -18385,7 +18385,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Wrench16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Wrench16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wrench-16-solid",
         Size = size,
@@ -18399,7 +18399,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon Wrench20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon Wrench20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wrench-20-solid",
         Size = size,
@@ -18413,7 +18413,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon WrenchScrewdriver(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon WrenchScrewdriver(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wrench-screwdriver",
         Size = size,
@@ -18427,7 +18427,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon WrenchScrewdriver16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon WrenchScrewdriver16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wrench-screwdriver-16-solid",
         Size = size,
@@ -18442,7 +18442,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon WrenchScrewdriver20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon WrenchScrewdriver20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wrench-screwdriver-20-solid",
         Size = size,
@@ -18459,7 +18459,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon WrenchScrewdriverSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon WrenchScrewdriverSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wrench-screwdriver-solid",
         Size = size,
@@ -18477,7 +18477,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon WrenchSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon WrenchSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "wrench-solid",
         Size = size,
@@ -18491,7 +18491,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon XCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon XCircle(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "x-circle",
         Size = size,
@@ -18505,7 +18505,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon XCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon XCircle16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "x-circle-16-solid",
         Size = size,
@@ -18519,7 +18519,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon XCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon XCircle20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "x-circle-20-solid",
         Size = size,
@@ -18533,7 +18533,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon XCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon XCircleSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "x-circle-solid",
         Size = size,
@@ -18547,7 +18547,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon XMark(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon XMark(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "x-mark",
         Size = size,
@@ -18561,7 +18561,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon XMark16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon XMark16Solid(int size = 16, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "x-mark-16-solid",
         Size = size,
@@ -18575,7 +18575,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon XMark20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon XMark20Solid(int size = 20, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "x-mark-20-solid",
         Size = size,
@@ -18589,7 +18589,7 @@ public static class HeroiconsIcons
         }
     };
 
-    public static HeroiconsIcon XMarkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroiconsIcon
+    public static HeroIcon XMarkSolid(int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null) => new HeroIcon
     {
         Name = "x-mark-solid",
         Size = size,

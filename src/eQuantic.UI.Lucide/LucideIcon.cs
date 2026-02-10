@@ -29,7 +29,7 @@ public class LucideIcon : StatelessComponent
                 ["stroke-linecap"] = "round",
                 ["stroke-linejoin"] = "round",
                 ["style"] = $"color: {Color}",
-                ["class"] = $"lucide lucide-{Name} {ClassName}".Trim()
+                ["class"] = $"icon icon-lucide icon-lucide-{Name} {ClassName}".Trim()
             }
         };
 

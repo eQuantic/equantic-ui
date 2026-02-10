@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Reflection;
 using eQuantic.UI.Core;
 
@@ -20,7 +21,11 @@ public class LucideIconProvider : IIconProvider
 
     private MethodInfo? GetMethod(string name)
     {
-        var pascalName = string.Join("", name.Split('-').Select(p => char.ToUpper(p[0]) + p.Substring(1)));
+        var pascalName = string.Join("", name.Split(new[] { '-', '_' }, System.StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => char.ToUpper(p[0]) + p.Substring(1)));
+        
+        if (char.IsDigit(pascalName[0])) pascalName = "_" + pascalName;
+        
         return typeof(LucideIcons).GetMethod(pascalName, new[] { typeof(int), typeof(double), typeof(string), typeof(string) });
     }
 }

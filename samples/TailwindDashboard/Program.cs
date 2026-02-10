@@ -10,31 +10,23 @@ using eQuantic.UI.Core.Assets;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add UI services
+// Add custom services
 builder.Services.AddSingleton<TailwindDashboard.Services.ITodoService, TailwindDashboard.Services.TodoService>();
-
-// Add Tailwind theme services (must be before AddUI for SSR)
-builder.Services.AddTailwind();
-
-// Add Lucide icon set
-builder.Services.AddLucideIcons();
-
-// Add chart libraries
-builder.Services.AddChartJs();
-builder.Services.AddApexCharts();
-builder.Services.AddLottie();
-
-// Add image optimization (Next.js-style)
-builder.Services.AddImageOptimization(opts =>
-{
-    opts.DefaultQuality = 80;
-    opts.Formats = ["image/webp"];
-});
 
 builder.Services.AddUI(options =>
 {
     options.ScanAssembly(typeof(Program).Assembly)
            .WithSsr()
+           .UseTailwind()
+           .UseLucideIcons()
+           .UseChartJs()
+           .UseApexCharts()
+           .UseLottie()
+           .UseImageOptimization(opts =>
+           {
+               opts.DefaultQuality = 80;
+               opts.Formats = ["image/webp"];
+           })
            .ConfigureHtmlShell(shell =>
            {
                shell.SetTitle("eQuantic.UI | Tailwind Dashboard")
@@ -64,17 +56,7 @@ app.UseRouting();
 // Enable Server Actions
 app.UseServerActions();
 
-// Map image optimization endpoint (/_equantic/image)
-app.UseImageOptimization();
-
-// Map Tailwind CSS dynamic endpoints (theme.js, dark-mode.js)
-app.UseTailwind();
-
-// Map Chart.js and ApexCharts (CDN + initialization scripts)
-app.UseChartJs();
-app.UseApexCharts();
-
-// Map UI (dynamic routing)
+// Map UI (dynamic routing + package endpoints)
 app.MapUI();
 
 app.Run();

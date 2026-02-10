@@ -67,6 +67,10 @@ async function generate(prefix, projectName, className, outputDir) {
     }
     const iconData = await response.json();
 
+    const baseName = className.replace(/icons$/i, '');
+    const iconsClassName = `${baseName}Icons`;
+    const iconBaseName = `${baseName}Icon`;
+
     const srcDir = path.join(outputDir, projectName);
     if (!fs.existsSync(srcDir)) {
         fs.mkdirSync(srcDir, { recursive: true });
@@ -78,7 +82,7 @@ using eQuantic.UI.Components;
 
 namespace eQuantic.UI.${className};
 
-public static class ${className}Icons
+public static class ${iconsClassName}
 {
 `;
 
@@ -93,7 +97,7 @@ public static class ${className}Icons
         const width = icon.width || iconData.width || 24;
         const height = icon.height || iconData.height || 24;
 
-        code += `    public static ${className}Icon ${pascalName}(int size = ${width}, double strokeWidth = 2, string color = "currentColor", string? className = null) => new ${className}Icon
+        code += `    public static ${iconBaseName} ${pascalName}(int size = ${width}, double strokeWidth = 2, string color = "currentColor", string? className = null) => new ${iconBaseName}
     {
         Name = "${name}",
         Size = size,
@@ -114,19 +118,18 @@ public static class ${className}Icons
 
     code += '}\n';
 
-    const outputFile = path.join(srcDir, `${className}Icons.cs`);
+    const outputFile = path.join(srcDir, `${iconsClassName}.cs`);
     console.log(`Writing to ${outputFile}...`);
     fs.writeFileSync(outputFile, code);
     
-    // Generate Base Icon Component if not exists
-    const iconComponentFile = path.join(srcDir, `${className}Icon.cs`);
-    if (!fs.existsSync(iconComponentFile)) {
-        const iconComponentCode = `using eQuantic.UI.Core;
+    // Generate Base Icon Component
+    const iconComponentFile = path.join(srcDir, `${iconBaseName}.cs`);
+    const iconComponentCode = `using eQuantic.UI.Core;
 using eQuantic.UI.Components;
 
 namespace eQuantic.UI.${className};
 
-public class ${className}Icon : StatelessComponent
+public class ${iconBaseName} : StatelessComponent
 {
     public string? Name { get; set; }
     public int Size { get; set; } = 24;
@@ -165,35 +168,77 @@ public class ${className}Icon : StatelessComponent
     }
 }
 `;
-        fs.writeFileSync(iconComponentFile, iconComponentCode);
-    }
+    fs.writeFileSync(iconComponentFile, iconComponentCode);
 
-    // Generate ServiceExtensions if not exists
+    // Generate ServiceExtensions
     const extensionsFile = path.join(srcDir, `${className}ServiceExtensions.cs`);
-    if (!fs.existsSync(extensionsFile)) {
-        const extensionsCode = `using Microsoft.Extensions.DependencyInjection;
+    const extensionsCode = `using Microsoft.Extensions.DependencyInjection;
+using eQuantic.UI.Server;
+using eQuantic.UI.Core;
 
 namespace eQuantic.UI.${className};
 
 public static class ${className}ServiceExtensions
 {
-    public static IServiceCollection Add${className}Icons(this IServiceCollection services)
+    public static IServiceCollection Add${iconsClassName}(this IServiceCollection services)
     {
+        services.AddSingleton<IIconProvider, ${className}IconProvider>();
         return services;
+    }
+
+    public static UIOptions Use${iconsClassName}(this UIOptions options)
+    {
+        options.RegisterServices(services => services.Add${iconsClassName}());
+        return options;
     }
 }
 `;
-        fs.writeFileSync(extensionsFile, extensionsCode);
+    fs.writeFileSync(extensionsFile, extensionsCode);
+
+    // Generate IconProvider
+    const providerFile = path.join(srcDir, `${className}IconProvider.cs`);
+    const providerCode = `using System.Linq;
+using System.Reflection;
+using eQuantic.UI.Core;
+
+namespace eQuantic.UI.${className};
+
+public class ${className}IconProvider : IIconProvider
+{
+    public bool CanResolve(string name)
+    {
+        return GetMethod(name) != null;
     }
 
-    // Generate .csproj if not exists
+    public IComponent? CreateIcon(string name, int size = 24, double strokeWidth = 2, string color = "currentColor", string? className = null)
+    {
+        var method = GetMethod(name);
+        if (method == null) return null;
+
+        return method.Invoke(null, new object?[] { size, strokeWidth, color, className }) as IComponent;
+    }
+
+    private MethodInfo? GetMethod(string name)
+    {
+        var pascalName = string.Join("", name.Split(new[] { '-', '_' }, System.StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => char.ToUpper(p[0]) + p.Substring(1)));
+        
+        if (char.IsDigit(pascalName[0])) pascalName = "_" + pascalName;
+        
+        return typeof(${iconsClassName}).GetMethod(pascalName, new[] { typeof(int), typeof(double), typeof(string), typeof(string) });
+    }
+}
+`;
+    fs.writeFileSync(providerFile, providerCode);
+
+    // Generate .csproj
     const csprojFile = path.join(srcDir, `eQuantic.UI.${className}.csproj`);
-    if (!fs.existsSync(csprojFile)) {
-        const csprojCode = `<Project Sdk="Microsoft.NET.Sdk">
+    const csprojCode = `<Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
         <ProjectReference Include="..\\eQuantic.UI.Core\\eQuantic.UI.Core.csproj" />
         <ProjectReference Include="..\\eQuantic.UI.Components\\eQuantic.UI.Components.csproj" />
+        <ProjectReference Include="..\\eQuantic.UI.Server\\eQuantic.UI.Server.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -213,8 +258,7 @@ public static class ${className}ServiceExtensions
 
 </Project>
 `;
-        fs.writeFileSync(csprojFile, csprojCode);
-    }
+    fs.writeFileSync(csprojFile, csprojCode);
 
     console.log(`Done with ${prefix}!`);
 }

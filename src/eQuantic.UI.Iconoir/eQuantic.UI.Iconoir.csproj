@@ -3,6 +3,7 @@
     <ItemGroup>
         <ProjectReference Include="..\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
         <ProjectReference Include="..\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+        <ProjectReference Include="..\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
     </ItemGroup>
 
     <ItemGroup>

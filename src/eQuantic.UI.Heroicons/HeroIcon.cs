@@ -1,9 +1,9 @@
 using eQuantic.UI.Core;
 using eQuantic.UI.Components;
 
-namespace eQuantic.UI.SimpleIcons;
+namespace eQuantic.UI.Heroicons;
 
-public class SimpleIconsIcon : StatelessComponent
+public class HeroIcon : StatelessComponent
 {
     public string? Name { get; set; }
     public int Size { get; set; } = 24;
@@ -29,7 +29,7 @@ public class SimpleIconsIcon : StatelessComponent
                 ["stroke-linecap"] = "round",
                 ["stroke-linejoin"] = "round",
                 ["style"] = $"color: {Color}",
-                ["class"] = $"icon icon-simple-icons icon-simple-icons-{Name} {ClassName}".Trim()
+                ["class"] = $"icon icon-heroicons icon-heroicons-{Name} {ClassName}".Trim()
             }
         };
 

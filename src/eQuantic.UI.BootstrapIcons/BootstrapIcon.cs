@@ -1,9 +1,9 @@
 using eQuantic.UI.Core;
 using eQuantic.UI.Components;
 
-namespace eQuantic.UI.TablerIcons;
+namespace eQuantic.UI.BootstrapIcons;
 
-public class TablerIconsIcon : StatelessComponent
+public class BootstrapIcon : StatelessComponent
 {
     public string? Name { get; set; }
     public int Size { get; set; } = 24;
@@ -29,7 +29,7 @@ public class TablerIconsIcon : StatelessComponent
                 ["stroke-linecap"] = "round",
                 ["stroke-linejoin"] = "round",
                 ["style"] = $"color: {Color}",
-                ["class"] = $"icon icon-tabler icon-tabler-{Name} {ClassName}".Trim()
+                ["class"] = $"icon icon-bi icon-bi-{Name} {ClassName}".Trim()
             }
         };
 

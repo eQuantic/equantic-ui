@@ -2,6 +2,7 @@ using System;
 using eQuantic.UI.Core.Theme;
 using eQuantic.UI.Material.Theme;
 using Microsoft.Extensions.DependencyInjection;
+using eQuantic.UI.Server;
 
 namespace eQuantic.UI.Material;
 
@@ -37,6 +38,22 @@ public static class MaterialServiceExtensions
         services.AddSingleton(options);
         services.AddSingleton<IAppTheme, MaterialAppTheme>();
         return services;
+    }
+
+    public static UIOptions UseMaterialTheme(this UIOptions options, Action<MaterialThemeOptions>? configure = null)
+    {
+        options.RegisterServices(services =>
+        {
+            if (configure != null)
+            {
+                services.AddMaterialTheme(configure);
+            }
+            else
+            {
+                services.AddMaterialTheme();
+            }
+        });
+        return options;
     }
 }
 

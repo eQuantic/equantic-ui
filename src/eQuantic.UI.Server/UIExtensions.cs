@@ -59,6 +59,12 @@ public static class UIExtensions
         
         configure?.Invoke(options);
 
+        // Execute package service registrations
+        foreach (var registration in options.ServiceRegistrations)
+        {
+            registration(services);
+        }
+
         services.AddSingleton(options);
         services.AddSingleton<IServerActionRegistry>(sp =>
         {
@@ -263,6 +269,14 @@ public static class UIExtensions
     /// </summary>
     public static IEndpointRouteBuilder MapUI(this IEndpointRouteBuilder endpoints)
     {
+        var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
+
+        // Apply package endpoint configurations
+        foreach (var configuration in options.EndpointConfigurations)
+        {
+            configuration(endpoints);
+        }
+
         // Ensure all page routes and assets are mapped
         endpoints.MapPages();
 
@@ -484,6 +498,8 @@ public class UIOptions
 {
     internal List<Assembly> AssembliesToScan { get; } = new();
     internal List<(Type ServiceType, Type ImplementationType)> AssetProviders { get; } = new();
+    internal List<Action<IServiceCollection>> ServiceRegistrations { get; } = new();
+    internal List<Action<IEndpointRouteBuilder>> EndpointConfigurations { get; } = new();
 
     /// <summary>
     /// Configuration for the HTML shell (index.html).
@@ -530,6 +546,26 @@ public class UIOptions
         throw new ArgumentException(
             $"{providerType.Name} does not implement IComponentAssetProvider<T>.",
             nameof(TProvider));
+    }
+
+    /// <summary>
+    /// Registers a custom service registration callback.
+    /// Used by packages to add services to the DI container during AddUI().
+    /// </summary>
+    public UIOptions RegisterServices(Action<IServiceCollection> registration)
+    {
+        ServiceRegistrations.Add(registration);
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a custom endpoint configuration callback.
+    /// Used by packages to map routes during MapUI().
+    /// </summary>
+    public UIOptions RegisterEndpoints(Action<IEndpointRouteBuilder> configuration)
+    {
+        EndpointConfigurations.Add(configuration);
+        return this;
     }
 
     public UIOptions ConfigureHtmlShell(Action<HtmlShellOptions> configure)

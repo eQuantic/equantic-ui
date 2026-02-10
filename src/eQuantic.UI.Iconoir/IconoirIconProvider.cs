@@ -2,9 +2,9 @@ using System.Linq;
 using System.Reflection;
 using eQuantic.UI.Core;
 
-namespace eQuantic.UI.FontAwesome6Solid;
+namespace eQuantic.UI.Iconoir;
 
-public class FontAwesome6SolidIconProvider : IIconProvider
+public class IconoirIconProvider : IIconProvider
 {
     public bool CanResolve(string name)
     {
@@ -26,6 +26,6 @@ public class FontAwesome6SolidIconProvider : IIconProvider
         
         if (char.IsDigit(pascalName[0])) pascalName = "_" + pascalName;
         
-        return typeof(FontAwesome6SolidIcons).GetMethod(pascalName, new[] { typeof(int), typeof(double), typeof(string), typeof(string) });
+        return typeof(IconoirIcons).GetMethod(pascalName, new[] { typeof(int), typeof(double), typeof(string), typeof(string) });
     }
 }

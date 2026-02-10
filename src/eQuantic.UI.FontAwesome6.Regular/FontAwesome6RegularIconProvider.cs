@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Reflection;
 using eQuantic.UI.Core;
@@ -22,7 +21,7 @@ public class FontAwesome6RegularIconProvider : IIconProvider
 
     private MethodInfo? GetMethod(string name)
     {
-        var pascalName = string.Join("", name.Split(new[] { '-', '_' }, StringSplitOptions.RemoveEmptyEntries)
+        var pascalName = string.Join("", name.Split(new[] { '-', '_' }, System.StringSplitOptions.RemoveEmptyEntries)
             .Select(p => char.ToUpper(p[0]) + p.Substring(1)));
         
         if (char.IsDigit(pascalName[0])) pascalName = "_" + pascalName;
