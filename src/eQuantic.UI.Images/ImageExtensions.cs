@@ -22,6 +22,7 @@ public static class ImageExtensions
     {
         var options = new ImageOptimizationOptions();
         configure?.Invoke(options);
+        options.Validate();
 
         services.AddSingleton(options);
         services.AddSingleton<ImageOptimizer>();

@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,10 +9,15 @@ namespace eQuantic.UI.Images;
 
 /// <summary>
 /// Handles the /_equantic/image endpoint for on-demand image optimization.
-/// Validates parameters, negotiates format, caches results.
+/// Validates parameters, negotiates format, caches results, supports ETag.
 /// </summary>
 public static class ImageOptimizationMiddleware
 {
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff"
+    };
+
     /// <summary>
     /// Handles an image optimization request.
     /// Query params: url (source path), w (width), q (quality).
@@ -39,6 +46,15 @@ public static class ImageOptimizationMiddleware
         {
             context.Response.StatusCode = 400;
             await context.Response.WriteAsync("Invalid url: must be a local path starting with /");
+            return;
+        }
+
+        // Security: only allow image file extensions
+        var ext = Path.GetExtension(urlParam);
+        if (string.IsNullOrEmpty(ext) || !AllowedExtensions.Contains(ext))
+        {
+            context.Response.StatusCode = 400;
+            await context.Response.WriteAsync("Invalid url: must be an image file (.jpg, .png, .webp, etc.)");
             return;
         }
 
@@ -74,6 +90,16 @@ public static class ImageOptimizationMiddleware
         var env = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
         var sourcePath = Path.Combine(env.WebRootPath, urlParam.TrimStart('/'));
 
+        // Security: verify resolved path is still within wwwroot
+        var resolvedPath = Path.GetFullPath(sourcePath);
+        var webRootFull = Path.GetFullPath(env.WebRootPath);
+        if (!resolvedPath.StartsWith(webRootFull, StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.StatusCode = 400;
+            await context.Response.WriteAsync("Invalid url: path traversal detected");
+            return;
+        }
+
         if (!File.Exists(sourcePath))
         {
             context.Response.StatusCode = 404;
@@ -100,12 +126,23 @@ public static class ImageOptimizationMiddleware
             var data = await cache.GetOrCreateAsync(urlParam, width, quality, outputFormat, async () =>
             {
                 logger?.LogInformation(
-                    "Optimizing image: {Url} → {Width}px, q={Quality}, format={Format}",
+                    "Optimizing image: {Url} -> {Width}px, q={Quality}, format={Format}",
                     urlParam, width, quality, outputFormat);
 
                 await using var stream = File.OpenRead(sourcePath);
                 return await optimizer.OptimizeAsync(stream, width, quality, outputFormat);
             });
+
+            // ETag support for conditional requests (304 Not Modified)
+            var etag = ComputeETag(data);
+            context.Response.Headers["ETag"] = etag;
+
+            var ifNoneMatch = context.Request.Headers.IfNoneMatch.FirstOrDefault();
+            if (!string.IsNullOrEmpty(ifNoneMatch) && ifNoneMatch == etag)
+            {
+                context.Response.StatusCode = 304;
+                return;
+            }
 
             // Set response headers
             context.Response.ContentType = outputFormat;
@@ -140,5 +177,14 @@ public static class ImageOptimizationMiddleware
 
         // Fallback: if the client accepts any image, use JPEG
         return "image/jpeg";
+    }
+
+    /// <summary>
+    /// Computes a weak ETag from the image data using SHA256.
+    /// </summary>
+    private static string ComputeETag(byte[] data)
+    {
+        var hash = SHA256.HashData(data);
+        return $"\"{Convert.ToHexString(hash)[..16].ToLowerInvariant()}\"";
     }
 }

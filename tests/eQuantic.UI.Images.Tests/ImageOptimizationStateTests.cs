@@ -2,6 +2,7 @@ using eQuantic.UI.Core.Images;
 
 namespace eQuantic.UI.Images.Tests;
 
+[Collection("ImageState")]
 public class ImageOptimizationStateTests : IDisposable
 {
     public ImageOptimizationStateTests()

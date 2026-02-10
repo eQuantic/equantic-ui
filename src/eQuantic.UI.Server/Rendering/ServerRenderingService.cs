@@ -124,12 +124,8 @@ public class ServerRenderingService : IServerRenderingService
                 }
             }
 
-            // Set global provider for SSR context
-            // Note: This static property approach is not thread-safe for concurrent requests
-            // but is required by the current Core implementation of StatelessComponent.
-            // TODO: Refactor Core to pass context down the render tree.
-            var previousProvider = RenderContext.ServiceProvider;
-            RenderContext.ServiceProvider = context.RequestServices;
+            // Set scoped provider for this async context (thread-safe via AsyncLocal)
+            RenderContext.SetScopedServiceProvider(context.RequestServices);
 
             try
             {
@@ -161,7 +157,7 @@ public class ServerRenderingService : IServerRenderingService
             }
             finally
             {
-                RenderContext.ServiceProvider = previousProvider;
+                RenderContext.SetScopedServiceProvider(null);
             }
         }
         catch (Exception ex)

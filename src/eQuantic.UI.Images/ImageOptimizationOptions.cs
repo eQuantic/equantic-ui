@@ -5,6 +5,11 @@ namespace eQuantic.UI.Images;
 /// </summary>
 public class ImageOptimizationOptions
 {
+    private static readonly HashSet<string> ValidFormats = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "image/webp", "image/avif", "image/png", "image/jpeg"
+    };
+
     /// <summary>
     /// Allowed output widths for full-width responsive images (matches Next.js defaults).
     /// </summary>
@@ -46,4 +51,44 @@ public class ImageOptimizationOptions
     /// </summary>
     public int[] AllowedWidths =>
         ImageSizes.Concat(DeviceSizes).Distinct().OrderBy(x => x).ToArray();
+
+    /// <summary>
+    /// Validates all configuration values. Throws <see cref="ArgumentException"/> on invalid config.
+    /// </summary>
+    public void Validate()
+    {
+        if (DefaultQuality < 1 || DefaultQuality > 100)
+            throw new ArgumentException($"DefaultQuality must be between 1 and 100, got {DefaultQuality}.");
+
+        if (CacheTtlSeconds < 0)
+            throw new ArgumentException($"CacheTtlSeconds must be non-negative, got {CacheTtlSeconds}.");
+
+        if (MaxSourceSize <= 0)
+            throw new ArgumentException($"MaxSourceSize must be positive, got {MaxSourceSize}.");
+
+        if (string.IsNullOrWhiteSpace(CacheDirectory))
+            throw new ArgumentException("CacheDirectory must not be empty.");
+
+        if (Formats == null || Formats.Length == 0)
+            throw new ArgumentException("Formats must contain at least one format.");
+
+        foreach (var format in Formats)
+        {
+            if (!ValidFormats.Contains(format))
+                throw new ArgumentException(
+                    $"Invalid format '{format}'. Supported: {string.Join(", ", ValidFormats)}.");
+        }
+
+        if (DeviceSizes == null || DeviceSizes.Length == 0)
+            throw new ArgumentException("DeviceSizes must contain at least one width.");
+
+        if (ImageSizes == null || ImageSizes.Length == 0)
+            throw new ArgumentException("ImageSizes must contain at least one width.");
+
+        foreach (var w in DeviceSizes.Concat(ImageSizes))
+        {
+            if (w <= 0)
+                throw new ArgumentException($"All widths must be positive, got {w}.");
+        }
+    }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ using eQuantic.UI.Server.Rendering;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -77,6 +79,20 @@ public static class UIExtensions
 
         // Add SSR rendering service
         services.TryAddSingleton<IServerRenderingService, ServerRenderingService>();
+
+        // Add response compression (Brotli + Gzip for JS, CSS, HTML)
+        services.AddResponseCompression(opts =>
+        {
+            opts.EnableForHttps = true;
+            opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+            {
+                "application/javascript",
+                "text/css",
+                "image/svg+xml"
+            });
+        });
+        services.Configure<BrotliCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
+        services.Configure<GzipCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
 
         // Add SignalR services
         services.AddSignalR();
@@ -159,10 +175,11 @@ public static class UIExtensions
         // Map SignalR Hub
         endpoints.MapHub<Hubs.ServerActionHub>("/_equantic/hub");
 
-        // Map Runtime JS
+        // Map Runtime JS (immutable via BuildId in URL, long cache)
         endpoints.MapGet("/_equantic/runtime.js", async context =>
         {
             context.Response.ContentType = "application/javascript";
+            context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
             var assembly = typeof(UIExtensions).Assembly;
             var resourceName = "eQuantic.UI.Server.runtime.js";
             using var stream = assembly.GetManifestResourceStream(resourceName);
@@ -181,6 +198,7 @@ public static class UIExtensions
         endpoints.MapGet("/_equantic/equantic.css", async context =>
         {
             context.Response.ContentType = "text/css";
+            context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
             var env = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
             var path = Path.Combine(env.WebRootPath, "_equantic", "equantic.css");
 
@@ -209,10 +227,11 @@ public static class UIExtensions
         {
             var name = (string?)context.GetRouteValue("name");
             var path = Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic", $"{name}.js");
-            
+
             if (File.Exists(path))
             {
                 context.Response.ContentType = "application/javascript";
+                context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
                 await context.Response.SendFileAsync(path);
             }
             else

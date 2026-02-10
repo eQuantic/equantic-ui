@@ -4,6 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>eQuantic.UI.Core</PackageId>
+    <Description>Core abstractions for eQuantic.UI - component model, rendering context, and HTML primitives.</Description>
   </PropertyGroup>
 
 </Project>

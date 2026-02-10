@@ -47,8 +47,8 @@ builder.Services.AddUI(options =>
 
 var app = builder.Build();
 
-// Set global service provider for UI components
-eQuantic.UI.Core.RenderContext.ServiceProvider = app.Services;
+// Set global service provider for UI components (thread-safe)
+eQuantic.UI.Core.RenderContext.SetGlobalServiceProvider(app.Services);
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

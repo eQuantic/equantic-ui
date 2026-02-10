@@ -6,6 +6,7 @@ using SixLabors.ImageSharp.PixelFormats;
 
 namespace eQuantic.UI.Images.Tests;
 
+[Collection("ImageState")]
 public class ImageOptimizationMiddlewareTests : IDisposable
 {
     private readonly string _webRoot;

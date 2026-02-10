@@ -30,12 +30,11 @@ public class EdgeCaseTests
     }
     
     [Fact]
-    public void Convert_UnknownExpression_ReturnsToString()
+    public void Convert_SizeOf_EvaluatesToConstant()
     {
-        // Fallback: unsupported syntax returns C# code as-is
-        // e.g. sizeof(int) is not supported
+        // sizeof(int) is now evaluated at compile time to its constant value
         var code = "sizeof(int)";
         var result = TestHelper.ConvertExpression(code);
-        Assert.Equal("sizeof(int)", result);
+        Assert.Equal("4", result);
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace eQuantic.UI.Images.Tests;
 
+[Collection("ImageState")]
 public class ImageExtensionsTests : IDisposable
 {
     public ImageExtensionsTests()

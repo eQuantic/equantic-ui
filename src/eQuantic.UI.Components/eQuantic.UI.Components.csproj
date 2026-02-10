@@ -9,6 +9,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
+        <PackageId>eQuantic.UI.Components</PackageId>
+        <Description>Standard UI component library for eQuantic.UI - buttons, inputs, containers, and more.</Description>
     </PropertyGroup>
 
     <!-- Package source files for compiler type resolution -->

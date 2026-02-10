@@ -12,6 +12,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>eQuantic.UI.Charts</PackageId>
+    <Description>Core chart abstractions for eQuantic.UI - data models and chart component base.</Description>
   </PropertyGroup>
 
 </Project>

@@ -15,6 +15,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
+        <PackageId>eQuantic.UI.Images</PackageId>
+        <Description>Next.js-style server-side image optimization for eQuantic.UI - resize, WebP conversion, and caching.</Description>
     </PropertyGroup>
 
     <ItemGroup>
