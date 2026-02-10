@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using eQuantic.UI.Core;
+using eQuantic.UI.Core.Images;
 
 namespace eQuantic.UI.Components.Display;
 
@@ -111,6 +114,19 @@ public class Image : StatelessComponent
     /// </summary>
     public string? ObjectPosition { get; set; }
 
+    /// <summary>
+    /// Enable server-side image optimization (resize, format conversion, quality).
+    /// When null, falls back to global setting from UseImageOptimization().
+    /// Only applies to local images (paths starting with /).
+    /// </summary>
+    public bool? Optimize { get; set; }
+
+    /// <summary>
+    /// Image quality (1-100). Only used when optimization is active.
+    /// Default: 0 (uses global default from ImageOptimizationOptions).
+    /// </summary>
+    public int Quality { get; set; }
+
     public override IComponent Build(RenderContext context)
     {
         var attributes = new Dictionary<string, string>
@@ -126,8 +142,44 @@ public class Image : StatelessComponent
             attributes["fetchpriority"] = "high";
         }
 
-        if (!string.IsNullOrEmpty(SrcSet)) attributes["srcset"] = SrcSet;
-        if (!string.IsNullOrEmpty(Sizes)) attributes["sizes"] = Sizes;
+        // Server-side image optimization: generate optimized src/srcset URLs
+        var shouldOptimize = Optimize ?? ImageOptimizationState.IsEnabled;
+        if (shouldOptimize && !string.IsNullOrEmpty(Src) && Src.StartsWith("/"))
+        {
+            var q = Quality > 0 ? Quality : ImageOptimizationState.DefaultQuality;
+            var escapedUrl = Uri.EscapeDataString(Src);
+
+            if (Width.HasValue && !Fill)
+            {
+                // Fixed-size image: generate 1x and 2x density descriptors
+                var w1x = ImageOptimizationState.SnapToAllowed(Width.Value);
+                var w2x = ImageOptimizationState.SnapToAllowed(Width.Value * 2);
+                attributes["src"] = $"/_equantic/image?url={escapedUrl}&w={w1x}&q={q}";
+                attributes["srcset"] =
+                    $"/_equantic/image?url={escapedUrl}&w={w1x}&q={q} 1x, " +
+                    $"/_equantic/image?url={escapedUrl}&w={w2x}&q={q} 2x";
+            }
+            else
+            {
+                // Responsive image: generate width descriptors for all configured sizes
+                var allWidths = ImageOptimizationState.AllowedWidths;
+                var srcsetParts = allWidths.Select(w =>
+                    $"/_equantic/image?url={escapedUrl}&w={w}&q={q} {w}w");
+                attributes["srcset"] = string.Join(", ", srcsetParts);
+                attributes["src"] = $"/_equantic/image?url={escapedUrl}&w={allWidths[allWidths.Length - 1]}&q={q}";
+
+                if (string.IsNullOrEmpty(Sizes))
+                    attributes["sizes"] = "100vw";
+                else
+                    attributes["sizes"] = Sizes;
+            }
+        }
+        else
+        {
+            // No optimization: use manual srcset/sizes if provided
+            if (!string.IsNullOrEmpty(SrcSet)) attributes["srcset"] = SrcSet;
+            if (!string.IsNullOrEmpty(Sizes)) attributes["sizes"] = Sizes;
+        }
 
         var styleList = new List<string>();
         var classList = new List<string> { "equantic-image" };

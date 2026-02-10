@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+        <ProjectReference Include="..\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
+        <ProjectReference Include="..\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+        <ProjectReference Include="..\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.*" />
+    </ItemGroup>
+
+</Project>

@@ -16,6 +16,7 @@
         <ProjectReference Include="..\..\src\eQuantic.UI.Charts.ChartJs\eQuantic.UI.Charts.ChartJs.csproj" />
         <ProjectReference Include="..\..\src\eQuantic.UI.Charts.ApexCharts\eQuantic.UI.Charts.ApexCharts.csproj" />
         <ProjectReference Include="..\..\src\eQuantic.UI.Lottie\eQuantic.UI.Lottie.csproj" />
+        <ProjectReference Include="..\..\src\eQuantic.UI.Images\eQuantic.UI.Images.csproj" />
     </ItemGroup>
 
     <ItemGroup>

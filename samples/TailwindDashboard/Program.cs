@@ -4,6 +4,7 @@ using eQuantic.UI.Lucide;
 using eQuantic.UI.Charts.ChartJs;
 using eQuantic.UI.Charts.ApexCharts;
 using eQuantic.UI.Lottie;
+using eQuantic.UI.Images;
 using eQuantic.UI.Components.Display;
 using eQuantic.UI.Core.Assets;
 
@@ -22,6 +23,13 @@ builder.Services.AddLucideIcons();
 builder.Services.AddChartJs();
 builder.Services.AddApexCharts();
 builder.Services.AddLottie();
+
+// Add image optimization (Next.js-style)
+builder.Services.AddImageOptimization(opts =>
+{
+    opts.DefaultQuality = 80;
+    opts.Formats = ["image/webp"];
+});
 
 builder.Services.AddUI(options =>
 {
@@ -55,6 +63,9 @@ app.UseRouting();
 
 // Enable Server Actions
 app.UseServerActions();
+
+// Map image optimization endpoint (/_equantic/image)
+app.UseImageOptimization();
 
 // Map Tailwind CSS dynamic endpoints (theme.js, dark-mode.js)
 app.UseTailwind();
