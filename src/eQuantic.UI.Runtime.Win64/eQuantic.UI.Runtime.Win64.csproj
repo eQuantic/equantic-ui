@@ -5,7 +5,6 @@
         <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
         <!-- Metadata -->
         <PackageId>eQuantic.UI.Runtime.Win64</PackageId>
-        <Version>0.1.2</Version>
         <Description>eQuantic UI Runtime for Windows (x64).</Description>
         <Authors>eQuantic Tech</Authors>
     </PropertyGroup>
