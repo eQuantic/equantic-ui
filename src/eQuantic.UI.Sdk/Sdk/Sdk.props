@@ -50,6 +50,14 @@
         <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Runtime" Version="$(EQuanticUIVersion)" />
+
+        <!-- Platform-specific Bun Runtime Packages -->
+        <PackageReference Include="eQuantic.UI.Runtime.Win64" Version="$(EQuanticUIVersion)"
+            Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+        <PackageReference Include="eQuantic.UI.Runtime.Linux64" Version="$(EQuanticUIVersion)"
+            Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
+        <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="$(EQuanticUIVersion)"
+            Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
     </ItemGroup>
 
     <!-- Project references for Dev Mode -->
@@ -59,6 +67,17 @@
             Include="$(_DevRootDir)eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Runtime\eQuantic.UI.Runtime.csproj" />
+
+        <!-- Platform-specific Bun Runtime Project References -->
+        <ProjectReference
+            Include="$(_DevRootDir)eQuantic.UI.Runtime.Win64\eQuantic.UI.Runtime.Win64.csproj"
+            Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+        <ProjectReference
+            Include="$(_DevRootDir)eQuantic.UI.Runtime.Linux64\eQuantic.UI.Runtime.Linux64.csproj"
+            Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
+        <ProjectReference
+            Include="$(_DevRootDir)eQuantic.UI.Runtime.Osx64\eQuantic.UI.Runtime.Osx64.csproj"
+            Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
     </ItemGroup>
 
     <ItemGroup>

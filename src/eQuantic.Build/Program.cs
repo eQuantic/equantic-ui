@@ -291,10 +291,32 @@ void CompileAndBundle()
 
             // Post-process source maps to merge C# -> TS and TS -> JS
             var jsMapFiles = Directory.GetFiles(outputDir, "*.js.map", SearchOption.AllDirectories);
-            var mergeMapsScript = Path.Combine(AppContext.BaseDirectory, "Scripts", "merge-maps.js");
+            var scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
+            var mergeMapsScript = Path.Combine(scriptsDir, "merge-maps.js");
 
             if (File.Exists(mergeMapsScript))
             {
+                // Ensure dependency is installed
+                var nodeModulesDir = Path.Combine(scriptsDir, "node_modules", "@ampproject", "remapping");
+                if (!Directory.Exists(nodeModulesDir))
+                {
+                    Console.WriteLine("📦 Installing remapping dependency in SDK CLI...");
+                    var installProcess = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = bunPath!,
+                            Arguments = "add @ampproject/remapping",
+                            WorkingDirectory = scriptsDir,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+                    installProcess.Start();
+                    installProcess.WaitForExit();
+                }
                 foreach (var mapFile in jsMapFiles)
                 {
                     var nodePath = "node";
