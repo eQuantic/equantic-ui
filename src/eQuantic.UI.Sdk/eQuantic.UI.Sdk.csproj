@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <IsPackable>true</IsPackable>
         <PackageId>eQuantic.UI.Sdk</PackageId>
@@ -30,11 +30,11 @@
         <MSBuild Projects="..\eQuantic.Build\eQuantic.Build.csproj" Targets="Build"
             Properties="Configuration=$(Configuration)" />
         <ItemGroup>
-            <_BuildOutput Include="..\eQuantic.Build\bin\$(Configuration)\net8.0\**"
-                Exclude="..\eQuantic.Build\bin\$(Configuration)\net8.0\*.pdb" />
+            <_BuildOutput Include="..\eQuantic.Build\bin\$(Configuration)\net10.0\**"
+                Exclude="..\eQuantic.Build\bin\$(Configuration)\net10.0\*.pdb" />
         </ItemGroup>
         <ItemGroup>
-            <TfmSpecificPackageFile Include="@(_BuildOutput)" PackagePath="tools\net8.0" />
+            <TfmSpecificPackageFile Include="@(_BuildOutput)" PackagePath="tools\net10.0" />
         </ItemGroup>
     </Target>
 

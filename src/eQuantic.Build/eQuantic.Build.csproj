@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AssemblyName>eqc</AssemblyName>
@@ -22,7 +22,7 @@
         </ItemGroup>
         <Message Text="eQuantic.UI: Updating SDK tools from $(AssemblyName)..." Importance="high" />
         <Copy SourceFiles="@(_FilesToCopy)"
-            DestinationFiles="@(_FilesToCopy->'..\eQuantic.UI.Sdk\tools\net8.0\%(RecursiveDir)%(Filename)%(Extension)')"
+            DestinationFiles="@(_FilesToCopy->'..\eQuantic.UI.Sdk\tools\net10.0\%(RecursiveDir)%(Filename)%(Extension)')"
             SkipUnchangedFiles="true" />
     </Target>
 

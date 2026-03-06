@@ -2,9 +2,9 @@
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.Web" />
     <PropertyGroup>
         <!-- Use paths relative to the targets file locations -->
-        <_SdkToolsDir>$(MSBuildThisFileDirectory)../tools/net8.0/</_SdkToolsDir>
-        <_SourceBuildDir>$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Release/net8.0/</_SourceBuildDir>
-        <_SourceBuildDirDebug>$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Debug/net8.0/</_SourceBuildDirDebug>
+        <_SdkToolsDir>$(MSBuildThisFileDirectory)../tools/net10.0/</_SdkToolsDir>
+        <_SourceBuildDir>$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Release/net10.0/</_SourceBuildDir>
+        <_SourceBuildDirDebug>$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Debug/net10.0/</_SourceBuildDirDebug>
     </PropertyGroup>
     <PropertyGroup Condition="Exists('$(_SdkToolsDir)eqc.dll')">
         <EqcCliPath>$(_SdkToolsDir)eqc.dll</EqcCliPath>
@@ -125,7 +125,8 @@
             Overwrite="true"
             Condition="!Exists('$(_BunNpmNodeModules)')" />
 
-        <Message Text="eQuantic.UI: Installing npm packages: @(BunPackage -> '%(Identity)@%(Version)', ', ')..."
+        <Message
+            Text="eQuantic.UI: Installing npm packages: @(BunPackage -> '%(Identity)@%(Version)', ', ')..."
             Importance="High"
             Condition="!Exists('$(_BunNpmNodeModules)')" />
 
@@ -134,11 +135,13 @@
             Condition="!Exists('$(_BunNpmNodeModules)')" />
 
         <!-- Create node_modules symlink at project root for tool resolution -->
-        <Exec Command="if [ ! -L &quot;node_modules&quot; ]; then ln -s &quot;$(_BunNpmDir)/node_modules&quot; &quot;node_modules&quot;; fi"
+        <Exec
+            Command="if [ ! -L &quot;node_modules&quot; ]; then ln -s &quot;$(_BunNpmDir)/node_modules&quot; &quot;node_modules&quot;; fi"
             Condition="!$([MSBuild]::IsOSPlatform('Windows'))"
             WorkingDirectory="$(MSBuildProjectDirectory)"
             IgnoreExitCode="true" />
-        <Exec Command="if not exist &quot;node_modules&quot; mklink /D &quot;node_modules&quot; &quot;$(_BunNpmDir)\node_modules&quot;"
+        <Exec
+            Command="if not exist &quot;node_modules&quot; mklink /D &quot;node_modules&quot; &quot;$(_BunNpmDir)\node_modules&quot;"
             Condition="$([MSBuild]::IsOSPlatform('Windows'))"
             WorkingDirectory="$(MSBuildProjectDirectory)"
             IgnoreExitCode="true" />
@@ -149,14 +152,18 @@
         <PropertyGroup>
             <!-- Standard components source files are packaged in eQuantic.UI.Components package -->
             <!-- Try NuGet cache first (consumer scenario) -->
-            <_StandardComponentsDir Condition="'$(PkgeQuantic_UI_Components)' != ''">$(PkgeQuantic_UI_Components)/tools/source</_StandardComponentsDir>
+            <_StandardComponentsDir Condition="'$(PkgeQuantic_UI_Components)' != ''">
+                $(PkgeQuantic_UI_Components)/tools/source</_StandardComponentsDir>
 
             <!-- Fallback to source tree (development scenario) -->
             <_DevComponentsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Components</_DevComponentsDir>
-            <_StandardComponentsDir Condition="'$(_StandardComponentsDir)' == '' And Exists('$(_DevComponentsDir)')">$(_DevComponentsDir)</_StandardComponentsDir>
+            <_StandardComponentsDir
+                Condition="'$(_StandardComponentsDir)' == '' And Exists('$(_DevComponentsDir)')">
+                $(_DevComponentsDir)</_StandardComponentsDir>
         </PropertyGroup>
 
-        <Error Text="eQuantic.UI: Standard components not found. Ensure the eQuantic.UI.Components package (version $(EQuanticUIVersion)) is installed."
+        <Error
+            Text="eQuantic.UI: Standard components not found. Ensure the eQuantic.UI.Components package (version $(EQuanticUIVersion)) is installed."
             Condition="'$(_StandardComponentsDir)' == '' Or !Exists('$(_StandardComponentsDir)')" />
         <!-- Clean old generated files before compiling -->
         <ItemGroup>
@@ -179,18 +186,25 @@
         <PropertyGroup>
             <!-- Runtime.js is packaged in eQuantic.UI.Runtime package -->
             <!-- Try NuGet cache first (consumer scenario) -->
-            <_RuntimeSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">$(PkgeQuantic_UI_Runtime)/tools/runtime/runtime.js</_RuntimeSourcePath>
-            <_CssSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">$(PkgeQuantic_UI_Runtime)/tools/runtime/equantic.css</_CssSourcePath>
+            <_RuntimeSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">
+                $(PkgeQuantic_UI_Runtime)/tools/runtime/runtime.js</_RuntimeSourcePath>
+            <_CssSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">
+                $(PkgeQuantic_UI_Runtime)/tools/runtime/equantic.css</_CssSourcePath>
 
             <!-- Fallback to source tree (development scenario) -->
-            <_RuntimeSourcePath Condition="'$(_RuntimeSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/dist/index.js')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/dist/index.js</_RuntimeSourcePath>
-            <_CssSourcePath Condition="'$(_CssSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/assets/equantic.css')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/assets/equantic.css</_CssSourcePath>
+            <_RuntimeSourcePath
+                Condition="'$(_RuntimeSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/dist/index.js')">
+                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/dist/index.js</_RuntimeSourcePath>
+            <_CssSourcePath
+                Condition="'$(_CssSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/assets/equantic.css')">
+                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/assets/equantic.css</_CssSourcePath>
 
             <_RuntimeDestPath>$(MSBuildProjectDirectory)/$(EQuanticOutputPath)runtime.js</_RuntimeDestPath>
             <_CssDestPath>$(MSBuildProjectDirectory)/$(EQuanticOutputPath)equantic.css</_CssDestPath>
         </PropertyGroup>
 
-        <Error Text="eQuantic.UI: Runtime not found. Ensure the eQuantic.UI.Runtime package (version $(Version)) is installed. Try running 'dotnet restore --force'."
+        <Error
+            Text="eQuantic.UI: Runtime not found. Ensure the eQuantic.UI.Runtime package (version $(Version)) is installed. Try running 'dotnet restore --force'."
             Condition="'$(_RuntimeSourcePath)' == '' Or !Exists('$(_RuntimeSourcePath)')" />
 
         <Message Text="eQuantic.UI: Copying runtime.js from '$(_RuntimeSourcePath)' to output..."

@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (leave empty to use Directory.Build.props)'
+        description: "Version to build (leave empty to use Directory.Build.props)"
         required: false
-        default: ''
+        default: ""
 
 jobs:
   # Build TypeScript Runtime once (platform-agnostic)
@@ -22,7 +22,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Build Runtime TypeScript (using embedded Bun)
         shell: bash
@@ -70,7 +70,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Download Runtime Build
         uses: actions/download-artifact@v4
@@ -114,7 +114,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Download Runtime Build
         uses: actions/download-artifact@v4

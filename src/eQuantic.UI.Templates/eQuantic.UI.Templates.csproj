@@ -8,7 +8,7 @@
         <Authors>eQuantic</Authors>
         <Description>Templates for creating eQuantic.UI applications and components.</Description>
         <PackageTags>dotnet-new;templates;equantic;ui</PackageTags>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
 
         <IncludeContentInPack>true</IncludeContentInPack>
         <IncludeBuildOutput>false</IncludeBuildOutput>
