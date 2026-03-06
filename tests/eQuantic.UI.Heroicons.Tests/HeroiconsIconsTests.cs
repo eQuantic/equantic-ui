@@ -10,7 +10,7 @@ public class HeroiconsIconsTests
     [Fact]
     public void Heroicons_AcademicCap_ShouldReturnIconWithCorrectContent()
     {
-        var icon = HeroiconsIcons.AcademicCap();
+        var icon = HeroIcons.AcademicCap();
         
         icon.Name.Should().Be("academic-cap");
         icon.Content.Should().NotBeEmpty();
@@ -23,7 +23,7 @@ public class HeroiconsIconsTests
     [Fact]
     public void HeroiconsIcon_Build_ShouldHaveCorrectRootAttributes()
     {
-        var icon = HeroiconsIcons.AcademicCap(size: 32, color: "blue");
+        var icon = HeroIcons.AcademicCap(size: 32, color: "blue");
         var context = new RenderContext();
         
         var built = icon.Build(context) as DynamicElement;
