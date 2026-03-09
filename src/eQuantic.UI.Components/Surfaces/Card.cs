@@ -97,11 +97,12 @@ public class Card : StatelessComponent
         var shadowClass = cardTheme?.GetShadowInfo(shadowKey) ?? "";
 
         // Build variant class
-        var variantClass = cardTheme?.GetVariant(Variant) ?? "";
+        var variantClass = cardTheme?.GetVariant(Variant) ?? $"eq-card-{Variant.ToString().ToLowerInvariant()}";
 
         // Build container class list
         var classes = new List<string>();
         if (!string.IsNullOrEmpty(cardTheme?.Container)) classes.Add(cardTheme.Container);
+        else classes.Add("eq-card");
         if (!string.IsNullOrEmpty(variantClass)) classes.Add(variantClass);
         if (!string.IsNullOrEmpty(shadowClass)) classes.Add(shadowClass);
         if (!string.IsNullOrEmpty(Width)) classes.Add(Width);
@@ -124,9 +125,9 @@ public class Card : StatelessComponent
         else
         {
             // Legacy pattern: Use Header/Body/Footer props
-            var headerClass = cardTheme?.Header ?? "";
-            var bodyClass = cardTheme?.Body ?? "";
-            var footerClass = cardTheme?.Footer ?? "";
+            var headerClass = cardTheme?.Header ?? "eq-card-header";
+            var bodyClass = cardTheme?.Body ?? "eq-card-body";
+            var footerClass = cardTheme?.Footer ?? "eq-card-footer";
 
             if (Header != null)
             {

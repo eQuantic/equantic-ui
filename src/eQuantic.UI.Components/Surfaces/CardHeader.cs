@@ -18,7 +18,7 @@ public class CardHeader : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var cardTheme = theme?.Card;
 
-        var headerClass = cardTheme?.Header ?? "";
+        var headerClass = cardTheme?.Header ?? "eq-card-header";
         if (!string.IsNullOrEmpty(AdditionalClass))
         {
             headerClass = $"{headerClass} {AdditionalClass}";

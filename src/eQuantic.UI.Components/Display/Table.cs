@@ -28,12 +28,12 @@ public class Table<T> : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var tableTheme = theme?.Table;
 
-        var wrapperClass = tableTheme?.Wrapper ?? "";
-        var tableClass = tableTheme?.Table ?? "";
-        var headerClass = tableTheme?.Header ?? "";
-        var rowClass = tableTheme?.Row ?? "";
-        var headCellClass = tableTheme?.HeadCell ?? "";
-        var cellClass = tableTheme?.Cell ?? "";
+        var wrapperClass = tableTheme?.Wrapper ?? "eq-table-wrapper";
+        var tableClass = tableTheme?.Table ?? "eq-table";
+        var headerClass = tableTheme?.Header ?? "eq-table-header";
+        var rowClass = tableTheme?.Row ?? "eq-table-row";
+        var headCellClass = tableTheme?.HeadCell ?? "eq-table-head-cell";
+        var cellClass = tableTheme?.Cell ?? "eq-table-cell";
 
         var attrs = new Dictionary<string, string>
         {

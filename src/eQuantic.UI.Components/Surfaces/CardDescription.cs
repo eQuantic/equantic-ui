@@ -23,7 +23,7 @@ public class CardDescription : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var cardTheme = theme?.Card;
 
-        var descClass = cardTheme?.Description ?? "";
+        var descClass = cardTheme?.Description ?? "eq-card-description";
         if (!string.IsNullOrEmpty(ClassName))
         {
             descClass = $"{descClass} {ClassName}";

@@ -21,8 +21,8 @@ public class Badge : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var badgeTheme = theme?.Badge;
 
-        var baseStyle = badgeTheme?.Base ?? "";
-        var variantStyle = badgeTheme?.GetVariant(Variant) ?? "";
+        var baseStyle = badgeTheme?.Base ?? "eq-badge";
+        var variantStyle = badgeTheme?.GetVariant(Variant) ?? $"eq-badge-{Variant.ToString().ToLowerInvariant()}";
 
         var element = new DynamicElement
         {

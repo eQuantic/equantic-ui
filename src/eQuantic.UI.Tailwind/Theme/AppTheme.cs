@@ -21,6 +21,12 @@ public class AppTheme : IAppTheme
     public IAvatarTheme Avatar { get; }
     public IDialogTheme Dialog { get; }
     public ITabsTheme Tabs { get; }
+    public ITooltipTheme Tooltip { get; }
+    public IDropdownMenuTheme DropdownMenu { get; }
+    public IPaginationTheme Pagination { get; }
+    public IPopoverTheme Popover { get; }
+    public IScrollAreaTheme ScrollArea { get; }
+    public IInputOTPTheme InputOTP { get; }
 
     public AppTheme()
     {
@@ -40,5 +46,11 @@ public class AppTheme : IAppTheme
         Avatar = new AvatarTheme();
         Dialog = new DialogTheme();
         Tabs = new TabsTheme();
+        Tooltip = new TooltipTheme();
+        DropdownMenu = new DropdownMenuTheme();
+        Pagination = new PaginationTheme();
+        Popover = new PopoverTheme();
+        ScrollArea = new ScrollAreaTheme();
+        InputOTP = new InputOTPTheme();
     }
 }

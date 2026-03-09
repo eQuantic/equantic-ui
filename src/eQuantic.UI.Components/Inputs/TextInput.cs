@@ -74,8 +74,8 @@ public class TextInput : InputComponent<string>
     {
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var inputTheme = theme?.Input;
-        var baseStyle = inputTheme?.Base ?? "";
-        var sizeStyle = inputTheme?.GetSize(Size) ?? "";
+        var baseStyle = inputTheme?.Base ?? "eq-input";
+        var sizeStyle = inputTheme?.GetSize(Size) ?? $"eq-input-{Size.ToString().ToLowerInvariant()}";
 
         var attrs = new Dictionary<string, string>
         {

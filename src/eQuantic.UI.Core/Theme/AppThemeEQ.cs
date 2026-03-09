@@ -22,6 +22,12 @@ public class AppThemeEQ : IAppTheme
     public IAvatarTheme? Avatar { get; }
     public IDialogTheme? Dialog { get; }
     public ITabsTheme? Tabs { get; }
+    public ITooltipTheme? Tooltip { get; }
+    public IDropdownMenuTheme? DropdownMenu { get; }
+    public IPaginationTheme? Pagination { get; }
+    public IPopoverTheme? Popover { get; }
+    public IScrollAreaTheme? ScrollArea { get; }
+    public IInputOTPTheme? InputOTP { get; }
 
     public AppThemeEQ()
     {
@@ -42,5 +48,11 @@ public class AppThemeEQ : IAppTheme
         Avatar = ThemeRegistry.GetTheme<IAvatarTheme>();
         Dialog = ThemeRegistry.GetTheme<IDialogTheme>();
         Tabs = ThemeRegistry.GetTheme<ITabsTheme>();
+        Tooltip = ThemeRegistry.GetTheme<ITooltipTheme>();
+        DropdownMenu = ThemeRegistry.GetTheme<IDropdownMenuTheme>();
+        Pagination = ThemeRegistry.GetTheme<IPaginationTheme>();
+        Popover = ThemeRegistry.GetTheme<IPopoverTheme>();
+        ScrollArea = ThemeRegistry.GetTheme<IScrollAreaTheme>();
+        InputOTP = ThemeRegistry.GetTheme<IInputOTPTheme>();
     }
 }

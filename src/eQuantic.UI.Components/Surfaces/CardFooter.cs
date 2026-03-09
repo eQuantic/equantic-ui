@@ -18,7 +18,7 @@ public class CardFooter : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var cardTheme = theme?.Card;
 
-        var footerClass = cardTheme?.Footer ?? "";
+        var footerClass = cardTheme?.Footer ?? "eq-card-footer";
         if (!string.IsNullOrEmpty(AdditionalClass))
         {
             footerClass = $"{footerClass} {AdditionalClass}";

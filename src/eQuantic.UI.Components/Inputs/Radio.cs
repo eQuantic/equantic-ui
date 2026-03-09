@@ -39,7 +39,7 @@ public class Radio : InputComponent<string>
             var labelElement = new DynamicElement
             {
                 TagName = "label",
-                CustomAttributes = new Dictionary<string, string> { ["class"] = "radio-label flex items-center gap-2" }
+                CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-checkbox-label" }
             };
             labelElement.Children.Add(inputElement);
             labelElement.Children.Add(new Text(Label));

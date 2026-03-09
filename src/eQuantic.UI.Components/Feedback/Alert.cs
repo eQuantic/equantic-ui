@@ -16,8 +16,8 @@ public class Alert : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var alertTheme = theme?.Alert;
 
-        var baseStyle = alertTheme?.Base ?? "";
-        var variantStyle = alertTheme?.GetVariant(Variant) ?? "";
+        var baseStyle = alertTheme?.Base ?? "eq-alert";
+        var variantStyle = alertTheme?.GetVariant(Variant) ?? $"eq-alert-{Variant.ToString().ToLowerInvariant()}";
 
         var element = new DynamicElement
         {
@@ -44,7 +44,7 @@ public class AlertTitle : StatelessComponent
     public override IComponent Build(RenderContext context)
     {
         var theme = context.GetService<Core.Theme.IAppTheme>();
-        var style = theme?.Alert.Title ?? "";
+        var style = theme?.Alert.Title ?? "eq-alert-title";
 
         var element = new DynamicElement
         {
@@ -75,7 +75,7 @@ public class AlertDescription : StatelessComponent
     public override IComponent Build(RenderContext context)
     {
         var theme = context.GetService<Core.Theme.IAppTheme>();
-        var style = theme?.Alert.Description ?? "";
+        var style = theme?.Alert.Description ?? "eq-alert-description";
 
         var element = new DynamicElement
         {

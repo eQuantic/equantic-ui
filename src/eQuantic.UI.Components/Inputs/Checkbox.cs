@@ -49,9 +49,9 @@ public class Checkbox : InputComponent<bool>
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var checkboxTheme = theme?.Checkbox;
         
-        var baseStyle = checkboxTheme?.Base ?? "";
-        var checkedStyle = checkboxTheme?.Checked ?? "";
-        var uncheckedStyle = checkboxTheme?.Unchecked ?? "";
+        var baseStyle = checkboxTheme?.Base ?? "eq-checkbox";
+        var checkedStyle = checkboxTheme?.Checked ?? "eq-checkbox-checked";
+        var uncheckedStyle = checkboxTheme?.Unchecked ?? "eq-checkbox-unchecked";
 
         // Controlled mode: Use Value (Checked)
         // Uncontrolled mode: Use DefaultChecked
@@ -83,15 +83,15 @@ public class Checkbox : InputComponent<bool>
         else
         {
             // Rich Checkbox
-            var rootStyle = checkboxTheme?.Root ?? "";
-            var indicatorStyle = checkboxTheme?.Indicator ?? "";
+            var rootStyle = checkboxTheme?.Root ?? "eq-checkbox-root";
+            var indicatorStyle = checkboxTheme?.Indicator ?? "eq-checkbox-indicator";
             var state = isChecked ? "checked" : "unchecked";
 
             // Hidden input
             var inputAttrs = new Dictionary<string, string>
             {
                 ["type"] = "checkbox",
-                ["class"] = "sr-only",
+                ["class"] = "eq-sr-only",
                 ["name"] = Name ?? ""
             };
             if (isChecked) inputAttrs["checked"] = "true";
@@ -146,7 +146,7 @@ public class Checkbox : InputComponent<bool>
                     ["stroke-width"] = "3",
                     ["stroke-linecap"] = "round",
                     ["stroke-linejoin"] = "round",
-                    ["class"] = "h-3.5 w-3.5"
+                    ["class"] = "eq-checkbox-indicator"
                 }};
                 svg.Children.Add(new DynamicElement { TagName = "polyline", CustomAttributes = new Dictionary<string, string> { ["points"] = "20 6 9 17 4 12" } });
                 
@@ -158,7 +158,7 @@ public class Checkbox : InputComponent<bool>
             var label = new DynamicElement
             {
                 TagName = "label",
-                CustomAttributes = new Dictionary<string, string> { ["class"] = "inline-flex items-center gap-2 cursor-pointer" },
+                CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-checkbox-label" },
                 Children = { input, button }
             };
             

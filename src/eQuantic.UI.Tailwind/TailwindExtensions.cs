@@ -47,6 +47,17 @@ public static class TailwindExtensions
         return options;
     }
 
+    /// <summary>
+    /// Encapsulates the Tailwind dark mode script injection.
+    /// This resolves the dark mode preference on page load (checking localStorage and OS theme)
+    /// to prevent FOUC (Flash of Unstyled Content).
+    /// </summary>
+    public static HtmlShellOptions EnableTailwindDarkMode(this HtmlShellOptions shell)
+    {
+        shell.AddHeadTag("<script>!function(){var t=localStorage.getItem('theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;d?document.documentElement.classList.add('dark'):document.documentElement.classList.remove('dark');document.addEventListener('DOMContentLoaded',function(){var s=document.getElementById('icon-sun');var m=document.getElementById('icon-moon');if(s&&m){var dk=document.documentElement.classList.contains('dark');s.classList.toggle('hidden',!dk);m.classList.toggle('hidden',dk)}})}();</script>");
+        return shell;
+    }
+
     private static void ConfigureTailwind(IEndpointRouteBuilder endpoints, UIOptions options, string cssPath)
     {
         // Disable default CSS injection since we use Tailwind

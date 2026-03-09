@@ -20,12 +20,12 @@ public class Modal : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var dialogTheme = theme?.Dialog;
 
-        var overlayClass = dialogTheme?.Overlay ?? "";
-        var contentClass = dialogTheme?.Content ?? "";
-        var headerClass = dialogTheme?.Header ?? "";
-        var titleClass = dialogTheme?.Title ?? "";
-        var descriptorClass = dialogTheme?.Description ?? "";
-        var footerClass = dialogTheme?.Footer ?? "";
+        var overlayClass = dialogTheme?.Overlay ?? "eq-modal-overlay";
+        var contentClass = dialogTheme?.Content ?? "eq-modal-content";
+        var headerClass = dialogTheme?.Header ?? "eq-modal-header";
+        var titleClass = dialogTheme?.Title ?? "eq-modal-title";
+        var descriptorClass = dialogTheme?.Description ?? "eq-modal-description";
+        var footerClass = dialogTheme?.Footer ?? "eq-modal-footer";
 
         // Combine width with content class nicely and add relative for absolute positioning of close button
         var contentStyle = $"{contentClass} {Width} relative".Trim();

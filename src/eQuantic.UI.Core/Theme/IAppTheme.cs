@@ -19,4 +19,10 @@ public interface IAppTheme
     IAvatarTheme Avatar { get; }
     IDialogTheme Dialog { get; }
     ITabsTheme Tabs { get; }
+    ITooltipTheme Tooltip { get; }
+    IDropdownMenuTheme DropdownMenu { get; }
+    IPaginationTheme Pagination { get; }
+    IPopoverTheme Popover { get; }
+    IScrollAreaTheme ScrollArea { get; }
+    IInputOTPTheme InputOTP { get; }
 }

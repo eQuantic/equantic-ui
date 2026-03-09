@@ -44,4 +44,11 @@ public class MaterialAppTheme : IAppTheme
         Dialog = new MaterialDialogTheme();
         Tabs = new MaterialTabsTheme();
     }
+
+    public ITooltipTheme? Tooltip { get; }
+    public IDropdownMenuTheme? DropdownMenu { get; }
+    public IPaginationTheme? Pagination { get; }
+    public IPopoverTheme? Popover { get; }
+    public IScrollAreaTheme? ScrollArea { get; }
+    public IInputOTPTheme? InputOTP { get; }
 }

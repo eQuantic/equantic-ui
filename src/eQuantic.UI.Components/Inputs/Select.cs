@@ -62,7 +62,7 @@ public class Select : InputComponent<string>
 
         if (IsNative)
         {
-            var baseStyle = selectTheme?.Base ?? "";
+            var baseStyle = selectTheme?.Base ?? "eq-select";
             var attrs = new Dictionary<string, string>
             {
                 ["class"] = $"{baseStyle} {ClassName}".Trim()
@@ -103,9 +103,9 @@ public class Select : InputComponent<string>
             // Rich UI implementation
             // Note: This requires a corresponding JS controller for interactivity (open/close)
             // For now we render the structure.
-            var triggerStyle = selectTheme?.Trigger ?? "";
-            var contentStyle = selectTheme?.Content ?? "";
-            var itemStyle = selectTheme?.Item ?? "";
+            var triggerStyle = selectTheme?.Trigger ?? "eq-select-trigger";
+            var contentStyle = selectTheme?.Content ?? "eq-select-content";
+            var itemStyle = selectTheme?.Item ?? "eq-select-item";
 
             var container = new DynamicElement { TagName = "div", CustomAttributes = new Dictionary<string, string> { ["class"] = $"relative {ClassName}".Trim() } };
 

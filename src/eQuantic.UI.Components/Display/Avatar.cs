@@ -16,12 +16,12 @@ public class Avatar : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var avatarTheme = theme?.Avatar;
 
-        var rootStyle = avatarTheme?.Root ?? "";
-        var imageStyle = avatarTheme?.Image ?? "";
-        var fallbackStyle = avatarTheme?.Fallback ?? "";
+        var rootStyle = avatarTheme?.Root ?? "eq-avatar";
+        var imageStyle = avatarTheme?.Image ?? "eq-avatar-image";
+        var fallbackStyle = avatarTheme?.Fallback ?? "eq-avatar-fallback";
 
         // Get size from theme
-        var sizeClass = avatarTheme?.GetSize(Size) ?? "";
+        var sizeClass = avatarTheme?.GetSize(Size) ?? $"eq-avatar-{Size.ToString().ToLowerInvariant()}";
 
         var rootElement = new DynamicElement
         {

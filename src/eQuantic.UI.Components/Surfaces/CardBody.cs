@@ -18,7 +18,7 @@ public class CardBody : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var cardTheme = theme?.Card;
 
-        var bodyClass = cardTheme?.Body ?? "";
+        var bodyClass = cardTheme?.Body ?? "eq-card-body";
         if (!string.IsNullOrEmpty(AdditionalClass))
         {
             bodyClass = $"{bodyClass} {AdditionalClass}";

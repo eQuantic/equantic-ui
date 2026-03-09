@@ -27,14 +27,13 @@ builder.Services.AddUI(options =>
                opts.DefaultQuality = 80;
                opts.Formats = ["image/webp"];
            })
-           .ConfigureHtmlShell(shell =>
-           {
-               shell.SetTitle("eQuantic.UI | Tailwind Dashboard")
-                    .SetHtmlClass("dark")
-                    .AddHeadTag("<meta name=\"theme-color\" content=\"#3b82f6\">")
-                    // Dark mode: respect localStorage, fallback to OS preference
-                    .AddHeadTag("<script>!function(){var t=localStorage.getItem('theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;d?document.documentElement.classList.add('dark'):document.documentElement.classList.remove('dark');document.addEventListener('DOMContentLoaded',function(){var s=document.getElementById('icon-sun');var m=document.getElementById('icon-moon');if(s&&m){var dk=document.documentElement.classList.contains('dark');s.classList.toggle('hidden',!dk);m.classList.toggle('hidden',dk)}})}();</script>");
-           });
+            .ConfigureHtmlShell(shell =>
+            {
+                shell.SetTitle("eQuantic.UI | Tailwind Dashboard")
+                     .SetHtmlClass("dark")
+                     .AddHeadTag("<meta name=\"theme-color\" content=\"#3b82f6\">")
+                     .EnableTailwindDarkMode();
+            });
 });
 
 var app = builder.Build();

@@ -20,7 +20,7 @@ public class Switch : Checkbox
         if (IsNative)
         {
             var checkboxTheme = theme?.Checkbox;
-            var baseStyle = checkboxTheme?.Base ?? "";
+            var baseStyle = checkboxTheme?.Base ?? "eq-checkbox";
             var attrs = new Dictionary<string, string>
             {
                 ["type"] = "checkbox",
@@ -42,7 +42,7 @@ public class Switch : Checkbox
             
             if (Label != null)
             {
-                 var label = new DynamicElement { TagName = "label", CustomAttributes = new Dictionary<string, string> { ["class"] = "flex items-center gap-2" } };
+                 var label = new DynamicElement { TagName = "label", CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-switch-label" } };
                  label.Children.Add(input);
                  label.Children.Add(new Text(Label));
                  return label;
@@ -50,14 +50,14 @@ public class Switch : Checkbox
             return input;
         }
 
-        var rootStyle = switchTheme?.Root ?? "";
-        var thumbStyle = switchTheme?.Thumb ?? "";
+        var rootStyle = switchTheme?.Root ?? "eq-switch-root";
+        var thumbStyle = switchTheme?.Thumb ?? "eq-switch-thumb";
         
         // Hidden input for form submission
         var inputAttrs = new Dictionary<string, string>
         {
             ["type"] = "checkbox",
-            ["class"] = "sr-only", 
+            ["class"] = "eq-sr-only", 
             ["name"] = Name ?? ""
         };
         if (Value) inputAttrs["checked"] = "true";

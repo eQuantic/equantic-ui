@@ -21,9 +21,9 @@ public class TextArea : InputComponent<string>
     {
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var inputTheme = theme?.Input;
-        var baseStyle = inputTheme?.Base ?? "";
+        var baseStyle = inputTheme?.Base ?? "eq-textarea";
         // Size might affect font size/padding even if height is determined by rows
-        var sizeStyle = inputTheme?.GetSize(Size) ?? "";
+        var sizeStyle = inputTheme?.GetSize(Size) ?? $"eq-textarea-{Size.ToString().ToLowerInvariant()}";
 
         var attrs = new Dictionary<string, string>
         {
