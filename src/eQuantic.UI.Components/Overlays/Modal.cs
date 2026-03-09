@@ -37,8 +37,15 @@ public class Modal : StatelessComponent
             Children = {
                 new Box
                 {
+                    As = "div",
                     ClassName = contentStyle,
-                    OnClick = () => {}, // Stop propagation (prevent closing when clicking inside)
+                    CustomAttributes = 
+                    {
+                        ["role"] = "dialog",
+                        ["aria-modal"] = "true",
+                        ["tabindex"] = "-1"
+                    },
+                    CustomEvents = { ["click"] = new Action(() => {}) }, // Stop propagation (prevent closing when clicking inside)
                     Children = {
                         // Close button (absolutely positioned)
                         new Button {

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Components.Overlays.ContextMenu;
@@ -17,11 +19,15 @@ public class ContextMenuTrigger : StatelessComponent
 {
     public override IComponent Build(RenderContext context)
     {
-        var box = new DynamicElement
+        var box = new Box
         {
-            TagName = "div",
+            As = "div",
             ClassName = $"context-menu-trigger {ClassName}".Trim(),
-            CustomAttributes = { ["data-context-menu-trigger"] = "true" }
+            CustomAttributes = { 
+                ["data-context-menu-trigger"] = "true",
+                ["aria-haspopup"] = "menu",
+                ["aria-expanded"] = "false"
+            }
         };
         foreach (var child in Children) box.Children.Add(child);
         return box;
@@ -32,11 +38,19 @@ public class ContextMenuContent : StatelessComponent
 {
     public override IComponent Build(RenderContext context)
     {
-        var box = new DynamicElement
+        var theme = context.GetService<Core.Theme.IAppTheme>();
+        var contentClass = theme?.ContextMenu?.Content ?? "eq-context-menu-content";
+
+        var box = new Box
         {
-            TagName = "div",
-            ClassName = $"z-50 min-w-[8rem] overflow-hidden rounded-md border border-zinc-200 bg-white p-1 text-zinc-950 shadow-md animate-in fade-in-80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 {ClassName}".Trim(),
-            CustomAttributes = { ["data-state"] = "closed" }
+            As = "div",
+            ClassName = $"{contentClass} {ClassName}".Trim(),
+            CustomAttributes = { 
+                ["data-state"] = "closed",
+                ["role"] = "menu",
+                ["aria-orientation"] = "vertical",
+                ["tabindex"] = "-1"
+            }
         };
         foreach (var child in Children) box.Children.Add(child);
         return box;
@@ -51,18 +65,51 @@ public class ContextMenuItem : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var box = new DynamicElement
+        var theme = context.GetService<Core.Theme.IAppTheme>();
+        var itemClass = theme?.ContextMenu?.Item ?? "eq-context-menu-item";
+        var insetClass = Inset ? "pl-8" : "";
+
+        var box = new Box
         {
-            TagName = "div",
-            ClassName = $"relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-zinc-100 focus:text-zinc-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50 {(Inset ? "pl-8" : "")} {ClassName}".Trim(),
+            As = "div",
+            ClassName = $"{itemClass} {insetClass} {ClassName}".Trim(),
             CustomAttributes = new Dictionary<string, string>
             {
-                ["data-disabled"] = Disabled ? "true" : null
+                ["role"] = "menuitem",
+                ["tabindex"] = "-1",
+                ["data-disabled"] = Disabled ? "true" : null,
+                ["aria-disabled"] = Disabled ? "true" : null
             }.Where(x => x.Value != null).ToDictionary(x => x.Key, x => x.Value!)
         };
         foreach (var child in Children) box.Children.Add(child);
         if (!string.IsNullOrEmpty(Shortcut)) box.Children.Add(new ContextMenuShortcut { Text = Shortcut });
         return box;
+    }
+}
+
+public class ContextMenuLabel : StatelessComponent
+{
+    public string? Text { get; set; }
+    public bool Inset { get; set; }
+
+    public override IComponent Build(RenderContext context)
+    {
+        var theme = context.GetService<Core.Theme.IAppTheme>();
+        var labelClass = theme?.ContextMenu?.Label ?? "eq-context-menu-label";
+        var insetClass = Inset ? "pl-8" : "";
+
+        var element = new Box
+        {
+            As = "div",
+            ClassName = $"{labelClass} {insetClass} {ClassName}".Trim()
+        };
+
+        if (Children.Any())
+            foreach (var child in Children) element.Children.Add(child);
+        else if (Text != null)
+            element.Children.Add(new Text(Text));
+
+        return element;
     }
 }
 
@@ -72,9 +119,12 @@ public class ContextMenuShortcut : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
+        var theme = context.GetService<Core.Theme.IAppTheme>();
+        var shortcutClass = theme?.ContextMenu?.Shortcut ?? "eq-context-menu-shortcut";
+
         return new Text(Text)
         {
-            ClassName = $"ml-auto text-xs tracking-widest text-zinc-500 dark:text-zinc-400 {ClassName}".Trim()
+            ClassName = $"{shortcutClass} {ClassName}".Trim()
         };
     }
 }
@@ -83,9 +133,14 @@ public class ContextMenuSeparator : StatelessComponent
 {
     public override IComponent Build(RenderContext context)
     {
+        var theme = context.GetService<Core.Theme.IAppTheme>();
+        var separatorClass = theme?.ContextMenu?.Separator ?? "eq-context-menu-separator";
+
         return new Box
         {
-            ClassName = $"-mx-1 my-1 h-px bg-zinc-200 dark:bg-zinc-800 {ClassName}".Trim()
+            As = "div",
+            ClassName = $"{separatorClass} {ClassName}".Trim(),
+            CustomAttributes = { ["role"] = "separator" }
         };
     }
 }

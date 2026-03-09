@@ -1,12 +1,10 @@
 namespace eQuantic.UI.Core.Theme;
 
-public interface ISelectTheme
+public interface IContextMenuTheme
 {
-    string Trigger { get; }
     string Content { get; }
     string Item { get; }
-    string Base { get; }
     string Label { get; }
     string Separator { get; }
-    string Group { get; }
+    string Shortcut { get; }
 }

@@ -43,8 +43,12 @@ public class MaterialAppTheme : IAppTheme
         Avatar = new MaterialAvatarTheme();
         Dialog = new MaterialDialogTheme();
         Tabs = new MaterialTabsTheme();
+        ContextMenu = new MaterialContextMenuTheme();
+        Drawer = new MaterialDrawerTheme();
     }
 
+    public IContextMenuTheme ContextMenu { get; }
+    public IDrawerTheme Drawer { get; }
     public ITooltipTheme? Tooltip { get; }
     public IDropdownMenuTheme? DropdownMenu { get; }
     public IPaginationTheme? Pagination { get; }

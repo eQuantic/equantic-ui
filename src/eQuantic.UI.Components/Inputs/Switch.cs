@@ -57,6 +57,8 @@ public class Switch : Checkbox
         var inputAttrs = new Dictionary<string, string>
         {
             ["type"] = "checkbox",
+            ["role"] = "switch",
+            ["aria-checked"] = Value ? "true" : "false",
             ["class"] = "eq-sr-only", 
             ["name"] = Name ?? ""
         };

@@ -7,10 +7,12 @@ namespace eQuantic.UI.Components;
 
 public class DynamicElement : HtmlElement
 {
-    public string TagName { get; set; } = "div";
     public string? InnerText { get; set; }
-    public Dictionary<string, string> CustomAttributes { get; set; } = new();
-    public Dictionary<string, Delegate> CustomEvents { get; set; } = new();
+
+    /// <summary>
+    /// The HTML tag name to render. Inherited As feature conceptually mapped to TagName for backwards compatibility.
+    /// </summary>
+    public string TagName { get; set; } = "div";
 
     public override HtmlNode Render()
     {
@@ -31,8 +33,8 @@ public class DynamicElement : HtmlElement
         return new HtmlNode
         {
             Tag = TagName,
-            Attributes = CustomAttributes,
-            Events = CustomEvents,
+            Attributes = BuildAttributes(),
+            Events = BuildEvents(),
             Children = children
         };
     }

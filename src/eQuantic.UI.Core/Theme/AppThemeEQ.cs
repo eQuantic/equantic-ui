@@ -24,6 +24,8 @@ public class AppThemeEQ : IAppTheme
     public ITabsTheme? Tabs { get; }
     public ITooltipTheme? Tooltip { get; }
     public IDropdownMenuTheme? DropdownMenu { get; }
+    public IContextMenuTheme? ContextMenu { get; }
+    public IDrawerTheme? Drawer { get; }
     public IPaginationTheme? Pagination { get; }
     public IPopoverTheme? Popover { get; }
     public IScrollAreaTheme? ScrollArea { get; }
@@ -50,6 +52,8 @@ public class AppThemeEQ : IAppTheme
         Tabs = ThemeRegistry.GetTheme<ITabsTheme>();
         Tooltip = ThemeRegistry.GetTheme<ITooltipTheme>();
         DropdownMenu = ThemeRegistry.GetTheme<IDropdownMenuTheme>();
+        ContextMenu = ThemeRegistry.GetTheme<IContextMenuTheme>();
+        Drawer = ThemeRegistry.GetTheme<IDrawerTheme>();
         Pagination = ThemeRegistry.GetTheme<IPaginationTheme>();
         Popover = ThemeRegistry.GetTheme<IPopoverTheme>();
         ScrollArea = ThemeRegistry.GetTheme<IScrollAreaTheme>();

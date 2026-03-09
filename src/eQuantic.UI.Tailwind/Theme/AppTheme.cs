@@ -22,8 +22,10 @@ public class AppTheme : IAppTheme
     public IDialogTheme Dialog { get; }
     public ITabsTheme Tabs { get; }
     public ITooltipTheme Tooltip { get; }
-    public IDropdownMenuTheme DropdownMenu { get; }
-    public IPaginationTheme Pagination { get; }
+    public IDropdownMenuTheme DropdownMenu { get; } = new DropdownMenuTheme();
+    public IContextMenuTheme ContextMenu { get; } = new ContextMenuTheme();
+    public IDrawerTheme Drawer { get; } = new DrawerTheme();
+    public IPaginationTheme Pagination { get; } = new PaginationTheme();
     public IPopoverTheme Popover { get; }
     public IScrollAreaTheme ScrollArea { get; }
     public IInputOTPTheme InputOTP { get; }

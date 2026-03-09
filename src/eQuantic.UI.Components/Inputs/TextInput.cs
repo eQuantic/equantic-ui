@@ -70,6 +70,16 @@ public class TextInput : InputComponent<string>
     /// </summary>
     public string? DefaultValue { get; set; }
 
+    /// <summary>
+    /// Component to render as an icon on the left side of the input
+    /// </summary>
+    public IComponent? LeftIcon { get; set; }
+
+    /// <summary>
+    /// Component to render as an icon on the right side of the input
+    /// </summary>
+    public IComponent? RightIcon { get; set; }
+
     public override IComponent Build(RenderContext context)
     {
         var theme = context.GetService<Core.Theme.IAppTheme>();
@@ -77,10 +87,15 @@ public class TextInput : InputComponent<string>
         var baseStyle = inputTheme?.Base ?? "eq-input";
         var sizeStyle = inputTheme?.GetSize(Size) ?? $"eq-input-{Size.ToString().ToLowerInvariant()}";
 
+        var inputClass = $"{baseStyle} {sizeStyle} {ClassName}".Trim();
+        
+        if (LeftIcon != null) inputClass += " eq-input-with-icon-left";
+        if (RightIcon != null) inputClass += " eq-input-with-icon-right";
+
         var attrs = new Dictionary<string, string>
         {
             ["type"] = Type,
-            ["class"] = $"{baseStyle} {sizeStyle} {ClassName}".Trim()
+            ["class"] = inputClass.Trim()
         };
 
         // Controlled mode: Use Value prop
@@ -100,11 +115,40 @@ public class TextInput : InputComponent<string>
         if (OnChange != null) events["change"] = OnChange;
         if (OnInput != null) events["input"] = OnInput;
 
-        return new DynamicElement
+        var input = new DynamicElement
         {
             TagName = "input",
             CustomAttributes = attrs,
             CustomEvents = events
         };
+
+        if (LeftIcon == null && RightIcon == null)
+        {
+            return input;
+        }
+
+        var wrapper = new DynamicElement
+        {
+            TagName = "div",
+            CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-input-wrapper" }
+        };
+
+        if (LeftIcon != null)
+        {
+            var leftContainer = new DynamicElement { TagName = "div", CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-input-icon-left" } };
+            leftContainer.Children.Add(LeftIcon);
+            wrapper.Children.Add(leftContainer);
+        }
+
+        wrapper.Children.Add(input);
+
+        if (RightIcon != null)
+        {
+            var rightContainer = new DynamicElement { TagName = "div", CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-input-icon-right" } };
+            rightContainer.Children.Add(RightIcon);
+            wrapper.Children.Add(rightContainer);
+        }
+
+        return wrapper;
     }
 }
