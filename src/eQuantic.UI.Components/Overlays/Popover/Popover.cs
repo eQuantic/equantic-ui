@@ -60,30 +60,24 @@ public class Popover : StatelessComponent
             }
         }
 
-        var container = new DynamicElement
+        var container = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"eq-popover {ClassName}".Trim(),
-                ["data-state"] = IsOpen ? "open" : "closed"
-            }
+            As = "div",
+            ClassName = $"eq-popover {ClassName}".Trim(),
+            DataAttributes = new Dictionary<string, string> { ["state"] = IsOpen ? "open" : "closed" }
         };
 
         // Trigger button
         if (Trigger != null)
         {
-            var triggerWrapper = new DynamicElement
+            var triggerWrapper = new Box
             {
-                TagName = "button",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["class"] = "eq-popover-trigger",
-                    ["type"] = "button",
-                    ["aria-expanded"] = IsOpen ? "true" : "false",
-                    ["aria-controls"] = $"{id}-content",
-                    ["data-state"] = IsOpen ? "open" : "closed"
-                }
+                As = "button",
+                ClassName = "eq-popover-trigger",
+                Type = "button",
+                AriaExpanded = IsOpen,
+                AriaControls = $"{id}-content",
+                DataAttributes = new Dictionary<string, string> { ["state"] = IsOpen ? "open" : "closed" }
             };
             triggerWrapper.Children.Add(Trigger);
             container.Children.Add(triggerWrapper);
@@ -127,17 +121,17 @@ public class PopoverContent : StatelessComponent, IPopoverChild
 
         if (!IsPopoverOpen) return new NullComponent();
 
-        var content = new DynamicElement
+        var content = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
+            As = "div",
+            Id = $"{PopoverId}-content",
+            ClassName = contentClass,
+            Role = "dialog",
+            TabIndex = -1,
+            DataAttributes = new Dictionary<string, string>
             {
-                ["id"] = $"{PopoverId}-content",
-                ["class"] = contentClass,
-                ["role"] = "dialog",
-                ["data-state"] = "open",
-                ["data-side"] = sideValue,
-                ["tabindex"] = "-1"
+                ["state"] = "open",
+                ["side"] = sideValue
             }
         };
 

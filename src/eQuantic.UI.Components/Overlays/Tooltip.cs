@@ -80,43 +80,40 @@ public class Tooltip : StatelessComponent
         var sideValue = Side.ToString().ToLowerInvariant();
 
         // Wrapper (trigger)
-        var wrapper = new DynamicElement
+        var wrapper = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
+            As = "div",
+            ClassName = $"eq-tooltip-container {ClassName}".Trim(),
+            DataAttributes = new Dictionary<string, string>
             {
-                ["class"] = $"eq-tooltip-container {ClassName}".Trim(),
-                ["data-tooltip-id"] = id,
-                ["data-tooltip-side"] = sideValue,
-                ["data-tooltip-delay"] = DelayDuration.ToString()
+                ["tooltip-id"] = id,
+                ["tooltip-side"] = sideValue,
+                ["tooltip-delay"] = DelayDuration.ToString()
             }
         };
 
         // Trigger element (the children)
-        var trigger = new DynamicElement
+        var trigger = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = "eq-tooltip-trigger",
-                ["aria-describedby"] = id,
-                ["tabindex"] = "0"
-            }
+            As = "div",
+            ClassName = "eq-tooltip-trigger",
+            AriaDescribedBy = id,
+            TabIndex = 0
         };
         foreach (var child in Children) trigger.Children.Add(child);
 
         // Tooltip content
-        var tooltip = new DynamicElement
+        var tooltip = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
+            As = "div",
+            Id = id,
+            ClassName = $"{contentClass} eq-tooltip-{sideValue}".Trim(),
+            Role = "tooltip",
+            DataAttributes = new Dictionary<string, string>
             {
-                ["id"] = id,
-                ["class"] = $"{contentClass} eq-tooltip-{sideValue}".Trim(),
-                ["role"] = "tooltip",
-                ["data-side"] = sideValue,
-                ["data-align"] = Align.ToString().ToLowerInvariant(),
-                ["data-state"] = Open == true ? "open" : "closed"
+                ["side"] = sideValue,
+                ["align"] = Align.ToString().ToLowerInvariant(),
+                ["state"] = Open == true ? "open" : "closed"
             }
         };
 

@@ -7,6 +7,15 @@ namespace eQuantic.UI.Core;
 /// </summary>
 public class HtmlStyle
 {
+    public string? Raw { get; set; }
+
+    public HtmlStyle() { }
+
+    public HtmlStyle(string raw)
+    {
+        Raw = raw;
+    }
+
     #region Layout
 
     public Display? Display { get; set; }
@@ -197,6 +206,13 @@ public class HtmlStyle
         AddProperty(properties, "overflow-y", OverflowY);
         AddProperty(properties, "transition", Transition);
         AddProperty(properties, "transform", Transform);
+
+        if (!string.IsNullOrEmpty(Raw))
+        {
+            var rawCss = Raw.Trim();
+            if (rawCss.EndsWith(";")) rawCss = rawCss.Substring(0, rawCss.Length - 1);
+            properties.Add(rawCss);
+        }
 
         return string.Join("; ", properties);
     }

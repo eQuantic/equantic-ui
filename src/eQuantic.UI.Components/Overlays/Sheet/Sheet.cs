@@ -58,14 +58,11 @@ public class Sheet : StatelessComponent
             }
         }
 
-        var root = new DynamicElement
+        var root = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"eq-sheet {ClassName}".Trim(),
-                ["data-state"] = "open"
-            }
+            As = "div",
+            ClassName = $"eq-sheet {ClassName}".Trim(),
+            DataAttributes = new Dictionary<string, string> { ["state"] = "open" }
         };
 
         foreach (var child in Children) root.Children.Add(child);
@@ -111,53 +108,42 @@ public class SheetContent : SheetSubComponent
         };
 
         // Overlay
-        var overlay = new DynamicElement
+        var overlay = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = overlayClass,
-                ["data-state"] = "open"
-            }
+            As = "div",
+            ClassName = overlayClass,
+            DataAttributes = new Dictionary<string, string> { ["state"] = "open" }
         };
 
         // Panel
-        var panelAttrs = new Dictionary<string, string>
+        var panel = new Box
         {
-            ["class"] = $"eq-sheet-content {sideClass}".Trim(),
-            ["role"] = "dialog",
-            ["aria-modal"] = "true",
-            ["data-state"] = "open",
-            ["tabindex"] = "-1"
+            As = "div",
+            ClassName = $"eq-sheet-content {sideClass}".Trim(),
+            Style = new HtmlStyle($"z-index: 50"),
+            AriaModal = true,
+            TabIndex = -1,
+            DataAttributes = new Dictionary<string, string> { ["state"] = "open" }
         };
 
         if (!string.IsNullOrEmpty(SheetParent?.Width) &&
             (side == SheetSide.Left || side == SheetSide.Right))
         {
-            panelAttrs["style"] = $"width:{SheetParent.Width}";
+            panel.Style = new HtmlStyle($"width:{SheetParent.Width}");
         }
 
-        var panel = new DynamicElement
-        {
-            TagName = "div",
-            CustomAttributes = panelAttrs
-        };
-
         // Close button
-        panel.Children.Add(new DynamicElement
+        panel.Children.Add(new Box
         {
-            TagName = "button",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = "eq-sheet-close",
-                ["type"] = "button",
-                ["aria-label"] = "Close"
-            },
+            As = "button",
+            ClassName = "eq-sheet-close",
+            Type = "button",
+            AriaLabel = "Close",
             Children = {
-                new DynamicElement
+                new Box
                 {
-                    TagName = "span",
-                    CustomAttributes = new Dictionary<string, string> { ["aria-hidden"] = "true" },
+                    As = "span",
+                    AriaHidden = true,
                     Children = { new Text("✕") }
                 }
             }
@@ -165,13 +151,10 @@ public class SheetContent : SheetSubComponent
 
         foreach (var child in Children) panel.Children.Add(child);
 
-        var portal = new DynamicElement
+        var portal = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = "eq-sheet-portal"
-            }
+            As = "div",
+            ClassName = "eq-sheet-portal"
         };
         portal.Children.Add(overlay);
         portal.Children.Add(panel);
@@ -188,10 +171,10 @@ public class SheetHeader : SheetSubComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var headerClass = theme?.Dialog?.Header ?? "eq-modal-header";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string> { ["class"] = headerClass }
+            As = "div",
+            ClassName = headerClass
         };
         foreach (var child in Children) element.Children.Add(child);
         return element;
@@ -208,10 +191,10 @@ public class SheetTitle : SheetSubComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var titleClass = theme?.Dialog?.Title ?? "eq-modal-title";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "h2",
-            CustomAttributes = new Dictionary<string, string> { ["class"] = titleClass }
+            As = "h2",
+            ClassName = titleClass
         };
 
         if (Children.Count > 0) foreach (var child in Children) element.Children.Add(child);
@@ -231,10 +214,10 @@ public class SheetDescription : SheetSubComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var descClass = theme?.Dialog?.Description ?? "eq-modal-description";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "p",
-            CustomAttributes = new Dictionary<string, string> { ["class"] = descClass }
+            As = "p",
+            ClassName = descClass
         };
 
         if (Children.Count > 0) foreach (var child in Children) element.Children.Add(child);
@@ -252,10 +235,10 @@ public class SheetFooter : SheetSubComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var footerClass = theme?.Dialog?.Footer ?? "eq-modal-footer";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string> { ["class"] = footerClass }
+            As = "div",
+            ClassName = footerClass
         };
         foreach (var child in Children) element.Children.Add(child);
         return element;

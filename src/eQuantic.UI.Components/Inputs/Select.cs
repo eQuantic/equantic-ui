@@ -57,38 +57,31 @@ public class Select : InputComponent<string>
         if (IsNative || Options.Any())
         {
             var baseStyle = selectTheme?.Base ?? "eq-select";
-            var attrs = new Dictionary<string, string>
-            {
-                ["class"] = $"{baseStyle} {ClassName}".Trim()
-            };
-
-            if (Name != null) attrs["name"] = Name;
-            if (Multiple) attrs["multiple"] = "true";
-            if (Disabled) attrs["disabled"] = "true";
-            if (Required) attrs["required"] = "true";
-
-            var events = BuildEvents();
+            var events = new Dictionary<string, Delegate>();
             if (OnChange != null) events["change"] = OnChange;
 
-            var selectElement = new DynamicElement
+            var selectElement = new Box
             {
-                TagName = "select",
-                CustomAttributes = attrs,
+                As = "select",
+                ClassName = $"{baseStyle} {ClassName}".Trim(),
+                Name = Name,
+                Multiple = Multiple,
+                Disabled = Disabled,
+                Required = Required,
                 CustomEvents = events
             };
 
             foreach (var opt in Options)
             {
-                var optAttrs = new Dictionary<string, string> { ["value"] = opt.Value };
-                if (opt.Disabled) optAttrs["disabled"] = "true";
-                if (IsSelectedOld(opt)) optAttrs["selected"] = "selected";
-
-                selectElement.Children.Add(new DynamicElement
+                var optionBox = new Box
                 {
-                    TagName = "option",
-                    InnerText = opt.Label,
-                    CustomAttributes = optAttrs
-                });
+                    As = "option",
+                    Value = opt.Value,
+                    Disabled = opt.Disabled,
+                    Selected = IsSelectedOld(opt),
+                    Children = { new Text(opt.Label) }
+                };
+                selectElement.Children.Add(optionBox);
             }
             return selectElement;
         }
@@ -107,29 +100,25 @@ public class Select : InputComponent<string>
                 }
             }
 
-            var container = new DynamicElement 
+            var container = new Box 
             { 
-                TagName = "div", 
-                CustomAttributes = new Dictionary<string, string> 
-                { 
-                    ["class"] = $"eq-select-container relative {ClassName}".Trim(),
-                    ["data-state"] = IsOpen ? "open" : "closed"
-                } 
+                As = "div", 
+                ClassName = $"eq-select-container relative {ClassName}".Trim(),
+                DataAttributes = new Dictionary<string, string> { ["state"] = IsOpen ? "open" : "closed" }
             };
 
             // Hidden Native Select for Form Submission
-            var hiddenAttrs = new Dictionary<string, string> 
+            var hiddenSelect = new Box 
             { 
-                ["class"] = "eq-sr-only eq-select-hidden",
-                ["aria-hidden"] = "true",
-                ["tabindex"] = "-1"
+                As = "select", 
+                ClassName = "eq-sr-only eq-select-hidden",
+                AriaHidden = true,
+                TabIndex = -1,
+                Name = Name,
+                Multiple = Multiple,
+                Required = Required,
+                Disabled = Disabled
             };
-            if (Name != null) hiddenAttrs["name"] = Name;
-            if (Multiple) hiddenAttrs["multiple"] = "true";
-            if (Required) hiddenAttrs["required"] = "true";
-            if (Disabled) hiddenAttrs["disabled"] = "true";
-            
-            var hiddenSelect = new DynamicElement { TagName = "select", CustomAttributes = hiddenAttrs };
             
             // Collect all option values from children to build hidden select
             var allItems = FindAllChildren<SelectItem>(Children);
@@ -137,9 +126,8 @@ public class Select : InputComponent<string>
             {
                 if (item.Value != null)
                 {
-                    var optAttrs = new Dictionary<string, string> { ["value"] = item.Value };
-                    if (IsValueSelected(item.Value)) optAttrs["selected"] = "selected";
-                    hiddenSelect.Children.Add(new DynamicElement { TagName = "option", CustomAttributes = optAttrs, Children = { new Text(item.Text ?? item.Value) } });
+                    var optBox = new Box { As = "option", Value = item.Value, Selected = IsValueSelected(item.Value), Children = { new Text(item.Text ?? item.Value) } };
+                    hiddenSelect.Children.Add(optBox);
                 }
             }
             container.Children.Add(hiddenSelect);
@@ -213,24 +201,19 @@ public class SelectTrigger : SelectSubComponent
         var triggerStyle = SelectTheme?.Trigger ?? "eq-select-trigger";
         var isOpen = SelectParent?.IsOpen == true;
         
-        var attrs = new Dictionary<string, string>
-        {
-            ["type"] = "button",
-            ["class"] = triggerStyle,
-            ["role"] = "combobox",
-            ["aria-controls"] = $"{SelectParent?.Id}-content",
-            ["aria-expanded"] = isOpen ? "true" : "false",
-            ["aria-haspopup"] = "listbox",
-            ["data-state"] = isOpen ? "open" : "closed"
+        var btn = new Box 
+        { 
+            As = "button", 
+            Type = "button",
+            ClassName = triggerStyle,
+            Role = "combobox",
+            AriaControls = $"{SelectParent?.Id}-content",
+            AriaExpanded = isOpen,
+            AriaHasPopup = "listbox",
+            DataAttributes = new Dictionary<string, string> { ["state"] = isOpen ? "open" : "closed" },
+            Disabled = SelectParent?.Disabled == true
         };
-        
-        if (SelectParent?.Disabled == true) 
-        {
-            attrs["disabled"] = "true";
-            attrs["data-disabled"] = "true";
-        }
-
-        var btn = new DynamicElement { TagName = "button", CustomAttributes = attrs };
+        if (SelectParent?.Disabled == true) btn.DataAttributes["disabled"] = "true";
         foreach (var child in Children) btn.Children.Add(child);
         return btn;
     }
@@ -252,10 +235,10 @@ public class SelectValue : SelectSubComponent
             text = SelectParent.Value;
         }
 
-        return new DynamicElement 
+        return new Box 
         { 
-            TagName = "span", 
-            CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-select-value" },
+            As = "span", 
+            ClassName = "eq-select-value",
             Children = { new Text(text) }
         };
     }
@@ -272,17 +255,17 @@ public class SelectContent : SelectSubComponent
 
         if (!isOpen) return new NullComponent();
 
-        var content = new DynamicElement
+        var content = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
+            As = "div",
+            Id = $"{SelectParent?.Id}-content",
+            ClassName = contentStyle,
+            Role = "listbox",
+            TabIndex = -1,
+            DataAttributes = new Dictionary<string, string>
             {
-                ["id"] = $"{SelectParent?.Id}-content",
-                ["class"] = contentStyle,
-                ["role"] = "listbox",
-                ["data-state"] = "open",
-                ["data-side"] = side,
-                ["tabindex"] = "-1"
+                ["state"] = "open",
+                ["side"] = side
             }
         };
 
@@ -303,23 +286,25 @@ public class SelectItem : SelectSubComponent
         var itemStyle = SelectTheme?.Item ?? "eq-select-item";
         var isSelected = SelectParent?.IsValueSelected(Value ?? "") == true;
 
-        var attrs = new Dictionary<string, string>
-        {
-            ["class"] = itemStyle,
-            ["role"] = "option",
-            ["aria-selected"] = isSelected ? "true" : "false",
-            ["data-value"] = Value ?? "",
-            ["data-state"] = isSelected ? "checked" : "unchecked",
-            ["tabindex"] = Disabled ? "-1" : "0"
+        var item = new Box 
+        { 
+            As = "div", 
+            ClassName = itemStyle,
+            Role = "option",
+            AriaSelected = isSelected,
+            TabIndex = Disabled ? -1 : 0,
+            DataAttributes = new Dictionary<string, string>
+            {
+                ["value"] = Value ?? "",
+                ["state"] = isSelected ? "checked" : "unchecked"
+            }
         };
-
+        
         if (Disabled)
         {
-            attrs["aria-disabled"] = "true";
-            attrs["data-disabled"] = "true";
+            item.AriaDisabled = true;
+            item.DataAttributes["disabled"] = "true";
         }
-
-        var item = new DynamicElement { TagName = "div", CustomAttributes = attrs };
         
         if (Children.Any())
         {
@@ -341,14 +326,11 @@ public class SelectGroup : SelectSubComponent
         PassContextToChildren();
         var groupStyle = SelectTheme?.Group ?? "eq-select-group";
         
-        var group = new DynamicElement 
+        var group = new Box 
         { 
-            TagName = "div", 
-            CustomAttributes = new Dictionary<string, string> 
-            { 
-                ["class"] = groupStyle,
-                ["role"] = "group"
-            }
+            As = "div", 
+            ClassName = groupStyle,
+            Role = "group"
         };
         foreach (var child in Children) group.Children.Add(child);
         return group;
@@ -362,10 +344,10 @@ public class SelectLabel : SelectSubComponent
     public override IComponent Build(RenderContext context)
     {
         var labelStyle = SelectTheme?.Label ?? "eq-select-label";
-        var label = new DynamicElement 
+        var label = new Box 
         { 
-            TagName = "div", 
-            CustomAttributes = new Dictionary<string, string> { ["class"] = labelStyle } 
+            As = "div", 
+            ClassName = labelStyle
         };
         
         if (Children.Any()) foreach (var child in Children) label.Children.Add(child);
@@ -380,14 +362,11 @@ public class SelectSeparator : SelectSubComponent
     public override IComponent Build(RenderContext context)
     {
         var sepStyle = SelectTheme?.Separator ?? "eq-select-separator";
-        return new DynamicElement 
+        return new Box 
         { 
-            TagName = "div", 
-            CustomAttributes = new Dictionary<string, string> 
-            { 
-                ["class"] = sepStyle,
-                ["role"] = "separator"
-            } 
+            As = "div", 
+            ClassName = sepStyle,
+            Role = "separator"
         };
     }
 }

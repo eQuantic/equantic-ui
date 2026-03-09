@@ -148,7 +148,7 @@ public abstract class InputComponent<TValue> : HtmlElement
     /// <summary>
     /// Current value
     /// </summary>
-    public TValue? Value { get; set; }
+    public new TValue? Value { get; set; }
 
     /// <summary>
     /// Change event handler

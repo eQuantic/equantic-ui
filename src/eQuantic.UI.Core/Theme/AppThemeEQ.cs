@@ -9,27 +9,27 @@ public class AppThemeEQ : IAppTheme
     public IColorTheme Colors { get; }
     public ISizeTheme Sizes { get; }
 
-    public ICardTheme? Card { get; }
+    public ICardTheme Card { get; }
     public IButtonTheme Button { get; }
-    public IInputTheme? Input { get; }
-    public ICheckboxTheme? Checkbox { get; }
-    public ITextTheme? Typography { get; }
-    public IBadgeTheme? Badge { get; }
-    public IAlertTheme? Alert { get; }
-    public ISwitchTheme? Switch { get; }
-    public ISelectTheme? Select { get; }
-    public ITableTheme? Table { get; }
-    public IAvatarTheme? Avatar { get; }
-    public IDialogTheme? Dialog { get; }
-    public ITabsTheme? Tabs { get; }
-    public ITooltipTheme? Tooltip { get; }
-    public IDropdownMenuTheme? DropdownMenu { get; }
-    public IContextMenuTheme? ContextMenu { get; }
-    public IDrawerTheme? Drawer { get; }
-    public IPaginationTheme? Pagination { get; }
-    public IPopoverTheme? Popover { get; }
-    public IScrollAreaTheme? ScrollArea { get; }
-    public IInputOTPTheme? InputOTP { get; }
+    public IInputTheme Input { get; }
+    public ICheckboxTheme Checkbox { get; }
+    public ITextTheme Typography { get; }
+    public IBadgeTheme Badge { get; }
+    public IAlertTheme Alert { get; }
+    public ISwitchTheme Switch { get; }
+    public ISelectTheme Select { get; }
+    public ITableTheme Table { get; }
+    public IAvatarTheme Avatar { get; }
+    public IDialogTheme Dialog { get; }
+    public ITabsTheme Tabs { get; }
+    public ITooltipTheme Tooltip { get; }
+    public IDropdownMenuTheme DropdownMenu { get; }
+    public IContextMenuTheme ContextMenu { get; }
+    public IDrawerTheme Drawer { get; }
+    public IPaginationTheme Pagination { get; }
+    public IPopoverTheme Popover { get; }
+    public IScrollAreaTheme ScrollArea { get; }
+    public IInputOTPTheme InputOTP { get; }
 
     public AppThemeEQ()
     {

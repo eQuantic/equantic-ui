@@ -38,9 +38,8 @@ public interface IComponent
     Dictionary<string, string>? DataAttributes { get; set; }
 
     /// <summary>
-    /// ARIA attributes for accessibility
+    /// ARIA attributes for accessibility will now be strongly-typed on HtmlElement
     /// </summary>
-    Dictionary<string, string>? AriaAttributes { get; set; }
 
     /// <summary>
     /// Child components - Composite Pattern

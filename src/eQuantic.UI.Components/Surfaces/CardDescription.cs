@@ -29,13 +29,10 @@ public class CardDescription : StatelessComponent
             descClass = $"{descClass} {ClassName}";
         }
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = Tag,
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = descClass.Trim()
-            }
+            As = Tag,
+            ClassName = descClass.Trim()
         };
 
         // Add text if provided

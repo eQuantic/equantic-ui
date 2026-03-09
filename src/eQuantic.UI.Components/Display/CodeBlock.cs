@@ -74,34 +74,28 @@ public class CodeBlock : StatelessComponent, IRequireAssets
         var children = new List<IComponent>
         {
             // Copy Button (Absolute Top Right)
-            new DynamicElement {
-                TagName = "button",
-                InnerText = "Copy",
-                CustomAttributes = new Dictionary<string, string> {
-                    ["id"] = $"btn-{id}",
-                    ["onclick"] = $"copyToClipboard('{id}')",
-                    ["class"] = "absolute top-2 right-2 opacity-0 group-hover:opacity-100 px-2 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-200/50 dark:bg-zinc-800/50 hover:bg-zinc-300 dark:hover:bg-zinc-700 border border-zinc-300/50 dark:border-zinc-700/50 rounded transition-all backdrop-blur-sm z-10"
-                }
+            new Box {
+                As = "button",
+                Id = $"btn-{id}",
+                ClassName = "absolute top-2 right-2 opacity-0 group-hover:opacity-100 px-2 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-200/50 dark:bg-zinc-800/50 hover:bg-zinc-300 dark:hover:bg-zinc-700 border border-zinc-300/50 dark:border-zinc-700/50 rounded transition-all backdrop-blur-sm z-10",
+                CustomAttributes = new Dictionary<string, string> { ["onclick"] = $"copyToClipboard('{id}')" },
+                Children = { new Text("Copy") }
             },
             
             // Script trigger for highlighting (if specific block needs it, but Autoloader handles strictly)
              
             // Code Wrapper
-            new DynamicElement {
-                TagName = "pre",
-                CustomAttributes = new Dictionary<string, string> {
-                    ["id"] = $"container-{id}",
-                    ["class"] = contentClass,
-                    ["style"] = "margin: 0;" // Override user agent pre margin
-                },
+            new Box {
+                As = "pre",
+                Id = $"container-{id}",
+                ClassName = contentClass,
+                Style = new HtmlStyle { Margin = "0" },
                 Children = {
-                    new DynamicElement {
-                        TagName = "code",
-                        InnerText = Code,
-                        CustomAttributes = new Dictionary<string, string> {
-                            ["id"] = id,
-                            ["class"] = $"font-mono {languageClass}"
-                        }
+                    new Box {
+                        As = "code",
+                        Id = id,
+                        ClassName = $"font-mono {languageClass}",
+                        Children = { new Text(Code) }
                     }
                 }
             }
@@ -110,20 +104,18 @@ public class CodeBlock : StatelessComponent, IRequireAssets
         // Expand Button (Bottom)
         if (isCollapsible)
         {
-            children.Add(new DynamicElement {
-                TagName = "button",
-                InnerText = "Expand Code",
-                CustomAttributes = new Dictionary<string, string> {
-                    ["id"] = $"expand-{id}",
-                    ["onclick"] = $"toggleCodeBlock('{id}')",
-                    ["class"] = "w-full py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100/80 dark:bg-zinc-900/80 hover:bg-zinc-200 dark:hover:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-800 transition-colors rounded-b-lg"
-                }
+            children.Add(new Box {
+                As = "button",
+                Id = $"expand-{id}",
+                ClassName = "w-full py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100/80 dark:bg-zinc-900/80 hover:bg-zinc-200 dark:hover:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-800 transition-colors rounded-b-lg",
+                CustomAttributes = new Dictionary<string, string> { ["onclick"] = $"toggleCodeBlock('{id}')" },
+                Children = { new Text("Expand Code") }
             });
         }
 
-        var wrapper = new DynamicElement {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string> { ["class"] = containerClass }
+        var wrapper = new Box {
+            As = "div",
+            ClassName = containerClass
         };
         
         foreach (var child in children)

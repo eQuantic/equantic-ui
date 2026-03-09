@@ -30,12 +30,9 @@ public class DrawerContent : DrawerSubComponent
         var panel = new Box {
             As = "div",
             ClassName = $"{panelClass} {sideClass} {panelWidth} {slideAnim}".Trim(),
-            CustomAttributes = 
-            {
-                ["role"] = "dialog",
-                ["aria-modal"] = "true",
-                ["tabindex"] = "-1"
-            }
+            Role = "dialog",
+            AriaModal = true,
+            TabIndex = -1
         };
         foreach(var child in Children) panel.Children.Add(child);
 

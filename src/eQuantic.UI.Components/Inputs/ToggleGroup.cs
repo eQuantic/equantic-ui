@@ -13,7 +13,7 @@ public class ToggleGroup : StatelessComponent
     /// <summary>
     /// Selection type. Default: Single.
     /// </summary>
-    public ToggleGroupType Type { get; set; } = ToggleGroupType.Single;
+    public new ToggleGroupType Type { get; set; } = ToggleGroupType.Single;
 
     /// <summary>
     /// Visual variant applied to all toggles. Default: Default.
@@ -23,7 +23,7 @@ public class ToggleGroup : StatelessComponent
     /// <summary>
     /// Size applied to all toggles. Default: Medium.
     /// </summary>
-    public Size Size { get; set; } = Size.Medium;
+    public new Size Size { get; set; } = Size.Medium;
 
     /// <summary>
     /// Orientation of the group. Default: Horizontal.
@@ -33,7 +33,7 @@ public class ToggleGroup : StatelessComponent
     /// <summary>
     /// Whether the group is disabled. Default: false.
     /// </summary>
-    public bool Disabled { get; set; }
+    public new bool Disabled { get; set; }
 
     public override IComponent Build(RenderContext context)
     {
@@ -41,20 +41,17 @@ public class ToggleGroup : StatelessComponent
             ? "eq-toggle-group-vertical"
             : "eq-toggle-group";
 
-        var attrs = new Dictionary<string, string>
+        var element = new Box
         {
-            ["class"] = $"{orientationClass} {ClassName}".Trim(),
-            ["role"] = "group",
-            ["data-orientation"] = Orientation.ToString().ToLowerInvariant()
+            As = "div",
+            ClassName = $"{orientationClass} {ClassName}".Trim(),
+            Role = "group",
+            DataAttributes = new Dictionary<string, string> {
+                ["orientation"] = Orientation.ToString().ToLowerInvariant()
+            }
         };
 
-        if (Disabled) attrs["data-disabled"] = "true";
-
-        var element = new DynamicElement
-        {
-            TagName = "div",
-            CustomAttributes = attrs
-        };
+        if (Disabled) element.DataAttributes["disabled"] = "true";
 
         foreach (var child in Children)
         {

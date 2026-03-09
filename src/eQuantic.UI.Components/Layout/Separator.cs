@@ -25,22 +25,15 @@ public class Separator : StatelessComponent
             ? "eq-separator-vertical"
             : "eq-separator-horizontal";
 
-        var attrs = new Dictionary<string, string>
+        return new Box
         {
-            ["class"] = $"eq-separator {orientationClass} {ClassName}".Trim(),
-            ["role"] = Decorative ? "none" : "separator",
-            ["data-orientation"] = Orientation.ToString().ToLowerInvariant()
-        };
-
-        if (!Decorative)
-        {
-            attrs["aria-orientation"] = Orientation.ToString().ToLowerInvariant();
-        }
-
-        return new DynamicElement
-        {
-            TagName = "div",
-            CustomAttributes = attrs
+            As = "div",
+            ClassName = $"eq-separator {orientationClass} {ClassName}".Trim(),
+            Role = Decorative ? "none" : "separator",
+            AriaOrientation = Decorative ? null : Orientation.ToString().ToLowerInvariant(),
+            DataAttributes = new Dictionary<string, string> {
+                ["orientation"] = Orientation.ToString().ToLowerInvariant()
+            }
         };
     }
 }

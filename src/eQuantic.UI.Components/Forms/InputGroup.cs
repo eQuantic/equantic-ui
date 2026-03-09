@@ -49,13 +49,10 @@ public class InputAddon : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var addon = new DynamicElement
+        var addon = new Box
         {
-            TagName = "span",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"eq-input-addon {ClassName}".Trim()
-            }
+            As = "span",
+            ClassName = $"eq-input-addon {ClassName}".Trim()
         };
 
         if (!string.IsNullOrEmpty(Text))

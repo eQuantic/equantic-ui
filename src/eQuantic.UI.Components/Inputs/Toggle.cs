@@ -28,17 +28,17 @@ public class Toggle : StatelessComponent
     /// <summary>
     /// Size of the toggle. Default: Medium.
     /// </summary>
-    public Size Size { get; set; } = Size.Medium;
+    public new Size Size { get; set; } = Size.Medium;
 
     /// <summary>
     /// Whether the toggle is disabled. Default: false.
     /// </summary>
-    public bool Disabled { get; set; }
+    public new bool Disabled { get; set; }
 
     /// <summary>
     /// Accessible label for the toggle action.
     /// </summary>
-    public string? AriaLabel { get; set; }
+    public new string? AriaLabel { get; set; }
 
     public override IComponent Build(RenderContext context)
     {
@@ -56,21 +56,15 @@ public class Toggle : StatelessComponent
             _ => ""
         };
 
-        var attrs = new Dictionary<string, string>
+        var element = new Box
         {
-            ["class"] = $"eq-toggle {sizeClass} {variantClass} {ClassName}".Trim(),
-            ["type"] = "button",
-            ["data-state"] = isPressed ? "on" : "off",
-            ["aria-pressed"] = isPressed ? "true" : "false"
-        };
-
-        if (Disabled) attrs["disabled"] = "true";
-        if (!string.IsNullOrEmpty(AriaLabel)) attrs["aria-label"] = AriaLabel;
-
-        var element = new DynamicElement
-        {
-            TagName = "button",
-            CustomAttributes = attrs
+            As = "button",
+            Type = "button",
+            ClassName = $"eq-toggle {sizeClass} {variantClass} {ClassName}".Trim(),
+            DataAttributes = new Dictionary<string, string> { ["state"] = isPressed ? "on" : "off" },
+            AriaPressed = isPressed ? "true" : "false",
+            Disabled = Disabled,
+            AriaLabel = AriaLabel
         };
 
         foreach (var child in Children)

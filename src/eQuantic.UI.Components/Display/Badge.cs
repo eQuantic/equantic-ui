@@ -24,13 +24,10 @@ public class Badge : StatelessComponent
         var baseStyle = badgeTheme?.Base ?? "eq-badge";
         var variantStyle = badgeTheme?.GetVariant(Variant) ?? $"eq-badge-{Variant.ToString().ToLowerInvariant()}";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"{baseStyle} {variantStyle} {ClassName}".Trim()
-            }
+            As = "div",
+            ClassName = $"{baseStyle} {variantStyle} {ClassName}".Trim()
         };
 
         if (Children.Any())

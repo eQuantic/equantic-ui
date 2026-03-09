@@ -65,15 +65,12 @@ public class AccordionTrigger : AccordionSubComponent, IAccordionItemComponent
     {
         var isOpen = ActiveValues?.Contains(ItemValue ?? "") ?? false;
 
-        var trigger = new DynamicElement
+        var trigger = new Box
         {
-            TagName = "button",
+            As = "button",
             ClassName = $"flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline data-[state=open]:rotate-0 {ClassName}".Trim(),
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["type"] = "button",
-                ["data-state"] = isOpen ? "open" : "closed"
-            },
+            Type = "button",
+            DataAttributes = new Dictionary<string, string> { ["state"] = isOpen ? "open" : "closed" },
             OnClick = () => {
                 if (Accordion == null || string.IsNullOrEmpty(ItemValue)) return;
                 

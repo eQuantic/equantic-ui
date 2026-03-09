@@ -60,35 +60,23 @@ public class FormField : StatelessComponent
         // Label
         if (!string.IsNullOrEmpty(Label))
         {
-            var labelAttrs = new Dictionary<string, string>
+            var labelElement = new Box
             {
-                ["class"] = "eq-form-label"
-            };
-
-            if (!string.IsNullOrEmpty(For))
-            {
-                labelAttrs["for"] = For;
-            }
-
-            var labelElement = new DynamicElement
-            {
-                TagName = "label",
-                CustomAttributes = labelAttrs
+                As = "label",
+                ClassName = "eq-form-label",
+                For = For
             };
 
             labelElement.Children.Add(new Text(Label));
 
             if (Required)
             {
-                labelElement.Children.Add(new DynamicElement
+                labelElement.Children.Add(new Box
                 {
-                    TagName = "span",
-                    InnerText = " *",
-                    CustomAttributes = new Dictionary<string, string>
-                    {
-                        ["class"] = "eq-form-required",
-                        ["aria-label"] = "required"
-                    }
+                    As = "span",
+                    ClassName = "eq-form-required",
+                    AriaLabel = "required",
+                    Children = { new Text(" *") }
                 });
             }
 
@@ -111,28 +99,22 @@ public class FormField : StatelessComponent
         // Error message or helper text
         if (hasError)
         {
-            container.Children.Add(new DynamicElement
+            container.Children.Add(new Box
             {
-                TagName = "span",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["class"] = "eq-error-message",
-                    ["role"] = "alert"
-                },
+                As = "span",
+                ClassName = "eq-error-message",
+                Role = "alert",
                 Children = {
-                    new Text(Error)
+                    new Text(Error ?? string.Empty)
                 }
             });
         }
         else if (!string.IsNullOrEmpty(HelperText))
         {
-            container.Children.Add(new DynamicElement
+            container.Children.Add(new Box
             {
-                TagName = "span",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["class"] = "eq-helper-text"
-                },
+                As = "span",
+                ClassName = "eq-helper-text",
                 Children = {
                     new Text(HelperText)
                 }

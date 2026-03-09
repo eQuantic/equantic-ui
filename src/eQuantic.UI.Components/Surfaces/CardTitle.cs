@@ -29,13 +29,10 @@ public class CardTitle : StatelessComponent
             titleClass = $"{titleClass} {ClassName}";
         }
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = Tag,
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = titleClass.Trim()
-            }
+            As = Tag,
+            ClassName = titleClass.Trim()
         };
 
         // Add text if provided

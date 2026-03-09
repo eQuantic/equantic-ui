@@ -37,20 +37,15 @@ public class Text : StatelessComponent
         var theme = context.GetService<IAppTheme>();
         var textTheme = theme?.Typography;
 
-        var attrs = new Dictionary<string, string>
+        return new Box
         {
-            ["class"] = StyleBuilder.Create(textTheme?.Base)
+            As = Paragraph ? "p" : "span",
+            ClassName = StyleBuilder.Create(textTheme?.Base)
                             .Add(textTheme?.GetVariant(Variant))
                             .Add(ClassName)
-                            .Build()
-        };
-
-        return new DynamicElement
-        {
-            TagName = Paragraph ? "p" : "span",
-            InnerText = Content,
-            CustomAttributes = attrs,
-            CustomEvents = BuildEvents()
+                            .Build(),
+            CustomEvents = BuildEvents(),
+            InnerHtml = Content
         };
     }
 }

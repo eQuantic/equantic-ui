@@ -27,26 +27,20 @@ public class Progress : StatelessComponent
         if (percentage > 100) percentage = 100;
         if (percentage < 0) percentage = 0;
 
-        return new DynamicElement
+        return new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"eq-progress {ClassName}".Trim(),
-                ["role"] = "progressbar",
-                ["aria-valuemin"] = "0",
-                ["aria-valuemax"] = Max.ToString(),
-                ["aria-valuenow"] = Value.ToString()
-            },
+            As = "div",
+            ClassName = $"eq-progress {ClassName}".Trim(),
+            Role = "progressbar",
+            AriaValueMin = 0,
+            AriaValueMax = Max,
+            AriaValueNow = Value,
             Children = {
-                new DynamicElement
+                new Box
                 {
-                    TagName = "div",
-                    CustomAttributes = new Dictionary<string, string>
-                    {
-                        ["class"] = "eq-progress-indicator",
-                        ["style"] = $"width:{percentage}%"
-                    }
+                    As = "div",
+                    ClassName = "eq-progress-indicator",
+                    Style = new HtmlStyle { Width = $"{percentage}%" }
                 }
             }
         };

@@ -53,14 +53,11 @@ public class AlertDialog : StatelessComponent
             }
         }
 
-        var root = new DynamicElement
+        var root = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"eq-alert-dialog {ClassName}".Trim(),
-                ["data-state"] = "open"
-            }
+            As = "div",
+            ClassName = $"eq-alert-dialog {ClassName}".Trim(),
+            DataAttributes = new Dictionary<string, string> { ["state"] = "open" }
         };
 
         foreach (var child in Children) root.Children.Add(child);
@@ -94,39 +91,30 @@ public class AlertDialogContent : AlertDialogSubComponent
         var contentClass = dialogTheme?.Content ?? "eq-modal-content";
 
         // Overlay
-        var overlay = new DynamicElement
+        var overlay = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = overlayClass,
-                ["data-state"] = "open"
-            }
+            As = "div",
+            ClassName = overlayClass,
+            DataAttributes = new Dictionary<string, string> { ["state"] = "open" }
         };
 
         // Content
-        var content = new DynamicElement
+        var content = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = contentClass,
-                ["role"] = "alertdialog",
-                ["aria-modal"] = "true",
-                ["data-state"] = "open",
-                ["tabindex"] = "-1"
-            }
+            As = "div",
+            ClassName = contentClass,
+            Role = "alertdialog",
+            AriaModal = true,
+            TabIndex = -1,
+            DataAttributes = new Dictionary<string, string> { ["state"] = "open" }
         };
 
         foreach (var child in Children) content.Children.Add(child);
 
-        var wrapper = new DynamicElement
+        var wrapper = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = "eq-alert-dialog-portal"
-            }
+            As = "div",
+            ClassName = "eq-alert-dialog-portal"
         };
         wrapper.Children.Add(overlay);
         wrapper.Children.Add(content);
@@ -143,13 +131,10 @@ public class AlertDialogHeader : AlertDialogSubComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var headerClass = theme?.Dialog?.Header ?? "eq-modal-header";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = headerClass
-            }
+            As = "div",
+            ClassName = headerClass
         };
         foreach (var child in Children) element.Children.Add(child);
         return element;
@@ -167,13 +152,10 @@ public class AlertDialogTitle : AlertDialogSubComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var titleClass = theme?.Dialog?.Title ?? "eq-modal-title";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "h2",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = titleClass
-            }
+            As = "h2",
+            ClassName = titleClass
         };
 
         if (Children.Count > 0)
@@ -196,13 +178,10 @@ public class AlertDialogDescription : AlertDialogSubComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var descClass = theme?.Dialog?.Description ?? "eq-modal-description";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "p",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = descClass
-            }
+            As = "p",
+            ClassName = descClass
         };
 
         if (Children.Count > 0)
@@ -222,13 +201,10 @@ public class AlertDialogFooter : AlertDialogSubComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var footerClass = theme?.Dialog?.Footer ?? "eq-modal-footer";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = footerClass
-            }
+            As = "div",
+            ClassName = footerClass
         };
         foreach (var child in Children) element.Children.Add(child);
         return element;
@@ -252,14 +228,11 @@ public class AlertDialogAction : AlertDialogSubComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var btnBase = theme?.Button?.Base ?? "eq-btn";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "button",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"{btnBase} eq-btn-primary {ClassName}".Trim(),
-                ["type"] = "button"
-            }
+            As = "button",
+            ClassName = $"{btnBase} eq-btn-primary {ClassName}".Trim(),
+            Type = "button"
         };
 
         if (Children.Count > 0)
@@ -288,14 +261,11 @@ public class AlertDialogCancel : AlertDialogSubComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var btnBase = theme?.Button?.Base ?? "eq-btn";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "button",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"{btnBase} eq-btn-outline {ClassName}".Trim(),
-                ["type"] = "button"
-            }
+            As = "button",
+            ClassName = $"{btnBase} eq-btn-outline {ClassName}".Trim(),
+            Type = "button"
         };
 
         if (Children.Count > 0)

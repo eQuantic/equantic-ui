@@ -27,20 +27,11 @@ public class Label : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var attrs = new Dictionary<string, string>
+        var element = new Box
         {
-            ["class"] = $"eq-label {ClassName}".Trim()
-        };
-
-        if (!string.IsNullOrEmpty(For))
-        {
-            attrs["for"] = For;
-        }
-
-        var element = new DynamicElement
-        {
-            TagName = "label",
-            CustomAttributes = attrs
+            As = "label",
+            ClassName = $"eq-label {ClassName}".Trim(),
+            For = For
         };
 
         if (Children.Count > 0)

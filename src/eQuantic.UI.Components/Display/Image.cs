@@ -188,7 +188,7 @@ public class Image : StatelessComponent
         if (Fill)
         {
             classList.Add("absolute inset-0 w-full h-full");
-            styleList.Add($"object-fit: {ObjectFit ?? "cover"}");
+            Style = new HtmlStyle("width: 100%; height: 100%; object-fit: cover; border-radius: inherit;");
             if (!string.IsNullOrEmpty(ObjectPosition)) styleList.Add($"object-position: {ObjectPosition}");
         }
         else
@@ -215,22 +215,35 @@ public class Image : StatelessComponent
         if (styleList.Count > 0) attributes["style"] = string.Join("; ", styleList);
         attributes["class"] = string.Join(" ", classList);
 
-        var img = new DynamicElement
+        var img = new Box
         {
-            TagName = "img",
-            CustomAttributes = attributes
+            As = "img",
+            Src = attributes.TryGetValue("src", out var s) ? s : null,
+            Alt = attributes.TryGetValue("alt", out var a) ? a : null,
+            Loading = attributes.TryGetValue("loading", out var l) ? l : null,
+            Decoding = attributes.TryGetValue("decoding", out var d) ? d : null,
+            FetchPriority = attributes.GetValueOrDefault("fetchpriority"),
+            Srcset = attributes.GetValueOrDefault("srcset"),
+            Sizes = attributes.GetValueOrDefault("sizes"),
+            Width = attributes.GetValueOrDefault("width"),
+            Height = attributes.GetValueOrDefault("height"),
+            Style = attributes.ContainsKey("style") ? new HtmlStyle(attributes["style"]) : null,
+            ClassName = attributes.GetValueOrDefault("class")
         };
+        
+        if (attributes.TryGetValue("onload", out var onloadJs))
+        {
+            // We use inline javascript event
+            img.OnLoad = onloadJs;
+        }
 
         if (Fill)
         {
             // Wrapper for fill mode to maintain relative context if not provided by parent
-            return new DynamicElement
+            return new Box
             {
-                TagName = "div",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["class"] = "relative w-full h-full overflow-hidden"
-                },
+                As = "div",
+                ClassName = "relative w-full h-full overflow-hidden",
                 Children = { img }
             };
         }

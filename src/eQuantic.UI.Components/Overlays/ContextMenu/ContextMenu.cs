@@ -23,11 +23,9 @@ public class ContextMenuTrigger : StatelessComponent
         {
             As = "div",
             ClassName = $"context-menu-trigger {ClassName}".Trim(),
-            CustomAttributes = { 
-                ["data-context-menu-trigger"] = "true",
-                ["aria-haspopup"] = "menu",
-                ["aria-expanded"] = "false"
-            }
+            DataAttributes = new Dictionary<string, string> { ["context-menu-trigger"] = "true" },
+            AriaHasPopup = "menu",
+            AriaExpanded = false
         };
         foreach (var child in Children) box.Children.Add(child);
         return box;
@@ -45,12 +43,10 @@ public class ContextMenuContent : StatelessComponent
         {
             As = "div",
             ClassName = $"{contentClass} {ClassName}".Trim(),
-            CustomAttributes = { 
-                ["data-state"] = "closed",
-                ["role"] = "menu",
-                ["aria-orientation"] = "vertical",
-                ["tabindex"] = "-1"
-            }
+            DataAttributes = new Dictionary<string, string> { ["state"] = "closed" },
+            Role = "menu",
+            AriaOrientation = "vertical",
+            TabIndex = -1
         };
         foreach (var child in Children) box.Children.Add(child);
         return box;
@@ -73,13 +69,10 @@ public class ContextMenuItem : StatelessComponent
         {
             As = "div",
             ClassName = $"{itemClass} {insetClass} {ClassName}".Trim(),
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["role"] = "menuitem",
-                ["tabindex"] = "-1",
-                ["data-disabled"] = Disabled ? "true" : null,
-                ["aria-disabled"] = Disabled ? "true" : null
-            }.Where(x => x.Value != null).ToDictionary(x => x.Key, x => x.Value!)
+            Role = "menuitem",
+            TabIndex = -1,
+            AriaDisabled = Disabled,
+            DataAttributes = Disabled ? new Dictionary<string, string> { ["disabled"] = "true" } : null
         };
         foreach (var child in Children) box.Children.Add(child);
         if (!string.IsNullOrEmpty(Shortcut)) box.Children.Add(new ContextMenuShortcut { Text = Shortcut });
@@ -140,7 +133,7 @@ public class ContextMenuSeparator : StatelessComponent
         {
             As = "div",
             ClassName = $"{separatorClass} {ClassName}".Trim(),
-            CustomAttributes = { ["role"] = "separator" }
+            Role = "separator"
         };
     }
 }

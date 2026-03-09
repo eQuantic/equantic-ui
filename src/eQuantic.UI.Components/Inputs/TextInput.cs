@@ -23,37 +23,37 @@ public class TextInput : InputComponent<string>
     /// <summary>
     /// HTML input type (text, email, password, etc.)
     /// </summary>
-    public string Type { get; set; } = "text";
+    public new string Type { get; set; } = "text";
 
     /// <summary>
     /// Placeholder text to display when empty
     /// </summary>
-    public string? Placeholder { get; set; }
+    public new string? Placeholder { get; set; }
 
     /// <summary>
     /// Disable the input
     /// </summary>
-    public bool Disabled { get; set; }
+    public new bool Disabled { get; set; }
 
     /// <summary>
     /// Make the input read-only
     /// </summary>
-    public bool ReadOnly { get; set; }
+    public new bool ReadOnly { get; set; }
 
     /// <summary>
     /// Mark as required field
     /// </summary>
-    public bool Required { get; set; }
+    public new bool Required { get; set; }
 
     /// <summary>
     /// Form field name attribute
     /// </summary>
-    public string? Name { get; set; }
+    public new string? Name { get; set; }
 
     /// <summary>
     /// Maximum character length
     /// </summary>
-    public int? MaxLength { get; set; }
+    public new int? MaxLength { get; set; }
 
     /// <summary>
     /// Autocomplete hint for browsers
@@ -63,7 +63,7 @@ public class TextInput : InputComponent<string>
     /// <summary>
     /// Input size variant
     /// </summary>
-    public Size Size { get; set; } = Size.Medium;
+    public new Size Size { get; set; } = Size.Medium;
 
     /// <summary>
     /// Default value for uncontrolled mode (initial value only)
@@ -115,10 +115,19 @@ public class TextInput : InputComponent<string>
         if (OnChange != null) events["change"] = OnChange;
         if (OnInput != null) events["input"] = OnInput;
 
-        var input = new DynamicElement
+        var input = new Box
         {
-            TagName = "input",
-            CustomAttributes = attrs,
+            As = "input",
+            Type = Type,
+            ClassName = inputClass.Trim(),
+            Value = initialValue,
+            Placeholder = Placeholder,
+            Disabled = Disabled,
+            ReadOnly = ReadOnly,
+            Required = Required,
+            Name = Name,
+            MaxLength = MaxLength,
+            Autocomplete = AutoComplete,
             CustomEvents = events
         };
 
@@ -127,16 +136,15 @@ public class TextInput : InputComponent<string>
             return input;
         }
 
-        var wrapper = new DynamicElement
+        var wrapper = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-input-wrapper" }
+            As = "div",
+            ClassName = "eq-input-wrapper"
         };
 
         if (LeftIcon != null)
         {
-            var leftContainer = new DynamicElement { TagName = "div", CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-input-icon-left" } };
-            leftContainer.Children.Add(LeftIcon);
+            var leftContainer = new Box { As = "div", ClassName = "eq-input-icon-left", Children = { LeftIcon } };
             wrapper.Children.Add(leftContainer);
         }
 
@@ -144,8 +152,7 @@ public class TextInput : InputComponent<string>
 
         if (RightIcon != null)
         {
-            var rightContainer = new DynamicElement { TagName = "div", CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-input-icon-right" } };
-            rightContainer.Children.Add(RightIcon);
+            var rightContainer = new Box { As = "div", ClassName = "eq-input-icon-right", Children = { RightIcon } };
             wrapper.Children.Add(rightContainer);
         }
 

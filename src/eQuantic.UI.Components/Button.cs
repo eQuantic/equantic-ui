@@ -75,22 +75,20 @@ public class Button : StatelessComponent
                             .Add(ClassName)
                             .Build();
 
-        var attrs = new Dictionary<string, string>
+        var element = new Box
         {
-            ["type"] = Type,
-            ["class"] = classValue
+            As = "button",
+            Type = Type,
+            ClassName = classValue,
+            CustomEvents = BuildEvents()
         };
 
         // Disable button when loading or explicitly disabled
-        if (Disabled || Loading) attrs["disabled"] = "true";
-        if (Loading) attrs["data-loading"] = "true";
-
-        var element = new DynamicElement
+        if (Disabled || Loading) element.Disabled = true;
+        if (Loading) 
         {
-            TagName = "button",
-            CustomAttributes = attrs,
-            CustomEvents = BuildEvents()
-        };
+            element.DataAttributes = new Dictionary<string, string> { ["loading"] = "true" };
+        }
 
         // Add loading spinner if loading
         if (Loading)
@@ -116,14 +114,11 @@ public class Button : StatelessComponent
     private IComponent CreateSpinner()
     {
         // Simple CSS-based spinner (single div with animation)
-        return new DynamicElement
+        return new Box
         {
-            TagName = "span",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = "eq-btn-spinner",
-                ["aria-hidden"] = "true"
-            }
+            As = "span",
+            ClassName = "eq-btn-spinner",
+            AriaHidden = true
         };
     }
 }

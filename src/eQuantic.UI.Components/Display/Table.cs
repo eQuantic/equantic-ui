@@ -44,29 +44,27 @@ public class Table<T> : StatelessComponent
         var headerCells = new List<IComponent>();
         foreach(var col in Columns)
         {
-            var thAttrs = new Dictionary<string, string> { ["class"] = headCellClass };
-            if (col.Width != null) thAttrs["style"] = $"width: {col.Width}";
-            
-            var th = new DynamicElement 
+            var th = new Box 
             { 
-                TagName = "th", 
-                CustomAttributes = thAttrs
+                As = "th", 
+                ClassName = headCellClass,
+                Style = col.Width != null ? new HtmlStyle { Width = col.Width } : null
             };
             th.Children.Add(new Text(col.Header));
             headerCells.Add(th);
         }
 
-        var headerRow = new DynamicElement
+        var headerRow = new Box
         {
-            TagName = "tr",
-            CustomAttributes = new Dictionary<string, string> { ["class"] = "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted" }
+            As = "tr",
+            ClassName = "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
         };
         foreach(var h in headerCells) headerRow.Children.Add(h);
 
-        var thead = new DynamicElement
+        var thead = new Box
         {
-            TagName = "thead",
-            CustomAttributes = new Dictionary<string, string> { ["class"] = headerClass },
+            As = "thead",
+            ClassName = headerClass,
             Children = { headerRow }
         };
 
@@ -82,53 +80,51 @@ public class Table<T> : StatelessComponent
                     ? col.Formatter(value)
                     : value?.ToString() ?? "";
 
-                var cell = new DynamicElement
+                var cell = new Box
                 {
-                    TagName = "td",
-                    CustomAttributes = new Dictionary<string, string> { ["class"] = cellClass }
+                    As = "td",
+                    ClassName = cellClass
                 };
                 cell.Children.Add(new Text(displayValue));
                 cells.Add(cell);
             }
 
-            var trAttrs = new Dictionary<string, string> { ["class"] = rowClass };
-            // Row click handling logic would require binding an event, but DynamicElement OnClick is simple delegate.
+            var trClass = rowClass;
             var events = new Dictionary<string, Delegate>();
             if (OnRowClick != null)
             {
-                 // We can use a trick to capture 'item' 
                  events["click"] = (Action)(() => OnRowClick(item));
-                 trAttrs["class"] += " cursor-pointer";
+                 trClass += " cursor-pointer";
             }
 
-            var rowElement = new DynamicElement
+            var rowElement = new Box
             {
-                TagName = "tr",
-                CustomAttributes = trAttrs,
+                As = "tr",
+                ClassName = trClass,
                 CustomEvents = events
             };
             foreach(var c in cells) rowElement.Children.Add(c);
             rows.Add(rowElement);
         }
 
-        var tbody = new DynamicElement
+        var tbody = new Box
         {
-            TagName = "tbody"
+            As = "tbody"
         };
         foreach(var r in rows) tbody.Children.Add(r);
 
-        var tableElement = new DynamicElement
+        var tableElement = new Box
         {
-            TagName = "table",
-            CustomAttributes = attrs,
+            As = "table",
+            ClassName = $"{tableClass} {ClassName}".Trim(),
             Children = { thead, tbody }
         };
 
         // Wrap in div
-        return new DynamicElement
+        return new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string> { ["class"] = wrapperClass },
+            As = "div",
+            ClassName = wrapperClass,
             Children = { tableElement }
         };
     }

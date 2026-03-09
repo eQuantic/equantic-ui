@@ -7,40 +7,31 @@ public class CodeBlockScripts : StatelessComponent
 {
     public override IComponent Build(RenderContext context)
     {
-        return new DynamicElement
+        return new Box
         {
-            TagName = "div",
+            As = "div",
             Children = {
-                new DynamicElement
+                new Box
                 {
-                    TagName = "link",
-                    CustomAttributes = new Dictionary<string, string>
-                    {
-                        ["rel"] = "stylesheet",
-                        ["id"] = "prism-theme",
-                        ["href"] = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
-                    }
+                    As = "link",
+                    Rel = "stylesheet",
+                    Id = "prism-theme",
+                    Href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
                 },
-                new DynamicElement
+                new Box
                 {
-                    TagName = "script",
-                    CustomAttributes = new Dictionary<string, string>
-                    {
-                        ["src"] = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"
-                    }
+                    As = "script",
+                    Src = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"
                 },
-                new DynamicElement
+                new Box
                 {
-                    TagName = "script",
-                    CustomAttributes = new Dictionary<string, string>
-                    {
-                        ["src"] = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"
-                    }
+                    As = "script",
+                    Src = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"
                 },
-                new DynamicElement
+                new Box
                 {
-                    TagName = "script",
-                    InnerText = """
+                    As = "script",
+                    Children = { new Text("""
                         window.updatePrismTheme = function() {
                             const isDark = document.documentElement.classList.contains('dark');
                             const link = document.getElementById('prism-theme');
@@ -90,7 +81,7 @@ public class CodeBlockScripts : StatelessComponent
                                 btn.innerText = 'Expand Code';
                             }
                         }
-                    """
+                    """) }
                 }
             }
         };

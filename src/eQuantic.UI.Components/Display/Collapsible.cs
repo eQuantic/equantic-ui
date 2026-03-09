@@ -23,54 +23,42 @@ public class Collapsible : StatelessComponent
         var id = Id ?? $"collapsible-{System.Guid.NewGuid():N}";
         var state = DefaultOpen ? "open" : "closed";
 
-        var container = new DynamicElement
+        var container = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"eq-collapsible {ClassName}".Trim(),
-                ["data-state"] = state
-            }
+            As = "div",
+            ClassName = $"eq-collapsible {ClassName}".Trim(),
+            Id = id,
+            DataAttributes = new Dictionary<string, string> { ["state"] = state }
         };
 
         // Trigger button
         if (Trigger != null)
         {
-            var triggerWrapper = new DynamicElement
+            var triggerWrapper = new Box
             {
-                TagName = "button",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["class"] = "eq-collapsible-trigger",
-                    ["type"] = "button",
-                    ["onclick"] = $"(function(){{var c=document.getElementById('{id}');if(c){{var s=c.dataset.state==='open'?'closed':'open';c.dataset.state=s;var ct=document.getElementById('{id}-content');if(ct)ct.style.display=s==='open'?'':'none'}}}})();"
-                }
+                As = "button",
+                ClassName = "eq-collapsible-trigger",
+                Type = "button"
             };
             triggerWrapper.Children.Add(Trigger);
             container.Children.Add(triggerWrapper);
         }
 
         // Content area
-        var content = new DynamicElement
+        var content = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["id"] = $"{id}-content",
-                ["class"] = "eq-collapsible-content",
-                ["style"] = DefaultOpen ? "" : "display:none"
-            }
+            As = "div",
+            Id = $"{id}-content",
+            ClassName = "eq-collapsible-content",
+            Style = DefaultOpen ? new HtmlStyle() : new HtmlStyle { Display = eQuantic.UI.Core.Display.None }
         };
-
+        
         foreach (var child in Children)
         {
             content.Children.Add(child);
         }
 
         container.Children.Add(content);
-
-        // Override container id
-        container.CustomAttributes["id"] = id;
 
         return container;
     }

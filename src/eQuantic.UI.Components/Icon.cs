@@ -53,14 +53,11 @@ public class Icon : StatelessComponent
         }
 
         // Fallback or placeholder if not found
-        return new DynamicElement
+        return new Box
         {
-            TagName = "span",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"icon-missing icon-{Name} {ClassName}".Trim(),
-                ["data-icon"] = Name
-            }
+            As = "span",
+            ClassName = $"icon-missing icon-{Name} {ClassName}".Trim(),
+            DataAttributes = new Dictionary<string, string> { ["icon"] = Name }
         };
     }
 }

@@ -13,36 +13,29 @@ public class Radio : InputComponent<string>
 
     public override IComponent Build(RenderContext context)
     {
-        var inputAttrs = new Dictionary<string, string>
-        {
-            ["type"] = "radio",
-            ["class"] = ClassName
-        };
-
-        if (Name != null) inputAttrs["name"] = Name;
-        if (Value != null) inputAttrs["value"] = Value;
-        if (Checked) inputAttrs["checked"] = "true";
-        if (Disabled) inputAttrs["disabled"] = "true";
-
-        var events = BuildEvents();
+        var events = new Dictionary<string, Delegate>();
         if (OnChange != null) events["change"] = OnChange;
 
-        var inputElement = new DynamicElement
+        var inputElement = new Box
         {
-            TagName = "input",
-            CustomAttributes = inputAttrs,
+            As = "input",
+            Type = "radio",
+            ClassName = ClassName,
+            Name = Name,
+            Value = Value,
+            Checked = Checked,
+            Disabled = Disabled,
             CustomEvents = events
         };
 
         if (Label != null)
         {
-            var labelElement = new DynamicElement
+            var labelElement = new Box
             {
-                TagName = "label",
-                CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-checkbox-label" }
+                As = "label",
+                ClassName = "eq-checkbox-label",
+                Children = { inputElement, new Text(Label) }
             };
-            labelElement.Children.Add(inputElement);
-            labelElement.Children.Add(new Text(Label));
             return labelElement;
         }
 

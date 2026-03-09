@@ -45,30 +45,24 @@ public class DropdownMenu : StatelessComponent
         var id = Id ?? $"dropdown-{Guid.NewGuid():N}";
         var contentClass = menuTheme?.Content ?? "eq-dropdown-content";
 
-        var container = new DynamicElement
+        var container = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"eq-dropdown {ClassName}".Trim(),
-                ["data-state"] = IsOpen ? "open" : "closed"
-            }
+            As = "div",
+            ClassName = $"eq-dropdown {ClassName}".Trim(),
+            DataAttributes = new Dictionary<string, string> { ["state"] = IsOpen ? "open" : "closed" }
         };
 
         // Trigger
         if (Trigger != null)
         {
-            var triggerWrapper = new DynamicElement
+            var triggerWrapper = new Box
             {
-                TagName = "button",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["class"] = "eq-dropdown-trigger",
-                    ["type"] = "button",
-                    ["aria-haspopup"] = "menu",
-                    ["aria-expanded"] = IsOpen ? "true" : "false",
-                    ["data-state"] = IsOpen ? "open" : "closed"
-                }
+                As = "button",
+                ClassName = "eq-dropdown-trigger",
+                Type = "button",
+                AriaHasPopup = "menu",
+                AriaExpanded = IsOpen,
+                DataAttributes = new Dictionary<string, string> { ["state"] = IsOpen ? "open" : "closed" }
             };
             triggerWrapper.Children.Add(Trigger);
             container.Children.Add(triggerWrapper);
@@ -77,18 +71,18 @@ public class DropdownMenu : StatelessComponent
         // Content
         if (IsOpen)
         {
-            var content = new DynamicElement
+            var content = new Box
             {
-                TagName = "div",
-                CustomAttributes = new Dictionary<string, string>
+                As = "div",
+                ClassName = contentClass,
+                Role = "menu",
+                AriaOrientation = "vertical",
+                TabIndex = -1,
+                DataAttributes = new Dictionary<string, string>
                 {
-                    ["class"] = contentClass,
-                    ["role"] = "menu",
-                    ["aria-orientation"] = "vertical",
-                    ["data-state"] = "open",
-                    ["data-side"] = Side.ToString().ToLowerInvariant(),
-                    ["data-align"] = Align.ToString().ToLowerInvariant(),
-                    ["tabindex"] = "-1"
+                    ["state"] = "open",
+                    ["side"] = Side.ToString().ToLowerInvariant(),
+                    ["align"] = Align.ToString().ToLowerInvariant()
                 }
             };
 
@@ -146,23 +140,18 @@ public class DropdownMenuItem : DropdownMenuSubComponent
         var shortcutClass = MenuTheme?.Shortcut ?? "eq-dropdown-shortcut";
         var destructiveClass = Destructive ? "eq-dropdown-destructive" : "";
 
-        var attrs = new Dictionary<string, string>
+        var element = new Box
         {
-            ["class"] = $"{itemClass} {destructiveClass} {ClassName}".Trim(),
-            ["role"] = "menuitem",
-            ["tabindex"] = "-1"
+            As = "div",
+            ClassName = $"{itemClass} {destructiveClass} {ClassName}".Trim(),
+            Role = "menuitem",
+            TabIndex = -1
         };
         if (Disabled)
         {
-            attrs["data-disabled"] = "true";
-            attrs["aria-disabled"] = "true";
+            element.DataAttributes = new Dictionary<string, string> { ["disabled"] = "true" };
+            element.AriaDisabled = true;
         }
-
-        var element = new DynamicElement
-        {
-            TagName = "div",
-            CustomAttributes = attrs
-        };
 
         if (Icon != null) element.Children.Add(Icon);
 
@@ -177,13 +166,10 @@ public class DropdownMenuItem : DropdownMenuSubComponent
 
         if (!string.IsNullOrEmpty(Shortcut))
         {
-            element.Children.Add(new DynamicElement
+            element.Children.Add(new Box
             {
-                TagName = "span",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["class"] = shortcutClass
-                },
+                As = "span",
+                ClassName = shortcutClass,
                 Children = { new Text(Shortcut) }
             });
         }
@@ -199,14 +185,11 @@ public class DropdownMenuSeparator : DropdownMenuSubComponent
     {
         var separatorClass = MenuTheme?.Separator ?? "eq-dropdown-separator";
 
-        return new DynamicElement
+        return new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = separatorClass,
-                ["role"] = "separator"
-            }
+            As = "div",
+            ClassName = separatorClass,
+            Role = "separator"
         };
     }
 }
@@ -221,13 +204,10 @@ public class DropdownMenuLabel : DropdownMenuSubComponent
     {
         var labelClass = MenuTheme?.Label ?? "eq-dropdown-label";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = labelClass
-            }
+            As = "div",
+            ClassName = labelClass
         };
 
         if (Children.Any())
@@ -244,14 +224,11 @@ public class DropdownMenuGroup : DropdownMenuSubComponent
 {
     public override IComponent Build(RenderContext context)
     {
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = "eq-dropdown-group",
-                ["role"] = "group"
-            }
+            As = "div",
+            ClassName = "eq-dropdown-group",
+            Role = "group"
         };
 
         foreach (var child in Children)

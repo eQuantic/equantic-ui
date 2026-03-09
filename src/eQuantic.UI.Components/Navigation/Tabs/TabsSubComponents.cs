@@ -14,11 +14,11 @@ public class TabsList : TabsSubComponent
         
         if (Tabs?.Vertical == true) listClass += " flex-col h-auto";
 
-        var box = new DynamicElement
+        var box = new Box
         {
-            TagName = "div",
+            As = "div",
             ClassName = $"{listClass} {ClassName}".Trim(),
-            CustomAttributes = { ["role"] = "tablist" }
+            Role = "tablist"
         };
         foreach (var child in Children) box.Children.Add(child);
         return box;
@@ -27,9 +27,9 @@ public class TabsList : TabsSubComponent
 
 public class TabsTrigger : TabsSubComponent
 {
-    public string Value { get; set; } = string.Empty;
+    public new string Value { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
-    public bool Disabled { get; set; }
+    public new bool Disabled { get; set; }
 
     public override IComponent Build(RenderContext context)
     {
@@ -43,17 +43,14 @@ public class TabsTrigger : TabsSubComponent
         var isActive = Value == ActiveValue;
         var triggerStyle = $"{triggerBase} {(isActive ? activeTrigger : inactiveTrigger)} {ClassName}".Trim();
 
-        var trigger = new DynamicElement
+        var trigger = new Box
         {
-            TagName = "button",
+            As = "button",
             ClassName = triggerStyle,
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["role"] = "tab",
-                ["type"] = "button",
-                ["data-state"] = isActive ? "active" : "inactive",
-                ["disabled"] = Disabled ? "disabled" : null
-            }.Where(x => x.Value != null).ToDictionary(x => x.Key, x => x.Value!),
+            Role = "tab",
+            Type = "button",
+            Disabled = Disabled,
+            DataAttributes = new Dictionary<string, string> { ["state"] = isActive ? "active" : "inactive" },
             OnClick = () => {
                 if (!Disabled && Tabs != null)
                 {
@@ -69,7 +66,7 @@ public class TabsTrigger : TabsSubComponent
 
 public class TabsContent : TabsSubComponent
 {
-    public string Value { get; set; } = string.Empty;
+    public new string Value { get; set; } = string.Empty;
 
     public override IComponent Build(RenderContext context)
     {
@@ -80,15 +77,12 @@ public class TabsContent : TabsSubComponent
         var isActive = Value == ActiveValue;
         if (!isActive) return new NullComponent();
 
-        var box = new DynamicElement
+        var box = new Box
         {
-            TagName = "div",
+            As = "div",
             ClassName = $"{contentBase} {ClassName}".Trim(),
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["role"] = "tabpanel",
-                ["data-state"] = "active"
-            }
+            Role = "tabpanel",
+            DataAttributes = new Dictionary<string, string> { ["state"] = "active" }
         };
         foreach (var child in Children) box.Children.Add(child);
         return box;

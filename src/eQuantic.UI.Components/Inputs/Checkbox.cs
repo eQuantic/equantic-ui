@@ -60,23 +60,17 @@ public class Checkbox : InputComponent<bool>
 
         if (IsNative)
         {
-            var attrs = new Dictionary<string, string>
-            {
-                ["type"] = "checkbox",
-                ["class"] = $"{baseStyle} {stateStyle} {ClassName}".Trim()
-            };
-
-            if (isChecked) attrs["checked"] = "true";
-            if (Disabled) attrs["disabled"] = "true";
-            if (Name != null) attrs["name"] = Name;
-    
-            var events = BuildEvents();
+            var events = new Dictionary<string, Delegate>();
             if (OnChange != null) events["change"] = OnChange;
             
-            return new DynamicElement
+            return new Box
             {
-                TagName = "input",
-                CustomAttributes = attrs,
+                As = "input",
+                Type = "checkbox",
+                ClassName = $"{baseStyle} {stateStyle} {ClassName}".Trim(),
+                Checked = isChecked,
+                Disabled = Disabled,
+                Name = Name,
                 CustomEvents = events
             };
         }
@@ -88,90 +82,69 @@ public class Checkbox : InputComponent<bool>
             var state = isChecked ? "checked" : "unchecked";
 
             // Hidden input
-            var inputAttrs = new Dictionary<string, string>
-            {
-                ["type"] = "checkbox",
-                ["class"] = "eq-sr-only",
-                ["name"] = Name ?? ""
-            };
-            if (isChecked) inputAttrs["checked"] = "true";
-            
-            var richEvents = BuildEvents();
+            var richEvents = new Dictionary<string, Delegate>();
             if (OnChange != null) richEvents["change"] = OnChange;
 
-            var input = new DynamicElement
+            var input = new Box
             {
-                TagName = "input",
-                CustomAttributes = inputAttrs,
+                As = "input",
+                Type = "checkbox",
+                ClassName = "eq-sr-only",
+                Name = Name ?? "",
+                Checked = isChecked,
                 CustomEvents = richEvents
             };
 
-            var button = new DynamicElement
+            var button = new Box
             {
-                TagName = "button",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["type"] = "button",
-                    ["role"] = "checkbox",
-                    ["aria-checked"] = isChecked.ToString().ToLower(),
-                    ["data-state"] = state,
-                    ["class"] = $"{rootStyle} {ClassName}".Trim()
-                },
-                // OnClick handling implies client-side toggle or server event.
-                // Assuming wrapper handles click -> change event.
+                As = "button",
+                Type = "button",
+                Role = "checkbox",
+                ClassName = $"{rootStyle} {ClassName}".Trim(),
+                Disabled = Disabled,
+                DataAttributes = new Dictionary<string, string> { ["state"] = state },
+                AriaChecked = isChecked ? "true" : "false"
             };
-            if (Disabled) button.CustomAttributes["disabled"] = "true";
 
             // Indicator
             if (isChecked)
             {
-                var indicator = new DynamicElement
+                var indicator = new Box
                 {
-                    TagName = "div",
-                    CustomAttributes = new Dictionary<string, string> 
-                    { 
-                        ["class"] = indicatorStyle,
-                        ["data-state"] = state
-                    }
+                    As = "div",
+                    ClassName = indicatorStyle,
+                    DataAttributes = new Dictionary<string, string> { ["state"] = state }
                 };
                 
                 // SVG Checkmark
-                var svg = new DynamicElement { TagName = "svg", CustomAttributes = new Dictionary<string, string> { 
-                    ["xmlns"] = "http://www.w3.org/2000/svg",
-                    ["width"] = "14",
-                    ["height"] = "14",
-                    ["viewBox"] = "0 0 24 24",
-                    ["fill"] = "none",
-                    ["stroke"] = "currentColor",
-                    ["stroke-width"] = "3",
-                    ["stroke-linecap"] = "round",
-                    ["stroke-linejoin"] = "round",
-                    ["class"] = "eq-checkbox-indicator"
-                }};
-                svg.Children.Add(new DynamicElement { TagName = "polyline", CustomAttributes = new Dictionary<string, string> { ["points"] = "20 6 9 17 4 12" } });
+                var svg = new Box { 
+                    As = "svg", 
+                    ClassName = "eq-checkbox-indicator",
+                    CustomAttributes = new Dictionary<string, string> {
+                        ["xmlns"] = "http://www.w3.org/2000/svg",
+                        ["width"] = "14",
+                        ["height"] = "14",
+                        ["viewBox"] = "0 0 24 24",
+                        ["fill"] = "none",
+                        ["stroke"] = "currentColor",
+                        ["stroke-width"] = "3",
+                        ["stroke-linecap"] = "round",
+                        ["stroke-linejoin"] = "round"
+                    }
+                };
+                svg.Children.Add(new Box { As = "polyline", CustomAttributes = new Dictionary<string, string> { ["points"] = "20 6 9 17 4 12" } });
                 
                 indicator.Children.Add(svg);
                 button.Children.Add(indicator);
             }
 
             // Wrapper label to handle click targeting the input
-            var label = new DynamicElement
+            var label = new Box
             {
-                TagName = "label",
-                CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-checkbox-label" },
+                As = "label",
+                ClassName = "eq-checkbox-label",
                 Children = { input, button }
             };
-            
-            // We wrap input outside button because button inside label triggers input? 
-            // Standard pattern: <label> <input class=hidden> <div class=visual> </div> </label>
-            // Here `button` IS the visual.
-            // If I click the label, the input toggles. Use CSS to reflect state on button?
-            // Shadcn uses `peer` on input to style sibling.
-            // My styles use `data-[state=checked]`.
-            // If I rely on `peer`, I don't need `button` to have data-state.
-            // BUT Shadcn's Checkbox IS a button (primitive).
-            // Let's stick to the button being the visual representation controlled by JS or State.
-            // Since this is server-rendered primarily, `Value` determines styling.
             
             return label;
         }

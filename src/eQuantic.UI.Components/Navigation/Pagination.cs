@@ -56,24 +56,18 @@ public class Pagination : StatelessComponent
         var disabledClass = paginationTheme?.Disabled ?? "eq-pagination-disabled";
         var ellipsisClass = paginationTheme?.Ellipsis ?? "eq-pagination-ellipsis";
 
-        var nav = new DynamicElement
+        var nav = new Box
         {
-            TagName = "nav",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"{containerClass} {ClassName}".Trim(),
-                ["role"] = "navigation",
-                ["aria-label"] = AriaLabel
-            }
+            As = "nav",
+            ClassName = $"{containerClass} {ClassName}".Trim(),
+            Role = "navigation",
+            AriaLabel = AriaLabel
         };
 
-        var list = new DynamicElement
+        var list = new Box
         {
-            TagName = "ul",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = listClass
-            }
+            As = "ul",
+            ClassName = listClass
         };
 
         // Previous button
@@ -96,18 +90,15 @@ public class Pagination : StatelessComponent
             if (page == -1)
             {
                 // Ellipsis
-                list.Children.Add(new DynamicElement
+                list.Children.Add(new Box
                 {
-                    TagName = "li",
+                    As = "li",
                     Children = {
-                        new DynamicElement
+                        new Box
                         {
-                            TagName = "span",
-                            CustomAttributes = new Dictionary<string, string>
-                            {
-                                ["class"] = ellipsisClass,
-                                ["aria-hidden"] = "true"
-                            },
+                            As = "span",
+                            ClassName = ellipsisClass,
+                            AriaHidden = true,
                             Children = { new Text("…") }
                         }
                     }
@@ -118,21 +109,16 @@ public class Pagination : StatelessComponent
                 var isActive = page == CurrentPage;
                 var pageClass = isActive ? $"{itemClass} {activeClass}" : itemClass;
 
-                var attrs = new Dictionary<string, string>
+                list.Children.Add(new Box
                 {
-                    ["class"] = pageClass,
-                    ["type"] = "button"
-                };
-                if (isActive) attrs["aria-current"] = "page";
-
-                list.Children.Add(new DynamicElement
-                {
-                    TagName = "li",
+                    As = "li",
                     Children = {
-                        new DynamicElement
+                        new Box
                         {
-                            TagName = "button",
-                            CustomAttributes = attrs,
+                            As = "button",
+                            ClassName = pageClass,
+                            Type = "button",
+                            AriaCurrent = isActive ? "page" : null,
                             Children = { new Text(page.ToString()) }
                         }
                     }
@@ -157,31 +143,27 @@ public class Pagination : StatelessComponent
         return nav;
     }
 
-    private DynamicElement CreateNavItem(string text, string cssClass, bool disabled, string rel, string ariaLabel)
+    private Box CreateNavItem(string text, string cssClass, bool disabled, string rel, string ariaLabel)
     {
-        var attrs = new Dictionary<string, string>
+        var btn = new Box
         {
-            ["class"] = cssClass,
-            ["type"] = "button",
-            ["aria-label"] = ariaLabel
+            As = "button",
+            ClassName = cssClass,
+            Type = "button",
+            AriaLabel = ariaLabel,
+            Children = { new Text(text) }
         };
+
         if (disabled)
         {
-            attrs["disabled"] = "true";
-            attrs["aria-disabled"] = "true";
+            btn.Disabled = true;
+            btn.AriaDisabled = true;
         }
 
-        return new DynamicElement
+        return new Box
         {
-            TagName = "li",
-            Children = {
-                new DynamicElement
-                {
-                    TagName = "button",
-                    CustomAttributes = attrs,
-                    Children = { new Text(text) }
-                }
-            }
+            As = "li",
+            Children = { btn }
         };
     }
 

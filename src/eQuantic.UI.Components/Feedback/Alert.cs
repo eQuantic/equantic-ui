@@ -19,14 +19,11 @@ public class Alert : StatelessComponent
         var baseStyle = alertTheme?.Base ?? "eq-alert";
         var variantStyle = alertTheme?.GetVariant(Variant) ?? $"eq-alert-{Variant.ToString().ToLowerInvariant()}";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["role"] = "alert",
-                ["class"] = $"{baseStyle} {variantStyle} {ClassName}".Trim()
-            }
+            As = "div",
+            Role = "alert",
+            ClassName = $"{baseStyle} {variantStyle} {ClassName}".Trim()
         };
 
         foreach(var child in Children) element.Children.Add(child);
@@ -46,13 +43,10 @@ public class AlertTitle : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var style = theme?.Alert.Title ?? "eq-alert-title";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "h5",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"{style} {ClassName}".Trim()
-            }
+            As = "h5",
+            ClassName = $"{style} {ClassName}".Trim()
         };
 
         if (!string.IsNullOrEmpty(Text))
@@ -77,13 +71,10 @@ public class AlertDescription : StatelessComponent
         var theme = context.GetService<Core.Theme.IAppTheme>();
         var style = theme?.Alert.Description ?? "eq-alert-description";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"{style} {ClassName}".Trim()
-            }
+            As = "div",
+            ClassName = $"{style} {ClassName}".Trim()
         };
 
         if (!string.IsNullOrEmpty(Text))

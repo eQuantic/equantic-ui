@@ -20,14 +20,11 @@ public class ButtonGroup : StatelessComponent
             ? "eq-btn-group-vertical"
             : "eq-btn-group";
 
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"{orientationClass} {ClassName}".Trim(),
-                ["role"] = "group"
-            }
+            As = "div",
+            ClassName = $"{orientationClass} {ClassName}".Trim(),
+            Role = "group"
         };
 
         foreach (var child in Children)

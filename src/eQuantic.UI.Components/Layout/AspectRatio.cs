@@ -16,24 +16,16 @@ public class AspectRatio : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var padding = (1.0 / Ratio) * 100.0;
-
-        return new DynamicElement
+        return new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"eq-aspect-ratio {ClassName}".Trim(),
-                ["style"] = $"position:relative;width:100%;padding-bottom:{padding:F4}%"
-            },
+            As = "div",
+            ClassName = $"eq-aspect-ratio {ClassName}".Trim(),
+            Style = new HtmlStyle($"position: relative; width: 100%; padding-bottom: {100 / Ratio}%;"),
             Children = {
-                new DynamicElement
+                new Box
                 {
-                    TagName = "div",
-                    CustomAttributes = new Dictionary<string, string>
-                    {
-                        ["style"] = "position:absolute;inset:0"
-                    },
+                    As = "div",
+                    Style = new HtmlStyle("position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%;"),
                     Children = { BuildChildren(context) }
                 }
             }
@@ -44,7 +36,7 @@ public class AspectRatio : StatelessComponent
     {
         if (Children.Count == 1) return Children[0];
 
-        var wrapper = new DynamicElement { TagName = "div" };
+        var wrapper = new Box { As = "div" };
         foreach (var child in Children) wrapper.Children.Add(child);
         return wrapper;
     }

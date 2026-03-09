@@ -33,20 +33,15 @@ public class Heading : StatelessComponent
         var theme = context.GetService<IAppTheme>();
         var textTheme = theme?.Typography;
         
-        var attrs = new Dictionary<string, string>
+        return new Box
         {
-            ["class"] = StyleBuilder.Create(textTheme?.Base)
+            As = "h" + Level,
+            ClassName = StyleBuilder.Create(textTheme?.Base)
                             .Add(textTheme?.GetHeading(Level))
                             .Add(ClassName)
-                            .Build()
-        };
-
-        return new DynamicElement
-        {
-            TagName = "h" + Level,
-            InnerText = Content,
-            CustomAttributes = attrs,
-            CustomEvents = BuildEvents()
+                            .Build(),
+            CustomEvents = BuildEvents(),
+            Children = { new Text(Content) }
         };
     }
 }

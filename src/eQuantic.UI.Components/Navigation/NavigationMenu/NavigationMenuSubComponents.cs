@@ -8,9 +8,9 @@ public class NavigationMenuItem : StatelessComponent
 {
     public override IComponent Build(RenderContext context)
     {
-        var li = new DynamicElement
+        var li = new Box
         {
-            TagName = "li",
+            As = "li",
             ClassName = $"relative {ClassName}".Trim()
         };
         foreach (var child in Children) li.Children.Add(child);
@@ -24,11 +24,11 @@ public class NavigationMenuTrigger : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var trigger = new DynamicElement
+        var trigger = new Box
         {
-            TagName = "button",
+            As = "button",
             ClassName = $"group inline-flex h-10 w-max items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus:bg-zinc-100 focus:text-zinc-900 focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-zinc-100/50 data-[state=open]:bg-zinc-100/50 dark:bg-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50 dark:data-[active]:bg-zinc-800/50 dark:data-[state=open]:bg-zinc-800/50 {ClassName}".Trim(),
-            CustomAttributes = { ["data-state"] = "closed" } // Runtime handles state
+            DataAttributes = new Dictionary<string, string> { ["state"] = "closed" } // Runtime handles state
         };
 
         trigger.Children.Add(new Text(Text));

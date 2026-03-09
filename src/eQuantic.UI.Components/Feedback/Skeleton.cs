@@ -27,15 +27,12 @@ public class Skeleton : StatelessComponent
     {
         var circleClass = Circle ? "eq-skeleton-circle" : "";
 
-        return new DynamicElement
+        return new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"eq-skeleton {circleClass} {ClassName}".Trim(),
-                ["style"] = $"width:{Width};height:{Height}",
-                ["aria-hidden"] = "true"
-            }
+            As = "div",
+            ClassName = $"eq-skeleton {circleClass} {ClassName}".Trim(),
+            Style = Style != null ? new HtmlStyle(Style.ToString() + $";width:{Width};height:{Height}") : new HtmlStyle($"width:{Width};height:{Height}"),
+            AriaHidden = true
         };
     }
 }

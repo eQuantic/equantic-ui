@@ -21,30 +21,23 @@ public class Switch : Checkbox
         {
             var checkboxTheme = theme?.Checkbox;
             var baseStyle = checkboxTheme?.Base ?? "eq-checkbox";
-            var attrs = new Dictionary<string, string>
-            {
-                ["type"] = "checkbox",
-                ["class"] = $"{baseStyle} {ClassName}".Trim()
-            };
-            if (Value) attrs["checked"] = "true";
-            if (Disabled) attrs["disabled"] = "true";
-            if (Name != null) attrs["name"] = Name;
-            
             var events = BuildEvents();
             if (OnChange != null) events["change"] = OnChange;
 
-            var input = new DynamicElement
+            var input = new Box
             {
-                TagName = "input",
-                CustomAttributes = attrs,
+                As = "input",
+                Type = "checkbox",
+                ClassName = $"{baseStyle} {ClassName}".Trim(),
+                Checked = Value,
+                Disabled = Disabled,
+                Name = Name,
                 CustomEvents = events
             };
             
             if (Label != null)
             {
-                 var label = new DynamicElement { TagName = "label", CustomAttributes = new Dictionary<string, string> { ["class"] = "eq-switch-label" } };
-                 label.Children.Add(input);
-                 label.Children.Add(new Text(Label));
+                 var label = new Box { As = "label", ClassName = "eq-switch-label", Children = { input, new Text(Label) } };
                  return label;
             }
             return input;
@@ -54,49 +47,36 @@ public class Switch : Checkbox
         var thumbStyle = switchTheme?.Thumb ?? "eq-switch-thumb";
         
         // Hidden input for form submission
-        var inputAttrs = new Dictionary<string, string>
-        {
-            ["type"] = "checkbox",
-            ["role"] = "switch",
-            ["aria-checked"] = Value ? "true" : "false",
-            ["class"] = "eq-sr-only", 
-            ["name"] = Name ?? ""
-        };
-        if (Value) inputAttrs["checked"] = "true";
-        if (Disabled) inputAttrs["disabled"] = "true";
-        
         var richEvents = BuildEvents();
         if (OnChange != null) richEvents["change"] = OnChange;
 
-        var inputElement = new DynamicElement
+        var inputElement = new Box
         {
-            TagName = "input",
-            CustomAttributes = inputAttrs,
+            As = "input",
+            Type = "checkbox",
+            Role = "switch",
+            ClassName = "eq-sr-only",
+            Name = Name ?? "",
+            Checked = Value,
+            Disabled = Disabled,
+            AriaChecked = Value ? "true" : "false",
             CustomEvents = richEvents
         };
         
-        var thumbElement = new DynamicElement
+        var thumbElement = new Box
         {
-            TagName = "span",
-            CustomAttributes = new Dictionary<string, string> 
-            { 
-                ["class"] = thumbStyle,
-                ["data-state"] = state
-            }
+            As = "span",
+            ClassName = thumbStyle,
+            DataAttributes = new Dictionary<string, string> { ["state"] = state }
         };
 
-        var container = new DynamicElement
+        var container = new Box
         {
-            TagName = "label", // Use label to trigger input click
-            CustomAttributes = new Dictionary<string, string> 
-            { 
-                ["class"] = $"{rootStyle} {ClassName}".Trim(),
-                ["data-state"] = state
-            }
+            As = "label", // Use label to trigger input click
+            ClassName = $"{rootStyle} {ClassName}".Trim(),
+            DataAttributes = new Dictionary<string, string> { ["state"] = state },
+            Children = { inputElement, thumbElement }
         };
-        
-        container.Children.Add(inputElement);
-        container.Children.Add(thumbElement);
         
         if (Label != null)
         {

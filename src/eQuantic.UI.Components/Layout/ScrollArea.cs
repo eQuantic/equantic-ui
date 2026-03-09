@@ -56,26 +56,20 @@ public class ScrollArea : StatelessComponent
         };
         styles.Add(overflowStyle);
 
-        var root = new DynamicElement
+        var root = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"{rootClass} {ClassName}".Trim(),
-                ["data-orientation"] = ScrollOrientation.ToString().ToLowerInvariant()
-            }
+            As = "div",
+            ClassName = $"{rootClass} {ClassName}".Trim(),
+            DataAttributes = new Dictionary<string, string> { ["orientation"] = ScrollOrientation.ToString().ToLowerInvariant() }
         };
 
         // Viewport
-        var viewport = new DynamicElement
+        var viewport = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = viewportClass,
-                ["style"] = string.Join(";", styles),
-                ["tabindex"] = "0"
-            }
+            As = "div",
+            ClassName = viewportClass,
+            Style = new HtmlStyle(string.Join(";", styles)),
+            TabIndex = 0
         };
 
         foreach (var child in Children) viewport.Children.Add(child);
@@ -85,22 +79,16 @@ public class ScrollArea : StatelessComponent
         // Vertical scrollbar indicator
         if (ScrollOrientation != ScrollOrientation.Horizontal)
         {
-            root.Children.Add(new DynamicElement
+            root.Children.Add(new Box
             {
-                TagName = "div",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["class"] = $"{scrollbarClass} eq-scrollbar-vertical",
-                    ["data-orientation"] = "vertical"
-                },
+                As = "div",
+                ClassName = $"{scrollbarClass} eq-scrollbar-vertical",
+                DataAttributes = new Dictionary<string, string> { ["orientation"] = "vertical" },
                 Children = {
-                    new DynamicElement
+                    new Box
                     {
-                        TagName = "div",
-                        CustomAttributes = new Dictionary<string, string>
-                        {
-                            ["class"] = thumbClass
-                        }
+                        As = "div",
+                        ClassName = thumbClass
                     }
                 }
             });
@@ -109,22 +97,16 @@ public class ScrollArea : StatelessComponent
         // Horizontal scrollbar indicator
         if (ScrollOrientation != ScrollOrientation.Vertical)
         {
-            root.Children.Add(new DynamicElement
+            root.Children.Add(new Box
             {
-                TagName = "div",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["class"] = $"{scrollbarClass} eq-scrollbar-horizontal",
-                    ["data-orientation"] = "horizontal"
-                },
+                As = "div",
+                ClassName = $"{scrollbarClass} eq-scrollbar-horizontal",
+                DataAttributes = new Dictionary<string, string> { ["orientation"] = "horizontal" },
                 Children = {
-                    new DynamicElement
+                    new Box
                     {
-                        TagName = "div",
-                        CustomAttributes = new Dictionary<string, string>
-                        {
-                            ["class"] = thumbClass
-                        }
+                        As = "div",
+                        ClassName = thumbClass
                     }
                 }
             });

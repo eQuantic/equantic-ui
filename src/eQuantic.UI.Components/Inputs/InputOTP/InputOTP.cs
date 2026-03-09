@@ -62,20 +62,20 @@ public class InputOTP : StatelessComponent
         var paddedValue = (Value ?? "").PadRight(Length);
         var id = Id ?? $"otp-{Guid.NewGuid():N}";
 
-        var container = new DynamicElement
+        var container = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
+            As = "div",
+            ClassName = $"{containerClass} {ClassName}".Trim(),
+            Role = "group",
+            AriaLabel = AriaLabel,
+            DataAttributes = new Dictionary<string, string>
             {
-                ["class"] = $"{containerClass} {ClassName}".Trim(),
-                ["role"] = "group",
-                ["aria-label"] = AriaLabel,
-                ["data-otp-id"] = id,
-                ["data-otp-length"] = Length.ToString()
+                ["otp-id"] = id,
+                ["otp-length"] = Length.ToString()
             }
         };
 
-        if (Disabled) container.CustomAttributes["data-disabled"] = "true";
+        if (Disabled) container.DataAttributes["disabled"] = "true";
 
         // Hidden input for form submission
         var hiddenAttrs = new Dictionary<string, string>
@@ -84,10 +84,12 @@ public class InputOTP : StatelessComponent
             ["value"] = Value ?? ""
         };
         if (!string.IsNullOrEmpty(Name)) hiddenAttrs["name"] = Name;
-        container.Children.Add(new DynamicElement
+        container.Children.Add(new Box
         {
-            TagName = "input",
-            CustomAttributes = hiddenAttrs
+            As = "input",
+            Type = "hidden",
+            Value = Value ?? "",
+            Name = Name
         });
 
         if (Children.Any())
@@ -156,14 +158,11 @@ public class InputOTPGroup : StatelessComponent
     {
         var groupClass = OTPTheme?.Group ?? "eq-otp-group";
 
-        var group = new DynamicElement
+        var group = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = groupClass,
-                ["role"] = "group"
-            }
+            As = "div",
+            ClassName = groupClass,
+            Role = "group"
         };
 
         for (var i = 0; i < Slots; i++)
@@ -181,57 +180,40 @@ public class InputOTPGroup : StatelessComponent
                 slotClass = $"{slotClass} {activeClass}";
             }
 
-            var slotAttrs = new Dictionary<string, string>
-            {
-                ["class"] = slotClass,
-                ["data-slot-index"] = index.ToString()
-            };
+            var slot = new Box
+        {
+            As = "div",
+            ClassName = slotClass,
+            DataAttributes = new Dictionary<string, string> { ["slot-index"] = index.ToString() }
+        };
 
-            var slot = new DynamicElement
+            slot.Children.Add(new Box
             {
-                TagName = "div",
-                CustomAttributes = slotAttrs
-            };
-
-            // Individual input for each slot
-            var inputAttrs = new Dictionary<string, string>
-            {
-                ["type"] = "text",
-                ["inputmode"] = "numeric",
-                ["pattern"] = Pattern,
-                ["maxlength"] = "1",
-                ["value"] = displayValue,
-                ["class"] = "eq-otp-input",
-                ["autocomplete"] = "one-time-code",
-                ["aria-label"] = $"Digit {index + 1}"
-            };
-            if (Disabled) inputAttrs["disabled"] = "true";
-
-            slot.Children.Add(new DynamicElement
-            {
-                TagName = "input",
-                CustomAttributes = inputAttrs
+                As = "input",
+                Type = "text",
+                ClassName = "eq-otp-input",
+                Value = displayValue,
+                Disabled = Disabled,
+                InputMode = "numeric",
+                Pattern = Pattern,
+                MaxLength = 1,
+                Autocomplete = "one-time-code",
+                AriaLabel = $"Digit {index + 1}"
             });
 
             // Caret indicator for active slot
             if (isActive && !Disabled)
             {
                 var caretClass = OTPTheme?.Caret ?? "eq-otp-caret";
-                slot.Children.Add(new DynamicElement
+                slot.Children.Add(new Box
                 {
-                    TagName = "div",
-                    CustomAttributes = new Dictionary<string, string>
-                    {
-                        ["class"] = caretClass
-                    },
+                    As = "div",
+                    ClassName = caretClass,
                     Children = {
-                        new DynamicElement
+                        new Box
                         {
-                            TagName = "div",
-                            CustomAttributes = new Dictionary<string, string>
-                            {
-                                ["class"] = "eq-otp-caret-line"
-                            }
+                            As = "div",
+                            ClassName = "eq-otp-caret-line"
                         }
                     }
                 });
@@ -255,15 +237,12 @@ public class InputOTPSeparator : StatelessComponent
     {
         var separatorClass = OTPTheme?.Separator ?? "eq-otp-separator";
 
-        return new DynamicElement
+        return new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = separatorClass,
-                ["role"] = "separator",
-                ["aria-orientation"] = "vertical"
-            },
+            As = "div",
+            ClassName = separatorClass,
+            Role = "separator",
+            AriaOrientation = "vertical",
             Children = { new Text("–") }
         };
     }

@@ -18,13 +18,10 @@ public class Kbd : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var element = new DynamicElement
+        var element = new Box
         {
-            TagName = "kbd",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"eq-kbd {ClassName}".Trim()
-            }
+            As = "kbd",
+            ClassName = $"eq-kbd {ClassName}".Trim()
         };
 
         if (Children.Count > 0)

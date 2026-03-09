@@ -33,11 +33,19 @@ public class RadioGroup : InputComponent<string>
             attrs["style"] = style.ToCssString();
         }
 
-        var container = new DynamicElement
+        var container = new Box
         {
-            TagName = "div",
-            CustomAttributes = attrs
+            As = "div",
+            Style = style,
+            ClassName = ClassName,
+            Id = Id,
+            AriaOrientation = (Direction == FlexDirection.Row || Direction == FlexDirection.RowReverse) ? "horizontal" : "vertical"
         };
+        
+        // Pass ARIA/Data attributes from base
+        if (Role != null) container.Role = Role;
+        container.DataAttributes = DataAttributes;
+        container.AriaHidden = AriaHidden;
         
         if (Options.Any())
         {

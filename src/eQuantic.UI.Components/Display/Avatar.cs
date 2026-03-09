@@ -23,34 +23,28 @@ public class Avatar : StatelessComponent
         // Get size from theme
         var sizeClass = avatarTheme?.GetSize(Size) ?? $"eq-avatar-{Size.ToString().ToLowerInvariant()}";
 
-        var rootElement = new DynamicElement
+        var rootElement = new Box
         {
-            TagName = "div",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["class"] = $"{rootStyle} {sizeClass} {ClassName}".Trim()
-            }
+            As = "div",
+            ClassName = $"{rootStyle} {sizeClass} {ClassName}".Trim()
         };
 
         if (ImageUrl != null)
         {
-            rootElement.Children.Add(new DynamicElement
+            rootElement.Children.Add(new Box
             {
-                TagName = "img",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["src"] = ImageUrl,
-                    ["alt"] = AltText ?? "Avatar",
-                    ["class"] = imageStyle
-                }
+                As = "img",
+                Src = ImageUrl,
+                Alt = AltText ?? "Avatar",
+                ClassName = imageStyle
             });
         }
         else
         {
-            rootElement.Children.Add(new DynamicElement
+            rootElement.Children.Add(new Box
             {
-                TagName = "div",
-                CustomAttributes = new Dictionary<string, string> { ["class"] = fallbackStyle },
+                As = "div",
+                ClassName = fallbackStyle,
                 Children = { new Text(Initials ?? "?") }
             });
         }
