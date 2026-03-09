@@ -31,7 +31,7 @@ public class Skeleton : StatelessComponent
         {
             As = "div",
             ClassName = $"eq-skeleton {circleClass} {ClassName}".Trim(),
-            Style = Style != null ? new HtmlStyle(Style.ToString() + $";width:{Width};height:{Height}") : new HtmlStyle($"width:{Width};height:{Height}"),
+            Style = Style != null ? new HtmlStyle { Width = Width, Height = Height } : new HtmlStyle { Width = Width, Height = Height },
             AriaHidden = true
         };
     }

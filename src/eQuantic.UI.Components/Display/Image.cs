@@ -181,38 +181,40 @@ public class Image : StatelessComponent
             if (!string.IsNullOrEmpty(Sizes)) attributes["sizes"] = Sizes;
         }
 
-        var styleList = new List<string>();
+        var style = new HtmlStyle();
         var classList = new List<string> { "equantic-image" };
         if (!string.IsNullOrEmpty(ClassName)) classList.Add(ClassName);
 
         if (Fill)
         {
             classList.Add("absolute inset-0 w-full h-full");
-            Style = new HtmlStyle("width: 100%; height: 100%; object-fit: cover; border-radius: inherit;");
-            if (!string.IsNullOrEmpty(ObjectPosition)) styleList.Add($"object-position: {ObjectPosition}");
+            style.Width = "100%";
+            style.Height = "100%";
+            style.ObjectFit = "cover";
+            style.BorderRadius = "inherit";
+            if (!string.IsNullOrEmpty(ObjectPosition)) style.ObjectPosition = ObjectPosition;
         }
         else
         {
             if (Width.HasValue) attributes["width"] = Width.Value.ToString();
             if (Height.HasValue) attributes["height"] = Height.Value.ToString();
             
-            styleList.Add("color: transparent"); // Hide Alt text during load if possible
+            style.Color = "transparent"; // Hide Alt text during load if possible
         }
 
         // Handle Blur Placeholder
         if (Placeholder == ImagePlaceholder.Blur && !string.IsNullOrEmpty(BlurDataURL))
         {
-            styleList.Add($"background-image: url(\"{BlurDataURL}\")");
-            styleList.Add("background-size: cover");
-            styleList.Add("background-position: center");
-            styleList.Add("filter: blur(20px)");
-            styleList.Add("transition: filter 0.3s ease-out");
+            style.BackgroundImage = $"url(\"{BlurDataURL}\")";
+            style.BackgroundSize = "cover";
+            style.BackgroundPosition = "center";
+            style.Filter = "blur(20px)";
+            style.Transition = "filter 0.3s ease-out";
             
             // Script to remove blur once loaded
             attributes["onload"] = "this.style.filter='none'";
         }
 
-        if (styleList.Count > 0) attributes["style"] = string.Join("; ", styleList);
         attributes["class"] = string.Join(" ", classList);
 
         var img = new Box
@@ -227,7 +229,7 @@ public class Image : StatelessComponent
             Sizes = attributes.GetValueOrDefault("sizes"),
             Width = attributes.GetValueOrDefault("width"),
             Height = attributes.GetValueOrDefault("height"),
-            Style = attributes.ContainsKey("style") ? new HtmlStyle(attributes["style"]) : null,
+            Style = style,
             ClassName = attributes.GetValueOrDefault("class")
         };
         

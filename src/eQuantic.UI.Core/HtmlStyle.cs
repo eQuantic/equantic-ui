@@ -7,15 +7,6 @@ namespace eQuantic.UI.Core;
 /// </summary>
 public class HtmlStyle
 {
-    public string? Raw { get; set; }
-
-    public HtmlStyle() { }
-
-    public HtmlStyle(string raw)
-    {
-        Raw = raw;
-    }
-
     #region Layout
 
     public Display? Display { get; set; }
@@ -85,6 +76,9 @@ public class HtmlStyle
     public string? Background { get; set; }
     public string? BackgroundColor { get; set; }
     public string? BackgroundImage { get; set; }
+    public string? BackgroundSize { get; set; }
+    public string? BackgroundPosition { get; set; }
+    public string? Filter { get; set; }
 
     #endregion
 
@@ -97,6 +91,9 @@ public class HtmlStyle
     public string? BorderRadius { get; set; }
 
     #endregion
+
+    public string? ObjectFit { get; set; }
+    public string? ObjectPosition { get; set; }
 
     #region Typography
 
@@ -180,12 +177,18 @@ public class HtmlStyle
         AddProperty(properties, "background", Background);
         AddProperty(properties, "background-color", BackgroundColor);
         AddProperty(properties, "background-image", BackgroundImage);
+        AddProperty(properties, "background-size", BackgroundSize);
+        AddProperty(properties, "background-position", BackgroundPosition);
+        AddProperty(properties, "filter", Filter);
 
         AddProperty(properties, "border", Border);
         AddProperty(properties, "border-width", BorderWidth);
         AddProperty(properties, "border-style", BorderStyle);
         AddProperty(properties, "border-color", BorderColor);
         AddProperty(properties, "border-radius", BorderRadius);
+
+        AddProperty(properties, "object-fit", ObjectFit);
+        AddProperty(properties, "object-position", ObjectPosition);
 
         AddProperty(properties, "color", Color);
         AddProperty(properties, "font-family", FontFamily);
@@ -207,12 +210,6 @@ public class HtmlStyle
         AddProperty(properties, "transition", Transition);
         AddProperty(properties, "transform", Transform);
 
-        if (!string.IsNullOrEmpty(Raw))
-        {
-            var rawCss = Raw.Trim();
-            if (rawCss.EndsWith(";")) rawCss = rawCss.Substring(0, rawCss.Length - 1);
-            properties.Add(rawCss);
-        }
 
         return string.Join("; ", properties);
     }

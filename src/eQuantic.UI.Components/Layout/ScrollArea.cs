@@ -42,19 +42,19 @@ public class ScrollArea : StatelessComponent
         var thumbClass = scrollTheme?.Thumb ?? "eq-scrollbar-thumb";
 
         // Build style
-        var styles = new List<string>();
-        if (ScrollOrientation == ScrollOrientation.Vertical || ScrollOrientation == ScrollOrientation.Both)
-            styles.Add($"max-height:{MaxHeight}");
-        if (MaxWidth != null && (ScrollOrientation == ScrollOrientation.Horizontal || ScrollOrientation == ScrollOrientation.Both))
-            styles.Add($"max-width:{MaxWidth}");
-
-        var overflowStyle = ScrollOrientation switch
+        var overflowStyleX = ScrollOrientation switch
         {
-            ScrollOrientation.Horizontal => "overflow-x:auto;overflow-y:hidden",
-            ScrollOrientation.Both => "overflow:auto",
-            _ => "overflow-y:auto;overflow-x:hidden"
+            ScrollOrientation.Horizontal => "auto",
+            ScrollOrientation.Vertical => "hidden",
+            _ => "auto"
         };
-        styles.Add(overflowStyle);
+        
+        var overflowStyleY = ScrollOrientation switch
+        {
+            ScrollOrientation.Horizontal => "hidden",
+            ScrollOrientation.Vertical => "auto",
+            _ => "auto"
+        };
 
         var root = new Box
         {
@@ -68,7 +68,7 @@ public class ScrollArea : StatelessComponent
         {
             As = "div",
             ClassName = viewportClass,
-            Style = new HtmlStyle(string.Join(";", styles)),
+            Style = new HtmlStyle { Width = "100%", Height = "100%", Position = eQuantic.UI.Core.Position.Relative, OverflowX = overflowStyleX, OverflowY = overflowStyleY },
             TabIndex = 0
         };
 

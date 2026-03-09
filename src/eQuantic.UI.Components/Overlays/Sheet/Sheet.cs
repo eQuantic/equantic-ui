@@ -120,7 +120,7 @@ public class SheetContent : SheetSubComponent
         {
             As = "div",
             ClassName = $"eq-sheet-content {sideClass}".Trim(),
-            Style = new HtmlStyle($"z-index: 50"),
+            Style = new HtmlStyle { ZIndex = "50" },
             AriaModal = true,
             TabIndex = -1,
             DataAttributes = new Dictionary<string, string> { ["state"] = "open" }
@@ -129,7 +129,7 @@ public class SheetContent : SheetSubComponent
         if (!string.IsNullOrEmpty(SheetParent?.Width) &&
             (side == SheetSide.Left || side == SheetSide.Right))
         {
-            panel.Style = new HtmlStyle($"width:{SheetParent.Width}");
+            panel.Style = new HtmlStyle { Width = SheetParent.Width };
         }
 
         // Close button

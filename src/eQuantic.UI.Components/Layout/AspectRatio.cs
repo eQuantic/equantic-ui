@@ -20,12 +20,12 @@ public class AspectRatio : StatelessComponent
         {
             As = "div",
             ClassName = $"eq-aspect-ratio {ClassName}".Trim(),
-            Style = new HtmlStyle($"position: relative; width: 100%; padding-bottom: {100 / Ratio}%;"),
+            Style = new HtmlStyle { Position = eQuantic.UI.Core.Position.Relative, Width = "100%", PaddingBottom = $"{100 / Ratio}%" },
             Children = {
                 new Box
                 {
                     As = "div",
-                    Style = new HtmlStyle("position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%;"),
+                    Style = new HtmlStyle { Position = eQuantic.UI.Core.Position.Absolute, Top = "0", Right = "0", Bottom = "0", Left = "0", Width = "100%", Height = "100%" },
                     Children = { BuildChildren(context) }
                 }
             }
