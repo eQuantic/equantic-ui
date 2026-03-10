@@ -78,7 +78,7 @@ public class CodeBlock : StatelessComponent, IRequireAssets
                 As = "button",
                 Id = $"btn-{id}",
                 ClassName = "absolute top-2 right-2 opacity-0 group-hover:opacity-100 px-2 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-200/50 dark:bg-zinc-800/50 hover:bg-zinc-300 dark:hover:bg-zinc-700 border border-zinc-300/50 dark:border-zinc-700/50 rounded transition-all backdrop-blur-sm z-10",
-                CustomAttributes = new Dictionary<string, string> { ["onclick"] = $"copyToClipboard('{id}')" },
+                OnClientClick = $"copyToClipboard('{id}')",
                 Children = { new Text("Copy") }
             },
             
@@ -108,7 +108,7 @@ public class CodeBlock : StatelessComponent, IRequireAssets
                 As = "button",
                 Id = $"expand-{id}",
                 ClassName = "w-full py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-100/80 dark:bg-zinc-900/80 hover:bg-zinc-200 dark:hover:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-800 transition-colors rounded-b-lg",
-                CustomAttributes = new Dictionary<string, string> { ["onclick"] = $"toggleCodeBlock('{id}')" },
+                OnClientClick = $"toggleCodeBlock('{id}')",
                 Children = { new Text("Expand Code") }
             });
         }

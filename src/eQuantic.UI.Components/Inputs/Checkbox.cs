@@ -117,22 +117,18 @@ public class Checkbox : InputComponent<bool>
                 };
                 
                 // SVG Checkmark
-                var svg = new Box { 
-                    As = "svg", 
+                var svg = new SvgElement { 
                     ClassName = "eq-checkbox-indicator",
-                    CustomAttributes = new Dictionary<string, string> {
-                        ["xmlns"] = "http://www.w3.org/2000/svg",
-                        ["width"] = "14",
-                        ["height"] = "14",
-                        ["viewBox"] = "0 0 24 24",
-                        ["fill"] = "none",
-                        ["stroke"] = "currentColor",
-                        ["stroke-width"] = "3",
-                        ["stroke-linecap"] = "round",
-                        ["stroke-linejoin"] = "round"
-                    }
+                    Width = "14",
+                    Height = "14",
+                    ViewBox = "0 0 24 24",
+                    Fill = "none",
+                    Stroke = "currentColor",
+                    StrokeWidth = "3",
+                    StrokeLinecap = "round",
+                    StrokeLinejoin = "round"
                 };
-                svg.Children.Add(new Box { As = "polyline", CustomAttributes = new Dictionary<string, string> { ["points"] = "20 6 9 17 4 12" } });
+                svg.Children.Add(new SvgElement { As = "polyline", Points = "20 6 9 17 4 12" });
                 
                 indicator.Children.Add(svg);
                 button.Children.Add(indicator);

@@ -197,11 +197,10 @@ public abstract class HtmlElement : IComponent
     public string? Decoding { get; set; }
     public string? FetchPriority { get; set; }
     
-    // Inline JavaScript Events
     public string? OnLoad { get; set; }
+    public string? OnClientClick { get; set; }
 
     public string? InnerHtml { get; set; }
-    public Dictionary<string, string> CustomAttributes { get; set; } = new();
 
     /// <summary>
     /// Custom JavaScript-style event handlers.
@@ -325,10 +324,8 @@ public abstract class HtmlElement : IComponent
             }
         }
 
-        foreach (var attr in CustomAttributes)
-        {
-            attrs[attr.Key] = attr.Value;
-        }
+        if (OnLoad != null) attrs["onload"] = OnLoad;
+        if (OnClientClick != null) attrs["onclick"] = OnClientClick;
 
         // Global HTML
         if (AccessKey != null) attrs["accesskey"] = AccessKey;
