@@ -17,12 +17,21 @@ public class Box : HtmlElement
     /// <inheritdoc />
     public override HtmlNode Render()
     {
+        var children = Children.Select(c => c.Render()).ToList();
+
+        // Textual content (set e.g. by the Text component). Rendered as an
+        // escaped #text node so user-provided strings are never treated as raw HTML.
+        if (!string.IsNullOrEmpty(InnerHtml))
+        {
+            children.Insert(0, HtmlNode.Text(InnerHtml));
+        }
+
         return new HtmlNode
         {
             Tag = As,
             Attributes = BuildAttributes(),
             Events = BuildEvents(),
-            Children = Children.Select(c => c.Render()).ToList()
+            Children = children
         };
     }
 }

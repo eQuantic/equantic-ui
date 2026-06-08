@@ -216,12 +216,13 @@ public class HtmlStyle
 
     private static void AddProperty(List<string> properties, string name, object? value)
     {
-        if (value != null)
-        {
-            var cssValue = value.ToString()!.ToLowerInvariant();
+        if (value == null) return;
 
-            // Fix generic enum replacements
-            cssValue = cssValue
+        string cssValue;
+        if (value is Enum)
+        {
+            // Enum member names (e.g. SpaceBetween) map to lowercase, hyphenated CSS keywords.
+            cssValue = value.ToString()!.ToLowerInvariant()
                 .Replace("flexstart", "flex-start")
                 .Replace("flexend", "flex-end")
                 .Replace("inlineblock", "inline-block")
@@ -232,11 +233,17 @@ public class HtmlStyle
                 .Replace("spaceevenly", "space-evenly")
                 .Replace("rowreverse", "row-reverse")
                 .Replace("columnreverse", "column-reverse")
+                .Replace("wrapreverse", "wrap-reverse")
                 .Replace("rowdense", "row dense")
-                .Replace("columndense", "column dense")
-                .Replace("nowrap", "nowrap"); // Enum is NoWrap, CSS is nowrap
-
-            properties.Add($"{name}: {cssValue}");
+                .Replace("columndense", "column dense");
         }
+        else
+        {
+            // Arbitrary values — URLs, data: URIs, base64, custom properties — are
+            // case-sensitive and must be preserved verbatim (never lowercased).
+            cssValue = value.ToString()!;
+        }
+
+        properties.Add($"{name}: {cssValue}");
     }
 }
