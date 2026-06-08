@@ -11,7 +11,6 @@ public class TypeScriptCodeBuilder
 
     // Source mapping data
     private int _currentLine = 1;
-    private int _currentColumn = 1;
     private readonly List<SourceMapping> _mappings = new();
 
     public struct SourceMapping
@@ -52,15 +51,12 @@ public class TypeScriptCodeBuilder
         {
             _sb.Append(indent);
             _sb.AppendLine(line);
-            
             _currentLine++;
-            _currentColumn = 1;
         }
         else
         {
             _sb.AppendLine();
             _currentLine++;
-            _currentColumn = 1;
         }
     }
 
@@ -80,9 +76,11 @@ public class TypeScriptCodeBuilder
         _mappings.Add(new SourceMapping
         {
             GeneratedLine = _currentLine,
-            GeneratedColumn = _currentColumn,
-            SourceLine = pos.StartLinePosition.Line + 1,
-            SourceColumn = pos.StartLinePosition.Character + 1,
+            // 0-based column where the emitted line's content begins (after indentation).
+            GeneratedColumn = _indentLevel * IndentString.Length,
+            // Roslyn line/character positions are already 0-based, matching the source-map spec.
+            SourceLine = pos.StartLinePosition.Line,
+            SourceColumn = pos.StartLinePosition.Character,
             SourceFile = pos.Path
         });
     }

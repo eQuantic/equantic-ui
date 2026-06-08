@@ -26,7 +26,18 @@ public class ToStringStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
-        
+
+        // x.ToString("F2") → format(x, 'F2') via the runtime helper, mirroring the
+        // format-specifier handling in interpolated strings. Without this the format
+        // argument was silently dropped.
+        var args = invocation.ArgumentList.Arguments;
+        if (args.Count >= 1)
+        {
+            var fmt = context.Converter.ConvertExpression(args[0].Expression);
+            context.UsedHelpers.Add("format");
+            return $"format({caller}, {fmt})";
+        }
+
         return $"String({caller})";
     }
 

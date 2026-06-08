@@ -60,9 +60,10 @@ public class LinqStrategyTests
         // Simple case: OrderBy generic
         // We expect .sort((a, b) => ...) transformation
         var result = TestHelper.ConvertExpression("list.OrderBy(x => x.Id)");
-        // The implementation should produce a sort function
+        // The implementation should produce a sort function over a COPY of the source
+        // (OrderBy is non-mutating in C#).
         result.Should().Contain(".sort(");
-        result.Should().StartWith("this.list");
+        result.Should().StartWith("[...this.list]");
     }
     [Fact]
     public void Chained_Calls_Respect_Order()
@@ -70,8 +71,8 @@ public class LinqStrategyTests
         // list.Where(x => x.Active).OrderBy(x => x.Name).Select(x => x.Id)
         var result = TestHelper.ConvertExpression("list.Where(x => x.Active).OrderBy(x => x.Name).Select(x => x.Id)");
         
-        // Check structural correctness of the chain
-        result.Should().StartWith("this.list.filter((x) => x.active)");
+        // Check structural correctness of the chain (OrderBy copies the filtered source).
+        result.Should().StartWith("[...this.list.filter((x) => x.active)]");
         result.Should().Contain(".sort(");
         result.Should().EndWith(".map((x) => x.id)");
     }

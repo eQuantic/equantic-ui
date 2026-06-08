@@ -46,11 +46,23 @@ public class MathStrategy : IConversionStrategy
         {
             return $"Math.min(Math.max({argsList[0]}, {argsList[1]}), {argsList[2]})";
         }
-        
-        // Standard conversion: preserve method name in camelCase
-        var jsMethodName = ToCamelCase(methodName);
+
+        // Math.Round(x, digits): JS Math.round takes no precision argument, so emulate it.
+        if (methodName == "Round" && argsList.Count >= 2)
+        {
+            return $"(Math.round(({argsList[0]}) * 10 ** ({argsList[1]})) / 10 ** ({argsList[1]}))";
+        }
+
+        // Standard conversion: map .NET method names that differ from JS, else camelCase.
+        // (camelCasing alone would produce Math.truncate / Math.ceiling, which don't exist.)
+        var jsMethodName = methodName switch
+        {
+            "Truncate" => "trunc",
+            "Ceiling" => "ceil",
+            _ => ToCamelCase(methodName)
+        };
         var args = string.Join(", ", argsList);
-        
+
         return $"Math.{jsMethodName}({args})";
     }
 

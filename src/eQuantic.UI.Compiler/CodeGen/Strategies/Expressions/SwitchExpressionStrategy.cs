@@ -35,14 +35,30 @@ public class SwitchExpressionStrategy : IConversionStrategy
             }
 
             var condition = ConvertPattern(arm.Pattern, "_s", context);
-            if (arm.WhenClause != null)
-            {
-                var whenCond = context.Converter.ConvertExpression(arm.WhenClause.Condition);
-                condition = $"({condition}) && ({whenCond})";
-            }
-
+            var boundName = GetBoundName(arm.Pattern);
             var armResult = context.Converter.ConvertExpression(arm.Expression);
-            sb.Append($" if ({condition}) return {armResult};");
+
+            if (boundName != null)
+            {
+                // Patterns like `var v` / `Type t` capture a variable. Bind it in a
+                // block so both the when-clause and the result can reference it.
+                var inner = $"return {armResult};";
+                if (arm.WhenClause != null)
+                {
+                    var whenCond = context.Converter.ConvertExpression(arm.WhenClause.Condition);
+                    inner = $"if ({whenCond}) return {armResult};";
+                }
+                sb.Append($" if ({condition}) {{ const {boundName} = _s; {inner} }}");
+            }
+            else
+            {
+                if (arm.WhenClause != null)
+                {
+                    var whenCond = context.Converter.ConvertExpression(arm.WhenClause.Condition);
+                    condition = $"({condition}) && ({whenCond})";
+                }
+                sb.Append($" if ({condition}) return {armResult};");
+            }
         }
 
         // Default fallback if no discard pattern exists
@@ -53,6 +69,23 @@ public class SwitchExpressionStrategy : IConversionStrategy
 
         sb.Append(" })()");
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Returns the variable name captured by a pattern (var v / Type t / Type(..) p),
+    /// or null when the pattern binds nothing.
+    /// </summary>
+    private static string? GetBoundName(PatternSyntax pattern)
+    {
+        VariableDesignationSyntax? designation = pattern switch
+        {
+            VarPatternSyntax v => v.Designation,
+            DeclarationPatternSyntax d => d.Designation,
+            RecursivePatternSyntax r => r.Designation,
+            _ => null
+        };
+
+        return designation is SingleVariableDesignationSyntax single ? single.Identifier.Text : null;
     }
 
     private string ConvertPattern(PatternSyntax pattern, string varName, ConversionContext context)

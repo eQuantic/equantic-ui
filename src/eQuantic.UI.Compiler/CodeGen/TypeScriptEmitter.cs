@@ -835,7 +835,15 @@ public class TypeScriptEmitter
     
     private static string EscapeString(string s)
     {
-        return s.Replace("'", "\\'").Replace("\n", "\\n");
+        // Backslash MUST be escaped first, otherwise it would double-escape the
+        // sequences introduced below. Output is wrapped in single quotes by callers.
+        return s
+            .Replace("\\", "\\\\")
+            .Replace("'", "\\'")
+            .Replace("\"", "\\\"")
+            .Replace("\r", "\\r")
+            .Replace("\n", "\\n")
+            .Replace("\t", "\\t");
     }
     
     #region Output Helpers

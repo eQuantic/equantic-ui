@@ -42,7 +42,7 @@ public class SourceMapGenerator
         var sb = new StringBuilder();
         int prevGenLine = 1;
         int prevGenCol = 0;
-        int prevSrcLine = 1;
+        int prevSrcLine = 0;
         int prevSrcCol = 0;
         int prevSrcFile = 0;
 
@@ -64,11 +64,11 @@ public class SourceMapGenerator
                 sb.Append(',');
             }
 
-            // Segment: [generatedCol, srcFile, srcLine, srcCol]
-            sb.Append(Base64Vlq.Encode(m.GeneratedColumn - prevGenCol)); // Shifted 1-based to 0-based for genCol
+            // Segment: [generatedCol, srcFile, srcLine, srcCol] — all values are 0-based deltas.
+            sb.Append(Base64Vlq.Encode(m.GeneratedColumn - prevGenCol));
             sb.Append(Base64Vlq.Encode(0 - prevSrcFile)); // Single source file for now
-            sb.Append(Base64Vlq.Encode((m.SourceLine - 1) - (prevSrcLine - 1)));
-            sb.Append(Base64Vlq.Encode((m.SourceColumn - 1) - (prevSrcCol - 1)));
+            sb.Append(Base64Vlq.Encode(m.SourceLine - prevSrcLine));
+            sb.Append(Base64Vlq.Encode(m.SourceColumn - prevSrcCol));
 
             prevGenCol = m.GeneratedColumn;
             prevSrcLine = m.SourceLine;

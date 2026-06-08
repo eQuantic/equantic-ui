@@ -24,19 +24,17 @@ public class OrderByStrategy : IConversionStrategy
         var methodName = access.Name.Identifier.Text;
         
         var args = invocation.ArgumentList.Arguments;
-        if (args.Count == 0) return $"{caller}.sort()";
+        if (args.Count == 0) return $"[...{caller}].sort()";
 
         var keySelector = context.Converter.ConvertExpression(args[0].Expression);
-        
-        // Use a generic sort comparator in JS that utilizes the key selector
-        // We wrap the selector to avoid scope issues
-        // (a, b) => key(a) > key(b) ? 1 : -1
-        
-        var comparison = methodName == "OrderBy" 
-            ? "ka > kb ? 1 : -1" 
-            : "ka < kb ? 1 : -1";
 
-        return $"{caller}.sort((a, b) => {{ const key = {keySelector}; const ka = key(a); const kb = key(b); return {comparison}; }})";
+        // C# OrderBy returns a new, stably-sorted sequence and never mutates the source.
+        // Copy first ([...caller]); return 0 for equal keys so JS's stable sort keeps order.
+        var comparison = methodName == "OrderBy"
+            ? "ka < kb ? -1 : ka > kb ? 1 : 0"
+            : "ka > kb ? -1 : ka < kb ? 1 : 0";
+
+        return $"[...{caller}].sort((a, b) => {{ const key = {keySelector}; const ka = key(a); const kb = key(b); return {comparison}; }})";
     }
 
     public int Priority => 10;
