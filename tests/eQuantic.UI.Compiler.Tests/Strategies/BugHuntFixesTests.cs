@@ -78,4 +78,30 @@ public class BugHuntFixesTests
         result.Should().Contain(": 0");                     // returns 0 on equal keys (stable)
         result.Should().NotContain("? 1 : -1");             // old non-stable comparator gone
     }
+
+    [Fact]
+    public void Distinct_OnPrimitives_UsesSet()
+    {
+        // string elements -> Set is correct and matches C# value equality.
+        var result = TestHelper.ConvertExpression("items.Distinct()");
+        result.Should().Be("[...new Set(this.items)]");
+    }
+
+    [Fact]
+    public void Distinct_OnPlainClass_UsesSet()
+    {
+        // Plain reference types use reference equality in C#, which JS Set already matches.
+        var result = TestHelper.ConvertExpression("list.Distinct()");
+        result.Should().Be("[...new Set(this.list)]");
+    }
+
+    [Fact]
+    public void Distinct_OnRecord_UsesValueDedup()
+    {
+        // Records use structural equality; Set (reference) would be wrong.
+        var result = TestHelper.ConvertExpression("points.Distinct()");
+        result.Should().NotContain("new Set(this.points)");
+        result.Should().Contain("JSON.stringify");
+        result.Should().Contain("this.points.filter");
+    }
 }
