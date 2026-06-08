@@ -14,39 +14,22 @@ public class RadioGroup : InputComponent<string>
 
     public override IComponent Build(RenderContext context)
     {
-        var attrs = BuildAttributes();
-        
-        // Container style
-        var style = new HtmlStyle 
-        { 
-            Display = eQuantic.UI.Core.Display.Flex, 
-            FlexDirection = Direction,
-            Gap = "0.5rem"
-        };
-        
-        if (attrs.TryGetValue("style", out var existing))
-        {
-            attrs["style"] = existing + "; " + style.ToCssString();
-        }
-        else
-        {
-            attrs["style"] = style.ToCssString();
-        }
+        var container = new Box { As = "div" };
 
-        var container = new Box
-        {
-            As = "div",
-            Style = style,
-            ClassName = ClassName,
-            Id = Id,
-            AriaOrientation = (Direction == FlexDirection.Row || Direction == FlexDirection.RowReverse) ? "horizontal" : "vertical"
-        };
-        
-        // Pass ARIA/Data attributes from base
-        if (Role != null) container.Role = Role;
-        container.DataAttributes = DataAttributes;
-        container.AriaHidden = AriaHidden;
-        
+        // Forward all host attributes (id, title, tabindex, class, ARIA, data-*, events, ...)
+        // so nothing set on the RadioGroup itself is lost when delegating to the Box.
+        CopyHtmlAttributesTo(container);
+
+        // Container layout: merge the flex layout into any forwarded inline style.
+        var style = container.Style ?? new HtmlStyle();
+        style.Display = eQuantic.UI.Core.Display.Flex;
+        style.FlexDirection = Direction;
+        if (string.IsNullOrEmpty(style.Gap)) style.Gap = "0.5rem";
+        container.Style = style;
+
+        container.AriaOrientation =
+            (Direction == FlexDirection.Row || Direction == FlexDirection.RowReverse) ? "horizontal" : "vertical";
+
         if (Options.Any())
         {
             foreach (var opt in Options)

@@ -230,8 +230,12 @@ public static class HtmlRenderer
             sb.Append(' ');
             sb.Append(key);
 
-            // Boolean attributes (hidden, disabled, etc.)
-            if (value == "true" || value == key)
+            // Collapse only the valueless boolean idiom (e.g. disabled="disabled" -> disabled).
+            // Do NOT collapse value="true": that corrupts real values (value="true") and breaks
+            // enumerated/ARIA-state attributes (aria-checked, draggable, spellcheck) which must
+            // keep their explicit "true"/"false". Genuine HTML booleans are emitted as "" and
+            // render as disabled="" (valid), so they don't need collapsing here.
+            if (value == key)
             {
                 continue;
             }

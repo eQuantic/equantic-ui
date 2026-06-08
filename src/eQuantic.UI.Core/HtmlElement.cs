@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using eQuantic.UI.Core.Events;
 
 namespace eQuantic.UI.Core;
@@ -287,6 +289,33 @@ public abstract class HtmlElement : IComponent
     /// Render the element to a virtual DOM node
     /// </summary>
     public abstract HtmlNode Render();
+
+    private static PropertyInfo[]? _htmlAttributeProps;
+
+    /// <summary>
+    /// Copies every non-null base <see cref="HtmlElement"/> attribute/state property
+    /// (id, title, tabindex, class, style, ARIA, data-*, global attributes and native
+    /// event handlers) from this element onto <paramref name="target"/>.
+    /// </summary>
+    /// <remarks>
+    /// Components whose <c>Build()</c> delegates to a child element (e.g. RadioGroup -> Box)
+    /// would otherwise silently drop host attributes set on the component itself. Only
+    /// properties declared on <see cref="HtmlElement"/> are copied; subclass-specific
+    /// members and the read-only <c>Children</c> collection are left untouched.
+    /// </remarks>
+    protected void CopyHtmlAttributesTo(HtmlElement target)
+    {
+        _htmlAttributeProps ??= typeof(HtmlElement)
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p is { CanRead: true, CanWrite: true })
+            .ToArray();
+
+        foreach (var prop in _htmlAttributeProps)
+        {
+            var value = prop.GetValue(this);
+            if (value != null) prop.SetValue(target, value);
+        }
+    }
 
     /// <summary>
     /// Build common HTML attributes from properties
