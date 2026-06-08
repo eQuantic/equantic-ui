@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using eQuantic.UI.Server.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -77,6 +78,15 @@ public class ServerActionsMiddleware
             return;
         }
 
+        // Content-Length is absent for chunked / Transfer-Encoding requests, so the check
+        // above does not catch them. Enforce a hard cap that Kestrel applies while reading
+        // the body (it throws BadHttpRequestException once the limit is exceeded).
+        var maxBodySizeFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
+        if (maxBodySizeFeature is { IsReadOnly: false })
+        {
+            maxBodySizeFeature.MaxRequestBodySize = MaxRequestBodySize;
+        }
+
         ServerActionRequest? request;
         try
         {
@@ -91,6 +101,13 @@ public class ServerActionsMiddleware
                     MaxDepth = 32 // Prevent deeply nested payloads
                 }
             );
+        }
+        catch (BadHttpRequestException ex)
+        {
+            _logger.LogWarning(ex, "Server Action request body exceeded the {MaxSize}-byte limit", MaxRequestBodySize);
+            context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+            await WriteErrorResponse(context, "Request payload too large.");
+            return;
         }
         catch (JsonException ex)
         {

@@ -293,21 +293,24 @@ public static class UIExtensions
     {
         var options = context.RequestServices.GetRequiredService<UIOptions>();
         var shell = options.HtmlShell;
+        // Per-request copy of the head tags. The HtmlShell is a singleton, so mutating
+        // shell.HeadTags directly is not thread-safe and leaks tags across requests.
+        var headTags = new List<string>(shell.HeadTags);
         var pageValue = pageName != null ? $"'{pageName}'" : "null";
 
         // Auto-inject theme initialization scripts if not already added by Tailwind
-        if (!shell.HeadTags.Any(t => t.Contains("__EQUANTIC_THEME_DATA")))
+        if (!headTags.Any(t => t.Contains("__EQUANTIC_THEME_DATA")))
         {
             var themeScript = ThemeProvider.GetInitializationScript();
             if (!string.IsNullOrEmpty(themeScript))
             {
-                shell.HeadTags.Add(themeScript);
+                headTags.Add(themeScript);
             }
 
             var darkModeScript = ThemeProvider.GetDarkModeScript();
-            if (!string.IsNullOrEmpty(darkModeScript) && !shell.HeadTags.Any(t => t.Contains("data-theme")))
+            if (!string.IsNullOrEmpty(darkModeScript) && !headTags.Any(t => t.Contains("data-theme")))
             {
-                shell.HeadTags.Add(darkModeScript);
+                headTags.Add(darkModeScript);
             }
         }
 
@@ -349,8 +352,8 @@ public static class UIExtensions
                         {
                             foreach (var tag in result.Assets.RenderTags())
                             {
-                                if (!shell.HeadTags.Contains(tag))
-                                    shell.HeadTags.Add(tag);
+                                if (!headTags.Contains(tag))
+                                    headTags.Add(tag);
                             }
                         }
                     }
@@ -471,7 +474,7 @@ public static class UIExtensions
                .Set("MetadataTags", metadata.RenderTags())
                .Set("BuildId", BuildId)
                .SetOrEmpty("BaseStyles", shell.BaseStyles)
-               .Set("HeadTags", string.Join("\n    ", shell.HeadTags))
+               .Set("HeadTags", string.Join("\n    ", headTags))
                .Set("SsrEnabled", ssrEnabled.ToString().ToLowerInvariant())
                .Set("SsrContent", ssrContent)
                .Set("ConfigJson", configJson)
