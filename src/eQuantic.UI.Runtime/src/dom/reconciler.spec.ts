@@ -249,3 +249,44 @@ describe('Reconciler SVG namespace', () => {
     expect(div.namespaceURI).toBe('http://www.w3.org/1999/xhtml');
   });
 });
+
+describe('Reconciler hydration', () => {
+  it('aligns children when the virtual tree has a whitespace text node the DOM omitted', () => {
+    const reconciler = new Reconciler();
+    const container = document.createElement('div');
+    container.innerHTML = '<button>Click</button>'; // SSR emitted only the button
+
+    let clicks = 0;
+    const text = (content: string): HtmlNode => ({
+      tag: '#text',
+      textContent: content,
+      attributes: {},
+      events: {},
+      children: [],
+    });
+    const virtualNode: HtmlNode = {
+      tag: 'div',
+      attributes: {},
+      events: {},
+      children: [
+        text('  '), // whitespace-only text node that the server did not render
+        {
+          tag: 'button',
+          attributes: {},
+          events: {
+            click: () => {
+              clicks++;
+            },
+          },
+          children: [text('Click')],
+        },
+      ],
+    };
+
+    const result = reconciler.hydrate(container, virtualNode);
+    expect(result.success).toBe(true);
+
+    (container.querySelector('button') as HTMLButtonElement).click();
+    expect(clicks).toBe(1);
+  });
+});

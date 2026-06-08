@@ -825,8 +825,15 @@ export class Reconciler {
       result.attachedListeners += Object.keys(virtualNode.events).length;
     }
 
-    // Recursively hydrate children
-    const virtualChildren = virtualNode.children || [];
+    // Recursively hydrate children. Both sides must use the SAME skip rule, otherwise
+    // a virtual text node the server collapsed/omitted shifts the index alignment and the
+    // following elements fail to hydrate. The DOM side drops whitespace-only text and
+    // comments; mirror that on the virtual side.
+    const virtualChildren = (virtualNode.children || []).filter(
+      (node) =>
+        (node.tag !== '#text' && node.tag !== '#comment') ||
+        (node.tag === '#text' && !!node.textContent?.trim()),
+    );
     const existingChildren = Array.from(existingElement.childNodes).filter(
       (node) =>
         node.nodeType === Node.ELEMENT_NODE ||
