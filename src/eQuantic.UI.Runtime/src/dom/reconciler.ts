@@ -23,6 +23,67 @@ export class Reconciler {
   private eventListeners: WeakMap<HTMLElement, Map<string, EventHandler>> = new WeakMap();
 
   /**
+   * Elements that currently have attached listeners. WeakMap is not iterable,
+   * so this companion set lets dispose() actually detach listeners from the DOM.
+   */
+  private trackedElements: Set<HTMLElement> = new Set();
+
+  private static readonly SVG_NS = 'http://www.w3.org/2000/svg';
+
+  /**
+   * HTML boolean attributes: presence means true, absence means false.
+   * The value string is irrelevant — `disabled="false"` still disables.
+   */
+  private static readonly BOOLEAN_ATTRS = new Set([
+    'disabled',
+    'checked',
+    'selected',
+    'readonly',
+    'multiple',
+    'required',
+    'hidden',
+    'open',
+    'autofocus',
+    'autoplay',
+    'controls',
+    'loop',
+    'muted',
+    'novalidate',
+    'formnovalidate',
+    'reversed',
+    'async',
+    'defer',
+    'nomodule',
+    'playsinline',
+    'allowfullscreen',
+    'default',
+    'ismap',
+    'itemscope',
+  ]);
+
+  /** Boolean attributes whose matching DOM property name is not the lowercase attribute name. */
+  private static readonly BOOLEAN_PROP = new Map<string, string>([
+    ['readonly', 'readOnly'],
+    ['novalidate', 'noValidate'],
+    ['formnovalidate', 'formNoValidate'],
+    ['nomodule', 'noModule'],
+    ['ismap', 'isMap'],
+    ['playsinline', 'playsInline'],
+    ['allowfullscreen', 'allowFullscreen'],
+  ]);
+
+  /**
+   * Whether a node must be created in the SVG namespace. True for an <svg>
+   * root, and for any descendant of an SVG element except a <foreignObject>
+   * subtree (whose children switch back to the HTML namespace).
+   */
+  private isSvgContext(node: HtmlNode, parent?: Node): boolean {
+    if (node.tag === 'svg') return true;
+    const el = parent as Element | null;
+    return !!el && el.namespaceURI === Reconciler.SVG_NS && el.localName !== 'foreignObject';
+  }
+
+  /**
    * Reconcile (diff and patch) old and new virtual DOM trees
    */
   reconcile(
@@ -35,7 +96,7 @@ export class Reconciler {
 
     // Case 1: No old node - create new element
     if (!oldNode && newNode) {
-      const newElement = this.createDomElement(newNode);
+      const newElement = this.createDomElement(newNode, parentElement);
       if (currentElement) {
         parentElement.insertBefore(newElement, currentElement);
       } else {
@@ -60,7 +121,7 @@ export class Reconciler {
 
     // Case 3: Different node types - replace
     if (this.isDifferentNodeType(oldNode, newNode)) {
-      const newElement = this.createDomElement(newNode);
+      const newElement = this.createDomElement(newNode, parentElement);
       if (currentElement) {
         this.cleanupEventListeners(currentElement);
         parentElement.replaceChild(newElement, currentElement);
@@ -110,7 +171,7 @@ export class Reconciler {
   /**
    * Create a DOM element from virtual node
    */
-  createDomElement(node: HtmlNode): Node {
+  createDomElement(node: HtmlNode, parent?: Node): Node {
     // Text node
     if (node.tag === '#text') {
       return document.createTextNode(node.textContent || '');
@@ -121,8 +182,11 @@ export class Reconciler {
       return document.createComment(node.attributes?.text || '');
     }
 
-    // Create element
-    const element = document.createElement(node.tag);
+    // Create element. SVG tags must use the SVG namespace, otherwise the
+    // browser creates inert HTMLUnknownElements that never render.
+    const element: Element = this.isSvgContext(node, parent)
+      ? document.createElementNS(Reconciler.SVG_NS, node.tag)
+      : document.createElement(node.tag);
 
     // Set attributes
     if (node.attributes) {
@@ -135,12 +199,12 @@ export class Reconciler {
 
     // Attach event handlers
     if (node.events) {
-      this.attachEventListeners(element, node.events);
+      this.attachEventListeners(element as HTMLElement, node.events);
     }
 
-    // Render children
+    // Render children (pass this element as parent to propagate SVG context)
     for (const child of node.children || []) {
-      element.appendChild(this.createDomElement(child));
+      element.appendChild(this.createDomElement(child, element));
     }
 
     return element;
@@ -165,6 +229,23 @@ export class Reconciler {
     }
 
     const strValue = String(value);
+
+    // Boolean attributes: a falsy value must remove the attribute, never emit
+    // `disabled="false"` (which still disables) or check on `checked="false"`.
+    if (Reconciler.BOOLEAN_ATTRS.has(key)) {
+      const on = value !== false && strValue !== 'false';
+      if (on) {
+        element.setAttribute(key, '');
+      } else {
+        element.removeAttribute(key);
+      }
+      const prop = Reconciler.BOOLEAN_PROP.get(key) ?? key;
+      if (prop in element) {
+        (element as unknown as Record<string, unknown>)[prop] = on;
+      }
+      return;
+    }
+
     element.setAttribute(key, strValue);
 
     if (
@@ -172,8 +253,6 @@ export class Reconciler {
       (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)
     ) {
       element.value = strValue;
-    } else if (key === 'checked' && element instanceof HTMLInputElement) {
-      element.checked = !!value || strValue === 'true' || strValue === 'checked';
     }
   }
 
@@ -216,6 +295,7 @@ export class Reconciler {
 
     if (elementListeners.size > 0) {
       this.eventListeners.set(element, elementListeners);
+      this.trackedElements.add(element);
     }
   }
 
@@ -264,8 +344,10 @@ export class Reconciler {
 
     if (elementListeners.size > 0) {
       this.eventListeners.set(element, elementListeners);
+      this.trackedElements.add(element);
     } else {
       this.eventListeners.delete(element);
+      this.trackedElements.delete(element);
     }
   }
 
@@ -411,7 +493,7 @@ export class Reconciler {
 
         while (newStartIdx <= newEndIdx) {
           const newNode = newCh[newStartIdx++];
-          const dom = this.createDomElement(newNode);
+          const dom = this.createDomElement(newNode, parentElement);
           parentElement.insertBefore(dom, anchor);
         }
       }
@@ -557,7 +639,7 @@ export class Reconciler {
           if (newIndexToOldIndexMap[i] === 0) {
             // New node - Mount
             const newNode = newCh[currentNewIndex];
-            const dom = this.createDomElement(newNode);
+            const dom = this.createDomElement(newNode, parentElement);
             parentElement.insertBefore(dom, nextAnchor);
             // Update map for future anchors?
             newIndexToNodeMap.set(currentNewIndex, dom);
@@ -607,7 +689,7 @@ export class Reconciler {
           const currentNewIndex = newStartIdx + i;
           if (newIndexToOldIndexMap[i] === 0) {
             const newNode = newCh[currentNewIndex];
-            const dom = this.createDomElement(newNode);
+            const dom = this.createDomElement(newNode, parentElement);
             parentElement.insertBefore(dom, nextAnchor);
             nextAnchor = dom;
           } else {
@@ -685,6 +767,7 @@ export class Reconciler {
           node.removeEventListener(eventName, handler as unknown as EventListener);
         }
         this.eventListeners.delete(node);
+        this.trackedElements.delete(node);
       }
 
       // Recursively cleanup children
@@ -788,16 +871,29 @@ export class Reconciler {
    * Cleanup all event listeners (Reset tracking)
    */
   dispose(): void {
-    // Note: WeakMap is not iterable, so we cannot manually remove all listeners from the DOM elements themselves here.
-    // However, re-initializing the map releases our references, allowing the nodes to be garbage collected.
+    // Detach every tracked listener from its DOM node so handlers (and whatever
+    // they close over) are not left attached to live elements.
+    for (const element of this.trackedElements) {
+      const elementListeners = this.eventListeners.get(element);
+      if (elementListeners) {
+        for (const [eventName, handler] of elementListeners.entries()) {
+          element.removeEventListener(eventName, handler as unknown as EventListener);
+        }
+      }
+    }
+    this.trackedElements.clear();
     this.eventListeners = new WeakMap();
   }
 
   /**
-   * Get the number of tracked event listeners (no longer supported with WeakMap)
+   * Total number of currently attached event listeners across all tracked elements.
    */
   getEventListenerCount(): number {
-    return -1;
+    let count = 0;
+    for (const element of this.trackedElements) {
+      count += this.eventListeners.get(element)?.size ?? 0;
+    }
+    return count;
   }
 }
 

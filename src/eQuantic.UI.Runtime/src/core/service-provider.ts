@@ -4,6 +4,8 @@
  * Lightweight DI container for managing services across the component tree
  */
 
+import { logger } from '../utils/logger';
+
 /**
  * Service lifecycle types
  */
@@ -82,7 +84,7 @@ export class ServiceProvider {
    */
   registerInstance<T>(key: ServiceKey<T>, instance: T): this {
     const keyName = typeof key === 'string' ? key : key.name;
-    console.log('[ServiceProvider.registerInstance]', keyName, instance);
+    logger.debug('[ServiceProvider.registerInstance]', keyName, instance);
     this.services.set(key, {
       factory: () => instance,
       lifetime: ServiceLifetime.Singleton,
@@ -102,7 +104,7 @@ export class ServiceProvider {
 
     if (descriptor) {
       const result = this.resolveService(key, descriptor);
-      console.log('[ServiceProvider.getService]', keyName, '→', result);
+      logger.debug('[ServiceProvider.getService]', keyName, '→', result);
       return result;
     }
 
@@ -111,7 +113,7 @@ export class ServiceProvider {
       return this.parent.getService<T>(key);
     }
 
-    console.log('[ServiceProvider.getService]', keyName, '→ undefined (not found)');
+    logger.debug('[ServiceProvider.getService]', keyName, '→ undefined (not found)');
     return undefined;
   }
 

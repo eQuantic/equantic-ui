@@ -138,3 +138,114 @@ describe('Reconciler Keyed Diffing', () => {
     expect(rootEl.childNodes[2]).not.toBe(originalThird);
   });
 });
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function el(
+  tag: string,
+  attributes: Record<string, string> = {},
+  children: HtmlNode[] = [],
+): HtmlNode {
+  return { tag, children, attributes, events: {} };
+}
+
+describe('Reconciler boolean attributes', () => {
+  let reconciler: Reconciler;
+
+  beforeEach(() => {
+    reconciler = new Reconciler();
+  });
+
+  it('disabled="false" must NOT disable (attribute removed)', () => {
+    const btn = reconciler.createDomElement(
+      el('button', { disabled: 'false' }),
+    ) as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
+    expect(btn.hasAttribute('disabled')).toBe(false);
+  });
+
+  it('disabled="" (presence) disables', () => {
+    const btn = reconciler.createDomElement(el('button', { disabled: '' })) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+  });
+
+  it('checked="false" must NOT check the box', () => {
+    const input = reconciler.createDomElement(
+      el('input', { type: 'checkbox', checked: 'false' }),
+    ) as HTMLInputElement;
+    expect(input.checked).toBe(false);
+  });
+
+  it('checked="true" checks the box', () => {
+    const input = reconciler.createDomElement(
+      el('input', { type: 'checkbox', checked: 'true' }),
+    ) as HTMLInputElement;
+    expect(input.checked).toBe(true);
+  });
+
+  it('readonly="false" maps to readOnly=false', () => {
+    const input = reconciler.createDomElement(
+      el('input', { readonly: 'false' }),
+    ) as HTMLInputElement;
+    expect(input.readOnly).toBe(false);
+  });
+});
+
+describe('Reconciler dispose', () => {
+  it('detaches event listeners from the DOM on dispose', () => {
+    const reconciler = new Reconciler();
+    let clicks = 0;
+    const node: HtmlNode = {
+      tag: 'button',
+      children: [],
+      attributes: {},
+      events: {
+        click: () => {
+          clicks++;
+        },
+      },
+    };
+
+    const btn = reconciler.createDomElement(node) as HTMLButtonElement;
+    document.body.appendChild(btn);
+
+    btn.click();
+    expect(clicks).toBe(1);
+    expect(reconciler.getEventListenerCount()).toBe(1);
+
+    reconciler.dispose();
+    expect(reconciler.getEventListenerCount()).toBe(0);
+
+    btn.click();
+    expect(clicks).toBe(1); // listener was removed, no further increments
+
+    document.body.removeChild(btn);
+  });
+});
+
+describe('Reconciler SVG namespace', () => {
+  let reconciler: Reconciler;
+
+  beforeEach(() => {
+    reconciler = new Reconciler();
+  });
+
+  it('creates <svg> and descendants in the SVG namespace', () => {
+    const svg = reconciler.createDomElement(
+      el('svg', { viewBox: '0 0 24 24' }, [el('path', { d: 'M0 0' })]),
+    ) as Element;
+    expect(svg.namespaceURI).toBe(SVG_NS);
+    expect(svg.firstChild && (svg.firstChild as Element).namespaceURI).toBe(SVG_NS);
+  });
+
+  it('preserves camelCase SVG attribute names (viewBox)', () => {
+    const svg = reconciler.createDomElement(el('svg', { viewBox: '0 0 24 24' })) as Element;
+    expect(svg.getAttribute('viewBox')).toBe('0 0 24 24');
+    expect(svg.hasAttribute('viewbox')).toBe(false);
+  });
+
+  it('keeps plain HTML elements in the HTML namespace', () => {
+    const div = reconciler.createDomElement(el('div')) as Element;
+    expect(div.namespaceURI).toBe('http://www.w3.org/1999/xhtml');
+  });
+});
