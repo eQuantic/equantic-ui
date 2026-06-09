@@ -33,6 +33,10 @@ public class DictionaryStrategy : IConversionStrategy
             var symbol = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
             if (symbol != null)
             {
+                // Nullable<T>.GetValueOrDefault is NOT a dictionary method — leave it to NullableStrategy.
+                if (symbol.ContainingType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                    return false;
+
                 var containingType = symbol.ContainingType.ToDisplayString();
                 if (containingType.Contains("Dictionary") || containingType.Contains("IDictionary") || containingType.Contains("CollectionExtensions"))
                     return true;

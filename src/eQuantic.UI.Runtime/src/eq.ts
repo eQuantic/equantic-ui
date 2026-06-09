@@ -5,6 +5,7 @@ import { format, parseEnum } from './utils/format';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
 import { queue, stack } from './utils/collections';
+import { liftArith, liftCmp } from './utils/nullable';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
@@ -31,6 +32,8 @@ export const $eq = {
   enums: { parse: parseEnum },
   /** Collections — Queue (FIFO), Stack (LIFO). */
   collections: { queue, stack },
+  /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
+  nullable: { arith: liftArith, cmp: liftCmp },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;

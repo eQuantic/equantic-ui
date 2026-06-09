@@ -34,6 +34,7 @@ export { long } from './utils/long';
 export { DateTime, dateTime, TimeSpan, timeSpan, DateOnly, dateOnly, TimeOnly, timeOnly, DateTimeOffset, dateTimeOffset } from './utils/datetime';
 export { StringBuilder, stringBuilder } from './utils/string-builder';
 export { Queue, queue, Stack, stack } from './utils/collections';
+export { liftArith, liftCmp } from './utils/nullable';
 export { $eq } from './eq';
 export { StyleBuilder } from './utils/style-builder';
 export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
