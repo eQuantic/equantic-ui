@@ -31,7 +31,8 @@ public static class ConformanceRunner
     public static void AssertStatementsSameAsDotNet(string csharpStatements, string prelude = "")
     {
         var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
-        var program = $"{BuildHelperImport(jsBlock)}console.log(JSON.stringify((() => {jsBlock})()))";
+        var types = Transpiler.EmitDeclaredRecordTypes(prelude);
+        var program = $"{BuildHelperImport(jsBlock + types)}{types}console.log(JSON.stringify((() => {jsBlock})()))";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
@@ -48,7 +49,8 @@ public static class ConformanceRunner
     public static void AssertSameAsDotNet(string csharpExpression, string prelude)
     {
         var js = Transpiler.TranspileExpression(csharpExpression, prelude);
-        var program = $"{BuildHelperImport(js)}console.log(JSON.stringify({js}))";
+        var types = Transpiler.EmitDeclaredRecordTypes(prelude);
+        var program = $"{BuildHelperImport(js + types)}{types}console.log(JSON.stringify({js}))";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, prelude);

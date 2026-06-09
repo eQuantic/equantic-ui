@@ -14,10 +14,37 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 /// </summary>
 public static class Transpiler
 {
+    /// <summary>
+    /// Emits any positional records declared in the prelude as named JS classes (so instance methods,
+    /// structural equality, etc. are available to the program under test). Returns "" when there are none.
+    /// </summary>
+    public static string EmitDeclaredRecordTypes(string prelude)
+    {
+        if (string.IsNullOrWhiteSpace(prelude)) return string.Empty;
+
+        var (tree, converter) = Compile("return 0;", prelude);
+        var emitter = new RecordTypeEmitter(converter);
+        var records = tree.GetRoot()
+            .DescendantNodes()
+            .OfType<RecordDeclarationSyntax>()
+            .Where(RecordTypeEmitter.CanEmit)
+            .ToList();
+
+        return records.Count == 0
+            ? string.Empty
+            : string.Join("\n", records.Select(emitter.Emit)) + "\n";
+    }
+
     public static string TranspileExpression(string csharpExpression, string prelude = "")
     {
         var (tree, converter) = Compile($"return {csharpExpression};", prelude);
+        // Scope to the __Eval method body — a prelude type may now declare methods whose own `return`
+        // statements would otherwise be picked up by a tree-wide First().
         var returnExpr = tree.GetRoot()
+            .DescendantNodes()
+            .OfType<MethodDeclarationSyntax>()
+            .First(m => m.Identifier.Text == "__Eval")
+            .Body!
             .DescendantNodes()
             .OfType<ReturnStatementSyntax>()
             .First()

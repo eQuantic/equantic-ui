@@ -37,11 +37,19 @@ public class ObjectCreationStrategy : IConversionStrategy
     private string ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var typeName = creation.Type.ToString();
+        var createdType = context.SemanticHelper.GetType(creation);
 
-        // User records / structs are value-shaped: represent as a plain object (consistent with
-        // anonymous types, object initializers, and value-based Distinct/equality). Positional args map
-        // to the constructor's parameter names; an object initializer contributes named members.
-        if (context.SemanticHelper.GetType(creation).IsStructuralValueType())
+        // Records are emitted as named JS classes (they can carry instance methods) — construct via `new`.
+        if (createdType is { IsRecord: true })
+        {
+            var ctorArgs = creation.ArgumentList == null
+                ? string.Empty
+                : string.Join(", ", creation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
+            return $"new {createdType.Name}({ctorArgs})";
+        }
+
+        // Non-record structs / value tuples stay plain objects (value-shaped, no instance methods).
+        if (createdType.IsStructuralValueType())
         {
             return BuildValueObject(creation, context);
         }
