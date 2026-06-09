@@ -13,6 +13,10 @@ public class ComponentDependencyResolver
     private readonly Dictionary<string, HashSet<string>> _dependencyCache = new();
     private readonly HashSet<string> _analysedAssemblies = new();
 
+    /// <summary>User data types (positional records) discovered during the scan — emitted as named
+    /// JS classes, so components that reference them import the generated module.</summary>
+    private readonly HashSet<string> _recordTypes = new();
+
     /// <summary>
     /// Scans source code directories to build dependency map
     /// </summary>
@@ -44,6 +48,13 @@ public class ComponentDependencyResolver
             var code = File.ReadAllText(filePath);
             var tree = CSharpSyntaxTree.ParseText(code, path: filePath);
             var root = tree.GetRoot();
+
+            // Discover positional records — emitted as named JS classes (so references import them).
+            foreach (var rec in root.DescendantNodes().OfType<RecordDeclarationSyntax>())
+            {
+                if (CodeGen.RecordTypeEmitter.CanEmit(rec))
+                    _recordTypes.Add(rec.Identifier.Text);
+            }
 
             // Find all class declarations
             var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
@@ -149,6 +160,9 @@ public class ComponentDependencyResolver
     {
         return _dependencyCache.Keys;
     }
+
+    /// <summary>Names of user data types (records) emitted as named JS classes.</summary>
+    public IReadOnlySet<string> GetAllRecords() => _recordTypes;
 
     /// <summary>
     /// Debug: Print dependency tree

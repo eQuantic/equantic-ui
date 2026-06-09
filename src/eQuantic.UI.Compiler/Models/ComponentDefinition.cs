@@ -104,6 +104,17 @@ public class ComponentDefinition
     /// Runtime helpers used by the component (ClassBuilder, StyleBuilder, etc.)
     /// </summary>
     public HashSet<string> UsedHelpers { get; set; } = new();
+
+    /// <summary>
+    /// True when this definition is a user data type (a positional record) emitted as a named JS class
+    /// rather than a UI component. Discovered by scanning for record declarations.
+    /// </summary>
+    public bool IsRecordType { get; set; }
+
+    /// <summary>
+    /// The record declaration syntax, when <see cref="IsRecordType"/> is true.
+    /// </summary>
+    public Microsoft.CodeAnalysis.CSharp.Syntax.RecordDeclarationSyntax? RecordSyntax { get; set; }
 }
 
 /// <summary>

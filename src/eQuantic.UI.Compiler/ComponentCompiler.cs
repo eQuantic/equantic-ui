@@ -91,6 +91,17 @@ public class ComponentCompiler
         
         try
         {
+            // User data type (record) — emit as a standalone named-class module.
+            if (component.IsRecordType && component.RecordSyntax != null)
+            {
+                var recordConverter = new CSharpToJsConverter();
+                if (component.SyntaxTree != null)
+                    recordConverter.SetSemanticModel(_semanticModelProvider.GetSemanticModel(component.SyntaxTree));
+                result.TypeScript = new RecordTypeEmitter(recordConverter).EmitModule(component.RecordSyntax);
+                result.Success = true;
+                return result;
+            }
+
             // Semantic Analysis
             SemanticModel? semanticModel = null;
             if (component.SyntaxTree != null)
