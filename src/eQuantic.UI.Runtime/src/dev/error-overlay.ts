@@ -3,6 +3,9 @@
  * Shows beautiful error UI during development
  */
 
+import { remapStackTrace, RemappedFrame } from './stack-remapper';
+import { RawSourceMap } from './source-map';
+
 const isDev = typeof window !== 'undefined' && window.__EQ_DEV__;
 
 interface ErrorInfo {
@@ -227,14 +230,18 @@ class ErrorOverlay {
 
         <div class="content">
           <div class="error-message">${this.escapeHtml(error.message)}</div>
-          
-          <div class="section-label">Source Context</div>
-          <div class="code-block">${this.highlightCode(error.stack || '')}</div>
 
-          ${error.stack ? `
-            <div class="section-label">Call Stack</div>
-            <div class="stack-trace">${this.formatStack(error.stack)}</div>
-          ` : ''}
+          <div class="section-label" id="eq-source-label">Source Context</div>
+          <div class="code-block" id="eq-source-context">${this.highlightCode(error.stack || '')}</div>
+
+          ${
+            error.stack
+              ? `
+            <div class="section-label" id="eq-stack-label">Call Stack</div>
+            <div class="stack-trace" id="eq-stack-trace">${this.formatStack(error.stack)}</div>
+          `
+              : ''
+          }
         </div>
 
         <div class="footer">
@@ -251,22 +258,127 @@ class ErrorOverlay {
       }
     };
     document.addEventListener('keydown', closeHandler);
+
+    // Asynchronously remap the JS stack back to C# via source maps and upgrade the UI in place.
+    if (error.stack) void this.enhanceWithSourceMaps(error.stack);
+  }
+
+  /**
+   * Translates the JS stack trace to the original C# frames (using the bundle's source maps) and
+   * rewrites the Call Stack + Source Context in place. Degrades silently to the JS view on failure.
+   */
+  private async enhanceWithSourceMaps(stack: string): Promise<void> {
+    let frames: RemappedFrame[];
+    try {
+      frames = await remapStackTrace(stack, (url) => this.fetchSourceMap(url));
+    } catch {
+      return;
+    }
+
+    if (!this.overlay || !frames.some((f) => f.mapped)) return; // nothing mapped → keep JS view
+
+    const stackEl = this.overlay.querySelector('#eq-stack-trace');
+    const stackLabel = this.overlay.querySelector('#eq-stack-label');
+    if (stackEl) stackEl.innerHTML = this.formatRemappedStack(frames);
+    if (stackLabel) stackLabel.textContent = 'Call Stack (C#)';
+
+    // Show a C# source snippet around the first mapped frame that carries source content.
+    const top = frames.find((f) => f.mapped && f.sourceContent);
+    if (top) {
+      const ctxEl = this.overlay.querySelector('#eq-source-context');
+      const ctxLabel = this.overlay.querySelector('#eq-source-label');
+      if (ctxEl) ctxEl.innerHTML = this.renderCSharpSnippet(top);
+      if (ctxLabel)
+        ctxLabel.textContent = `Source Context — ${this.escapeHtml(top.file)}:${top.line}`;
+    }
+  }
+
+  private async fetchSourceMap(jsUrl: string): Promise<RawSourceMap | null> {
+    try {
+      // Bun emits "<file>.js.map" next to the bundle; the sourceMappingURL points at it.
+      const response = await fetch(`${jsUrl}.map`);
+      if (!response.ok) return null;
+      return (await response.json()) as RawSourceMap;
+    } catch {
+      return null;
+    }
+  }
+
+  private formatRemappedStack(frames: RemappedFrame[]): string {
+    return frames
+      .map((f) => {
+        const func = f.func ? this.escapeHtml(f.func) : '<anonymous>';
+        const tag = f.mapped ? '' : ' <span class="stack-pos">(js)</span>';
+        return (
+          `<span class="stack-line">at <span class="eq-hl-func">${func}</span> ` +
+          `(<span class="stack-file">${this.escapeHtml(f.file)}</span>:` +
+          `<span class="stack-pos">${f.line}</span>:<span class="stack-pos">${f.column}</span>)${tag}</span>`
+        );
+      })
+      .join('');
+  }
+
+  private renderCSharpSnippet(frame: RemappedFrame): string {
+    const content = frame.sourceContent ?? '';
+    const lines = content.split('\n');
+    const target = frame.line; // 1-based
+    const start = Math.max(1, target - 2);
+    const end = Math.min(lines.length, target + 2);
+
+    const out: string[] = [];
+    for (let n = start; n <= end; n++) {
+      const isTarget = n === target;
+      const gutter = String(n).padStart(4, ' ');
+      const text = this.escapeHtml(lines[n - 1] ?? '');
+      out.push(
+        `<div class="stack-line"${isTarget ? ' style="background:rgba(229,62,62,0.15)"' : ''}>` +
+          `<span class="stack-pos">${gutter}</span>  ${isTarget ? '<span class="eq-hl-keyword">▶</span> ' : '  '}${text}` +
+          `</div>`,
+      );
+    }
+    return out.join('');
   }
 
   private highlightCode(stack: string): string {
     const lines = stack.split('\n');
     const firstLine = lines[0] || '';
-    
+
     // If it looks like a stack trace line, don't try to highlight as code
     if (firstLine.trim().startsWith('at ')) {
-        return this.escapeHtml(firstLine);
+      return this.escapeHtml(firstLine);
     }
 
     // Basic regex highlighter
     let highlighted = this.escapeHtml(firstLine);
-    
+
     // Keywords
-    const keywords = ['function', 'class', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'return', 'async', 'await', 'import', 'export', 'public', 'private', 'protected', 'static', 'readonly', 'new', 'this', 'throw', 'try', 'catch', 'finally'];
+    const keywords = [
+      'function',
+      'class',
+      'const',
+      'let',
+      'var',
+      'if',
+      'else',
+      'for',
+      'while',
+      'return',
+      'async',
+      'await',
+      'import',
+      'export',
+      'public',
+      'private',
+      'protected',
+      'static',
+      'readonly',
+      'new',
+      'this',
+      'throw',
+      'try',
+      'catch',
+      'finally',
+    ];
     const kwRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
     highlighted = highlighted.replace(kwRegex, '<span class="eq-hl-keyword">$1</span>');
 
@@ -283,17 +395,20 @@ class ErrorOverlay {
   }
 
   private formatStack(stack: string): string {
-      return stack.split('\n')
-          .filter(line => line.trim().startsWith('at'))
-          .map(line => {
-              const match = line.match(/(at\s+)?(.*?)\s+\((.*?):(\d+):(\d+)\)/) || line.match(/(at\s+)?(.*?):(.*?):(\d+):(\d+)/);
-              if (match) {
-                  const [,, func, file, lineNum, col] = match;
-                  return `<span class="stack-line">at <span class="eq-hl-func">${this.escapeHtml(func)}</span> (<span class="stack-file">${this.escapeHtml(file)}</span>:<span class="stack-pos">${lineNum}</span>:<span class="stack-pos">${col}</span>)</span>`;
-              }
-              return `<span class="stack-line">${this.escapeHtml(line)}</span>`;
-          })
-          .join('');
+    return stack
+      .split('\n')
+      .filter((line) => line.trim().startsWith('at'))
+      .map((line) => {
+        const match =
+          line.match(/(at\s+)?(.*?)\s+\((.*?):(\d+):(\d+)\)/) ||
+          line.match(/(at\s+)?(.*?):(.*?):(\d+):(\d+)/);
+        if (match) {
+          const [, , func, file, lineNum, col] = match;
+          return `<span class="stack-line">at <span class="eq-hl-func">${this.escapeHtml(func)}</span> (<span class="stack-file">${this.escapeHtml(file)}</span>:<span class="stack-pos">${lineNum}</span>:<span class="stack-pos">${col}</span>)</span>`;
+        }
+        return `<span class="stack-line">${this.escapeHtml(line)}</span>`;
+      })
+      .join('');
   }
 
   private escapeHtml(text: string): string {
