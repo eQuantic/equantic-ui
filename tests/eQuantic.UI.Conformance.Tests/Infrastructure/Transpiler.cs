@@ -70,7 +70,9 @@ public class __Conformance
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(System.Collections.Generic.Stack<>).Assembly.Location),
                 MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location),
+                MetadataReference.CreateFromFile(Assembly.Load("System.Collections").Location),
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 

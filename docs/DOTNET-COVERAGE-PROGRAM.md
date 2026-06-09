@@ -76,7 +76,8 @@ Design notes:
 - **LINQ**: Where/Select/SelectMany/indexed Select·Where/OrderBy/Distinct(By)/GroupBy/ToDictionary/Zip/
   Chunk/Min·MaxBy/Take(While)/Skip(While)/Aggregate/Sum/Min/Max/Average/Count/Any/All/First/Last/Concat/
   Reverse ✅; remaining — ToLookup, Join, GroupJoin, OrderBy.ThenBy stability edge cases ⬜.
-- **Collections**: List ✅, Dictionary ✅, HashSet ✅, Queue/Stack ⬜, LinkedList ⬜, sorted collections ⬜.
+- **Collections**: List ✅, Dictionary ✅, HashSet ✅, Queue ✅, Stack ✅ (compat types), LinkedList ⬜,
+  sorted collections ⬜.
 - **Types**: enum ✅, Guid ✅, DateTime ✅(tick-precise compat), TimeSpan ✅(tick-precise compat),
   Nullable ⬜(partial), Tuple ⬜(expression form), record/struct value semantics ⬜, DateTimeOffset/
   DateOnly/TimeOnly ⬜.

@@ -16,7 +16,8 @@ public static class DotNetEvaluator
         .AddReferences(
             typeof(object).Assembly,
             typeof(System.Linq.Enumerable).Assembly,
-            typeof(System.Collections.Generic.List<>).Assembly)
+            typeof(System.Collections.Generic.List<>).Assembly,
+            typeof(System.Collections.Generic.Stack<>).Assembly)
         .AddImports("System", "System.Linq", "System.Collections.Generic", "System.Text");
 
     private static readonly JsonSerializerOptions JsonOptions = new()

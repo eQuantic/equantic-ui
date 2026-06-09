@@ -4,6 +4,7 @@ import { round } from './utils/dotnet-math';
 import { format, parseEnum } from './utils/format';
 import { dateTime, timeSpan } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
+import { queue, stack } from './utils/collections';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
@@ -28,6 +29,8 @@ export const $eq = {
   time: { dateTime, timeSpan },
   /** Enum parsing (member-name string). */
   enums: { parse: parseEnum },
+  /** Collections — Queue (FIFO), Stack (LIFO). */
+  collections: { queue, stack },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;
