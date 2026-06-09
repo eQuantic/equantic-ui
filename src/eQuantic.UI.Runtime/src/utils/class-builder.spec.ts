@@ -38,20 +38,20 @@ describe('ClassBuilder', () => {
   });
 
   describe('when', () => {
-    it('should add classes when condition is true', () => {
+    it('should add all classes when condition is true (variadic)', () => {
       const result = ClassBuilder.create()
         .add('flex')
         .when(true, 'bg-blue-600', 'bg-gray-600')
         .build();
-      expect(result).toBe('flex bg-blue-600');
+      expect(result).toBe('flex bg-blue-600 bg-gray-600');
     });
 
-    it('should add fallback when condition is false', () => {
+    it('should add nothing when condition is false (no fallback — use whenClass for that)', () => {
       const result = ClassBuilder.create()
         .add('flex')
         .when(false, 'bg-blue-600', 'bg-gray-600')
         .build();
-      expect(result).toBe('flex bg-gray-600');
+      expect(result).toBe('flex');
     });
 
     it('should add nothing when false and no fallback', () => {
