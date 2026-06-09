@@ -19,13 +19,18 @@ public static class DotNetEvaluator
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        // Match JSON.stringify defaults as closely as possible.
+        // Match JSON.stringify of the transpiled output: object property names are camelCased
+        // by the transpiler, so serialize .NET objects camelCase too for a fair comparison.
         WriteIndented = false,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public static string EvaluateToJson(string csharpExpression)
+    public static string EvaluateToJson(string csharpExpression, string prelude = "")
     {
-        var value = CSharpScript.EvaluateAsync<object?>(csharpExpression, Options).GetAwaiter().GetResult();
+        // A prelude (type declarations such as enums/records) runs before the trailing expression;
+        // CSharpScript returns the value of that final expression.
+        var script = string.IsNullOrWhiteSpace(prelude) ? csharpExpression : $"{prelude}\n{csharpExpression}";
+        var value = CSharpScript.EvaluateAsync<object?>(script, Options).GetAwaiter().GetResult();
         return JsonSerializer.Serialize(value, JsonOptions);
     }
 }

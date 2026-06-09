@@ -14,12 +14,14 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 /// </summary>
 public static class Transpiler
 {
-    public static string TranspileExpression(string csharpExpression)
+    public static string TranspileExpression(string csharpExpression, string prelude = "")
     {
         var code = $@"
 using System;
 using System.Linq;
 using System.Collections.Generic;
+
+{prelude}
 
 public class __Conformance
 {{

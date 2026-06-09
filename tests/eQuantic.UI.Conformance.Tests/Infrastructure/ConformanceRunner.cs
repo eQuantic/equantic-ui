@@ -9,13 +9,20 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 /// </summary>
 public static class ConformanceRunner
 {
-    public static void AssertSameAsDotNet(string csharpExpression)
+    public static void AssertSameAsDotNet(string csharpExpression) =>
+        AssertSameAsDotNet(csharpExpression, prelude: "");
+
+    /// <summary>
+    /// As above, but with a C# <paramref name="prelude"/> of type declarations (e.g. an enum) made
+    /// available to both the transpiler's semantic model and the .NET evaluator.
+    /// </summary>
+    public static void AssertSameAsDotNet(string csharpExpression, string prelude)
     {
-        var js = Transpiler.TranspileExpression(csharpExpression);
+        var js = Transpiler.TranspileExpression(csharpExpression, prelude);
         var program = $"console.log(JSON.stringify({js}))";
 
         var actual = JsExecutor.Run(program);
-        var expected = DotNetEvaluator.EvaluateToJson(csharpExpression);
+        var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, prelude);
 
         actual.Should().Be(
             expected,

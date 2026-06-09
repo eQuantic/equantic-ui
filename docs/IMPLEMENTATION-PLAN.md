@@ -113,14 +113,18 @@ contract the harness and the validator enforce.
 proving float division is *not* truncated). *Acceptance met: the loop runs green.*
 
 **M1 — Seed corpus + regression backfill (W2 + W5). 🔄 In progress.**
-67 cases green across arithmetic, strings, LINQ, expression-level control flow and Math, plus
-regressions for integer division, Math.Truncate/Ceiling/Round and the switch var-pattern. The harness
-already paid for itself: it surfaced two previously-unknown transpiler bugs — array creation
-(`new[]{…}` / `new int[]{…}`) was emitted verbatim (invalid JS), and array `.Contains` emitted
-`.contains` instead of `.includes` — both fixed (ArrayCreationStrategy + a receiver-type check in
-ContainsStrategy). Still to cover: enum-typed comparisons and `ToString(format)`/formatted
-interpolation (need shared type context + the `format` helper injected — see Decision 3), and
-statement-level constructs (need a block-evaluating harness mode — folds into M2).
+73 cases green across arithmetic, strings, LINQ, expression-level control flow, Math and enums, plus
+regressions for integer division, Math.Truncate/Ceiling/Round, the switch var-pattern and the
+enum-as-string representation (#13). The harness already paid for itself: it surfaced two
+previously-unknown transpiler bugs — array creation (`new[]{…}` / `new int[]{…}`) was emitted verbatim
+(invalid JS), and array `.Contains` emitted `.contains` instead of `.includes` — both fixed
+(ArrayCreationStrategy + a receiver-type check in ContainsStrategy).
+
+The harness now supports a **shared type-declaration prelude** (e.g. an enum defined for both the
+transpiler's semantic model and the .NET evaluator) and serializes .NET objects in **camelCase** to
+match the transpiler's property casing. Still to cover: `ToString(format)`/formatted interpolation
+(need the `format` helper injected — Decision 3), record/DTO object values (need the type emitted in
+JS too), and statement-level constructs (need a block-evaluating harness mode — folds into M2).
 *Acceptance: corpus green; CI fails if any divergence is introduced.*
 
 **M2 — Fail-on-unsupported (W3).**
