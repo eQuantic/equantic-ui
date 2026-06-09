@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        <!-- Metadata -->
+        <PackageId>eQuantic.UI.Runtime.LinuxArm64</PackageId>
+        <Description>eQuantic UI Runtime for Linux (arm64).</Description>
+        <Authors>eQuantic Tech</Authors>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Ship only the .zip; the extracted binary (created on-demand by the SDK) must not be packed. -->
+        <Content Include="tools\**" Exclude="tools\bun\bun-linux" PackagePath="tools" />
+        <Content Include="build\**" PackagePath="build" />
+    </ItemGroup>
+</Project>

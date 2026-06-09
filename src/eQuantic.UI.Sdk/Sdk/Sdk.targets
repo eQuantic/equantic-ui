@@ -17,46 +17,36 @@
     </PropertyGroup>
     <PropertyGroup>
         <_EqOsArch Condition="'$(_EqOsArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_EqOsArch>
-        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-            eQuantic.UI.Runtime.Win64</BunRuntimePackageId>
-        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-            eQuantic.UI.Runtime.Linux64</BunRuntimePackageId>
-        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(_EqOsArch)' == 'Arm64'">eQuantic.UI.Runtime.OsxArm64</BunRuntimePackageId>
-        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(_EqOsArch)' != 'Arm64'">eQuantic.UI.Runtime.Osx64</BunRuntimePackageId>
+        <_EqIsArm64 Condition="'$(_EqOsArch)' == 'Arm64'">true</_EqIsArm64>
+
+        <!-- Per-OS + per-architecture embedded-bun package (arm64 native where available, else x64-baseline). -->
+        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(_EqIsArm64)' == 'true'">eQuantic.UI.Runtime.WinArm64</BunRuntimePackageId>
+        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(_EqIsArm64)' != 'true'">eQuantic.UI.Runtime.Win64</BunRuntimePackageId>
+        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(_EqIsArm64)' == 'true'">eQuantic.UI.Runtime.LinuxArm64</BunRuntimePackageId>
+        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(_EqIsArm64)' != 'true'">eQuantic.UI.Runtime.Linux64</BunRuntimePackageId>
+        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(_EqIsArm64)' == 'true'">eQuantic.UI.Runtime.OsxArm64</BunRuntimePackageId>
+        <BunRuntimePackageId Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(_EqIsArm64)' != 'true'">eQuantic.UI.Runtime.Osx64</BunRuntimePackageId>
+
+        <!-- Zip file name is per-OS (both arch variants of an OS use the same name). -->
+        <_BunZipName Condition="$([MSBuild]::IsOSPlatform('Windows'))">bun.exe.zip</_BunZipName>
+        <_BunZipName Condition="$([MSBuild]::IsOSPlatform('Linux'))">bun-linux.zip</_BunZipName>
+        <_BunZipName Condition="$([MSBuild]::IsOSPlatform('OSX'))">bun-darwin.zip</_BunZipName>
     </PropertyGroup>
 
     <Target Name="ResolveBunZipPath" BeforeTargets="ResolveBunPath">
         <PropertyGroup>
-            <BunPkgRef>Pkg$(BunRuntimePackageId.Replace('.', '_'))</BunPkgRef>
+            <!-- Dev fallback (source tree), keyed by the resolved per-OS+arch runtime package. -->
+            <BunZipPath
+                Condition="'$(BunZipPath)' == '' and Exists('$(MSBuildThisFileDirectory)../../$(BunRuntimePackageId)/tools/bun/$(_BunZipName)')">
+                $(MSBuildThisFileDirectory)../../$(BunRuntimePackageId)/tools/bun/$(_BunZipName)</BunZipPath>
 
-            <!-- Dev Fallback (Source Tree) -->
-            <BunZipPath
-                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('OSX')) and '$(_EqOsArch)' == 'Arm64' and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.OsxArm64/tools/bun/bun-darwin.zip')">
-                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.OsxArm64/tools/bun/bun-darwin.zip</BunZipPath>
-            <BunZipPath
-                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('OSX')) and '$(_EqOsArch)' != 'Arm64' and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin.zip')">
-                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin.zip</BunZipPath>
-            <BunZipPath
-                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Windows')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe.zip')">
-                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe.zip</BunZipPath>
-            <BunZipPath
-                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Linux')) and Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip')">
-                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip</BunZipPath>
-
-            <!-- Package Cache Resolution -->
-            <BunZipPath
-                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('OSX')) and '$(PkgeQuantic_UI_Runtime_OsxArm64)' != ''">
-                $(PkgeQuantic_UI_Runtime_OsxArm64)/tools/bun/bun-darwin.zip</BunZipPath>
-            <BunZipPath
-                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('OSX')) and '$(PkgeQuantic_UI_Runtime_Osx64)' != ''">
-                $(PkgeQuantic_UI_Runtime_Osx64)/tools/bun/bun-darwin.zip</BunZipPath>
-            <BunZipPath
-                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Windows')) and '$(PkgeQuantic_UI_Runtime_Win64)' != ''">
-                $(PkgeQuantic_UI_Runtime_Win64)/tools/bun/bun.exe.zip</BunZipPath>
-            <BunZipPath
-                Condition="'$(BunZipPath)' == '' and $([MSBuild]::IsOSPlatform('Linux')) and '$(PkgeQuantic_UI_Runtime_Linux64)' != ''">
-                $(PkgeQuantic_UI_Runtime_Linux64)/tools/bun/bun-linux.zip</BunZipPath>
-
+            <!-- NuGet package cache: only the matching package's $(Pkg*) is set (conditional refs in Sdk.props). -->
+            <BunZipPath Condition="'$(BunZipPath)' == '' and '$(PkgeQuantic_UI_Runtime_OsxArm64)' != ''">$(PkgeQuantic_UI_Runtime_OsxArm64)/tools/bun/$(_BunZipName)</BunZipPath>
+            <BunZipPath Condition="'$(BunZipPath)' == '' and '$(PkgeQuantic_UI_Runtime_Osx64)' != ''">$(PkgeQuantic_UI_Runtime_Osx64)/tools/bun/$(_BunZipName)</BunZipPath>
+            <BunZipPath Condition="'$(BunZipPath)' == '' and '$(PkgeQuantic_UI_Runtime_WinArm64)' != ''">$(PkgeQuantic_UI_Runtime_WinArm64)/tools/bun/$(_BunZipName)</BunZipPath>
+            <BunZipPath Condition="'$(BunZipPath)' == '' and '$(PkgeQuantic_UI_Runtime_Win64)' != ''">$(PkgeQuantic_UI_Runtime_Win64)/tools/bun/$(_BunZipName)</BunZipPath>
+            <BunZipPath Condition="'$(BunZipPath)' == '' and '$(PkgeQuantic_UI_Runtime_LinuxArm64)' != ''">$(PkgeQuantic_UI_Runtime_LinuxArm64)/tools/bun/$(_BunZipName)</BunZipPath>
+            <BunZipPath Condition="'$(BunZipPath)' == '' and '$(PkgeQuantic_UI_Runtime_Linux64)' != ''">$(PkgeQuantic_UI_Runtime_Linux64)/tools/bun/$(_BunZipName)</BunZipPath>
         </PropertyGroup>
     </Target>
 
