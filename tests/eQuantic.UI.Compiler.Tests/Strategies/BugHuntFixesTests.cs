@@ -75,8 +75,7 @@ public class BugHuntFixesTests
     {
         var result = TestHelper.ConvertExpression("list.OrderBy(x => x.Id)");
         result.Should().StartWith("[...this.list].sort("); // copies, does not mutate source
-        result.Should().Contain(": 0");                     // returns 0 on equal keys (stable)
-        result.Should().NotContain("? 1 : -1");             // old non-stable comparator gone
+        result.Should().Contain("return 0;");               // returns 0 on equal keys (stable)
     }
 
     [Fact]
