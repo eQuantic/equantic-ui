@@ -67,6 +67,33 @@ public class SemanticHelper
         return _semanticModel?.GetTypeInfo(node).Type;
     }
 
+    /// <summary>
+    /// True for .NET value-shaped data that the transpiler models as plain objects/arrays and that
+    /// compares by VALUE: records (class or struct), user structs, and value tuples. Excludes
+    /// <c>Nullable&lt;T&gt;</c> (handled separately), primitives/string/decimal (their
+    /// <see cref="SpecialType"/> is set), and the compat structs that carry their own equality
+    /// (DateTime, TimeSpan, DateOnly, TimeOnly, DateTimeOffset, Guid).
+    /// </summary>
+    public static bool IsStructuralValueType(ITypeSymbol? type)
+    {
+        if (type == null) return false;
+        if (type is INamedTypeSymbol n && n.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T)
+            return false;
+        if (type.SpecialType != SpecialType.None) return false; // int/string/decimal/bool/…
+        if (type.IsTupleType) return true;
+        if (type.IsRecord) return true;
+        if (type.TypeKind == TypeKind.Struct)
+        {
+            return type.ToDisplayString() switch
+            {
+                "System.DateTime" or "System.TimeSpan" or "System.DateOnly" or "System.TimeOnly"
+                    or "System.DateTimeOffset" or "System.Guid" => false,
+                _ => true,
+            };
+        }
+        return false;
+    }
+
     public bool IsLinqMethod(SyntaxNode node, string methodName)
     {
         if (node is not Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax invocation) return false;
