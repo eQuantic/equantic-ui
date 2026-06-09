@@ -49,11 +49,12 @@ public class ComponentDependencyResolver
             var tree = CSharpSyntaxTree.ParseText(code, path: filePath);
             var root = tree.GetRoot();
 
-            // Discover positional records — emitted as named JS classes (so references import them).
-            foreach (var rec in root.DescendantNodes().OfType<RecordDeclarationSyntax>())
+            // Discover user value types (records/structs) — emitted as named JS classes (so references
+            // import them).
+            foreach (var valueType in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
             {
-                if (CodeGen.RecordTypeEmitter.CanEmit(rec))
-                    _recordTypes.Add(rec.Identifier.Text);
+                if (CodeGen.RecordTypeEmitter.CanEmit(valueType))
+                    _recordTypes.Add(valueType.Identifier.Text);
             }
 
             // Find all class declarations

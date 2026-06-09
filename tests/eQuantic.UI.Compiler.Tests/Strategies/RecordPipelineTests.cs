@@ -24,7 +24,7 @@ public class RecordPipelineTests
         var ts = result.TypeScript;
         ts.Should().Contain("import { $eq } from \"@equantic/runtime\"");
         ts.Should().Contain("export class Point");
-        ts.Should().Contain("constructor(x, y)");
+        ts.Should().Contain("constructor(x = 0, y = 0)"); // per-member defaults cover omitted args
         ts.Should().Contain("equals(o)");
         ts.Should().Contain("with(patch)");
         ts.Should().Contain("sum()");        // user instance method

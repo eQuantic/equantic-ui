@@ -50,20 +50,20 @@ public class ComponentParser
             }
         }
         
-        // Discover user data types: any positional record is emitted as a named JS class. Reactive —
-        // driven by the record declarations actually present, not a fixed list.
-        foreach (var recordDecl in root.DescendantNodes().OfType<RecordDeclarationSyntax>())
+        // Discover user value types: records (positional or body) and structs are emitted as named JS
+        // classes. Reactive — driven by the declarations actually present, not a fixed list.
+        foreach (var typeDecl in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
         {
-            if (RecordTypeEmitter.CanEmit(recordDecl))
+            if (RecordTypeEmitter.CanEmit(typeDecl))
             {
                 results.Add(new ComponentDefinition
                 {
-                    Name = recordDecl.Identifier.Text,
+                    Name = typeDecl.Identifier.Text,
                     SourcePath = sourcePath,
                     SyntaxTree = tree,
                     Namespace = ns ?? "",
                     IsRecordType = true,
-                    RecordSyntax = recordDecl,
+                    ValueTypeSyntax = typeDecl,
                 });
             }
         }
