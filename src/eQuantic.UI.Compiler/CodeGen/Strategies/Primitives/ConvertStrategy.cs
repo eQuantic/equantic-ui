@@ -40,6 +40,7 @@ public class ConvertStrategy : IConversionStrategy
             or "ToUInt32" or "ToUInt16" or "ToInt64" or "ToUInt64";
         if (isIntegerTarget && !isStringArg)
         {
+            context.UsedHelpers.Add(Eq.Import);
             return $"{Eq.Round}({value})";
         }
 

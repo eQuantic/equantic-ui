@@ -39,6 +39,7 @@ public class InterpolatedStringStrategy : IConversionStrategy
                     
                     if (format != null || alignment != null)
                     {
+                        context.UsedHelpers.Add(Eq.Import);
                         var fmtArg = format != null ? $"'{format}'" : "null";
                         var alignArg = alignment != null ? $", {alignment}" : "";
                         sb.Append($"{Eq.Format}({expr}, {fmtArg}{alignArg})");

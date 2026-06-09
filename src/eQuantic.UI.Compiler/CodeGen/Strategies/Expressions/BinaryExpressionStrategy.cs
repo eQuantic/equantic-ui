@@ -99,6 +99,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
             && (IsLong(context.SemanticHelper.GetType(binary.Left))
                 || IsLong(context.SemanticHelper.GetType(binary.Right))))
         {
+            context.UsedHelpers.Add(Eq.Import);
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
             return $"({Eq.Long}({left}) {jsOp} {Eq.Long}({right}))";
         }
@@ -151,6 +152,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
         // Always wrap both operands in $eq.num.dec(): it is a pass-through for existing Decimals and
         // coerces plain numbers (e.g. a decimal field that arrived from state as a JS number) — so the
         // call is safe regardless of the runtime representation.
+        context.UsedHelpers.Add(Eq.Import);
         var l = $"{Eq.Dec}({left})";
         var r = $"{Eq.Dec}({right})";
 

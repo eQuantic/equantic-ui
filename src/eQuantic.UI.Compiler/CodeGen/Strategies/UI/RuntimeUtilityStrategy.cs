@@ -65,8 +65,11 @@ public class RuntimeUtilityStrategy : IConversionStrategy
         var methodName = methodSymbol.Name;
         var tsMethodName = ToCamelCase(methodName);
 
-        // Static method calls (e.g. StyleBuilder.Create()) start the chain on the global $eq.css
-        // namespace: StyleBuilder -> $eq.css.styleBuilder. No per-module import needed.
+        // Emitting $eq.* requires the single $eq import (resolved by the page import map).
+        context.UsedHelpers.Add(Eq.Import);
+
+        // Static method calls (e.g. StyleBuilder.Create()) start the chain on the $eq.css namespace:
+        // StyleBuilder -> $eq.css.styleBuilder.
         if (methodSymbol.IsStatic)
         {
             var arguments = ConvertArguments(invocation, context);

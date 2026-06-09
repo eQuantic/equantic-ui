@@ -51,6 +51,7 @@ public class MathStrategy : IConversionStrategy
         // neither matches JS Math.round. Route through the runtime $eq.math.round compat helper.
         if (methodName == "Round" && argsList.Count >= 1)
         {
+            context.UsedHelpers.Add(Eq.Import);
             return argsList.Count >= 2
                 ? $"{Eq.Round}({argsList[0]}, {argsList[1]})"
                 : $"{Eq.Round}({argsList[0]})";

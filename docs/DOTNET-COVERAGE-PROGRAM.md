@@ -13,8 +13,9 @@
 2. **.NET-compat runtime helper** — when JS lacks the semantics, emit a call into a TypeScript
    library that faithfully implements the .NET behavior. The transpiler emits these under the global
    **`$eq`** namespace, organised by domain — `$eq.num.dec/long`, `$eq.math.round`, `$eq.text.format/
-   stringBuilder`, `$eq.time.dateTime/timeSpan`, `$eq.enums.parse`. `$eq` is provided once as a runtime
-   global (`window.$eq`), so generated modules need no imports and `$eq.*` cannot shadow user code.
+   stringBuilder`, `$eq.time.dateTime/timeSpan`, `$eq.enums.parse`, `$eq.css.*`. Brought in with one
+   import per module (`import { $eq } from "@equantic/runtime"`, resolved by the page import map) and
+   `$eq.*` cannot shadow user code.
 3. **Fail-on-unsupported** — when no faithful conversion exists (unsafe code, P/Invoke, reflection
    emit, threading, filesystem on the client), the validator emits a build **error** with `file:line`
    and a remediation hint. Never silently miscompile.

@@ -37,6 +37,7 @@ public class DateTimeStrategy : IConversionStrategy
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
+        context.UsedHelpers.Add(Eq.Import);
         switch (node)
         {
             case ObjectCreationExpressionSyntax oc:

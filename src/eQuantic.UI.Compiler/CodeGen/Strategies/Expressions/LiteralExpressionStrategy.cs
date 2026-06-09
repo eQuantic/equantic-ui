@@ -37,6 +37,7 @@ public class LiteralExpressionStrategy : IConversionStrategy
         // decimal literal (1.1m / 1.1M) -> exact Decimal via the $eq.num.dec compat helper.
         if (!isHexOrBinary && text.Length > 0 && (text[^1] == 'm' || text[^1] == 'M'))
         {
+            context.UsedHelpers.Add(Eq.Import);
             return $"{Eq.Dec}(\"{text[..^1]}\")";
         }
 
