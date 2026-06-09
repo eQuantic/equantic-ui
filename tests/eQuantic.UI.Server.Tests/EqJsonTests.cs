@@ -18,6 +18,7 @@ public class EqJsonTests
         public long Big { get; set; }
         public ulong UBig { get; set; }
         public int Small { get; set; }
+        public decimal Price { get; set; }
     }
 
     [Fact]
@@ -57,5 +58,32 @@ public class EqJsonTests
         var json = JsonSerializer.Serialize(new Payload { Small = 1 }, EqJson.Options);
         json.Should().Contain("\"small\":");
         json.Should().NotContain("\"Small\":");
+    }
+
+    [Fact]
+    public void Decimal_IsSerializedAsString_PreservingScale()
+    {
+        var json = JsonSerializer.Serialize(new Payload { Price = 100.50m }, EqJson.Options);
+
+        // String form preserves the trailing zero (scale) — a JSON number would normalize to 100.5.
+        json.Should().Contain("\"price\":\"100.50\"");
+    }
+
+    [Fact]
+    public void Decimal_HighPrecision_RoundTripsExactly()
+    {
+        // 28 significant digits — far beyond what a double (the JS number type) can hold.
+        const decimal original = 0.1234567890123456789012345678m;
+        var json = JsonSerializer.Serialize(new Payload { Price = original }, EqJson.Options);
+        var back = JsonSerializer.Deserialize<Payload>(json, EqJson.Options)!;
+
+        back.Price.Should().Be(original);
+    }
+
+    [Fact]
+    public void Decimal_AcceptsBareNumber_OnRead()
+    {
+        var back = JsonSerializer.Deserialize<Payload>("{\"price\":19.99}", EqJson.Options)!;
+        back.Price.Should().Be(19.99m);
     }
 }

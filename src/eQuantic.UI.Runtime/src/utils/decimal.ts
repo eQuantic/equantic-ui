@@ -105,9 +105,14 @@ export class Decimal {
     return Number(this.toString());
   }
 
-  /** Serialize as a JSON number, matching .NET's decimal serialization. */
-  toJSON(): number {
-    return this.toNumber();
+  /**
+   * Serialize as a JSON **string** (e.g. `"19.99"`), matching the eQuantic wire protocol (`EqJson`
+   * emits decimal as a string). A JSON number would round through a double and lose digits beyond
+   * ~17 significant figures; the string preserves the exact value and scale so a server round-trip
+   * (Server Action arg, SSR state) stays precise.
+   */
+  toJSON(): string {
+    return this.toString();
   }
 }
 

@@ -36,8 +36,16 @@ describe('Decimal — exact base-10 arithmetic', () => {
     expect(dec('-0.3').toString()).toBe('-0.3');
   });
 
-  it('serializes to a JSON number', () => {
-    expect(new Decimal(33n, 1).toJSON()).toBe(3.3);
-    expect(JSON.stringify({ v: dec('1.1').add(dec('2.2')) })).toBe('{"v":3.3}');
+  it('serializes to a JSON string (exact wire protocol)', () => {
+    expect(new Decimal(33n, 1).toJSON()).toBe('3.3');
+    expect(JSON.stringify({ v: dec('1.1').add(dec('2.2')) })).toBe('{"v":"3.3"}');
+  });
+
+  it('round-trips a high-precision value through JSON without loss', () => {
+    const original = dec('0.123456789012345678901234567'); // 27 digits — a double would mangle it
+    const json = JSON.stringify({ v: original });
+    expect(json).toBe('{"v":"0.123456789012345678901234567"}');
+    const parsed = dec((JSON.parse(json) as { v: string }).v);
+    expect(parsed.toString()).toBe('0.123456789012345678901234567');
   });
 });

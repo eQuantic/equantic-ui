@@ -5,6 +5,7 @@
 import { Component, HtmlNode, RenderContext } from './types';
 import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
+import { hydrateValue } from '../utils/hydrate-value';
 
 /**
  * Base class for stateless components
@@ -87,11 +88,15 @@ export abstract class StatefulComponent extends Component {
       if (typeof window !== 'undefined' && (window as any).__INITIAL_STATE__ && this._state) {
         const initialState = (window as any).__INITIAL_STATE__;
 
-        // Copy data properties from SSR state to client state
-        // Server preserves original field names (including underscore prefix)
+        // Copy data properties from SSR state to client state.
+        // Server preserves original field names (including underscore prefix).
+        // The existing field's default value reveals its runtime type, so values that crossed the
+        // wire as strings (decimal -> Decimal, long -> bigint) are coerced back to that type —
+        // see hydrateValue. Plain fields are assigned verbatim.
+        const state = this._state as unknown as Record<string, unknown>;
         Object.keys(initialState).forEach((key) => {
           if (this._state && typeof initialState[key] !== 'function' && key in this._state) {
-            (this._state as unknown as Record<string, unknown>)[key] = initialState[key];
+            state[key] = hydrateValue(state[key], initialState[key]);
           }
         });
         // Clear initial state to prevent reuse
