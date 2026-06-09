@@ -112,8 +112,15 @@ contract the harness and the validator enforce.
 `ConformanceRunner`; 7 arithmetic cases pass (incl. integer truncation across signs and `7.0/2 == 3.5`
 proving float division is *not* truncated). *Acceptance met: the loop runs green.*
 
-**M1 — Seed corpus + regression backfill (W2 + W5).**
-~80–120 cases across arithmetic/strings/LINQ/control-flow/enums + the 24-bug regressions.
+**M1 — Seed corpus + regression backfill (W2 + W5). 🔄 In progress.**
+67 cases green across arithmetic, strings, LINQ, expression-level control flow and Math, plus
+regressions for integer division, Math.Truncate/Ceiling/Round and the switch var-pattern. The harness
+already paid for itself: it surfaced two previously-unknown transpiler bugs — array creation
+(`new[]{…}` / `new int[]{…}`) was emitted verbatim (invalid JS), and array `.Contains` emitted
+`.contains` instead of `.includes` — both fixed (ArrayCreationStrategy + a receiver-type check in
+ContainsStrategy). Still to cover: enum-typed comparisons and `ToString(format)`/formatted
+interpolation (need shared type context + the `format` helper injected — see Decision 3), and
+statement-level constructs (need a block-evaluating harness mode — folds into M2).
 *Acceptance: corpus green; CI fails if any divergence is introduced.*
 
 **M2 — Fail-on-unsupported (W3).**

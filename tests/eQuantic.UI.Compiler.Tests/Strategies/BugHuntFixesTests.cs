@@ -114,4 +114,24 @@ public class BugHuntFixesTests
         result.Should().Contain("'active'");
         result.Should().NotContain("=== 0");
     }
+
+    [Fact]
+    public void ImplicitArrayCreation_BecomesJsArrayLiteral()
+    {
+        // Found by the conformance harness: array creation used to be emitted verbatim (invalid JS).
+        TestHelper.ConvertExpression("new[]{1,2,3}").Should().Be("[1, 2, 3]");
+    }
+
+    [Fact]
+    public void ExplicitArrayCreation_BecomesJsArrayLiteral()
+    {
+        TestHelper.ConvertExpression("new int[]{1,2,3}").Should().Be("[1, 2, 3]");
+    }
+
+    [Fact]
+    public void ArrayContains_MapsToIncludes()
+    {
+        // Found by the conformance harness: array Contains used to emit `.contains` (not a function).
+        TestHelper.ConvertExpression("new[]{1,2,3}.Contains(2)").Should().Be("[1, 2, 3].includes(2)");
+    }
 }

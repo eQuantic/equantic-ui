@@ -134,6 +134,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<LiteralExpressionStrategy>();
         _strategyRegistry.Register<ConditionalExpressionStrategy>();
         _strategyRegistry.Register<InitializerExpressionStrategy>();
+        _strategyRegistry.Register<ArrayCreationStrategy>();
         _strategyRegistry.Register<IsPatternStrategy>();
         _strategyRegistry.Register<DeclarationExpressionStrategy>();
         _strategyRegistry.Register<CollectionExpressionStrategy>();

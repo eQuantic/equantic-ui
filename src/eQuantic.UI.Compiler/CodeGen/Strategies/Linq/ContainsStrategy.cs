@@ -19,6 +19,25 @@ public class ContainsStrategy : IConversionStrategy
         if (memberAccess.Name.Identifier.Text != "Contains")
             return false;
 
+        // Receiver-type check (most reliable): arrays and sequence types map Contains -> includes.
+        // Arrays bind Contains via the Enumerable extension, which the method-symbol checks below
+        // miss. HashSet/ISet are intentionally excluded here (they map to Set.has elsewhere).
+        var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
+        if (receiverType is IArrayTypeSymbol)
+            return true;
+        if (receiverType != null)
+        {
+            if (receiverType.SpecialType == SpecialType.System_String)
+                return true;
+            var def = receiverType.OriginalDefinition?.ToString() ?? "";
+            if (def.StartsWith("System.Collections.Generic.List") ||
+                def.StartsWith("System.Collections.Generic.IList") ||
+                def.StartsWith("System.Collections.Generic.ICollection") ||
+                def.StartsWith("System.Collections.Generic.IReadOnlyList") ||
+                def.StartsWith("System.Collections.Generic.IEnumerable"))
+                return true;
+        }
+
         // Semantic Check
         var symbol = context.SemanticHelper.GetSymbol(invocation);
         if (symbol is IMethodSymbol ms)
