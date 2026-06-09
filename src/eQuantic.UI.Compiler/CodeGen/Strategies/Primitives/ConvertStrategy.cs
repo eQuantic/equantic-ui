@@ -35,13 +35,12 @@ public class ConvertStrategy : IConversionStrategy
         var argType = context.SemanticHelper.GetType(argExpr);
         var isStringArg = argType?.SpecialType == SpecialType.System_String;
 
-        // Numeric → integer uses .NET banker's rounding via the `round` compat helper.
+        // Numeric → integer uses .NET banker's rounding via the $eq.math.round compat helper.
         bool isIntegerTarget = name is "ToInt32" or "ToInt16" or "ToByte" or "ToSByte"
             or "ToUInt32" or "ToUInt16" or "ToInt64" or "ToUInt64";
         if (isIntegerTarget && !isStringArg)
         {
-            context.UsedHelpers.Add("round");
-            return $"round({value})";
+            return $"{Eq.Round}({value})";
         }
 
         return name switch

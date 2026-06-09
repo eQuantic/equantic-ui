@@ -214,7 +214,7 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("parseEnum");
+        result.Should().Contain("$eq.enums.parse");
         result.Should().Contain("!== undefined");
         result.Should().Contain("Object.values");
         result.Should().Contain("'status'");

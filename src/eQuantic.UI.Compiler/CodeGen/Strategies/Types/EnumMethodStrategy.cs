@@ -56,8 +56,7 @@ public class EnumMethodStrategy : IConversionStrategy
             if (enumTypeName != null)
             {
                 // Use helper that tries to match case-insensitively
-                context.UsedHelpers.Add("parseEnum");
-                return $"parseEnum({value}, {enumTypeName})";
+                return $"{Eq.ParseEnum}({value}, {enumTypeName})";
             }
 
             return value; // Fallback
@@ -87,8 +86,7 @@ public class EnumMethodStrategy : IConversionStrategy
 
             if (enumTypeName != null)
             {
-                context.UsedHelpers.Add("parseEnum");
-                return $"({varName} = parseEnum({input}, {enumTypeName}), {varName} !== undefined)";
+                return $"({varName} = {Eq.ParseEnum}({input}, {enumTypeName}), {varName} !== undefined)";
             }
 
             return "false";

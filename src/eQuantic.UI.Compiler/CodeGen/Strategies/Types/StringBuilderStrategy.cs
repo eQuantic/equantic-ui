@@ -42,8 +42,7 @@ public class StringBuilderStrategy : IConversionStrategy
         switch (node)
         {
             case ObjectCreationExpressionSyntax oc:
-                context.UsedHelpers.Add("stringBuilder");
-                return $"stringBuilder({ConvertArgs(oc.ArgumentList, context)})";
+                return $"{Eq.StringBuilder}({ConvertArgs(oc.ArgumentList, context)})";
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
