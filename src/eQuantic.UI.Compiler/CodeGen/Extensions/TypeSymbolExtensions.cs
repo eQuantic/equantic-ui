@@ -31,6 +31,26 @@ public static class TypeSymbolExtensions
         // Int64/UInt64 (long) and Decimal are intentionally excluded — handled by their own branches.
     };
 
+    /// <summary>The framework base types a UI component / state class derives from. Kept tiny and
+    /// principled (the actual abstract bases the framework defines) — intermediate user/library bases
+    /// are reached by walking the chain, not by naming them.</summary>
+    private static readonly string[] ComponentBaseNames =
+        { "StatefulComponent", "StatelessComponent", "HtmlElement", "ComponentState" };
+
+    /// <summary>
+    /// True when the type derives (transitively) from a framework component/state base. Walking the base
+    /// chain recognises a component that extends another user or library component without enumerating
+    /// every intermediate base — replacing brittle direct-base-name matching.
+    /// </summary>
+    public static bool IsUiComponent(this ITypeSymbol? type)
+    {
+        for (var t = type; t != null; t = t.BaseType)
+        {
+            if (System.Array.IndexOf(ComponentBaseNames, t.Name) >= 0) return true;
+        }
+        return false;
+    }
+
     /// <summary>Returns the underlying <c>T</c> of a <c>Nullable&lt;T&gt;</c>, or the type itself.</summary>
     public static ITypeSymbol? UnwrapNullable(this ITypeSymbol? type)
     {
