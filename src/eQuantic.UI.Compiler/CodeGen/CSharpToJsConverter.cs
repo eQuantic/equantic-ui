@@ -56,6 +56,11 @@ public class CSharpToJsConverter
 
     public HashSet<string> UsedHelpers => _context.UsedHelpers;
 
+    /// <summary>Diagnostics raised during the most recent conversion(s); call <see cref="ClearDiagnostics"/> between components.</summary>
+    public IReadOnlyList<ConversionDiagnostic> Diagnostics => _context.Diagnostics;
+
+    public void ClearDiagnostics() => _context.ClearDiagnostics();
+
     private void RegisterStrategies()
     {
         // Compile-Time Evaluation Strategy (Highest Priority - 100)
@@ -185,6 +190,10 @@ public class CSharpToJsConverter
         // Fallback Strategies (Priority 1)
         _strategyRegistry.Register<InvocationStrategy>();
 
+        // Safety net (Priority 2): genuinely-impossible constructs become a build error (EQ2001)
+        // instead of being emitted verbatim.
+        _strategyRegistry.Register<UnsupportedConstructStrategy>();
+
         // Statement Strategies
         _statementRegistry.Register<IfStatementStrategy>();
         _statementRegistry.Register<ForStatementStrategy>();
@@ -246,6 +255,8 @@ public class CSharpToJsConverter
         if (node is ExpressionSyntax expr) return ConvertExpression(expr);
         if (node is BlockSyntax block) return ConvertBlock(block);
         if (node is StatementSyntax stmt) return ConvertStatement(stmt);
+        _context.Report(node, ConversionSeverity.Warning, "EQ1003",
+            $"C# node '{node.Kind()}' has no transpilation strategy; emitted verbatim and may fail at runtime.");
         return node.ToString();
     }
     
@@ -268,10 +279,9 @@ public class CSharpToJsConverter
             return result;
         }
 
-        return expression switch
-        {
-            _ => expression.ToString()
-        };
+        _context.Report(expression, ConversionSeverity.Warning, "EQ1001",
+            $"C# expression '{expression.Kind()}' has no transpilation strategy; emitted verbatim and may fail at runtime.");
+        return expression.ToString();
     }
 
     public string ConvertBlock(BlockSyntax block)
@@ -298,7 +308,9 @@ public class CSharpToJsConverter
         {
             return ConvertBlock(block);
         }
-        
-        return stmt.ToString(); 
+
+        _context.Report(stmt, ConversionSeverity.Warning, "EQ1002",
+            $"C# statement '{stmt.Kind()}' has no transpilation strategy; emitted verbatim and may fail at runtime.");
+        return stmt.ToString();
     }
 }

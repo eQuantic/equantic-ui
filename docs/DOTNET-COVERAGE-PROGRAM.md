@@ -64,21 +64,24 @@ Design notes:
 ## Coverage matrix (areas → status; filled in as the corpus grows)
 
 - **Operators / expressions**: arithmetic ✅, comparison ✅, logical ✅, ternary ✅, null-coalescing ✅,
-  bitwise ⬜, checked/unchecked ⬜, integer division ✅, shift ⬜.
-- **Numeric types**: int ✅(basic), double ✅(basic), decimal ⬜(needs helper), long ⬜(needs BigInt),
-  float ⬜, overflow ⬜, parsing/Convert ⬜.
-- **Strings**: core methods ✅, format specifiers ✅(F/X/N), padding/split/join ✅, StringBuilder ⬜,
-  interpolation ✅, comparison/IgnoreCase ⬜, char ops ⬜.
-- **Boolean / conversions**: bool ✅, `bool.Parse` ⬜, `Convert.ToBoolean/Int32/...` ⬜.
-- **LINQ**: ~22 operators ✅; remaining — GroupBy, ToDictionary, ToLookup, SelectMany, Zip, indexed
-  Select/Where, Join, GroupJoin, Min/MaxBy, Chunk, OrderBy.ThenBy stability, FirstOrDefault semantics ⬜.
+  bitwise ✅, integer division ✅, shift ✅, checked/unchecked ⬜.
+- **Numeric types**: int ✅, double ✅, decimal ✅(exact `Decimal`, wire-as-string + hydration),
+  long/ulong ✅(BigInt, wire-as-string), float ✅, parsing/Convert ✅, overflow ⬜.
+- **Strings**: core methods ✅, format specifiers ✅(F/X/N), padding/split/join ✅, interpolation ✅,
+  `Trim(char)` ✅, char ops ✅, StringBuilder ⬜, comparison/IgnoreCase ⬜(partial).
+- **Boolean / conversions**: bool ✅, `bool.Parse` ✅, `Convert.ToBoolean/Int32/Double/String/...` ✅.
+- **LINQ**: Where/Select/SelectMany/indexed Select·Where/OrderBy/Distinct(By)/GroupBy/ToDictionary/Zip/
+  Chunk/Min·MaxBy/Take(While)/Skip(While)/Aggregate/Sum/Min/Max/Average/Count/Any/All/First/Last/Concat/
+  Reverse ✅; remaining — ToLookup, Join, GroupJoin, OrderBy.ThenBy stability edge cases ⬜.
 - **Collections**: List ✅, Dictionary ✅, HashSet ✅, Queue/Stack ⬜, LinkedList ⬜, sorted collections ⬜.
 - **Types**: enum ✅, Guid ⬜, DateTime/TimeSpan ⬜, Nullable ⬜(partial), Tuple ⬜, record/struct value
   semantics ⬜.
 - **Control flow**: expression-level ✅; statement-level (if/for/while/foreach/switch/try) — needs the
   block-evaluating harness mode ⬜.
-- **Unsupported (fail-on-unsupported)**: unsafe, pointers, P/Invoke, reflection emit, threading, IO,
-  `Span<T>`/`stackalloc` semantics beyond simple cases.
+- **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
+  pointers raise `EQ2001`; client-side `System.IO`/`Net.Http`/EF·`System.Data`/OS threading/`Process`/
+  P/Invoke/`Reflection.Emit` raise `EQ21xx` (boundary). Anything else with no strategy is a warning
+  (`EQ1001`/`EQ1002`), not a silent passthrough. Diagnostics are MSBuild-canonical and fail the build.
 
 ## Prioritization (highest leverage first)
 1. **Numeric + conversions** (this is where silent miscompiles hide: long precision, decimal, parsing).
@@ -86,7 +89,7 @@ Design notes:
 3. **Strings completeness** (mostly native; char/StringBuilder/comparison gaps).
 4. **Stand up the `eq` compat runtime** properly (Decimal, Int64/BigInt, Guid, DateTime/TimeSpan, Convert,
    structural equality) — each unblocks a corpus area.
-5. **Statement-level harness mode** + **fail-on-unsupported** (W3) to close the loop.
+5. **Statement-level harness mode** (W3) to close the loop. **Fail-on-unsupported** ✅ landed.
 
 ## Definition of done (per area)
 An area is "covered" when its conformance cases are green, every unsupported construct in it produces a

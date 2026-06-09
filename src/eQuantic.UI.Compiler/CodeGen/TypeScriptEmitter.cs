@@ -32,7 +32,10 @@ public class TypeScriptEmitter
     }
 
     public List<TypeScriptCodeBuilder.SourceMapping> GetLastMappings() => _builder.GetMappings();
-    
+
+    /// <summary>Transpilation diagnostics raised during the most recent <see cref="Emit"/> call.</summary>
+    public IReadOnlyList<ConversionDiagnostic> GetLastDiagnostics() => _converter.Diagnostics;
+
     /// <summary>
     /// Generate TypeScript code for a component
     /// </summary>
@@ -40,6 +43,7 @@ public class TypeScriptEmitter
     {
         _builder = new TypeScriptCodeBuilder();
         _converter.SetSemanticModel(semanticModel);
+        _converter.ClearDiagnostics();
         _output.Clear();
 
         // Clear UsedHelpers from previous compilations

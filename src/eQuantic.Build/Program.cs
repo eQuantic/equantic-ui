@@ -147,7 +147,7 @@ Console.WriteLine($"   Intermediate: {intermediateDir}");
 Console.WriteLine($"   Output:       {outputDir}");
 
 // Initial compilation
-CompileAndBundle();
+var initialBuildHadErrors = CompileAndBundle();
 
 if (isWatchMode)
 {
@@ -180,12 +180,25 @@ if (isWatchMode)
         watchers.Add(watcher);
     }
     
-    await Task.Delay(-1); 
+    await Task.Delay(-1);
 }
 
-return 0;
+// Non-zero exit fails the MSBuild `Exec` step when transpilation hit unsupported constructs.
+return initialBuildHadErrors ? 1 : 0;
 
-void CompileAndBundle()
+// Format a diagnostic in MSBuild's canonical form so `Exec` recognises it and fails/warns the build:
+//   path(line,col): error EQ2001: message
+static string FormatDiagnostic(eQuantic.UI.Compiler.CompilationError d, string severity)
+{
+    var code = string.IsNullOrEmpty(d.Code) ? "EQ0000" : d.Code;
+    var path = string.IsNullOrEmpty(d.SourcePath) ? "eQuantic.UI" : d.SourcePath;
+    var line = d.Line > 0 ? d.Line : 1;
+    var col = d.Column > 0 ? d.Column : 1;
+    return $"{path}({line},{col}): {severity} {code}: {d.Message}";
+}
+
+// Returns true if compilation produced errors (so the process can exit non-zero and fail the build).
+bool CompileAndBundle()
 {
     try
     {
@@ -213,6 +226,13 @@ void CompileAndBundle()
                 
                 foreach (var result in results)
                 {
+                    // Warnings surface whether or not compilation succeeded (e.g. an unconverted
+                    // construct emitted verbatim). Errors are reported below and fail the build.
+                    foreach (var warning in result.Warnings)
+                    {
+                        Console.Error.WriteLine(FormatDiagnostic(warning, "warning"));
+                    }
+
                     if (result.Success)
                     {
                         var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
@@ -245,7 +265,7 @@ void CompileAndBundle()
                         hasErrors = true;
                         foreach (var error in result.Errors)
                         {
-                            Console.Error.WriteLine($"Error [{error.SourcePath}:{error.Line}]: {error.Message}");
+                            Console.Error.WriteLine(FormatDiagnostic(error, "error"));
                         }
                     }
                 }
@@ -259,8 +279,8 @@ void CompileAndBundle()
             File.WriteAllText(safelistPath, string.Join("\n", safelist));
         }
         
-        if (hasErrors) return;
-        
+        if (hasErrors) return true;
+
         if (hasBun && entryPoints.Count > 0)
         {
             var bunArgs = $"build {string.Join(" ", entryPoints.Select(p => $"\"{p}\""))} --outdir \"{outputDir}\" --splitting --sourcemap --minify-syntax --minify-whitespace --target browser --external @equantic/runtime";
@@ -286,7 +306,7 @@ void CompileAndBundle()
             {
                 Console.Error.WriteLine("❌ Bun compilation failed:");
                 Console.Error.WriteLine(error);
-                return;
+                return true;
             }
 
             // Post-process source maps to merge C# -> TS and TS -> JS
@@ -357,10 +377,12 @@ void CompileAndBundle()
         }
 
         Console.WriteLine($"✅ Built at {DateTime.Now:HH:mm:ss}");
+        return false;
     }
     catch (Exception ex)
     {
-        Console.Error.WriteLine($"Compilation crash: {ex.Message}");
+        Console.Error.WriteLine($"eQuantic.UI(1,1): error EQ0001: Compilation crash: {ex.Message}");
+        return true;
     }
 }
 

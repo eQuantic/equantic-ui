@@ -10,9 +10,16 @@ namespace eQuantic.UI.Compiler.Tests;
 public static class TestHelper
 {
     public static string ConvertExpression(string code, string? expectedType = null)
+        => ConvertExpressionCore(code, expectedType).Js;
+
+    /// <summary>Convert and return the transpilation diagnostics raised (for fail-on-unsupported tests).</summary>
+    public static IReadOnlyList<ConversionDiagnostic> DiagnosticsFor(string code)
+        => ConvertExpressionCore(code, null).Diagnostics;
+
+    private static (string Js, IReadOnlyList<ConversionDiagnostic> Diagnostics) ConvertExpressionCore(string code, string? expectedType)
     {
         var converter = new CSharpToJsConverter();
-        
+
         // Setup minimal semantic model environment
         var tree = CSharpSyntaxTree.ParseText($@"
             using System;
@@ -66,13 +73,12 @@ public static class TestHelper
             .Body;
 
         var stmt = methodBody!.Statements.First();
-        
-        if (stmt is ExpressionStatementSyntax exprStmt)
-        {
-            return converter.ConvertExpression(exprStmt.Expression, expectedType);
-        }
-        
-        return converter.Convert(stmt);
+
+        var js = stmt is ExpressionStatementSyntax exprStmt
+            ? converter.ConvertExpression(exprStmt.Expression, expectedType)
+            : converter.Convert(stmt);
+
+        return (js, converter.Diagnostics.ToList());
     }
     
     public static string ConvertStatement(string code, string? expectedType = null)

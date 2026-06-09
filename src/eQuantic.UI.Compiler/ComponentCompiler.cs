@@ -117,7 +117,31 @@ public class ComponentCompiler
             // I'll need to check TypeScriptEmitter.Emit again.
             
             result.TypeScript = _tsEmitter.Emit(component, semanticModel);
-            
+
+            // Collect transpilation diagnostics (unconverted or impossible constructs). Errors fail
+            // the build; warnings are surfaced but do not. Replaces silent verbatim fallbacks.
+            foreach (var diagnostic in _tsEmitter.GetLastDiagnostics())
+            {
+                var entry = new CompilationError
+                {
+                    Message = diagnostic.Message,
+                    Code = diagnostic.Code,
+                    SourcePath = component.SourcePath,
+                    Line = diagnostic.Line,
+                    Column = diagnostic.Column,
+                };
+                if (diagnostic.Severity == ConversionSeverity.Error)
+                    result.Errors.Add(entry);
+                else
+                    result.Warnings.Add(entry);
+            }
+
+            if (result.Errors.Count > 0)
+            {
+                result.Success = false;
+                return result;
+            }
+
             // Generate Source Map
             var mappings = _tsEmitter.GetLastMappings();
             if (mappings.Any() && component.SyntaxTree != null)
@@ -248,6 +272,7 @@ public class CompilationResult
     public string? SourceMap { get; set; }
     public string? Css { get; set; }
     public List<CompilationError> Errors { get; set; } = new();
+    public List<CompilationError> Warnings { get; set; } = new();
     public List<string> ExtractedStyles { get; set; } = new();
 }
 
@@ -260,4 +285,7 @@ public class CompilationError
     public string SourcePath { get; set; } = string.Empty;
     public int Line { get; set; }
     public int Column { get; set; }
+
+    /// <summary>Stable diagnostic id (e.g. <c>EQ2001</c>), or empty for legacy errors.</summary>
+    public string Code { get; set; } = string.Empty;
 }
