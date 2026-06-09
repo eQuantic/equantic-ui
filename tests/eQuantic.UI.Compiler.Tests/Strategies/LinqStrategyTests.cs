@@ -83,11 +83,10 @@ public class LinqStrategyTests
         // list.Select(u => u.Orders.Where(o => o.Total > 100))
         var result = TestHelper.ConvertExpression("list.Select(u => u.Orders.Where(o => o.Total > 100))");
         
-        // This validates that the inner .Where() is correctly converted inside the .Select() callback
-        // Note: u.Orders is likely property of order, but since u is lambda param, it should NOT have this.
-        // Wait, u is a TestClass? Yes. So Orders is a property.
-        // It should be u.orders.
-        result.Should().Be("this.list.map((u) => u.orders.filter((o) => o.total > 100))");
+        // This validates that the inner .Where() is correctly converted inside the .Select() callback.
+        // o.Total is a decimal, so the > comparison is routed through the Decimal compat type
+        // (dec(...).compareTo) for exact base-10 semantics.
+        result.Should().Be("this.list.map((u) => u.orders.filter((o) => (dec(o.total).compareTo(dec(100)) > 0)))");
     }
 
     [Fact]

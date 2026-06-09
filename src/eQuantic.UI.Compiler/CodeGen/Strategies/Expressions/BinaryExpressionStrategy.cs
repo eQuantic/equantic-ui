@@ -42,12 +42,33 @@ public class BinaryExpressionStrategy : IConversionStrategy
         return Array.IndexOf(IntegralTypes, type.SpecialType) >= 0;
     }
 
+    private static bool IsDecimal(ITypeSymbol? type)
+    {
+        if (type is INamedTypeSymbol named
+            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
+            && named.TypeArguments.Length == 1)
+        {
+            type = named.TypeArguments[0];
+        }
+        return type?.SpecialType == SpecialType.System_Decimal;
+    }
+
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var binary = (BinaryExpressionSyntax)node;
         var left = context.Converter.ConvertExpression(binary.Left);
         var right = context.Converter.ConvertExpression(binary.Right);
         var op = binary.OperatorToken.Text;
+
+        // decimal is an exact base-10 type implemented by the runtime Decimal class; route its
+        // operators to method calls. (Null comparisons fall through to the loose-equality logic.)
+        if (left != "null" && right != "null"
+            && (IsDecimal(context.SemanticHelper.GetType(binary.Left))
+                || IsDecimal(context.SemanticHelper.GetType(binary.Right))))
+        {
+            var decResult = ConvertDecimal(left, right, op, binary, context);
+            if (decResult != null) return decResult;
+        }
 
         // C# integer division truncates toward zero; JS `/` is always float division.
         // When the result type is integral, emit Math.trunc to preserve C# semantics
@@ -78,5 +99,34 @@ public class BinaryExpressionStrategy : IConversionStrategy
         return $"{left} {op} {right}";
     }
 
-    public int Priority => 0; 
+    /// <summary>
+    /// Routes a decimal binary operation to the runtime Decimal class. Non-decimal operands are
+    /// wrapped with dec(...). Returns null for operators not modelled (falls back to the default).
+    /// </summary>
+    private static string? ConvertDecimal(string left, string right, string op, BinaryExpressionSyntax binary, ConversionContext context)
+    {
+        // Always wrap both operands in dec(): it is a pass-through for existing Decimals and coerces
+        // plain numbers (e.g. a decimal field that arrived from state as a JS number) — so the call
+        // is safe regardless of the runtime representation.
+        context.UsedHelpers.Add("dec");
+        var l = $"dec({left})";
+        var r = $"dec({right})";
+
+        return op switch
+        {
+            "+" => $"{l}.add({r})",
+            "-" => $"{l}.sub({r})",
+            "*" => $"{l}.mul({r})",
+            "/" => $"{l}.div({r})",
+            "==" => $"{l}.equals({r})",
+            "!=" => $"!{l}.equals({r})",
+            "<" => $"({l}.compareTo({r}) < 0)",
+            ">" => $"({l}.compareTo({r}) > 0)",
+            "<=" => $"({l}.compareTo({r}) <= 0)",
+            ">=" => $"({l}.compareTo({r}) >= 0)",
+            _ => null
+        };
+    }
+
+    public int Priority => 0;
 }

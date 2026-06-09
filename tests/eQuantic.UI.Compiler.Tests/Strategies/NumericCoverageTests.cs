@@ -45,4 +45,28 @@ public class NumericCoverageTests
     {
         TestHelper.ConvertExpression("Convert.ToBoolean(1)").Should().Be("((1) !== 0)");
     }
+
+    [Theory]
+    [InlineData("5L", "5")]      // long suffix stripped (BigInt is future work)
+    [InlineData("1.5f", "1.5")]  // float suffix stripped
+    [InlineData("2.0d", "2.0")]  // double suffix stripped
+    [InlineData("100u", "100")]  // unsigned suffix stripped
+    public void NumericLiteralSuffixes_AreStripped(string csharp, string expected)
+    {
+        TestHelper.ConvertExpression(csharp).Should().Be(expected);
+    }
+
+    [Fact]
+    public void DecimalLiteral_BecomesDecHelper()
+    {
+        TestHelper.ConvertExpression("1.1m").Should().Be("dec(\"1.1\")");
+    }
+
+    [Fact]
+    public void DecimalArithmetic_RoutesThroughDecimalClass()
+    {
+        // Both operands wrapped in dec() (pass-through for Decimals, coercion for plain numbers).
+        TestHelper.ConvertExpression("1.1m + 2.2m")
+            .Should().Be("dec(dec(\"1.1\")).add(dec(dec(\"2.2\")))");
+    }
 }

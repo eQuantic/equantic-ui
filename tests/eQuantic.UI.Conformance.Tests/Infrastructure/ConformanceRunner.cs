@@ -17,7 +17,7 @@ public static class ConformanceRunner
     // Runtime helpers the transpiler may emit; imported from the REAL bundled runtime.js (not a
     // re-implementation) so format/enum/etc. behavior is validated against what actually ships.
     private static readonly string[] RuntimeHelpers =
-        { "format", "parseEnum", "round", "StyleBuilder", "ClassBuilder", "joinClasses", "whenClass" };
+        { "format", "parseEnum", "round", "dec", "StyleBuilder", "ClassBuilder", "joinClasses", "whenClass" };
 
     public static void AssertSameAsDotNet(string csharpExpression) =>
         AssertSameAsDotNet(csharpExpression, prelude: "");

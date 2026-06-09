@@ -24,9 +24,28 @@ public class LiteralExpressionStrategy : IConversionStrategy
             SyntaxKind.TrueLiteralExpression => "true",
             SyntaxKind.FalseLiteralExpression => "false",
             SyntaxKind.NullLiteralExpression => "null",
-            // For numbers, just use valid text representation
-            _ => literal.Token.Text 
+            SyntaxKind.NumericLiteralExpression => ConvertNumericLiteral(literal.Token.Text, context),
+            _ => literal.Token.Text
         };
+    }
+
+    private static string ConvertNumericLiteral(string text, ConversionContext context)
+    {
+        var isHexOrBinary = text.StartsWith("0x") || text.StartsWith("0X")
+            || text.StartsWith("0b") || text.StartsWith("0B");
+
+        // decimal literal (1.1m / 1.1M) -> exact Decimal via the dec() compat helper.
+        if (!isHexOrBinary && text.Length > 0 && (text[^1] == 'm' || text[^1] == 'M'))
+        {
+            context.UsedHelpers.Add("dec");
+            return $"dec(\"{text[..^1]}\")";
+        }
+
+        // Strip C# numeric type suffixes that aren't valid JS. Hex/binary keep their digits
+        // (only L/U are suffixes there); for decimals, F/D are also suffixes, not digits.
+        return isHexOrBinary
+            ? text.TrimEnd('L', 'l', 'U', 'u')
+            : text.TrimEnd('L', 'l', 'U', 'u', 'F', 'f', 'D', 'd');
     }
 
     private static string EscapeString(string s)
