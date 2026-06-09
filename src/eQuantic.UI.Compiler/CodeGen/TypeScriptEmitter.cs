@@ -419,7 +419,7 @@ public class TypeScriptEmitter
             "Component" or "BuildContext" or "HtmlElement" => true,
             "StatefulComponent" or "StatelessComponent" or "ComponentState" => true,
             "getServerActionsClient" or "getRootServiceProvider" => true,
-            "StyleBuilder" or "format" => true,
+            // StyleBuilder/ClassBuilder are now emitted as `$eq.css.*` (global), not imported.
             _ => false
         };
     }
