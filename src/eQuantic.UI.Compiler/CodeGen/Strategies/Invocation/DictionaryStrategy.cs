@@ -178,13 +178,7 @@ public class DictionaryStrategy : IConversionStrategy
 
         // Fallback
         var argsStr = string.Join(", ", args.Select(a => context.Converter.ConvertExpression(a.Expression)));
-        return $"{caller}.{ToCamelCase(methodName)}({argsStr})";
-    }
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
+        return $"{caller}.{methodName.ToCamelCase()}({argsStr})";
     }
 
     public int Priority => 20; // Higher than ListMethodStrategy (15) to handle Dictionary.Add vs List.Add

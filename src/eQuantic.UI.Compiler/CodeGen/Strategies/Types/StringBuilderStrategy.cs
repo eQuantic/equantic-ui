@@ -15,11 +15,11 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// strategies for StringBuilder nodes. Gated on the semantic type (falls back to the type name when no
 /// semantic model is present).
 /// </remarks>
-public class StringBuilderStrategy : IConversionStrategy
+public class StringBuilderStrategy : ConversionStrategyBase
 {
     private const string TypeName = "System.Text.StringBuilder";
 
-    public bool CanConvert(SyntaxNode node, ConversionContext context)
+    public override bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         switch (node)
         {
@@ -37,7 +37,7 @@ public class StringBuilderStrategy : IConversionStrategy
         }
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public override string Convert(SyntaxNode node, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
         switch (node)
@@ -49,13 +49,13 @@ public class StringBuilderStrategy : IConversionStrategy
             {
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
                 var name = ma.Name.Identifier.Text;
-                return $"{receiver}.{Camel(name)}({ConvertArgs(inv.ArgumentList, context)})";
+                return $"{receiver}.{name.ToCamelCase()}({ConvertArgs(inv.ArgumentList, context)})";
             }
 
             case MemberAccessExpressionSyntax member:
             {
                 var receiver = context.Converter.ConvertExpression(member.Expression);
-                return $"{receiver}.{Camel(member.Name.Identifier.Text)}";
+                return $"{receiver}.{member.Name.Identifier.Text.ToCamelCase()}";
             }
 
             default:
@@ -74,14 +74,5 @@ public class StringBuilderStrategy : IConversionStrategy
 
     private static bool IsType(ITypeSymbol? type) => type?.ToDisplayString() == TypeName;
 
-    private static string ConvertArgs(ArgumentListSyntax? argumentList, ConversionContext context)
-    {
-        if (argumentList == null || argumentList.Arguments.Count == 0) return string.Empty;
-        return string.Join(", ", argumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
-    }
-
-    private static string Camel(string name) =>
-        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
-
-    public int Priority => 15;
+    public override int Priority => 15;
 }

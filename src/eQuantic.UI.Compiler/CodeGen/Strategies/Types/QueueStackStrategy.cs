@@ -10,9 +10,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// instance members/methods (<c>Enqueue</c>, <c>Dequeue</c>, <c>Push</c>, <c>Pop</c>, <c>Peek</c>,
 /// <c>Count</c>, <c>Contains</c>, <c>ToArray</c>, <c>Clear</c>) -> camelCase. Priority 15, type-gated.
 /// </summary>
-public class QueueStackStrategy : IConversionStrategy
+public class QueueStackStrategy : ConversionStrategyBase
 {
-    public bool CanConvert(SyntaxNode node, ConversionContext context)
+    public override bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         switch (node)
         {
@@ -30,7 +30,7 @@ public class QueueStackStrategy : IConversionStrategy
         }
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public override string Convert(SyntaxNode node, ConversionContext context)
     {
         switch (node)
         {
@@ -44,13 +44,13 @@ public class QueueStackStrategy : IConversionStrategy
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
-                return $"{receiver}.{Camel(ma.Name.Identifier.Text)}({ConvertArgs(inv.ArgumentList, context)})";
+                return $"{receiver}.{ma.Name.Identifier.Text.ToCamelCase()}({ConvertArgs(inv.ArgumentList, context)})";
             }
 
             case MemberAccessExpressionSyntax member:
             {
                 var receiver = context.Converter.ConvertExpression(member.Expression);
-                return $"{receiver}.{Camel(member.Name.Identifier.Text)}";
+                return $"{receiver}.{member.Name.Identifier.Text.ToCamelCase()}";
             }
 
             default:
@@ -80,14 +80,5 @@ public class QueueStackStrategy : IConversionStrategy
     private static string? KindOfName(string name) =>
         name.StartsWith("Queue") ? "queue" : name.StartsWith("Stack") ? "stack" : null;
 
-    private static string ConvertArgs(ArgumentListSyntax? argumentList, ConversionContext context)
-    {
-        if (argumentList == null || argumentList.Arguments.Count == 0) return string.Empty;
-        return string.Join(", ", argumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
-    }
-
-    private static string Camel(string name) =>
-        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
-
-    public int Priority => 15;
+    public override int Priority => 15;
 }

@@ -11,9 +11,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// members/methods -> camelCase. Priority 15, gated on the receiver type (robust against members
 /// that resolve to interfaces/extensions).
 /// </summary>
-public class DateOnlyTimeOnlyStrategy : IConversionStrategy
+public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
 {
-    public bool CanConvert(SyntaxNode node, ConversionContext context)
+    public override bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         switch (node)
         {
@@ -31,7 +31,7 @@ public class DateOnlyTimeOnlyStrategy : IConversionStrategy
         }
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public override string Convert(SyntaxNode node, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
         switch (node)
@@ -47,9 +47,9 @@ public class DateOnlyTimeOnlyStrategy : IConversionStrategy
                 var name = ma.Name.Identifier.Text;
                 var args = ConvertArgs(inv.ArgumentList, context);
                 if (IsStaticAccess(ma, context))
-                    return $"$eq.time.{StaticKind(ma, context)}.{Camel(name)}({args})";
+                    return $"$eq.time.{StaticKind(ma, context)}.{name.ToCamelCase()}({args})";
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
-                return $"{receiver}.{Camel(name)}({args})";
+                return $"{receiver}.{name.ToCamelCase()}({args})";
             }
 
             case MemberAccessExpressionSyntax member:
@@ -57,9 +57,9 @@ public class DateOnlyTimeOnlyStrategy : IConversionStrategy
                 var name = member.Name.Identifier.Text;
                 if (IsStaticAccess(member, context))
                     // Static properties (MinValue/MaxValue) map to factory methods.
-                    return $"$eq.time.{StaticKind(member, context)}.{Camel(name)}()";
+                    return $"$eq.time.{StaticKind(member, context)}.{name.ToCamelCase()}()";
                 var receiver = context.Converter.ConvertExpression(member.Expression);
-                return $"{receiver}.{Camel(name)}";
+                return $"{receiver}.{name.ToCamelCase()}";
             }
 
             default:
@@ -102,14 +102,5 @@ public class DateOnlyTimeOnlyStrategy : IConversionStrategy
     private static string? KindOfName(string name) =>
         name == "DateOnly" ? "dateOnly" : name == "TimeOnly" ? "timeOnly" : null;
 
-    private static string ConvertArgs(ArgumentListSyntax? argumentList, ConversionContext context)
-    {
-        if (argumentList == null || argumentList.Arguments.Count == 0) return string.Empty;
-        return string.Join(", ", argumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
-    }
-
-    private static string Camel(string name) =>
-        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
-
-    public int Priority => 15;
+    public override int Priority => 15;
 }

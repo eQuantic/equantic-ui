@@ -71,18 +71,12 @@ public class HashSetStrategy : IConversionStrategy
                 "Contains" => $"{expr}.has({arg})",
                 "Remove" => $"{expr}.delete({arg})",
                 "Clear" => $"{expr}.clear()",
-                _ => $"{expr}.{ToCamelCase(name)}({arg})"
+                _ => $"{expr}.{name.ToCamelCase()}({arg})"
             };
         }
 
         return node.ToString();
     }
 
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
-    }
-    
     public int Priority => 10;
 }

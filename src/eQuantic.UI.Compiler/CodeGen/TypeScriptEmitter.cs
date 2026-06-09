@@ -100,14 +100,14 @@ public class TypeScriptEmitter
                         {
                             foreach (var param in ctor!.Parameters)
                             {
-                                c.Raw($"this.{ToCamelCase(param.Name)} = {param.Name};");
+                                c.Raw($"this.{param.Name.ToCamelCase()} = {param.Name};");
                             }
                         }
 
                         // Apply defaults for properties not provided in props (only if still undefined)
                         foreach (var prop in component.Properties.Where(p => p.IsPublic && p.DefaultValue != null))
                         {
-                            var camelName = ToCamelCase(prop.Name);
+                            var camelName = prop.Name.ToCamelCase();
                             var tsDefault = prop.DefaultValueNode != null 
                                 ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
                                 : ConvertToTsValue(prop.DefaultValue, prop.Type);
@@ -187,7 +187,7 @@ public class TypeScriptEmitter
                     if (component.Constructors.Any(ctor => ctor.Parameters.Count > 0))
                     {
                         var ctor = component.Constructors.OrderByDescending(ct => ct.Parameters.Count).First();
-                        var paramList = string.Join(", ", ctor.Parameters.Select(p => $"{ToCamelCase(p.Name)}?: any"));
+                        var paramList = string.Join(", ", ctor.Parameters.Select(p => $"{p.Name.ToCamelCase()}?: any"));
 
                         c.Constructor($"{paramList}, props?: any", () =>
                         {
@@ -195,7 +195,7 @@ public class TypeScriptEmitter
                             // Assign explicit parameters as properties
                             foreach (var param in ctor.Parameters)
                             {
-                                var camelName = ToCamelCase(param.Name);
+                                var camelName = param.Name.ToCamelCase();
                                 c.Raw($"if ({camelName} !== undefined) this.{camelName} = {camelName};");
                             }
                         });
@@ -246,7 +246,7 @@ public class TypeScriptEmitter
                     var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
                     var returnType = CSharpTypeToTypeScript(action.ReturnType);
 
-                    c.Method(ToCamelCase(action.MethodName), paramsList, true, () => 
+                    c.Method(action.MethodName.ToCamelCase(), paramsList, true, () => 
                     {
                         c.Raw($"return await getServerActionsClient().invoke('{action.ActionId}', [{argsList}])");
                     }, sourceNode: action.SyntaxNode);
@@ -578,7 +578,7 @@ public class TypeScriptEmitter
     private void EmitMethod(MethodDefinition method, TypeScriptCodeBuilder.ClassBuilder c, string? className = null)
     {
         var parameters = string.Join(", ", method.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
-        var methodName = ToCamelCase(method.Name);
+        var methodName = method.Name.ToCamelCase();
         
         // Lifecycle mapping
         if (method.Name == "OnMount") methodName = "onInit";
@@ -653,7 +653,7 @@ public class TypeScriptEmitter
             
             foreach (var (propName, propValue) in props)
             {
-                var tsPropName = ToCamelCase(propName);
+                var tsPropName = propName.ToCamelCase();
                 if (propName == "Key") tsPropName = "key"; // Special casing for Key
 
                 var tsValue = EmitPropertyValue(propValue);
@@ -721,7 +721,7 @@ public class TypeScriptEmitter
         var props = tree.Properties.Where(p => p.Key != "Children").ToList();
         foreach (var (propName, propValue) in props)
         {
-            var tsPropName = ToCamelCase(propName);
+            var tsPropName = propName.ToCamelCase();
             if (propName == "Key") tsPropName = "key";
             
             sb.Append($" {tsPropName}: {EmitPropertyValue(propValue)},");
@@ -783,7 +783,7 @@ public class TypeScriptEmitter
         else if (tsType.StartsWith("Action<") && tsType.EndsWith(">"))
         {
             var itemType = tsType.Substring(7, tsType.Length - 8);
-            tsType = $"({ToCamelCase(itemType)}: {CSharpTypeToTypeScript(itemType)}) => void";
+            tsType = $"({itemType.ToCamelCase()}: {CSharpTypeToTypeScript(itemType)}) => void";
         }
         else if (tsType == "Action")
         {
@@ -826,12 +826,6 @@ public class TypeScriptEmitter
             "bool" or "boolean" => "false",
              _ => "null"
         };
-    }
-    
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
     }
     
     private static string EscapeString(string s)

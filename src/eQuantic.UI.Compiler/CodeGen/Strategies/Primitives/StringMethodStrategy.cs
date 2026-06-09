@@ -90,7 +90,7 @@ public class StringMethodStrategy : IConversionStrategy
             "ToCharArray" => $"[...{caller}]",
             "Insert" => ConvertInsert(caller, args),
             "Remove" => ConvertRemove(caller, args),
-            _ => $"{caller}.{ToCamelCase(methodName)}({JoinArgs(args)})"
+            _ => $"{caller}.{methodName.ToCamelCase()}({JoinArgs(args)})"
         };
     }
 
@@ -198,12 +198,6 @@ public class StringMethodStrategy : IConversionStrategy
     }
 
     private string JoinArgs(List<string> args) => string.Join(", ", args);
-
-    private string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
-    }
 
     public int Priority => 15; // Higher than InvocationStrategy (1)
 }

@@ -63,17 +63,11 @@ public class MathStrategy : IConversionStrategy
         {
             "Truncate" => "trunc",
             "Ceiling" => "ceil",
-            _ => ToCamelCase(methodName)
+            _ => methodName.ToCamelCase()
         };
         var args = string.Join(", ", argsList);
 
         return $"Math.{jsMethodName}({args})";
-    }
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
     }
 
     public int Priority => 10;

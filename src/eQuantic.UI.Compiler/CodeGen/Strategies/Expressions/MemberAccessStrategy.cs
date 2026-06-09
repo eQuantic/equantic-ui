@@ -65,7 +65,7 @@ public class MemberAccessStrategy : IConversionStrategy
         {
             "Length" => "length",
             "Count" => "length", // Arrays/Lists (fallback when type is unknown)
-            _ => ToCamelCase(name)
+            _ => name.ToCamelCase()
         };
 
         if (string.IsNullOrEmpty(name)) return expr;
@@ -85,12 +85,6 @@ public class MemberAccessStrategy : IConversionStrategy
         }
 
         return result;
-    }
-
-    private string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
     }
 
     public int Priority => 0; // Low priority (fallback)

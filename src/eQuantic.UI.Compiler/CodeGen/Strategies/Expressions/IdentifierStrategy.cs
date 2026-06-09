@@ -47,10 +47,10 @@ public class IdentifierStrategy : IConversionStrategy
                     // If it's 'other.Property', identifier 'Property' shouldn't get 'this.'
                     if (identifier.Parent is MemberAccessExpressionSyntax ma && ma.Name == identifier)
                     {
-                        return ToCamelCase(name);
+                        return name.ToCamelCase();
                     }
 
-                    var result = $"this.{ToCamelCase(name)}";
+                    var result = $"this.{name.ToCamelCase()}";
                     
                     // If it's a method reference (not being called), add .bind(this)
                     if (symbol is IMethodSymbol)
@@ -81,18 +81,12 @@ public class IdentifierStrategy : IConversionStrategy
              // If parent is MemberAccess as the Name part, don't prefix
             if (identifier.Parent is MemberAccessExpressionSyntax ma && ma.Name == identifier)
             {
-                return ToCamelCase(name);
+                return name.ToCamelCase();
             }
-            return $"this.{ToCamelCase(name)}";
+            return $"this.{name.ToCamelCase()}";
         }
         
         return name;
-    }
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
     }
 
     public int Priority => 10;
