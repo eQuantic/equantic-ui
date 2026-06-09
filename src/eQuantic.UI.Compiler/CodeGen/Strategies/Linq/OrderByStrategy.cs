@@ -1,40 +1,67 @@
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
+/// <summary>
+/// Strategy for <c>OrderBy</c>/<c>OrderByDescending</c> and their <c>ThenBy</c>/<c>ThenByDescending</c>
+/// continuations. A whole ordering chain (<c>src.OrderBy(k1).ThenBy(k2).ThenByDescending(k3)</c>) is
+/// collapsed into a SINGLE stable sort with a composite comparator — comparing by each key in turn,
+/// honouring each key's direction. (Re-sorting per key would be wrong: a stable sort by the secondary
+/// key alone keeps the primary order only among secondary-equal items, inverting the precedence.)
+/// The source is copied first ([...src]) so the original sequence is never mutated, matching LINQ; JS's
+/// stable sort makes items equal on all keys keep their input order, matching LINQ's stable ordering.
+/// </summary>
 public class OrderByStrategy : IConversionStrategy
 {
+    private static readonly HashSet<string> OrderMethods = new()
+    {
+        "OrderBy", "OrderByDescending", "ThenBy", "ThenByDescending",
+    };
+
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        if (node is InvocationExpressionSyntax invocation &&
-            invocation.Expression is MemberAccessExpressionSyntax access)
-        {
-            return access.Name.Identifier.Text == "OrderBy" || access.Name.Identifier.Text == "OrderByDescending";
-        }
-        return false;
+        return node is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax access }
+            && OrderMethods.Contains(access.Name.Identifier.Text);
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
-        var invocation = (InvocationExpressionSyntax)node;
-        var access = (MemberAccessExpressionSyntax)invocation.Expression;
-        var caller = context.Converter.ConvertExpression(access.Expression);
-        var methodName = access.Name.Identifier.Text;
-        
-        var args = invocation.ArgumentList.Arguments;
-        if (args.Count == 0) return $"[...{caller}].sort()";
+        // Walk the ordering chain from outermost (this node) inward, collecting each key selector and
+        // its direction; the deepest receiver is the base source.
+        var keys = new List<(string Selector, bool Descending)>();
+        ExpressionSyntax current = (InvocationExpressionSyntax)node;
+        ExpressionSyntax source = current;
 
-        var keySelector = context.Converter.ConvertExpression(args[0].Expression);
+        while (current is InvocationExpressionSyntax inv
+               && inv.Expression is MemberAccessExpressionSyntax acc
+               && OrderMethods.Contains(acc.Name.Identifier.Text))
+        {
+            if (inv.ArgumentList.Arguments.Count > 0)
+            {
+                var selector = context.Converter.ConvertExpression(inv.ArgumentList.Arguments[0].Expression);
+                var descending = acc.Name.Identifier.Text.EndsWith("Descending");
+                keys.Insert(0, (selector, descending)); // outer call = later (lower-priority) key
+            }
+            source = acc.Expression;
+            current = acc.Expression;
+        }
 
-        // C# OrderBy returns a new, stably-sorted sequence and never mutates the source.
-        // Copy first ([...caller]); return 0 for equal keys so JS's stable sort keeps order.
-        var comparison = methodName == "OrderBy"
-            ? "ka < kb ? -1 : ka > kb ? 1 : 0"
-            : "ka > kb ? -1 : ka < kb ? 1 : 0";
+        var src = context.Converter.ConvertExpression(source);
+        if (keys.Count == 0) return $"[...{src}].sort()";
 
-        return $"[...{caller}].sort((a, b) => {{ const key = {keySelector}; const ka = key(a); const kb = key(b); return {comparison}; }})";
+        var body = new System.Text.StringBuilder();
+        foreach (var (selector, descending) in keys)
+        {
+            var lt = descending ? "1" : "-1";
+            var gt = descending ? "-1" : "1";
+            body.Append($"{{ const _k = {selector}; const _a = _k(a), _b = _k(b); ");
+            body.Append($"if (_a < _b) return {lt}; if (_a > _b) return {gt}; }} ");
+        }
+        body.Append("return 0;");
+
+        return $"[...{src}].sort((a, b) => {{ {body} }})";
     }
 
     public int Priority => 10;
