@@ -60,14 +60,14 @@ public class NumericCoverageTests
     [Fact]
     public void DecimalLiteral_BecomesDecHelper()
     {
-        TestHelper.ConvertExpression("1.1m").Should().Be("dec(\"1.1\")");
+        TestHelper.ConvertExpression("1.1m").Should().Be("$eq.num.dec(\"1.1\")");
     }
 
     [Fact]
     public void DecimalArithmetic_RoutesThroughDecimalClass()
     {
-        // Both operands wrapped in dec() (pass-through for Decimals, coercion for plain numbers).
+        // Both operands wrapped in $eq.num.dec() (pass-through for Decimals, coercion for plain numbers).
         TestHelper.ConvertExpression("1.1m + 2.2m")
-            .Should().Be("dec(dec(\"1.1\")).add(dec(dec(\"2.2\")))");
+            .Should().Be("$eq.num.dec($eq.num.dec(\"1.1\")).add($eq.num.dec($eq.num.dec(\"2.2\")))");
     }
 }

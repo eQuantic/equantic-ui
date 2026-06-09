@@ -48,13 +48,12 @@ public class MathStrategy : IConversionStrategy
         }
 
         // Math.Round uses banker's rounding (MidpointRounding.ToEven) and supports a digit count —
-        // neither matches JS Math.round. Route through the runtime `round` compat helper.
+        // neither matches JS Math.round. Route through the runtime $eq.math.round compat helper.
         if (methodName == "Round" && argsList.Count >= 1)
         {
-            context.UsedHelpers.Add("round");
             return argsList.Count >= 2
-                ? $"round({argsList[0]}, {argsList[1]})"
-                : $"round({argsList[0]})";
+                ? $"{Eq.Round}({argsList[0]}, {argsList[1]})"
+                : $"{Eq.Round}({argsList[0]})";
         }
 
         // Standard conversion: map .NET method names that differ from JS, else camelCase.

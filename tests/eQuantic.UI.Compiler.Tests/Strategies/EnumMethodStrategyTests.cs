@@ -11,14 +11,14 @@ public class EnumMethodStrategyTests
     public void EnumParse_WithGeneric_MapsToParseEnumHelper()
     {
         var result = TestHelper.ConvertExpression("Enum.Parse<Status>(str)");
-        result.Should().Be("parseEnum(this.str, Status)");
+        result.Should().Be("$eq.enums.parse(this.str, Status)");
     }
 
     [Fact]
     public void EnumParse_WithLiteral_MapsToParseEnumHelper()
     {
         var result = TestHelper.ConvertExpression("Enum.Parse<OrderStatus>(\"active\")");
-        result.Should().Be("parseEnum('active', OrderStatus)");
+        result.Should().Be("$eq.enums.parse('active', OrderStatus)");
     }
 
     // ============ Enum.TryParse<T> ============
@@ -27,14 +27,14 @@ public class EnumMethodStrategyTests
     public void EnumTryParse_WithOutVar_MapsToParseEnumWithCheck()
     {
         var result = TestHelper.ConvertExpression("Enum.TryParse<Status>(str, out var result)");
-        result.Should().Be("(result = parseEnum(this.str, Status), result !== undefined)");
+        result.Should().Be("(result = $eq.enums.parse(this.str, Status), result !== undefined)");
     }
 
     [Fact]
     public void EnumTryParse_WithOutExisting_MapsToParseEnumWithCheck()
     {
         var result = TestHelper.ConvertExpression("Enum.TryParse<Status>(\"pending\", out var status)");
-        result.Should().Be("(status = parseEnum('pending', Status), status !== undefined)");
+        result.Should().Be("(status = $eq.enums.parse('pending', Status), status !== undefined)");
     }
 
     // ============ Enum.GetValues<T> ============

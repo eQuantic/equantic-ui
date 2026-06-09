@@ -40,8 +40,7 @@ public class DateTimeStrategy : IConversionStrategy
         switch (node)
         {
             case ObjectCreationExpressionSyntax oc:
-                context.UsedHelpers.Add("dateTime");
-                return $"dateTime({ConvertArgs(oc.ArgumentList, context)})";
+                return $"{Eq.DateTime}({ConvertArgs(oc.ArgumentList, context)})";
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
@@ -49,8 +48,7 @@ public class DateTimeStrategy : IConversionStrategy
                 var args = ConvertArgs(inv.ArgumentList, context);
                 if (IsStaticAccess(ma, context))
                 {
-                    context.UsedHelpers.Add("dateTime");
-                    return $"dateTime.{Camel(name)}({args})";
+                    return $"{Eq.DateTime}.{Camel(name)}({args})";
                 }
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
                 return $"{receiver}.{Camel(name)}({args})";
@@ -62,8 +60,7 @@ public class DateTimeStrategy : IConversionStrategy
                 if (IsStaticAccess(member, context))
                 {
                     // Static properties (Now/UtcNow/Today/MinValue/MaxValue) map to factory methods.
-                    context.UsedHelpers.Add("dateTime");
-                    return $"dateTime.{Camel(name)}()";
+                    return $"{Eq.DateTime}.{Camel(name)}()";
                 }
                 var receiver = context.Converter.ConvertExpression(member.Expression);
                 return $"{receiver}.{Camel(name)}";

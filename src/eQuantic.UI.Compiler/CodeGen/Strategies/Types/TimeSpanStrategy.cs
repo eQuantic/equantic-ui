@@ -37,8 +37,7 @@ public class TimeSpanStrategy : IConversionStrategy
         switch (node)
         {
             case ObjectCreationExpressionSyntax oc:
-                context.UsedHelpers.Add("timeSpan");
-                return $"timeSpan({ConvertArgs(oc.ArgumentList, context)})";
+                return $"{Eq.TimeSpan}({ConvertArgs(oc.ArgumentList, context)})";
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
@@ -46,8 +45,7 @@ public class TimeSpanStrategy : IConversionStrategy
                 var args = ConvertArgs(inv.ArgumentList, context);
                 if (IsStaticAccess(ma, context))
                 {
-                    context.UsedHelpers.Add("timeSpan");
-                    return $"timeSpan.{Camel(name)}({args})";
+                    return $"{Eq.TimeSpan}.{Camel(name)}({args})";
                 }
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
                 return $"{receiver}.{Camel(name)}({args})";
@@ -59,8 +57,7 @@ public class TimeSpanStrategy : IConversionStrategy
                 if (IsStaticAccess(member, context))
                 {
                     // Static properties (Zero/MinValue/MaxValue). Zero is a field, the others methods.
-                    context.UsedHelpers.Add("timeSpan");
-                    return name == "Zero" ? "timeSpan.zero" : $"timeSpan.{Camel(name)}()";
+                    return name == "Zero" ? $"{Eq.TimeSpan}.zero" : $"{Eq.TimeSpan}.{Camel(name)}()";
                 }
                 var receiver = context.Converter.ConvertExpression(member.Expression);
                 return $"{receiver}.{Camel(name)}";

@@ -5,6 +5,7 @@ export * from '../../eQuantic.UI.Runtime/src/index';
 
 import {
   StyleBuilder,
+  $eq,
   getReconciler,
   type EqConfig,
   type HtmlNode,
@@ -24,6 +25,7 @@ interface MountableComponent {
 declare global {
   interface Window {
     StyleBuilder: typeof StyleBuilder;
+    $eq: typeof $eq;
   }
 }
 
@@ -35,9 +37,10 @@ function isDev(): boolean {
 // --- Initialization ---
 let initialized = false;
 
-// Expose StyleBuilder globally for generated code
+// Expose runtime helpers globally for generated code (no per-module imports needed)
 if (typeof window !== 'undefined') {
   window.StyleBuilder = StyleBuilder;
+  window.$eq = $eq;
 }
 
 /**

@@ -85,8 +85,8 @@ public class LinqStrategyTests
         
         // This validates that the inner .Where() is correctly converted inside the .Select() callback.
         // o.Total is a decimal, so the > comparison is routed through the Decimal compat type
-        // (dec(...).compareTo) for exact base-10 semantics.
-        result.Should().Be("this.list.map((u) => u.orders.filter((o) => (dec(o.total).compareTo(dec(100)) > 0)))");
+        // ($eq.num.dec(...).compareTo) for exact base-10 semantics.
+        result.Should().Be("this.list.map((u) => u.orders.filter((o) => ($eq.num.dec(o.total).compareTo($eq.num.dec(100)) > 0)))");
     }
 
     [Fact]

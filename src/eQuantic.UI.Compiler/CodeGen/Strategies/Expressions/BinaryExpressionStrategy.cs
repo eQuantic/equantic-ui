@@ -99,9 +99,8 @@ public class BinaryExpressionStrategy : IConversionStrategy
             && (IsLong(context.SemanticHelper.GetType(binary.Left))
                 || IsLong(context.SemanticHelper.GetType(binary.Right))))
         {
-            context.UsedHelpers.Add("long");
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
-            return $"(long({left}) {jsOp} long({right}))";
+            return $"({Eq.Long}({left}) {jsOp} {Eq.Long}({right}))";
         }
 
         // DateTime/TimeSpan are runtime compat classes with operator overloads (+ - and comparisons).
@@ -149,12 +148,11 @@ public class BinaryExpressionStrategy : IConversionStrategy
     /// </summary>
     private static string? ConvertDecimal(string left, string right, string op, BinaryExpressionSyntax binary, ConversionContext context)
     {
-        // Always wrap both operands in dec(): it is a pass-through for existing Decimals and coerces
-        // plain numbers (e.g. a decimal field that arrived from state as a JS number) — so the call
-        // is safe regardless of the runtime representation.
-        context.UsedHelpers.Add("dec");
-        var l = $"dec({left})";
-        var r = $"dec({right})";
+        // Always wrap both operands in $eq.num.dec(): it is a pass-through for existing Decimals and
+        // coerces plain numbers (e.g. a decimal field that arrived from state as a JS number) — so the
+        // call is safe regardless of the runtime representation.
+        var l = $"{Eq.Dec}({left})";
+        var r = $"{Eq.Dec}({right})";
 
         return op switch
         {

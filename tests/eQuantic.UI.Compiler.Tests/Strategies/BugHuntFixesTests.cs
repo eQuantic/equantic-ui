@@ -44,15 +44,15 @@ public class BugHuntFixesTests
     public void MathRound_RoutesThroughBankersRoundingHelper()
     {
         // Math.Round uses banker's rounding + a digit count; both go through the runtime `round` helper.
-        TestHelper.ConvertExpression("Math.Round(Total, 2)").Should().Be("round(this.total, 2)");
-        TestHelper.ConvertExpression("Math.Round(Total)").Should().Be("round(this.total)");
+        TestHelper.ConvertExpression("Math.Round(Total, 2)").Should().Be("$eq.math.round(this.total, 2)");
+        TestHelper.ConvertExpression("Math.Round(Total)").Should().Be("$eq.math.round(this.total)");
     }
 
     [Fact]
     public void ToString_WithFormat_UsesFormatHelper()
     {
         var result = TestHelper.ConvertExpression("Total.ToString(\"F2\")");
-        result.Should().Be("format(this.total, 'F2')");
+        result.Should().Be("$eq.text.format(this.total, 'F2')");
     }
 
     [Fact]

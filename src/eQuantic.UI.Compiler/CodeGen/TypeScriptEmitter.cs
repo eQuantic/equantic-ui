@@ -382,13 +382,10 @@ public class TypeScriptEmitter
             }
         }
 
-        // Check for formatting usage
-        if (UsesFormatting(component))
-        {
-            coreImports.Add("format");
-        }
-
-        // Add all runtime utilities from UsedHelpers (tracked by RuntimeUtilityStrategy)
+        // Note: .NET-compat helpers (format, round, dec, long, dateTime, timeSpan, stringBuilder,
+        // parseEnum) are emitted as `$eq.*` and provided by the global `$eq` namespace, so they are
+        // NOT imported here. Only the remaining runtime utilities (e.g. StyleBuilder/ClassBuilder,
+        // tracked in UsedHelpers by RuntimeUtilityStrategy) are imported.
         foreach (var helper in component.UsedHelpers)
         {
             coreImports.Add(helper);

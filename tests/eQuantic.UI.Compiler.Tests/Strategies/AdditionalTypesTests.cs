@@ -12,7 +12,7 @@ public class AdditionalTypesTests
         // DateTime now maps to the tick-precise `dateTime` compat type, not a lossy native Date.
         var code = "DateTime.Now";
         var js = ConvertExpression(code);
-        Assert.Equal("dateTime.now()", js);
+        Assert.Equal("$eq.time.dateTime.now()", js);
     }
     
     // Instance members require semantic model - moved to integration tests
@@ -32,7 +32,7 @@ public class AdditionalTypesTests
         // TimeSpan now maps to the tick-precise `timeSpan` compat type, not a bare millisecond number.
         var code = "TimeSpan.FromSeconds(5)";
         var js = ConvertExpression(code);
-        Assert.Equal("timeSpan.fromSeconds(5)", js);
+        Assert.Equal("$eq.time.timeSpan.fromSeconds(5)", js);
     }
     
     [Fact]
