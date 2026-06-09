@@ -42,6 +42,15 @@ public class Select : InputComponent<string>
     public List<SelectOption> Options { get; set; } = new();
     public string? DefaultValue { get; set; }
     public bool IsNative { get; set; } = false;
+
+    /// <summary>Selected values when <see cref="Multiple"/> is enabled (controlled).</summary>
+    public IReadOnlyList<string>? Values { get; set; }
+
+    /// <summary>Default selected values for an uncontrolled multiple select.</summary>
+    public IReadOnlyList<string>? DefaultValues { get; set; }
+
+    /// <summary>Change handler for a multiple select; receives all currently selected values.</summary>
+    public Action<IReadOnlyList<string>>? OnValuesChange { get; set; }
     
     /// <summary>Controlled open state for rich select</summary>
     public bool IsOpen { get; set; }
@@ -58,7 +67,16 @@ public class Select : InputComponent<string>
         {
             var baseStyle = selectTheme?.Base ?? "eq-select";
             var events = new Dictionary<string, Delegate>();
-            if (OnChange != null) events["change"] = OnChange;
+            // A multiple select emits all selected values (the runtime passes a string[]),
+            // so it uses OnValuesChange; a single select uses OnChange (a single string).
+            if (Multiple)
+            {
+                if (OnValuesChange != null) events["change"] = OnValuesChange;
+            }
+            else if (OnChange != null)
+            {
+                events["change"] = OnChange;
+            }
 
             var selectElement = new Box
             {
@@ -143,7 +161,7 @@ public class Select : InputComponent<string>
 
     private bool IsSelectedOld(SelectOption opt)
     {
-        if (Multiple) return false;
+        if (Multiple) return IsValueInSet(opt.Value);
         if (Value != null) return opt.Value == Value;
         if (DefaultValue != null) return opt.Value == DefaultValue;
         return opt.Selected;
@@ -151,8 +169,17 @@ public class Select : InputComponent<string>
 
     public bool IsValueSelected(string itemValue)
     {
+        if (Multiple) return IsValueInSet(itemValue);
         if (Value != null) return itemValue == Value;
         if (DefaultValue != null) return itemValue == DefaultValue;
+        return false;
+    }
+
+    /// <summary>Whether a value is part of the multiple-select selection (controlled or default).</summary>
+    private bool IsValueInSet(string value)
+    {
+        if (Values != null) return Values.Contains(value);
+        if (DefaultValues != null) return DefaultValues.Contains(value);
         return false;
     }
     
