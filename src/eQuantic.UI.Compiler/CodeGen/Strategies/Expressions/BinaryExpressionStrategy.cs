@@ -64,6 +64,28 @@ public class BinaryExpressionStrategy : IConversionStrategy
         return type?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64;
     }
 
+    private static readonly SpecialType[] PrimitiveNumericTypes =
+    {
+        SpecialType.System_SByte, SpecialType.System_Byte,
+        SpecialType.System_Int16, SpecialType.System_UInt16,
+        SpecialType.System_Int32, SpecialType.System_UInt32,
+        SpecialType.System_Single, SpecialType.System_Double,
+        // NOTE: Int64/UInt64 (long) and Decimal are intentionally excluded — handled by their own branches.
+    };
+
+    /// <summary>True when <paramref name="type"/> is <c>Nullable&lt;T&gt;</c> over a primitive numeric
+    /// T (the kinds whose lifted operators route through <c>$eq.nullable.*</c>).</summary>
+    private static bool IsNullablePrimitiveNumeric(ITypeSymbol? type)
+    {
+        if (type is INamedTypeSymbol named
+            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
+            && named.TypeArguments.Length == 1)
+        {
+            return Array.IndexOf(PrimitiveNumericTypes, named.TypeArguments[0].SpecialType) >= 0;
+        }
+        return false;
+    }
+
     private static bool IsNamed(ITypeSymbol? type, string fullName)
     {
         if (type is INamedTypeSymbol named
@@ -102,6 +124,35 @@ public class BinaryExpressionStrategy : IConversionStrategy
             context.UsedHelpers.Add(Eq.Import);
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
             return $"({Eq.Long}({left}) {jsOp} {Eq.Long}({right}))";
+        }
+
+        // Lifted Nullable<T> operators for primitive-numeric T (int/double/short/… — decimal and
+        // long/ulong are handled by their own branches above). .NET evaluates both operands, then:
+        // arithmetic -> null if either is null; relational -> FALSE if either is null. Naive JS would
+        // coerce null to 0 (so `null < 5` is `true`), diverging — route through the runtime lift.
+        if (op != "&&" && op != "||")
+        {
+            var nlt = context.SemanticHelper.GetType(binary.Left);
+            var nrt = context.SemanticHelper.GetType(binary.Right);
+            if (IsNullablePrimitiveNumeric(nlt) || IsNullablePrimitiveNumeric(nrt))
+            {
+                if (op is "<" or ">" or "<=" or ">=")
+                {
+                    context.UsedHelpers.Add(Eq.Import);
+                    return $"{Eq.LiftCmp}({left}, {right}, (a, b) => a {op} b)";
+                }
+                if (op is "+" or "-" or "*" or "/" or "%")
+                {
+                    context.UsedHelpers.Add(Eq.Import);
+                    // Integer division/remainder truncates toward zero in C#; preserve it inside the lift.
+                    var body = (op is "/" or "%") && IsIntegral(context.SemanticHelper.GetType(binary))
+                        ? (op == "/" ? "Math.trunc(a / b)" : "(a % b)")
+                        : $"a {op} b";
+                    return $"{Eq.LiftArith}({left}, {right}, (a, b) => {body})";
+                }
+                // == != fall through: strict ===/!== already match .NET nullable equality
+                // (null===null is true; value===null is false).
+            }
         }
 
         // DateTime/TimeSpan are runtime compat classes with operator overloads (+ - and comparisons).

@@ -13,7 +13,8 @@
 2. **.NET-compat runtime helper** — when JS lacks the semantics, emit a call into a TypeScript
    library that faithfully implements the .NET behavior. The transpiler emits these under the global
    **`$eq`** namespace, organised by domain — `$eq.num.dec/long`, `$eq.math.round`, `$eq.text.format/
-   stringBuilder`, `$eq.time.dateTime/timeSpan`, `$eq.enums.parse`, `$eq.css.*`. Brought in with one
+   stringBuilder`, `$eq.time.dateTime/timeSpan/dateTimeOffset`, `$eq.enums.parse`, `$eq.collections.*`,
+   `$eq.nullable.arith/cmp` (lifted operators), `$eq.css.*`. Brought in with one
    import per module (`import { $eq } from "@equantic/runtime"`, resolved by the page import map) and
    `$eq.*` cannot shadow user code.
 3. **Fail-on-unsupported** — when no faithful conversion exists (unsafe code, P/Invoke, reflection
@@ -80,7 +81,10 @@ Design notes:
   sorted collections ⬜.
 - **Types**: enum ✅, Guid ✅, DateTime ✅, TimeSpan ✅, DateOnly ✅, TimeOnly ✅, DateTimeOffset ✅
   (all tick-precise compat; DateTimeOffset = wall-clock + offset, compared by the instant),
-  Nullable ⬜(partial), Tuple ⬜(expression form), record/struct value semantics ⬜.
+  Nullable ✅ (HasValue/Value, GetValueOrDefault()/(fallback) with a type-aware default, lifted
+  arithmetic/relational with null-propagation via `$eq.nullable.*`; no-arg GetValueOrDefault on
+  DateTime?/Guid?/struct? returns null rather than the type default — use the fallback form there),
+  Tuple ⬜(expression form), record/struct value semantics ⬜.
 - **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function
@@ -95,7 +99,7 @@ Design notes:
 2. **LINQ totality** (mostly native strategies; high everyday use).
 3. **Strings completeness** (mostly native; char/StringBuilder/comparison gaps).
 4. **Stand up the `eq` compat runtime** properly — Decimal ✅, Int64/BigInt ✅, Convert ✅, DateTime ✅,
-   TimeSpan ✅, DateOnly ✅, TimeOnly ✅, DateTimeOffset ✅, Guid ✅. Remaining: structural equality, Nullable totality.
+   TimeSpan ✅, DateOnly ✅, TimeOnly ✅, DateTimeOffset ✅, Nullable ✅, Guid ✅. Remaining: structural equality (records/structs).
 5. **Statement-level harness mode** (W3) ✅ landed — control-flow blocks are validated end-to-end.
    **Fail-on-unsupported** ✅ landed.
 
