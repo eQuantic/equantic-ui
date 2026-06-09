@@ -29,10 +29,30 @@ public static class Transpiler
             .OfType<TypeDeclarationSyntax>()
             .Where(RecordTypeEmitter.CanEmit)
             .ToList();
+        if (valueTypes.Count == 0) return string.Empty;
 
-        return valueTypes.Count == 0
-            ? string.Empty
-            : string.Join("\n", valueTypes.Select(emitter.Emit)) + "\n";
+        // Emit base records before derived ones — JS `class X extends Base` needs Base already declared.
+        var names = valueTypes.Select(t => t.Identifier.Text).ToHashSet();
+        string? EmittedBaseOf(TypeDeclarationSyntax t)
+        {
+            var b = t.BaseList?.Types.OfType<PrimaryConstructorBaseTypeSyntax>().FirstOrDefault()?.Type.ToString();
+            if (b != null && b.Contains('<')) b = b[..b.IndexOf('<')];
+            return b != null && names.Contains(b) ? b : null;
+        }
+
+        var ordered = new List<TypeDeclarationSyntax>();
+        var done = new HashSet<string>();
+        void Add(TypeDeclarationSyntax t)
+        {
+            if (!done.Add(t.Identifier.Text)) return;
+            var baseName = EmittedBaseOf(t);
+            var baseType = baseName == null ? null : valueTypes.FirstOrDefault(x => x.Identifier.Text == baseName);
+            if (baseType != null) Add(baseType);
+            ordered.Add(t);
+        }
+        foreach (var t in valueTypes) Add(t);
+
+        return string.Join("\n", ordered.Select(emitter.Emit)) + "\n";
     }
 
     public static string TranspileExpression(string csharpExpression, string prelude = "")

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -26,20 +27,30 @@ public class RecordTypeEmitter
     /// Emits the type as a standalone TypeScript module — the structural <c>equals</c>/<c>with</c> use
     /// <c>$eq</c>, imported from the runtime, and the class is exported so components can import it.
     /// </summary>
-    public string EmitModule(TypeDeclarationSyntax type) =>
-        "import { $eq } from \"@equantic/runtime\";\n\nexport " + Emit(type) + "\n";
+    public string EmitModule(TypeDeclarationSyntax type)
+    {
+        var imports = new StringBuilder("import { $eq } from \"@equantic/runtime\";\n");
+        // A base record is emitted as its own module — import it so `extends` resolves.
+        var (baseName, _, _) = BaseInfo(type);
+        if (baseName != null) imports.Append($"import {{ {baseName} }} from \"./{baseName}\";\n");
+        return imports.Append("\nexport ").Append(Emit(type)).Append('\n').ToString();
+    }
 
     public string Emit(TypeDeclarationSyntax type)
     {
         var name = type.Identifier.Text;
         var members = type.ValueMembers();
+        var (baseName, superArgs, passedToBase) = BaseInfo(type);
 
         var sb = new StringBuilder();
-        sb.Append($"class {name} {{ ");
+        sb.Append($"class {name}{(baseName != null ? $" extends {baseName}" : "")} {{ ");
 
-        // constructor(x = …, y = …) { this.x = x; this.y = y; } — defaults cover omitted args.
+        // constructor(x = …, y = …) { [super(…);] this.<own> = …; } — defaults cover omitted args;
+        // members passed to the base record's primary constructor are assigned by `super`, not here.
         sb.Append($"constructor({string.Join(", ", members.Select(m => $"{m.Js} = {m.Default}"))}) {{ ");
-        foreach (var m in members) sb.Append($"this.{m.Js} = {m.Js}; ");
+        if (baseName != null) sb.Append($"super({superArgs}); ");
+        foreach (var m in members)
+            if (!passedToBase.Contains(m.Display)) sb.Append($"this.{m.Js} = {m.Js}; ");
         sb.Append("} ");
 
         // Structural equality — $eq.equals(a, b) delegates here when `a` is an instance.
@@ -69,6 +80,39 @@ public class RecordTypeEmitter
 
         sb.Append('}');
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// The base record (if any) from a primary-constructor base clause (<c>record Dog(…) : Animal(Name)</c>):
+    /// its name (generics erased), the JS <c>super(...)</c> arguments, and which members are passed to the
+    /// base (so they aren't re-assigned in the derived constructor). Interfaces / non-record bases yield none.
+    /// </summary>
+    private (string? BaseName, string SuperArgs, HashSet<string> PassedToBase) BaseInfo(TypeDeclarationSyntax type)
+    {
+        var primary = type.BaseList?.Types.OfType<PrimaryConstructorBaseTypeSyntax>().FirstOrDefault();
+        if (primary == null) return (null, "", new HashSet<string>());
+
+        var baseName = primary.Type.ToString();
+        if (baseName.Contains('<')) baseName = baseName[..baseName.IndexOf('<')]; // erase generics
+
+        var passed = new HashSet<string>();
+        var superArgs = new List<string>();
+        if (primary.ArgumentList != null)
+        {
+            foreach (var arg in primary.ArgumentList.Arguments)
+            {
+                if (arg.Expression is IdentifierNameSyntax id)
+                {
+                    passed.Add(id.Identifier.Text);                 // a member forwarded to the base
+                    superArgs.Add(id.Identifier.Text.ToCamelCase());
+                }
+                else
+                {
+                    superArgs.Add(_converter.ConvertExpression(arg.Expression));
+                }
+            }
+        }
+        return (baseName, string.Join(", ", superArgs), passed);
     }
 
     private string EmitMethod(MethodDeclarationSyntax method, string className)
