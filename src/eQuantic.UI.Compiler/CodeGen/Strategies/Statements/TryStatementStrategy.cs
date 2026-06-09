@@ -24,20 +24,16 @@ public class TryStatementStrategy : IStatementStrategy
         foreach (var catchClause in tryStmt.Catches)
         {
             builder.Append(" catch");
-            if (catchClause.Declaration != null)
+
+            // Emit a binding only when C# named one. A typed catch with no variable
+            // (`catch (OverflowException)`) or an untyped `catch` both use JS's optional catch binding
+            // (`catch { … }`) — the exception type itself isn't a JS construct, so every catch is catch-all.
+            var identifier = catchClause.Declaration?.Identifier.Text;
+            if (!string.IsNullOrEmpty(identifier))
             {
-                builder.Append(" (");
-                builder.Append(catchClause.Declaration.Identifier.Text);
-                builder.Append(")");
+                builder.Append($" ({identifier})");
             }
-            else
-            {
-                // JavaScript catch allows 'catch' but binding is usually expected in older envs
-                // Modern JS supports optional catch binding (catch {})
-                // We will output catch (e) if implicit or just catch {} if that's safe. 
-                // Let's stick to catch {} for untyped catches to match C# semantics of "swallow everything"
-            }
-            
+
             builder.Append(" ");
             builder.Append(converter.Convert(catchClause.Block));
         }

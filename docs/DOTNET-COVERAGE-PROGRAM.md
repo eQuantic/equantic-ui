@@ -69,7 +69,9 @@ Design notes:
 ## Coverage matrix (areas → status; filled in as the corpus grows)
 
 - **Operators / expressions**: arithmetic ✅, comparison ✅, logical ✅, ternary ✅, null-coalescing ✅,
-  bitwise ✅, integer division ✅, shift ✅, checked/unchecked ⬜.
+  bitwise ✅, integer division ✅, shift ✅, `checked(expr)`/`unchecked(expr)` ✅ (32-bit: unchecked
+  wraps via `| 0`/`>>> 0`, checked throws `OverflowException`; long/ulong are exact BigInt and pass
+  through; default-context overflow does NOT wrap — JS float64 — a documented divergence).
 - **Numeric types**: int ✅, double ✅, decimal ✅(exact `Decimal`, wire-as-string + hydration),
   long/ulong ✅(BigInt, wire-as-string), float ✅, parsing/Convert ✅, overflow ⬜.
 - **Strings**: core methods ✅, format specifiers ✅(F/X/N), padding/split/join ✅, interpolation ✅,
