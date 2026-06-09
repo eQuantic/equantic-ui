@@ -31,6 +31,7 @@ export { format, parseEnum } from './utils/format';
 export { round } from './utils/dotnet-math';
 export { Decimal, dec } from './utils/decimal';
 export { long } from './utils/long';
+export { DateTime, dateTime, TimeSpan, timeSpan } from './utils/datetime';
 export { StyleBuilder } from './utils/style-builder';
 export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 

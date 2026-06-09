@@ -64,6 +64,17 @@ public class BinaryExpressionStrategy : IConversionStrategy
         return type?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64;
     }
 
+    private static bool IsNamed(ITypeSymbol? type, string fullName)
+    {
+        if (type is INamedTypeSymbol named
+            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
+            && named.TypeArguments.Length == 1)
+        {
+            type = named.TypeArguments[0];
+        }
+        return type?.ToDisplayString() == fullName;
+    }
+
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var binary = (BinaryExpressionSyntax)node;
@@ -91,6 +102,16 @@ public class BinaryExpressionStrategy : IConversionStrategy
             context.UsedHelpers.Add("long");
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
             return $"(long({left}) {jsOp} long({right}))";
+        }
+
+        // DateTime/TimeSpan are runtime compat classes with operator overloads (+ - and comparisons).
+        // Route to their methods based on the operand types. (Null comparisons fall through.)
+        if (left != "null" && right != "null" && op != "&&" && op != "||")
+        {
+            var lt = context.SemanticHelper.GetType(binary.Left);
+            var rt = context.SemanticHelper.GetType(binary.Right);
+            var dtResult = ConvertDateTimeOrTimeSpan(left, right, op, lt, rt);
+            if (dtResult != null) return dtResult;
         }
 
         // C# integer division truncates toward zero; JS `/` is always float division.
@@ -149,6 +170,65 @@ public class BinaryExpressionStrategy : IConversionStrategy
             ">=" => $"({l}.compareTo({r}) >= 0)",
             _ => null
         };
+    }
+
+    /// <summary>
+    /// Routes a binary operation involving DateTime/TimeSpan to the runtime compat methods:
+    /// <c>DateTime - DateTime -> TimeSpan</c> (diff), <c>DateTime ± TimeSpan -> DateTime</c> (add/subtract),
+    /// <c>TimeSpan ± TimeSpan</c>, and comparisons via <c>compareTo</c>/<c>equals</c>. Returns null for
+    /// any combination not modelled (falls back to the default operator handling).
+    /// </summary>
+    private static string? ConvertDateTimeOrTimeSpan(string left, string right, string op, ITypeSymbol? lt, ITypeSymbol? rt)
+    {
+        const string dt = "System.DateTime";
+        const string ts = "System.TimeSpan";
+        bool lDt = IsNamed(lt, dt), rDt = IsNamed(rt, dt);
+        bool lTs = IsNamed(lt, ts), rTs = IsNamed(rt, ts);
+
+        if (lDt && rDt)
+        {
+            return op switch
+            {
+                "-" => $"{left}.diff({right})",          // -> TimeSpan
+                "==" => $"{left}.equals({right})",
+                "!=" => $"!{left}.equals({right})",
+                "<" => $"({left}.compareTo({right}) < 0)",
+                ">" => $"({left}.compareTo({right}) > 0)",
+                "<=" => $"({left}.compareTo({right}) <= 0)",
+                ">=" => $"({left}.compareTo({right}) >= 0)",
+                _ => null,
+            };
+        }
+
+        if (lDt && rTs)
+        {
+            return op switch
+            {
+                "+" => $"{left}.add({right})",
+                "-" => $"{left}.subtract({right})",
+                _ => null,
+            };
+        }
+
+        if (lTs && rDt && op == "+") return $"{right}.add({left})"; // TimeSpan + DateTime (commutative)
+
+        if (lTs && rTs)
+        {
+            return op switch
+            {
+                "+" => $"{left}.add({right})",
+                "-" => $"{left}.sub({right})",
+                "==" => $"{left}.equals({right})",
+                "!=" => $"!{left}.equals({right})",
+                "<" => $"({left}.compareTo({right}) < 0)",
+                ">" => $"({left}.compareTo({right}) > 0)",
+                "<=" => $"({left}.compareTo({right}) <= 0)",
+                ">=" => $"({left}.compareTo({right}) >= 0)",
+                _ => null,
+            };
+        }
+
+        return null;
     }
 
     public int Priority => 0;

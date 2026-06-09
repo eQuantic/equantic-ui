@@ -1,0 +1,341 @@
+/**
+ * .NET-compat `DateTime` and `TimeSpan` — exact, timezone-free, tick-precise.
+ *
+ * JavaScript's `Date` conflates an instant with a timezone, uses a millisecond epoch, and formats
+ * nothing like .NET. .NET models both types as a 64-bit count of **ticks** (100-nanosecond units):
+ * `DateTime` since 0001-01-01 00:00:00, `TimeSpan` as a signed duration. We reproduce that with a
+ * BigInt tick count, so arithmetic is exact (no float drift), `ToString()` matches .NET, and
+ * `DateTime - DateTime` yields a `TimeSpan` to the tick.
+ *
+ * The transpiler emits `dateTime(...)` / `timeSpan(...)` for `new DateTime(...)` / `new TimeSpan(...)`
+ * and routes operators (`+ - < > <= >= == !=`) to the methods here.
+ *
+ * Scope: construction, calendar/component properties, Add* arithmetic, comparison, parameterless
+ * `ToString()` (+ a common-pattern `format`), parse of ISO-8601 and the invariant default. Kind
+ * (Utc/Local/Unspecified) is not tracked — values are treated as wall-clock, matching `Unspecified`.
+ */
+
+const TICKS_PER_MILLISECOND = 10_000n;
+const TICKS_PER_SECOND = 10_000_000n;
+const TICKS_PER_MINUTE = 600_000_000n;
+const TICKS_PER_HOUR = 36_000_000_000n;
+const TICKS_PER_DAY = 864_000_000_000n;
+
+// Ticks of 9999-12-31 23:59:59.9999999 — .NET DateTime.MaxValue.
+const MAX_DATETIME_TICKS = 3_155_378_975_999_999_999n;
+
+// Days from 0001-01-01 to 1970-01-01 (Hinnant's algorithm is epoch-relative to 1970).
+const DAYS_0001_TO_1970 = 719_162;
+
+function idiv(a: number, b: number): number {
+  return Math.trunc(a / b);
+}
+
+/** Days since 0001-01-01 (which is day 0), proleptic Gregorian. */
+function daysFromCivil(year: number, month: number, day: number): number {
+  const y = month <= 2 ? year - 1 : year;
+  const era = idiv(y >= 0 ? y : y - 399, 400);
+  const yoe = y - era * 400;
+  const doy = idiv(153 * (month + (month > 2 ? -3 : 9)) + 2, 5) + day - 1;
+  const doe = yoe * 365 + idiv(yoe, 4) - idiv(yoe, 100) + doy;
+  return era * 146097 + doe - 719468 + DAYS_0001_TO_1970;
+}
+
+/** Inverse of {@link daysFromCivil}. */
+function civilFromDays(daysSince0001: number): { year: number; month: number; day: number } {
+  const z = daysSince0001 - DAYS_0001_TO_1970 + 719468;
+  const era = idiv(z >= 0 ? z : z - 146096, 146097);
+  const doe = z - era * 146097;
+  const yoe = idiv(doe - idiv(doe, 1460) + idiv(doe, 36524) - idiv(doe, 146096), 365);
+  const y = yoe + era * 400;
+  const doy = doe - (365 * yoe + idiv(yoe, 4) - idiv(yoe, 100));
+  const mp = idiv(5 * doy + 2, 153);
+  const day = doy - idiv(153 * mp + 2, 5) + 1;
+  const month = mp < 10 ? mp + 3 : mp - 9;
+  return { year: month <= 2 ? y + 1 : y, month, day };
+}
+
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+function daysInMonth(year: number, month: number): number {
+  return month === 2 && isLeapYear(year) ? 29 : DAYS_IN_MONTH[month - 1];
+}
+
+function pad(n: number, width: number): string {
+  const s = Math.abs(n).toString();
+  return s.length >= width ? s : '0'.repeat(width - s.length) + s;
+}
+
+// ---------------------------------------------------------------------------------------------
+// TimeSpan
+// ---------------------------------------------------------------------------------------------
+
+export class TimeSpan {
+  constructor(readonly ticks: bigint) {}
+
+  // Component parts (whole, truncated toward zero — matching .NET).
+  get days(): number { return Number(this.ticks / TICKS_PER_DAY); }
+  get hours(): number { return Number((this.ticks / TICKS_PER_HOUR) % 24n); }
+  get minutes(): number { return Number((this.ticks / TICKS_PER_MINUTE) % 60n); }
+  get seconds(): number { return Number((this.ticks / TICKS_PER_SECOND) % 60n); }
+  get milliseconds(): number { return Number((this.ticks / TICKS_PER_MILLISECOND) % 1000n); }
+
+  // Fractional totals.
+  get totalDays(): number { return Number(this.ticks) / Number(TICKS_PER_DAY); }
+  get totalHours(): number { return Number(this.ticks) / Number(TICKS_PER_HOUR); }
+  get totalMinutes(): number { return Number(this.ticks) / Number(TICKS_PER_MINUTE); }
+  get totalSeconds(): number { return Number(this.ticks) / Number(TICKS_PER_SECOND); }
+  get totalMilliseconds(): number { return Number(this.ticks) / Number(TICKS_PER_MILLISECOND); }
+
+  add(other: TimeSpan): TimeSpan { return new TimeSpan(this.ticks + other.ticks); }
+  sub(other: TimeSpan): TimeSpan { return new TimeSpan(this.ticks - other.ticks); }
+  negate(): TimeSpan { return new TimeSpan(-this.ticks); }
+  duration(): TimeSpan { return new TimeSpan(this.ticks < 0n ? -this.ticks : this.ticks); }
+
+  compareTo(other: TimeSpan): number {
+    return this.ticks < other.ticks ? -1 : this.ticks > other.ticks ? 1 : 0;
+  }
+  equals(other: TimeSpan): boolean { return this.ticks === other.ticks; }
+
+  /** .NET "c" (constant) format: `[-][d.]hh:mm:ss[.fffffff]`. */
+  toString(): string {
+    const sign = this.ticks < 0n ? '-' : '';
+    const abs = this.ticks < 0n ? -this.ticks : this.ticks;
+    const d = Number(abs / TICKS_PER_DAY);
+    const h = Number((abs / TICKS_PER_HOUR) % 24n);
+    const m = Number((abs / TICKS_PER_MINUTE) % 60n);
+    const s = Number((abs / TICKS_PER_SECOND) % 60n);
+    const frac = abs % TICKS_PER_SECOND;
+
+    let result = sign;
+    if (d > 0) result += d + '.';
+    result += `${pad(h, 2)}:${pad(m, 2)}:${pad(s, 2)}`;
+    if (frac > 0n) result += '.' + frac.toString().padStart(7, '0');
+    return result;
+  }
+
+  /** System.Text.Json serializes TimeSpan in the "c" format — same as toString. */
+  toJSON(): string { return this.toString(); }
+}
+
+function ticksFromUnit(value: number, ticksPerUnit: bigint): bigint {
+  // .NET scales through milliseconds and rounds to the nearest tick.
+  return BigInt(Math.round(value * Number(ticksPerUnit / TICKS_PER_MILLISECOND))) * TICKS_PER_MILLISECOND;
+}
+
+interface TimeSpanFactory {
+  (ticks: bigint | number): TimeSpan;
+  (hours: number, minutes: number, seconds: number): TimeSpan;
+  (days: number, hours: number, minutes: number, seconds: number): TimeSpan;
+  (days: number, hours: number, minutes: number, seconds: number, milliseconds: number): TimeSpan;
+  fromDays(value: number): TimeSpan;
+  fromHours(value: number): TimeSpan;
+  fromMinutes(value: number): TimeSpan;
+  fromSeconds(value: number): TimeSpan;
+  fromMilliseconds(value: number): TimeSpan;
+  fromTicks(value: bigint | number): TimeSpan;
+  parse(text: string): TimeSpan;
+  readonly zero: TimeSpan;
+  minValue(): TimeSpan;
+  maxValue(): TimeSpan;
+}
+
+/** Mirrors C# `new TimeSpan(...)` overloads (dispatched by arity) plus the static factories. */
+function timeSpanImpl(...args: number[] | bigint[]): TimeSpan {
+  if (args.length === 1) {
+    const v = args[0];
+    return new TimeSpan(typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
+  }
+  // (h, m, s) | (d, h, m, s) | (d, h, m, s, ms)
+  const n = args as number[];
+  let days = 0, hours = 0, minutes = 0, seconds = 0, ms = 0;
+  if (n.length === 3) [hours, minutes, seconds] = n;
+  else if (n.length === 4) [days, hours, minutes, seconds] = n;
+  else [days, hours, minutes, seconds, ms] = n;
+  const ticks =
+    BigInt(days) * TICKS_PER_DAY +
+    BigInt(hours) * TICKS_PER_HOUR +
+    BigInt(minutes) * TICKS_PER_MINUTE +
+    BigInt(seconds) * TICKS_PER_SECOND +
+    BigInt(ms) * TICKS_PER_MILLISECOND;
+  return new TimeSpan(ticks);
+}
+
+export const timeSpan = timeSpanImpl as TimeSpanFactory;
+timeSpan.fromDays = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_DAY));
+timeSpan.fromHours = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_HOUR));
+timeSpan.fromMinutes = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_MINUTE));
+timeSpan.fromSeconds = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_SECOND));
+timeSpan.fromMilliseconds = (v) => new TimeSpan(BigInt(Math.round(v)) * TICKS_PER_MILLISECOND);
+timeSpan.fromTicks = (v) => new TimeSpan(typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
+timeSpan.parse = (text: string): TimeSpan => {
+  // .NET "c" format: [-][d.]hh:mm:ss[.fffffff]
+  const m = /^(-)?(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d+))?$/.exec(text.trim());
+  if (!m) throw new Error(`Unrecognized TimeSpan format: '${text}'`);
+  const frac = m[6] ? BigInt(m[6].padEnd(7, '0').slice(0, 7)) : 0n;
+  const ticks =
+    BigInt(m[2] ?? 0) * TICKS_PER_DAY +
+    BigInt(m[3]) * TICKS_PER_HOUR +
+    BigInt(m[4]) * TICKS_PER_MINUTE +
+    BigInt(m[5]) * TICKS_PER_SECOND +
+    frac;
+  return new TimeSpan(m[1] ? -ticks : ticks);
+};
+(timeSpan as { zero: TimeSpan }).zero = new TimeSpan(0n);
+timeSpan.minValue = () => new TimeSpan(-9_223_372_036_854_775_808n);
+timeSpan.maxValue = () => new TimeSpan(9_223_372_036_854_775_807n);
+
+// ---------------------------------------------------------------------------------------------
+// DateTime
+// ---------------------------------------------------------------------------------------------
+
+export class DateTime {
+  constructor(readonly ticks: bigint) {}
+
+  private get totalDays(): number { return Number(this.ticks / TICKS_PER_DAY); }
+  private civil() { return civilFromDays(this.totalDays); }
+
+  get year(): number { return this.civil().year; }
+  get month(): number { return this.civil().month; }
+  get day(): number { return this.civil().day; }
+  get hour(): number { return Number((this.ticks / TICKS_PER_HOUR) % 24n); }
+  get minute(): number { return Number((this.ticks / TICKS_PER_MINUTE) % 60n); }
+  get second(): number { return Number((this.ticks / TICKS_PER_SECOND) % 60n); }
+  get millisecond(): number { return Number((this.ticks / TICKS_PER_MILLISECOND) % 1000n); }
+  /** Sunday = 0 (matches System.DayOfWeek). 0001-01-01 is a Monday. */
+  get dayOfWeek(): number { return Number((BigInt(this.totalDays) + 1n) % 7n); }
+  get dayOfYear(): number {
+    const { year } = this.civil();
+    return this.totalDays - daysFromCivil(year, 1, 1) + 1;
+  }
+  get date(): DateTime { return new DateTime(BigInt(this.totalDays) * TICKS_PER_DAY); }
+  get timeOfDay(): TimeSpan { return new TimeSpan(this.ticks % TICKS_PER_DAY); }
+
+  addTicks(t: bigint): DateTime { return new DateTime(this.ticks + t); }
+  // Fractional Add* round to the nearest millisecond, like .NET.
+  addDays(value: number): DateTime { return this.addTicks(ticksFromUnit(value, TICKS_PER_DAY)); }
+  addHours(value: number): DateTime { return this.addTicks(ticksFromUnit(value, TICKS_PER_HOUR)); }
+  addMinutes(value: number): DateTime { return this.addTicks(ticksFromUnit(value, TICKS_PER_MINUTE)); }
+  addSeconds(value: number): DateTime { return this.addTicks(ticksFromUnit(value, TICKS_PER_SECOND)); }
+  addMilliseconds(value: number): DateTime { return this.addTicks(BigInt(Math.round(value)) * TICKS_PER_MILLISECOND); }
+
+  addMonths(months: number): DateTime {
+    const c = this.civil();
+    const i = c.month - 1 + months;
+    let year: number, month: number;
+    if (i >= 0) { month = (i % 12) + 1; year = c.year + idiv(i, 12); }
+    else { month = 12 + ((i + 1) % 12); year = c.year + idiv(i - 11, 12); }
+    const day = Math.min(c.day, daysInMonth(year, month));
+    const datePart = BigInt(daysFromCivil(year, month, day)) * TICKS_PER_DAY;
+    return new DateTime(datePart + (this.ticks % TICKS_PER_DAY));
+  }
+  addYears(years: number): DateTime { return this.addMonths(years * 12); }
+
+  /** DateTime - DateTime -> TimeSpan. */
+  diff(other: DateTime): TimeSpan { return new TimeSpan(this.ticks - other.ticks); }
+  /** DateTime + TimeSpan -> DateTime. */
+  add(span: TimeSpan): DateTime { return new DateTime(this.ticks + span.ticks); }
+  /** DateTime - TimeSpan -> DateTime. */
+  subtract(span: TimeSpan): DateTime { return new DateTime(this.ticks - span.ticks); }
+
+  compareTo(other: DateTime): number {
+    return this.ticks < other.ticks ? -1 : this.ticks > other.ticks ? 1 : 0;
+  }
+  equals(other: DateTime): boolean { return this.ticks === other.ticks; }
+
+  /** .NET invariant default: `MM/dd/yyyy HH:mm:ss`. With a pattern, see {@link format}. */
+  toString(pattern?: string): string {
+    if (pattern) return this.format(pattern);
+    const c = this.civil();
+    return `${pad(c.month, 2)}/${pad(c.day, 2)}/${pad(c.year, 4)} ${pad(this.hour, 2)}:${pad(this.minute, 2)}:${pad(this.second, 2)}`;
+  }
+
+  /** Common custom format tokens: yyyy yy MM M dd d HH H mm m ss s. Literals pass through. */
+  format(pattern: string): string {
+    const c = this.civil();
+    const map: Record<string, string> = {
+      yyyy: pad(c.year, 4), yy: pad(c.year % 100, 2),
+      MM: pad(c.month, 2), M: String(c.month),
+      dd: pad(c.day, 2), d: String(c.day),
+      HH: pad(this.hour, 2), H: String(this.hour),
+      mm: pad(this.minute, 2), m: String(this.minute),
+      ss: pad(this.second, 2), s: String(this.second),
+    };
+    return pattern.replace(/yyyy|yy|MM|M|dd|d|HH|H|mm|m|ss|s/g, (t) => map[t]);
+  }
+
+  /** ISO-8601 (what System.Text.Json reads). Fractional ticks appended only when non-zero. */
+  toJSON(): string {
+    const c = this.civil();
+    let s = `${pad(c.year, 4)}-${pad(c.month, 2)}-${pad(c.day, 2)}T${pad(this.hour, 2)}:${pad(this.minute, 2)}:${pad(this.second, 2)}`;
+    const frac = this.ticks % TICKS_PER_SECOND;
+    if (frac > 0n) s += '.' + frac.toString().padStart(7, '0').replace(/0+$/, '');
+    return s;
+  }
+}
+
+interface DateTimeFactory {
+  (ticks: bigint): DateTime;
+  (year: number, month: number, day: number): DateTime;
+  (year: number, month: number, day: number, hour: number, minute: number, second: number): DateTime;
+  (year: number, month: number, day: number, hour: number, minute: number, second: number, millisecond: number): DateTime;
+  now(): DateTime;
+  utcNow(): DateTime;
+  today(): DateTime;
+  minValue(): DateTime;
+  maxValue(): DateTime;
+  parse(text: string): DateTime;
+  daysInMonth(year: number, month: number): number;
+  isLeapYear(year: number): boolean;
+}
+
+function fromComponents(year: number, month: number, day: number, hour = 0, minute = 0, second = 0, ms = 0): DateTime {
+  const ticks =
+    BigInt(daysFromCivil(year, month, day)) * TICKS_PER_DAY +
+    BigInt(hour) * TICKS_PER_HOUR +
+    BigInt(minute) * TICKS_PER_MINUTE +
+    BigInt(second) * TICKS_PER_SECOND +
+    BigInt(ms) * TICKS_PER_MILLISECOND;
+  return new DateTime(ticks);
+}
+
+/** Mirrors C# `new DateTime(...)` overloads (dispatched by arity) plus the static members. */
+function dateTimeImpl(...args: number[] | [bigint]): DateTime {
+  if (args.length === 1 && typeof args[0] === 'bigint') return new DateTime(args[0]);
+  const n = args as number[];
+  return fromComponents(n[0], n[1], n[2], n[3] ?? 0, n[4] ?? 0, n[5] ?? 0, n[6] ?? 0);
+}
+
+function fromJsDate(d: Date, utc: boolean): DateTime {
+  return utc
+    ? fromComponents(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds())
+    : fromComponents(d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds());
+}
+
+export const dateTime = dateTimeImpl as DateTimeFactory;
+dateTime.now = () => fromJsDate(new Date(), false);
+dateTime.utcNow = () => fromJsDate(new Date(), true);
+dateTime.today = () => dateTime.now().date;
+dateTime.minValue = () => new DateTime(0n);
+dateTime.maxValue = () => new DateTime(MAX_DATETIME_TICKS);
+dateTime.daysInMonth = daysInMonth;
+dateTime.isLeapYear = isLeapYear;
+dateTime.parse = (text: string): DateTime => {
+  const t = text.trim();
+  // ISO-8601: yyyy-MM-dd[Thh:mm:ss[.fffffff]] (the wire form).
+  let m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?/.exec(t);
+  if (m) {
+    const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
+    return new DateTime(
+      fromComponents(+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)).ticks + frac,
+    );
+  }
+  // Invariant default: MM/dd/yyyy[ HH:mm:ss]
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?/.exec(t);
+  if (m) return fromComponents(+m[3], +m[1], +m[2], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0));
+  throw new Error(`Unrecognized DateTime format: '${text}'`);
+};

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using eQuantic.UI.Server.Json;
@@ -19,6 +20,12 @@ public class EqJsonTests
         public ulong UBig { get; set; }
         public int Small { get; set; }
         public decimal Price { get; set; }
+    }
+
+    private sealed class TemporalPayload
+    {
+        public DateTime When { get; set; }
+        public TimeSpan Duration { get; set; }
     }
 
     [Fact]
@@ -85,5 +92,22 @@ public class EqJsonTests
     {
         var back = JsonSerializer.Deserialize<Payload>("{\"price\":19.99}", EqJson.Options)!;
         back.Price.Should().Be(19.99m);
+    }
+
+    [Fact]
+    public void DateTime_CrossesAsIso8601_AndRoundTrips()
+    {
+        // The client `dateTime` compat type parses/emits this ISO form (no custom converter needed —
+        // System.Text.Json's default DateTime handling already matches).
+        var payload = new TemporalPayload { When = new DateTime(2024, 1, 15, 9, 30, 0), Duration = TimeSpan.FromHours(25) };
+        var json = JsonSerializer.Serialize(payload, EqJson.Options);
+
+        json.Should().Contain("\"when\":\"2024-01-15T09:30:00\"");
+        // TimeSpan uses the .NET "c" constant format — what the client TimeSpan compat type emits/parses.
+        json.Should().Contain("\"duration\":\"1.01:00:00\"");
+
+        var back = JsonSerializer.Deserialize<TemporalPayload>(json, EqJson.Options)!;
+        back.When.Should().Be(payload.When);
+        back.Duration.Should().Be(payload.Duration);
     }
 }

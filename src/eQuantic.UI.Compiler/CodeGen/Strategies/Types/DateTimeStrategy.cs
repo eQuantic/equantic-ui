@@ -1,72 +1,116 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
-/// Strategy for DateTime and DateTimeOffset.
-/// Handles: 
-/// - DateTime.Now -> new Date()
-/// - DateTime.UtcNow -> new Date()
-/// - date.Year -> date.getFullYear()
+/// Maps <c>System.DateTime</c> to the runtime <c>DateTime</c> compat type (tick-precise, .NET-faithful).
+/// Construction and statics route through the <c>dateTime</c> factory; instance members/methods become
+/// camelCase calls on the value. Operators (+ - and comparisons) are handled by BinaryExpressionStrategy.
 /// </summary>
+/// <remarks>
+/// Priority 15 so it wins over the generic ToString (10), ObjectCreation (5) and member-access (0)
+/// strategies for DateTime nodes. Gated on the semantic type, so only genuine DateTime nodes are taken.
+/// </remarks>
 public class DateTimeStrategy : IConversionStrategy
 {
+    private const string TypeName = "System.DateTime";
+
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        if (node is not MemberAccessExpressionSyntax memberAccess) return false;
-        
-        var symbol = context.SemanticHelper.GetSymbol(node);
-        if (symbol != null) 
+        switch (node)
         {
-            var type = symbol.ContainingType?.ToDisplayString();
-            return type == "System.DateTime" || type == "System.DateTimeOffset";
-        }
+            case ObjectCreationExpressionSyntax oc:
+                return IsType(context.SemanticHelper.GetType(oc)) || oc.Type.ToString() == "DateTime";
 
-        // Heuristic: Check if accessing static member of known types
-        var expressionStr = memberAccess.Expression.ToString();
-        return expressionStr == "DateTime" || expressionStr == "DateTimeOffset";
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
+                return IsDateTimeMember(ma, context);
+
+            case MemberAccessExpressionSyntax member:
+                return IsDateTimeMember(member, context);
+
+            default:
+                return false;
+        }
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
-        var memberAccess = (MemberAccessExpressionSyntax)node;
-        var name = memberAccess.Name.Identifier.Text;
-        
-        // Static access: DateTime.Now
-        // Heuristic: if expression is literally "DateTime"
-        if (context.SemanticHelper.IsStatic(node) || memberAccess.Expression.ToString() == "DateTime")
+        switch (node)
         {
-             return name switch
-             {
-                 "Now" => "new Date()",
-                 "UtcNow" => "new Date()", // JS Date is UTC/Local hybrid
-                 "Today" => "new Date()",
-                 _ => $"Date.{ToCamelCase(name)}"
-             };
+            case ObjectCreationExpressionSyntax oc:
+                context.UsedHelpers.Add("dateTime");
+                return $"dateTime({ConvertArgs(oc.ArgumentList, context)})";
+
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
+            {
+                var name = ma.Name.Identifier.Text;
+                var args = ConvertArgs(inv.ArgumentList, context);
+                if (IsStaticAccess(ma, context))
+                {
+                    context.UsedHelpers.Add("dateTime");
+                    return $"dateTime.{Camel(name)}({args})";
+                }
+                var receiver = context.Converter.ConvertExpression(ma.Expression);
+                return $"{receiver}.{Camel(name)}({args})";
+            }
+
+            case MemberAccessExpressionSyntax member:
+            {
+                var name = member.Name.Identifier.Text;
+                if (IsStaticAccess(member, context))
+                {
+                    // Static properties (Now/UtcNow/Today/MinValue/MaxValue) map to factory methods.
+                    context.UsedHelpers.Add("dateTime");
+                    return $"dateTime.{Camel(name)}()";
+                }
+                var receiver = context.Converter.ConvertExpression(member.Expression);
+                return $"{receiver}.{Camel(name)}";
+            }
+
+            default:
+                return node.ToString();
         }
-        
-        // Instance access: date.Year
-        var expr = context.Converter.ConvertExpression(memberAccess.Expression);
-        return name switch
-        {
-            "Year" => $"{expr}.getFullYear()",
-            "Month" => $"({expr}.getMonth() + 1)", // JS Month is 0-indexed
-            "Day" => $"{expr}.getDate()",
-            "Hour" => $"{expr}.getHours()",
-            "Minute" => $"{expr}.getMinutes()",
-            "Second" => $"{expr}.getSeconds()",
-            "Millisecond" => $"{expr}.getMilliseconds()",
-            "DayOfWeek" => $"{expr}.getDay()",
-            _ => $"{expr}.{ToCamelCase(name)}"
-        };
-    }
-    
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
     }
 
-    public int Priority => 10;
+    private static bool IsDateTimeMember(MemberAccessExpressionSyntax ma, ConversionContext context)
+    {
+        var symbol = context.SemanticHelper.GetSymbol(ma);
+        if (symbol?.ContainingType != null)
+            return symbol.ContainingType.ToDisplayString() == TypeName;
+
+        // No semantic info: static access via the type name, or an instance whose type we can read.
+        if (ma.Expression.ToString() == "DateTime") return true;
+        return IsType(context.SemanticHelper.GetType(ma.Expression));
+    }
+
+    private static bool IsStaticAccess(MemberAccessExpressionSyntax ma, ConversionContext context)
+    {
+        var symbol = context.SemanticHelper.GetSymbol(ma);
+        if (symbol != null) return symbol.IsStatic;
+        return ma.Expression.ToString() == "DateTime";
+    }
+
+    private static bool IsType(ITypeSymbol? type)
+    {
+        if (type is INamedTypeSymbol named
+            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
+            && named.TypeArguments.Length == 1)
+        {
+            type = named.TypeArguments[0];
+        }
+        return type?.ToDisplayString() == TypeName;
+    }
+
+    private static string ConvertArgs(ArgumentListSyntax? argumentList, ConversionContext context)
+    {
+        if (argumentList == null || argumentList.Arguments.Count == 0) return string.Empty;
+        return string.Join(", ", argumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
+    }
+
+    private static string Camel(string name) =>
+        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
+
+    public int Priority => 15;
 }
