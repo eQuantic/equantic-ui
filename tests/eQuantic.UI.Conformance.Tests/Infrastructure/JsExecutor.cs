@@ -2,17 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 
 namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 
 /// <summary>
 /// Executes JavaScript for the conformance harness. The PRIMARY engine is the project's embedded
-/// Bun binary (the same one the build uses). If Bun is present but cannot execute JS on the current
-/// machine (e.g. an AVX-less VM where this Bun build crashes at startup), the harness falls back to
-/// a local Node, purely so development/CI isn't blocked. This is an internal test-only fallback and
-/// does NOT relax the shipped SDK's "no Node/npm required" guarantee — that path still uses Bun.
-/// Only stdout is returned; stderr (warnings) is surfaced only on failure.
+/// Bun binary — resolved exactly like the SDK does: per-OS <b>and per-architecture</b> (the native
+/// arm64 build on Apple Silicon / arm64 Linux·Windows, the x64-baseline build elsewhere), extracted
+/// on demand from the tracked <c>.zip</c> if the binary isn't already unpacked. If Bun is present but
+/// cannot execute JS on the current machine (e.g. an AVX-less VM where this Bun build crashes at
+/// startup), the harness falls back to a local Node, purely so development/CI isn't blocked. This is
+/// an internal test-only fallback and does NOT relax the shipped SDK's "no Node/npm required"
+/// guarantee — that path still uses Bun. Only stdout is returned; stderr is surfaced only on failure.
 /// </summary>
 public static class JsExecutor
 {
@@ -59,15 +62,47 @@ public static class JsExecutor
         var root = RepoRoot.Find();
         if (root == null) return null;
 
-        string? relative =
-            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "src/eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin"
-            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux"
-            : RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "src/eQuantic.UI.Runtime.Win64/tools/bun/bun.exe"
+        // Mirror the SDK (Sdk.targets): pick the per-OS + per-architecture embedded-bun package —
+        // the native arm64 build on Apple Silicon / arm64 Linux·Windows, the x64-baseline elsewhere.
+        var arm64 = RuntimeInformation.OSArchitecture == Architecture.Arm64;
+        var packageId =
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? (arm64 ? "eQuantic.UI.Runtime.OsxArm64" : "eQuantic.UI.Runtime.Osx64")
+            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? (arm64 ? "eQuantic.UI.Runtime.LinuxArm64" : "eQuantic.UI.Runtime.Linux64")
+            : RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (arm64 ? "eQuantic.UI.Runtime.WinArm64" : "eQuantic.UI.Runtime.Win64")
             : null;
-        if (relative == null) return null;
+        if (packageId == null) return null;
 
-        var path = Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar));
-        _bunPath = File.Exists(path) ? path : null;
+        var exeName =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "bun.exe"
+            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "bun-linux"
+            : "bun-darwin";
+
+        var bunDir = Path.Combine(root, "src", packageId, "tools", "bun");
+        var exePath = Path.Combine(bunDir, exeName);
+        var zipPath = exePath + ".zip"; // bun-darwin.zip / bun-linux.zip / bun.exe.zip
+
+        // Only the .zip is tracked in git; the SDK extracts the binary on first build. Mirror that here
+        // so the harness runs on the same Bun the framework ships instead of silently using Node.
+        if (!File.Exists(exePath) && File.Exists(zipPath))
+        {
+            try
+            {
+                ZipFile.ExtractToDirectory(zipPath, bunDir, overwriteFiles: true);
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && File.Exists(exePath))
+                {
+                    File.SetUnixFileMode(exePath,
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                        UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                        UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+                }
+            }
+            catch
+            {
+                // Extraction failed (corrupt zip, perms): leave _bunPath null so we fall back to Node.
+            }
+        }
+
+        _bunPath = File.Exists(exePath) ? exePath : null;
         return _bunPath;
     }
 
