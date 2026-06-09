@@ -17,6 +17,11 @@ public class Dashboard : StatelessComponent
         var resp = new Stat("Response Time", "12ms", "eq-text-info");
         var errors = new Stat("Error Rate", "0.02%", "eq-text-error");
 
+        // LINQ over the records (runs client-side): how many distinct status colors are in play.
+        var stats = new List<Stat> { users, load, resp, errors };
+        var distinctColors = stats.Select(s => s.Color).Distinct().Count();
+        var summary = $"{stats.Count} metrics · {distinctColors} status levels";
+
         return new DefaultDashboardShell
         {
             ActivePath = "/",
@@ -38,6 +43,7 @@ public class Dashboard : StatelessComponent
                             ClassName = "eq-col-span-2 eq-surface-subtle eq-border eq-rounded-xl eq-p-8",
                             Children = {
                                 new Heading("System Performance", 2) { ClassName = "eq-text-xl eq-font-bold eq-mb-6" },
+                                new Text(summary) { ClassName = "eq-text-secondary eq-text-sm eq-mb-4 eq-block" },
                                 new Box { ClassName = "eq-h-64 eq-border eq-border-dashed eq-rounded-lg eq-flex eq-items-center eq-justify-center eq-text-secondary", Children = { new Text("Real-time graph") } }
                             }
                         },
