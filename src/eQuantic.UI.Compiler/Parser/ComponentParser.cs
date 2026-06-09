@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.Models;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.Parser;
 
@@ -11,6 +12,22 @@ namespace eQuantic.UI.Compiler.Parser;
 /// </summary>
 public class ComponentParser
 {
+    private SemanticModelProvider? _semanticModelProvider;
+
+    /// <summary>
+    /// Supplies a semantic model provider so component detection can walk the base-type chain (via the
+    /// project compilation, which resolves library bases) instead of matching base-type name strings.
+    /// </summary>
+    public void SetSemanticModelProvider(SemanticModelProvider provider) => _semanticModelProvider = provider;
+
+    /// <summary>Semantic model for the tree (via the project compilation), or null to fall back to the
+    /// syntactic heuristic — never throws.</summary>
+    private SemanticModel? TryGetSemanticModel(SyntaxTree tree)
+    {
+        if (_semanticModelProvider == null) return null;
+        try { return _semanticModelProvider.GetSemanticModel(tree); }
+        catch { return null; }
+    }
     /// <summary>
     /// Parse a .eqx file and extract component definitions
     /// </summary>
@@ -68,21 +85,30 @@ public class ComponentParser
             }
         }
 
-        // Find component class (extends StatefulComponent, StatelessComponent or HtmlElement)
+        // Find component classes. Prefer a semantic base-type walk (resolves library bases like Flex /
+        // Container and any user-defined intermediate component) over matching base-type name strings;
+        // fall back to the syntactic heuristic when no semantic model is available.
         var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
-        
+        var model = TryGetSemanticModel(tree);
+
         foreach (var classDecl in classes)
         {
             var baseType = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ToString();
-            
-            bool isComp = baseType == "StatefulComponent" || 
-                         baseType == "StatelessComponent" || 
-                         baseType == "HtmlElement" ||
-                         baseType == "Flex" || 
-                         baseType == "Container" ||
-                         baseType == "Stack" ||
-                         classDecl.Members.OfType<MethodDeclarationSyntax>().Any(m => m.Identifier.Text == "Render" || m.Identifier.Text == "Build");
-                         
+            var hasBuildOrRender = classDecl.Members.OfType<MethodDeclarationSyntax>()
+                .Any(m => m.Identifier.Text is "Render" or "Build");
+
+            bool isComp;
+            if (model?.GetDeclaredSymbol(classDecl) is INamedTypeSymbol symbol)
+            {
+                isComp = symbol.IsUiComponent() || hasBuildOrRender;
+            }
+            else
+            {
+                isComp = baseType is "StatefulComponent" or "StatelessComponent" or "HtmlElement"
+                             or "Flex" or "Container" or "Stack"
+                         || hasBuildOrRender;
+            }
+
             if (!isComp) continue;
 
             var definition = new ComponentDefinition

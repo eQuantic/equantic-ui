@@ -21,6 +21,7 @@ public class ComponentCompiler
     public ComponentCompiler()
     {
         _parser = new ComponentParser();
+        _parser.SetSemanticModelProvider(_semanticModelProvider);
         _tsEmitter = new TypeScriptEmitter();
         _cssEmitter = new CssEmitter();
         _semanticModelProvider = new SemanticModelProvider();
