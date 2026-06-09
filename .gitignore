@@ -44,3 +44,7 @@ TestResults/
 coverage/
 
 **/wwwroot/_equantic/*
+# Embedded bun: only the .zip is tracked; the extracted binary is produced at build time.
+src/eQuantic.UI.Runtime.*/tools/bun/bun-darwin
+src/eQuantic.UI.Runtime.*/tools/bun/bun-linux
+src/eQuantic.UI.Runtime.*/tools/bun/bun.exe

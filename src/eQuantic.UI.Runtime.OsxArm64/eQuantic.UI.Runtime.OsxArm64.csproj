@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        <!-- Metadata -->
+        <PackageId>eQuantic.UI.Runtime.OsxArm64</PackageId>
+        <Description>eQuantic UI Runtime for macOS (Apple Silicon / arm64).</Description>
+        <Authors>eQuantic Tech</Authors>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Ship only the .zip; the extracted binary (created on-demand by the SDK at build time) must
+             not be packed, or the package would carry both (≈3× size). -->
+        <Content Include="tools\**" Exclude="tools\bun\bun-darwin" PackagePath="tools" />
+        <Content Include="build\**" PackagePath="build" />
+    </ItemGroup>
+</Project>
