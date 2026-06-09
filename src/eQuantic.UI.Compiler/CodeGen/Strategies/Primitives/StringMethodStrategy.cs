@@ -26,7 +26,7 @@ public class StringMethodStrategy : IConversionStrategy
         "Split", "Replace", "StartsWith", "EndsWith", "Contains",
         "Substring", "IndexOf", "LastIndexOf", "PadLeft", "PadRight",
         "TrimStart", "TrimEnd", "Trim", "ToCharArray", "Insert", "Remove",
-        "ToUpper", "ToLower", "ToUpperInvariant", "ToLowerInvariant"
+        "ToUpper", "ToLower", "ToUpperInvariant", "ToLowerInvariant", "Equals"
     };
 
     public bool CanConvert(SyntaxNode node, ConversionContext context)
@@ -64,20 +64,33 @@ public class StringMethodStrategy : IConversionStrategy
         var methodName = memberAccess.Name.Identifier.Text;
 
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
-        var args = invocation.ArgumentList.Arguments
-            .Select(a => context.Converter.ConvertExpression(a.Expression))
-            .ToList();
+        var rawArgs = invocation.ArgumentList.Arguments;
+
+        // A trailing StringComparison argument selects the comparison mode. JS string ops have no such
+        // parameter, so we strip it: case-sensitive (Ordinal/InvariantCulture) maps to the plain op;
+        // an IgnoreCase variant lower-cases both operands first.
+        var hasComparison = rawArgs.Count > 0 && IsStringComparison(rawArgs[^1], context);
+        var ignoreCase = hasComparison && rawArgs[^1].Expression.ToString().Contains("IgnoreCase");
+        var argNodes = hasComparison ? rawArgs.Take(rawArgs.Count - 1) : rawArgs;
+        var args = argNodes.Select(a => context.Converter.ConvertExpression(a.Expression)).ToList();
+
+        // Receiver / operand with optional case folding for IgnoreCase comparisons.
+        var lhs = ignoreCase ? $"{caller}.toLowerCase()" : caller;
+        string Fold(string a) => ignoreCase ? $"{a}.toLowerCase()" : a;
+        // IndexOf/LastIndexOf may carry a trailing startIndex after the search value.
+        var extraArgs = args.Count > 1 ? ", " + string.Join(", ", args.Skip(1)) : "";
 
         return methodName switch
         {
             "Split" => ConvertSplit(caller, args),
             "Replace" => ConvertReplace(caller, args),
-            "StartsWith" => $"{caller}.startsWith({JoinArgs(args)})",
-            "EndsWith" => $"{caller}.endsWith({JoinArgs(args)})",
-            "Contains" => $"{caller}.includes({JoinArgs(args)})",
+            "StartsWith" => $"{lhs}.startsWith({Fold(args[0])})",
+            "EndsWith" => $"{lhs}.endsWith({Fold(args[0])})",
+            "Contains" => $"{lhs}.includes({Fold(args[0])})",
+            "Equals" => $"({Fold(caller)} === {Fold(args[0])})",
             "Substring" => ConvertSubstring(caller, args),
-            "IndexOf" => $"{caller}.indexOf({JoinArgs(args)})",
-            "LastIndexOf" => $"{caller}.lastIndexOf({JoinArgs(args)})",
+            "IndexOf" => $"{lhs}.indexOf({Fold(args[0])}{extraArgs})",
+            "LastIndexOf" => $"{lhs}.lastIndexOf({Fold(args[0])}{extraArgs})",
             "PadLeft" => ConvertPadLeft(caller, args),
             "PadRight" => ConvertPadRight(caller, args),
             "TrimStart" => ConvertTrim(caller, args, "start"),
@@ -93,6 +106,11 @@ public class StringMethodStrategy : IConversionStrategy
             _ => $"{caller}.{methodName.ToCamelCase()}({JoinArgs(args)})"
         };
     }
+
+    /// <summary>True when the argument is a <c>System.StringComparison</c> value.</summary>
+    private static bool IsStringComparison(ArgumentSyntax arg, ConversionContext context) =>
+        context.SemanticHelper.GetType(arg.Expression).IsNamed("System.StringComparison")
+        || arg.Expression.ToString().Contains("StringComparison"); // syntax fallback (no semantic model)
 
     private string ConvertTrim(string caller, List<string> args, string mode)
     {
