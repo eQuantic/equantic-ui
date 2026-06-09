@@ -80,9 +80,9 @@ public class StringMethodStrategy : IConversionStrategy
             "LastIndexOf" => $"{caller}.lastIndexOf({JoinArgs(args)})",
             "PadLeft" => ConvertPadLeft(caller, args),
             "PadRight" => ConvertPadRight(caller, args),
-            "TrimStart" => $"{caller}.trimStart()",
-            "TrimEnd" => $"{caller}.trimEnd()",
-            "Trim" => $"{caller}.trim()",
+            "TrimStart" => ConvertTrim(caller, args, "start"),
+            "TrimEnd" => ConvertTrim(caller, args, "end"),
+            "Trim" => ConvertTrim(caller, args, "both"),
             "ToUpper" => $"{caller}.toUpperCase()",
             "ToLower" => $"{caller}.toLowerCase()",
             "ToUpperInvariant" => $"{caller}.toUpperCase()",
@@ -91,6 +91,30 @@ public class StringMethodStrategy : IConversionStrategy
             "Insert" => ConvertInsert(caller, args),
             "Remove" => ConvertRemove(caller, args),
             _ => $"{caller}.{ToCamelCase(methodName)}({JoinArgs(args)})"
+        };
+    }
+
+    private string ConvertTrim(string caller, List<string> args, string mode)
+    {
+        // No argument → native whitespace trim.
+        if (args.Count == 0)
+        {
+            return mode switch
+            {
+                "start" => $"{caller}.trimStart()",
+                "end" => $"{caller}.trimEnd()",
+                _ => $"{caller}.trim()"
+            };
+        }
+
+        // Trim specific characters. Char args are JS strings; concatenated they form the trim set
+        // (.includes works for the resulting string or an array arg). No regex escaping needed.
+        var chars = string.Join(" + ", args);
+        return mode switch
+        {
+            "start" => $"(_s => {{ const _c = {chars}; let _i = 0; while (_i < _s.length && _c.includes(_s[_i])) _i++; return _s.slice(_i); }})({caller})",
+            "end" => $"(_s => {{ const _c = {chars}; let _e = _s.length; while (_e > 0 && _c.includes(_s[_e - 1])) _e--; return _s.slice(0, _e); }})({caller})",
+            _ => $"(_s => {{ const _c = {chars}; let _i = 0, _e = _s.length; while (_i < _e && _c.includes(_s[_i])) _i++; while (_e > _i && _c.includes(_s[_e - 1])) _e--; return _s.slice(_i, _e); }})({caller})"
         };
     }
 

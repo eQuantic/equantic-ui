@@ -43,6 +43,7 @@ public class MemberAccessStrategy : IConversionStrategy
         // Heuristic fallback
         if (expr == "DateTime" && (name == "Now" || name == "Today")) return "new Date()";
         if (expr == "Guid" && name == "Empty") return "''";
+        if ((expr == "string" || expr == "String") && name == "Empty") return "''";
 
         // .Count is type-dependent: Set -> .size, Dictionary -> Object.keys(x).length,
         // List/array/ICollection -> .length.
