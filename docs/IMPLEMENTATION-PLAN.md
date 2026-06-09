@@ -125,10 +125,15 @@ transpiler bugs, all now fixed:
   (type-aware MemberAccessStrategy).
 
 The harness now supports a **shared type-declaration prelude** (e.g. an enum defined for both the
-transpiler's semantic model and the .NET evaluator) and serializes .NET objects in **camelCase** to
-match the transpiler's property casing. Still to cover: `ToString(format)`/formatted interpolation
-(need the `format` helper injected — Decision 3), record/DTO object values (need the type emitted in
-JS too), and statement-level constructs (need a block-evaluating harness mode — folds into M2).
+transpiler's semantic model and the .NET evaluator), serializes .NET objects in **camelCase** to
+match the transpiler's property casing, evaluates .NET under **InvariantCulture** for deterministic
+number/format output, and — when the emitted JS calls a runtime helper — **imports that helper from
+the real bundled `runtime.js`** (Decision 3 resolved: import the real runtime, not a re-implementation).
+This unlocked `ToString(format)` / formatted interpolation conformance (regression for #12), now 94
+cases green. Still to cover: record/DTO object values (need the type emitted in JS too) and
+statement-level constructs (need a block-evaluating harness mode — folds into M2). Known gap kept out
+of the corpus: midpoint rounding (`(2.5).ToString("F0")`, `Math.Round(2.5)`) — .NET uses banker's
+rounding, JS does not.
 *Acceptance: corpus green; CI fails if any divergence is introduced.*
 
 **M2 — Fail-on-unsupported (W3).**

@@ -1,14 +1,24 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 
 namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 
 /// <summary>
 /// The heart of the conformance harness: evaluates a C# expression two ways — by transpiling it
-/// to JS and running it under embedded Bun, and by evaluating it directly in .NET — and asserts
-/// the JSON results are identical. Divergence means the transpiler miscompiled the construct.
+/// to JS and running it under embedded Bun (or Node fallback), and by evaluating it directly in
+/// .NET — and asserts the JSON results are identical. Divergence means the transpiler miscompiled
+/// the construct.
 /// </summary>
 public static class ConformanceRunner
 {
+    // Runtime helpers the transpiler may emit; imported from the REAL bundled runtime.js (not a
+    // re-implementation) so format/enum/etc. behavior is validated against what actually ships.
+    private static readonly string[] RuntimeHelpers =
+        { "format", "parseEnum", "StyleBuilder", "ClassBuilder", "joinClasses", "whenClass" };
+
     public static void AssertSameAsDotNet(string csharpExpression) =>
         AssertSameAsDotNet(csharpExpression, prelude: "");
 
@@ -19,7 +29,7 @@ public static class ConformanceRunner
     public static void AssertSameAsDotNet(string csharpExpression, string prelude)
     {
         var js = Transpiler.TranspileExpression(csharpExpression, prelude);
-        var program = $"console.log(JSON.stringify({js}))";
+        var program = $"{BuildHelperImport(js)}console.log(JSON.stringify({js}))";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, prelude);
@@ -27,5 +37,27 @@ public static class ConformanceRunner
         actual.Should().Be(
             expected,
             $"C# `{csharpExpression}` (transpiled to JS `{js}`) must behave identically to .NET");
+    }
+
+    /// <summary>
+    /// If the emitted JS references runtime helpers (e.g. `format`), import exactly those from the
+    /// real bundled runtime.js. Helper-free output (the common case) gets no import at all.
+    /// </summary>
+    private static string BuildHelperImport(string js)
+    {
+        var used = RuntimeHelpers.Where(h => Regex.IsMatch(js, $@"\b{h}\(")).ToArray();
+        if (used.Length == 0) return string.Empty;
+
+        var runtimeUrl = RuntimeJsUrl()
+            ?? throw new InvalidOperationException("Could not locate the bundled runtime.js for helper import.");
+        return $"import {{ {string.Join(", ", used)} }} from '{runtimeUrl}';\n";
+    }
+
+    private static string? RuntimeJsUrl()
+    {
+        var root = RepoRoot.Find();
+        if (root == null) return null;
+        var path = Path.Combine(root, "src", "eQuantic.UI.Server", "wwwroot", "runtime.js");
+        return File.Exists(path) ? new Uri(path).AbsoluteUri : null;
     }
 }

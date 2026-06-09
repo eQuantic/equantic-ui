@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
@@ -24,6 +25,15 @@ public static class DotNetEvaluator
         WriteIndented = false,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
+
+    static DotNetEvaluator()
+    {
+        // Make .NET formatting (ToString("F2"), N0, etc.) deterministic and culture-independent so
+        // the comparison isn't skewed by the host locale (e.g. pt-BR using a comma decimal). The JS
+        // runtime `format` helper formats with an invariant/dot convention, so we match that here.
+        CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+    }
 
     public static string EvaluateToJson(string csharpExpression, string prelude = "")
     {
