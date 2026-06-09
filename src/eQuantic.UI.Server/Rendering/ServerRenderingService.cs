@@ -320,11 +320,9 @@ public class ServerRenderingService : IServerRenderingService
                 }
             }
 
-            var options = new System.Text.Json.JsonSerializerOptions
-            {
-                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-                WriteIndented = false
-            };
+            // EqJson serializes Int64/UInt64 as strings so values beyond 2^53 survive into the
+            // client BigInt-backed `long` runtime (matches the Server Action wire protocol).
+            var options = eQuantic.UI.Server.Json.EqJson.Options;
 
             var json = System.Text.Json.JsonSerializer.Serialize(stateDict, options);
             _logger.LogInformation($"[SSR Hydration] Serialized state: {json}");

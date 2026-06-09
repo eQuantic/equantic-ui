@@ -43,9 +43,18 @@ public class LiteralExpressionStrategy : IConversionStrategy
 
         // Strip C# numeric type suffixes that aren't valid JS. Hex/binary keep their digits
         // (only L/U are suffixes there); for decimals, F/D are also suffixes, not digits.
-        return isHexOrBinary
+        var noSuffix = isHexOrBinary
             ? text.TrimEnd('L', 'l', 'U', 'u')
             : text.TrimEnd('L', 'l', 'U', 'u', 'F', 'f', 'D', 'd');
+
+        // A long/ulong literal (suffix contains L) becomes a BigInt literal for exact 64-bit values.
+        var suffix = text[noSuffix.Length..];
+        if (suffix.IndexOfAny(new[] { 'L', 'l' }) >= 0)
+        {
+            return $"{noSuffix}n";
+        }
+
+        return noSuffix;
     }
 
     private static string EscapeString(string s)

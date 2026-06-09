@@ -47,11 +47,12 @@ public class NumericCoverageTests
     }
 
     [Theory]
-    [InlineData("5L", "5")]      // long suffix stripped (BigInt is future work)
+    [InlineData("5L", "5n")]     // long -> BigInt literal (exact 64-bit)
+    [InlineData("9223372036854775807L", "9223372036854775807n")] // long.MaxValue literal, exact
     [InlineData("1.5f", "1.5")]  // float suffix stripped
     [InlineData("2.0d", "2.0")]  // double suffix stripped
     [InlineData("100u", "100")]  // unsigned suffix stripped
-    public void NumericLiteralSuffixes_AreStripped(string csharp, string expected)
+    public void NumericLiteralSuffixes_AreHandled(string csharp, string expected)
     {
         TestHelper.ConvertExpression(csharp).Should().Be(expected);
     }

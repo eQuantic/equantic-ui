@@ -9,8 +9,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// Without this they are emitted verbatim (e.g. `int.MaxValue`) and crash at runtime.
 /// </summary>
 /// <remarks>
-/// long/ulong/decimal MaxValue/MinValue exceed JS Number precision and are intentionally not mapped
-/// here — they belong to the BigInt/Decimal compat work (see DOTNET-COVERAGE-PROGRAM.md).
+/// long/ulong limits are emitted as BigInt literals (exact). decimal MaxValue/MinValue are not mapped
+/// here — they belong to the Decimal compat type (see DOTNET-COVERAGE-PROGRAM.md).
 /// </remarks>
 public class NumericConstantStrategy : IConversionStrategy
 {
@@ -56,6 +56,15 @@ public class NumericConstantStrategy : IConversionStrategy
         ["float.MinValue"] = "-3.4028234663852886e38",
         ["Single.MaxValue"] = "3.4028234663852886e38",
         ["Single.MinValue"] = "-3.4028234663852886e38",
+        // 64-bit limits as BigInt literals (exact; they exceed JS Number precision).
+        ["long.MaxValue"] = "9223372036854775807n",
+        ["long.MinValue"] = "-9223372036854775808n",
+        ["Int64.MaxValue"] = "9223372036854775807n",
+        ["Int64.MinValue"] = "-9223372036854775808n",
+        ["ulong.MaxValue"] = "18446744073709551615n",
+        ["ulong.MinValue"] = "0n",
+        ["UInt64.MaxValue"] = "18446744073709551615n",
+        ["UInt64.MinValue"] = "0n",
     };
 
     public bool CanConvert(SyntaxNode node, ConversionContext context)

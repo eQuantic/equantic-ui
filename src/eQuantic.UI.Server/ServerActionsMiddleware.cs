@@ -197,7 +197,9 @@ public class ServerActionsMiddleware
                 "Server Action {ActionId} executed successfully",
                 actionId);
 
-            await context.Response.WriteAsJsonAsync(new { success = true, result });
+            // EqJson serializes Int64/UInt64 as strings (the eQuantic long wire protocol) so values
+            // beyond 2^53 survive into the client BigInt-backed `long` runtime.
+            await context.Response.WriteAsJsonAsync(new { success = true, result }, Json.EqJson.Options);
         }
         catch (Exception ex)
         {
@@ -229,7 +231,7 @@ public class ServerActionsMiddleware
 
     private static async Task WriteErrorResponse(HttpContext context, string error)
     {
-        await context.Response.WriteAsJsonAsync(new { success = false, error });
+        await context.Response.WriteAsJsonAsync(new { success = false, error }, Json.EqJson.Options);
     }
 
     private static bool IsDevelopment(HttpContext context)
@@ -266,7 +268,9 @@ public class ServerActionsMiddleware
                 throw new InvalidOperationException($"Type '{paramType.Name}' is not allowed for deserialization.");
             }
 
-            result[i] = arguments[i].Deserialize(paramType);
+            // EqJson.Options accepts Int64/UInt64 as either string (the eQuantic long wire
+            // protocol) or number, so large values from the client BigInt runtime survive.
+            result[i] = arguments[i].Deserialize(paramType, Json.EqJson.Options);
         }
 
         return result;

@@ -53,6 +53,17 @@ public class BinaryExpressionStrategy : IConversionStrategy
         return type?.SpecialType == SpecialType.System_Decimal;
     }
 
+    private static bool IsLong(ITypeSymbol? type)
+    {
+        if (type is INamedTypeSymbol named
+            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
+            && named.TypeArguments.Length == 1)
+        {
+            type = named.TypeArguments[0];
+        }
+        return type?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64;
+    }
+
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var binary = (BinaryExpressionSyntax)node;
@@ -68,6 +79,18 @@ public class BinaryExpressionStrategy : IConversionStrategy
         {
             var decResult = ConvertDecimal(left, right, op, binary, context);
             if (decResult != null) return decResult;
+        }
+
+        // long/ulong are exact 64-bit via BigInt. Wrap operands in long() and use native BigInt
+        // operators (BigInt `/` truncates, matching C# long division — so this must run before the
+        // integer-division branch below). Null comparisons fall through to the loose-equality logic.
+        if (left != "null" && right != "null" && op != "&&" && op != "||"
+            && (IsLong(context.SemanticHelper.GetType(binary.Left))
+                || IsLong(context.SemanticHelper.GetType(binary.Right))))
+        {
+            context.UsedHelpers.Add("long");
+            var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
+            return $"(long({left}) {jsOp} long({right}))";
         }
 
         // C# integer division truncates toward zero; JS `/` is always float division.
