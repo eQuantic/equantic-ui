@@ -37,7 +37,7 @@ public class DistinctByStrategy : IConversionStrategy
             // Better:
             // (arr => { const seen = new Set(); return arr.filter(x => { const k = selector(x); if(seen.has(k)) return false; seen.add(k); return true; }); })(source)
             
-            return $"(arr => {{ const seen = new Set(); return arr.filter(x => {{ const k = {selector}(x); if(seen.has(k)) return false; seen.add(k); return true; }}); }})({caller})";
+            return $"(arr => {{ const seen = new Set(); return arr.filter(x => {{ const k = ({selector})(x); if(seen.has(k)) return false; seen.add(k); return true; }}); }})({caller})";
         }
 
         return caller;

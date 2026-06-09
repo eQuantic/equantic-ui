@@ -103,6 +103,8 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<TakeWhileStrategy>();
         _strategyRegistry.Register<SkipWhileStrategy>();
         _strategyRegistry.Register<DistinctByStrategy>();
+        _strategyRegistry.Register<MinByMaxByStrategy>();
+        _strategyRegistry.Register<ChunkStrategy>();
         _strategyRegistry.Register<ElementAtStrategy>();
         _strategyRegistry.Register<SequenceEqualStrategy>();
         _strategyRegistry.Register<DefaultIfEmptyStrategy>();

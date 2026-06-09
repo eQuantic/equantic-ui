@@ -39,7 +39,7 @@ public class TakeWhileStrategy : IConversionStrategy
             // Better approach for small arrays in UI:
             // (function(arr) { const res = []; for(const x of arr) { if(predicate(x)) res.push(x); else break; } return res; })(source)
             
-            return $"(function(arr) {{ const res = []; for(const x of arr) {{ if({predicate}(x)) res.push(x); else break; }} return res; }})({caller})";
+            return $"(function(arr) {{ const res = []; for(const x of arr) {{ if(({predicate})(x)) res.push(x); else break; }} return res; }})({caller})";
         }
 
         return caller;
