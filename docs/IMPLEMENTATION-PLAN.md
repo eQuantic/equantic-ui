@@ -77,8 +77,10 @@ type (primitive, enum, Guid, DateTime, TimeSpan, Nullable, Tuple, record, struct
 BCL surface (string methods, LINQ operators, Math, Console, Dictionary, etc.). This doc is the
 contract the harness and the validator enforce.
 
-### W2 — Conformance harness  `tests/eQuantic.UI.Conformance.Tests/`
-- `BunExecutor` — locate + invoke the embedded Bun, run a JS file, return stdout (with timeout).
+### W2 — Conformance harness  `tests/eQuantic.UI.Conformance.Tests/`  *(M0 ✅ done)*
+- `JsExecutor` — runs JS with the embedded Bun (primary); on machines where this Bun build can't
+  execute (e.g. an AVX-less VM — see Decision 1), falls back to a local Node so dev/CI isn't blocked.
+  Test-only fallback; the shipped SDK path still uses Bun. Returns stdout (with timeout).
 - `DotNetEvaluator` — Roslyn scripting wrapper returning a JSON-normalized value.
 - `ConformanceRunner.AssertSameAsDotNet(csharp)`.
 - Seed corpus: arithmetic (incl. integer division, `%` on negatives), string ops (Substring/IndexOf/
@@ -105,10 +107,10 @@ contract the harness and the validator enforce.
 
 ## Milestones (sequenced — start at M0)
 
-**M0 — Harness walking skeleton (smallest end-to-end slice).**
-Stand up `eQuantic.UI.Conformance.Tests` with `BunExecutor` + `DotNetEvaluator` + `ConformanceRunner`,
-and ONE passing case: `AssertSameAsDotNet("7 / 2")` (transpiles to `Math.trunc(7 / 2)`, Bun prints `3`,
-.NET evaluates `3`, equal). *Acceptance: the loop runs green in CI on at least one platform.*
+**M0 — Harness walking skeleton (smallest end-to-end slice). ✅ DONE.**
+`eQuantic.UI.Conformance.Tests` is live with `JsExecutor` + `DotNetEvaluator` + `Transpiler` +
+`ConformanceRunner`; 7 arithmetic cases pass (incl. integer truncation across signs and `7.0/2 == 3.5`
+proving float division is *not* truncated). *Acceptance met: the loop runs green.*
 
 **M1 — Seed corpus + regression backfill (W2 + W5).**
 ~80–120 cases across arithmetic/strings/LINQ/control-flow/enums + the 24-bug regressions.
@@ -126,8 +128,10 @@ Publish `transpiler-supported-csharp.md`; source-map round-trip + error-mapping 
 ---
 
 ## Decisions needed before/while coding
-1. **Bun in CI**: confirm the embedded binary is invokable in CI for each target OS (the conformance
-   harness depends on it). If CI is Linux-only initially, gate the harness to Linux first.
+1. **Bun in CI / on dev machines**: confirm the embedded binary can *execute JS* on each target.
+   Finding: the current dev machine is an AVX-less VM where the embedded Bun 1.3.6 (x64, non-baseline)
+   crashes at JS startup (`Invalid DNS result order`) — `JsExecutor` transparently falls back to Node
+   there. For real Bun coverage, ship/point at a **baseline Bun build** or run on AVX-capable hardware.
 2. **Unsupported-but-common constructs** (e.g. `decimal` banker's rounding, culture-specific
    formatting): decide per item — emulate, or diagnose-and-reject. The spec (W1) records the call.
 3. **Helper bundling for the harness**: import helpers from the built `runtime.js`, or maintain a
