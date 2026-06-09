@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -100,6 +101,31 @@ public static class TypeSymbolExtensions
             };
         }
         return false;
+    }
+
+    /// <summary>
+    /// Zero-based index of a value-tuple element accessed by name — either a positional <c>ItemN</c>
+    /// or a declared element name (<c>X</c> in <c>(int X, int Y)</c>). Returns -1 when the type is not a
+    /// tuple or the name doesn't match an element (so the caller can fall back to default member access).
+    /// </summary>
+    public static int TupleElementIndex(this ITypeSymbol? type, string name)
+    {
+        if (type is not INamedTypeSymbol { IsTupleType: true } tuple) return -1;
+
+        // Positional accessor: Item1, Item2, … (always available, even on named tuples).
+        var m = Regex.Match(name, @"^Item(\d+)$");
+        if (m.Success && int.TryParse(m.Groups[1].Value, out var n)
+            && n >= 1 && n <= tuple.TupleElements.Length)
+        {
+            return n - 1;
+        }
+
+        // Declared element name.
+        for (var i = 0; i < tuple.TupleElements.Length; i++)
+        {
+            if (tuple.TupleElements[i].Name == name) return i;
+        }
+        return -1;
     }
 
     /// <summary>The element type of an array or <c>IEnumerable&lt;T&gt;</c>, or <c>null</c>.</summary>

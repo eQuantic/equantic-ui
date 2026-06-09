@@ -88,6 +88,7 @@ Design notes:
   Nullable ✅ (HasValue/Value, GetValueOrDefault()/(fallback) with a type-aware default, lifted
   arithmetic/relational with null-propagation via `$eq.nullable.*`; no-arg GetValueOrDefault on
   DateTime?/Guid?/struct? returns null rather than the type default — use the fallback form there),
+  Tuple ✅ (arrays; element access by position `Item1` and by declared name `(int X, int Y).X` → index),
   record/struct/tuple value semantics ✅ (records & structs are plain objects, tuples are arrays;
   `==`/`!=`/`.Equals`/`Contains`/`Distinct` are structural via `$eq.equals`, `with` copies; positional
   `new Point(1,2)` → `{x,y}`. Follow-ups: user-defined instance methods on records/structs (would
