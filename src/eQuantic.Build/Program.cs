@@ -197,6 +197,35 @@ static string FormatDiagnostic(eQuantic.UI.Compiler.CompilationError d, string s
     return $"{path}({line},{col}): {severity} {code}: {d.Message}";
 }
 
+// Runs the source-map merge with one JS runtime. Returns true only on a clean exit (0); returns false
+// on a launch failure OR a non-zero exit (e.g. the bun JS VM crashing on an AVX-less VM) — never throws,
+// so the caller can fall back to another runtime and the build is never broken by map merging.
+static bool TryRunMerge(string fileName, string script, string mapFile)
+{
+    try
+    {
+        using var p = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = $"\"{script}\" \"{mapFile}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            },
+        };
+        p.Start();
+        p.WaitForExit();
+        return p.ExitCode == 0;
+    }
+    catch
+    {
+        return false;
+    }
+}
+
 // Returns true if compilation produced errors (so the process can exit non-zero and fail the build).
 bool CompileAndBundle()
 {
@@ -339,38 +368,14 @@ bool CompileAndBundle()
                 }
                 foreach (var mapFile in jsMapFiles)
                 {
-                    var nodePath = "node";
-                    var mergeProcess = new Process
+                    // Source-map merge is BEST-EFFORT (C#-level debugging only) — it must never fail
+                    // the build. Prefer the embedded bun (zero Node by default); if bun can't start OR
+                    // exits non-zero (e.g. the bun JS VM crashes on some VMs), fall back to a system
+                    // `node`. If neither works, warn and move on.
+                    if (!TryRunMerge(bunPath!, mergeMapsScript, mapFile) &&
+                        !TryRunMerge("node", mergeMapsScript, mapFile))
                     {
-                        StartInfo = new ProcessStartInfo
-                        {
-                            FileName = nodePath,
-                            Arguments = $"\"{mergeMapsScript}\" \"{mapFile}\"",
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        }
-                    };
-                    
-                    try 
-                    {
-                        mergeProcess.Start();
-                    }
-                    catch
-                    {
-                        mergeProcess.StartInfo.FileName = bunPath!;
-                        mergeProcess.StartInfo.Arguments = $"run \"{mergeMapsScript}\" \"{mapFile}\"";
-                        mergeProcess.Start();
-                    }
-                    
-                    mergeProcess.WaitForExit();
-
-                    if (mergeProcess.ExitCode != 0)
-                    {
-                        var mergeError = mergeProcess.StandardError.ReadToEnd();
-                        Console.Error.WriteLine($"⚠️ Map merging failed for {Path.GetFileName(mapFile)}:");
-                        Console.Error.WriteLine(mergeError);
+                        Console.Error.WriteLine($"⚠️ Map merging skipped for {Path.GetFileName(mapFile)} (no working JS runtime).");
                     }
                 }
             }
