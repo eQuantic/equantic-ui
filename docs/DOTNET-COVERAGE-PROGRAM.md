@@ -102,9 +102,11 @@ Design notes:
   deconstruction keep working unchanged. Non-record structs / tuples stay plain objects/arrays.
   Tier 2 (real pipeline) ✅ — the parser discovers positional records by scanning, the compiler emits
   each as a standalone `export class` module (with its `$eq` import), and components that reference a
-  record **reactively import it** (registry built by scanning — no hardcoded type list). Remaining:
-  SSR re-hydration of record instances + generics/inheritance (Tier 3), plain structs / body records,
-  record-keyed dictionaries.
+  record **reactively import it** (registry built by scanning — no hardcoded type list). Tier 3 (SSR) ✅
+  — `hydrateValue` rebuilds a record instance from the plain SSR JSON on the field's prototype (witness
+  = the field default), recursively, so nested records and compat-typed members are restored and the
+  instance methods / `instanceof` survive hydration. Remaining: plain structs / body records,
+  generics/inheritance, record-keyed dictionaries.
 - **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function
