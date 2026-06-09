@@ -10,6 +10,13 @@ public class Dashboard : StatelessComponent
 {
     public override IComponent Build(RenderContext context)
     {
+        // Showcase: a domain record drives the stat cards — value-type construction, an instance
+        // method, and a `with` copy (Highlight) all transpile to the named-class runtime.
+        var users = new Stat("Live Users", "1,284", "eq-text-success");
+        var load = new Stat("Server Load", "42%", "eq-text-warning").Highlight();
+        var resp = new Stat("Response Time", "12ms", "eq-text-info");
+        var errors = new Stat("Error Rate", "0.02%", "eq-text-error");
+
         return new DefaultDashboardShell
         {
             ActivePath = "/",
@@ -18,10 +25,10 @@ public class Dashboard : StatelessComponent
                     Columns = 4,
                     Gap = "1.5rem",
                     Children = {
-                        new QuickStat("Live Users", "1,284", "eq-text-success"),
-                        new QuickStat("Server Load", "42%", "eq-text-warning"),
-                        new QuickStat("Response Time", "12ms", "eq-text-info"),
-                        new QuickStat("Error Rate", "0.02%", "eq-text-error")
+                        new QuickStat(users.Label, users.Value, users.Color),
+                        new QuickStat(load.Label, load.Value, load.Color),
+                        new QuickStat(resp.Label, resp.Value, resp.Color),
+                        new QuickStat(errors.Label, errors.Value, errors.Color)
                     }
                 },
                 new Box {
@@ -54,6 +61,18 @@ public class Dashboard : StatelessComponent
             }
         };
     }
+}
+
+/// <summary>
+/// A dashboard metric — a value-type model that the compiler emits as a named JS class. Showcases
+/// records as data: an instance method (<see cref="Summary"/>), a <c>with</c> copy (<see cref="Highlight"/>),
+/// and value equality (==/Distinct) — all available client-side.
+/// </summary>
+public record Stat(string Label, string Value, string Color)
+{
+    public string Summary() => Label + ": " + Value;
+
+    public Stat Highlight() => this with { Color = "eq-text-success eq-font-black" };
 }
 
 public class QuickStat : StatelessComponent
