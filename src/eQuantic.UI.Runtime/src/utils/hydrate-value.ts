@@ -1,6 +1,6 @@
 import { Decimal, dec } from './decimal';
 import { long } from './long';
-import { DateTime, dateTime, TimeSpan, timeSpan, DateOnly, dateOnly, TimeOnly, timeOnly } from './datetime';
+import { DateTime, dateTime, TimeSpan, timeSpan, DateOnly, dateOnly, TimeOnly, timeOnly, DateTimeOffset, dateTimeOffset } from './datetime';
 
 /**
  * Coerce a value arriving from SSR state (or any server payload) so it matches the runtime type of
@@ -45,6 +45,9 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
   }
   if (current instanceof TimeOnly && typeof incoming === 'string') {
     return timeOnly.parse(incoming);
+  }
+  if (current instanceof DateTimeOffset && typeof incoming === 'string') {
+    return dateTimeOffset.parse(incoming);
   }
 
   return incoming;

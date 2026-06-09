@@ -489,3 +489,111 @@ timeOnly.parse = (text: string): TimeOnly => {
   return new TimeOnly(BigInt(+m[1]) * TICKS_PER_HOUR + BigInt(+m[2]) * TICKS_PER_MINUTE +
     BigInt(+(m[3] ?? 0)) * TICKS_PER_SECOND + frac);
 };
+
+// ---------------------------------------------------------------------------------------------
+// DateTimeOffset — a wall-clock DateTime plus an offset from UTC. Compared/equated by the instant.
+// ---------------------------------------------------------------------------------------------
+
+const UNIX_EPOCH_TICKS = BigInt(daysFromCivil(1970, 1, 1)) * TICKS_PER_DAY;
+
+function offsetString(offsetTicks: bigint): string {
+  const neg = offsetTicks < 0n;
+  const abs = neg ? -offsetTicks : offsetTicks;
+  return `${neg ? '-' : '+'}${pad(Number(abs / TICKS_PER_HOUR), 2)}:${pad(Number((abs / TICKS_PER_MINUTE) % 60n), 2)}`;
+}
+
+export class DateTimeOffset {
+  /** @param localTicks wall-clock ticks; @param offsetTicks offset from UTC in ticks. */
+  constructor(readonly localTicks: bigint, readonly offsetTicks: bigint) {}
+
+  /** The instant in UTC ticks (local − offset). Comparison/equality use this. */
+  get utcTicks(): bigint { return this.localTicks - this.offsetTicks; }
+
+  private civil() { return civilFromDays(Number(this.localTicks / TICKS_PER_DAY)); }
+  get year(): number { return this.civil().year; }
+  get month(): number { return this.civil().month; }
+  get day(): number { return this.civil().day; }
+  get hour(): number { return Number((this.localTicks / TICKS_PER_HOUR) % 24n); }
+  get minute(): number { return Number((this.localTicks / TICKS_PER_MINUTE) % 60n); }
+  get second(): number { return Number((this.localTicks / TICKS_PER_SECOND) % 60n); }
+  get millisecond(): number { return Number((this.localTicks / TICKS_PER_MILLISECOND) % 1000n); }
+  get dayOfWeek(): number { return Number((BigInt(Number(this.localTicks / TICKS_PER_DAY)) + 1n) % 7n); }
+  get ticks(): bigint { return this.localTicks; }
+  get offset(): TimeSpan { return new TimeSpan(this.offsetTicks); }
+  get dateTime(): DateTime { return new DateTime(this.localTicks); }
+  get localDateTime(): DateTime { return new DateTime(this.localTicks); }
+  get utcDateTime(): DateTime { return new DateTime(this.utcTicks); }
+  get date(): DateTime { return new DateTime(BigInt(Number(this.localTicks / TICKS_PER_DAY)) * TICKS_PER_DAY); }
+  get timeOfDay(): TimeSpan { return new TimeSpan(this.localTicks % TICKS_PER_DAY); }
+
+  addTicks(t: bigint): DateTimeOffset { return new DateTimeOffset(this.localTicks + t, this.offsetTicks); }
+  addDays(v: number): DateTimeOffset { return this.addTicks(ticksFromUnit(v, TICKS_PER_DAY)); }
+  addHours(v: number): DateTimeOffset { return this.addTicks(ticksFromUnit(v, TICKS_PER_HOUR)); }
+  addMinutes(v: number): DateTimeOffset { return this.addTicks(ticksFromUnit(v, TICKS_PER_MINUTE)); }
+  addSeconds(v: number): DateTimeOffset { return this.addTicks(ticksFromUnit(v, TICKS_PER_SECOND)); }
+  addMonths(months: number): DateTimeOffset {
+    return new DateTimeOffset(new DateTime(this.localTicks).addMonths(months).ticks, this.offsetTicks);
+  }
+  addYears(years: number): DateTimeOffset { return this.addMonths(years * 12); }
+
+  /** Same instant, expressed at a different offset. */
+  toOffset(offset: TimeSpan): DateTimeOffset { return new DateTimeOffset(this.utcTicks + offset.ticks, offset.ticks); }
+
+  diff(other: DateTimeOffset): TimeSpan { return new TimeSpan(this.utcTicks - other.utcTicks); }
+  add(span: TimeSpan): DateTimeOffset { return this.addTicks(span.ticks); }
+  subtract(span: TimeSpan): DateTimeOffset { return this.addTicks(-span.ticks); }
+
+  compareTo(other: DateTimeOffset): number {
+    return this.utcTicks < other.utcTicks ? -1 : this.utcTicks > other.utcTicks ? 1 : 0;
+  }
+  equals(other: DateTimeOffset): boolean { return this.utcTicks === other.utcTicks; }
+
+  toUnixTimeSeconds(): number { return Number((this.utcTicks - UNIX_EPOCH_TICKS) / TICKS_PER_SECOND); }
+  toUnixTimeMilliseconds(): number { return Number((this.utcTicks - UNIX_EPOCH_TICKS) / TICKS_PER_MILLISECOND); }
+
+  /** .NET invariant: `MM/dd/yyyy HH:mm:ss zzz`. */
+  toString(): string { return `${new DateTime(this.localTicks).toString()} ${offsetString(this.offsetTicks)}`; }
+  /** ISO-8601 with offset, e.g. `2024-01-15T13:30:00-03:00`. */
+  toJSON(): string { return `${new DateTime(this.localTicks).toJSON()}${offsetString(this.offsetTicks)}`; }
+}
+
+interface DateTimeOffsetFactory {
+  (dateTime: DateTime, offset: TimeSpan): DateTimeOffset;
+  (ticks: bigint, offset: TimeSpan): DateTimeOffset;
+  (year: number, month: number, day: number, hour: number, minute: number, second: number, offset: TimeSpan): DateTimeOffset;
+  fromUnixTimeSeconds(seconds: number): DateTimeOffset;
+  fromUnixTimeMilliseconds(ms: number): DateTimeOffset;
+  now(): DateTimeOffset;
+  utcNow(): DateTimeOffset;
+  parse(text: string): DateTimeOffset;
+}
+
+function dateTimeOffsetImpl(...args: unknown[]): DateTimeOffset {
+  if (args.length === 2 && args[0] instanceof DateTime) return new DateTimeOffset(args[0].ticks, (args[1] as TimeSpan).ticks);
+  if (args.length === 2 && typeof args[0] === 'bigint') return new DateTimeOffset(args[0], (args[1] as TimeSpan).ticks);
+  if (args.length === 1 && args[0] instanceof DateTime) return new DateTimeOffset(args[0].ticks, 0n); // Unspecified → UTC
+  const n = args as unknown[];
+  const local = fromComponents(n[0] as number, n[1] as number, n[2] as number, n[3] as number, n[4] as number, n[5] as number);
+  return new DateTimeOffset(local.ticks, (n[6] as TimeSpan).ticks);
+}
+
+export const dateTimeOffset = dateTimeOffsetImpl as DateTimeOffsetFactory;
+dateTimeOffset.fromUnixTimeSeconds = (s) => new DateTimeOffset(UNIX_EPOCH_TICKS + BigInt(Math.trunc(s)) * TICKS_PER_SECOND, 0n);
+dateTimeOffset.fromUnixTimeMilliseconds = (ms) => new DateTimeOffset(UNIX_EPOCH_TICKS + BigInt(Math.trunc(ms)) * TICKS_PER_MILLISECOND, 0n);
+dateTimeOffset.now = () => new DateTimeOffset(dateTime.now().ticks, 0n);
+dateTimeOffset.utcNow = () => new DateTimeOffset(dateTime.utcNow().ticks, 0n);
+dateTimeOffset.parse = (text: string): DateTimeOffset => {
+  const t = text.trim();
+  // yyyy-MM-ddTHH:mm:ss[.fff][(+|-)HH:mm | Z]
+  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?\s*(Z|[+-]\d{2}:?\d{2})?$/.exec(t);
+  if (!m) throw new Error(`Unrecognized DateTimeOffset format: '${text}'`);
+  const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
+  const local = fromComponents(+m[1], +m[2], +m[3], +m[4], +m[5], +m[6]).ticks + frac;
+  let offsetTicks = 0n;
+  if (m[8] && m[8] !== 'Z') {
+    const neg = m[8][0] === '-';
+    const digits = m[8].slice(1).replace(':', '');
+    offsetTicks = (BigInt(digits.slice(0, 2)) * TICKS_PER_HOUR + BigInt(digits.slice(2)) * TICKS_PER_MINUTE) * (neg ? -1n : 1n);
+  }
+  return new DateTimeOffset(local, offsetTicks);
+};
