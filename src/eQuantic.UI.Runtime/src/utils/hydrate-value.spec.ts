@@ -48,4 +48,49 @@ describe('hydrateValue', () => {
     expect(hydrateValue(dec('0'), null)).toBeNull();
     expect(hydrateValue(0n, undefined)).toBeUndefined();
   });
+
+  // --- Record/struct re-hydration (Tier 3): SSR sends a plain object; restore the class instance. ---
+
+  class Point {
+    constructor(public x: number, public y: number) {}
+    sum() { return this.x + this.y; }
+  }
+
+  it('rebuilds a record instance from a plain SSR object (methods + instanceof restored)', () => {
+    const result = hydrateValue(new Point(0, 0), { x: 3, y: 4 }) as Point;
+    expect(result).toBeInstanceOf(Point);
+    expect(result.x).toBe(3);
+    expect(result.y).toBe(4);
+    expect(result.sum()).toBe(7); // instance method works after hydration
+  });
+
+  it('rebuilds nested records recursively via the default witness', () => {
+    class Line {
+      constructor(public start: Point, public end: Point) {}
+      dx() { return this.end.x - this.start.x; }
+    }
+    const witness = new Line(new Point(0, 0), new Point(0, 0));
+    const result = hydrateValue(witness, { start: { x: 1, y: 1 }, end: { x: 5, y: 1 } }) as Line;
+    expect(result).toBeInstanceOf(Line);
+    expect(result.start).toBeInstanceOf(Point);
+    expect(result.start.sum()).toBe(2);
+    expect(result.dx()).toBe(4);
+  });
+
+  it('restores compat-typed members inside a record (e.g. a Decimal field)', () => {
+    class Money {
+      constructor(public amount: Decimal) {}
+    }
+    const result = hydrateValue(new Money(dec('0')), { amount: '9.99' }) as Money;
+    expect(result).toBeInstanceOf(Money);
+    expect(result.amount).toBeInstanceOf(Decimal);
+    expect(result.amount.toString()).toBe('9.99');
+  });
+
+  it('leaves a plain object (dictionary / anonymous) untouched', () => {
+    const incoming = { a: 1, b: 2 };
+    const result = hydrateValue({}, incoming);
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect(result).toEqual({ a: 1, b: 2 });
+  });
 });

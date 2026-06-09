@@ -50,5 +50,29 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
     return dateTimeOffset.parse(incoming);
   }
 
+  // Record/struct field: SSR sends the value as a plain JSON object, which loses the class prototype
+  // (so its instance methods and `instanceof` would be gone). Rebuild it on the right prototype, taken
+  // from the field's default (a record instance), and hydrate each member recursively using the
+  // default's corresponding member as the witness — so nested records and compat-typed members (a
+  // Decimal/DateTime inside the record) are restored too. Plain objects (Dictionary/anonymous) keep
+  // the `Object.prototype` and are left untouched; arrays are handled by their element witnesses.
+  if (
+    typeof current === 'object' &&
+    current !== null &&
+    !Array.isArray(current) &&
+    typeof incoming === 'object' &&
+    !Array.isArray(incoming)
+  ) {
+    const proto = Object.getPrototypeOf(current);
+    if (proto && proto !== Object.prototype) {
+      const rebuilt = Object.create(proto) as Record<string, unknown>;
+      const witness = current as Record<string, unknown>;
+      for (const key of Object.keys(incoming as Record<string, unknown>)) {
+        rebuilt[key] = hydrateValue(witness[key], (incoming as Record<string, unknown>)[key]);
+      }
+      return rebuilt;
+    }
+  }
+
   return incoming;
 }
