@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
@@ -16,7 +17,7 @@ public static class DotNetEvaluator
             typeof(object).Assembly,
             typeof(System.Linq.Enumerable).Assembly,
             typeof(System.Collections.Generic.List<>).Assembly)
-        .AddImports("System", "System.Linq", "System.Collections.Generic");
+        .AddImports("System", "System.Linq", "System.Collections.Generic", "System.Text");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -24,6 +25,9 @@ public static class DotNetEvaluator
         // by the transpiler, so serialize .NET objects camelCase too for a fair comparison.
         WriteIndented = false,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        // JS JSON.stringify does NOT HTML-escape; the default System.Text.Json encoder escapes
+        // <, >, &, +, ' etc. as \uXXXX. Use the relaxed encoder so string results compare faithfully.
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
     static DotNetEvaluator()

@@ -163,6 +163,7 @@ public class CSharpToJsConverter
         // Additional Types
         _strategyRegistry.Register<DateTimeStrategy>();
         _strategyRegistry.Register<TimeSpanStrategy>();
+        _strategyRegistry.Register<StringBuilderStrategy>();
         _strategyRegistry.Register<RegexStrategy>();
         _strategyRegistry.Register<HashSetStrategy>();
         _strategyRegistry.Register<NumericConstantStrategy>();

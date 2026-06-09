@@ -32,6 +32,7 @@ export { round } from './utils/dotnet-math';
 export { Decimal, dec } from './utils/decimal';
 export { long } from './utils/long';
 export { DateTime, dateTime, TimeSpan, timeSpan } from './utils/datetime';
+export { StringBuilder, stringBuilder } from './utils/string-builder';
 export { StyleBuilder } from './utils/style-builder';
 export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 

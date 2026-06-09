@@ -68,7 +68,7 @@ Design notes:
 - **Numeric types**: int ✅, double ✅, decimal ✅(exact `Decimal`, wire-as-string + hydration),
   long/ulong ✅(BigInt, wire-as-string), float ✅, parsing/Convert ✅, overflow ⬜.
 - **Strings**: core methods ✅, format specifiers ✅(F/X/N), padding/split/join ✅, interpolation ✅,
-  `Trim(char)` ✅, char ops ✅, StringBuilder ⬜, comparison/IgnoreCase ⬜(partial).
+  `Trim(char)` ✅, char ops ✅, StringBuilder ✅(compat type), comparison/IgnoreCase ⬜(partial).
 - **Boolean / conversions**: bool ✅, `bool.Parse` ✅, `Convert.ToBoolean/Int32/Double/String/...` ✅.
 - **LINQ**: Where/Select/SelectMany/indexed Select·Where/OrderBy/Distinct(By)/GroupBy/ToDictionary/Zip/
   Chunk/Min·MaxBy/Take(While)/Skip(While)/Aggregate/Sum/Min/Max/Average/Count/Any/All/First/Last/Concat/
