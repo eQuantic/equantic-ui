@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
@@ -126,6 +127,19 @@ public static class TypeSymbolExtensions
             if (tuple.TupleElements[i].Name == name) return i;
         }
         return -1;
+    }
+
+    /// <summary>
+    /// Ordered camelCase element names of a type's <c>Deconstruct(out …)</c> method — the order
+    /// <c>var (a, b) = value</c> binds to. Used to deconstruct a record/struct (a plain object) by
+    /// position. Returns <c>null</c> when the type has no usable <c>Deconstruct</c>.
+    /// </summary>
+    public static IReadOnlyList<string>? DeconstructElementNames(this ITypeSymbol? type)
+    {
+        var deconstruct = type?.GetMembers("Deconstruct")
+            .OfType<IMethodSymbol>()
+            .FirstOrDefault(m => m.Parameters.Length > 0 && m.Parameters.All(p => p.RefKind == RefKind.Out));
+        return deconstruct?.Parameters.Select(p => p.Name.ToCamelCase()).ToList();
     }
 
     /// <summary>The element type of an array or <c>IEnumerable&lt;T&gt;</c>, or <c>null</c>.</summary>
