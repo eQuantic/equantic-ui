@@ -164,6 +164,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<DateTimeStrategy>();
         _strategyRegistry.Register<TimeSpanStrategy>();
         _strategyRegistry.Register<DateOnlyTimeOnlyStrategy>();
+        _strategyRegistry.Register<DateTimeOffsetStrategy>();
         _strategyRegistry.Register<StringBuilderStrategy>();
         _strategyRegistry.Register<QueueStackStrategy>();
         _strategyRegistry.Register<RegexStrategy>();

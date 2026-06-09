@@ -19,5 +19,6 @@ public static class Eq
     public const string StringBuilder = "$eq.text.stringBuilder";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
+    public const string DateTimeOffset = "$eq.time.dateTimeOffset";
     public const string ParseEnum = "$eq.enums.parse";
 }

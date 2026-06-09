@@ -52,7 +52,7 @@ A first-party library of faithful .NET implementations. Candidates, by need:
 | `Math.Round` midpoint | JS rounds half-up | `eq.round` with MidpointRounding.ToEven (banker's) |
 | `string.Format` / `ToString(fmt)` | partial | `format` (exists) — extend specifiers (D, P, C culture-aware, custom) |
 | `Guid` | none | `eq.Guid` (parse/new/format/equality) |
-| `DateTime` / `DateTimeOffset` / `TimeSpan` | `Date` only, no formatting/arith parity | `eq.DateTime` / `eq.TimeSpan` (formatting via `format`, add/subtract, components) |
+| `DateTime` / `DateTimeOffset` / `TimeSpan` | `Date` only, no formatting/arith parity | ✅ `$eq.time.dateTime` / `timeSpan` / `dateTimeOffset` (tick-precise; formatting, add/subtract, components, instant comparison) |
 | `Convert.ToX` / `int.Parse` / `TryParse` | loose / different errors | `eq.convert` / strict parse matching .NET (throw on invalid, radix, overflow) |
 | structural equality (records/structs) | reference equality | `eq.equals` (deep/structural) used by `==`, `Distinct`, `Contains`, dict keys |
 | `IEqualityComparer` / `GetHashCode` | none | `eq.hash` + comparer support where needed |
@@ -78,9 +78,9 @@ Design notes:
   Reverse ✅; remaining — ToLookup, Join, GroupJoin, OrderBy.ThenBy stability edge cases ⬜.
 - **Collections**: List ✅, Dictionary ✅, HashSet ✅, Queue ✅, Stack ✅ (compat types), LinkedList ⬜,
   sorted collections ⬜.
-- **Types**: enum ✅, Guid ✅, DateTime ✅, TimeSpan ✅, DateOnly ✅, TimeOnly ✅ (all tick-precise
-  compat), Nullable ⬜(partial), Tuple ⬜(expression form), record/struct value semantics ⬜,
-  DateTimeOffset ⬜.
+- **Types**: enum ✅, Guid ✅, DateTime ✅, TimeSpan ✅, DateOnly ✅, TimeOnly ✅, DateTimeOffset ✅
+  (all tick-precise compat; DateTimeOffset = wall-clock + offset, compared by the instant),
+  Nullable ⬜(partial), Tuple ⬜(expression form), record/struct value semantics ⬜.
 - **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function
@@ -95,7 +95,7 @@ Design notes:
 2. **LINQ totality** (mostly native strategies; high everyday use).
 3. **Strings completeness** (mostly native; char/StringBuilder/comparison gaps).
 4. **Stand up the `eq` compat runtime** properly — Decimal ✅, Int64/BigInt ✅, Convert ✅, DateTime ✅,
-   TimeSpan ✅, Guid ✅. Remaining: structural equality, DateTimeOffset/DateOnly/TimeOnly.
+   TimeSpan ✅, DateOnly ✅, TimeOnly ✅, DateTimeOffset ✅, Guid ✅. Remaining: structural equality, Nullable totality.
 5. **Statement-level harness mode** (W3) ✅ landed — control-flow blocks are validated end-to-end.
    **Fail-on-unsupported** ✅ landed.
 
