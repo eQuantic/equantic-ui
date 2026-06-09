@@ -32,9 +32,13 @@
             <_EqOsArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_EqOsArch>
             <_BunOsxDir Condition="'$(_EqOsArch)' == 'Arm64'">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.OsxArm64/tools/bun</_BunOsxDir>
             <_BunOsxDir Condition="'$(_BunOsxDir)' == ''">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Osx64/tools/bun</_BunOsxDir>
+            <_BunWinDir Condition="'$(_EqOsArch)' == 'Arm64'">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.WinArm64/tools/bun</_BunWinDir>
+            <_BunWinDir Condition="'$(_BunWinDir)' == ''">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Win64/tools/bun</_BunWinDir>
+            <_BunLinuxDir Condition="'$(_EqOsArch)' == 'Arm64'">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.LinuxArm64/tools/bun</_BunLinuxDir>
+            <_BunLinuxDir Condition="'$(_BunLinuxDir)' == ''">$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Linux64/tools/bun</_BunLinuxDir>
             <_BunOsxPath>$(_BunOsxDir)/bun-darwin</_BunOsxPath>
-            <_BunWinPath>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe</_BunWinPath>
-            <_BunLinuxPath>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux</_BunLinuxPath>
+            <_BunWinPath>$(_BunWinDir)/bun.exe</_BunWinPath>
+            <_BunLinuxPath>$(_BunLinuxDir)/bun-linux</_BunLinuxPath>
             <_BunPath Condition="$([MSBuild]::IsOSPlatform('OSX')) And Exists('$(_BunOsxPath)')">$(_BunOsxPath)</_BunPath>
             <_BunPath Condition="$([MSBuild]::IsOSPlatform('Windows')) And Exists('$(_BunWinPath)')">$(_BunWinPath)</_BunPath>
             <_BunPath Condition="$([MSBuild]::IsOSPlatform('Linux')) And Exists('$(_BunLinuxPath)')">$(_BunLinuxPath)</_BunPath>
@@ -42,17 +46,17 @@
 
         <PropertyGroup Condition="'$(_BunPath)' == ''">
             <_BunZipOsx>$(_BunOsxDir)/bun-darwin.zip</_BunZipOsx>
-            <_BunZipWin>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Win64/tools/bun/bun.exe.zip</_BunZipWin>
-            <_BunZipLinux>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip</_BunZipLinux>
+            <_BunZipWin>$(_BunWinDir)/bun.exe.zip</_BunZipWin>
+            <_BunZipLinux>$(_BunLinuxDir)/bun-linux.zip</_BunZipLinux>
         </PropertyGroup>
         <Unzip SourceFiles="$(_BunZipOsx)"
             DestinationFolder="$(_BunOsxDir)"
             Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_BunPath)' == '' And Exists('$(_BunZipOsx)')" />
         <Unzip SourceFiles="$(_BunZipWin)"
-            DestinationFolder="$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Win64/tools/bun"
+            DestinationFolder="$(_BunWinDir)"
             Condition="$([MSBuild]::IsOSPlatform('Windows')) And '$(_BunPath)' == '' And Exists('$(_BunZipWin)')" />
         <Unzip SourceFiles="$(_BunZipLinux)"
-            DestinationFolder="$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime.Linux64/tools/bun"
+            DestinationFolder="$(_BunLinuxDir)"
             Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(_BunPath)' == '' And Exists('$(_BunZipLinux)')" />
 
         <PropertyGroup>

@@ -1,0 +1,8 @@
+<Project>
+    <!--
+        $(PkgeQuantic_UI_Runtime_LinuxArm64) is provided by the consumer's PackageReference using
+        GeneratePathProperty="true" (set in eQuantic.UI.Sdk's Sdk.props). This build/ folder only
+        needs to exist so the package carries it; the SDK targets read the embedded bun from
+        $(PkgeQuantic_UI_Runtime_LinuxArm64)/tools/bun.
+    -->
+</Project>
