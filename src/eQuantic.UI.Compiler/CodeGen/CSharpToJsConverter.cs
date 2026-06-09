@@ -223,6 +223,9 @@ public class CSharpToJsConverter
         _statementRegistry.Register<FixedStatementStrategy>();
         _statementRegistry.Register<LocalFunctionStatementStrategy>();
         _statementRegistry.Register<CheckedStatementStrategy>();
+        _statementRegistry.Register<UnsafeStatementStrategy>();
+        _statementRegistry.Register<LabeledStatementStrategy>();
+        _statementRegistry.Register<GotoStatementStrategy>();
     }
 
     /// <summary>

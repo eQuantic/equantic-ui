@@ -28,6 +28,24 @@ public class FailOnUnsupportedTests
             .Which.Code.Should().Be("EQ2001");
     }
 
+    [Fact]
+    public void Goto_RaisesError()
+    {
+        // goto has no JS equivalent — must be a build error, not emitted verbatim.
+        TestHelper.DiagnosticsFor("goto done")
+            .Should().ContainSingle(d => d.Severity == ConversionSeverity.Error)
+            .Which.Code.Should().Be("EQ2002");
+    }
+
+    [Fact]
+    public void UnsafeBlock_WithoutPointers_Unwraps_NoError()
+    {
+        // `unsafe` is just a context marker; plain code inside transpiles normally (no diagnostic).
+        var js = TestHelper.ConvertStatement("unsafe { int n = 1; }");
+        js.Should().Contain("n = 1");
+        TestHelper.DiagnosticsFor("unsafe { int n = 1; }").Should().BeEmpty();
+    }
+
     [Theory]
     [InlineData("1 + 2 * 3")]
     [InlineData("items.Where(x => x.Length > 0).Select(x => x.Trim())")]

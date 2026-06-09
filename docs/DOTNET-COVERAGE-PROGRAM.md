@@ -103,7 +103,10 @@ Design notes:
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function
   calls were emitted as `this.fn()`.)
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
-  pointers raise `EQ2001`; client-side `System.IO`/`Net.Http`/EF·`System.Data`/OS threading/`Process`/
+  pointers raise `EQ2001`; `goto`/`goto case`/`goto default` raise `EQ2002` (no JS equivalent). `unsafe`/
+  `fixed`/`lock` blocks unwrap to their body (lock is a no-op — JS is single-threaded — and pointer ops
+  inside still raise `EQ2001`); a bare label drops to its inner statement. Client-side `System.IO`/
+  `Net.Http`/EF·`System.Data`/OS threading/`Process`/
   P/Invoke/`Reflection.Emit` raise `EQ21xx` (boundary). Anything else with no strategy is a warning
   (`EQ1001`/`EQ1002`), not a silent passthrough. Diagnostics are MSBuild-canonical and fail the build.
 
