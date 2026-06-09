@@ -5,9 +5,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
 /// Strategy for LINQ <c>ToLookup(keySelector[, elementSelector])</c>. Mirrors the
-/// <see cref="GroupByStrategy"/> representation — an array of <c>{ key, items }</c> groupings (so
-/// <c>.Count</c>/iteration behave the same) — applying the optional element selector to each item.
-/// (The <c>ILookup[key]</c> indexer is not modelled, consistent with GroupBy's grouping shape.)
+/// <see cref="GroupByStrategy"/> representation — an array of groupings, each being the items array
+/// with a <c>key</c> property — so groups iterate and expose <c>.Key</c>, applying the optional element
+/// selector to each item. (The <c>ILookup[key]</c> indexer is not modelled — use iteration / First.)
 /// </summary>
 public class ToLookupStrategy : IConversionStrategy
 {
@@ -29,11 +29,11 @@ public class ToLookupStrategy : IConversionStrategy
             ? context.Converter.ConvertExpression(args[1].Expression)
             : "x => x";
 
-        return $"{source}.reduce((map, item) => {{ " +
-               $"var key = ({keySelector})(item); " +
-               "var entry = map.find(e => e.key === key); " +
-               "if (!entry) { entry = { key, items: [] }; map.push(entry); } " +
-               $"entry.items.push(({elementSelector})(item)); return map; }}, [])";
+        return $"{source}.reduce((groups, item) => {{ " +
+               $"const key = ({keySelector})(item); " +
+               "let g = groups.find(x => x.key === key); " +
+               "if (!g) { g = []; g.key = key; groups.push(g); } " +
+               $"g.push(({elementSelector})(item)); return groups; }}, [])";
     }
 
     public int Priority => 10;

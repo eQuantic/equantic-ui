@@ -21,18 +21,19 @@ public class GroupByStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var source = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments;
-        
+
         if (args.Count == 0) return source;
-        
+
         var keySelector = context.Converter.ConvertExpression(args[0].Expression);
-        
-        // Simple client-sidegroupBy implementation
-        // Returns an array of { key, items } or Map
-        return $"{source}.reduce((map, item) => {{ " +
-               $"var key = ({keySelector})(item); " +
-               $"var entry = map.find(e => e.key === key); " +
-               $"if (!entry) {{ entry = {{ key, items: [] }}; map.push(entry); }} " +
-               $"entry.items.push(item); return map; }}, [])";
+
+        // Each IGrouping is the items array itself with a `key` property attached, so a group works as a
+        // sequence (iterate, g.Select(...), g.Sum(), g.Count()) AND exposes g.Key — matching .NET.
+        // Groups stay in first-occurrence key order, as LINQ does.
+        return $"{source}.reduce((groups, item) => {{ " +
+               $"const key = ({keySelector})(item); " +
+               "let g = groups.find(x => x.key === key); " +
+               "if (!g) { g = []; g.key = key; groups.push(g); } " +
+               "g.push(item); return groups; }, [])";
     }
 
     public int Priority => 10;
