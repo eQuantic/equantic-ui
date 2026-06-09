@@ -104,4 +104,14 @@ public class BugHuntFixesTests
         result.Should().Contain("JSON.stringify");
         result.Should().Contain("this.points.filter");
     }
+
+    [Fact]
+    public void EnumMemberAccess_IsStringNotNumeric()
+    {
+        // With a semantic model the enum member used to resolve to its numeric value (0);
+        // it must now be its member-name string so the representation is consistent.
+        var result = TestHelper.ConvertCodeBlock("var b = status == Status.Active;");
+        result.Should().Contain("'active'");
+        result.Should().NotContain("=== 0");
+    }
 }
