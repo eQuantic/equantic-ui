@@ -23,7 +23,7 @@ public class AnonymousObjectCreationStrategy : IConversionStrategy
 
             if (name != null)
             {
-                members.Add($"{ToCamelCase(name)}: {expression}");
+                members.Add($"{name.ToCamelCase()}: {expression}");
             }
             else
             {
@@ -32,7 +32,7 @@ public class AnonymousObjectCreationStrategy : IConversionStrategy
                 var inferredName = GetInferredName(decl.Expression);
                 if (inferredName != null)
                 {
-                    members.Add($"{ToCamelCase(inferredName)}: {expression}");
+                    members.Add($"{inferredName.ToCamelCase()}: {expression}");
                 }
                 else
                 {
@@ -50,12 +50,6 @@ public class AnonymousObjectCreationStrategy : IConversionStrategy
         if (expression is IdentifierNameSyntax id) return id.Identifier.Text;
         if (expression is MemberAccessExpressionSyntax ma) return ma.Name.Identifier.Text;
         return null; 
-    }
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
     }
 
     public int Priority => 10;

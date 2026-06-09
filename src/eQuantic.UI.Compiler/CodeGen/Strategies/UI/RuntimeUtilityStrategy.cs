@@ -63,7 +63,7 @@ public class RuntimeUtilityStrategy : IConversionStrategy
 
         var typeName = methodSymbol.ContainingType.Name;
         var methodName = methodSymbol.Name;
-        var tsMethodName = ToCamelCase(methodName);
+        var tsMethodName = methodName.ToCamelCase();
 
         // Emitting $eq.* requires the single $eq import (resolved by the page import map).
         context.UsedHelpers.Add(Eq.Import);
@@ -73,7 +73,7 @@ public class RuntimeUtilityStrategy : IConversionStrategy
         if (methodSymbol.IsStatic)
         {
             var arguments = ConvertArguments(invocation, context);
-            return $"$eq.css.{ToCamelCase(typeName)}.{tsMethodName}({arguments})";
+            return $"$eq.css.{typeName.ToCamelCase()}.{tsMethodName}({arguments})";
         }
 
         // Handle instance methods (chaining): builder.Add(...), builder.When(...), etc.
@@ -99,12 +99,4 @@ public class RuntimeUtilityStrategy : IConversionStrategy
         return string.Join(", ", args);
     }
 
-    private static string ToCamelCase(string pascalCase)
-    {
-        if (string.IsNullOrEmpty(pascalCase))
-            return pascalCase;
-
-        // Convert PascalCase to camelCase: Create -> create, Add -> add
-        return char.ToLowerInvariant(pascalCase[0]) + pascalCase.Substring(1);
-    }
 }

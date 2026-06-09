@@ -57,13 +57,7 @@ public class EnumStrategy : IConversionStrategy
         // the semantic path emitted a number while the fallback emitted a string). camelCase
         // matches the runtime convention used by theme lookups (GetSize/GetVariant) and the
         // case-insensitive parseEnum / Enum.* helpers.
-        return $"'{ToCamelCase(member)}'";
-    }
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
+        return $"'{member.ToCamelCase()}'";
     }
 
     public int Priority => 5;

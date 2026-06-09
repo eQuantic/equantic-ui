@@ -208,19 +208,13 @@ public class IsPatternStrategy : IConversionStrategy
                 var propName = sub.NameColon?.Name.ToString();
                 if (propName != null)
                 {
-                    var subVar = $"{varName}.{ToCamelCase(propName)}";
+                    var subVar = $"{varName}.{propName.ToCamelCase()}";
                     checks.Add(ConvertPattern(sub.Pattern, subVar, context));
                 }
             }
         }
 
         return checks.Count > 0 ? string.Join(" && ", checks) : $"{varName} != null";
-    }
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
     }
 
     public int Priority => 10;

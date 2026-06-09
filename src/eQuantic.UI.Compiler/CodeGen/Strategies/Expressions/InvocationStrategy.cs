@@ -80,7 +80,7 @@ public class InvocationStrategy : IConversionStrategy
                 isLocal = true; // Heuristic
             }
 
-            return $"{caller}.{ToCamelCase(methodName)}({args})";
+            return $"{caller}.{methodName.ToCamelCase()}({args})";
         }
 
         // Direct invocation (Function() -> function())
@@ -107,16 +107,10 @@ public class InvocationStrategy : IConversionStrategy
 
         if (needsThis)
         {
-            return $"this.{ToCamelCase(methodName)}({args})";
+            return $"this.{methodName.ToCamelCase()}({args})";
         }
 
-        return $"{ToCamelCase(methodName)}({args})";
-    }
-
-    private string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
+        return $"{methodName.ToCamelCase()}({args})";
     }
 
     public int Priority => 1; // Lowest priority (fallback)

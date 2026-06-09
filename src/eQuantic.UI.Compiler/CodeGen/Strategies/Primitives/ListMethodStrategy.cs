@@ -103,7 +103,7 @@ public class ListMethodStrategy : IConversionStrategy
             "GetRange" => ConvertGetRange(caller, args),
             "CopyTo" => $"[...{caller}]",
             "BinarySearch" => ConvertBinarySearch(caller, args),
-            _ => $"{caller}.{ToCamelCase(methodName)}({JoinArgs(args)})"
+            _ => $"{caller}.{methodName.ToCamelCase()}({JoinArgs(args)})"
         };
     }
 
@@ -177,12 +177,6 @@ public class ListMethodStrategy : IConversionStrategy
     }
 
     private string JoinArgs(List<string> args) => string.Join(", ", args);
-
-    private string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
-    }
 
     public int Priority => 15; // Higher than InvocationStrategy (1)
 }

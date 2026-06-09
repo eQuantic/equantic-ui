@@ -1,6 +1,5 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
@@ -19,7 +18,7 @@ public class StructuralEqualsStrategy : IConversionStrategy
             return false;
         if (ma.Name.Identifier.Text != "Equals") return false;
         if (inv.ArgumentList.Arguments.Count != 1) return false;
-        return SemanticHelper.IsStructuralValueType(context.SemanticHelper.GetType(ma.Expression));
+        return context.SemanticHelper.GetType(ma.Expression).IsStructuralValueType();
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

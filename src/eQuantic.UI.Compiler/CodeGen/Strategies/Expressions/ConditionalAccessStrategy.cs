@@ -31,7 +31,7 @@ public class ConditionalAccessStrategy : IConversionStrategy
         {
             // ?.member -> ?.member
             MemberBindingExpressionSyntax memberBinding =>
-                $"?.{ToCamelCase(memberBinding.Name.Identifier.Text)}",
+                $"?.{memberBinding.Name.Identifier.Text.ToCamelCase()}",
 
             // ?[index] -> ?.[index] (JavaScript requires the dot)
             ElementBindingExpressionSyntax elementBinding =>
@@ -41,11 +41,11 @@ public class ConditionalAccessStrategy : IConversionStrategy
             InvocationExpressionSyntax invocation when invocation.Expression is MemberBindingExpressionSyntax mb =>
                 mb.Name.Identifier.Text == "Invoke"
                     ? $"?.({ConvertArguments(invocation.ArgumentList, context)})"
-                    : $"?.{ToCamelCase(mb.Name.Identifier.Text)}({ConvertArguments(invocation.ArgumentList, context)})",
+                    : $"?.{mb.Name.Identifier.Text.ToCamelCase()}({ConvertArguments(invocation.ArgumentList, context)})",
 
             // ?.member.property -> ?.member.property (e.g., theme?.Alert.Title)
             MemberAccessExpressionSyntax memberAccess when memberAccess.Expression is MemberBindingExpressionSyntax binding =>
-                $"?.{ToCamelCase(binding.Name.Identifier.Text)}.{ToCamelCase(memberAccess.Name.Identifier.Text)}",
+                $"?.{binding.Name.Identifier.Text.ToCamelCase()}.{memberAccess.Name.Identifier.Text.ToCamelCase()}",
 
             // ?.member.property.deeper -> chain after conditional (recursive)
             MemberAccessExpressionSyntax memberAccess =>
@@ -53,11 +53,11 @@ public class ConditionalAccessStrategy : IConversionStrategy
 
             // Nested conditional access: a?.b?.c - The nested expression (b) is a MemberBindingExpression
             ConditionalAccessExpressionSyntax nested when nested.Expression is MemberBindingExpressionSyntax nestedMember =>
-                $"?.{ToCamelCase(nestedMember.Name.Identifier.Text)}{ConvertWhenNotNull(nested.WhenNotNull, context)}",
+                $"?.{nestedMember.Name.Identifier.Text.ToCamelCase()}{ConvertWhenNotNull(nested.WhenNotNull, context)}",
 
             // Nested conditional access with identifier: for cases like user?.Address?.City
             ConditionalAccessExpressionSyntax nested =>
-                $"?.{ToCamelCase(nested.Expression.ToString())}{ConvertWhenNotNull(nested.WhenNotNull, context)}",
+                $"?.{(nested.Expression.ToString()).ToCamelCase()}{ConvertWhenNotNull(nested.WhenNotNull, context)}",
 
             // Fallback
             _ => $"?.{context.Converter.ConvertExpression(whenNotNull)}"
@@ -66,11 +66,11 @@ public class ConditionalAccessStrategy : IConversionStrategy
 
     private string ConvertMemberChain(MemberAccessExpressionSyntax memberAccess, ConversionContext context)
     {
-        var name = ToCamelCase(memberAccess.Name.Identifier.Text);
+        var name = memberAccess.Name.Identifier.Text.ToCamelCase();
         return memberAccess.Expression switch
         {
             MemberBindingExpressionSyntax binding =>
-                $"{ToCamelCase(binding.Name.Identifier.Text)}.{name}",
+                $"{binding.Name.Identifier.Text.ToCamelCase()}.{name}",
             MemberAccessExpressionSyntax nested =>
                 $"{ConvertMemberChain(nested, context)}.{name}",
             _ => $"{context.Converter.ConvertExpression(memberAccess.Expression)}.{name}"
@@ -87,12 +87,6 @@ public class ConditionalAccessStrategy : IConversionStrategy
     {
         var args = argumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression));
         return string.Join(", ", args);
-    }
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
     }
 
     public int Priority => 15; // Higher priority to intercept before MemberAccessStrategy

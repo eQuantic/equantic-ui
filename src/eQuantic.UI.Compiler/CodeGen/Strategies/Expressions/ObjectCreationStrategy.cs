@@ -41,7 +41,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         // User records / structs are value-shaped: represent as a plain object (consistent with
         // anonymous types, object initializers, and value-based Distinct/equality). Positional args map
         // to the constructor's parameter names; an object initializer contributes named members.
-        if (SemanticHelper.IsStructuralValueType(context.SemanticHelper.GetType(creation)))
+        if (context.SemanticHelper.GetType(creation).IsStructuralValueType())
         {
             return BuildValueObject(creation, context);
         }
@@ -123,7 +123,7 @@ public class ObjectCreationStrategy : IConversionStrategy
                     name = ctor.Parameters[i].Name;                          // positional -> param name
                 else
                     name = $"item{i + 1}";                                   // fallback (untyped)
-                parts.Add($"{Camel(name)}: {value}");
+                parts.Add($"{name.ToCamelCase()}: {value}");
             }
         }
 
@@ -134,16 +134,13 @@ public class ObjectCreationStrategy : IConversionStrategy
                 if (expr is AssignmentExpressionSyntax assignment)
                 {
                     var value = context.Converter.ConvertExpression(assignment.Right);
-                    parts.Add($"{Camel(assignment.Left.ToString())}: {value}");
+                    parts.Add($"{(assignment.Left.ToString()).ToCamelCase()}: {value}");
                 }
             }
         }
 
         return parts.Count == 0 ? "{}" : "{ " + string.Join(", ", parts) + " }";
     }
-
-    private static string Camel(string name) =>
-        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
 
     private string ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)
     {

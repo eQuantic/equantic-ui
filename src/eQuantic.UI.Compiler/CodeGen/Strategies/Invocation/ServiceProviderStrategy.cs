@@ -47,7 +47,7 @@ public class ServiceProviderStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var methodName = memberAccess.Name.Identifier.Text;
-        var jsMethodName = methodName == "GetRequiredService" ? "getService" : ToCamelCase(methodName);
+        var jsMethodName = methodName == "GetRequiredService" ? "getService" : methodName.ToCamelCase();
 
         // Check if generic: GetService<T>()
         if (memberAccess.Name is GenericNameSyntax genericName &&
@@ -94,12 +94,6 @@ public class ServiceProviderStrategy : IConversionStrategy
         // If no generic type or argument, this is an error - we should warn
         // But fallback to empty call for backwards compatibility
         return $"{caller}.{jsMethodName}()";
-    }
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
     }
 
     public int Priority => 10;

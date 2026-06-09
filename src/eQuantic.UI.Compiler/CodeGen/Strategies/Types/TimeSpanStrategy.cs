@@ -10,11 +10,11 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// factory; instance members/methods become camelCase calls. Operators are handled by
 /// BinaryExpressionStrategy. Priority 15, gated on the semantic type.
 /// </summary>
-public class TimeSpanStrategy : IConversionStrategy
+public class TimeSpanStrategy : ConversionStrategyBase
 {
     private const string TypeName = "System.TimeSpan";
 
-    public bool CanConvert(SyntaxNode node, ConversionContext context)
+    public override bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         switch (node)
         {
@@ -32,7 +32,7 @@ public class TimeSpanStrategy : IConversionStrategy
         }
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public override string Convert(SyntaxNode node, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
         switch (node)
@@ -46,10 +46,10 @@ public class TimeSpanStrategy : IConversionStrategy
                 var args = ConvertArgs(inv.ArgumentList, context);
                 if (IsStaticAccess(ma, context))
                 {
-                    return $"{Eq.TimeSpan}.{Camel(name)}({args})";
+                    return $"{Eq.TimeSpan}.{name.ToCamelCase()}({args})";
                 }
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
-                return $"{receiver}.{Camel(name)}({args})";
+                return $"{receiver}.{name.ToCamelCase()}({args})";
             }
 
             case MemberAccessExpressionSyntax member:
@@ -58,10 +58,10 @@ public class TimeSpanStrategy : IConversionStrategy
                 if (IsStaticAccess(member, context))
                 {
                     // Static properties (Zero/MinValue/MaxValue). Zero is a field, the others methods.
-                    return name == "Zero" ? $"{Eq.TimeSpan}.zero" : $"{Eq.TimeSpan}.{Camel(name)}()";
+                    return name == "Zero" ? $"{Eq.TimeSpan}.zero" : $"{Eq.TimeSpan}.{name.ToCamelCase()}()";
                 }
                 var receiver = context.Converter.ConvertExpression(member.Expression);
-                return $"{receiver}.{Camel(name)}";
+                return $"{receiver}.{name.ToCamelCase()}";
             }
 
             default:
@@ -97,14 +97,5 @@ public class TimeSpanStrategy : IConversionStrategy
         return type?.ToDisplayString() == TypeName;
     }
 
-    private static string ConvertArgs(ArgumentListSyntax? argumentList, ConversionContext context)
-    {
-        if (argumentList == null || argumentList.Arguments.Count == 0) return string.Empty;
-        return string.Join(", ", argumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
-    }
-
-    private static string Camel(string name) =>
-        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
-
-    public int Priority => 15;
+    public override int Priority => 15;
 }

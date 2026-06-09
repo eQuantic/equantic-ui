@@ -100,19 +100,13 @@ public class InitializerExpressionStrategy : IConversionStrategy
                         }
                     }
                     
-                    props.Add($"{ToCamelCase(propName)}: {value}");
+                    props.Add($"{propName.ToCamelCase()}: {value}");
                 }
             }
             return $"{{ {string.Join(", ", props)} }}";
         }
         
         return "{}";
-    }
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        return char.ToLowerInvariant(name[0]) + name[1..];
     }
 
     public int Priority => 10;

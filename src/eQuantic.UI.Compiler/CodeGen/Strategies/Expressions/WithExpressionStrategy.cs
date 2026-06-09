@@ -28,7 +28,7 @@ public class WithExpressionStrategy : IConversionStrategy
                     sb.Append(", ");
                     // The left side is a property name (`X`), not an expression to resolve — emit it
                     // directly as a camelCased object key (matching how records/initializers are built).
-                    var left = Camel(assignment.Left.ToString());
+                    var left = (assignment.Left.ToString()).ToCamelCase();
                     var right = context.Converter.ConvertExpression(assignment.Right);
                     sb.Append($"{left}: {right}");
                 }
@@ -38,9 +38,6 @@ public class WithExpressionStrategy : IConversionStrategy
         sb.Append(" }");
         return sb.ToString();
     }
-
-    private static string Camel(string name) =>
-        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
 
     public int Priority => 10;
 }

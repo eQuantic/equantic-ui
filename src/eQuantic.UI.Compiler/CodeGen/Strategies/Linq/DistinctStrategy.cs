@@ -47,7 +47,7 @@ public class DistinctStrategy : IConversionStrategy
         // enums AND plain reference types (reference equality). Only records and structs use
         // structural/value equality, where Set would keep equal-but-distinct instances — those
         // need a value-based dedup (keeping the first occurrence, like Distinct).
-        var elementType = GetElementType(context.SemanticHelper.GetType(memberAccess.Expression));
+        var elementType = context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType();
         if (elementType is { } et && !IsPrimitiveOrString(et) && (et.IsRecord || et.TypeKind == TypeKind.Struct))
         {
             return $"(() => {{ const _seen = new Set(); return {caller}.filter(_x => {{ " +
@@ -56,19 +56,6 @@ public class DistinctStrategy : IConversionStrategy
 
         // [...new Set(array)] creates a new array with unique values
         return $"[...new Set({caller})]";
-    }
-
-    private static ITypeSymbol? GetElementType(ITypeSymbol? collectionType)
-    {
-        if (collectionType is IArrayTypeSymbol array) return array.ElementType;
-        if (collectionType is INamedTypeSymbol named)
-        {
-            if (named.TypeArguments.Length == 1) return named.TypeArguments[0];
-            var enumerable = named.AllInterfaces
-                .FirstOrDefault(i => i.Name == "IEnumerable" && i.TypeArguments.Length == 1);
-            if (enumerable != null) return enumerable.TypeArguments[0];
-        }
-        return null;
     }
 
     private static bool IsPrimitiveOrString(ITypeSymbol type)

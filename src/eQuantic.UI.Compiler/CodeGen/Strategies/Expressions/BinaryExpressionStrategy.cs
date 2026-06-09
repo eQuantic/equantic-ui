@@ -19,84 +19,6 @@ public class BinaryExpressionStrategy : IConversionStrategy
         return node is BinaryExpressionSyntax;
     }
 
-    private static readonly SpecialType[] IntegralTypes =
-    {
-        SpecialType.System_SByte, SpecialType.System_Byte,
-        SpecialType.System_Int16, SpecialType.System_UInt16,
-        SpecialType.System_Int32, SpecialType.System_UInt32,
-        SpecialType.System_Int64, SpecialType.System_UInt64,
-    };
-
-    private static bool IsIntegral(ITypeSymbol? type)
-    {
-        if (type == null) return false;
-
-        // Unwrap Nullable<T> (int? / int? still divides as integers).
-        if (type is INamedTypeSymbol named
-            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
-            && named.TypeArguments.Length == 1)
-        {
-            type = named.TypeArguments[0];
-        }
-
-        return Array.IndexOf(IntegralTypes, type.SpecialType) >= 0;
-    }
-
-    private static bool IsDecimal(ITypeSymbol? type)
-    {
-        if (type is INamedTypeSymbol named
-            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
-            && named.TypeArguments.Length == 1)
-        {
-            type = named.TypeArguments[0];
-        }
-        return type?.SpecialType == SpecialType.System_Decimal;
-    }
-
-    private static bool IsLong(ITypeSymbol? type)
-    {
-        if (type is INamedTypeSymbol named
-            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
-            && named.TypeArguments.Length == 1)
-        {
-            type = named.TypeArguments[0];
-        }
-        return type?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64;
-    }
-
-    private static readonly SpecialType[] PrimitiveNumericTypes =
-    {
-        SpecialType.System_SByte, SpecialType.System_Byte,
-        SpecialType.System_Int16, SpecialType.System_UInt16,
-        SpecialType.System_Int32, SpecialType.System_UInt32,
-        SpecialType.System_Single, SpecialType.System_Double,
-        // NOTE: Int64/UInt64 (long) and Decimal are intentionally excluded — handled by their own branches.
-    };
-
-    /// <summary>True when <paramref name="type"/> is <c>Nullable&lt;T&gt;</c> over a primitive numeric
-    /// T (the kinds whose lifted operators route through <c>$eq.nullable.*</c>).</summary>
-    private static bool IsNullablePrimitiveNumeric(ITypeSymbol? type)
-    {
-        if (type is INamedTypeSymbol named
-            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
-            && named.TypeArguments.Length == 1)
-        {
-            return Array.IndexOf(PrimitiveNumericTypes, named.TypeArguments[0].SpecialType) >= 0;
-        }
-        return false;
-    }
-
-    private static bool IsNamed(ITypeSymbol? type, string fullName)
-    {
-        if (type is INamedTypeSymbol named
-            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
-            && named.TypeArguments.Length == 1)
-        {
-            type = named.TypeArguments[0];
-        }
-        return type?.ToDisplayString() == fullName;
-    }
-
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var binary = (BinaryExpressionSyntax)node;
@@ -107,8 +29,8 @@ public class BinaryExpressionStrategy : IConversionStrategy
         // decimal is an exact base-10 type implemented by the runtime Decimal class; route its
         // operators to method calls. (Null comparisons fall through to the loose-equality logic.)
         if (left != "null" && right != "null"
-            && (IsDecimal(context.SemanticHelper.GetType(binary.Left))
-                || IsDecimal(context.SemanticHelper.GetType(binary.Right))))
+            && (context.SemanticHelper.GetType(binary.Left).IsDecimal()
+                || context.SemanticHelper.GetType(binary.Right).IsDecimal()))
         {
             var decResult = ConvertDecimal(left, right, op, binary, context);
             if (decResult != null) return decResult;
@@ -118,8 +40,8 @@ public class BinaryExpressionStrategy : IConversionStrategy
         // operators (BigInt `/` truncates, matching C# long division — so this must run before the
         // integer-division branch below). Null comparisons fall through to the loose-equality logic.
         if (left != "null" && right != "null" && op != "&&" && op != "||"
-            && (IsLong(context.SemanticHelper.GetType(binary.Left))
-                || IsLong(context.SemanticHelper.GetType(binary.Right))))
+            && (context.SemanticHelper.GetType(binary.Left).IsLong()
+                || context.SemanticHelper.GetType(binary.Right).IsLong()))
         {
             context.UsedHelpers.Add(Eq.Import);
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
@@ -134,7 +56,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
         {
             var nlt = context.SemanticHelper.GetType(binary.Left);
             var nrt = context.SemanticHelper.GetType(binary.Right);
-            if (IsNullablePrimitiveNumeric(nlt) || IsNullablePrimitiveNumeric(nrt))
+            if (nlt.IsNullablePrimitiveNumeric() || nrt.IsNullablePrimitiveNumeric())
             {
                 if (op is "<" or ">" or "<=" or ">=")
                 {
@@ -145,7 +67,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
                 {
                     context.UsedHelpers.Add(Eq.Import);
                     // Integer division/remainder truncates toward zero in C#; preserve it inside the lift.
-                    var body = (op is "/" or "%") && IsIntegral(context.SemanticHelper.GetType(binary))
+                    var body = (op is "/" or "%") && context.SemanticHelper.GetType(binary).IsIntegral()
                         ? (op == "/" ? "Math.trunc(a / b)" : "(a % b)")
                         : $"a {op} b";
                     return $"{Eq.LiftArith}({left}, {right}, (a, b) => {body})";
@@ -169,8 +91,8 @@ public class BinaryExpressionStrategy : IConversionStrategy
         // structural helper. (Null comparisons fall through to the loose ==/!= below — correct, since
         // `record == null` is a plain null check.)
         if ((op == "==" || op == "!=") && left != "null" && right != "null"
-            && (SemanticHelper.IsStructuralValueType(context.SemanticHelper.GetType(binary.Left))
-                || SemanticHelper.IsStructuralValueType(context.SemanticHelper.GetType(binary.Right))))
+            && (context.SemanticHelper.GetType(binary.Left).IsStructuralValueType()
+                || context.SemanticHelper.GetType(binary.Right).IsStructuralValueType()))
         {
             context.UsedHelpers.Add(Eq.Import);
             return op == "==" ? $"{Eq.Equals}({left}, {right})" : $"!{Eq.Equals}({left}, {right})";
@@ -179,7 +101,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
         // C# integer division truncates toward zero; JS `/` is always float division.
         // When the result type is integral, emit Math.trunc to preserve C# semantics
         // (7 / 2 == 3, not 3.5). Chained divisions nest correctly.
-        if (op == "/" && IsIntegral(context.SemanticHelper.GetType(binary)))
+        if (op == "/" && context.SemanticHelper.GetType(binary).IsIntegral())
         {
             return $"Math.trunc({left} / {right})";
         }
@@ -244,8 +166,8 @@ public class BinaryExpressionStrategy : IConversionStrategy
     {
         const string dt = "System.DateTime";
         const string ts = "System.TimeSpan";
-        bool lDt = IsNamed(lt, dt), rDt = IsNamed(rt, dt);
-        bool lTs = IsNamed(lt, ts), rTs = IsNamed(rt, ts);
+        bool lDt = lt.IsNamed(dt), rDt = rt.IsNamed(dt);
+        bool lTs = lt.IsNamed(ts), rTs = rt.IsNamed(ts);
 
         if (lDt && rDt)
         {
@@ -275,7 +197,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
         if (lTs && rDt && op == "+") return $"{right}.add({left})"; // TimeSpan + DateTime (commutative)
 
         // DateTimeOffset: like DateTime — DTO - DTO -> TimeSpan, DTO ± TimeSpan -> DTO, comparisons by instant.
-        bool lDto = IsNamed(lt, "System.DateTimeOffset"), rDto = IsNamed(rt, "System.DateTimeOffset");
+        bool lDto = lt.IsNamed("System.DateTimeOffset"), rDto = rt.IsNamed("System.DateTimeOffset");
         if (lDto && rDto)
         {
             return op switch
@@ -296,8 +218,8 @@ public class BinaryExpressionStrategy : IConversionStrategy
         }
 
         // DateOnly/TimeOnly: comparisons + equality (no operator arithmetic modelled here).
-        bool lDo = IsNamed(lt, "System.DateOnly"), rDo = IsNamed(rt, "System.DateOnly");
-        bool lTo = IsNamed(lt, "System.TimeOnly"), rTo = IsNamed(rt, "System.TimeOnly");
+        bool lDo = lt.IsNamed("System.DateOnly"), rDo = rt.IsNamed("System.DateOnly");
+        bool lTo = lt.IsNamed("System.TimeOnly"), rTo = rt.IsNamed("System.TimeOnly");
         if ((lDo && rDo) || (lTo && rTo))
         {
             return op switch
