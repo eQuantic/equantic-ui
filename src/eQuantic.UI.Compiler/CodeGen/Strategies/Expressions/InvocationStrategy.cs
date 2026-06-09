@@ -86,8 +86,9 @@ public class InvocationStrategy : IConversionStrategy
         // Direct invocation (Function() -> function())
         bool needsThis = false;
         
-        // Use semantic resolution if available
-        if (symbol != null && !symbol.IsStatic)
+        // Use semantic resolution if available. Local functions are NOT members of `this` even
+        // though they have a containing type — they compile to a plain `function` in the same scope.
+        if (symbol != null && !symbol.IsStatic && symbol.MethodKind != MethodKind.LocalFunction)
         {
             if (symbol.ContainingType != null)
             {

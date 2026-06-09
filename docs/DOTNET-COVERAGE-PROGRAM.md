@@ -77,8 +77,10 @@ Design notes:
 - **Types**: enum ✅, Guid ✅, DateTime ✅(tick-precise compat), TimeSpan ✅(tick-precise compat),
   Nullable ⬜(partial), Tuple ⬜(expression form), record/struct value semantics ⬜, DateTimeOffset/
   DateOnly/TimeOnly ⬜.
-- **Control flow**: expression-level ✅; statement-level (if/for/while/foreach/switch/try) — needs the
-  block-evaluating harness mode ⬜.
+- **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks
+  (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
+  local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function
+  calls were emitted as `this.fn()`.)
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
   pointers raise `EQ2001`; client-side `System.IO`/`Net.Http`/EF·`System.Data`/OS threading/`Process`/
   P/Invoke/`Reflection.Emit` raise `EQ21xx` (boundary). Anything else with no strategy is a warning
@@ -90,7 +92,8 @@ Design notes:
 3. **Strings completeness** (mostly native; char/StringBuilder/comparison gaps).
 4. **Stand up the `eq` compat runtime** properly — Decimal ✅, Int64/BigInt ✅, Convert ✅, DateTime ✅,
    TimeSpan ✅, Guid ✅. Remaining: structural equality, DateTimeOffset/DateOnly/TimeOnly.
-5. **Statement-level harness mode** (W3) to close the loop. **Fail-on-unsupported** ✅ landed.
+5. **Statement-level harness mode** (W3) ✅ landed — control-flow blocks are validated end-to-end.
+   **Fail-on-unsupported** ✅ landed.
 
 ## Definition of done (per area)
 An area is "covered" when its conformance cases are green, every unsupported construct in it produces a

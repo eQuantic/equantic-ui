@@ -23,6 +23,24 @@ public static class ConformanceRunner
         AssertSameAsDotNet(csharpExpression, prelude: "");
 
     /// <summary>
+    /// As <see cref="AssertSameAsDotNet(string,string)"/> but for a block of C# <b>statements</b>
+    /// (control flow). The block must <c>return</c> a value; the transpiled block is wrapped in an
+    /// IIFE to capture it, and the .NET side runs the same block as a script (top-level return).
+    /// </summary>
+    public static void AssertStatementsSameAsDotNet(string csharpStatements, string prelude = "")
+    {
+        var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
+        var program = $"{BuildHelperImport(jsBlock)}console.log(JSON.stringify((() => {jsBlock})()))";
+
+        var actual = JsExecutor.Run(program);
+        var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
+
+        actual.Should().Be(
+            expected,
+            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) must behave identically to .NET");
+    }
+
+    /// <summary>
     /// As above, but with a C# <paramref name="prelude"/> of type declarations (e.g. an enum) made
     /// available to both the transpiler's semantic model and the .NET evaluator.
     /// </summary>
