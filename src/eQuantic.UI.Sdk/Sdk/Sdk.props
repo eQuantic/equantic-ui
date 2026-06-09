@@ -44,19 +44,23 @@
             Condition="Exists('$(_DevRootDir)eQuantic.UI.Core/eQuantic.UI.Core.csproj')">true</IsEQuanticDevMode>
     </PropertyGroup>
 
-    <!-- Core eQuantic.UI packages (automatically included by SDK) -->
+    <!-- Core eQuantic.UI packages (automatically included by SDK).
+         GeneratePathProperty="true" is REQUIRED on the packages whose content (tools/source,
+         tools/runtime, tools/bun) the SDK targets resolve via $(Pkg<Id>) — NuGet does NOT create
+         those properties otherwise. Without it the consumer (NuGet) build can't locate the standard
+         components, runtime.js or the embedded bun, and the targets fail. -->
     <ItemGroup Condition="'$(IsEQuanticDevMode)' != 'true'">
         <PackageReference Include="eQuantic.UI.Core" Version="$(EQuanticUIVersion)" />
-        <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
         <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" />
-        <PackageReference Include="eQuantic.UI.Runtime" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Runtime" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
 
-        <!-- Platform-specific Bun Runtime Packages -->
-        <PackageReference Include="eQuantic.UI.Runtime.Win64" Version="$(EQuanticUIVersion)"
+        <!-- Platform-specific Bun Runtime Packages (asset-only; resolved purely via $(Pkg*)) -->
+        <PackageReference Include="eQuantic.UI.Runtime.Win64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
             Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
-        <PackageReference Include="eQuantic.UI.Runtime.Linux64" Version="$(EQuanticUIVersion)"
+        <PackageReference Include="eQuantic.UI.Runtime.Linux64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
             Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
-        <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="$(EQuanticUIVersion)"
+        <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
             Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
     </ItemGroup>
 

@@ -1,6 +1,8 @@
 <Project>
     <!--
-        NuGet automatically generates PkgeQuantic_UI_Runtime_Osx64 property.
-        This file exists only to ensure the build folder is included in the package.
+        $(PkgeQuantic_UI_Runtime_Osx64) is provided by the consumer's PackageReference using
+        GeneratePathProperty="true" (set in eQuantic.UI.Sdk's Sdk.props). This build/ folder only
+        needs to exist so the package carries it; the SDK targets read the embedded bun from
+        $(PkgeQuantic_UI_Runtime_Osx64)/tools/bun.
     -->
 </Project>
