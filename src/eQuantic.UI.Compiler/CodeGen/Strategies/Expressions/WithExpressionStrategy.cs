@@ -26,25 +26,21 @@ public class WithExpressionStrategy : IConversionStrategy
                 if (expr is AssignmentExpressionSyntax assignment)
                 {
                     sb.Append(", ");
-                    var left = context.Converter.ConvertExpression(assignment.Left);
+                    // The left side is a property name (`X`), not an expression to resolve — emit it
+                    // directly as a camelCased object key (matching how records/initializers are built).
+                    var left = Camel(assignment.Left.ToString());
                     var right = context.Converter.ConvertExpression(assignment.Right);
-                    // Handle "this." prefix removal if the converter adds it inappropriately to property names in object literals
-                    // though usually ConvertExpression handles identifiers. 
-                    // For object literals { Prop: Val }, Prop is typically an identifier. 
-                    // But here it's an assignment in C# { Prop = Val }.
-                    // We need 'Prop: Val' in JS.
-                    
-                    // Simple hack: if left is "this.Prop", take "Prop".
-                    if (left.StartsWith("this.")) left = left.Substring(5);
-                    
                     sb.Append($"{left}: {right}");
                 }
             }
         }
-        
+
         sb.Append(" }");
         return sb.ToString();
     }
+
+    private static string Camel(string name) =>
+        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
 
     public int Priority => 10;
 }

@@ -165,6 +165,17 @@ public class BinaryExpressionStrategy : IConversionStrategy
             if (dtResult != null) return dtResult;
         }
 
+        // Records, structs and value tuples compare by VALUE in C# (not reference). Route ==/!= to the
+        // structural helper. (Null comparisons fall through to the loose ==/!= below — correct, since
+        // `record == null` is a plain null check.)
+        if ((op == "==" || op == "!=") && left != "null" && right != "null"
+            && (SemanticHelper.IsStructuralValueType(context.SemanticHelper.GetType(binary.Left))
+                || SemanticHelper.IsStructuralValueType(context.SemanticHelper.GetType(binary.Right))))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return op == "==" ? $"{Eq.Equals}({left}, {right})" : $"!{Eq.Equals}({left}, {right})";
+        }
+
         // C# integer division truncates toward zero; JS `/` is always float division.
         // When the result type is integral, emit Math.trunc to preserve C# semantics
         // (7 / 2 == 3, not 3.5). Chained divisions nest correctly.

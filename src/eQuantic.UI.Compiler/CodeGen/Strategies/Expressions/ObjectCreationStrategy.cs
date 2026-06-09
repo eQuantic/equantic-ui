@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
@@ -35,6 +37,15 @@ public class ObjectCreationStrategy : IConversionStrategy
     private string ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var typeName = creation.Type.ToString();
+
+        // User records / structs are value-shaped: represent as a plain object (consistent with
+        // anonymous types, object initializers, and value-based Distinct/equality). Positional args map
+        // to the constructor's parameter names; an object initializer contributes named members.
+        if (SemanticHelper.IsStructuralValueType(context.SemanticHelper.GetType(creation)))
+        {
+            return BuildValueObject(creation, context);
+        }
+
         var arguments = "";
         
         if (creation.ArgumentList != null && creation.ArgumentList.Arguments.Count > 0)
@@ -88,6 +99,51 @@ public class ObjectCreationStrategy : IConversionStrategy
 
         return $"new {typeName}({arguments})";
     }
+
+    /// <summary>
+    /// Builds the plain-object form of a record/struct construction. Positional arguments are named
+    /// after the matched constructor's parameters (camelCased); named arguments and an object
+    /// initializer (<c>{ X = 1 }</c>) contribute their members directly.
+    /// </summary>
+    private static string BuildValueObject(ObjectCreationExpressionSyntax creation, ConversionContext context)
+    {
+        var parts = new List<string>();
+        var ctor = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
+
+        if (creation.ArgumentList != null)
+        {
+            var args = creation.ArgumentList.Arguments;
+            for (var i = 0; i < args.Count; i++)
+            {
+                var value = context.Converter.ConvertExpression(args[i].Expression);
+                string name;
+                if (args[i].NameColon != null)
+                    name = args[i].NameColon!.Name.Identifier.Text;          // explicit `x: value`
+                else if (ctor != null && i < ctor.Parameters.Length)
+                    name = ctor.Parameters[i].Name;                          // positional -> param name
+                else
+                    name = $"item{i + 1}";                                   // fallback (untyped)
+                parts.Add($"{Camel(name)}: {value}");
+            }
+        }
+
+        if (creation.Initializer != null)
+        {
+            foreach (var expr in creation.Initializer.Expressions)
+            {
+                if (expr is AssignmentExpressionSyntax assignment)
+                {
+                    var value = context.Converter.ConvertExpression(assignment.Right);
+                    parts.Add($"{Camel(assignment.Left.ToString())}: {value}");
+                }
+            }
+        }
+
+        return parts.Count == 0 ? "{}" : "{ " + string.Join(", ", parts) + " }";
+    }
+
+    private static string Camel(string name) =>
+        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
 
     private string ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)
     {

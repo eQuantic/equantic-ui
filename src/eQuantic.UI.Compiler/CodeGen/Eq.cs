@@ -26,4 +26,7 @@ public static class Eq
     public const string LiftArith = "$eq.nullable.arith";
     /// <summary>Lifted Nullable&lt;T&gt; relational — <c>false</c> if either operand is null.</summary>
     public const string LiftCmp = "$eq.nullable.cmp";
+
+    /// <summary>Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct.</summary>
+    public const string Equals = "$eq.equals";
 }

@@ -1,5 +1,7 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -78,10 +80,33 @@ public class ContainsStrategy : IConversionStrategy
         if (args.Count > 0)
         {
             var item = context.Converter.ConvertExpression(args[0].Expression);
+
+            // Records / structs / tuples compare by VALUE — `includes` (SameValueZero) would miss
+            // equal-but-distinct instances. Walk with the structural equality helper instead.
+            var elementType = GetElementType(context.SemanticHelper.GetType(memberAccess.Expression));
+            if (SemanticHelper.IsStructuralValueType(elementType))
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return $"{caller}.some(_x => {Eq.Equals}(_x, {item}))";
+            }
+
             return $"{caller}.includes({item})";
         }
 
         return $"{caller}.includes(undefined)";
+    }
+
+    private static ITypeSymbol? GetElementType(ITypeSymbol? collectionType)
+    {
+        if (collectionType is IArrayTypeSymbol array) return array.ElementType;
+        if (collectionType is INamedTypeSymbol named)
+        {
+            if (named.TypeArguments.Length == 1) return named.TypeArguments[0];
+            var enumerable = named.AllInterfaces
+                .FirstOrDefault(i => i.Name == "IEnumerable" && i.TypeArguments.Length == 1);
+            if (enumerable != null) return enumerable.TypeArguments[0];
+        }
+        return null;
     }
 
     public int Priority => 10;

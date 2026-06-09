@@ -6,6 +6,7 @@ import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/
 import { stringBuilder } from './utils/string-builder';
 import { queue, stack } from './utils/collections';
 import { liftArith, liftCmp } from './utils/nullable';
+import { equals } from './utils/equals';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
@@ -34,6 +35,8 @@ export const $eq = {
   collections: { queue, stack },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
   nullable: { arith: liftArith, cmp: liftCmp },
+  /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */
+  equals,
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;
