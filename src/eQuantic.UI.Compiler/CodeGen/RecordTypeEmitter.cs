@@ -20,6 +20,13 @@ public class RecordTypeEmitter
     /// <summary>True for the records this emitter handles today — positional (with a parameter list).</summary>
     public static bool CanEmit(RecordDeclarationSyntax rec) => rec.ParameterList is { Parameters.Count: > 0 };
 
+    /// <summary>
+    /// Emits the record as a standalone TypeScript module — the structural <c>equals</c>/<c>with</c> use
+    /// <c>$eq</c>, imported from the runtime, and the class is exported so components can import it.
+    /// </summary>
+    public string EmitModule(RecordDeclarationSyntax rec) =>
+        "import { $eq } from \"@equantic/runtime\";\n\nexport " + Emit(rec) + "\n";
+
     public string Emit(RecordDeclarationSyntax rec)
     {
         var name = rec.Identifier.Text;

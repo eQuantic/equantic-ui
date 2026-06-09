@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.Models;
 
 namespace eQuantic.UI.Compiler.Parser;
@@ -49,6 +50,24 @@ public class ComponentParser
             }
         }
         
+        // Discover user data types: any positional record is emitted as a named JS class. Reactive —
+        // driven by the record declarations actually present, not a fixed list.
+        foreach (var recordDecl in root.DescendantNodes().OfType<RecordDeclarationSyntax>())
+        {
+            if (RecordTypeEmitter.CanEmit(recordDecl))
+            {
+                results.Add(new ComponentDefinition
+                {
+                    Name = recordDecl.Identifier.Text,
+                    SourcePath = sourcePath,
+                    SyntaxTree = tree,
+                    Namespace = ns ?? "",
+                    IsRecordType = true,
+                    RecordSyntax = recordDecl,
+                });
+            }
+        }
+
         // Find component class (extends StatefulComponent, StatelessComponent or HtmlElement)
         var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
         

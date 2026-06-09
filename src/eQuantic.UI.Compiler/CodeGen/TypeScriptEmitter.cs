@@ -395,13 +395,16 @@ public class TypeScriptEmitter
         var importsBuilder = new TypeScriptCodeBuilder();
         importsBuilder.Import(coreImports, "@equantic/runtime");
 
-        // Import user components (only those that are actual UI components with generated .ts files)
+        // Import user types that we actually emit as their own module: UI components AND data records
+        // (each gets a generated .ts file). The set is discovered by scanning the project — no fixed
+        // skip-list — so any referenced type that we emit is imported, and anything else is left alone.
         var knownComponents = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
+        var knownRecords = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
             if (userComp == component.Name) continue;
-            // Skip data/POCO types that aren't UI components (e.g., SelectOption, BreadcrumbItem)
-            if (knownComponents.Count > 0 && !knownComponents.Contains(userComp))
+            var isEmittedType = knownComponents.Contains(userComp) || knownRecords.Contains(userComp);
+            if (knownComponents.Count + knownRecords.Count > 0 && !isEmittedType)
                 continue;
             importsBuilder.Import(new[] { userComp }, $"./{userComp}");
         }
