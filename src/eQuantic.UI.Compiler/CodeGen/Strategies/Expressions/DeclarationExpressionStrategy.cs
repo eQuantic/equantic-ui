@@ -22,10 +22,11 @@ public class DeclarationExpressionStrategy : IConversionStrategy
         
         if (decl.Designation is ParenthesizedVariableDesignationSyntax deconstruction)
         {
-            var names = string.Join(", ", deconstruction.Variables
-                .OfType<SingleVariableDesignationSyntax>()
-                .Select(v => v.Identifier.Text));
-            return $"[{names}]";
+            // Array destructuring (tuples). Discards (`_`) keep their slot as a hole so the remaining
+            // names still line up positionally: `var (_, y) = (5, 7)` -> `[, y]`.
+            var names = deconstruction.Variables.Select(v =>
+                v is SingleVariableDesignationSyntax s && s.Identifier.Text != "_" ? s.Identifier.Text : "");
+            return $"[{string.Join(", ", names)}]";
         }
         
         if (decl.Designation is SingleVariableDesignationSyntax single)
