@@ -500,6 +500,14 @@ public static class UIExtensions
 public class UIOptions
 {
     internal List<Assembly> AssembliesToScan { get; } = new();
+
+    /// <summary>
+    /// Additional assemblies whose complex types are permitted as Server Action parameters,
+    /// beyond the scanned application assemblies. Use this to opt in DTOs declared in shared
+    /// libraries. Framework/system/third-party types are otherwise rejected by default.
+    /// </summary>
+    public HashSet<Assembly> AllowedDeserializationAssemblies { get; } = new();
+
     internal List<(Type ServiceType, Type ImplementationType)> AssetProviders { get; } = new();
     internal List<Action<IServiceCollection>> ServiceRegistrations { get; } = new();
     internal List<Action<IEndpointRouteBuilder>> EndpointConfigurations { get; } = new();

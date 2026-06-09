@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using eQuantic.UI.Server.Authorization;
@@ -30,6 +32,7 @@ public class ServerActionsMiddleware
     private readonly IServiceProvider _serviceProvider;
     private readonly IServerActionAuthorizationService _authorizationService;
     private readonly ILogger<ServerActionsMiddleware> _logger;
+    private readonly HashSet<Assembly> _allowedAssemblies;
 
     private const string ActionsPath = "/api/_equantic/actions";
 
@@ -43,6 +46,7 @@ public class ServerActionsMiddleware
         IServerActionRegistry registry,
         IServiceProvider serviceProvider,
         IServerActionAuthorizationService authorizationService,
+        UIOptions options,
         ILogger<ServerActionsMiddleware> logger)
     {
         _next = next;
@@ -50,6 +54,11 @@ public class ServerActionsMiddleware
         _serviceProvider = serviceProvider;
         _authorizationService = authorizationService;
         _logger = logger;
+
+        // Complex Server Action parameter types are only deserialized when declared in the
+        // application's own (scanned) assemblies or an explicitly opted-in assembly.
+        _allowedAssemblies = new HashSet<Assembly>(options.AssembliesToScan);
+        _allowedAssemblies.UnionWith(options.AllowedDeserializationAssemblies);
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -266,7 +275,7 @@ public class ServerActionsMiddleware
     /// <summary>
     /// Validates that a type is safe for deserialization.
     /// </summary>
-    private static bool IsAllowedType(Type type)
+    private bool IsAllowedType(Type type)
     {
         // Allow primitives and common types
         if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal) ||
@@ -311,26 +320,13 @@ public class ServerActionsMiddleware
             return true;
         }
 
-        // Allow classes/structs from the same assembly as the Server project
-        // or from the application's assemblies (custom DTOs)
-        // This is a permissive check - in stricter scenarios, maintain an explicit whitelist
+        // Complex types (DTOs/models) are allowed only when declared in the application's own
+        // scanned assemblies, or an assembly explicitly opted in via
+        // UIOptions.AllowedDeserializationAssemblies. This is an allow-list (secure by default):
+        // framework, system and third-party types are rejected unless opted in.
         if (type.IsClass || type.IsValueType)
         {
-            // Deny system types that could be dangerous
-            var ns = type.Namespace ?? "";
-            if (ns.StartsWith("System.Reflection") ||
-                ns.StartsWith("System.Runtime") ||
-                ns.StartsWith("System.Diagnostics") ||
-                ns.StartsWith("System.IO") ||
-                ns.StartsWith("System.Security") ||
-                ns.StartsWith("System.Threading") ||
-                ns.StartsWith("Microsoft."))
-            {
-                return false;
-            }
-
-            // Allow application types (DTOs, models, etc.)
-            return true;
+            return _allowedAssemblies.Contains(type.Assembly);
         }
 
         return false;
