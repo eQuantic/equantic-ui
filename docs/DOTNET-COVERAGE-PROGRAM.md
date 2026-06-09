@@ -78,9 +78,9 @@ Design notes:
   Reverse ✅; remaining — ToLookup, Join, GroupJoin, OrderBy.ThenBy stability edge cases ⬜.
 - **Collections**: List ✅, Dictionary ✅, HashSet ✅, Queue ✅, Stack ✅ (compat types), LinkedList ⬜,
   sorted collections ⬜.
-- **Types**: enum ✅, Guid ✅, DateTime ✅(tick-precise compat), TimeSpan ✅(tick-precise compat),
-  Nullable ⬜(partial), Tuple ⬜(expression form), record/struct value semantics ⬜, DateTimeOffset/
-  DateOnly/TimeOnly ⬜.
+- **Types**: enum ✅, Guid ✅, DateTime ✅, TimeSpan ✅, DateOnly ✅, TimeOnly ✅ (all tick-precise
+  compat), Nullable ⬜(partial), Tuple ⬜(expression form), record/struct value semantics ⬜,
+  DateTimeOffset ⬜.
 - **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function

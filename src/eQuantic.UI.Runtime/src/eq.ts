@@ -2,7 +2,7 @@ import { dec } from './utils/decimal';
 import { long } from './utils/long';
 import { round } from './utils/dotnet-math';
 import { format, parseEnum } from './utils/format';
-import { dateTime, timeSpan } from './utils/datetime';
+import { dateTime, timeSpan, dateOnly, timeOnly } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
 import { queue, stack } from './utils/collections';
 import { StyleBuilder } from './utils/style-builder';
@@ -26,7 +26,7 @@ export const $eq = {
   /** Text: number/string formatting and StringBuilder. */
   text: { format, stringBuilder },
   /** Date and time, tick-precise. */
-  time: { dateTime, timeSpan },
+  time: { dateTime, timeSpan, dateOnly, timeOnly },
   /** Enum parsing (member-name string). */
   enums: { parse: parseEnum },
   /** Collections — Queue (FIFO), Stack (LIFO). */

@@ -212,6 +212,23 @@ public class BinaryExpressionStrategy : IConversionStrategy
 
         if (lTs && rDt && op == "+") return $"{right}.add({left})"; // TimeSpan + DateTime (commutative)
 
+        // DateOnly/TimeOnly: comparisons + equality (no operator arithmetic modelled here).
+        bool lDo = IsNamed(lt, "System.DateOnly"), rDo = IsNamed(rt, "System.DateOnly");
+        bool lTo = IsNamed(lt, "System.TimeOnly"), rTo = IsNamed(rt, "System.TimeOnly");
+        if ((lDo && rDo) || (lTo && rTo))
+        {
+            return op switch
+            {
+                "==" => $"{left}.equals({right})",
+                "!=" => $"!{left}.equals({right})",
+                "<" => $"({left}.compareTo({right}) < 0)",
+                ">" => $"({left}.compareTo({right}) > 0)",
+                "<=" => $"({left}.compareTo({right}) <= 0)",
+                ">=" => $"({left}.compareTo({right}) >= 0)",
+                _ => null,
+            };
+        }
+
         if (lTs && rTs)
         {
             return op switch

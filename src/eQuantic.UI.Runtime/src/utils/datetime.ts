@@ -339,3 +339,153 @@ dateTime.parse = (text: string): DateTime => {
   if (m) return fromComponents(+m[3], +m[1], +m[2], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0));
   throw new Error(`Unrecognized DateTime format: '${text}'`);
 };
+
+// ---------------------------------------------------------------------------------------------
+// DateOnly (.NET 6+) — a calendar date with no time-of-day.
+// ---------------------------------------------------------------------------------------------
+
+export class DateOnly {
+  /** Days since 0001-01-01 (0001-01-01 = 0), matching .NET DateOnly.DayNumber. */
+  constructor(readonly dayNumber: number) {}
+
+  private civil() { return civilFromDays(this.dayNumber); }
+
+  get year(): number { return this.civil().year; }
+  get month(): number { return this.civil().month; }
+  get day(): number { return this.civil().day; }
+  get dayOfWeek(): number { return Number((BigInt(this.dayNumber) + 1n) % 7n); } // Sunday = 0
+  get dayOfYear(): number { return this.dayNumber - daysFromCivil(this.civil().year, 1, 1) + 1; }
+
+  addDays(value: number): DateOnly { return new DateOnly(this.dayNumber + Math.trunc(value)); }
+  addMonths(months: number): DateOnly {
+    const c = this.civil();
+    const i = c.month - 1 + months;
+    let year: number, month: number;
+    if (i >= 0) { month = (i % 12) + 1; year = c.year + idiv(i, 12); }
+    else { month = 12 + ((i + 1) % 12); year = c.year + idiv(i - 11, 12); }
+    return dateOnly(year, month, Math.min(c.day, daysInMonth(year, month)));
+  }
+  addYears(years: number): DateOnly { return this.addMonths(years * 12); }
+
+  compareTo(other: DateOnly): number {
+    return this.dayNumber < other.dayNumber ? -1 : this.dayNumber > other.dayNumber ? 1 : 0;
+  }
+  equals(other: DateOnly): boolean { return this.dayNumber === other.dayNumber; }
+
+  /** .NET invariant short date: `MM/dd/yyyy`. */
+  toString(pattern?: string): string {
+    const c = this.civil();
+    if (pattern) {
+      const map: Record<string, string> = {
+        yyyy: pad(c.year, 4), yy: pad(c.year % 100, 2),
+        MM: pad(c.month, 2), M: String(c.month), dd: pad(c.day, 2), d: String(c.day),
+      };
+      return pattern.replace(/yyyy|yy|MM|M|dd|d/g, (t) => map[t]);
+    }
+    return `${pad(c.month, 2)}/${pad(c.day, 2)}/${pad(c.year, 4)}`;
+  }
+
+  /** ISO `yyyy-MM-dd` (what System.Text.Json reads/writes for DateOnly). */
+  toJSON(): string {
+    const c = this.civil();
+    return `${pad(c.year, 4)}-${pad(c.month, 2)}-${pad(c.day, 2)}`;
+  }
+}
+
+interface DateOnlyFactory {
+  (year: number, month: number, day: number): DateOnly;
+  fromDayNumber(dayNumber: number): DateOnly;
+  fromDateTime(dt: DateTime): DateOnly;
+  minValue(): DateOnly;
+  maxValue(): DateOnly;
+  parse(text: string): DateOnly;
+}
+
+export const dateOnly = ((year: number, month: number, day: number) =>
+  new DateOnly(daysFromCivil(year, month, day))) as DateOnlyFactory;
+dateOnly.fromDayNumber = (n) => new DateOnly(n);
+dateOnly.fromDateTime = (dt) => new DateOnly(Number(dt.ticks / TICKS_PER_DAY));
+dateOnly.minValue = () => new DateOnly(0);
+dateOnly.maxValue = () => new DateOnly(daysFromCivil(9999, 12, 31));
+dateOnly.parse = (text: string): DateOnly => {
+  const t = text.trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);           // ISO yyyy-MM-dd
+  if (m) return dateOnly(+m[1], +m[2], +m[3]);
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(t);          // invariant MM/dd/yyyy
+  if (m) return dateOnly(+m[3], +m[1], +m[2]);
+  throw new Error(`Unrecognized DateOnly format: '${text}'`);
+};
+
+// ---------------------------------------------------------------------------------------------
+// TimeOnly (.NET 6+) — a time of day with no date. Backed by ticks in [0, TicksPerDay).
+// ---------------------------------------------------------------------------------------------
+
+export class TimeOnly {
+  constructor(readonly ticks: bigint) {}
+
+  get hour(): number { return Number((this.ticks / TICKS_PER_HOUR) % 24n); }
+  get minute(): number { return Number((this.ticks / TICKS_PER_MINUTE) % 60n); }
+  get second(): number { return Number((this.ticks / TICKS_PER_SECOND) % 60n); }
+  get millisecond(): number { return Number((this.ticks / TICKS_PER_MILLISECOND) % 1000n); }
+
+  /** Wraps within a 24h day, matching .NET TimeOnly.Add*. */
+  private wrap(deltaTicks: bigint): TimeOnly {
+    let t = (this.ticks + deltaTicks) % TICKS_PER_DAY;
+    if (t < 0n) t += TICKS_PER_DAY;
+    return new TimeOnly(t);
+  }
+  addHours(value: number): TimeOnly { return this.wrap(ticksFromUnit(value, TICKS_PER_HOUR)); }
+  addMinutes(value: number): TimeOnly { return this.wrap(ticksFromUnit(value, TICKS_PER_MINUTE)); }
+
+  compareTo(other: TimeOnly): number {
+    return this.ticks < other.ticks ? -1 : this.ticks > other.ticks ? 1 : 0;
+  }
+  equals(other: TimeOnly): boolean { return this.ticks === other.ticks; }
+
+  /** .NET invariant short time: `HH:mm`. */
+  toString(): string {
+    return `${pad(this.hour, 2)}:${pad(this.minute, 2)}`;
+  }
+
+  /** ISO `HH:mm:ss[.fffffff]` (what System.Text.Json reads/writes for TimeOnly). */
+  toJSON(): string {
+    let s = `${pad(this.hour, 2)}:${pad(this.minute, 2)}:${pad(this.second, 2)}`;
+    const frac = this.ticks % TICKS_PER_SECOND;
+    if (frac > 0n) s += '.' + frac.toString().padStart(7, '0').replace(/0+$/, '');
+    return s;
+  }
+}
+
+interface TimeOnlyFactory {
+  (hour: number, minute: number): TimeOnly;
+  (hour: number, minute: number, second: number): TimeOnly;
+  (hour: number, minute: number, second: number, millisecond: number): TimeOnly;
+  (ticks: bigint): TimeOnly;
+  fromTimeSpan(span: TimeSpan): TimeOnly;
+  minValue(): TimeOnly;
+  maxValue(): TimeOnly;
+  parse(text: string): TimeOnly;
+}
+
+function timeOnlyImpl(...args: number[] | [bigint]): TimeOnly {
+  if (args.length === 1 && typeof args[0] === 'bigint') return new TimeOnly(args[0]);
+  const n = args as number[];
+  const ticks =
+    BigInt(n[0]) * TICKS_PER_HOUR +
+    BigInt(n[1]) * TICKS_PER_MINUTE +
+    BigInt(n[2] ?? 0) * TICKS_PER_SECOND +
+    BigInt(n[3] ?? 0) * TICKS_PER_MILLISECOND;
+  return new TimeOnly(ticks);
+}
+
+export const timeOnly = timeOnlyImpl as TimeOnlyFactory;
+timeOnly.fromTimeSpan = (span) => new TimeOnly(((span.ticks % TICKS_PER_DAY) + TICKS_PER_DAY) % TICKS_PER_DAY);
+timeOnly.minValue = () => new TimeOnly(0n);
+timeOnly.maxValue = () => new TimeOnly(TICKS_PER_DAY - 1n);
+timeOnly.parse = (text: string): TimeOnly => {
+  const m = /^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?/.exec(text.trim());
+  if (!m) throw new Error(`Unrecognized TimeOnly format: '${text}'`);
+  const frac = m[4] ? BigInt(m[4].padEnd(7, '0').slice(0, 7)) : 0n;
+  return new TimeOnly(BigInt(+m[1]) * TICKS_PER_HOUR + BigInt(+m[2]) * TICKS_PER_MINUTE +
+    BigInt(+(m[3] ?? 0)) * TICKS_PER_SECOND + frac);
+};
