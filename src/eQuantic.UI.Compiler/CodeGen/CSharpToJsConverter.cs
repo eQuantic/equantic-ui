@@ -158,10 +158,13 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<TimeSpanStrategy>();
         _strategyRegistry.Register<RegexStrategy>();
         _strategyRegistry.Register<HashSetStrategy>();
-        
+        _strategyRegistry.Register<NumericConstantStrategy>();
+
         // Phase 7: Static Helpers & Async
         _strategyRegistry.Register<TaskMethodStrategy>();
         _strategyRegistry.Register<NumberMethodStrategy>();
+        _strategyRegistry.Register<BooleanMethodStrategy>();
+        _strategyRegistry.Register<ConvertStrategy>();
         // StringStaticStrategy is registered in primitives block? Checking order logic.
         // It's a Primitive strategy, so lets check where StringMethodStrategy is.
 

@@ -1,0 +1,93 @@
+# .NET Coverage Program — maximal C#→JS transpilation fidelity
+
+> Goal: transpile as much of the .NET/C# surface as possible with behavior identical to .NET;
+> where JS has no native equivalent, provide a faithful **.NET-compat runtime in TypeScript**; and
+> where conversion is genuinely impossible, **fail the build with a clear C# diagnostic**.
+> This program extends Phase 1 (see `docs/IMPLEMENTATION-PLAN.md`) and is driven by the conformance
+> harness.
+
+## The three mechanisms (every construct resolves to exactly one)
+
+1. **Native strategy** — emit idiomatic JS when the runtime has an equivalent
+   (`x.Where(...)` → `.filter(...)`, `"a".ToUpper()` → `.toUpperCase()`). Cheapest; preferred.
+2. **.NET-compat runtime helper** — when JS lacks the semantics, emit a call into a TypeScript
+   library that faithfully implements the .NET behavior (already done for `format`, `parseEnum`).
+   The transpiler emits `eq.<helper>(...)`; the helper ships in the runtime bundle.
+3. **Fail-on-unsupported** — when no faithful conversion exists (unsafe code, P/Invoke, reflection
+   emit, threading, filesystem on the client), the validator emits a build **error** with `file:line`
+   and a remediation hint. Never silently miscompile.
+
+## Methodology: the harness is the engine
+
+The conformance harness (`tests/eQuantic.UI.Conformance.Tests`) runs C# both as transpiled JS and as
+real .NET, and asserts identical results. We drive coverage by **flooding it with cases** across the
+.NET surface; each failure is triaged into one of the three mechanisms:
+
+```
+add conformance cases  ──▶  run  ──▶  failures
+                                        │
+                 ┌──────────────────────┼───────────────────────┐
+        native-fixable            needs .NET semantics      impossible
+        → fix/strategy            → TS compat helper         → fail-on-unsupported
+                 └──────────────────────┴───────────────────────┘
+                                        ▼
+                          green corpus = spec + regression net
+```
+
+The corpus simultaneously becomes the supported-subset spec (W1) and the permanent regression net.
+
+## The .NET-compat TypeScript runtime (`eq` namespace)
+
+A first-party library of faithful .NET implementations. Candidates, by need:
+
+| .NET concept | JS gap | Plan |
+|---|---|---|
+| `long` / `ulong` (Int64) | JS number is float64 → loses precision > 2^53 | map to **BigInt**; emit `BigInt` literals + `eq.long` ops |
+| `decimal` | no base-10 exact type | a `Decimal` class (exact), `eq.decimal` arithmetic + banker's rounding |
+| `int`/`short`/`byte` overflow | JS doesn't wrap | accept JS number for the common case; offer checked ops; **document** |
+| `char` | no char type (UTF-16 code unit) | represent as number where used arithmetically; string where textual |
+| `Math.Round` midpoint | JS rounds half-up | `eq.round` with MidpointRounding.ToEven (banker's) |
+| `string.Format` / `ToString(fmt)` | partial | `format` (exists) — extend specifiers (D, P, C culture-aware, custom) |
+| `Guid` | none | `eq.Guid` (parse/new/format/equality) |
+| `DateTime` / `DateTimeOffset` / `TimeSpan` | `Date` only, no formatting/arith parity | `eq.DateTime` / `eq.TimeSpan` (formatting via `format`, add/subtract, components) |
+| `Convert.ToX` / `int.Parse` / `TryParse` | loose / different errors | `eq.convert` / strict parse matching .NET (throw on invalid, radix, overflow) |
+| structural equality (records/structs) | reference equality | `eq.equals` (deep/structural) used by `==`, `Distinct`, `Contains`, dict keys |
+| `IEqualityComparer` / `GetHashCode` | none | `eq.hash` + comparer support where needed |
+| culture / `CultureInfo` | runtime locale | invariant by default; explicit culture pass-through |
+
+Design notes:
+- Helpers live in the runtime bundle and are imported on demand (the compiler tracks `UsedHelpers`).
+- The conformance harness imports the **real** helpers from the bundled runtime, so helper behavior
+  is validated against .NET, not re-implemented in the test.
+- Prefer the smallest faithful implementation; cite any deliberate divergence in the spec.
+
+## Coverage matrix (areas → status; filled in as the corpus grows)
+
+- **Operators / expressions**: arithmetic ✅, comparison ✅, logical ✅, ternary ✅, null-coalescing ✅,
+  bitwise ⬜, checked/unchecked ⬜, integer division ✅, shift ⬜.
+- **Numeric types**: int ✅(basic), double ✅(basic), decimal ⬜(needs helper), long ⬜(needs BigInt),
+  float ⬜, overflow ⬜, parsing/Convert ⬜.
+- **Strings**: core methods ✅, format specifiers ✅(F/X/N), padding/split/join ✅, StringBuilder ⬜,
+  interpolation ✅, comparison/IgnoreCase ⬜, char ops ⬜.
+- **Boolean / conversions**: bool ✅, `bool.Parse` ⬜, `Convert.ToBoolean/Int32/...` ⬜.
+- **LINQ**: ~22 operators ✅; remaining — GroupBy, ToDictionary, ToLookup, SelectMany, Zip, indexed
+  Select/Where, Join, GroupJoin, Min/MaxBy, Chunk, OrderBy.ThenBy stability, FirstOrDefault semantics ⬜.
+- **Collections**: List ✅, Dictionary ✅, HashSet ✅, Queue/Stack ⬜, LinkedList ⬜, sorted collections ⬜.
+- **Types**: enum ✅, Guid ⬜, DateTime/TimeSpan ⬜, Nullable ⬜(partial), Tuple ⬜, record/struct value
+  semantics ⬜.
+- **Control flow**: expression-level ✅; statement-level (if/for/while/foreach/switch/try) — needs the
+  block-evaluating harness mode ⬜.
+- **Unsupported (fail-on-unsupported)**: unsafe, pointers, P/Invoke, reflection emit, threading, IO,
+  `Span<T>`/`stackalloc` semantics beyond simple cases.
+
+## Prioritization (highest leverage first)
+1. **Numeric + conversions** (this is where silent miscompiles hide: long precision, decimal, parsing).
+2. **LINQ totality** (mostly native strategies; high everyday use).
+3. **Strings completeness** (mostly native; char/StringBuilder/comparison gaps).
+4. **Stand up the `eq` compat runtime** properly (Decimal, Int64/BigInt, Guid, DateTime/TimeSpan, Convert,
+   structural equality) — each unblocks a corpus area.
+5. **Statement-level harness mode** + **fail-on-unsupported** (W3) to close the loop.
+
+## Definition of done (per area)
+An area is "covered" when its conformance cases are green, every unsupported construct in it produces a
+build error (negative tests), and its row in the matrix is ✅ with any divergences documented in the spec.
