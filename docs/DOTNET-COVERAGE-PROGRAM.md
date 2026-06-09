@@ -95,9 +95,13 @@ Design notes:
   Tuple ✅ (arrays; element access by position `Item1` and by declared name `(int X, int Y).X` → index),
   record/struct/tuple value semantics ✅ (records & structs are plain objects, tuples are arrays;
   `==`/`!=`/`.Equals`/`Contains`/`Distinct` are structural via `$eq.equals`, `with` copies; positional
-  `new Point(1,2)` → `{x,y}`; deconstruction `var (a,b) = …` (tuples via array destructuring with
-  discard holes, records via object destructuring keyed by Deconstruct order). Follow-ups: user-defined
-  instance methods on records/structs (would need named-class emission), record-keyed dictionaries).
+  positional `new Point(1,2)`; deconstruction `var (a,b) = …` (tuples via array destructuring with
+  discard holes, records via object destructuring keyed by Deconstruct order). **Records now emit as
+  named JS classes** (Tier 1) — constructor + structural `equals` (delegated to by `$eq.equals`) +
+  prototype-preserving `with` + `toString` + **user instance methods**; `==`/`Contains`/`Distinct`/
+  deconstruction keep working unchanged. Non-record structs / tuples stay plain objects/arrays.
+  Remaining tiers: real build-pipeline emission + import wiring (Tier 2), SSR re-hydration of record
+  instances + generics/inheritance (Tier 3); record-keyed dictionaries.
 - **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function

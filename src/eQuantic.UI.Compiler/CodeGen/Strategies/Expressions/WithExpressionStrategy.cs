@@ -16,27 +16,30 @@ public class WithExpressionStrategy : IConversionStrategy
         var withExpr = (WithExpressionSyntax)node;
         var receiver = context.Converter.ConvertExpression(withExpr.Expression);
 
-        var sb = new StringBuilder();
-        sb.Append($"{{ ...{receiver}");
-
+        // Build the changed members as `camelKey: value` entries from the initializer.
+        var entries = new StringBuilder();
         if (withExpr.Initializer is InitializerExpressionSyntax initializer)
         {
             foreach (var expr in initializer.Expressions)
             {
                 if (expr is AssignmentExpressionSyntax assignment)
                 {
-                    sb.Append(", ");
-                    // The left side is a property name (`X`), not an expression to resolve — emit it
-                    // directly as a camelCased object key (matching how records/initializers are built).
-                    var left = (assignment.Left.ToString()).ToCamelCase();
-                    var right = context.Converter.ConvertExpression(assignment.Right);
-                    sb.Append($"{left}: {right}");
+                    if (entries.Length > 0) entries.Append(", ");
+                    // The left side is a property name (`X`) — emit it as a camelCased object key.
+                    var key = assignment.Left.ToString().ToCamelCase();
+                    var value = context.Converter.ConvertExpression(assignment.Right);
+                    entries.Append($"{key}: {value}");
                 }
             }
         }
 
-        sb.Append(" }");
-        return sb.ToString();
+        // Records are JS classes — copy via their generated `with` so the prototype (methods) survives.
+        // Other value shapes (non-record structs, anonymous types) are plain objects — spread is fine.
+        if (context.SemanticHelper.GetType(withExpr.Expression) is { IsRecord: true })
+        {
+            return $"{receiver}.with({{ {entries} }})";
+        }
+        return $"{{ ...{receiver}, {entries} }}";
     }
 
     public int Priority => 10;
