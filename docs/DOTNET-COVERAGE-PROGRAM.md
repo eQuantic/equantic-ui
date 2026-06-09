@@ -109,7 +109,10 @@ Design notes:
   structs** are all covered — a shared `ValueMembers` extraction (positional params + body
   auto-properties + public fields, in one canonical order) drives the constructor, equality, `with`,
   `toString` and the construction site (object-initializer mapped onto the constructor by member order,
-  with per-member defaults). Remaining: generics/inheritance, record-keyed dictionaries.
+  with per-member defaults). Record inheritance (`record Dog(…) : Animal(Name)` → `class Dog extends
+  Animal` with a `super(…)` call, only own members re-assigned) and generic records (`record Box<T>` —
+  type args erased) are covered too. Remaining: record-keyed dictionaries; semantic (base-walk)
+  component detection.
 - **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function
