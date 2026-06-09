@@ -16,10 +16,9 @@ public static class ConformanceRunner
 {
     // Runtime helpers the transpiler may emit; imported from the REAL bundled runtime.js (not a
     // re-implementation) so format/enum/etc. behavior is validated against what actually ships.
-    // .NET-compat helpers are now emitted as `$eq.*` (global in the browser; imported once here for the
-    // standalone harness JS). Only the remaining CSS utilities are still imported by name.
-    private static readonly string[] RuntimeHelpers =
-        { "StyleBuilder", "ClassBuilder", "joinClasses", "whenClass" };
+    // All runtime helpers (incl. CSS) are now emitted under the `$eq` namespace (global in the browser;
+    // imported once here for the standalone harness JS). No individual named helpers remain.
+    private static readonly string[] RuntimeHelpers = System.Array.Empty<string>();
 
     public static void AssertSameAsDotNet(string csharpExpression) =>
         AssertSameAsDotNet(csharpExpression, prelude: "");

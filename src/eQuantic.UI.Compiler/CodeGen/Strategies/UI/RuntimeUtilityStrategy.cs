@@ -65,14 +65,15 @@ public class RuntimeUtilityStrategy : IConversionStrategy
         var methodName = methodSymbol.Name;
         var tsMethodName = ToCamelCase(methodName);
 
-        // Track that this type is used (TypeScriptEmitter will handle import)
-        context.UsedHelpers.Add(typeName);
+        // Emitting $eq.* requires the single $eq import (resolved by the page import map).
+        context.UsedHelpers.Add(Eq.Import);
 
-        // Handle static method calls (e.g., ClassBuilder.Create())
+        // Static method calls (e.g. StyleBuilder.Create()) start the chain on the $eq.css namespace:
+        // StyleBuilder -> $eq.css.styleBuilder.
         if (methodSymbol.IsStatic)
         {
             var arguments = ConvertArguments(invocation, context);
-            return $"{typeName}.{tsMethodName}({arguments})";
+            return $"$eq.css.{ToCamelCase(typeName)}.{tsMethodName}({arguments})";
         }
 
         // Handle instance methods (chaining): builder.Add(...), builder.When(...), etc.

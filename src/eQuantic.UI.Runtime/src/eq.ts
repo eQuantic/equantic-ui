@@ -4,6 +4,8 @@ import { round } from './utils/dotnet-math';
 import { format, parseEnum } from './utils/format';
 import { dateTime, timeSpan } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
+import { StyleBuilder } from './utils/style-builder';
+import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
 /**
  * `$eq` — the single runtime namespace the transpiler emits for .NET-compat helpers, organised by
@@ -26,6 +28,8 @@ export const $eq = {
   time: { dateTime, timeSpan },
   /** Enum parsing (member-name string). */
   enums: { parse: parseEnum },
+  /** CSS class composition (the styling subsystem). */
+  css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;
 
 export type EqNamespace = typeof $eq;

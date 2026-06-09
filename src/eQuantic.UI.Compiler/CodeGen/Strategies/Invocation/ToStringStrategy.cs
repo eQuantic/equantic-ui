@@ -34,6 +34,7 @@ public class ToStringStrategy : IConversionStrategy
         if (args.Count >= 1)
         {
             var fmt = context.Converter.ConvertExpression(args[0].Expression);
+            context.UsedHelpers.Add(Eq.Import);
             return $"{Eq.Format}({caller}, {fmt})";
         }
 
