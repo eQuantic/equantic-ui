@@ -1,6 +1,6 @@
 import { Decimal, dec } from './decimal';
 import { long } from './long';
-import { DateTime, dateTime, TimeSpan, timeSpan } from './datetime';
+import { DateTime, dateTime, TimeSpan, timeSpan, DateOnly, dateOnly, TimeOnly, timeOnly } from './datetime';
 
 /**
  * Coerce a value arriving from SSR state (or any server payload) so it matches the runtime type of
@@ -37,6 +37,14 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
   // TimeSpan field: parse the .NET "c" string ([-][d.]hh:mm:ss[.fffffff]) back into the compat type.
   if (current instanceof TimeSpan && typeof incoming === 'string') {
     return timeSpan.parse(incoming);
+  }
+
+  // DateOnly / TimeOnly: parse the ISO string the server emitted back into the compat type.
+  if (current instanceof DateOnly && typeof incoming === 'string') {
+    return dateOnly.parse(incoming);
+  }
+  if (current instanceof TimeOnly && typeof incoming === 'string') {
+    return timeOnly.parse(incoming);
   }
 
   return incoming;

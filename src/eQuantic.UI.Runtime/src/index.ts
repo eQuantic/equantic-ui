@@ -31,7 +31,7 @@ export { format, parseEnum } from './utils/format';
 export { round } from './utils/dotnet-math';
 export { Decimal, dec } from './utils/decimal';
 export { long } from './utils/long';
-export { DateTime, dateTime, TimeSpan, timeSpan } from './utils/datetime';
+export { DateTime, dateTime, TimeSpan, timeSpan, DateOnly, dateOnly, TimeOnly, timeOnly } from './utils/datetime';
 export { StringBuilder, stringBuilder } from './utils/string-builder';
 export { Queue, queue, Stack, stack } from './utils/collections';
 export { $eq } from './eq';
