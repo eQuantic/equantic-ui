@@ -42,6 +42,9 @@
         <_DevRootDir>$(MSBuildThisFileDirectory)../../</_DevRootDir>
         <IsEQuanticDevMode
             Condition="Exists('$(_DevRootDir)eQuantic.UI.Core/eQuantic.UI.Core.csproj')">true</IsEQuanticDevMode>
+        <!-- Machine architecture: on macOS we pick the native arm64 bun on Apple Silicon, else the
+             x64-baseline build. (OSArchitecture reflects the real machine, even under Rosetta.) -->
+        <_EqOsArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_EqOsArch>
     </PropertyGroup>
 
     <!-- Core eQuantic.UI packages (automatically included by SDK).
@@ -60,8 +63,10 @@
             Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
         <PackageReference Include="eQuantic.UI.Runtime.Linux64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
             Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
+        <PackageReference Include="eQuantic.UI.Runtime.OsxArm64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
+            Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_EqOsArch)' == 'Arm64'" />
         <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
-            Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+            Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_EqOsArch)' != 'Arm64'" />
     </ItemGroup>
 
     <!-- Project references for Dev Mode -->
@@ -80,8 +85,11 @@
             Include="$(_DevRootDir)eQuantic.UI.Runtime.Linux64\eQuantic.UI.Runtime.Linux64.csproj"
             Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
         <ProjectReference
+            Include="$(_DevRootDir)eQuantic.UI.Runtime.OsxArm64\eQuantic.UI.Runtime.OsxArm64.csproj"
+            Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_EqOsArch)' == 'Arm64'" />
+        <ProjectReference
             Include="$(_DevRootDir)eQuantic.UI.Runtime.Osx64\eQuantic.UI.Runtime.Osx64.csproj"
-            Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+            Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_EqOsArch)' != 'Arm64'" />
     </ItemGroup>
 
     <ItemGroup>
