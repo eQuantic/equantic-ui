@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -37,8 +38,21 @@ public class HashSetStrategy : IConversionStrategy
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
-        if (node is ObjectCreationExpressionSyntax)
+        if (node is ObjectCreationExpressionSyntax creation)
         {
+            // new HashSet<T>{ 1, 2, 3 } -> new Set([1, 2, 3])
+            if (creation.Initializer is { Expressions.Count: > 0 } init)
+            {
+                var elements = init.Expressions.Select(e => context.Converter.ConvertExpression(e));
+                return $"new Set([{string.Join(", ", elements)}])";
+            }
+
+            // new HashSet<T>(existingEnumerable) -> new Set(existingEnumerable)
+            if (creation.ArgumentList is { Arguments.Count: 1 } argList)
+            {
+                return $"new Set({context.Converter.ConvertExpression(argList.Arguments[0].Expression)})";
+            }
+
             return "new Set()";
         }
         

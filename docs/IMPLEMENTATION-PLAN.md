@@ -113,12 +113,16 @@ contract the harness and the validator enforce.
 proving float division is *not* truncated). *Acceptance met: the loop runs green.*
 
 **M1 — Seed corpus + regression backfill (W2 + W5). 🔄 In progress.**
-73 cases green across arithmetic, strings, LINQ, expression-level control flow, Math and enums, plus
-regressions for integer division, Math.Truncate/Ceiling/Round, the switch var-pattern and the
-enum-as-string representation (#13). The harness already paid for itself: it surfaced two
-previously-unknown transpiler bugs — array creation (`new[]{…}` / `new int[]{…}`) was emitted verbatim
-(invalid JS), and array `.Contains` emitted `.contains` instead of `.includes` — both fixed
-(ArrayCreationStrategy + a receiver-type check in ContainsStrategy).
+86 cases green across arithmetic, strings, LINQ, expression-level control flow, Math, enums and
+collections (dictionaries/sets/aggregations), plus regressions for integer division,
+Math.Truncate/Ceiling/Round, the switch var-pattern and the enum-as-string representation (#13).
+The harness has already paid for itself several times over — it surfaced **four** previously-unknown
+transpiler bugs, all now fixed:
+- array creation (`new[]{…}` / `new int[]{…}`) emitted verbatim → invalid JS (ArrayCreationStrategy);
+- array `.Contains` emitted `.contains` not `.includes` (receiver-type check in ContainsStrategy);
+- `new HashSet<T>{…}` dropped its initializer → `new Set()` instead of `new Set([…])` (HashSetStrategy);
+- `.Count` always emitted `.length`, wrong for sets (`.size`) and dictionaries (`Object.keys(x).length`)
+  (type-aware MemberAccessStrategy).
 
 The harness now supports a **shared type-declaration prelude** (e.g. an enum defined for both the
 transpiler's semantic model and the .NET evaluator) and serializes .NET objects in **camelCase** to

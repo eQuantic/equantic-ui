@@ -44,10 +44,26 @@ public class MemberAccessStrategy : IConversionStrategy
         if (expr == "DateTime" && (name == "Now" || name == "Today")) return "new Date()";
         if (expr == "Guid" && name == "Empty") return "''";
 
+        // .Count is type-dependent: Set -> .size, Dictionary -> Object.keys(x).length,
+        // List/array/ICollection -> .length.
+        if (name == "Count")
+        {
+            var def = context.SemanticHelper.GetType(memberAccess.Expression)?.OriginalDefinition?.ToString() ?? "";
+            if (def.StartsWith("System.Collections.Generic.HashSet") ||
+                def.StartsWith("System.Collections.Generic.ISet") ||
+                def.StartsWith("System.Collections.Generic.IReadOnlySet"))
+                return $"{expr}.size";
+            if (def.StartsWith("System.Collections.Generic.Dictionary") ||
+                def.StartsWith("System.Collections.Generic.IDictionary") ||
+                def.StartsWith("System.Collections.Generic.IReadOnlyDictionary"))
+                return $"Object.keys({expr}).length";
+            return $"{expr}.length";
+        }
+
         name = name switch
         {
             "Length" => "length",
-            "Count" => "length", // Arrays/Lists
+            "Count" => "length", // Arrays/Lists (fallback when type is unknown)
             _ => ToCamelCase(name)
         };
 

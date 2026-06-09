@@ -134,4 +134,18 @@ public class BugHuntFixesTests
         // Found by the conformance harness: array Contains used to emit `.contains` (not a function).
         TestHelper.ConvertExpression("new[]{1,2,3}.Contains(2)").Should().Be("[1, 2, 3].includes(2)");
     }
+
+    [Fact]
+    public void HashSetInitializer_KeepsElements()
+    {
+        // Found by the conformance harness: HashSet initializer values were dropped (new Set()).
+        TestHelper.ConvertExpression("new HashSet<int>{1,2,3}").Should().Be("new Set([1, 2, 3])");
+    }
+
+    [Fact]
+    public void DictionaryCount_UsesObjectKeysLength()
+    {
+        // Found by the conformance harness: Dictionary.Count emitted `.length` (objects have none).
+        TestHelper.ConvertExpression("dict.Count").Should().Be("Object.keys(this.dict).length");
+    }
 }
