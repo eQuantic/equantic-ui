@@ -91,13 +91,13 @@ public class ComponentCompiler
         
         try
         {
-            // User data type (record) — emit as a standalone named-class module.
-            if (component.IsRecordType && component.RecordSyntax != null)
+            // User value type (record/struct) — emit as a standalone named-class module.
+            if (component.IsRecordType && component.ValueTypeSyntax != null)
             {
                 var recordConverter = new CSharpToJsConverter();
                 if (component.SyntaxTree != null)
                     recordConverter.SetSemanticModel(_semanticModelProvider.GetSemanticModel(component.SyntaxTree));
-                result.TypeScript = new RecordTypeEmitter(recordConverter).EmitModule(component.RecordSyntax);
+                result.TypeScript = new RecordTypeEmitter(recordConverter).EmitModule(component.ValueTypeSyntax);
                 result.Success = true;
                 return result;
             }

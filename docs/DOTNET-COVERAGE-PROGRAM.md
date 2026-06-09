@@ -105,8 +105,11 @@ Design notes:
   record **reactively import it** (registry built by scanning — no hardcoded type list). Tier 3 (SSR) ✅
   — `hydrateValue` rebuilds a record instance from the plain SSR JSON on the field's prototype (witness
   = the field default), recursively, so nested records and compat-typed members are restored and the
-  instance methods / `instanceof` survive hydration. Remaining: plain structs / body records,
-  generics/inheritance, record-keyed dictionaries.
+  instance methods / `instanceof` survive hydration. Records (positional **and body**) and **plain
+  structs** are all covered — a shared `ValueMembers` extraction (positional params + body
+  auto-properties + public fields, in one canonical order) drives the constructor, equality, `with`,
+  `toString` and the construction site (object-initializer mapped onto the constructor by member order,
+  with per-member defaults). Remaining: generics/inheritance, record-keyed dictionaries.
 - **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function

@@ -24,15 +24,15 @@ public static class Transpiler
 
         var (tree, converter) = Compile("return 0;", prelude);
         var emitter = new RecordTypeEmitter(converter);
-        var records = tree.GetRoot()
+        var valueTypes = tree.GetRoot()
             .DescendantNodes()
-            .OfType<RecordDeclarationSyntax>()
+            .OfType<TypeDeclarationSyntax>()
             .Where(RecordTypeEmitter.CanEmit)
             .ToList();
 
-        return records.Count == 0
+        return valueTypes.Count == 0
             ? string.Empty
-            : string.Join("\n", records.Select(emitter.Emit)) + "\n";
+            : string.Join("\n", valueTypes.Select(emitter.Emit)) + "\n";
     }
 
     public static string TranspileExpression(string csharpExpression, string prelude = "")

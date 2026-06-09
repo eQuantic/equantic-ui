@@ -39,19 +39,12 @@ public class ObjectCreationStrategy : IConversionStrategy
         var typeName = creation.Type.ToString();
         var createdType = context.SemanticHelper.GetType(creation);
 
-        // Records are emitted as named JS classes (they can carry instance methods) — construct via `new`.
-        if (createdType is { IsRecord: true })
+        // Records and user structs are emitted as named JS classes (they carry instance methods) —
+        // construct via `new`, mapping positional args and any object initializer onto the constructor.
+        if (createdType is { IsRecord: true }
+            || (createdType is { TypeKind: TypeKind.Struct } && createdType.IsStructuralValueType()))
         {
-            var ctorArgs = creation.ArgumentList == null
-                ? string.Empty
-                : string.Join(", ", creation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
-            return $"new {createdType.Name}({ctorArgs})";
-        }
-
-        // Non-record structs / value tuples stay plain objects (value-shaped, no instance methods).
-        if (createdType.IsStructuralValueType())
-        {
-            return BuildValueObject(creation, context);
+            return BuildValueTypeConstruction(creation, createdType, context);
         }
 
         var arguments = "";
@@ -109,45 +102,60 @@ public class ObjectCreationStrategy : IConversionStrategy
     }
 
     /// <summary>
-    /// Builds the plain-object form of a record/struct construction. Positional arguments are named
-    /// after the matched constructor's parameters (camelCased); named arguments and an object
-    /// initializer (<c>{ X = 1 }</c>) contribute their members directly.
+    /// Builds a <c>new T(...)</c> construction for a record/struct, mapping positional arguments and any
+    /// object initializer (<c>{ Name = … }</c>) onto the constructor's positional value members (in the
+    /// type's declaration order). Members left unset before the last supplied one get their default
+    /// literal; trailing unset members are omitted (the constructor's parameter defaults cover them).
     /// </summary>
-    private static string BuildValueObject(ObjectCreationExpressionSyntax creation, ConversionContext context)
+    private static string BuildValueTypeConstruction(ObjectCreationExpressionSyntax creation, ITypeSymbol type, ConversionContext context)
     {
-        var parts = new List<string>();
-        var ctor = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
+        var declSyntax = type.DeclaringSyntaxReferences
+            .Select(r => r.GetSyntax())
+            .OfType<TypeDeclarationSyntax>()
+            .FirstOrDefault();
 
+        // No declaration available (external type) — best effort: positional args as-is.
+        if (declSyntax == null)
+        {
+            var simple = creation.ArgumentList == null
+                ? string.Empty
+                : string.Join(", ", creation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
+            return $"new {type.Name}({simple})";
+        }
+
+        var members = declSyntax.ValueMembers();
+        var values = new string?[members.Count];
+
+        // Positional constructor arguments fill the leading members.
         if (creation.ArgumentList != null)
         {
             var args = creation.ArgumentList.Arguments;
-            for (var i = 0; i < args.Count; i++)
-            {
-                var value = context.Converter.ConvertExpression(args[i].Expression);
-                string name;
-                if (args[i].NameColon != null)
-                    name = args[i].NameColon!.Name.Identifier.Text;          // explicit `x: value`
-                else if (ctor != null && i < ctor.Parameters.Length)
-                    name = ctor.Parameters[i].Name;                          // positional -> param name
-                else
-                    name = $"item{i + 1}";                                   // fallback (untyped)
-                parts.Add($"{name.ToCamelCase()}: {value}");
-            }
+            for (var i = 0; i < args.Count && i < members.Count; i++)
+                values[i] = context.Converter.ConvertExpression(args[i].Expression);
         }
 
+        // Object initializer `{ Name = …, Age = … }` fills the named members by position.
         if (creation.Initializer != null)
         {
             foreach (var expr in creation.Initializer.Expressions)
             {
                 if (expr is AssignmentExpressionSyntax assignment)
                 {
-                    var value = context.Converter.ConvertExpression(assignment.Right);
-                    parts.Add($"{(assignment.Left.ToString()).ToCamelCase()}: {value}");
+                    var key = assignment.Left.ToString().ToCamelCase();
+                    var idx = -1;
+                    for (var i = 0; i < members.Count; i++) if (members[i].Js == key) { idx = i; break; }
+                    if (idx >= 0) values[idx] = context.Converter.ConvertExpression(assignment.Right);
                 }
             }
         }
 
-        return parts.Count == 0 ? "{}" : "{ " + string.Join(", ", parts) + " }";
+        var lastSet = -1;
+        for (var i = 0; i < values.Length; i++) if (values[i] != null) lastSet = i;
+
+        var ctorArgs = new List<string>();
+        for (var i = 0; i <= lastSet; i++) ctorArgs.Add(values[i] ?? members[i].Default);
+
+        return $"new {type.Name}({string.Join(", ", ctorArgs)})";
     }
 
     private string ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)

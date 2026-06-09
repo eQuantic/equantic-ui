@@ -106,15 +106,15 @@ public class ComponentDefinition
     public HashSet<string> UsedHelpers { get; set; } = new();
 
     /// <summary>
-    /// True when this definition is a user data type (a positional record) emitted as a named JS class
-    /// rather than a UI component. Discovered by scanning for record declarations.
+    /// True when this definition is a user value type (a record or struct) emitted as a named JS class
+    /// rather than a UI component. Discovered by scanning for record/struct declarations.
     /// </summary>
     public bool IsRecordType { get; set; }
 
     /// <summary>
-    /// The record declaration syntax, when <see cref="IsRecordType"/> is true.
+    /// The record/struct declaration syntax, when <see cref="IsRecordType"/> is true.
     /// </summary>
-    public Microsoft.CodeAnalysis.CSharp.Syntax.RecordDeclarationSyntax? RecordSyntax { get; set; }
+    public Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax? ValueTypeSyntax { get; set; }
 }
 
 /// <summary>
