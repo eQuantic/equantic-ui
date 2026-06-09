@@ -98,7 +98,9 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<GroupByStrategy>();
         _strategyRegistry.Register<AggregateStrategy>();
         _strategyRegistry.Register<ToDictionaryStrategy>();
+        _strategyRegistry.Register<ToLookupStrategy>();
         _strategyRegistry.Register<JoinStrategy>();
+        _strategyRegistry.Register<GroupJoinStrategy>();
         _strategyRegistry.Register<ZipStrategy>();
         _strategyRegistry.Register<ConcatStrategy>();
         _strategyRegistry.Register<UnionStrategy>();
