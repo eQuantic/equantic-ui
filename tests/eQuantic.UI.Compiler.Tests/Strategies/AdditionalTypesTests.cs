@@ -7,11 +7,12 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 public class AdditionalTypesTests
 {
     [Fact]
-    public void DateTime_Now_Static_ConvertsToNewDate()
+    public void DateTime_Now_Static_ConvertsToCompatFactory()
     {
+        // DateTime now maps to the tick-precise `dateTime` compat type, not a lossy native Date.
         var code = "DateTime.Now";
         var js = ConvertExpression(code);
-        Assert.Equal("new Date()", js);
+        Assert.Equal("dateTime.now()", js);
     }
     
     // Instance members require semantic model - moved to integration tests
@@ -26,11 +27,12 @@ public class AdditionalTypesTests
     */
 
     [Fact]
-    public void TimeSpan_FromSeconds_ConvertsToMilliseconds()
+    public void TimeSpan_FromSeconds_ConvertsToCompatFactory()
     {
+        // TimeSpan now maps to the tick-precise `timeSpan` compat type, not a bare millisecond number.
         var code = "TimeSpan.FromSeconds(5)";
         var js = ConvertExpression(code);
-        Assert.Equal("(5 * 1000)", js);
+        Assert.Equal("timeSpan.fromSeconds(5)", js);
     }
     
     [Fact]

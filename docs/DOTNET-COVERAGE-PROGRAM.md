@@ -74,8 +74,9 @@ Design notes:
   Chunk/Min·MaxBy/Take(While)/Skip(While)/Aggregate/Sum/Min/Max/Average/Count/Any/All/First/Last/Concat/
   Reverse ✅; remaining — ToLookup, Join, GroupJoin, OrderBy.ThenBy stability edge cases ⬜.
 - **Collections**: List ✅, Dictionary ✅, HashSet ✅, Queue/Stack ⬜, LinkedList ⬜, sorted collections ⬜.
-- **Types**: enum ✅, Guid ⬜, DateTime/TimeSpan ⬜, Nullable ⬜(partial), Tuple ⬜, record/struct value
-  semantics ⬜.
+- **Types**: enum ✅, Guid ✅, DateTime ✅(tick-precise compat), TimeSpan ✅(tick-precise compat),
+  Nullable ⬜(partial), Tuple ⬜(expression form), record/struct value semantics ⬜, DateTimeOffset/
+  DateOnly/TimeOnly ⬜.
 - **Control flow**: expression-level ✅; statement-level (if/for/while/foreach/switch/try) — needs the
   block-evaluating harness mode ⬜.
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
@@ -87,8 +88,8 @@ Design notes:
 1. **Numeric + conversions** (this is where silent miscompiles hide: long precision, decimal, parsing).
 2. **LINQ totality** (mostly native strategies; high everyday use).
 3. **Strings completeness** (mostly native; char/StringBuilder/comparison gaps).
-4. **Stand up the `eq` compat runtime** properly (Decimal, Int64/BigInt, Guid, DateTime/TimeSpan, Convert,
-   structural equality) — each unblocks a corpus area.
+4. **Stand up the `eq` compat runtime** properly — Decimal ✅, Int64/BigInt ✅, Convert ✅, DateTime ✅,
+   TimeSpan ✅, Guid ✅. Remaining: structural equality, DateTimeOffset/DateOnly/TimeOnly.
 5. **Statement-level harness mode** (W3) to close the loop. **Fail-on-unsupported** ✅ landed.
 
 ## Definition of done (per area)

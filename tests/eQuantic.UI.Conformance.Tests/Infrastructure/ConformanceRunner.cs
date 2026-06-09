@@ -17,7 +17,7 @@ public static class ConformanceRunner
     // Runtime helpers the transpiler may emit; imported from the REAL bundled runtime.js (not a
     // re-implementation) so format/enum/etc. behavior is validated against what actually ships.
     private static readonly string[] RuntimeHelpers =
-        { "format", "parseEnum", "round", "dec", "long", "StyleBuilder", "ClassBuilder", "joinClasses", "whenClass" };
+        { "format", "parseEnum", "round", "dec", "long", "dateTime", "timeSpan", "StyleBuilder", "ClassBuilder", "joinClasses", "whenClass" };
 
     public static void AssertSameAsDotNet(string csharpExpression) =>
         AssertSameAsDotNet(csharpExpression, prelude: "");
@@ -45,7 +45,9 @@ public static class ConformanceRunner
     /// </summary>
     private static string BuildHelperImport(string js)
     {
-        var used = RuntimeHelpers.Where(h => Regex.IsMatch(js, $@"\b{h}\(")).ToArray();
+        // Match both call form `h(` (factories like dec(), dateTime()) and static-access form `h.`
+        // (e.g. dateTime.now(), timeSpan.fromSeconds()), so statics get imported too.
+        var used = RuntimeHelpers.Where(h => Regex.IsMatch(js, $@"\b{h}[(.]")).ToArray();
         if (used.Length == 0) return string.Empty;
 
         var runtimeUrl = RuntimeJsUrl()

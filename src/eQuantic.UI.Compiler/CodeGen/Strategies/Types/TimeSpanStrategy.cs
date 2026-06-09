@@ -1,79 +1,112 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
-/// Strategy for TimeSpan.
-/// Handles: 
-/// - TimeSpan.FromSeconds(x) -> x * 1000
-/// - TimeSpan.TotalMilliseconds -> value
+/// Maps <c>System.TimeSpan</c> to the runtime <c>TimeSpan</c> compat type (tick-precise, .NET "c"
+/// formatting). Construction and statics (<c>FromSeconds</c>, …) route through the <c>timeSpan</c>
+/// factory; instance members/methods become camelCase calls. Operators are handled by
+/// BinaryExpressionStrategy. Priority 15, gated on the semantic type.
 /// </summary>
 public class TimeSpanStrategy : IConversionStrategy
 {
+    private const string TypeName = "System.TimeSpan";
+
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        if (node is InvocationExpressionSyntax inv && inv.Expression is MemberAccessExpressionSyntax ma)
+        switch (node)
         {
-             var symbol = context.SemanticHelper.GetSymbol(ma);
-             if (symbol != null) return symbol.ContainingType?.ToDisplayString() == "System.TimeSpan";
-             
-             // Heuristic
-             return ma.Expression.ToString() == "TimeSpan";
+            case ObjectCreationExpressionSyntax oc:
+                return IsType(context.SemanticHelper.GetType(oc)) || oc.Type.ToString() == "TimeSpan";
+
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
+                return IsTimeSpanMember(ma, context);
+
+            case MemberAccessExpressionSyntax member:
+                return IsTimeSpanMember(member, context);
+
+            default:
+                return false;
         }
-        
-        if (node is MemberAccessExpressionSyntax memberAccess)
-        {
-             var symbol = context.SemanticHelper.GetSymbol(node);
-             if (symbol != null) return symbol.ContainingType?.ToDisplayString() == "System.TimeSpan";
-             
-             // Heuristic
-             return memberAccess.Expression.ToString() == "TimeSpan";
-        }
-        
-        return false;
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
-        if (node is InvocationExpressionSyntax invocation)
+        switch (node)
         {
-            var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-            var name = memberAccess.Name.Identifier.Text;
-            var args = invocation.ArgumentList.Arguments;
-            
-            var isStatic = context.SemanticHelper.IsStatic(memberAccess) || memberAccess.Expression.ToString() == "TimeSpan";
-            
-            if (isStatic)
-            {
-                var val = args.Count > 0 ? context.Converter.ConvertExpression(args[0].Expression) : "0";
-                
-                return name switch
-                {
-                    "FromMilliseconds" => val,
-                    "FromSeconds" => $"({val} * 1000)",
-                    "FromMinutes" => $"({val} * 60000)",
-                    "FromHours" => $"({val} * 3600000)",
-                    "FromDays" => $"({val} * 86400000)",
-                    _ => $"{val}" 
-                };
-            }
-        }
-        else if (node is MemberAccessExpressionSyntax memberAccess)
-        {
-            var expr = context.Converter.ConvertExpression(memberAccess.Expression);
-            var name = memberAccess.Name.Identifier.Text;
-            
-            return name switch
-            {
-                "TotalMilliseconds" => expr,
-                "TotalSeconds" => $"({expr} / 1000)",
-                _ => expr
-            };
-        }
+            case ObjectCreationExpressionSyntax oc:
+                context.UsedHelpers.Add("timeSpan");
+                return $"timeSpan({ConvertArgs(oc.ArgumentList, context)})";
 
-        return node.ToString();
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
+            {
+                var name = ma.Name.Identifier.Text;
+                var args = ConvertArgs(inv.ArgumentList, context);
+                if (IsStaticAccess(ma, context))
+                {
+                    context.UsedHelpers.Add("timeSpan");
+                    return $"timeSpan.{Camel(name)}({args})";
+                }
+                var receiver = context.Converter.ConvertExpression(ma.Expression);
+                return $"{receiver}.{Camel(name)}({args})";
+            }
+
+            case MemberAccessExpressionSyntax member:
+            {
+                var name = member.Name.Identifier.Text;
+                if (IsStaticAccess(member, context))
+                {
+                    // Static properties (Zero/MinValue/MaxValue). Zero is a field, the others methods.
+                    context.UsedHelpers.Add("timeSpan");
+                    return name == "Zero" ? "timeSpan.zero" : $"timeSpan.{Camel(name)}()";
+                }
+                var receiver = context.Converter.ConvertExpression(member.Expression);
+                return $"{receiver}.{Camel(name)}";
+            }
+
+            default:
+                return node.ToString();
+        }
     }
 
-    public int Priority => 10;
+    private static bool IsTimeSpanMember(MemberAccessExpressionSyntax ma, ConversionContext context)
+    {
+        var symbol = context.SemanticHelper.GetSymbol(ma);
+        if (symbol?.ContainingType != null)
+            return symbol.ContainingType.ToDisplayString() == TypeName;
+
+        if (ma.Expression.ToString() == "TimeSpan") return true;
+        return IsType(context.SemanticHelper.GetType(ma.Expression));
+    }
+
+    private static bool IsStaticAccess(MemberAccessExpressionSyntax ma, ConversionContext context)
+    {
+        var symbol = context.SemanticHelper.GetSymbol(ma);
+        if (symbol != null) return symbol.IsStatic;
+        return ma.Expression.ToString() == "TimeSpan";
+    }
+
+    private static bool IsType(ITypeSymbol? type)
+    {
+        if (type is INamedTypeSymbol named
+            && named.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T
+            && named.TypeArguments.Length == 1)
+        {
+            type = named.TypeArguments[0];
+        }
+        return type?.ToDisplayString() == TypeName;
+    }
+
+    private static string ConvertArgs(ArgumentListSyntax? argumentList, ConversionContext context)
+    {
+        if (argumentList == null || argumentList.Arguments.Count == 0) return string.Empty;
+        return string.Join(", ", argumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
+    }
+
+    private static string Camel(string name) =>
+        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
+
+    public int Priority => 15;
 }
