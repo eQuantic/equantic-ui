@@ -41,11 +41,11 @@ public class BugHuntFixesTests
     }
 
     [Fact]
-    public void MathRound_WithPrecision_EmulatesDigits()
+    public void MathRound_RoutesThroughBankersRoundingHelper()
     {
-        var result = TestHelper.ConvertExpression("Math.Round(Total, 2)");
-        result.Should().Contain("Math.round");
-        result.Should().Contain("10 ** (2)");
+        // Math.Round uses banker's rounding + a digit count; both go through the runtime `round` helper.
+        TestHelper.ConvertExpression("Math.Round(Total, 2)").Should().Be("round(this.total, 2)");
+        TestHelper.ConvertExpression("Math.Round(Total)").Should().Be("round(this.total)");
     }
 
     [Fact]

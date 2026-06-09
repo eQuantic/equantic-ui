@@ -28,6 +28,7 @@ export type { ServerActionResponse } from './core/server-actions';
 
 // Utils
 export { format, parseEnum } from './utils/format';
+export { round } from './utils/dotnet-math';
 export { StyleBuilder } from './utils/style-builder';
 export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
@@ -41,10 +42,7 @@ export { RenderManager } from './dom/renderer';
 /**
  * Mount a component to a DOM element
  */
-export function mount(
-  component: { mount(container: HTMLElement): void },
-  selector: string,
-): void {
+export function mount(component: { mount(container: HTMLElement): void }, selector: string): void {
   const container = document.querySelector(selector);
   if (!container) {
     throw new Error(`Container not found: ${selector}`);

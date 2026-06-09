@@ -47,10 +47,14 @@ public class MathStrategy : IConversionStrategy
             return $"Math.min(Math.max({argsList[0]}, {argsList[1]}), {argsList[2]})";
         }
 
-        // Math.Round(x, digits): JS Math.round takes no precision argument, so emulate it.
-        if (methodName == "Round" && argsList.Count >= 2)
+        // Math.Round uses banker's rounding (MidpointRounding.ToEven) and supports a digit count —
+        // neither matches JS Math.round. Route through the runtime `round` compat helper.
+        if (methodName == "Round" && argsList.Count >= 1)
         {
-            return $"(Math.round(({argsList[0]}) * 10 ** ({argsList[1]})) / 10 ** ({argsList[1]}))";
+            context.UsedHelpers.Add("round");
+            return argsList.Count >= 2
+                ? $"round({argsList[0]}, {argsList[1]})"
+                : $"round({argsList[0]})";
         }
 
         // Standard conversion: map .NET method names that differ from JS, else camelCase.
