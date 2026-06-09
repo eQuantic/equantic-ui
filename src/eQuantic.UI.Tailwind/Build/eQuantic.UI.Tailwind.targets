@@ -1,16 +1,22 @@
 <Project>
 
-    <Target Name="BuildCSS" AfterTargets="CompileEQuanticUI" DependsOnTargets="ResolveBunPath">
-        <PropertyGroup>
-            <TailwindInput>./src/styles.css</TailwindInput>
-            <TailwindOutput>./wwwroot/css/app.css</TailwindOutput>
-        </PropertyGroup>
+    <PropertyGroup>
+        <!-- Pin the Tailwind CLI major for reproducible builds; set TailwindCliVersion to a full
+             version to lock it exactly. (@latest could cross a major and break the build.) -->
+        <TailwindCliVersion Condition="'$(TailwindCliVersion)' == ''">4</TailwindCliVersion>
+        <TailwindInput Condition="'$(TailwindInput)' == ''">$(MSBuildProjectDirectory)/src/styles.css</TailwindInput>
+        <TailwindOutput Condition="'$(TailwindOutput)' == ''">$(MSBuildProjectDirectory)/wwwroot/css/app.css</TailwindOutput>
+    </PropertyGroup>
 
-        <!-- Use embedded Bun to run Tailwind CLI (True Zero-Config) -->
-        <Message Text="eQuantic.UI.Tailwind: Generating CSS (via Bun)..." Importance="High" />
-        <MakeDir Directories="./wwwroot/_equantic" />
+    <Target Name="BuildCSS" AfterTargets="CompileEQuanticUI" DependsOnTargets="ResolveBunPath">
+        <!-- Use embedded Bun to run the Tailwind CLI (zero Node). bun x downloads the pinned CLI on
+             first use (cached afterwards). -->
+        <Message Text="eQuantic.UI.Tailwind: generating CSS (bun x @tailwindcss/cli@$(TailwindCliVersion))..." Importance="High" />
+        <!-- Create the OUTPUT directory (previously created ./wwwroot/_equantic, which is not where
+             the CSS is written). -->
+        <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(TailwindOutput)'))" />
         <Exec
-            Command="&quot;$(BunPath)&quot; x @tailwindcss/cli@latest -i $(TailwindInput) -o $(TailwindOutput)" />
+            Command="&quot;$(BunPath)&quot; x @tailwindcss/cli@$(TailwindCliVersion) -i &quot;$(TailwindInput)&quot; -o &quot;$(TailwindOutput)&quot;" />
     </Target>
 
 </Project>
