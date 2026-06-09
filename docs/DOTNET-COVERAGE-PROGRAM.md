@@ -83,7 +83,8 @@ Design notes:
   Chunk/Min·MaxBy/Take(While)/Skip(While)/Aggregate/Sum/Min/Max/Average/Count/Any/All/First/Last/Concat/
   Reverse ✅; Join (order-preserving hash join), GroupJoin (left/group join), ToLookup ✅ (primitive
   keys); OrderBy/OrderByDescending + ThenBy/ThenByDescending ✅ (single stable composite sort, source
-  copied); remaining — ILookup/IGrouping indexer ⬜.
+  copied); IGrouping ✅ (each group is the items array + a `key` prop — iterable, `g.Key`, `g.Sum()`,
+  etc., first-occurrence order); remaining — ILookup `[key]` indexer ⬜ (use iteration/First).
 - **Collections**: List ✅, Dictionary ✅, HashSet ✅, Queue ✅, Stack ✅ (compat types), LinkedList ⬜,
   sorted collections ⬜.
 - **Types**: enum ✅, Guid ✅, DateTime ✅, TimeSpan ✅, DateOnly ✅, TimeOnly ✅, DateTimeOffset ✅

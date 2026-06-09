@@ -29,7 +29,9 @@ public class AdvancedLinqTests
     {
         var code = "list.GroupBy(x => x.Type)";
         var js = ConvertExpression(code);
-        Assert.Contains(".reduce((map, item) =>", js);
+        Assert.Contains(".reduce((groups, item) =>", js);
+        // Each group is the items array with a `key` property (IGrouping usable as a sequence).
+        Assert.Contains("g.key = key", js);
         // Lambda parameter name is preserved, but properties used in it are camelCased
         Assert.Matches(@"(x\.type|x\.Type)", js);
     }
