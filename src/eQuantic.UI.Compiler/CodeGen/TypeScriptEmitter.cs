@@ -393,6 +393,25 @@ public class TypeScriptEmitter
             }
         }
 
+        // Scan helper-method and property-accessor BODIES too — a type constructed ONLY inside a helper
+        // (e.g. `Money Make() => new Money(..)`) or inside a property body must still be imported, or the
+        // emitted body throws "<Type> is not defined". Previously only a property's declared TYPE was added
+        // (so a property happening to return its own type imported by luck), never the method/property body.
+        var memberLocalNames = new HashSet<string>(component.Properties.Select(p => p.Name)) { component.Name };
+        foreach (var m in component.Methods) memberLocalNames.Add(m.Name);
+        foreach (var method in component.Methods)
+        {
+            if (method.SyntaxNode == null) continue;
+            foreach (var t in CollectComponentTypesFromNode(method.SyntaxNode, memberLocalNames))
+                componentTypes.Add(t);
+        }
+        foreach (var prop in component.Properties)
+        {
+            if (prop.Node == null) continue;
+            foreach (var t in CollectComponentTypesFromNode(prop.Node, memberLocalNames))
+                componentTypes.Add(t);
+        }
+
         // Add property types to imports
         foreach (var prop in component.Properties)
         {

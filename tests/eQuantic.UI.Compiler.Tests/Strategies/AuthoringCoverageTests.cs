@@ -133,4 +133,20 @@ public class AuthoringCoverageTests
         ts.Should().NotContain("from \"./int\"");
         ts.Should().NotContain("from \"./number\"");
     }
+
+    [Fact]
+    public void TypeConstructedOnlyInHelperOrPropertyBody_IsImported()
+    {
+        // A record constructed ONLY inside a helper-method body (Money) or a property-accessor body must
+        // still be imported — not just types named in a property's declared TYPE. Previously the method
+        // body was never scanned, so `new Money(..)` emitted "Money is not defined" at module load.
+        var src = "public record Money(decimal Amount); public record Tag(string Label); " +
+                  "public class C : StatelessComponent { " +
+                  "  public Tag DefaultTag => new Tag(\"x\"); " +
+                  "  private Money MakeMoney() => new Money(10m); " +
+                  "  public override IComponent Build(RenderContext c) => new Box(); }";
+        var ts = TsOf("C", src);
+        ts.Should().Contain("from \"./Money\"");
+        ts.Should().Contain("from \"./Tag\"");
+    }
 }
