@@ -43,4 +43,26 @@ public class EnumConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertSameAsDotNet(expression, Prelude);
     }
+
+    private const string FlagsPrelude = "[System.Flags] enum Perm { None = 0, Read = 1, Write = 2, Exec = 4 }";
+
+    /// <summary>
+    /// A <c>[Flags]</c> enum is represented numerically, so bitwise combination, masking, and
+    /// <c>HasFlag</c> all behave like .NET (they evaluate to int/bool, comparable exactly).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("(int)(Perm.Read | Perm.Write)")]                  // -> 3
+    [InlineData("(int)(Perm.Read | Perm.Write | Perm.Exec)")]      // -> 7
+    [InlineData("(int)(Perm.Read & Perm.Write)")]                  // -> 0
+    [InlineData("((Perm.Read | Perm.Write) & Perm.Write) != 0")]   // mask test -> true
+    [InlineData("(Perm.Read | Perm.Write).HasFlag(Perm.Read)")]    // -> true
+    [InlineData("(Perm.Read | Perm.Write).HasFlag(Perm.Exec)")]    // -> false
+    [InlineData("(Perm.Read | Perm.Write | Perm.Exec).HasFlag(Perm.Write)")] // -> true
+    [InlineData("(int)(Perm)3")]                                   // int -> flags -> int round-trip -> 3
+    [InlineData("Perm.Read == Perm.Read")]                         // -> true
+    public void Flags_MatchDotNet(string expression)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertSameAsDotNet(expression, FlagsPrelude);
+    }
 }

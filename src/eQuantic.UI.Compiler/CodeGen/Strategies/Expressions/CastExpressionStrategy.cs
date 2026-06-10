@@ -32,20 +32,27 @@ public class CastExpressionStrategy : IConversionStrategy
                 return ToLong(constant).ToString(CultureInfo.InvariantCulture);
 
             var expr = context.Converter.ConvertExpression(cast.Expression);
-            return $"({BuildNameToValueMap(enumOperand)})[{expr}]";
+            // A [Flags] enum is already numeric at runtime — the cast is the identity. A normal (string)
+            // enum needs its member-name string mapped back to the underlying value.
+            return enumOperand.IsFlagsEnum() ? expr : $"({BuildNameToValueMap(enumOperand)})[{expr}]";
         }
 
-        // (EnumType)int → the member-name string (so it stays comparable to other enum members).
+        // (EnumType)int → a value of the enum.
         if (targetType is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumTarget)
         {
+            var flags = enumTarget.IsFlagsEnum();
             if (context.SemanticHelper.TryGetConstantValue(cast.Expression, out var constant))
             {
+                // Flags enums are numeric — keep the literal value. Normal enums map the value to the
+                // member-name string (so it stays comparable to other enum members).
+                if (flags) return ToLong(constant).ToString(CultureInfo.InvariantCulture);
                 var name = MemberNameForValue(enumTarget, ToLong(constant));
                 if (name != null) return $"'{name.ToCamelCase()}'";
             }
 
             var expr = context.Converter.ConvertExpression(cast.Expression);
-            return $"({BuildValueToNameMap(enumTarget)})[{expr}]";
+            // Flags: the int IS the runtime value (identity). Normal: map value → member-name string.
+            return flags ? expr : $"({BuildValueToNameMap(enumTarget)})[{expr}]";
         }
 
         var inner = context.Converter.ConvertExpression(cast.Expression);

@@ -158,15 +158,24 @@ Design notes:
     .NET), and `(int)enum` / `(EnumType)int` bridge the string↔value gap via the enum's compile-time
     name↔value table: constant-fold to a literal (`(int)Status.Pending` → `1`, `(Status)1` → `'pending'`) or
     inline a generated map indexed by the operand. Was silently `Math.trunc('pending')` → `NaN`.
+  - **`[Flags]` enums ✅** — represented NUMERICALLY (members emit their underlying value) because a
+    member-name string can't express `Read | Write`. Bitwise `|`/`&`/`^` work natively, `HasFlag(f)` →
+    `(v & f) === f`, and `(int)`/`(EnumType)` casts are the numeric identity. Non-flags enums are unaffected
+    (still strings). Caveat: a `[Flags]` value round-tripped through the server is numeric, not the
+    `JsonStringEnumConverter` `"Read, Write"` name list — keep flags state client-side.
+  - **Interpolated-string text ✅** — `{{`/`}}` collapse to `{`/`}`, verbatim/raw text is decoded, and the
+    result is re-escaped for the JS template literal (backslash, backtick, `${`). Was emitting raw `{{…}}`.
   - **Import collector ✅** — only types we actually emit (records/components/enums the resolver scanned)
     are imported; primitives (`int`/`bool`), `$eq`/BCL-compat types (`DateTime`/`Math`/`Guid`/…) and
-    static-field names read as `ClassName.X` no longer leak as bogus `import { X } from "./X"`.
+    static-field names read as `ClassName.X` no longer leak as bogus `import { X } from "./X"`. Helper-method
+    and property-accessor BODIES are scanned too (a type constructed only inside a helper is now imported).
   - Methods ✅, server actions ✅.
   (Surfaced + fixed via the Phase 2 sample + authoring sweep: see `docs/PHASE-2-CLIENT-ROUTER-PLAN.md` M3;
   compiler tests `ComponentStaticFieldTests`, `AuthoringCoverageTests`, `StringStrategyTests`,
-  `EnumCastStrategyTests`; conformance `EnumConformanceTests`. Remaining niche gaps — `[Flags]` bitwise enum
-  combinators (string repr can't `|`), advanced pattern-matching, raw/verbatim-interpolated strings, ctor
-  chaining (`:this`/`:base`) & C# 12 primary constructors — are tracked as a backlog.) Cross-ref:
+  `EnumCastStrategyTests`, `EnumFlagsStrategyTests`; conformance `EnumConformanceTests`, `StringConformanceTests`.
+  Remaining niche gaps — advanced pattern-matching (property/positional `var` bindings, list patterns),
+  ctor chaining (`:this`/`:base`) & C# 12 primary constructors, generic-component `new T()` (JS type erasure)
+  — are tracked as a backlog.) Cross-ref:
   **Phase 2 client router** is complete; `RenderContext.Route` (params/query) is the routing-facing surface.
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
   pointers raise `EQ2001`; `goto`/`goto case`/`goto default` raise `EQ2002` (no JS equivalent). `unsafe`/
