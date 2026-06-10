@@ -164,10 +164,10 @@ public static class TailwindExtensions
                 },
                 sizes = new Dictionary<string, string>
                 {
-                    ["small"] = theme.Button.GetSize(Core.Theme.Types.Size.Small),
-                    ["medium"] = theme.Button.GetSize(Core.Theme.Types.Size.Medium),
-                    ["large"] = theme.Button.GetSize(Core.Theme.Types.Size.Large),
-                    ["xlarge"] = theme.Button.GetSize(Core.Theme.Types.Size.XLarge)
+                    ["small"] = theme.Button.GetSize(Core.Theme.Types.SizeVariant.Small),
+                    ["medium"] = theme.Button.GetSize(Core.Theme.Types.SizeVariant.Medium),
+                    ["large"] = theme.Button.GetSize(Core.Theme.Types.SizeVariant.Large),
+                    ["xlarge"] = theme.Button.GetSize(Core.Theme.Types.SizeVariant.XLarge)
                 }
             },
             typography = new
@@ -221,9 +221,9 @@ public static class TailwindExtensions
                 },
                 sizes = new Dictionary<string, string>
                 {
-                    ["small"] = theme.Input.GetSize(Core.Theme.Types.Size.Small),
-                    ["medium"] = theme.Input.GetSize(Core.Theme.Types.Size.Medium),
-                    ["large"] = theme.Input.GetSize(Core.Theme.Types.Size.Large)
+                    ["small"] = theme.Input.GetSize(Core.Theme.Types.SizeVariant.Small),
+                    ["medium"] = theme.Input.GetSize(Core.Theme.Types.SizeVariant.Medium),
+                    ["large"] = theme.Input.GetSize(Core.Theme.Types.SizeVariant.Large)
                 }
             },
             checkbox = new
@@ -297,10 +297,10 @@ public static class TailwindExtensions
                 fallback = theme.Avatar.Fallback,
                 sizes = new Dictionary<string, string>
                 {
-                    ["small"] = theme.Avatar.GetSize(Core.Theme.Types.Size.Small),
-                    ["medium"] = theme.Avatar.GetSize(Core.Theme.Types.Size.Medium),
-                    ["large"] = theme.Avatar.GetSize(Core.Theme.Types.Size.Large),
-                    ["xlarge"] = theme.Avatar.GetSize(Core.Theme.Types.Size.XLarge)
+                    ["small"] = theme.Avatar.GetSize(Core.Theme.Types.SizeVariant.Small),
+                    ["medium"] = theme.Avatar.GetSize(Core.Theme.Types.SizeVariant.Medium),
+                    ["large"] = theme.Avatar.GetSize(Core.Theme.Types.SizeVariant.Large),
+                    ["xlarge"] = theme.Avatar.GetSize(Core.Theme.Types.SizeVariant.XLarge)
                 }
             },
             @switch = new

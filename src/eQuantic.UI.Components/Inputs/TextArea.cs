@@ -15,7 +15,7 @@ public class TextArea : InputComponent<string>
     public new bool Disabled { get; set; }
     public new bool ReadOnly { get; set; }
     public new string? Name { get; set; }
-    public new Size Size { get; set; } = Size.Medium;
+    public new SizeVariant Size { get; set; } = SizeVariant.Medium;
 
     public override IComponent Build(RenderContext context)
     {

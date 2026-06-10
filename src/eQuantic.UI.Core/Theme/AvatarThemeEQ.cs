@@ -8,13 +8,13 @@ public class AvatarThemeEQ : IAvatarTheme
     public string Image => "eq-avatar-image";
     public string Fallback => "eq-avatar-fallback";
 
-    public string GetSize(Size size)
+    public string GetSize(SizeVariant size)
     {
         return size switch
         {
-            Size.Small => "eq-avatar-sm",
-            Size.Large => "eq-avatar-lg",
-            Size.XLarge => "eq-avatar-xl",
+            SizeVariant.Small => "eq-avatar-sm",
+            SizeVariant.Large => "eq-avatar-lg",
+            SizeVariant.XLarge => "eq-avatar-xl",
             _ => "eq-avatar-md"
         };
     }

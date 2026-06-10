@@ -55,10 +55,10 @@ public class DisplayPage : StatelessComponent
                                         Gap = "1rem",
                                         Align = AlignItem.Center,
                                         Children = {
-                                            new Avatar { Initials = "SM", Size = Size.Small },
-                                            new Avatar { Initials = "MD", Size = Size.Medium },
-                                            new Avatar { Initials = "LG", Size = Size.Large },
-                                            new Avatar { Initials = "XL", Size = Size.XLarge }
+                                            new Avatar { Initials = "SM", Size = SizeVariant.Small },
+                                            new Avatar { Initials = "MD", Size = SizeVariant.Medium },
+                                            new Avatar { Initials = "LG", Size = SizeVariant.Large },
+                                            new Avatar { Initials = "XL", Size = SizeVariant.XLarge }
                                         }
                                     },
                                     new Text("With Image") { ClassName = "text-sm font-medium text-muted-foreground mt-4" },
@@ -66,9 +66,9 @@ public class DisplayPage : StatelessComponent
                                         Gap = "1rem",
                                         Align = AlignItem.Center,
                                         Children = {
-                                            new Avatar { ImageUrl = "https://i.pravatar.cc/40?img=1", AltText = "User 1", Size = Size.Small },
-                                            new Avatar { ImageUrl = "https://i.pravatar.cc/48?img=2", AltText = "User 2", Size = Size.Medium },
-                                            new Avatar { ImageUrl = "https://i.pravatar.cc/64?img=3", AltText = "User 3", Size = Size.Large }
+                                            new Avatar { ImageUrl = "https://i.pravatar.cc/40?img=1", AltText = "User 1", Size = SizeVariant.Small },
+                                            new Avatar { ImageUrl = "https://i.pravatar.cc/48?img=2", AltText = "User 2", Size = SizeVariant.Medium },
+                                            new Avatar { ImageUrl = "https://i.pravatar.cc/64?img=3", AltText = "User 3", Size = SizeVariant.Large }
                                         }
                                     },
                                     new Text("Initials Fallback") { ClassName = "text-sm font-medium text-muted-foreground mt-4" },
@@ -84,7 +84,7 @@ public class DisplayPage : StatelessComponent
                                 }
                             },
                             """
-                            new Avatar { Initials = "JD", Size = Size.Medium }
+                            new Avatar { Initials = "JD", Size = SizeVariant.Medium }
                             new Avatar { ImageUrl = "https://example.com/photo.jpg", AltText = "User" }
                             """
                         ),

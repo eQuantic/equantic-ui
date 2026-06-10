@@ -9,7 +9,7 @@ public class Avatar : StatelessComponent
     public string? ImageUrl { get; set; }
     public string? Initials { get; set; }
     public string? AltText { get; set; }
-    public Size Size { get; set; } = Size.Medium;
+    public SizeVariant Size { get; set; } = SizeVariant.Medium;
 
     public override IComponent Build(RenderContext context)
     {

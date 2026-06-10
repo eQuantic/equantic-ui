@@ -16,11 +16,11 @@ public class InputTheme : IInputTheme
         _ => ""  // Use base styles
     };
 
-    public string GetSize(Size size) => size switch
+    public string GetSize(SizeVariant size) => size switch
     {
-        Size.Small => "h-8 text-xs",
-        Size.Medium => "h-10 text-sm",
-        Size.Large => "h-12 text-base",
+        SizeVariant.Small => "h-8 text-xs",
+        SizeVariant.Medium => "h-10 text-sm",
+        SizeVariant.Large => "h-12 text-base",
         _ => "h-10 text-sm"
     };
 }

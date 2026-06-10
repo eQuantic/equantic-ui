@@ -28,7 +28,7 @@ public class Toggle : StatelessComponent
     /// <summary>
     /// Size of the toggle. Default: Medium.
     /// </summary>
-    public new Size Size { get; set; } = Size.Medium;
+    public new SizeVariant Size { get; set; } = SizeVariant.Medium;
 
     /// <summary>
     /// Whether the toggle is disabled. Default: false.
@@ -45,8 +45,8 @@ public class Toggle : StatelessComponent
         var isPressed = Pressed || DefaultPressed;
         var sizeClass = Size switch
         {
-            Size.Small => "eq-toggle-sm",
-            Size.Large => "eq-toggle-lg",
+            SizeVariant.Small => "eq-toggle-sm",
+            SizeVariant.Large => "eq-toggle-lg",
             _ => ""
         };
 

@@ -7,5 +7,5 @@ public interface IAvatarTheme
     string Root { get; }
     string Image { get; }
     string Fallback { get; }
-    string GetSize(Size size);
+    string GetSize(SizeVariant size);
 }

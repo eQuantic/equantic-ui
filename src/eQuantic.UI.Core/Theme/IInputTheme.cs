@@ -20,5 +20,5 @@ public interface IInputTheme
     /// <summary>
     /// Gets size-specific styles
     /// </summary>
-    string GetSize(Size size);
+    string GetSize(SizeVariant size);
 }

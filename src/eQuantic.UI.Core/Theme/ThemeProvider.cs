@@ -130,7 +130,7 @@ public static class ThemeProvider
     private static string SerializeThemeData(IAppTheme theme)
     {
         var variants = Enum.GetValues<Variant>();
-        var sizes = Enum.GetValues<Size>();
+        var sizes = Enum.GetValues<SizeVariant>();
 
         var themeData = new
         {

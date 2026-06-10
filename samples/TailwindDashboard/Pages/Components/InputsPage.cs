@@ -30,9 +30,9 @@ public class InputsPage : StatelessComponent
                                 Children = {
                                     // Sizes
                                     new Text("Sizes") { ClassName = "text-sm font-medium text-muted-foreground" },
-                                    new TextInput { Placeholder = "Small input", Size = Size.Small },
-                                    new TextInput { Placeholder = "Medium input (default)", Size = Size.Medium },
-                                    new TextInput { Placeholder = "Large input", Size = Size.Large },
+                                    new TextInput { Placeholder = "Small input", Size = SizeVariant.Small },
+                                    new TextInput { Placeholder = "Medium input (default)", Size = SizeVariant.Medium },
+                                    new TextInput { Placeholder = "Large input", Size = SizeVariant.Large },
 
                                     // Types
                                     new Text("Input Types") { ClassName = "text-sm font-medium text-muted-foreground mt-4" },
@@ -49,7 +49,7 @@ public class InputsPage : StatelessComponent
                                 }
                             },
                             """
-                            new TextInput { Placeholder = "Email", Type = "email", Size = Size.Medium }
+                            new TextInput { Placeholder = "Email", Type = "email", Size = SizeVariant.Medium }
                             new TextInput { Placeholder = "Disabled", Disabled = true }
                             new TextInput { Value = "Read-only", ReadOnly = true }
                             """
@@ -61,14 +61,14 @@ public class InputsPage : StatelessComponent
                                 ClassName = "space-y-4 max-w-md",
                                 Children = {
                                     new TextArea { Placeholder = "Default textarea", Rows = 3 },
-                                    new TextArea { Placeholder = "Small textarea", Size = Size.Small, Rows = 2 },
-                                    new TextArea { Placeholder = "Large textarea", Size = Size.Large, Rows = 4 },
+                                    new TextArea { Placeholder = "Small textarea", Size = SizeVariant.Small, Rows = 2 },
+                                    new TextArea { Placeholder = "Large textarea", Size = SizeVariant.Large, Rows = 4 },
                                     new TextArea { Placeholder = "Disabled textarea", Disabled = true, Rows = 3 }
                                 }
                             },
                             """
                             new TextArea { Placeholder = "Write something...", Rows = 3 }
-                            new TextArea { Placeholder = "Small", Size = Size.Small, Rows = 2 }
+                            new TextArea { Placeholder = "Small", Size = SizeVariant.Small, Rows = 2 }
                             """
                         ),
 

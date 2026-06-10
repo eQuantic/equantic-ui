@@ -39,7 +39,7 @@ Components automatically use the registered theme:
 new Button {
     Text = "Click me",
     Variant = Variant.Primary,  // Uses md-button--filled
-    Size = Size.Large           // Uses md-button--large
+    Size = SizeVariant.Large           // Uses md-button--large
 }
 
 // Card uses MaterialCardTheme classes
