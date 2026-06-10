@@ -116,6 +116,25 @@ public static class ProjectCompilationHelper
     }
 
     /// <summary>
+    /// The SDK-generated implicit-usings file(s) for a project (<c>obj/**/*.GlobalUsings.g.cs</c>).
+    /// <see cref="GetProjectSourceFiles"/> deliberately skips <c>obj/</c> — generated code isn't
+    /// transpiled — but this one generated artifact must still reach the semantic model, because it is
+    /// what lets BCL types referenced unqualified resolve (e.g. <c>Dictionary&lt;RecordKey, V&gt;</c>
+    /// under <c>&lt;ImplicitUsings&gt;</c>, with no explicit <c>using System.Collections.Generic;</c>).
+    /// Consuming the real file — rather than hardcoding a namespace list — honors the project's actual
+    /// <c>ImplicitUsings</c> setting and any custom <c>&lt;Using&gt;</c> items, so the compiler's
+    /// semantic view matches the real <c>dotnet build</c>. The SDK generates it during the build before
+    /// the eqc step runs, so it is present on disk by the time the compilation is assembled.
+    /// </summary>
+    public static IEnumerable<string> GetGeneratedGlobalUsingsFiles(string projectDirectory)
+    {
+        var objDir = Path.Combine(projectDirectory, "obj");
+        return Directory.Exists(objDir)
+            ? Directory.GetFiles(objDir, "*.GlobalUsings.g.cs", SearchOption.AllDirectories)
+            : Enumerable.Empty<string>();
+    }
+
+    /// <summary>
     /// Gets all .cs source files from a project directory.
     /// Excludes obj/ and bin/ directories.
     /// </summary>
