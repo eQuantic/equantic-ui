@@ -134,6 +134,13 @@ Design notes:
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function
   calls were emitted as `this.fn()`.)
+- **Component class members**: methods ✅, constructors ✅, properties ✅, and **fields ✅** — a component
+  may declare `static`/`const` data (`private static readonly List<Person> People = new() {…}`) and
+  instance fields; they are emitted as `static`/instance class members with transpiled initializers,
+  referenced through the class (`ClassName.field`, never `this.` for statics), and any type used only in a
+  field initializer is reactively imported. (Surfaced + fixed during the Phase 2 sample: see
+  `docs/PHASE-2-CLIENT-ROUTER-PLAN.md` M3; compiler test `StaticFieldRepro`.) Cross-ref: **Phase 2 client
+  router** is complete — `RenderContext.Route` (params/query) is the routing-facing surface.
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
   pointers raise `EQ2001`; `goto`/`goto case`/`goto default` raise `EQ2002` (no JS equivalent). `unsafe`/
   `fixed`/`lock` blocks unwrap to their body (lock is a no-op — JS is single-threaded — and pointer ops

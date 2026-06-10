@@ -40,6 +40,20 @@ public class IdentifierStrategy : IConversionStrategy
         {
             if (symbol.Kind == SymbolKind.Field || symbol.Kind == SymbolKind.Property || symbol.Kind == SymbolKind.Method)
             {
+                // A STATIC member is reached through the class, not the instance: a bare `Items` reference
+                // to `static Items` on `Widget` must emit `Widget.items`, never `this.items` (which the
+                // uppercase fallback below would otherwise produce, leaving the value undefined at runtime).
+                // (When the identifier is the `.Name` side of `other.Member`, the receiver already qualifies
+                // it — emit just the member name.)
+                if (symbol.IsStatic && symbol.ContainingType != null && symbol.Kind != SymbolKind.Method)
+                {
+                    if (identifier.Parent is MemberAccessExpressionSyntax sma && sma.Name == identifier)
+                    {
+                        return name.ToCamelCase();
+                    }
+                    return $"{symbol.ContainingType.Name}.{name.ToCamelCase()}";
+                }
+
                 // If it's a member of the current class and not static, add 'this.'
                 if (!symbol.IsStatic && symbol.ContainingType != null)
                 {

@@ -43,6 +43,8 @@ public class DefaultDashboardShell : StatelessComponent
                     Children = {
                         new NavItem { Text = "Dashboard", Href = "/", IsActive = ActivePath == "/" },
                         new NavItem { Text = "Counter", Href = "/counter", IsActive = ActivePath == "/counter" },
+                        new NavItem { Text = "Users", Href = "/users", IsActive = ActivePath == "/users" },
+                        new NavItem { Text = "Admin", Href = "/admin", IsActive = ActivePath == "/admin" },
                         new NavItem { Text = "Showcase", Href = "/showcase", IsActive = ActivePath == "/showcase" }
                     }
                 },

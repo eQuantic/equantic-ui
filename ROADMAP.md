@@ -107,8 +107,10 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
   supported-subset spec, fail-on-unsupported diagnostics, conformance harness (492 cases, emitted JS via
   Bun vs .NET) all in place; remaining polish is the in-browser source-map smoke test.
   → see `docs/IMPLEMENTATION-PLAN.md`.
-- **Phase 2 — Client router**: navigation without reload, typed route params, nested layouts,
-  route guards, `<Link>` with prefetch, route-based code-splitting, scroll restoration.
+- **Phase 2 — Client router** — **✅ complete**: navigation without reload, typed route params, persistent
+  layout (reconcile-on-navigate), route guards, `<Link>` with hover/focus prefetch, route-based
+  code-splitting, scroll restoration. Demonstrated end-to-end by `samples/DefaultUIDashboard`.
+  → see `docs/PHASE-2-CLIENT-ROUTER-PLAN.md`.
 - **Phase 3 — Hot reload with state preservation**: replace full reload with module/state-preserving
   reload; sub-second feedback loop.
 - **Phase 4 — Forms & validation engine**: declarative C# validation (ideally `DataAnnotations`),

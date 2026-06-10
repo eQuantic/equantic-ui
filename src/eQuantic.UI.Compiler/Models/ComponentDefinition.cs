@@ -44,7 +44,14 @@ public class ComponentDefinition
     /// State fields (field name -> type)
     /// </summary>
     public List<StateField> StateFields { get; set; } = new();
-    
+
+    /// <summary>
+    /// Fields declared directly on the component class itself (static data, consts, instance fields) —
+    /// distinct from <see cref="StateFields"/> which belong to a stateful component's state class.
+    /// Emitted as class members on the component.
+    /// </summary>
+    public List<StateField> ComponentFields { get; set; } = new();
+
     /// <summary>
     /// Methods defined in the state class
     /// </summary>
@@ -149,6 +156,9 @@ public class StateField
     public string Type { get; set; } = string.Empty;
     public string? DefaultValue { get; set; }
     public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? DefaultValueNode { get; set; }
+    /// <summary>True for <c>static</c>/<c>const</c> fields — emitted as a <c>static</c> class member and
+    /// referenced as <c>ClassName.field</c> rather than <c>this.field</c>.</summary>
+    public bool IsStatic { get; set; }
 }
 
 /// <summary>

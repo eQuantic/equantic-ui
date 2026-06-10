@@ -61,8 +61,26 @@ public class TypeScriptEmitter
             baseClass = baseClass.Substring(0, baseClass.IndexOf('<'));
         }
         
-        _builder.Class(component.Name, baseClass, c => 
+        _builder.Class(component.Name, baseClass, c =>
             {
+                // Component-level fields (static data / consts / instance fields), emitted at the top of
+                // the class. Skipped for primitives' INSTANCE fields, whose base ctor sets every prop via
+                // Object.assign — an uninitialised instance field would clobber that after super(); a static
+                // field is class-level and carries its own initializer, so it is always safe.
+                if (component.ComponentFields.Count > 0)
+                {
+                    _converter.SetCurrentClass(component.Name);
+                    foreach (var field in component.ComponentFields)
+                    {
+                        if (component.IsPrimitive && !field.IsStatic) continue;
+                        var tsType = CSharpTypeToTypeScript(field.Type);
+                        var tsDefault = field.DefaultValueNode != null
+                            ? _converter.ConvertExpression(field.DefaultValueNode, field.Type)
+                            : (field.DefaultValue != null ? ConvertToTsValue(field.DefaultValue, field.Type) : null);
+                        c.Field(field.Name.ToCamelCase(), tsType, tsDefault, field.DefaultValueNode, field.IsStatic);
+                    }
+                }
+
                 if (component.IsPrimitive)
                 {
                     // Remove field declarations for primitives.
@@ -314,6 +332,18 @@ public class TypeScriptEmitter
 
              var proceduralTypes = CollectComponentTypesFromNode(component.BuildMethodNode, localNames);
              foreach (var t in proceduralTypes) componentTypes.Add(t);
+        }
+
+        // Scan component-field initializers too — a type referenced ONLY in a static/instance field
+        // initializer (e.g. `static People = new() { new Person(...) }`) still needs its import, or the
+        // emitted static initializer throws "Person is not defined" at module load.
+        foreach (var field in component.ComponentFields)
+        {
+            if (field.DefaultValueNode == null) continue;
+            foreach (var t in CollectComponentTypesFromNode(field.DefaultValueNode, new HashSet<string> { component.Name }))
+            {
+                componentTypes.Add(t);
+            }
         }
 
         // Add property types to imports

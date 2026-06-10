@@ -157,6 +157,9 @@ public class ComponentParser
                         ParseStateClass(stateClass, definition);
                     }
                 }
+
+                // Static/instance data fields declared on the stateful component class itself.
+                ParseComponentFields(classDecl, definition);
             }
             else if (baseType == "StatelessComponent")
             {
@@ -188,6 +191,9 @@ public class ComponentParser
 
                 // Parse other helper methods
                 ParseMethods(classDecl, definition);
+
+                // Capture static/instance data fields declared on the component
+                ParseComponentFields(classDecl, definition);
             }
             else if (baseType == "HtmlElement")
             {
@@ -436,6 +442,32 @@ public class ComponentParser
             }
 
             definition.Constructors.Add(ctorDef);
+        }
+    }
+
+    /// <summary>
+    /// Captures fields declared directly on a component class (static data, consts, instance fields) into
+    /// <see cref="ComponentDefinition.ComponentFields"/>. Uses direct members (not descendants) so fields
+    /// of any nested type aren't pulled in. A field is treated as static when declared <c>static</c> or
+    /// <c>const</c> — both become a <c>static</c> class member referenced as <c>ClassName.field</c>.
+    /// </summary>
+    private void ParseComponentFields(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
+    {
+        foreach (var field in classDecl.Members.OfType<FieldDeclarationSyntax>())
+        {
+            var isStatic = field.Modifiers.Any(SyntaxKind.StaticKeyword)
+                           || field.Modifiers.Any(SyntaxKind.ConstKeyword);
+            foreach (var variable in field.Declaration.Variables)
+            {
+                definition.ComponentFields.Add(new StateField
+                {
+                    Name = variable.Identifier.Text,
+                    Type = field.Declaration.Type.ToString(),
+                    DefaultValue = variable.Initializer?.Value.ToString(),
+                    DefaultValueNode = variable.Initializer?.Value,
+                    IsStatic = isStatic
+                });
+            }
         }
     }
 

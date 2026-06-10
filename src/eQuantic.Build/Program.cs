@@ -352,7 +352,12 @@ bool CompileAndBundle()
 
         if (hasBun && entryPoints.Count > 0)
         {
-            var bunArgs = $"build {string.Join(" ", entryPoints.Select(p => $"\"{p}\""))} --outdir \"{outputDir}\" --splitting --sourcemap --minify-syntax --minify-whitespace --target browser --external @equantic/runtime";
+            // --root pins the output-path base to the intermediate TS dir (where every entry .ts lives),
+            // so bun writes entries FLAT as "<Page>.js" in outDir. Without it bun infers the root from the
+            // common ancestor of the absolute entry paths (the repo/cwd) and nests entries under that
+            // relative path (e.g. wwwroot/_equantic/samples/.../ts/Dashboard.js), which the boot — loading
+            // the flat "/_equantic/<Page>.js" — then 404s on.
+            var bunArgs = $"build {string.Join(" ", entryPoints.Select(p => $"\"{p}\""))} --outdir \"{outputDir}\" --root \"{intermediateDir}\" --splitting --sourcemap --minify-syntax --minify-whitespace --target browser --external @equantic/runtime";
             
             var process = new Process
             {
