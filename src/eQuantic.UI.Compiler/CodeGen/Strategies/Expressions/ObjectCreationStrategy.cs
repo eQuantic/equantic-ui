@@ -39,6 +39,18 @@ public class ObjectCreationStrategy : IConversionStrategy
         var typeName = creation.Type.ToString();
         var createdType = context.SemanticHelper.GetType(creation);
 
+        // `new T()` where T is a generic type parameter cannot be transpiled: JS erases generic type
+        // arguments, so the concrete constructor is unknown at runtime (emitting `new T()` would throw
+        // "T is not defined"). Fail the build with guidance instead of shipping broken code.
+        if (createdType is ITypeParameterSymbol)
+        {
+            context.Report(creation, ConversionSeverity.Error, "EQ2003",
+                $"Cannot instantiate type parameter '{typeName}' with `new {typeName}()` — generic type " +
+                "arguments are erased at runtime in JavaScript, so the concrete type is unknown. Pass a " +
+                "factory (e.g. Func<T>) or the constructed value as a parameter instead.");
+            return "undefined";
+        }
+
         // Records and user structs are emitted as named JS classes (they carry instance methods) —
         // construct via `new`, mapping positional args and any object initializer onto the constructor.
         if (createdType is { IsRecord: true }

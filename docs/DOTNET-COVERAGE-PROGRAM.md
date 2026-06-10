@@ -181,11 +181,14 @@ Design notes:
   them in the arm (`EnumConformanceTests`-style `PatternConformanceTests`). Remaining niche gaps — the same
   advanced patterns inside switch STATEMENTS / `is` expressions (expression form done), positional patterns
   over records (need `Deconstruct` element mapping, not index access), constructor overloads & `:this`/
-  `:base` delegation (JS single ctor), generic-component `new T()` (JS type erasure) — are tracked as a
-  backlog.) Cross-ref:
+  `:base` delegation (JS single ctor) — are tracked as a
+  backlog.) **Generic components** — the `<T>` class declaration transpiles, but `new T()` (instantiating a
+  type parameter) raises **EQ2003**: generic args are erased at runtime in JS, so the concrete ctor is
+  unknown. Authors pass a factory/value instead of constructing `T` directly. Cross-ref:
   **Phase 2 client router** is complete; `RenderContext.Route` (params/query) is the routing-facing surface.
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
-  pointers raise `EQ2001`; `goto`/`goto case`/`goto default` raise `EQ2002` (no JS equivalent). `unsafe`/
+  pointers raise `EQ2001`; `goto`/`goto case`/`goto default` raise `EQ2002` (no JS equivalent); `new T()` on
+  a generic type parameter raises `EQ2003` (generic args erased at runtime). `unsafe`/
   `fixed`/`lock` blocks unwrap to their body (lock is a no-op — JS is single-threaded — and pointer ops
   inside still raise `EQ2001`); a bare label drops to its inner statement. Client-side `System.IO`/
   `Net.Http`/EF·`System.Data`/OS threading/`Process`/
