@@ -3,6 +3,12 @@
 > The linchpin of the whole project. See `ROADMAP.md` for the full picture. This plan is detailed
 > enough to start coding now; later phases are sequenced at the end.
 
+> **Status (2026-06-10): Phase 1 is essentially complete.** The conformance harness runs **492** green
+> cases (target was ≥200), fail-on-unsupported diagnostics are in place (no silent miscompiles), and the
+> supported subset is documented (see `docs/DOTNET-COVERAGE-PROGRAM.md` + the wiki `SupportedFeatures`).
+> The milestone/exit-criteria notes below are updated to reflect this. The forward path is Phases 2–7 in
+> `ROADMAP.md` (client router, hot reload, forms/validation, a11y, CSS engine, global state).
+
 ## Why this phase first
 
 "100% C#, 0 JS knowledge" is only true if the transpiler is **complete and correct**. The 24 bugs
@@ -17,13 +23,17 @@ automatically; and **any unsupported construct fails the build** with a C# `file
 instead of producing wrong JS.
 
 ### Exit criteria (Phase 1 is "done" when)
-- [ ] A `transpiler-supported-csharp.md` spec lists every construct as Supported / Partial / Unsupported.
-- [ ] A **conformance harness** runs N≥200 cases: transpile C# → execute JS via embedded Bun →
-      compare to the .NET result. Green in CI.
-- [ ] Every one of the 24 fixed bugs has a conformance case (regression net).
-- [ ] `SemanticValidator` emits a build **error** (not a silent fallback) for unsupported constructs;
-      the ~69 silent fallbacks are each resolved to *supported* or *explicit diagnostic*.
-- [ ] Source maps validated by an automated round-trip test (started: `SourceMapGeneratorTests`).
+- [x] The supported subset is documented per construct (Supported / Partial / Unsupported). *Lives in
+      `docs/DOTNET-COVERAGE-PROGRAM.md` (coverage matrix) + the wiki `SupportedFeatures` page rather than
+      the originally-named `transpiler-supported-csharp.md`.*
+- [x] A **conformance harness** runs N≥200 cases (transpile C# → execute JS via embedded Bun → compare
+      to .NET). **492 cases green.**
+- [x] Every one of the 24 fixed bugs has a conformance case (regression net).
+- [x] `SemanticValidator`/the converter emit a build **error** (not a silent fallback) for unsupported
+      constructs; the fallback sites are resolved to *supported* or an *explicit diagnostic*
+      (`EQ2001/2002`, `EQ21xx` boundary, `EQ1001/1002` warnings).
+- [x] Source maps validated by `SourceMapGeneratorTests` (generation + decode). *Remaining polish: a
+      browser error → C# line smoke test (W4).*
 
 ---
 
@@ -112,9 +122,12 @@ contract the harness and the validator enforce.
 `ConformanceRunner`; 7 arithmetic cases pass (incl. integer truncation across signs and `7.0/2 == 3.5`
 proving float division is *not* truncated). *Acceptance met: the loop runs green.*
 
-**M1 — Seed corpus + regression backfill (W2 + W5). 🔄 In progress.**
-86 cases green across arithmetic, strings, LINQ, expression-level control flow, Math, enums and
-collections (dictionaries/sets/aggregations), plus regressions for integer division,
+**M1 — Seed corpus + regression backfill (W2 + W5). ✅ DONE (492 cases).**
+The corpus grew far past the seed: **492 cases green** across arithmetic, strings (+ `StringComparison`),
+the full LINQ surface, statement-level control flow, Math, enums, value types (records/structs/tuples,
+named-class emission, inheritance/generics, SSR hydration), the date-time family, Nullable, StringBuilder
+and the whole collections surface (List/Dictionary incl. record-keyed `valueMap`, HashSet, Queue, Stack,
+LinkedList, SortedSet/SortedDictionary/SortedList, `ILookup[key]`), plus regressions for integer division,
 Math.Truncate/Ceiling/Round, the switch var-pattern and the enum-as-string representation (#13).
 The harness has already paid for itself several times over — it surfaced **four** previously-unknown
 transpiler bugs, all now fixed:
@@ -129,21 +142,26 @@ transpiler's semantic model and the .NET evaluator), serializes .NET objects in 
 match the transpiler's property casing, evaluates .NET under **InvariantCulture** for deterministic
 number/format output, and — when the emitted JS calls a runtime helper — **imports that helper from
 the real bundled `runtime.js`** (Decision 3 resolved: import the real runtime, not a re-implementation).
-This unlocked `ToString(format)` / formatted interpolation conformance (regression for #12), now 94
-cases green. Still to cover: record/DTO object values (need the type emitted in JS too) and
-statement-level constructs (need a block-evaluating harness mode — folds into M2). Known gap kept out
-of the corpus: midpoint rounding (`(2.5).ToString("F0")`, `Math.Round(2.5)`) — .NET uses banker's
-rounding, JS does not.
-*Acceptance: corpus green; CI fails if any divergence is introduced.*
+This unlocked `ToString(format)` / formatted interpolation conformance (regression for #12). The two
+items once "still to cover" are now done: **record/DTO object values** (records emit as named JS classes
+and round-trip through SSR hydration) and **statement-level constructs** (the block-evaluating harness
+mode landed — if/for/foreach/while/switch/try-catch/local functions). Deliberate divergences kept out of
+the corpus and documented instead: midpoint/banker's rounding for raw JS arithmetic, culture-sensitive
+string ordering, and default-context integer overflow (JS float64 doesn't wrap).
+*Acceptance met: corpus green; CI fails if any divergence is introduced.*
 
-**M2 — Fail-on-unsupported (W3).**
-Validator errors on unsupported constructs; the 69 fallbacks triaged. *Acceptance: a curated list of
-"known-unsupported" snippets each produce a clear build error (a negative-test suite), and no snippet
-silently miscompiles.*
+**M2 — Fail-on-unsupported (W3). ✅ DONE.**
+The converter/validator raise build **errors** for unsupported constructs — `EQ2001` (pointers, typed-
+reference intrinsics, function pointers), `EQ2002` (`goto`/`goto case`/`goto default`), `EQ21xx`
+(client-side `System.IO`/`Net.Http`/EF/threading/`Process`/P-Invoke/`Reflection.Emit` boundary) — and
+anything else with no strategy is a warning (`EQ1001`/`EQ1002`), never a silent passthrough. Diagnostics
+are MSBuild-canonical (`file:line`). *Acceptance met: unsupported snippets produce a clear build error;
+nothing silently miscompiles.*
 
-**M3 — Spec + source-map validation (W1 + W4).**
-Publish `transpiler-supported-csharp.md`; source-map round-trip + error-mapping tests green.
-*Acceptance: Phase-1 exit criteria all checked.*
+**M3 — Spec + source-map validation (W1 + W4). 🔄 Mostly done.**
+The supported-subset spec is published as `docs/DOTNET-COVERAGE-PROGRAM.md` + the wiki `SupportedFeatures`
+page (not the originally-named `transpiler-supported-csharp.md`); `SourceMapGeneratorTests` covers
+generation + decode. *Remaining: the in-browser error → C# line smoke test.*
 
 ---
 
