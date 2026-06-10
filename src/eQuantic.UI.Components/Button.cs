@@ -18,7 +18,7 @@ namespace eQuantic.UI.Components;
 /// new Button {
 ///     Text = "Submit",
 ///     Variant = Variant.Primary,
-///     Size = Size.Large,
+///     Size = SizeVariant.Large,
 ///     OnClick = HandleClick
 /// }
 ///
@@ -57,7 +57,7 @@ public class Button : StatelessComponent
     /// <summary>
     /// Size variant (Small, Medium, Large, XLarge)
     /// </summary>
-    public Size Size { get; set; } = Size.Medium;
+    public SizeVariant Size { get; set; } = SizeVariant.Medium;
 
     /// <summary>
     /// Show loading spinner and disable interaction

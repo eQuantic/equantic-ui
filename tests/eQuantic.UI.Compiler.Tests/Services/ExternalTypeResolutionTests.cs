@@ -197,6 +197,55 @@ public class ExternalTypeResolutionTests
     }
 
     [Fact]
+    public void ProjectCompilationHelper_GetGeneratedGlobalUsingsFiles_FindsObjGlobalUsings()
+    {
+        // Arrange: an obj/ tree with a generated global-usings file (the SDK artifact) plus noise.
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        var objTfm = Path.Combine(tempDir, "obj", "Debug", "net10.0");
+        Directory.CreateDirectory(objTfm);
+
+        try
+        {
+            var globalUsings = Path.Combine(objTfm, "MyApp.GlobalUsings.g.cs");
+            File.WriteAllText(globalUsings, "global using global::System.Collections.Generic;");
+            File.WriteAllText(Path.Combine(objTfm, "MyApp.AssemblyInfo.cs"), "// not a global usings file");
+            File.WriteAllText(Path.Combine(tempDir, "Program.cs"), "// app source, not under obj");
+
+            // Act
+            var found = ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(tempDir).ToList();
+
+            // Assert: exactly the generated global-usings file, located under obj/.
+            found.Should().ContainSingle().Which.Should().EndWith("MyApp.GlobalUsings.g.cs");
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void ProjectCompilationHelper_GetGeneratedGlobalUsingsFiles_EmptyWhenNoObj()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(tempDir).Should().BeEmpty();
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void ProjectCompilationHelper_GetProjectSourceFiles_ExcludesObjAndBin()
     {
         // Arrange: Create temp project structure

@@ -7,30 +7,30 @@ namespace eQuantic.UI.Core.Theme;
 /// </summary>
 public class SizeThemeEQ : ISizeTheme
 {
-    public string GetFontSize(Size size) => size switch
+    public string GetFontSize(SizeVariant size) => size switch
     {
-        Size.Small => "eq-text-sm",
-        Size.Medium => "eq-text-base",
-        Size.Large => "eq-text-lg",
-        Size.XLarge => "eq-text-xl",
+        SizeVariant.Small => "eq-text-sm",
+        SizeVariant.Medium => "eq-text-base",
+        SizeVariant.Large => "eq-text-lg",
+        SizeVariant.XLarge => "eq-text-xl",
         _ => "eq-text-base"
     };
 
-    public string GetPadding(Size size) => size switch
+    public string GetPadding(SizeVariant size) => size switch
     {
-        Size.Small => "eq-p-1",
-        Size.Medium => "eq-p-2",
-        Size.Large => "eq-p-4",
-        Size.XLarge => "eq-p-6",
+        SizeVariant.Small => "eq-p-1",
+        SizeVariant.Medium => "eq-p-2",
+        SizeVariant.Large => "eq-p-4",
+        SizeVariant.XLarge => "eq-p-6",
         _ => "eq-p-2"
     };
 
-    public string GetRadius(Size size) => size switch
+    public string GetRadius(SizeVariant size) => size switch
     {
-        Size.Small => "eq-rounded-sm",
-        Size.Medium => "eq-rounded-md",
-        Size.Large => "eq-rounded-lg",
-        Size.XLarge => "eq-rounded-xl",
+        SizeVariant.Small => "eq-rounded-sm",
+        SizeVariant.Medium => "eq-rounded-md",
+        SizeVariant.Large => "eq-rounded-lg",
+        SizeVariant.XLarge => "eq-rounded-xl",
         _ => "eq-rounded-md"
     };
 }

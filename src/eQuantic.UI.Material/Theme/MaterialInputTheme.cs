@@ -19,7 +19,7 @@ public class MaterialInputTheme : IInputTheme
         };
     }
 
-    public string GetSize(Size size)
+    public string GetSize(SizeVariant size)
     {
         // M3 text fields have standard sizing
         return "";

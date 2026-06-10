@@ -4,7 +4,7 @@ namespace eQuantic.UI.Core.Theme;
 
 public interface ISizeTheme
 {
-    string GetFontSize(Size size);
-    string GetPadding(Size size);
-    string GetRadius(Size size);
+    string GetFontSize(SizeVariant size);
+    string GetPadding(SizeVariant size);
+    string GetRadius(SizeVariant size);
 }

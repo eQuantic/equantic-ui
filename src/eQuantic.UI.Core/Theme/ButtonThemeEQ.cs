@@ -20,7 +20,7 @@ public class ButtonThemeEQ : ComponentThemeBase, IButtonTheme
         throw new NotSupportedException("Tailwind theme should be used when Tailwind package is available");
     }
 
-    protected override string GetTailwindSize(Size size)
+    protected override string GetTailwindSize(SizeVariant size)
     {
         throw new NotSupportedException("Tailwind theme should be used when Tailwind package is available");
     }
@@ -47,14 +47,14 @@ public class ButtonThemeEQ : ComponentThemeBase, IButtonTheme
         };
     }
 
-    protected override string GetEQSize(Size size)
+    protected override string GetEQSize(SizeVariant size)
     {
         return size switch
         {
-            Size.Small => (string)EQ.Button.Sm,
-            Size.Medium => "",  // Medium is default
-            Size.Large => (string)EQ.Button.Lg,
-            Size.XLarge => (string)EQ.Button.Lg,  // Use same as Large for now
+            SizeVariant.Small => (string)EQ.Button.Sm,
+            SizeVariant.Medium => "",  // Medium is default
+            SizeVariant.Large => (string)EQ.Button.Lg,
+            SizeVariant.XLarge => (string)EQ.Button.Lg,  // Use same as Large for now
             _ => ""
         };
     }

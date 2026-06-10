@@ -63,7 +63,7 @@ public class TextInput : InputComponent<string>
     /// <summary>
     /// Input size variant
     /// </summary>
-    public new Size Size { get; set; } = Size.Medium;
+    public new SizeVariant Size { get; set; } = SizeVariant.Medium;
 
     /// <summary>
     /// Default value for uncontrolled mode (initial value only)

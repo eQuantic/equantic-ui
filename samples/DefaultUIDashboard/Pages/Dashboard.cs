@@ -20,7 +20,15 @@ public class Dashboard : StatelessComponent
         // LINQ over the records (runs client-side): how many distinct status colors are in play.
         var stats = new List<Stat> { users, load, resp, errors };
         var distinctColors = stats.Select(s => s.Color).Distinct().Count();
-        var summary = $"{stats.Count} metrics · {distinctColors} status levels";
+
+        // A dictionary KEYED BY a record. Value-type keys compare structurally (→ the runtime's
+        // $eq.collections.valueMap), so a freshly reconstructed Stat still finds its badge — a plain
+        // object key would collapse every record to "[object Object]".
+        var badges = new Dictionary<Stat, string>();
+        foreach (var s in stats) badges[s] = s.Color.Contains("success") ? "OK" : "WATCH";
+        var usersBadge = badges[new Stat("Live Users", "1,284", "eq-text-success")];
+
+        var summary = $"{stats.Count} metrics · {distinctColors} status levels · users {usersBadge}";
 
         return new DefaultDashboardShell
         {

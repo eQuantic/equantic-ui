@@ -41,6 +41,14 @@ add conformance cases  ──▶  run  ──▶  failures
 
 The corpus simultaneously becomes the supported-subset spec (W1) and the permanent regression net.
 
+**Faithful semantic model.** Type-gated strategies (e.g. record-keyed dictionaries) rely on Roslyn
+resolving BCL generics like `Dictionary<RecordKey,V>`. The eqc build reconstructs the project's
+compilation from its `.cs` files, which skip `obj/` — and that's where the SDK writes
+`*.GlobalUsings.g.cs`. eqc therefore feeds that generated file into the compilation
+(`ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles`), so types used unqualified under
+`<ImplicitUsings>` resolve exactly as in a real `dotnet build` (no hardcoded namespace list — the real
+SDK artifact is consumed, honoring custom `<Using>` items too).
+
 ## The .NET-compat TypeScript runtime (`eq` namespace)
 
 A first-party library of faithful .NET implementations. Candidates, by need:
@@ -85,8 +93,11 @@ Design notes:
   keys); OrderBy/OrderByDescending + ThenBy/ThenByDescending ✅ (single stable composite sort, source
   copied); IGrouping ✅ (each group is the items array + a `key` prop — iterable, `g.Key`, `g.Sum()`,
   etc., first-occurrence order); remaining — ILookup `[key]` indexer ⬜ (use iteration/First).
-- **Collections**: List ✅, Dictionary ✅, HashSet ✅, Queue ✅, Stack ✅ (compat types), LinkedList ⬜,
-  sorted collections ⬜.
+- **Collections**: List ✅, Dictionary ✅ (string/number/enum keys → plain object; **record/struct/tuple
+  keys → `$eq.collections.valueMap`**, a structurally-keyed map so two equal-by-value keys collide as in
+  .NET — construction, `d[k]` get/set, `ContainsKey`/`Add`/`Remove`/`Clear`/`TryGetValue`/
+  `GetValueOrDefault`, `Keys`/`Values`/`Count`, `foreach` over `{key,value}` all routed; the plain-object
+  path is untouched), HashSet ✅, Queue ✅, Stack ✅ (compat types), LinkedList ⬜, sorted collections ⬜.
 - **Types**: enum ✅, Guid ✅, DateTime ✅, TimeSpan ✅, DateOnly ✅, TimeOnly ✅, DateTimeOffset ✅
   (all tick-precise compat; DateTimeOffset = wall-clock + offset, compared by the instant),
   Nullable ✅ (HasValue/Value, GetValueOrDefault()/(fallback) with a type-aware default, lifted
@@ -111,8 +122,9 @@ Design notes:
   `toString` and the construction site (object-initializer mapped onto the constructor by member order,
   with per-member defaults). Record inheritance (`record Dog(…) : Animal(Name)` → `class Dog extends
   Animal` with a `super(…)` call, only own members re-assigned) and generic records (`record Box<T>` —
-  type args erased) are covered too. Remaining: record-keyed dictionaries; semantic (base-walk)
-  component detection.
+  type args erased) are covered too. **Record-keyed dictionaries** ✅ (`Dictionary<RecordKey,V>` →
+  `$eq.collections.valueMap`, structural-equality keys) and **semantic (base-walk) component detection**
+  ✅ are both landed.
 - **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function

@@ -35,12 +35,12 @@ public class ButtonTheme : IButtonTheme
         _ => $"{_colors.Primary} hover:bg-blue-700 shadow-sm hover:shadow"
     };
 
-    public string GetSize(Size size) => size switch
+    public string GetSize(SizeVariant size) => size switch
     {
-        Size.Small => "h-8 px-3 text-xs",
-        Size.Medium => "h-10 px-4 py-2 text-sm",
-        Size.Large => "h-12 px-6 text-base",
-        Size.XLarge => "h-14 px-8 text-lg",
+        SizeVariant.Small => "h-8 px-3 text-xs",
+        SizeVariant.Medium => "h-10 px-4 py-2 text-sm",
+        SizeVariant.Large => "h-12 px-6 text-base",
+        SizeVariant.XLarge => "h-14 px-8 text-lg",
         _ => "h-10 px-4 py-2 text-sm"
     };
 }

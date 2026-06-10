@@ -25,13 +25,13 @@ public class MaterialButtonTheme : IButtonTheme
         };
     }
 
-    public string GetSize(Size size)
+    public string GetSize(SizeVariant size)
     {
         return size switch
         {
-            Size.Small => "md-button--small",
-            Size.Medium => "",
-            Size.Large => "md-button--large",
+            SizeVariant.Small => "md-button--small",
+            SizeVariant.Medium => "",
+            SizeVariant.Large => "md-button--large",
             _ => ""
         };
     }

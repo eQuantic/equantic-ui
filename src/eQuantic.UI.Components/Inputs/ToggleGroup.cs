@@ -23,7 +23,7 @@ public class ToggleGroup : StatelessComponent
     /// <summary>
     /// Size applied to all toggles. Default: Medium.
     /// </summary>
-    public new Size Size { get; set; } = Size.Medium;
+    public new SizeVariant Size { get; set; } = SizeVariant.Medium;
 
     /// <summary>
     /// Orientation of the group. Default: Horizontal.

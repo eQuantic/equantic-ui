@@ -25,14 +25,14 @@ public class InputThemeEQ : IInputTheme
         };
     }
 
-    public string GetSize(Size size)
+    public string GetSize(SizeVariant size)
     {
         return size switch
         {
-            Size.Small => (string)EQ.Input.Sm,
-            Size.Medium => "",  // Default
-            Size.Large => (string)EQ.Input.Lg,
-            Size.XLarge => (string)EQ.Input.Lg,  // Use Large
+            SizeVariant.Small => (string)EQ.Input.Sm,
+            SizeVariant.Medium => "",  // Default
+            SizeVariant.Large => (string)EQ.Input.Lg,
+            SizeVariant.XLarge => (string)EQ.Input.Lg,  // Use Large
             _ => ""
         };
     }

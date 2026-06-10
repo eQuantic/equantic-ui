@@ -48,6 +48,16 @@ try
         var files = ProjectCompilationHelper.GetProjectSourceFiles(primarySourceDir).ToList();
         Console.WriteLine($"   Found {files.Count} source files in project");
         allSourceFiles.AddRange(files);
+
+        // Feed the SDK-generated global usings (obj/*.GlobalUsings.g.cs) to the compilation so the
+        // semantic model resolves BCL types used unqualified — e.g. Dictionary<RecordKey, V> under
+        // <ImplicitUsings> — exactly as the real build does, without hardcoding a namespace list.
+        var globalUsings = ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(primarySourceDir).ToList();
+        if (globalUsings.Count > 0)
+        {
+            Console.WriteLine($"   Including {globalUsings.Count} generated global-usings file(s)");
+            allSourceFiles.AddRange(globalUsings);
+        }
     }
 
     if (allSourceFiles.Count > 0)

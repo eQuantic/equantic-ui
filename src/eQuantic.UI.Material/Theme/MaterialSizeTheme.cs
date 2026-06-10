@@ -8,35 +8,35 @@ namespace eQuantic.UI.Material.Theme;
 /// </summary>
 public class MaterialSizeTheme : ISizeTheme
 {
-    public string GetFontSize(Size size)
+    public string GetFontSize(SizeVariant size)
     {
         return size switch
         {
-            Size.Small => "md-label-small",
-            Size.Medium => "md-body-medium",
-            Size.Large => "md-body-large",
+            SizeVariant.Small => "md-label-small",
+            SizeVariant.Medium => "md-body-medium",
+            SizeVariant.Large => "md-body-large",
             _ => "md-body-medium"
         };
     }
 
-    public string GetPadding(Size size)
+    public string GetPadding(SizeVariant size)
     {
         return size switch
         {
-            Size.Small => "p-2",
-            Size.Medium => "p-4",
-            Size.Large => "p-6",
+            SizeVariant.Small => "p-2",
+            SizeVariant.Medium => "p-4",
+            SizeVariant.Large => "p-6",
             _ => "p-4"
         };
     }
 
-    public string GetRadius(Size size)
+    public string GetRadius(SizeVariant size)
     {
         return size switch
         {
-            Size.Small => "rounded-[var(--md-sys-shape-corner-small)]",
-            Size.Medium => "rounded-[var(--md-sys-shape-corner-medium)]",
-            Size.Large => "rounded-[var(--md-sys-shape-corner-large)]",
+            SizeVariant.Small => "rounded-[var(--md-sys-shape-corner-small)]",
+            SizeVariant.Medium => "rounded-[var(--md-sys-shape-corner-medium)]",
+            SizeVariant.Large => "rounded-[var(--md-sys-shape-corner-large)]",
             _ => "rounded-[var(--md-sys-shape-corner-medium)]"
         };
     }

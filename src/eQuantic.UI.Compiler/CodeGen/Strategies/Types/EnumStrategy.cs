@@ -51,7 +51,7 @@ public class EnumStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)node;
         var member = memberAccess.Name.Identifier.Text;
 
-        // Enums are always represented by their member name as a string (e.g. Size.Medium ->
+        // Enums are always represented by their member name as a string (e.g. SizeVariant.Medium ->
         // 'medium'), never by their numeric value. A string is verbose and easy to identify,
         // and is stable regardless of the underlying value or build configuration (previously
         // the semantic path emitted a number while the fallback emitted a string). camelCase

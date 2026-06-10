@@ -29,4 +29,7 @@ public static class Eq
 
     /// <summary>Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct.</summary>
     public const string Equals = "$eq.equals";
+
+    /// <summary>Factory for a structurally-keyed dictionary (<c>Dictionary&lt;RecordKey, V&gt;</c>).</summary>
+    public const string ValueMap = "$eq.collections.valueMap";
 }

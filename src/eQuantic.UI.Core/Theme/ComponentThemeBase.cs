@@ -32,17 +32,17 @@ public abstract class ComponentThemeBase
     /// <summary>
     /// Gets size-specific classes.
     /// </summary>
-    public virtual string GetSize(Size size) => StyleSystem == StyleSystem.Tailwind
+    public virtual string GetSize(SizeVariant size) => StyleSystem == StyleSystem.Tailwind
         ? GetTailwindSize(size)
         : GetEQSize(size);
 
     // Abstract methods for Tailwind implementation (must be overridden by subclasses)
     protected abstract string GetTailwindBase();
     protected abstract string GetTailwindVariant(Variant variant);
-    protected abstract string GetTailwindSize(Size size);
+    protected abstract string GetTailwindSize(SizeVariant size);
 
     // Abstract methods for EQ implementation (must be overridden by subclasses)
     protected abstract string GetEQBase();
     protected abstract string GetEQVariant(Variant variant);
-    protected abstract string GetEQSize(Size size);
+    protected abstract string GetEQSize(SizeVariant size);
 }

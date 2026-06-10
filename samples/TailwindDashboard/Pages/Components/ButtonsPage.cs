@@ -53,17 +53,17 @@ public class ButtonsPage : StatelessComponent
                                 Wrap = true, Gap = "0.5rem",
                                 Align = AlignItem.Center,
                                 Children = {
-                                    new Button { Text = "Small", Size = Size.Small },
-                                    new Button { Text = "Medium", Size = Size.Medium },
-                                    new Button { Text = "Large", Size = Size.Large },
-                                    new Button { Text = "XLarge", Size = Size.XLarge }
+                                    new Button { Text = "Small", Size = SizeVariant.Small },
+                                    new Button { Text = "Medium", Size = SizeVariant.Medium },
+                                    new Button { Text = "Large", Size = SizeVariant.Large },
+                                    new Button { Text = "XLarge", Size = SizeVariant.XLarge }
                                 }
                             },
                             """
-                            new Button { Text = "Small", Size = Size.Small }
-                            new Button { Text = "Medium", Size = Size.Medium }
-                            new Button { Text = "Large", Size = Size.Large }
-                            new Button { Text = "XLarge", Size = Size.XLarge }
+                            new Button { Text = "Small", Size = SizeVariant.Small }
+                            new Button { Text = "Medium", Size = SizeVariant.Medium }
+                            new Button { Text = "Large", Size = SizeVariant.Large }
+                            new Button { Text = "XLarge", Size = SizeVariant.XLarge }
                             """
                         ),
 
@@ -73,15 +73,15 @@ public class ButtonsPage : StatelessComponent
                                 Wrap = true, Gap = "0.5rem",
                                 Align = AlignItem.Center,
                                 Children = {
-                                    new Button { Text = "Small", Variant = Variant.Outline, Size = Size.Small },
-                                    new Button { Text = "Medium", Variant = Variant.Outline, Size = Size.Medium },
-                                    new Button { Text = "Large", Variant = Variant.Outline, Size = Size.Large },
-                                    new Button { Text = "XLarge", Variant = Variant.Outline, Size = Size.XLarge }
+                                    new Button { Text = "Small", Variant = Variant.Outline, Size = SizeVariant.Small },
+                                    new Button { Text = "Medium", Variant = Variant.Outline, Size = SizeVariant.Medium },
+                                    new Button { Text = "Large", Variant = Variant.Outline, Size = SizeVariant.Large },
+                                    new Button { Text = "XLarge", Variant = Variant.Outline, Size = SizeVariant.XLarge }
                                 }
                             },
                             """
-                            new Button { Text = "Small", Variant = Variant.Outline, Size = Size.Small }
-                            new Button { Text = "Large", Variant = Variant.Outline, Size = Size.Large }
+                            new Button { Text = "Small", Variant = Variant.Outline, Size = SizeVariant.Small }
+                            new Button { Text = "Large", Variant = Variant.Outline, Size = SizeVariant.Large }
                             """
                         ),
 

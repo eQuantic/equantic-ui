@@ -6,5 +6,5 @@ public interface IButtonTheme
 {
     string Base { get; }
     string GetVariant(Variant variant);
-    string GetSize(Size size);
+    string GetSize(SizeVariant size);
 }

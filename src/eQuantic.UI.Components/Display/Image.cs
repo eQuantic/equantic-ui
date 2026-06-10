@@ -89,9 +89,10 @@ public class Image : StatelessComponent
     public string? SrcSet { get; set; }
 
     /// <summary>
-    /// Image sizes for responsive layout.
+    /// Image sizes for responsive layout. Intentionally re-declares the inherited
+    /// <see cref="HtmlElement.Sizes"/> to carry the <c>&lt;img&gt;</c>-specific doc comment.
     /// </summary>
-    public string? Sizes { get; set; }
+    public new string? Sizes { get; set; }
 
     /// <summary>
     /// Placeholder type to show while loading.
