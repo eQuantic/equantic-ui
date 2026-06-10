@@ -5,10 +5,13 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
-/// Maps <c>System.Collections.Generic.Queue&lt;T&gt;</c> and <c>Stack&lt;T&gt;</c> to the runtime
-/// compat types: <c>new Queue&lt;T&gt;(...)</c> -> <c>$eq.collections.queue(...)</c> (and <c>stack</c>),
-/// instance members/methods (<c>Enqueue</c>, <c>Dequeue</c>, <c>Push</c>, <c>Pop</c>, <c>Peek</c>,
-/// <c>Count</c>, <c>Contains</c>, <c>ToArray</c>, <c>Clear</c>) -> camelCase. Priority 15, type-gated.
+/// Maps the sequence-shaped <c>System.Collections.Generic</c> compat collections —
+/// <c>Queue&lt;T&gt;</c>, <c>Stack&lt;T&gt;</c>, <c>LinkedList&lt;T&gt;</c> and <c>SortedSet&lt;T&gt;</c> —
+/// to their runtime equivalents: <c>new Queue&lt;T&gt;(...)</c> -> <c>$eq.collections.queue(...)</c>
+/// (and <c>stack</c>/<c>linkedList</c>/<c>sortedSet</c>), with instance members/methods (<c>Enqueue</c>,
+/// <c>Push</c>, <c>AddFirst</c>, <c>Add</c>, <c>Count</c>, <c>First</c>, <c>Min</c>, <c>Contains</c>,
+/// <c>ToArray</c>, <c>Clear</c>, …) -> camelCase. Priority 15, type-gated. (The key-sorted
+/// <c>SortedDictionary</c>/<c>SortedList</c> are handled by their own dictionary strategy.)
 /// </summary>
 public class QueueStackStrategy : ConversionStrategyBase
 {
@@ -69,7 +72,8 @@ public class QueueStackStrategy : ConversionStrategyBase
         return symbol?.ContainingType != null && KindOf(symbol.ContainingType) != null;
     }
 
-    /// <summary>Returns "queue"/"stack" for the matching generic type, else null.</summary>
+    /// <summary>Returns the runtime factory name ("queue"/"stack"/"linkedList"/"sortedSet") for the
+    /// matching generic type, else null.</summary>
     private static string? KindOf(ITypeSymbol? type)
     {
         if (type == null) return null;
@@ -78,7 +82,11 @@ public class QueueStackStrategy : ConversionStrategyBase
     }
 
     private static string? KindOfName(string name) =>
-        name.StartsWith("Queue") ? "queue" : name.StartsWith("Stack") ? "stack" : null;
+        name.StartsWith("Queue") ? "queue"
+        : name.StartsWith("Stack") ? "stack"
+        : name.StartsWith("LinkedList") ? "linkedList"
+        : name.StartsWith("SortedSet") ? "sortedSet"
+        : null;
 
     public override int Priority => 15;
 }

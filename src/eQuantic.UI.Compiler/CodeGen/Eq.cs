@@ -32,4 +32,9 @@ public static class Eq
 
     /// <summary>Factory for a structurally-keyed dictionary (<c>Dictionary&lt;RecordKey, V&gt;</c>).</summary>
     public const string ValueMap = "$eq.collections.valueMap";
+
+    /// <summary>Factory for a key-sorted dictionary (<c>SortedDictionary&lt;K, V&gt;</c>).</summary>
+    public const string SortedDictionary = "$eq.collections.sortedDictionary";
+    /// <summary>Factory for a key-sorted list (<c>SortedList&lt;K, V&gt;</c>).</summary>
+    public const string SortedList = "$eq.collections.sortedList";
 }

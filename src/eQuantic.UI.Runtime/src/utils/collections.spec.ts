@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { Queue, queue, Stack, stack, ValueMap, valueMap } from './collections';
+import {
+  Queue,
+  queue,
+  Stack,
+  stack,
+  ValueMap,
+  valueMap,
+  LinkedList,
+  linkedList,
+} from './collections';
 
 describe('Queue<T> — FIFO', () => {
   it('enqueues and dequeues in order', () => {
@@ -137,5 +146,54 @@ describe('ValueMap<K, V> — structurally-keyed dictionary', () => {
     ]);
     expect(m.size).toBe(2);
     expect(m.get({ x: 2 })).toBe(20);
+  });
+});
+
+describe('LinkedList<T> — doubly-linked', () => {
+  it('addLast / addFirst order and count', () => {
+    const l = linkedList<number>();
+    l.addLast(2);
+    l.addLast(3);
+    l.addFirst(1);
+    expect(l.toArray()).toEqual([1, 2, 3]);
+    expect(l.count).toBe(3);
+  });
+
+  it('first/last nodes expose value and links', () => {
+    const l = new LinkedList<number>([10, 20, 30]);
+    expect(l.first!.value).toBe(10);
+    expect(l.last!.value).toBe(30);
+    expect(l.first!.next!.value).toBe(20);
+    expect(l.last!.previous!.value).toBe(20);
+    expect(l.first!.previous).toBeNull();
+    expect(l.last!.next).toBeNull();
+  });
+
+  it('removeFirst / removeLast', () => {
+    const l = new LinkedList<number>([1, 2, 3]);
+    l.removeFirst();
+    l.removeLast();
+    expect(l.toArray()).toEqual([2]);
+  });
+
+  it('remove(value) by structural equality, returns found', () => {
+    const l = new LinkedList<number>([1, 2, 3]);
+    expect(l.remove(2)).toBe(true);
+    expect(l.remove(9)).toBe(false);
+    expect(l.toArray()).toEqual([1, 3]);
+  });
+
+  it('contains / clear', () => {
+    const l = new LinkedList<string>(['a', 'b']);
+    expect(l.contains('a')).toBe(true);
+    expect(l.contains('z')).toBe(false);
+    l.clear();
+    expect(l.count).toBe(0);
+    expect(l.first).toBeNull();
+  });
+
+  it('throws on remove from empty', () => {
+    expect(() => linkedList<number>().removeFirst()).toThrow();
+    expect(() => linkedList<number>().removeLast()).toThrow();
   });
 });

@@ -181,3 +181,131 @@ export class ValueMap<K, V> implements Iterable<{ key: K; value: V }> {
 export function valueMap<K, V>(initial?: Iterable<readonly [K, V]>): ValueMap<K, V> {
   return new ValueMap<K, V>(initial);
 }
+
+/**
+ * A node of {@link LinkedList} — mirrors .NET `LinkedListNode<T>`: a value plus links to the adjacent
+ * nodes (`next`/`previous` are `null` at the ends). The transpiler maps `.Value`/`.Next`/`.Previous`
+ * to these camelCase members, so `list.First.Value` and node traversal work as in .NET.
+ */
+export class LinkedListNode<T> {
+  value: T;
+  next: LinkedListNode<T> | null = null;
+  previous: LinkedListNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
+}
+
+/**
+ * .NET-compat `LinkedList<T>` — a doubly-linked list with the .NET API: `AddFirst`/`AddLast` (return the
+ * new node), `RemoveFirst`/`RemoveLast`, `Remove(value)`, `Contains`, `Clear`, `Count`, and the `First`/
+ * `Last` node accessors. Real nodes (not an array) so `First.Next` traversal is faithful. Value lookup
+ * (`Contains`/`Remove`) uses `$eq.equals`, matching `EqualityComparer<T>.Default` for primitives and
+ * value types. The transpiler emits `$eq.collections.linkedList(...)` and maps members to camelCase.
+ */
+export class LinkedList<T> implements Iterable<T> {
+  private head: LinkedListNode<T> | null = null;
+  private tail: LinkedListNode<T> | null = null;
+  private _count = 0;
+
+  constructor(initial?: Iterable<T>) {
+    if (initial) {
+      for (const v of initial) this.addLast(v);
+    }
+  }
+
+  get count(): number {
+    return this._count;
+  }
+
+  /** First node, or `null` when empty (`.NET` `First`). */
+  get first(): LinkedListNode<T> | null {
+    return this.head;
+  }
+
+  /** Last node, or `null` when empty (`.NET` `Last`). */
+  get last(): LinkedListNode<T> | null {
+    return this.tail;
+  }
+
+  addFirst(value: T): LinkedListNode<T> {
+    const node = new LinkedListNode(value);
+    if (this.head === null) {
+      this.head = this.tail = node;
+    } else {
+      node.next = this.head;
+      this.head.previous = node;
+      this.head = node;
+    }
+    this._count++;
+    return node;
+  }
+
+  addLast(value: T): LinkedListNode<T> {
+    const node = new LinkedListNode(value);
+    if (this.tail === null) {
+      this.head = this.tail = node;
+    } else {
+      node.previous = this.tail;
+      this.tail.next = node;
+      this.tail = node;
+    }
+    this._count++;
+    return node;
+  }
+
+  removeFirst(): void {
+    if (this.head === null) throw new Error('LinkedList empty.');
+    this.unlink(this.head);
+  }
+
+  removeLast(): void {
+    if (this.tail === null) throw new Error('LinkedList empty.');
+    this.unlink(this.tail);
+  }
+
+  /** Removes the first node whose value equals `value`; true when one was found. */
+  remove(value: T): boolean {
+    for (let n = this.head; n !== null; n = n.next) {
+      if (equals(n.value, value)) {
+        this.unlink(n);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  contains(value: T): boolean {
+    for (let n = this.head; n !== null; n = n.next) {
+      if (equals(n.value, value)) return true;
+    }
+    return false;
+  }
+
+  clear(): void {
+    this.head = this.tail = null;
+    this._count = 0;
+  }
+
+  private unlink(node: LinkedListNode<T>): void {
+    if (node.previous !== null) node.previous.next = node.next;
+    else this.head = node.next;
+    if (node.next !== null) node.next.previous = node.previous;
+    else this.tail = node.previous;
+    this._count--;
+  }
+
+  *[Symbol.iterator](): Iterator<T> {
+    for (let n = this.head; n !== null; n = n.next) yield n.value;
+  }
+
+  /** Front-to-back order, matching .NET enumeration. */
+  toArray(): T[] {
+    return [...this];
+  }
+}
+
+export function linkedList<T>(initial?: Iterable<T>): LinkedList<T> {
+  return new LinkedList<T>(initial);
+}
