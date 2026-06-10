@@ -57,10 +57,17 @@ public static class ProjectCompilationHelper
     /// <param name="assemblyPaths">Paths to referenced assemblies (.dll)</param>
     /// <param name="assemblyName">Name for the compilation</param>
     /// <returns>A compilation with the specified sources and references</returns>
+    /// <param name="addStandardReferences">
+    /// When true (default), the running BCL impl assemblies (CoreLib, Linq, Collections, …) are injected.
+    /// Pass false when <paramref name="assemblyPaths"/> already holds the complete MSBuild-resolved
+    /// reference set: mixing runtime impl assemblies with targeting-pack ref assemblies duplicates type
+    /// identities and only muddies symbol resolution.
+    /// </param>
     public static Compilation CreateCompilationFromSources(
         IEnumerable<string> sourceFiles,
         IEnumerable<string> assemblyPaths,
-        string assemblyName = "DynamicAssembly")
+        string assemblyName = "DynamicAssembly",
+        bool addStandardReferences = true)
     {
         // Parse all source files
         var syntaxTrees = sourceFiles
@@ -70,39 +77,47 @@ public static class ProjectCompilationHelper
                 path: file))
             .ToList();
 
-        // Load all assembly references
+        // Load all assembly references, deduping by file name so the same assembly supplied through both
+        // the standard set and the explicit list isn't added twice.
         var references = new List<MetadataReference>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // Add standard references
-        references.Add(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
-        references.Add(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location));
-        references.Add(MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location));
-        references.Add(MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location));
-
-        try
+        void AddReference(string path)
         {
-            references.Add(MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location));
-            references.Add(MetadataReference.CreateFromFile(Assembly.Load("System.Collections").Location));
+            if (!File.Exists(path) || !seen.Add(Path.GetFileName(path)))
+                return;
+            try
+            {
+                references.Add(MetadataReference.CreateFromFile(path));
+            }
+            catch
+            {
+                // Ignore assemblies that can't be loaded
+            }
         }
-        catch
+
+        if (addStandardReferences)
         {
-            // Ignore if assemblies can't be loaded
+            AddReference(typeof(object).Assembly.Location);
+            AddReference(typeof(Console).Assembly.Location);
+            AddReference(typeof(Enumerable).Assembly.Location);
+            AddReference(typeof(List<>).Assembly.Location);
+
+            try
+            {
+                AddReference(Assembly.Load("System.Runtime").Location);
+                AddReference(Assembly.Load("System.Collections").Location);
+            }
+            catch
+            {
+                // Ignore if assemblies can't be loaded
+            }
         }
 
         // Add project-specific references
         foreach (var assemblyPath in assemblyPaths)
         {
-            if (File.Exists(assemblyPath))
-            {
-                try
-                {
-                    references.Add(MetadataReference.CreateFromFile(assemblyPath));
-                }
-                catch
-                {
-                    // Ignore assemblies that can't be loaded
-                }
-            }
+            AddReference(assemblyPath);
         }
 
         // Create compilation

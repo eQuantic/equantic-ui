@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DateTime, dateTime, TimeSpan, timeSpan } from './datetime';
+import { dateTime, TimeSpan, timeSpan } from './datetime';
 
 describe('TimeSpan — .NET "c" format and component math', () => {
   it('formats hours:minutes:seconds with no days', () => {

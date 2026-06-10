@@ -105,3 +105,34 @@ layout; update the wiki + `DOTNET-COVERAGE-PROGRAM` cross-links and mark Phase 2
 - **Progressive enhancement**: with JS off (or before boot), `<a href>` still works as a normal link —
   the router only *enhances* navigation.
 - **No new user-facing JS**: the route table is generated from `[Page]`; authors keep writing C#.
+
+## Build-infra fixes that unblocked the real-build sample (toward M2/M3)
+
+Bringing a real multi-page sample (`samples/DefaultUIDashboard`) up end-to-end surfaced three latent
+defects — invisible in unit/conformance tests, fatal in a real `dotnet build` + browser run. All three are
+fixed with regression coverage:
+
+- **eqc resolved no project references → mis-transpilation.** The eqc semantic model gathered references
+  from a hardcoded `bin/Debug/net8.0` path; the sample targets `net10.0`, so the directory never existed
+  and *zero* eQuantic assemblies were loaded. With `HtmlElement`/`IList<IComponent>` unresolved, member
+  calls degraded to naive camel-casing — `Children.Add(x)` emitted `.children.add(x)` (no such array
+  method), crashing SPA boot. Fix: the SDK now writes the exact `@(ReferencePathWithRefAssemblies)` set
+  (resolved via `ResolveReferences`) to `obj/.../equantic.refs.txt` and passes it to eqc with `--refs`;
+  eqc uses that complete set verbatim. The transpiler's type view now matches the real `csc` build,
+  independent of TFM/config/NuGet-vs-ProjectReference. (`eQuantic.Build/Program.cs`,
+  `ProjectCompilationHelper`, `Sdk.targets`; compiler regression `IListAddRepro`.)
+- **Runtime `buildEvents()` dropped forwarded handlers.** The C# `HtmlElement.BuildEvents()` merges
+  `CustomEvents`, but the hand-written TS runtime equivalent only discovered own `on*` props. Composite
+  components (e.g. `Button`) forward their resolved handler set to a child element via `customEvents`, so
+  the child silently lost every handler — buttons rendered but did nothing. Fix: the TS `buildEvents()`
+  now merges `customEvents` too, mirroring C#. (`runtime/src/core/types.ts`; 4 vitest cases in
+  `build-events.spec.ts`.)
+- **`npm run build` was broken** (`tsc` errored before `vite` ran): a spec unused-import, a callable+statics
+  cast needing `as unknown as`, strict-null inference in a spec, and unexported public factory interfaces
+  (`TimeSpanFactory` &c.) blocking declaration emit for `$eq`. All fixed; the documented runtime build is
+  green again.
+
+Verified live (chrome-devtools against the real build): SSR 200 → hydrate with no console errors → router
+installs → internal-link click is a *soft* nav (sentinel survives, no reload) → the counter is interactive
+after SPA nav (`0→3→2→0`) → the navigated page's `.js.map` serves 200 **with `.cs` sources** (C# breakpoints
+work after navigation).
