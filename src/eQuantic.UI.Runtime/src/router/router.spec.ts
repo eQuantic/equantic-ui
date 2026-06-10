@@ -101,6 +101,16 @@ describe('Router (happy-dom)', () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
+  it('ignores hash-only / same-path links (lets the browser scroll, no re-mount)', () => {
+    const hd = (window as unknown as { happyDOM?: { setURL?: (u: string) => void } }).happyDOM;
+    if (hd?.setURL) hd.setURL('http://localhost:3000/counter');
+    else window.history.replaceState(null, '', '/counter');
+    // A pure hash link and a same-path link with a hash, while already on /counter.
+    expect(click(anchor({ href: '#section' })).defaultPrevented).toBe(false);
+    expect(click(anchor({ href: '/counter#top' })).defaultPrevented).toBe(false);
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
   it('ignores modified clicks (ctrl/meta/shift/alt, non-left button)', () => {
     const a = anchor({ href: '/counter' });
     const e = new window.MouseEvent('click', { bubbles: true, cancelable: true, button: 0, metaKey: true });

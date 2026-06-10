@@ -86,6 +86,11 @@ export class Router {
     const url = new URL(anchor.href, this.win.location.href);
     if (url.origin !== this.win.location.origin) return; // external
 
+    // Hash-only / same-path link (e.g. "#section", "/here#top" while already on /here): let the browser
+    // do the in-page scroll — re-mounting the page would lose it. Only intercept real path changes.
+    const current = new URL(this.win.location.href);
+    if (url.pathname === current.pathname && url.search === current.search) return;
+
     const match = matchRoute(this.routes, url.pathname);
     if (!match) return; // unknown route → let the browser navigate (server fallthrough)
 
