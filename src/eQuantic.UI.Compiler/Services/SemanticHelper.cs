@@ -67,6 +67,21 @@ public class SemanticHelper
         return _semanticModel?.GetTypeInfo(node).Type;
     }
 
+    /// <summary>
+    /// The compile-time constant value of an expression (an enum member, a literal, a <c>const</c>), or
+    /// <c>false</c> when it isn't a constant. Used to constant-fold enum↔int casts so the common case emits
+    /// a literal instead of a runtime lookup.
+    /// </summary>
+    public bool TryGetConstantValue(SyntaxNode node, out object? value)
+    {
+        value = null;
+        if (_semanticModel == null) return false;
+        var constant = _semanticModel.GetConstantValue(node);
+        if (!constant.HasValue) return false;
+        value = constant.Value;
+        return value != null;
+    }
+
     public bool IsLinqMethod(SyntaxNode node, string methodName)
     {
         if (node is not Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax invocation) return false;
