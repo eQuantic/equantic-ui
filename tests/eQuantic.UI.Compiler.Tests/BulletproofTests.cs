@@ -74,11 +74,9 @@ public class BulletproofTests
         Assert.Contains("(() => {", js);
         Assert.Contains("const _s = x;", js);
         Assert.Contains("if (_s > 10) return 'Big';", js);
-        // Note: Simple casing assumption in current logic, might depend on casing helpers
-        // The implementation uses camelCase for properties if they match conventions, 
-        // OR explicit recursive pattern logic uses char.ToLowerInvariant
-        // Let's check regex or flexible assertion if exact string is tricky
-        Assert.Contains("if (_s.status === 'Active') return 'Active';", js);
+        // Property pattern: camelCased member access, guarded by a null check (in C# a property pattern
+        // on null is `false`, not a null-dereference) — matches `null is { Status: ... }` semantics.
+        Assert.Contains("if ((_s != null && _s.status === 'Active')) return 'Active';", js);
         Assert.Contains("return 'Default';", js);
         Assert.Contains("})()", js);
     }

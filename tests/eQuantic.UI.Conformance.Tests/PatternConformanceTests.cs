@@ -36,6 +36,10 @@ public class PatternConformanceTests
     [SkippableTheory]
     [InlineData("(new Pt(0, 7)) switch { { X: 0, Y: var y } => y, _ => -1 }")]             // -> 7
     [InlineData("(new Pt(2, 9)) switch { { X: 0, Y: var y } => y, { X: var x } => x, _ => -1 }")] // -> 2
+    // Positional pattern over a RECORD must read by Deconstruct member (`.x`/`.y`), not by index — a
+    // record is a plain object at runtime, so `_s[0]` would be undefined.
+    [InlineData("(new Pt(0, 7)) switch { (0, var y) => y, _ => -1 }")]                     // -> 7
+    [InlineData("(new Pt(3, 4)) switch { (var a, var b) => a + b, _ => -1 }")]             // -> 7
     public void PropertyPatterns_MatchDotNet(string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
