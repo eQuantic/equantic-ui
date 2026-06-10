@@ -90,9 +90,28 @@ first load matches client nav. 21 router vitest cases (matcher, params/query, co
 race-guard, hash, fallthrough). Remaining acceptance detail (end-to-end `/users/{id}` page through a real
 build) folds into M3's sample.
 
-**M2 — Persistent layout + `Link` + prefetch + guards.** A shell stays mounted across navigations; `Link`
-opts into SPA nav with hover prefetch; a route-guard hook can cancel/redirect. Acceptance: navigating
-within a shell does not re-mount the shell; a guard blocks a protected route; tests green.
+**M2 — Persistent layout + `Link` + prefetch + guards. ✅ DONE.**
+- *Persistent layout (M2a):* SPA navigation now **reconciles** the new page against the outgoing page's
+  tree instead of wiping + remounting the root. When two pages share a layout shell the reconciler keeps
+  the shell's DOM (identity, listeners, scroll, focus) and only patches the changed content — persistent
+  layout with no explicit layout/outlet concept. Primitives: `RenderManager.adopt`, component
+  `mountReconcile`/`getCurrentTree`/`disposeQuietly`/`hydrate`; `boot.ts` tracks `currentComponent` and
+  disposes the outgoing page *without* tearing down the reconciled DOM. The "Loading…" flash on nav is gone.
+- *`Link` + prefetch (M2b):* the `Link` C# component emits `data-prefetch` (default on; `Prefetch=false`
+  opts out, `_blank` excluded). The router adds delegated `pointerover`/`focusin` listeners that warm a
+  matched route's bundle once (deduped) via `onPrefetch` → `loadPageModule`, so the click navigates
+  instantly. `router.prefetch(href)` is also callable programmatically.
+- *Guards (M2c):* `RouterOptions.guards` + `router.addGuard` register `NavigationGuard`s consulted
+  **before** a forward navigation commits (so a cancel leaves the URL untouched). A guard returns
+  `true`/`undefined` (allow), `false` (cancel) or an href (redirect); first to decide wins; may be async.
+  `boot.ts` registers guards from `window.__eqGuards`. The no-guard path stays synchronous up to
+  `pushState` (unchanged timing).
+
+Verified live (chrome-devtools, real build): navbar is the **same DOM node** across forward + back nav with
+active-link updating and the counter still interactive (`0→2`); hovering a `data-prefetch` link loads the
+target bundle before any click; a `window.__eqGuards` guard blocks `/counter` (URL stays `/`) while letting
+`/showcase` through — all with zero console errors. Tests: 250 vitest (+15: persistent-layout, prefetch,
+guards) + .NET compiler 377 / conformance 492 / server 37.
 
 **M3 — Sample + docs.** A multi-page sample demonstrates SPA nav, params, a guard and a persistent
 layout; update the wiki + `DOTNET-COVERAGE-PROGRAM` cross-links and mark Phase 2 ✅ in `ROADMAP.md`.

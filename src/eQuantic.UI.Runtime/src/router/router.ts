@@ -15,9 +15,43 @@ export type NavigateHandler = (
   isCurrent: () => boolean,
 ) => void | Promise<void>;
 
+/**
+ * Called to warm a matched route ahead of navigation (hover/focus prefetch). The host loads the page
+ * bundle so a later click resolves from cache. Best-effort: failures are swallowed by the router.
+ */
+export type PrefetchHandler = (match: RouteMatch, url: URL) => void | Promise<void>;
+
+/** The navigation a guard is being asked to approve. */
+export interface PendingNavigation {
+  match: RouteMatch;
+  url: URL;
+}
+
+/**
+ * What a guard decides for a pending navigation:
+ *  - `true`/`undefined` → allow (continue to the next guard, then navigate);
+ *  - `false` → cancel (stay put — the URL is left unchanged);
+ *  - a string → redirect to that href instead.
+ */
+export type GuardResult = boolean | string | void;
+
+/**
+ * A navigation guard runs BEFORE a forward navigation commits (before `pushState`/render), so a cancel
+ * leaves the URL untouched. Receives the pending navigation and the current location. May be async (e.g.
+ * to check an auth token). Guards run in registration order; the first to cancel or redirect wins.
+ */
+export type NavigationGuard = (to: PendingNavigation, from: URL) => GuardResult | Promise<GuardResult>;
+
 export interface RouterOptions {
   routes: readonly RouteEntry[];
   onNavigate: NavigateHandler;
+  /**
+   * Optional: warm a route's bundle on hover/focus of an eligible link marked `data-prefetch`. Without
+   * it, prefetch is simply disabled (navigation still works).
+   */
+  onPrefetch?: PrefetchHandler;
+  /** Navigation guards consulted before a forward navigation commits (can cancel or redirect). */
+  guards?: readonly NavigationGuard[];
   /** The window to bind to — injectable so tests can drive a happy-dom window. Defaults to `window`. */
   win?: Window;
 }
@@ -42,19 +76,28 @@ interface HistoryScrollState {
 export class Router {
   private readonly routes: readonly RouteEntry[];
   private readonly onNavigate: NavigateHandler;
+  private readonly onPrefetch?: PrefetchHandler;
   private readonly win: Window;
   private readonly clickListener: (e: MouseEvent) => void;
   private readonly popListener: (e: PopStateEvent) => void;
+  private readonly prefetchListener: (e: Event) => void;
   private started = false;
   /** Monotonic navigation id — the host's handler compares against it to ignore superseded loads. */
   private navToken = 0;
+  /** Hrefs already handed to the prefetch handler, so repeated hovers don't reload the same bundle. */
+  private readonly prefetched = new Set<string>();
+  /** Guards consulted before each forward navigation commits. */
+  private readonly guards: NavigationGuard[];
 
   constructor(options: RouterOptions) {
     this.routes = options.routes;
     this.onNavigate = options.onNavigate;
+    this.onPrefetch = options.onPrefetch;
+    this.guards = options.guards ? [...options.guards] : [];
     this.win = options.win ?? window;
     this.clickListener = (e) => this.onClick(e);
     this.popListener = (e) => void this.dispatch(this.win.location.href, e.state);
+    this.prefetchListener = (e) => this.onPrefetchEvent(e);
   }
 
   /** Begins intercepting navigation. Idempotent. */
@@ -68,6 +111,12 @@ export class Router {
     }
     this.win.document.addEventListener('click', this.clickListener, true);
     this.win.addEventListener('popstate', this.popListener);
+    // Hover/focus prefetch (only when a handler was provided). pointerover/focusin both bubble, so a
+    // single delegated listener covers every link, including SSR-rendered ones, with no per-element wiring.
+    if (this.onPrefetch) {
+      this.win.document.addEventListener('pointerover', this.prefetchListener, true);
+      this.win.document.addEventListener('focusin', this.prefetchListener, true);
+    }
   }
 
   /** Stops intercepting navigation. */
@@ -76,6 +125,32 @@ export class Router {
     this.started = false;
     this.win.document.removeEventListener('click', this.clickListener, true);
     this.win.removeEventListener('popstate', this.popListener);
+    this.win.document.removeEventListener('pointerover', this.prefetchListener, true);
+    this.win.document.removeEventListener('focusin', this.prefetchListener, true);
+  }
+
+  /**
+   * Warm a route's page bundle ahead of navigation. Resolves the href against the route table and, for a
+   * not-yet-prefetched same-origin match that isn't the current page, hands it to the prefetch handler
+   * exactly once. Safe to call repeatedly; unmatched/external hrefs are ignored.
+   */
+  prefetch(href: string): void {
+    if (!this.onPrefetch) return;
+    const url = new URL(href, this.win.location.href);
+    if (url.origin !== this.win.location.origin) return;
+    const key = url.pathname + url.search;
+    if (this.prefetched.has(key)) return;
+    if (url.pathname === this.win.location.pathname) return; // already here
+    const match = matchRoute(this.routes, url.pathname);
+    if (!match) return;
+    this.prefetched.add(key);
+    void Promise.resolve(this.onPrefetch(match, url)).catch(() => this.prefetched.delete(key));
+  }
+
+  private onPrefetchEvent(e: Event): void {
+    const anchor = (e.target as Element | null)?.closest?.('a') as HTMLAnchorElement | null;
+    if (!anchor || !anchor.hasAttribute('data-prefetch') || !this.isEligible(anchor)) return;
+    this.prefetch(anchor.href);
   }
 
   /**
@@ -93,11 +168,54 @@ export class Router {
     return true;
   }
 
-  /** A forward navigation: save the outgoing scroll, push the new entry, render, then scroll to top. */
+  /** Register a navigation guard at runtime (consulted before each forward navigation). */
+  addGuard(guard: NavigationGuard): void {
+    this.guards.push(guard);
+  }
+
+  /**
+   * A forward navigation. With no guards registered this stays synchronous up to `pushState` (so the URL
+   * updates immediately, as callers expect). When guards exist they're consulted first — asynchronously,
+   * since a guard may be async — and a cancel leaves the URL untouched while a redirect navigates elsewhere.
+   */
   private goForward(match: RouteMatch, url: URL): Promise<void> {
+    if (this.guards.length === 0) {
+      return this.commitForward(match, url);
+    }
+    return this.goForwardGuarded(match, url);
+  }
+
+  private async goForwardGuarded(match: RouteMatch, url: URL): Promise<void> {
+    const decision = await this.runGuards(match, url);
+    if (decision === false) return; // cancelled — leave the URL untouched
+    if (typeof decision === 'string') {
+      await this.navigate(decision); // redirect
+      return;
+    }
+    return this.commitForward(match, url); // decision === true → allowed
+  }
+
+  /** Commit an approved forward navigation: save outgoing scroll, push the entry, render, scroll to top. */
+  private commitForward(match: RouteMatch, url: URL): Promise<void> {
     this.saveScroll();
     this.win.history.pushState(null, '', url.pathname + url.search + url.hash);
     return this.activate(match, url, 'top');
+  }
+
+  /**
+   * Run guards in order against a pending navigation. Returns `true` (allow), `false` (cancel), or a
+   * redirect href string. The first guard to cancel or redirect short-circuits the rest.
+   */
+  private async runGuards(match: RouteMatch, url: URL): Promise<true | false | string> {
+    if (this.guards.length === 0) return true;
+    const to: PendingNavigation = { match, url };
+    const from = new URL(this.win.location.href);
+    for (const guard of this.guards) {
+      const result = await Promise.resolve(guard(to, from));
+      if (result === false) return false;
+      if (typeof result === 'string') return result;
+    }
+    return true;
   }
 
   /** Renders whatever the current URL resolves to (used on `popstate`), restoring its saved scroll. */

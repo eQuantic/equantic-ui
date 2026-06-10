@@ -60,7 +60,14 @@ export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
 // DOM
 export { Router } from './router/router';
-export type { RouterOptions, NavigateHandler } from './router/router';
+export type {
+  RouterOptions,
+  NavigateHandler,
+  PrefetchHandler,
+  NavigationGuard,
+  PendingNavigation,
+  GuardResult,
+} from './router/router';
 export { matchRoute, matchPattern } from './router/route-table';
 export type { RouteEntry, RouteMatch } from './router/route-table';
 export {

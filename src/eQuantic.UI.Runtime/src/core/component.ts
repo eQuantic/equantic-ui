@@ -42,6 +42,36 @@ export abstract class StatelessComponent extends Component {
     }
   }
 
+  /**
+   * Hydrate existing SSR markup in `container`: attach listeners and take ownership of the tree through
+   * the render manager, so a later SPA navigation can diff against it ({@link getCurrentTree}) and keep a
+   * shared shell. The caller has already determined SSR content is present, so this bypasses the
+   * `data-ssr` gate that {@link mount} uses.
+   */
+  hydrate(container: HTMLElement): void {
+    const node = this.render();
+    this._renderManager.hydrate(node, container);
+  }
+
+  /**
+   * SPA-navigation mount: reconcile into a root that already holds the outgoing page's DOM (described by
+   * `previousNode`) so a shared layout shell is preserved instead of torn down. Returns the rendered tree
+   * — the host tracks it as the new "current" tree for the next navigation's diff.
+   */
+  mountReconcile(container: HTMLElement, previousNode: HtmlNode | null): HtmlNode {
+    const node = this.render();
+    this._renderManager.adopt(node, container, previousNode);
+    return node;
+  }
+
+  /** The virtual tree currently reflected in the DOM (the diff baseline for the next navigation). */
+  getCurrentTree(): HtmlNode | null {
+    return this._renderManager.getCurrentNode();
+  }
+
+  /** Stateless components hold no lifecycle/DOM ownership to release on navigation away. */
+  disposeQuietly(): void {}
+
   getVirtualNode(): HtmlNode {
     return this.render();
   }
@@ -147,6 +177,51 @@ export abstract class StatefulComponent extends Component {
       this._renderManager.mount(node, container);
       this._mounted = true;
       this.state.onMount();
+    }
+  }
+
+  /**
+   * Hydrate existing SSR markup in `container`: attach listeners, take ownership of the tree through the
+   * render manager (so later setState re-renders and SPA-nav diffs work), and run onMount. The caller has
+   * already determined SSR content is present, so this bypasses the `data-ssr` gate that {@link mount} uses.
+   */
+  hydrate(container: HTMLElement): void {
+    const node = this.render();
+    this._renderManager.hydrate(node, container);
+    this._mounted = true;
+    this.state.onMount();
+  }
+
+  /**
+   * SPA-navigation mount: reconcile into a root that already holds the outgoing page's DOM (described by
+   * `previousNode`) so a shared layout shell is preserved instead of torn down. Wires this component's
+   * render manager to the root (so later setState re-renders reconcile correctly) and runs onMount.
+   * Returns the rendered tree — the host tracks it as the new "current" tree for the next nav's diff.
+   */
+  mountReconcile(container: HTMLElement, previousNode: HtmlNode | null): HtmlNode {
+    const node = this.render();
+    this._renderManager.adopt(node, container, previousNode);
+    this._mounted = true;
+    this.state.onMount();
+    return node;
+  }
+
+  /** The virtual tree currently reflected in the DOM (the diff baseline for the next navigation). */
+  getCurrentTree(): HtmlNode | null {
+    return this._renderManager.getCurrentNode();
+  }
+
+  /**
+   * Release lifecycle ownership when navigating away WITHOUT touching the DOM. SPA navigation already
+   * reconciled the root to the next page (preserving any shared shell); calling {@link unmount} here
+   * would reconcile this component's tree to null and delete that shared DOM. Marking `_mounted=false`
+   * also makes any already-queued `_scheduleRender` rAF a no-op, so a stale outgoing page can't clobber
+   * the freshly mounted one.
+   */
+  disposeQuietly(): void {
+    if (this._mounted) {
+      this._state?.onDispose();
+      this._mounted = false;
     }
   }
 
