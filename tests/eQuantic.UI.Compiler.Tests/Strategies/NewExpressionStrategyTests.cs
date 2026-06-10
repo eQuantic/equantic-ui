@@ -82,9 +82,20 @@ public class NewExpressionStrategyTests
     }
     
     [Fact]
-    public void IsPattern_Declaration_ConvertsToIIFE()
+    public void IsPattern_Declaration_BindsInsideCondition()
     {
         var js = Convert("x is string s");
-        Assert.Equal("((() => { s = x; return typeof x === 'string'; })())", js);
+        // The bound variable is assigned (to a slot IfStatementStrategy hoists) inside the condition,
+        // guarded by `&&` so the assignment only runs once the type check passed.
+        Assert.Equal("(typeof x === 'string' && (s = x, true))", js);
+    }
+
+    [Fact]
+    public void IsPattern_PropertyPattern_BindsNestedVariable()
+    {
+        // The `var y` nested in a property subpattern is bound from its member path (`p.y`) — previously it
+        // matched the shape but never bound the variable.
+        var js = Convert("p is { X: 0, Y: var y }");
+        Assert.Equal("((p != null && p.x === 0) && (y = p.y, true))", js);
     }
 }

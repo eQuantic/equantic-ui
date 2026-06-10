@@ -183,10 +183,11 @@ Design notes:
   `_s`, bindings hoisted and assigned inside the arm condition (so `when` sees them and a failing `when`
   falls through), `default` → trailing `else`; a constant-only switch keeps the native JS `switch`.
   **Positional patterns over records ✅** — read by `Deconstruct` member (`.x`/`.y`), not index (a record is a
-  plain object). (`PatternConformanceTests`, `SwitchStatementPatternTests`.) Remaining niche gaps — the same
-  advanced patterns inside `is` expressions (switch forms done; `is` binds only its top-level designation),
-  constructor overloads & `:this`/`:base` delegation (JS single ctor) — are tracked as a
-  backlog.) **Generic components** — the `<T>` class declaration transpiles, but `new T()` (instantiating a
+  plain object). **`is` patterns ✅** — share the same `PatternConverter`, so `if (p is { X: 0, Y: var y })`
+  binds the nested `var y` (assigned inside the condition, to a slot `IfStatementStrategy` hoists). (Tests:
+  `PatternConformanceTests`, `SwitchStatementPatternTests`, `ModernPatternsTests`, `NewExpressionStrategyTests`.)
+  Remaining niche gap — constructor overloads & `:this`/`:base` delegation (JS has a single constructor) — is
+  tracked as a backlog.) **Generic components** — the `<T>` class declaration transpiles, but `new T()` (instantiating a
   type parameter) raises **EQ2003**: generic args are erased at runtime in JS, so the concrete ctor is
   unknown. Authors pass a factory/value instead of constructing `T` directly. Cross-ref:
   **Phase 2 client router** is complete; `RenderContext.Route` (params/query) is the routing-facing surface.

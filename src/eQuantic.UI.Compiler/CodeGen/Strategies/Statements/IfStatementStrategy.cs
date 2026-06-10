@@ -62,7 +62,14 @@ public class IfStatementStrategy : IStatementStrategy
                     vars.Add(single.Identifier.Text);
                 }
                 break;
+            case VarPatternSyntax { Designation: SingleVariableDesignationSyntax varDesig }
+                when varDesig.Identifier.Text != "_":
+                // `var x` anywhere in the pattern (e.g. `{ Y: var y }`, `(0, var b)`, `[var a, ..]`).
+                vars.Add(varDesig.Identifier.Text);
+                break;
             case RecursivePatternSyntax recursive:
+                if (recursive.Designation is SingleVariableDesignationSyntax recDesig && recDesig.Identifier.Text != "_")
+                    vars.Add(recDesig.Identifier.Text);
                 if (recursive.PositionalPatternClause != null)
                 {
                     foreach (var sub in recursive.PositionalPatternClause.Subpatterns)
@@ -73,6 +80,9 @@ public class IfStatementStrategy : IStatementStrategy
                     foreach (var sub in recursive.PropertyPatternClause.Subpatterns)
                         CollectPatternVariables(sub.Pattern, vars);
                 }
+                break;
+            case SlicePatternSyntax { Pattern: { } slicePat }:
+                CollectPatternVariables(slicePat, vars);
                 break;
              case BinaryPatternSyntax binary:
                 CollectPatternVariables(binary.Left, vars);
