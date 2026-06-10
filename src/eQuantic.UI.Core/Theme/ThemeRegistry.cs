@@ -29,6 +29,16 @@ public static class ThemeRegistry
         RegisterEQTheme<IAvatarTheme>(() => new AvatarThemeEQ());
         RegisterEQTheme<IDialogTheme>(() => new DialogThemeEQ());
         RegisterEQTheme<ITabsTheme>(() => new TabsThemeEQ());
+        // Overlay / navigation / advanced-input themes required by AppThemeEQ — without these the
+        // default (EQ) app theme threw "No theme registered for I…Theme" and 500'd every page.
+        RegisterEQTheme<IContextMenuTheme>(() => new ContextMenuThemeEQ());
+        RegisterEQTheme<IDrawerTheme>(() => new DrawerThemeEQ());
+        RegisterEQTheme<IDropdownMenuTheme>(() => new DropdownMenuThemeEQ());
+        RegisterEQTheme<ITooltipTheme>(() => new TooltipThemeEQ());
+        RegisterEQTheme<IPopoverTheme>(() => new PopoverThemeEQ());
+        RegisterEQTheme<IPaginationTheme>(() => new PaginationThemeEQ());
+        RegisterEQTheme<IScrollAreaTheme>(() => new ScrollAreaThemeEQ());
+        RegisterEQTheme<IInputOTPTheme>(() => new InputOTPThemeEQ());
     }
 
     /// <summary>
