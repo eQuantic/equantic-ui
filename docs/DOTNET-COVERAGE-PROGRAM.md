@@ -60,7 +60,7 @@ A first-party library of faithful .NET implementations. Candidates, by need:
 | `int`/`short`/`byte` overflow | JS doesn't wrap | accept JS number for the common case; offer checked ops; **document** |
 | `char` | no char type (UTF-16 code unit) | represent as number where used arithmetically; string where textual |
 | `Math.Round` midpoint | JS rounds half-up | `eq.round` with MidpointRounding.ToEven (banker's) |
-| `string.Format` / `ToString(fmt)` | partial | `format` (exists) — extend specifiers (D, P, C culture-aware, custom) |
+| `string.Format` / `ToString(fmt)` | partial | ✅ `$eq.text.stringFormat` (positional `{i}` / `{i:spec}` reusing the interpolation formatter, `{{`/`}}` unescape); `format` (`ToString(fmt)`) — remaining: extend specifiers (culture-aware C/P, custom numeric/date) |
 | `Guid` | none | `eq.Guid` (parse/new/format/equality) |
 | `DateTime` / `DateTimeOffset` / `TimeSpan` | `Date` only, no formatting/arith parity | ✅ `$eq.time.dateTime` / `timeSpan` / `dateTimeOffset` (tick-precise; formatting, add/subtract, components, instant comparison) |
 | `Convert.ToX` / `int.Parse` / `TryParse` | loose / different errors | `eq.convert` / strict parse matching .NET (throw on invalid, radix, overflow) |
@@ -145,14 +145,24 @@ Design notes:
     not just the positional param→prop auto-assign. (Chaining `:this`/`:base`, overloads and C# 12 primary
     constructors remain on the backlog.)
   - **Expression-bodied `Build`** (`=> new Box{…}`) ✅ — was emitting "Build method not implemented".
+  - **Field initializers ✅** — bare collection-initializer braces (`= { a, b }` / `= new[]{…}`) emit a JS
+    array `[...]`; target-typed `new(args)` on a named type emits `new Type(args)` (was dropping the type).
+  - **Component inheritance ✅** — a class is detected as a component transitively (subclass of a subclass of
+    `Stateful`/`StatelessComponent`, via a fixpoint pre-pass), and an `abstract` base emits as an abstract TS
+    class (its bodyless members are skipped) so concrete subclasses extend a real module.
+  - **Static helper classes ✅** — a `static class` of helpers is emitted as its own module (mirrors the
+    record path) and reactively imported, so `Helpers.Format(x)` resolves instead of leaking an import.
+  - **`string.Format` ✅** — routes to `$eq.text.stringFormat`, which substitutes positional `{i}` / `{i:spec}`
+    placeholders (the specifier reuses the interpolation formatter, so `{0:F2}` works) and unescapes `{{`/`}}`.
   - **Import collector ✅** — only types we actually emit (records/components/enums the resolver scanned)
     are imported; primitives (`int`/`bool`), `$eq`/BCL-compat types (`DateTime`/`Math`/`Guid`/…) and
     static-field names read as `ClassName.X` no longer leak as bogus `import { X } from "./X"`.
   - Methods ✅, server actions ✅.
   (Surfaced + fixed via the Phase 2 sample + authoring sweep: see `docs/PHASE-2-CLIENT-ROUTER-PLAN.md` M3;
-  compiler tests `ComponentStaticFieldTests`, `AuthoringCoverageTests`. Remaining niche gaps — bare
-  array-brace/target-typed-`new()` field initializers, static helper-class bodies, enum dict-keys & casts,
-  advanced pattern-matching, raw/verbatim-interpolated strings — are tracked as a backlog.) Cross-ref:
+  compiler tests `ComponentStaticFieldTests`, `AuthoringCoverageTests`, `StringStrategyTests`. Remaining niche
+  gaps — enum dict-keys & `(int)`-casts (a deliberate design call: enums are string-represented), advanced
+  pattern-matching, raw/verbatim-interpolated strings, ctor chaining (`:this`/`:base`) & C# 12 primary
+  constructors — are tracked as a backlog.) Cross-ref:
   **Phase 2 client router** is complete; `RenderContext.Route` (params/query) is the routing-facing surface.
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
   pointers raise `EQ2001`; `goto`/`goto case`/`goto default` raise `EQ2002` (no JS equivalent). `unsafe`/

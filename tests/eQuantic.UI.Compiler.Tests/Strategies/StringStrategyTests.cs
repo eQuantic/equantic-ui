@@ -213,6 +213,20 @@ public class StringStrategyTests
     }
 
     [Fact]
+    public void Format_MapsToRuntimeHelper()
+    {
+        var result = TestHelper.ConvertExpression("string.Format(\"{0} + {1}\", a, b)");
+        result.Should().Be("$eq.text.stringFormat('{0} + {1}', this.a, this.b)");
+    }
+
+    [Fact]
+    public void Format_WithSpecifier_PreservesFormatString()
+    {
+        var result = TestHelper.ConvertExpression("string.Format(\"{0:F2}\", Id)");
+        result.Should().Be("$eq.text.stringFormat('{0:F2}', this.id)");
+    }
+
+    [Fact]
     public void Equals_MapsToStrictEquality()
     {
         var result = TestHelper.ConvertExpression("string.Equals(a, b)");
