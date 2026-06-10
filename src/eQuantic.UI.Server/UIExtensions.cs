@@ -449,11 +449,24 @@ public static class UIExtensions
             }
         }
 
+        // Client route table from [Page] attributes — lets the runtime resolve URLs to page bundles
+        // for client-side (SPA) navigation without a server round-trip.
+        static string JsStr(string s) => s.Replace("\\", "\\\\").Replace("'", "\\'");
+        var routeEntries = options.AssembliesToScan
+            .SelectMany(a => a.GetTypes())
+            .SelectMany(t => t.GetCustomAttributes<Core.PageAttribute>()
+                .Select(attr => (Pattern: attr.Route, Page: t.Name)))
+            .Distinct()
+            .ToList();
+        var routesJson = "[" + string.Join(",", routeEntries
+            .Select(r => $"{{pattern:'{JsStr(r.Pattern)}',page:'{JsStr(r.Page)}'}}")) + "]";
+
         // Inject configuration object
         var configJson = $@"{{
             page: {pageValue},
             version: '{BuildId}',
-            ssr: {ssrEnabled.ToString().ToLowerInvariant()}
+            ssr: {ssrEnabled.ToString().ToLowerInvariant()},
+            routes: {routesJson}
         }}";
 
         // Render HTML using template engine with conditionals

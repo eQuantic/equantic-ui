@@ -6,6 +6,7 @@ export * from '../../eQuantic.UI.Runtime/src/index';
 import {
   StyleBuilder,
   getReconciler,
+  Router,
   type EqConfig,
   type HtmlNode,
 } from '../../eQuantic.UI.Runtime/src/index';
@@ -75,6 +76,17 @@ export async function boot(): Promise<void> {
     }
 
     await loadAndMountPage(root, pageName, config);
+
+    // Phase 2: when the server provided a route table, enable client-side (SPA) navigation —
+    // internal link clicks swap the page bundle in place instead of triggering a full reload.
+    if (config.routes && config.routes.length > 0) {
+      const router = new Router({
+        routes: config.routes,
+        onNavigate: (match) => navigateToPage(root, match.page, config),
+      });
+      router.start();
+      (window as unknown as { __eqRouter?: Router }).__eqRouter = router;
+    }
   } catch (error) {
     renderError(root, error as Error);
   }
@@ -95,20 +107,14 @@ function resolvePageName(config: EqConfig): string | null {
 }
 
 /**
- * Loads the page module and mounts the component
+ * Dynamically imports a page bundle and returns its exported component class. Returns `null` when the
+ * bundle can't be loaded (missing route → 404); throws when the bundle loads but doesn't export the
+ * expected class (a build/contract error).
  */
-async function loadAndMountPage(
-  root: HTMLElement,
+async function loadPageModule(
   pageName: string,
   config: EqConfig,
-): Promise<void> {
-  const hasSSRContent = root.children.length > 0;
-
-  // Show loading only if no SSR content
-  if (!hasSSRContent) {
-    root.innerHTML = '<div class="eq-loading">Loading...</div>';
-  }
-
+): Promise<(new () => MountableComponent) | null> {
   const cacheBuster = config.version ? `?v=${config.version}` : '';
   const modulePath = `${MODULE_PATH_PREFIX}${pageName}.js${cacheBuster}`;
 
@@ -120,13 +126,49 @@ async function loadAndMountPage(
   try {
     module = await import(/* @vite-ignore */ modulePath);
   } catch {
-    render404(root, pageName);
-    return;
+    return null;
   }
 
   const ComponentClass = module[pageName] as new () => MountableComponent;
   if (!ComponentClass) {
     throw new Error(`Module '${pageName}' does not export class '${pageName}'`);
+  }
+  return ComponentClass;
+}
+
+/** Full client mount (no hydration): clears the root and renders the component into it. */
+function mountComponent(root: HTMLElement, component: MountableComponent, pageName: string): void {
+  root.innerHTML = '';
+  if (typeof component.mount === 'function') {
+    component.mount(root);
+  } else if (typeof component.render === 'function') {
+    component.render(root);
+  } else {
+    renderMountError(root, pageName);
+  }
+  if (isDev()) {
+    console.log(`Mounted: ${pageName}`);
+  }
+}
+
+/**
+ * Initial load: hydrates the SSR HTML when present (attaching event listeners to the server-rendered
+ * markup), otherwise does a full client mount.
+ */
+async function loadAndMountPage(
+  root: HTMLElement,
+  pageName: string,
+  config: EqConfig,
+): Promise<void> {
+  const hasSSRContent = root.children.length > 0;
+  if (!hasSSRContent) {
+    root.innerHTML = '<div class="eq-loading">Loading...</div>';
+  }
+
+  const ComponentClass = await loadPageModule(pageName, config);
+  if (!ComponentClass) {
+    render404(root, pageName);
+    return;
   }
 
   const component = new ComponentClass();
@@ -137,28 +179,35 @@ async function loadAndMountPage(
       console.log(`Hydrating: ${pageName}`);
     }
     const reconciler = getReconciler();
-    const virtualNode = component.getVirtualNode();
-    const result = reconciler.hydrateRoot(root, virtualNode);
-
+    const result = reconciler.hydrateRoot(root, component.getVirtualNode());
     if (!result.success && isDev()) {
       console.warn('Hydration warnings:', result.warnings);
     }
     return;
   }
 
-  // Full mount
-  root.innerHTML = '';
+  mountComponent(root, component, pageName);
+}
 
-  if (typeof component.mount === 'function') {
-    component.mount(root);
-  } else if (typeof component.render === 'function') {
-    component.render(root);
-  } else {
-    renderMountError(root, pageName);
-  }
-
-  if (isDev()) {
-    console.log(`Mounted: ${pageName}`);
+/**
+ * Client-side (SPA) navigation: loads the target page bundle and fully mounts it into the root — no
+ * hydration (there is no fresh SSR content on a client navigation), no full page reload.
+ */
+async function navigateToPage(
+  root: HTMLElement,
+  pageName: string,
+  config: EqConfig,
+): Promise<void> {
+  root.innerHTML = '<div class="eq-loading">Loading...</div>';
+  try {
+    const ComponentClass = await loadPageModule(pageName, config);
+    if (!ComponentClass) {
+      render404(root, pageName);
+      return;
+    }
+    mountComponent(root, new ComponentClass(), pageName);
+  } catch (error) {
+    renderError(root, error as Error);
   }
 }
 
