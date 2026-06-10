@@ -11,8 +11,12 @@ if (args.Length < 2)
     return 1;
 }
 
-var sourceDirs = args[0].Split(';', StringSplitOptions.RemoveEmptyEntries);
-var outputDir = args[1];
+// TrimEntries: the SDK passes the source dirs as "$(MSBuildProjectDirectory);$(_StandardComponentsDir)",
+// and _StandardComponentsDir is defined as multi-line XML, so its value carries leading whitespace/
+// newline. Without trimming, Directory.Exists fails on the standard-components path → the built-in
+// components (Grid/Box/…) are never transpiled, and pages referencing them break with "X is not defined".
+var sourceDirs = args[0].Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+var outputDir = args[1].Trim();
 var bunPath = args.ToList().Contains("--bun") ? args[args.ToList().IndexOf("--bun") + 1] : null;
 var isWatchMode = args.Any(a => a == "--watch");
 
