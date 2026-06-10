@@ -36,7 +36,7 @@
 
 | Challenge | Blazor WASM | JavaScript Frameworks | **eQuantic.UI** |
 |-----------|-------------|----------------------|-----------------|
-| **Bundle size** | ~2MB+ (runtime) | Varies (~100KB-500KB) | **~52KB** runtime |
+| **Bundle size** | ~2MB+ (runtime) | Varies (~100KB-500KB) | **~57KB** runtime |
 | **Language** | C# | JavaScript/TypeScript | **C#** |
 | **Type safety** | At runtime | Optional (TS) | **Compile-time** |
 | **Server actions** | SignalR setup | REST/GraphQL setup | **Built-in RPC** |
@@ -51,7 +51,7 @@
 
 ### Prerequisites
 
-- .NET 8.0 SDK (that's it — no Node.js, no npm, nothing else)
+- .NET 10.0 SDK (that's it — no Node.js, no npm, nothing else)
 
 ### 1. Create a new project
 
@@ -65,10 +65,10 @@ cd MyApp
 Update your `.csproj`:
 
 ```xml
-<Project Sdk="eQuantic.UI.Sdk/0.1.2">
+<Project Sdk="eQuantic.UI.Sdk/0.1.6">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <!-- No manual package references needed - SDK includes everything automatically -->
@@ -421,8 +421,8 @@ Consistent styling with type-safe variants:
 new Button
 {
     Text = "Submit",
-    Variant = Variant.Primary,    // Primary, Secondary, Destructive, Outline, Ghost, Link...
-    Size = Size.Large             // Small, Medium, Large, XLarge
+    Variant = Variant.Primary,        // Primary, Secondary, Destructive, Outline, Ghost, Link...
+    Size = SizeVariant.Large          // Small, Medium, Large, XLarge
 }
 ```
 
@@ -431,7 +431,7 @@ new Button
 First-class Tailwind support with three approaches for maximum flexibility:
 
 ```xml
-<PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.2" />
+<PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.6" />
 ```
 
 #### 1. Type-Safe Typed Objects with + Operator (Recommended)
@@ -501,7 +501,7 @@ new Container
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                        RUNTIME (~49KB)                          │
+│                        RUNTIME (~57KB)                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │   • Virtual DOM with keyed reconciliation                       │
@@ -526,14 +526,14 @@ The entire toolchain is embedded in NuGet packages:
 
 eQuantic.UI uses a **self-contained package architecture** where each package manages its own artifacts:
 
-- **Runtime Package** (`eQuantic.UI.Runtime`) contains `runtime.js` (~49KB)
+- **Runtime Package** (`eQuantic.UI.Runtime`) contains `runtime.js` (~57KB)
 - **Components Package** (`eQuantic.UI.Components`) contains C# source for type resolution
 - **SDK Package** (`eQuantic.UI.Sdk`) orchestrates build via NuGet references
 
 This design ensures:
 
 - ✅ **No tight coupling** between packages
-- ✅ **Independent versioning** (use Runtime 0.1.3 with SDK 0.1.2)
+- ✅ **Independent versioning** (e.g. use Runtime 0.1.7 with SDK 0.1.6)
 - ✅ **No artifact duplication** across packages
 - ✅ **Flexible updates** without republishing all packages
 
@@ -545,21 +545,34 @@ This design ensures:
 
 The compiler supports modern C# constructs:
 
+Fidelity is enforced by a **conformance harness** (460+ cases) that runs each C# construct as both
+transpiled JS and real .NET and asserts identical results. Every construct resolves to one of three
+mechanisms: a native JS strategy, a faithful `$eq.*` compat helper, or a build error when it's
+genuinely impossible.
+
 | Category | Supported |
 |----------|-----------|
-| **Expressions** | Arithmetic, logical, ternary, string interpolation, `??`, `?.`, `?[]`, `^n` (index from end) |
-| **Control Flow** | `if`, `switch`, `for`, `foreach`, `while`, `do-while`, `break`, `continue`, `throw` |
+| **Expressions** | Arithmetic, logical, ternary, string interpolation, `??`, `?.`, `?[]`, `^n` (index from end), `checked`/`unchecked` overflow |
+| **Control Flow** | `if`, `switch`, `for`, `foreach`, `while`, `do-while`, `break`, `continue`, `throw`, local functions |
 | **Pattern Matching** | Type, property, positional, relational patterns (C# 9-12) |
-| **String Methods** | `Split`, `Replace`, `StartsWith`, `EndsWith`, `Contains`, `Substring`, `IndexOf`, `PadLeft/Right`, `Trim*`, `IsNullOrEmpty`, `Join`, `Concat`, `Compare`, `Equals`, `Format` |
-| **Number Methods** | `int.Parse`, `double.Parse`, `float.Parse`, `decimal.Parse`, `int.TryParse`, `double.TryParse` |
-| **List Methods** | `Add`, `Remove`, `Clear`, `Insert`, `Find`, `FindAll`, `Exists`, `Sort`, `ForEach`, `GetRange` |
-| **Enum Methods** | `Enum.Parse<T>`, `Enum.TryParse<T>`, `Enum.GetValues<T>`, `Enum.GetNames<T>`, `Enum.IsDefined` |
-| **Dictionary Methods** | `ContainsKey`, `TryGetValue`, `Add`, `Remove`, `Clear`, `Keys`, `Values` |
-| **LINQ Set Operations** | `Concat`, `Union`, `Intersect`, `Except` - Full set theory operations for collections |
-| **LINQ** | `Select`, `SelectMany`, `Where`, `First`, `Last`, `Single`, `Any`, `All`, `Count`, `Sum`, `Average`, `Min`, `Max`, `OrderBy`, `Skip`, `Take`, `Distinct`, `Contains`, `Reverse` |
+| **Numeric types** | `int`/`double`/`float`, **`decimal`** (exact base-10, wire-as-string), **`long`/`ulong`** (BigInt, exact), parsing & `Convert.ToX` |
+| **Value types** | `record`/`struct`/value tuples — **structural** `==`/`Equals`/`Contains`/`Distinct`, `with` copies, deconstruction; records emit as **named JS classes** with their instance methods, inheritance & generics, restored after SSR hydration |
+| **Date & Time** | `DateTime`, `DateTimeOffset`, `TimeSpan`, `DateOnly`, `TimeOnly` — tick-precise compat (formatting, arithmetic, comparison) |
+| **Nullable** | `Nullable<T>` — `HasValue`/`Value`/`GetValueOrDefault`, lifted arithmetic/relational with null-propagation |
+| **String / Text** | `Split`, `Replace`, `StartsWith`/`EndsWith`/`Contains` (+ `StringComparison`/IgnoreCase), `Substring`, `IndexOf`, `PadLeft/Right`, `Trim*`, `Join`, `Concat`, `Format` (F/X/N specifiers), `StringBuilder` |
+| **Collections** | `List`, `Dictionary` (string/number keys → object; **record/struct/tuple keys → structural `valueMap`**), `HashSet`, `Queue`, `Stack` |
+| **Dictionary** | `ContainsKey`, `TryGetValue`, `GetValueOrDefault`, `Add`, `Remove`, `Clear`, `Keys`, `Values`, `Count`, indexer get/set, `foreach` |
+| **Enum** | `Enum.Parse<T>`, `Enum.TryParse<T>`, `Enum.GetValues<T>`, `Enum.GetNames<T>`, `Enum.IsDefined` |
+| **LINQ** | `Select`/`SelectMany`/`Where` (+ indexed), `OrderBy`/`ThenBy` (stable composite), `GroupBy`, `Join`/`GroupJoin`/`ToLookup`, `ToDictionary`/`ToList`/`ToArray`, `Distinct(By)`/`Min(By)`/`Max(By)`, `Take(While)`/`Skip(While)`, `Aggregate`/`Sum`/`Average`/`Count`/`Any`/`All`/`First`/`Last`, `Zip`/`Chunk`/`Concat`/`Reverse` |
+| **LINQ Set Operations** | `Union`, `Intersect`, `Except`, `Concat` |
 | **Async/Await** | `Task<T>` → `Promise<T>` |
 | **Resources** | `using` statements and declarations |
 | **Exceptions** | `try-catch-finally`, `throw` (Exception → Error) |
+
+> Constructs with no JS equivalent (pointers, `goto`, client-side `System.IO`/`Net.Http`, etc.) fail the
+> build with a canonical diagnostic instead of miscompiling silently. See the
+> [.NET coverage program](docs/DOTNET-COVERAGE-PROGRAM.md) and the
+> [Supported Features wiki](https://github.com/equantic/equantic-ui/wiki/SupportedFeatures) for the full matrix.
 
 ---
 
@@ -607,7 +620,8 @@ src/
 | ✅ Runtime & State | Keyed reconciliation, WeakMap event tracking, state management |
 | ✅ Server Actions | RPC bridge with `[Authorize]` and payload validation |
 | ✅ SSR & Hydration | Server-side rendering with client hydration |
-| ✅ Theming System | `StyleBuilder` (CVA pattern), `Variant`/`Size` enums, `IAppTheme` |
+| ✅ Theming System | `StyleBuilder` (CVA pattern), `Variant`/`SizeVariant` enums, `IAppTheme` |
+| ✅ .NET Surface Coverage | Conformance-validated compat for value types, decimal/long, date-time family, Nullable, StringBuilder, collections (incl. record-keyed dictionaries) |
 | ✅ Component Robustness | Compound components, variants, loading states, validation, input groups |
 | ✅ Developer Experience | Source Maps for C# debugging, HMR support |
 
@@ -627,7 +641,7 @@ src/
 | 📋 DataGrid Pro | Enterprise-grade data grid with pagination and editing |
 | 📋 Dynamic Themes | Runtime Dark Mode switching |
 | 📋 eQuantic DevTools | Browser extension to inspect component tree and state |
-| 📋 Material Components | `eQuantic.UI.Material` component library |
+| 📋 Material Components | Expand the `eQuantic.UI.Material` package (theme + components available in preview) |
 | 📋 Online Playground | WASM-based online editor |
 
 See the [full roadmap](https://github.com/equantic/equantic-ui/wiki/Roadmap) for more details.
