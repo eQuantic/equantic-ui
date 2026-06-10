@@ -175,9 +175,14 @@ Design notes:
   (Surfaced + fixed via the Phase 2 sample + authoring sweep: see `docs/PHASE-2-CLIENT-ROUTER-PLAN.md` M3;
   compiler tests `ComponentStaticFieldTests`, `AuthoringCoverageTests`, `StringStrategyTests`,
   `EnumCastStrategyTests`, `EnumFlagsStrategyTests`; conformance `EnumConformanceTests`, `StringConformanceTests`.
-  Remaining niche gaps — advanced pattern-matching (property/positional `var` bindings, list patterns),
-  constructor overloads & `:this`/`:base` delegation (JS single ctor), generic-component `new T()` (JS type
-  erasure) — are tracked as a backlog.) Cross-ref:
+  Advanced **switch-expression patterns ✅** — nested `var` bindings in property (`{ X: var x }`) and
+  positional (`(0, var y)`) subpatterns, list patterns (`[]` / `[a, b]` / `[var a, .. var rest, var z]`),
+  and relational + `and` binding (`> 0 and var n`) — collect every binding with its access path and declare
+  them in the arm (`EnumConformanceTests`-style `PatternConformanceTests`). Remaining niche gaps — the same
+  advanced patterns inside switch STATEMENTS / `is` expressions (expression form done), positional patterns
+  over records (need `Deconstruct` element mapping, not index access), constructor overloads & `:this`/
+  `:base` delegation (JS single ctor), generic-component `new T()` (JS type erasure) — are tracked as a
+  backlog.) Cross-ref:
   **Phase 2 client router** is complete; `RenderContext.Route` (params/query) is the routing-facing surface.
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
   pointers raise `EQ2001`; `goto`/`goto case`/`goto default` raise `EQ2002` (no JS equivalent). `unsafe`/
