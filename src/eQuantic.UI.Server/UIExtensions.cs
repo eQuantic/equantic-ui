@@ -250,10 +250,37 @@ public static class UIExtensions
                     context.Response.ContentType = "application/javascript";
                     await context.Response.SendFileAsync(localPath);
                 }
-                else 
+                else
                 {
                     await context.Response.WriteAsync($"// 404: Component {name} not found at {path} or {localPath}");
                 }
+            }
+        });
+
+        // Debug/Fallback: serve component source maps so C# breakpoints bind — including on pages reached
+        // via client-side (SPA) navigation, where the page bundle is dynamically imported. Without this,
+        // the `.js` loads but its `.js.map` 404s and the debugger can't map back to C#. Not cached
+        // immutably (the map URL carries no version query, so a stale map must be revalidated).
+        endpoints.MapGet("/_equantic/{name}.js.map", async context =>
+        {
+            var name = (string?)context.GetRouteValue("name");
+            var webRoot = context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath;
+            var candidates = new[]
+            {
+                Path.Combine(webRoot, "_equantic", $"{name}.js.map"),
+                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic", $"{name}.js.map"),
+            };
+            var mapPath = candidates.FirstOrDefault(File.Exists);
+
+            if (mapPath != null)
+            {
+                context.Response.ContentType = "application/json";
+                context.Response.Headers["Cache-Control"] = "no-cache";
+                await context.Response.SendFileAsync(mapPath);
+            }
+            else
+            {
+                context.Response.StatusCode = 404;
             }
         });
 
