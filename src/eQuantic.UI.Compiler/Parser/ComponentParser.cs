@@ -91,25 +91,45 @@ public class ComponentParser
         var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
         var model = TryGetSemanticModel(tree);
 
+        // Pre-pass: which classes are components. A class is one if its base resolves to a known component
+        // base (semantic walk) / matches a base-name heuristic / it declares Build|Render — AND, transitively,
+        // any class extending another in-file component (so a subclass of a user component is recognized even
+        // without its own Build and without relying on the semantic model resolving the full base chain).
+        string? BaseName(ClassDeclarationSyntax c)
+        {
+            var b = c.BaseList?.Types.FirstOrDefault()?.Type.ToString();
+            if (b == null) return null;
+            if (b.Contains('<')) b = b.Substring(0, b.IndexOf('<'));
+            return b.Contains('.') ? b.Substring(b.LastIndexOf('.') + 1) : b;
+        }
+        var componentNames = new HashSet<string>();
+        foreach (var c in classes)
+        {
+            var bn = BaseName(c);
+            var hasBR = c.Members.OfType<MethodDeclarationSyntax>().Any(m => m.Identifier.Text is "Render" or "Build");
+            bool direct = model?.GetDeclaredSymbol(c) is INamedTypeSymbol s
+                ? (s.IsUiComponent() || hasBR)
+                : (bn is "StatefulComponent" or "StatelessComponent" or "HtmlElement" or "Flex" or "Container" or "Stack" || hasBR);
+            if (direct) componentNames.Add(c.Identifier.Text);
+        }
+        for (var changed = true; changed;)
+        {
+            changed = false;
+            foreach (var c in classes)
+            {
+                if (componentNames.Contains(c.Identifier.Text)) continue;
+                var bn = BaseName(c);
+                if (bn != null && componentNames.Contains(bn)) { componentNames.Add(c.Identifier.Text); changed = true; }
+            }
+        }
+
         foreach (var classDecl in classes)
         {
             var baseType = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ToString();
             var hasBuildOrRender = classDecl.Members.OfType<MethodDeclarationSyntax>()
                 .Any(m => m.Identifier.Text is "Render" or "Build");
 
-            bool isComp;
-            if (model?.GetDeclaredSymbol(classDecl) is INamedTypeSymbol symbol)
-            {
-                isComp = symbol.IsUiComponent() || hasBuildOrRender;
-            }
-            else
-            {
-                isComp = baseType is "StatefulComponent" or "StatelessComponent" or "HtmlElement"
-                             or "Flex" or "Container" or "Stack"
-                         || hasBuildOrRender;
-            }
-
-            if (!isComp) continue;
+            if (!componentNames.Contains(classDecl.Identifier.Text)) continue;
 
             var definition = new ComponentDefinition
             {
@@ -202,7 +222,7 @@ public class ComponentParser
                 definition.BaseClassName = baseType;
                 ParsePrimitiveClass(classDecl, definition);
             }
-            else if (isComp)
+            else
             {
                 // Component that extends another component (not directly StatelessComponent/HtmlElement)
                 // Check if it has its own Build method

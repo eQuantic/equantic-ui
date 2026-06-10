@@ -219,7 +219,9 @@ public class TypeScriptEmitter
                         c.Raw($"return new {component.StateClassName}(this)");
                     });
                 }
-                else if (!component.IsAbstract)
+                // A concrete component, OR an abstract base that still defines a concrete Build/members for
+                // its subclasses to inherit (a pure-abstract class with no Build emits nothing here).
+                else if (!component.IsAbstract || component.BuildMethodNode != null)
                 {
                     // Computed/get-set/static properties become real TS members (auto-props flow through
                     // the base Object.assign(props) instead).
@@ -757,6 +759,11 @@ public class TypeScriptEmitter
 
     private void EmitMethod(MethodDefinition method, TypeScriptCodeBuilder.ClassBuilder c, string? className = null)
     {
+        // Abstract methods (no body, no expression body) have nothing to emit — the concrete subclass
+        // supplies the implementation, and TS needs no abstract stub on the base.
+        if (method.SyntaxNode != null && method.SyntaxNode.Body == null && method.SyntaxNode.ExpressionBody == null)
+            return;
+
         var parameters = string.Join(", ", method.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
         var methodName = method.Name.ToCamelCase();
         

@@ -18,6 +18,9 @@ public class AuthoringCoverageTests
     private static string Ts(string body) =>
         new ComponentCompiler().CompileSource(Header + body).Single(r => r.ComponentName == "C").TypeScript;
 
+    private static string TsOf(string name, string body) =>
+        new ComponentCompiler().CompileSource(Header + body).Single(r => r.ComponentName == name).TypeScript;
+
     [Fact]
     public void ComputedGetOnlyProperty_EmitsGetter()
     {
@@ -79,6 +82,33 @@ public class AuthoringCoverageTests
                     "public override IComponent Build(RenderContext c) => new Text(_x.Label); }");
         ts.Should().Contain("new Item(9, 'z')");
         ts.Should().NotContain("_x: Item = {}");
+    }
+
+    [Fact]
+    public void Subclass_OfUserComponent_WithoutOwnBuild_IsEmitted()
+    {
+        // NoBuild extends a user component (Mid) and has no Build of its own — it must still be detected
+        // and emitted (inheriting Mid's build), not silently dropped.
+        var src = "public class Mid : StatelessComponent { public override IComponent Build(RenderContext c) => new Text(\"m\"); } " +
+                  "public class NoBuild : Mid { public string Extra() => \"x\"; }";
+        var ts = TsOf("NoBuild", src);
+        ts.Should().Contain("export class NoBuild extends Mid");
+        ts.Should().Contain("extra()");
+    }
+
+    [Fact]
+    public void AbstractBase_WithConcreteBuild_EmitsBuild_SkipsAbstractMethod()
+    {
+        var src = "public abstract class CardBase : StatelessComponent { protected abstract string Body(); " +
+                  "public override IComponent Build(RenderContext c) => new Text(Body()); } " +
+                  "public class InfoCard : CardBase { protected override string Body() => \"info\"; }";
+        var baseTs = TsOf("CardBase", src);
+        baseTs.Should().Contain("build(context");            // concrete Build is emitted for subclasses to inherit
+        baseTs.Should().Contain("this.body()");
+        baseTs.Should().NotContain("body() {}");             // abstract method gets no stub
+        var subTs = TsOf("InfoCard", src);
+        subTs.Should().Contain("export class InfoCard extends CardBase");
+        subTs.Should().Contain("body() {");                  // override provides the body
     }
 
     [Fact]
