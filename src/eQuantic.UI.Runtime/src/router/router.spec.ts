@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { matchRoute, matchPattern, type RouteEntry } from './route-table';
-import { Router, type RouteMatch } from '../index';
+import { Router, getCurrentRoute, type RouteMatch } from '../index';
 
 describe('matchPattern / matchRoute', () => {
   const routes: RouteEntry[] = [
@@ -32,6 +32,23 @@ describe('matchPattern / matchRoute', () => {
     expect(matchRoute(routes, '/missing')).toBeNull();
     expect(matchRoute(routes, '/users/1/extra')).toBeNull();
     expect(matchPattern('/a/{x}', '/a')).toBeNull();
+  });
+
+  it('honors inline constraints (:int rejects non-numeric, :guid the shape)', () => {
+    const intRoutes: RouteEntry[] = [{ pattern: '/users/{id:int}', page: 'User' }];
+    expect(matchRoute(intRoutes, '/users/42')?.params).toEqual({ id: '42' });
+    expect(matchRoute(intRoutes, '/users/-7')?.params).toEqual({ id: '-7' });
+    expect(matchRoute(intRoutes, '/users/abc')).toBeNull();
+    const guidRoutes: RouteEntry[] = [{ pattern: '/t/{id:guid}', page: 'T' }];
+    expect(matchRoute(guidRoutes, '/t/123')).toBeNull();
+    expect(
+      matchRoute(guidRoutes, '/t/3f2504e0-4f89-41d3-9a0c-0305e82c3301')?.params.id,
+    ).toBe('3f2504e0-4f89-41d3-9a0c-0305e82c3301');
+  });
+
+  it('accepts unknown constraints (server validates)', () => {
+    const r: RouteEntry[] = [{ pattern: '/p/{slug:minlength(2)}', page: 'P' }];
+    expect(matchRoute(r, '/p/hello')?.params).toEqual({ slug: 'hello' });
   });
 });
 
@@ -160,6 +177,26 @@ describe('Router (happy-dom)', () => {
     expect(seen).toHaveLength(2);
     expect(seen[0].isCurrent()).toBe(false); // first is stale
     expect(seen[1].isCurrent()).toBe(true); // second is current
+  });
+
+  it('publishes route params and query to the current route (context.Route)', async () => {
+    await router.navigate('/users/9?tab=info');
+    expect(getCurrentRoute().param('id')).toBe('9');
+    expect(getCurrentRoute().query('tab')).toBe('info');
+    expect(getCurrentRoute().param('missing')).toBeUndefined();
+  });
+
+  it('resets scroll to top on a forward navigation', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    await router.navigate('/counter');
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    scrollTo.mockRestore();
+  });
+
+  it('sets manual scroll restoration when supported', () => {
+    if ('scrollRestoration' in window.history) {
+      expect(window.history.scrollRestoration).toBe('manual');
+    }
   });
 
   it('stop() detaches the listeners', () => {

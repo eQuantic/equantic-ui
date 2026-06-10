@@ -14,6 +14,27 @@ public class RenderContext
     private static readonly AsyncLocal<IServiceProvider?> _asyncLocalProvider = new();
     private static IServiceProvider? _globalProvider;
 
+    private static readonly AsyncLocal<RouteData?> _scopedRoute = new();
+    private static readonly RouteData _emptyRoute = new();
+    private RouteData? _route;
+
+    /// <summary>
+    /// Active route data — matched parameters + query string (e.g. <c>context.Route.Param("id")</c>).
+    /// On the server it comes from the per-request scoped route (<see cref="SetScopedRoute"/>); never
+    /// null. The compiler transpiles this to the runtime's <c>context.route</c>.
+    /// </summary>
+    public RouteData Route
+    {
+        get => _route ?? _scopedRoute.Value ?? _emptyRoute;
+        set => _route = value;
+    }
+
+    /// <summary>
+    /// Sets the route data for the current async context (SSR), thread-safe via AsyncLocal so concurrent
+    /// requests don't interfere — mirroring <see cref="SetScopedServiceProvider"/>.
+    /// </summary>
+    public static void SetScopedRoute(RouteData? route) => _scopedRoute.Value = route;
+
     /// <summary>
     /// Service provider for the current async context.
     /// Uses AsyncLocal for thread-safe per-request isolation during SSR.

@@ -124,8 +124,9 @@ public class ServerRenderingService : IServerRenderingService
                 }
             }
 
-            // Set scoped provider for this async context (thread-safe via AsyncLocal)
+            // Set scoped provider + route data for this async context (thread-safe via AsyncLocal)
             RenderContext.SetScopedServiceProvider(context.RequestServices);
+            RenderContext.SetScopedRoute(BuildRouteData(context));
 
             try
             {
@@ -158,6 +159,7 @@ public class ServerRenderingService : IServerRenderingService
             finally
             {
                 RenderContext.SetScopedServiceProvider(null);
+                RenderContext.SetScopedRoute(null);
             }
         }
         catch (Exception ex)
@@ -258,6 +260,28 @@ public class ServerRenderingService : IServerRenderingService
         }
 
         throw new InvalidOperationException($"Cannot create instance of component type: {componentType.Name}");
+    }
+
+    /// <summary>
+    /// Builds the per-request <see cref="RouteData"/> from the HTTP route values and query string, so
+    /// SSR sees the same parameters the client router will (e.g. <c>id</c> in <c>/users/{id}</c>).
+    /// </summary>
+    private static RouteData BuildRouteData(HttpContext context)
+    {
+        var routeParams = new Dictionary<string, string>();
+        foreach (var rv in context.Request.RouteValues)
+        {
+            if (rv.Value is not null)
+                routeParams[rv.Key] = rv.Value.ToString() ?? string.Empty;
+        }
+
+        var query = new Dictionary<string, string>();
+        foreach (var q in context.Request.Query)
+        {
+            query[q.Key] = q.Value.ToString();
+        }
+
+        return new RouteData(routeParams, query);
     }
 
     /// <summary>

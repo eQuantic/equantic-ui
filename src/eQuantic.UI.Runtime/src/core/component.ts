@@ -6,6 +6,7 @@ import { Component, HtmlNode, RenderContext } from './types';
 import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
+import { getCurrentRoute } from '../router/current-route';
 
 /**
  * Base class for stateless components
@@ -24,6 +25,7 @@ export abstract class StatelessComponent extends Component {
       getService: <T>(key: import('./types').ServiceKey<T>) =>
         this.serviceProvider.getService<T>(key),
       serviceProvider: this.serviceProvider,
+      route: getCurrentRoute(),
     };
     const component = this.build(context);
     return component.render();
@@ -117,6 +119,7 @@ export abstract class StatefulComponent extends Component {
       getService: <T>(key: import('./types').ServiceKey<T>) =>
         this.serviceProvider.getService<T>(key),
       serviceProvider: this.serviceProvider,
+      route: getCurrentRoute(),
     };
     this.state._context = context;
 

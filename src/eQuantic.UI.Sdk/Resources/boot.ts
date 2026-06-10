@@ -7,6 +7,8 @@ import {
   StyleBuilder,
   getReconciler,
   Router,
+  matchRoute,
+  setCurrentRouteFrom,
   type EqConfig,
   type HtmlNode,
 } from '../../eQuantic.UI.Runtime/src/index';
@@ -73,6 +75,14 @@ export async function boot(): Promise<void> {
         console.log('[eQuantic.UI] Registering theme...');
       }
       (window as any).__registerTheme();
+    }
+
+    // Seed the active route from the initial URL before mounting, so SSR hydration sees the same
+    // route params/query the server rendered with (a param page would otherwise mismatch).
+    if (config.routes && config.routes.length > 0) {
+      const initialUrl = new URL(window.location.href);
+      const initialMatch = matchRoute(config.routes, initialUrl.pathname);
+      if (initialMatch) setCurrentRouteFrom(initialMatch, initialUrl);
     }
 
     await loadAndMountPage(root, pageName, config);
