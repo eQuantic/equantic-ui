@@ -162,6 +162,28 @@ public static class TypeSymbolExtensions
         return deconstruct?.Parameters.Select(p => p.Name.ToCamelCase()).ToList();
     }
 
+    /// <summary>
+    /// True when <paramref name="type"/> is a generic dictionary (<c>Dictionary</c>, <c>IDictionary</c>
+    /// or <c>IReadOnlyDictionary</c>) whose KEY is a structural value type (record/struct/value tuple).
+    /// A plain JS object can't key on those — it coerces the key to a string via <c>toString</c>,
+    /// collapsing distinct values — so the transpiler routes these to the runtime
+    /// <c>$eq.collections.valueMap</c> (structural-equality keys). String/number/enum-keyed dictionaries
+    /// return <c>false</c> and keep the plain-object representation.
+    /// </summary>
+    public static bool IsValueKeyedDictionary(this ITypeSymbol? type)
+    {
+        if (type is not INamedTypeSymbol named) return false;
+        var def = named.OriginalDefinition;
+        // Match on name + namespace + arity (not a display-string prefix) so nested helper types like
+        // `Dictionary<,>.KeyCollection` — whose display string also starts with "…Dictionary<" — don't
+        // get mistaken for the dictionary itself.
+        if (def?.ContainingNamespace?.ToDisplayString() != "System.Collections.Generic") return false;
+        var isDictionary = def.Name is "Dictionary" or "IDictionary" or "IReadOnlyDictionary";
+        return isDictionary
+            && named.TypeArguments.Length == 2
+            && named.TypeArguments[0].IsStructuralValueType();
+    }
+
     /// <summary>The element type of an array or <c>IEnumerable&lt;T&gt;</c>, or <c>null</c>.</summary>
     public static ITypeSymbol? GetEnumerableElementType(this ITypeSymbol? collectionType)
     {

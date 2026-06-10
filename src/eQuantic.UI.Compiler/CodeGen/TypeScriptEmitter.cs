@@ -137,12 +137,17 @@ public class TypeScriptEmitter
                     {
                         c.Method("render", "", false, () => 
                         {
-                            // Discover out variables
+                            // Discover `out var x` variables to hoist. Only single-variable designations:
+                            // parenthesised ones (`var (a, b) = …` deconstruction) are emitted as
+                            // `let { … } = …` by the assignment strategy, so hoisting them would yield
+                            // an invalid `let (a, b);`.
                             var outVars = component.BuildMethodNode.Body.DescendantNodes()
                                 .OfType<DeclarationExpressionSyntax>()
-                                .Select(d => d.Designation.ToString())
+                                .Select(d => d.Designation)
+                                .OfType<SingleVariableDesignationSyntax>()
+                                .Select(s => s.Identifier.Text)
                                 .Distinct();
-                            
+
                             foreach (var v in outVars)
                             {
                                 c.Raw($"let {v};");

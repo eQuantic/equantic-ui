@@ -172,6 +172,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<DateTimeOffsetStrategy>();
         _strategyRegistry.Register<StringBuilderStrategy>();
         _strategyRegistry.Register<QueueStackStrategy>();
+        _strategyRegistry.Register<ValueKeyedDictionaryStrategy>(); // Priority 25 - structurally-keyed dictionaries
         _strategyRegistry.Register<RegexStrategy>();
         _strategyRegistry.Register<HashSetStrategy>();
         _strategyRegistry.Register<NumericConstantStrategy>();
