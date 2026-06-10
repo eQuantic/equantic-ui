@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Standalone tool: not part of the solution build. -->
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/eQuantic.UI.Compiler/eQuantic.UI.Compiler.csproj" />
+    <ProjectReference Include="../../src/eQuantic.UI.Core/eQuantic.UI.Core.csproj" />
+    <ProjectReference Include="../../src/eQuantic.UI.Components/eQuantic.UI.Components.csproj" />
+  </ItemGroup>
+</Project>
