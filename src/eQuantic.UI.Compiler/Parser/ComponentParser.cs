@@ -141,6 +141,20 @@ public class ComponentParser
             }
         }
 
+        // A ComponentState<T> subclass is owned by its page: the page's module emits it COMPLETE (state
+        // fields + setState + handlers + ctor + build, via ParseStateClass) and `createState()` news it up
+        // from that same module. Emitting it ALSO as a standalone component module produced a broken,
+        // duplicated `<State>.ts/.js` carrying only `build()` — referencing state fields/handlers that
+        // module never declares. It is detected as a component here only because it has a `Build` method
+        // (and ComponentState is itself a component base), so drop state classes from the standalone set.
+        foreach (var c in classes)
+        {
+            bool isState = model?.GetDeclaredSymbol(c) is INamedTypeSymbol s
+                ? s.IsComponentState()
+                : BaseName(c) == "ComponentState";
+            if (isState) componentNames.Remove(c.Identifier.Text);
+        }
+
         foreach (var classDecl in classes)
         {
             var baseType = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ToString();
