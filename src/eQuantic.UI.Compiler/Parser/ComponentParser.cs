@@ -472,6 +472,24 @@ public class ComponentParser
 
     private void ParseConstructors(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
+        // C# 12 primary constructor: `class C(int id, string label) : Base`. Its parameters are captured as
+        // instance state when referenced in members (Build, helpers), so model them as a constructor whose
+        // params the emitter assigns to fields (`this.id = id`); IdentifierStrategy prefixes references with
+        // `this.`. (Records route through RecordTypeEmitter, not here.)
+        if (classDecl.ParameterList is { Parameters.Count: > 0 } primary)
+        {
+            var primaryDef = new MethodDefinition { Name = classDecl.Identifier.Text, ReturnType = "void" };
+            foreach (var param in primary.Parameters)
+            {
+                primaryDef.Parameters.Add(new ParameterDefinition
+                {
+                    Name = param.Identifier.Text,
+                    Type = param.Type?.ToString() ?? "object"
+                });
+            }
+            definition.Constructors.Add(primaryDef);
+        }
+
         var constructors = classDecl.Members
             .OfType<ConstructorDeclarationSyntax>()
             .Where(c => c.ParameterList.Parameters.Count > 0); // Only non-default constructors

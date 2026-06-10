@@ -135,6 +135,18 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
+    public void PrimaryConstructor_ParamsBecomeAssignedFields()
+    {
+        // C# 12 primary ctor: params are captured as instance state, assigned in the constructor and
+        // referenced as `this.<name>` in members. (Previously dropped entirely → `label`/`id` undefined.)
+        var ts = Ts("public class C(int id, string label) : StatelessComponent { " +
+                    "public override IComponent Build(RenderContext ctx) => new Text(label + id); }");
+        ts.Should().Contain("this.id = id");
+        ts.Should().Contain("this.label = label");
+        ts.Should().Contain("this.label + this.id");
+    }
+
+    [Fact]
     public void TypeConstructedOnlyInHelperOrPropertyBody_IsImported()
     {
         // A record constructed ONLY inside a helper-method body (Money) or a property-accessor body must
