@@ -105,7 +105,15 @@ public class InitializerExpressionStrategy : IConversionStrategy
             }
             return $"{{ {string.Join(", ", props)} }}";
         }
-        
+
+        // Bare array initializer: `string[] N = { "a", "b" }` (no `new[]`) — an ArrayInitializerExpression,
+        // not a collection/object initializer. Map its elements to a JS array, same as `new[] { … }`.
+        if (initializer.Kind() == SyntaxKind.ArrayInitializerExpression)
+        {
+            var elements = initializer.Expressions.Select(e => context.Converter.ConvertExpression(e));
+            return $"[{string.Join(", ", elements)}]";
+        }
+
         return "{}";
     }
 
