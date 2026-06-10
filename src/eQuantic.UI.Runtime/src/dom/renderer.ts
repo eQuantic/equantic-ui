@@ -28,6 +28,28 @@ export class RenderManager {
   }
 
   /**
+   * SPA-navigation mount: take over an existing root by reconciling against the outgoing page's tree
+   * (`previousNode`) instead of wiping it. When the two pages share a layout shell, the reconciler keeps
+   * the shell's DOM (and its listeners/scroll/focus) and only patches the changed content — the M2
+   * "persistent layout" without any explicit layout/outlet concept. With no previous tree it falls back
+   * to a clean {@link mount}.
+   */
+  adopt(node: HtmlNode, container: HTMLElement, previousNode: HtmlNode | null): void {
+    if (!previousNode) {
+      this.mount(node, container);
+      return;
+    }
+    this.container = container;
+    getReconciler().reconcile(container, previousNode, node, 0);
+    this.previousVirtualDom = node;
+  }
+
+  /** The virtual tree currently reflected in the DOM (kept in sync by mount/hydrate/update/adopt). */
+  getCurrentNode(): HtmlNode | null {
+    return this.previousVirtualDom;
+  }
+
+  /**
    * Update - reconcile old and new virtual DOM
    */
   update(newNode: HtmlNode): void {

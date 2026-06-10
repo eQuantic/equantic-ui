@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { matchRoute, matchPattern, type RouteEntry } from './route-table';
-import { Router, getCurrentRoute, type RouteMatch } from '../index';
+import { Router, getCurrentRoute, type RouteMatch, type NavigationGuard } from '../index';
 
 describe('matchPattern / matchRoute', () => {
   const routes: RouteEntry[] = [
@@ -203,5 +203,160 @@ describe('Router (happy-dom)', () => {
     router.stop();
     click(anchor({ href: '/counter' }));
     expect(onNavigate).not.toHaveBeenCalled();
+  });
+});
+
+describe('Router prefetch (happy-dom)', () => {
+  let onPrefetch: ReturnType<typeof vi.fn>;
+  let router: Router;
+  const routes: RouteEntry[] = [
+    { pattern: '/', page: 'Home' },
+    { pattern: '/counter', page: 'Counter' },
+  ];
+
+  beforeEach(() => {
+    const hd = (window as unknown as { happyDOM?: { setURL?: (u: string) => void } }).happyDOM;
+    if (hd?.setURL) hd.setURL('http://localhost:3000/');
+    else window.history.replaceState(null, '', '/');
+    document.body.innerHTML = '';
+    onPrefetch = vi.fn();
+    router = new Router({ routes, onNavigate: vi.fn(), onPrefetch, win: window });
+    router.start();
+  });
+
+  afterEach(() => router.stop());
+
+  function link(href: string, attrs: Record<string, string> = {}): HTMLAnchorElement {
+    const a = document.createElement('a');
+    a.setAttribute('href', href);
+    for (const [k, v] of Object.entries(attrs)) a.setAttribute(k, v);
+    a.textContent = 'link';
+    document.body.appendChild(a);
+    return a;
+  }
+
+  const hover = (a: HTMLAnchorElement) =>
+    a.dispatchEvent(new window.Event('pointerover', { bubbles: true }));
+
+  it('prefetches a matched data-prefetch link on hover (once, then deduped)', () => {
+    const a = link('/counter', { 'data-prefetch': 'true' });
+    hover(a);
+    hover(a);
+    expect(onPrefetch).toHaveBeenCalledTimes(1);
+    const [match] = onPrefetch.mock.calls[0] as [RouteMatch, URL];
+    expect(match.page).toBe('Counter');
+  });
+
+  it('ignores links without data-prefetch', () => {
+    hover(link('/counter'));
+    expect(onPrefetch).not.toHaveBeenCalled();
+  });
+
+  it('ignores unknown routes, the current page, and external origins', () => {
+    hover(link('/missing', { 'data-prefetch': 'true' }));
+    hover(link('/', { 'data-prefetch': 'true' })); // already here
+    hover(link('https://example.com/counter', { 'data-prefetch': 'true' }));
+    expect(onPrefetch).not.toHaveBeenCalled();
+  });
+
+  it('prefetch() is also callable programmatically and respects dedup', () => {
+    router.prefetch('/counter');
+    router.prefetch('/counter');
+    expect(onPrefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not prefetch after stop()', () => {
+    router.stop();
+    hover(link('/counter', { 'data-prefetch': 'true' }));
+    expect(onPrefetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('Router guards (happy-dom)', () => {
+  let onNavigate: ReturnType<typeof vi.fn>;
+  const routes: RouteEntry[] = [
+    { pattern: '/', page: 'Home' },
+    { pattern: '/admin', page: 'Admin' },
+    { pattern: '/login', page: 'Login' },
+  ];
+
+  function makeRouter(guards: NavigationGuard[]): Router {
+    const r = new Router({ routes, onNavigate, guards, win: window });
+    r.start();
+    return r;
+  }
+
+  beforeEach(() => {
+    const hd = (window as unknown as { happyDOM?: { setURL?: (u: string) => void } }).happyDOM;
+    if (hd?.setURL) hd.setURL('http://localhost:3000/');
+    else window.history.replaceState(null, '', '/');
+    document.body.innerHTML = '';
+    onNavigate = vi.fn();
+  });
+
+  it('allows navigation when guards return true/undefined', async () => {
+    const r = makeRouter([() => true, () => undefined]);
+    await r.navigate('/admin');
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(window.location.pathname).toBe('/admin');
+    r.stop();
+  });
+
+  it('cancels navigation (URL unchanged, page not rendered) when a guard returns false', async () => {
+    const r = makeRouter([() => false]);
+    await r.navigate('/admin');
+    expect(onNavigate).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/'); // stayed put
+    r.stop();
+  });
+
+  it('redirects when a guard returns an href, landing on the redirect target', async () => {
+    const seen: string[] = [];
+    const r = makeRouter([
+      (to) => {
+        seen.push(to.match.page);
+        return to.match.page === 'Admin' ? '/login' : true;
+      },
+    ]);
+    await r.navigate('/admin');
+    expect(window.location.pathname).toBe('/login');
+    const pages = onNavigate.mock.calls.map((c) => (c[0] as RouteMatch).page);
+    expect(pages).toEqual(['Login']); // Admin was blocked; only Login rendered
+    expect(seen).toEqual(['Admin', 'Login']); // guard ran for both, allowed Login
+    r.stop();
+  });
+
+  it('passes the pending target and current location to the guard', async () => {
+    const calls: Array<{ to: string; from: string }> = [];
+    const r = makeRouter([
+      (to, from) => {
+        calls.push({ to: to.url.pathname, from: from.pathname });
+        return true;
+      },
+    ]);
+    await r.navigate('/admin');
+    expect(calls).toEqual([{ to: '/admin', from: '/' }]);
+    r.stop();
+  });
+
+  it('addGuard registers a guard at runtime', async () => {
+    const r = makeRouter([]);
+    r.addGuard(() => false);
+    await r.navigate('/admin');
+    expect(onNavigate).not.toHaveBeenCalled();
+    r.stop();
+  });
+
+  it('blocks a guarded link click (first guard to cancel wins)', async () => {
+    const r = makeRouter([() => true, () => false]);
+    const a = document.createElement('a');
+    a.setAttribute('href', '/admin');
+    document.body.appendChild(a);
+    a.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onNavigate).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/');
+    r.stop();
   });
 });

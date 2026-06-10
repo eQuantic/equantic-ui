@@ -11,6 +11,7 @@ import {
   setCurrentRouteFrom,
   type EqConfig,
   type HtmlNode,
+  type NavigationGuard,
 } from '../../eQuantic.UI.Runtime/src/index';
 
 // --- Constants ---
@@ -22,6 +23,14 @@ interface MountableComponent {
   mount?(root: HTMLElement): void;
   render?(root: HTMLElement): void;
   getVirtualNode?(): HtmlNode;
+  /** Hydrate SSR markup and take ownership of the tree (so SPA-nav diffs can use getCurrentTree). */
+  hydrate?(root: HTMLElement): void;
+  /** SPA-nav mount that reconciles against the outgoing page's tree (preserves a shared shell). */
+  mountReconcile?(root: HTMLElement, previousNode: HtmlNode | null): HtmlNode;
+  /** The tree currently reflected in the DOM — the diff baseline when navigating away. */
+  getCurrentTree?(): HtmlNode | null;
+  /** Release lifecycle ownership on nav-away without touching the (now-reconciled) DOM. */
+  disposeQuietly?(): void;
 }
 
 declare global {
@@ -37,6 +46,12 @@ function isDev(): boolean {
 
 // --- Initialization ---
 let initialized = false;
+
+/**
+ * The page component currently mounted in the root. SPA navigation diffs the next page against this one's
+ * tree (so a shared layout shell is preserved) and disposes it without tearing down the reconciled DOM.
+ */
+let currentComponent: MountableComponent | null = null;
 
 // Expose StyleBuilder globally for back-compat ($eq and other helpers are imported by name).
 if (typeof window !== 'undefined') {
@@ -90,9 +105,20 @@ export async function boot(): Promise<void> {
     // Phase 2: when the server provided a route table, enable client-side (SPA) navigation —
     // internal link clicks swap the page bundle in place instead of triggering a full reload.
     if (config.routes && config.routes.length > 0) {
+      // Apps register navigation guards by pushing them onto window.__eqGuards (a guard can cancel a
+      // navigation by returning false, or redirect by returning an href) — e.g. an auth gate on a
+      // protected route. Read once at boot; runtime additions go through router.addGuard.
+      const guards = (window as unknown as { __eqGuards?: NavigationGuard[] }).__eqGuards;
+
       const router = new Router({
         routes: config.routes,
         onNavigate: (match, _url, isCurrent) => navigateToPage(root, match.page, config, isCurrent),
+        // Hover/focus prefetch: warm the page bundle so a click navigates instantly. loadPageModule's
+        // dynamic import is cached by the browser, so the later navigation resolves without a round-trip.
+        onPrefetch: (match) => {
+          void loadPageModule(match.page, config);
+        },
+        guards: Array.isArray(guards) ? guards : undefined,
       });
       router.start();
       (window as unknown as { __eqRouter?: Router }).__eqRouter = router;
@@ -183,25 +209,38 @@ async function loadAndMountPage(
 
   const component = new ComponentClass();
 
-  // Hydration: attach events to existing SSR HTML
+  // Hydration: attach events to existing SSR HTML. Prefer the component's own hydrate() so its render
+  // manager owns the tree — that lets the first SPA navigation away diff against it (getCurrentTree) and
+  // preserve a shared shell. Fall back to a direct reconciler hydrate for older component shapes.
   if (hasSSRContent && config.ssr !== false && component.getVirtualNode) {
     if (isDev()) {
       console.log(`Hydrating: ${pageName}`);
     }
-    const reconciler = getReconciler();
-    const result = reconciler.hydrateRoot(root, component.getVirtualNode());
-    if (!result.success && isDev()) {
-      console.warn('Hydration warnings:', result.warnings);
+    if (typeof component.hydrate === 'function') {
+      component.hydrate(root);
+    } else {
+      const result = getReconciler().hydrateRoot(root, component.getVirtualNode());
+      if (!result.success && isDev()) {
+        console.warn('Hydration warnings:', result.warnings);
+      }
     }
+    currentComponent = component;
     return;
   }
 
   mountComponent(root, component, pageName);
+  currentComponent = component;
 }
 
 /**
- * Client-side (SPA) navigation: loads the target page bundle and fully mounts it into the root — no
- * hydration (there is no fresh SSR content on a client navigation), no full page reload.
+ * Client-side (SPA) navigation: loads the target page bundle and reconciles it into the root against the
+ * outgoing page's tree — no hydration (there is no fresh SSR content on a client navigation), no full
+ * reload. Reconciling (rather than wiping + remounting) is what makes a shared layout shell persist: the
+ * reconciler keeps the shell's DOM and only patches the changed content. The outgoing page is disposed
+ * *after* the swap, without tearing down the (now-reconciled) DOM.
+ *
+ * The outgoing page stays on screen until the new bundle has loaded and rendered — no "Loading…" flash —
+ * which also means we must not blow the root away up front.
  */
 async function navigateToPage(
   root: HTMLElement,
@@ -209,16 +248,34 @@ async function navigateToPage(
   config: EqConfig,
   isCurrent?: () => boolean,
 ): Promise<void> {
-  root.innerHTML = '<div class="eq-loading">Loading...</div>';
   try {
     const ComponentClass = await loadPageModule(pageName, config);
     // A newer navigation started while this bundle was loading — don't clobber it.
     if (isCurrent && !isCurrent()) return;
     if (!ComponentClass) {
       render404(root, pageName);
+      currentComponent = null;
       return;
     }
-    mountComponent(root, new ComponentClass(), pageName);
+
+    const previous = currentComponent;
+    const next = new ComponentClass() as MountableComponent;
+
+    if (typeof next.mountReconcile === 'function') {
+      // Diff the new page against the outgoing tree (captured now, so it reflects any state the outgoing
+      // page rendered while the bundle loaded). A shared shell is preserved; only changed content patches.
+      const previousTree = previous?.getCurrentTree?.() ?? null;
+      next.mountReconcile(root, previousTree);
+      previous?.disposeQuietly?.();
+    } else {
+      // Fallback for component shapes without reconcile support: clean remount.
+      mountComponent(root, next, pageName);
+    }
+
+    currentComponent = next;
+    if (isDev()) {
+      console.log(`Navigated: ${pageName}`);
+    }
   } catch (error) {
     renderError(root, error as Error);
   }
