@@ -84,17 +84,12 @@ public class StringStaticStrategy : IConversionStrategy
 
         if (methodName == "Format")
         {
-             // Simple fallback: if 1st arg is string literal, we might do replacement, but for now
-             // we return a simplified template literal approach if just 1 arg?
-             // Or rely on a helper `stringFormat(fmt, ...args)` which we assume exists or emit inline?
-
-             // Implementing simple replacement: format(fmt, ...args)
+             // Route to the runtime helper, which substitutes {i}/{i:spec} (the latter via the same
+             // formatter the interpolation path uses, so `{0:F2}` works) and unescapes {{/}}.
+             context.UsedHelpers.Add(Eq.Import);
              var fmt = context.Converter.ConvertExpression(args[0].Expression);
              var restArgs = string.Join(", ", args.Skip(1).Select(a => context.Converter.ConvertExpression(a.Expression)));
-
-             // Emitting a runtime helper call since replace matches need regex
-             // "fmt".replace(/{(\d+)}/g, (match, number) => typeof args[number] != 'undefined' ? args[number] : match)
-             return $"(function(f, ...a) {{ return f.replace(/{{(\\d+)}}/g, (m, n) => typeof a[n] != 'undefined' ? a[n] : m); }})({fmt}, {restArgs})";
+             return restArgs.Length > 0 ? $"{Eq.StringFormat}({fmt}, {restArgs})" : $"{Eq.StringFormat}({fmt})";
         }
 
         if (methodName == "Compare")

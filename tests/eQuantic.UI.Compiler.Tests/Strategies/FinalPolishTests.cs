@@ -24,14 +24,21 @@ public class FinalPolishTests
     }
     
     [Fact]
-    public void String_Format_ConvertsToReplace()
+    public void String_Format_ConvertsToRuntimeHelper()
     {
-        // Simple test for basic transformation
+        // string.Format routes to the $eq runtime helper, which substitutes {i}/{i:spec}
+        // (the latter via the same formatter the interpolation path uses) and unescapes {{/}}.
         var code = "String.Format(\"Hello {0}\", name)";
         var js = ConvertExpression(code);
-        Assert.Contains("replace", js);
-        Assert.Contains("Hello {0}", js);
-        Assert.Contains("name", js);
+        Assert.Equal("$eq.text.stringFormat('Hello {0}', name)", js);
+    }
+
+    [Fact]
+    public void String_Format_NoArgs_PassesTemplateOnly()
+    {
+        var code = "String.Format(\"literal\")";
+        var js = ConvertExpression(code);
+        Assert.Equal("$eq.text.stringFormat('literal')", js);
     }
 
     // Task Tests

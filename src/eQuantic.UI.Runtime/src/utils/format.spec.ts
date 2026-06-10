@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseEnum, format } from './format';
+import { parseEnum, format, stringFormat } from './format';
 
 describe('parseEnum', () => {
   // String enum (TypeScript style)
@@ -112,5 +112,29 @@ describe('format (existing tests)', () => {
   it('should handle null/undefined', () => {
     expect(format(null, 'N2')).toBe('');
     expect(format(undefined, 'N2')).toBe('');
+  });
+});
+
+describe('stringFormat (string.Format)', () => {
+  it('substitutes positional placeholders', () => {
+    expect(stringFormat('{0} + {1} = {2}', 1, 2, 3)).toBe('1 + 2 = 3');
+  });
+
+  it('reuses the same placeholder index', () => {
+    expect(stringFormat('{0}-{0}', 'a')).toBe('a-a');
+  });
+
+  it('applies format specifiers via the value formatter', () => {
+    expect(stringFormat('{0:F2}', 3.14159)).toBe('3.14');
+    expect(stringFormat('{0:D3}', 7)).toBe('007');
+  });
+
+  it('unescapes doubled braces', () => {
+    expect(stringFormat('{{literal}} {0}', 'x')).toBe('{literal} x');
+  });
+
+  it('renders null/undefined args as empty string', () => {
+    expect(stringFormat('[{0}]', null)).toBe('[]');
+    expect(stringFormat('[{0}]', undefined)).toBe('[]');
   });
 });

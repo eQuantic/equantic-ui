@@ -1,7 +1,7 @@
 import { dec } from './utils/decimal';
 import { long } from './utils/long';
 import { round } from './utils/dotnet-math';
-import { format, parseEnum } from './utils/format';
+import { format, parseEnum, stringFormat } from './utils/format';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
 import { queue, stack, valueMap, linkedList } from './utils/collections';
@@ -27,7 +27,7 @@ export const $eq = {
   /** Math with .NET semantics (banker's rounding). */
   math: { round },
   /** Text: number/string formatting and StringBuilder. */
-  text: { format, stringBuilder },
+  text: { format, stringFormat, stringBuilder },
   /** Date and time, tick-precise. */
   time: { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset },
   /** Enum parsing (member-name string). */

@@ -82,6 +82,21 @@ function formatDate(value: Date, format: string): string {
 }
 
 /**
+ * .NET `string.Format(template, ...args)`. Substitutes `{i}` / `{i:spec}` placeholders (the latter via
+ * {@link format}, so `{0:F2}` formats arg 0 to 2 decimals) and unescapes `{{`/`}}` to `{`/`}`. Mirrors
+ * the interpolation path (`$"{x:F2}"`), which already uses `format`.
+ */
+export function stringFormat(template: string, ...args: unknown[]): string {
+  return template.replace(/\{\{|\}\}|\{(\d+)(?::([^}]*))?\}/g, (m, idx, spec) => {
+    if (m === '{{') return '{';
+    if (m === '}}') return '}';
+    const v = args[Number(idx)];
+    if (spec != null) return format(v, spec);
+    return v == null ? '' : String(v);
+  });
+}
+
+/**
  * Parse enum value from string (case-insensitive)
  * @param value The string value to parse
  * @param enumType The enum object

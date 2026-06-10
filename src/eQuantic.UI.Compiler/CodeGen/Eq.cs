@@ -16,6 +16,7 @@ public static class Eq
     public const string Long = "$eq.num.long";
     public const string Round = "$eq.math.round";
     public const string Format = "$eq.text.format";
+    public const string StringFormat = "$eq.text.stringFormat";
     public const string StringBuilder = "$eq.text.stringBuilder";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
