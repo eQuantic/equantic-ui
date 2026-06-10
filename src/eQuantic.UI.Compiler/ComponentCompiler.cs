@@ -103,6 +103,16 @@ public class ComponentCompiler
                 return result;
             }
 
+            // Static utility class — emit as its own module of static members.
+            if (component.IsStaticHelper &&
+                component.ValueTypeSyntax is Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax staticClass)
+            {
+                var sm = component.SyntaxTree != null ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree) : null;
+                result.TypeScript = _tsEmitter.EmitStaticHelperModule(staticClass, sm);
+                result.Success = true;
+                return result;
+            }
+
             // Semantic Analysis
             SemanticModel? semanticModel = null;
             if (component.SyntaxTree != null)

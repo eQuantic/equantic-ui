@@ -122,6 +122,13 @@ public class ComponentDefinition
     /// The record/struct declaration syntax, when <see cref="IsRecordType"/> is true.
     /// </summary>
     public Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax? ValueTypeSyntax { get; set; }
+
+    /// <summary>
+    /// True for a C# <c>static class</c> utility (e.g. <c>static class Format { … }</c>) used from a
+    /// component (<c>Format.Foo()</c>). Emitted as its own TS module of static members; <see cref="ValueTypeSyntax"/>
+    /// holds the declaration.
+    /// </summary>
+    public bool IsStaticHelper { get; set; }
 }
 
 /// <summary>

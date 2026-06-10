@@ -112,6 +112,19 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
+    public void StaticHelperClass_IsEmittedAsModuleOfStaticMembers()
+    {
+        var src = "public static class Fmt { public static string Tag(int n) => \"#\" + n; public static string Prefix => \"P\"; } " +
+                  "public class C : StatelessComponent { public override IComponent Build(RenderContext c) => new Text(Fmt.Tag(3)); }";
+        var fmt = TsOf("Fmt", src);
+        fmt.Should().Contain("export class Fmt");
+        fmt.Should().Contain("static tag(n: number) {");
+        fmt.Should().Contain("static get prefix() { return 'P'; }");
+        // The referencing component calls it statically (Fmt.tag), not as an instance method.
+        TsOf("C", src).Should().Contain("Fmt.tag(3)");
+    }
+
+    [Fact]
     public void PrimitiveTypes_AreNotImported()
     {
         // A property/var of a C# primitive type must never become `import { int } from "./int"`.

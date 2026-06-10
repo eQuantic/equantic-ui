@@ -85,6 +85,24 @@ public class ComponentParser
             }
         }
 
+        // Discover static utility classes (`static class Format { … }`) used from components — emitted as
+        // their own module of static members so `Format.Foo()` resolves at runtime.
+        foreach (var classDecl in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
+        {
+            if (classDecl.Modifiers.Any(SyntaxKind.StaticKeyword))
+            {
+                results.Add(new ComponentDefinition
+                {
+                    Name = classDecl.Identifier.Text,
+                    SourcePath = sourcePath,
+                    SyntaxTree = tree,
+                    Namespace = ns ?? "",
+                    IsStaticHelper = true,
+                    ValueTypeSyntax = classDecl,
+                });
+            }
+        }
+
         // Find component classes. Prefer a semantic base-type walk (resolves library bases like Flex /
         // Container and any user-defined intermediate component) over matching base-type name strings;
         // fall back to the syntactic heuristic when no semantic model is available.

@@ -17,6 +17,10 @@ public class ComponentDependencyResolver
     /// JS classes, so components that reference them import the generated module.</summary>
     private readonly HashSet<string> _recordTypes = new();
 
+    /// <summary>Static utility classes (`static class X`) discovered during the scan — emitted as their
+    /// own module, so a component referencing <c>X.Foo()</c> imports it.</summary>
+    private readonly HashSet<string> _staticHelpers = new();
+
     /// <summary>
     /// Scans source code directories to build dependency map
     /// </summary>
@@ -63,6 +67,12 @@ public class ComponentDependencyResolver
             foreach (var classDecl in classes)
             {
                 var className = classDecl.Identifier.Text;
+
+                // Static utility classes are emitted as their own module — register so referencers import.
+                if (classDecl.Modifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
+                {
+                    _staticHelpers.Add(className);
+                }
 
                 // Get base type
                 var baseType = classDecl.BaseList?.Types.FirstOrDefault();
@@ -164,6 +174,9 @@ public class ComponentDependencyResolver
 
     /// <summary>Names of user data types (records) emitted as named JS classes.</summary>
     public IReadOnlySet<string> GetAllRecords() => _recordTypes;
+
+    /// <summary>Names of static utility classes emitted as their own modules.</summary>
+    public IReadOnlySet<string> GetAllStaticHelpers() => _staticHelpers;
 
     /// <summary>
     /// Debug: Print dependency tree
