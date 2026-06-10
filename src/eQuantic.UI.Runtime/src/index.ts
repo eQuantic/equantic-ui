@@ -59,6 +59,10 @@ export { StyleBuilder } from './utils/style-builder';
 export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
 // DOM
+export { Router } from './router/router';
+export type { RouterOptions, NavigateHandler } from './router/router';
+export { matchRoute, matchPattern } from './router/route-table';
+export type { RouteEntry, RouteMatch } from './router/route-table';
 export { Reconciler, getReconciler, resetReconciler } from './dom/reconciler';
 export type { HydrationResult } from './dom/reconciler';
 export { RenderManager } from './dom/renderer';
@@ -95,6 +99,8 @@ export interface EqConfig {
   page?: string | null;
   version?: string;
   ssr?: boolean;
+  /** Client route table (generated from `[Page]` attributes) — enables SPA navigation. */
+  routes?: import('./router/route-table').RouteEntry[];
 }
 
 declare global {
