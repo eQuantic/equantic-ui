@@ -82,7 +82,7 @@ export async function boot(): Promise<void> {
     if (config.routes && config.routes.length > 0) {
       const router = new Router({
         routes: config.routes,
-        onNavigate: (match) => navigateToPage(root, match.page, config),
+        onNavigate: (match, _url, isCurrent) => navigateToPage(root, match.page, config, isCurrent),
       });
       router.start();
       (window as unknown as { __eqRouter?: Router }).__eqRouter = router;
@@ -197,10 +197,13 @@ async function navigateToPage(
   root: HTMLElement,
   pageName: string,
   config: EqConfig,
+  isCurrent?: () => boolean,
 ): Promise<void> {
   root.innerHTML = '<div class="eq-loading">Loading...</div>';
   try {
     const ComponentClass = await loadPageModule(pageName, config);
+    // A newer navigation started while this bundle was loading — don't clobber it.
+    if (isCurrent && !isCurrent()) return;
     if (!ComponentClass) {
       render404(root, pageName);
       return;

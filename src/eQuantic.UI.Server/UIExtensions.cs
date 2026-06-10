@@ -455,11 +455,14 @@ public static class UIExtensions
         var routeEntries = options.AssembliesToScan
             .SelectMany(a => a.GetTypes())
             .SelectMany(t => t.GetCustomAttributes<Core.PageAttribute>()
-                .Select(attr => (Pattern: attr.Route, Page: t.Name)))
+                .Select(attr => (Pattern: attr.Route, Page: t.Name, attr.Title)))
             .Distinct()
             .ToList();
-        var routesJson = "[" + string.Join(",", routeEntries
-            .Select(r => $"{{pattern:'{JsStr(r.Pattern)}',page:'{JsStr(r.Page)}'}}")) + "]";
+        var routesJson = "[" + string.Join(",", routeEntries.Select(r =>
+        {
+            var title = string.IsNullOrEmpty(r.Title) ? "" : $",title:'{JsStr(r.Title)}'";
+            return $"{{pattern:'{JsStr(r.Pattern)}',page:'{JsStr(r.Page)}'{title}}}";
+        })) + "]";
 
         // Inject configuration object
         var configJson = $@"{{

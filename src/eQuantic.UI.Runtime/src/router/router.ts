@@ -4,8 +4,15 @@ import { type RouteEntry, type RouteMatch, matchRoute } from './route-table';
  * Called when the router activates a route — load the page's bundle and render it into the app root.
  * Provided by the host (`boot.ts`), which knows the module path and mount mechanics; keeping it injected
  * leaves the {@link Router} itself free of framework/DOM-loading concerns and easy to test.
+ *
+ * `isCurrent()` lets the (async) handler bail out before it renders if a newer navigation has started in
+ * the meantime — guarding against a slow load clobbering a more recent one (out-of-order navigations).
  */
-export type NavigateHandler = (match: RouteMatch, url: URL) => void | Promise<void>;
+export type NavigateHandler = (
+  match: RouteMatch,
+  url: URL,
+  isCurrent: () => boolean,
+) => void | Promise<void>;
 
 export interface RouterOptions {
   routes: readonly RouteEntry[];
@@ -28,6 +35,8 @@ export class Router {
   private readonly clickListener: (e: MouseEvent) => void;
   private readonly popListener: () => void;
   private started = false;
+  /** Monotonic navigation id — the host's handler compares against it to ignore superseded loads. */
+  private navToken = 0;
 
   constructor(options: RouterOptions) {
     this.routes = options.routes;
@@ -65,7 +74,7 @@ export class Router {
       return false;
     }
     this.win.history.pushState(null, '', url.pathname + url.search + url.hash);
-    await this.onNavigate(match, url);
+    await this.activate(match, url);
     return true;
   }
 
@@ -73,7 +82,17 @@ export class Router {
   private async dispatch(href: string): Promise<void> {
     const url = new URL(href, this.win.location.href);
     const match = matchRoute(this.routes, url.pathname);
-    if (match) await this.onNavigate(match, url);
+    if (match) await this.activate(match, url);
+  }
+
+  /**
+   * Begins rendering a matched route: stamps a fresh navigation id (so a later navigation supersedes
+   * this one), updates the document title, and hands off to the host handler with a staleness check.
+   */
+  private activate(match: RouteMatch, url: URL): Promise<void> {
+    const token = ++this.navToken;
+    if (match.title) this.win.document.title = match.title;
+    return Promise.resolve(this.onNavigate(match, url, () => token === this.navToken));
   }
 
   private onClick(e: MouseEvent): void {
@@ -96,7 +115,7 @@ export class Router {
 
     e.preventDefault();
     this.win.history.pushState(null, '', url.pathname + url.search + url.hash);
-    void this.onNavigate(match, url);
+    void this.activate(match, url);
   }
 
   /** Whether an anchor opts into (rather than out of) SPA interception. */

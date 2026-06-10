@@ -9,10 +9,14 @@ export interface RouteEntry {
   pattern: string;
   /** The page component / bundle name to load for this route. */
   page: string;
+  /** Document title for this route (from `[Page(Title = …)]`), applied on navigation. */
+  title?: string;
 }
 
 export interface RouteMatch {
   page: string;
+  /** Document title for the matched route, if any. */
+  title?: string;
   /** Named route-segment values, decoded (empty when the pattern has no parameters). */
   params: Record<string, string>;
 }
@@ -68,7 +72,7 @@ export function matchRoute(routes: readonly RouteEntry[], path: string): RouteMa
   );
   for (const route of ordered) {
     const params = matchPattern(route.pattern, path);
-    if (params !== null) return { page: route.page, params };
+    if (params !== null) return { page: route.page, title: route.title, params };
   }
   return null;
 }

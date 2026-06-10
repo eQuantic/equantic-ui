@@ -40,7 +40,7 @@ describe('Router (happy-dom)', () => {
   let router: Router;
   const routes: RouteEntry[] = [
     { pattern: '/', page: 'Home' },
-    { pattern: '/counter', page: 'Counter' },
+    { pattern: '/counter', page: 'Counter', title: 'Counter — App' },
     { pattern: '/users/{id}', page: 'User' },
   ];
 
@@ -135,6 +135,31 @@ describe('Router (happy-dom)', () => {
     expect(onNavigate).toHaveBeenCalledTimes(1);
     const [match] = onNavigate.mock.calls[0] as [RouteMatch, URL];
     expect(match.page).toBe('Counter');
+  });
+
+  it('updates document.title from the matched route', async () => {
+    await router.navigate('/counter');
+    expect(document.title).toBe('Counter — App');
+  });
+
+  it('race-guard: a superseded navigation is told it is no longer current', () => {
+    const seen: Array<{ page: string; isCurrent: () => boolean }> = [];
+    const r = new Router({
+      routes,
+      win: window,
+      onNavigate: (m, _u, isCurrent) => {
+        // never resolves — both navigations stay in flight
+        seen.push({ page: m.page, isCurrent });
+        return new Promise<void>(() => {});
+      },
+    });
+    r.start();
+    void r.navigate('/counter'); // first (slower)
+    void r.navigate('/users/5'); // second (newer) supersedes it
+    r.stop();
+    expect(seen).toHaveLength(2);
+    expect(seen[0].isCurrent()).toBe(false); // first is stale
+    expect(seen[1].isCurrent()).toBe(true); // second is current
   });
 
   it('stop() detaches the listeners', () => {
