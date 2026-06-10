@@ -141,6 +141,21 @@ export abstract class Component implements IComponent {
       }
     }
 
+    // Merge explicit custom events (already keyed by DOM event name). Composite components such as
+    // Button forward their resolved handler set to a child element via `customEvents`; without this
+    // merge the child's render would rebuild events from its own (absent) on* props and silently drop
+    // the handler. Mirrors HtmlElement.BuildEvents() in C# (eQuantic.UI.Core).
+    const custom = (this as Record<string, unknown>).customEvents as
+      | Record<string, EventHandler>
+      | undefined;
+    if (custom) {
+      for (const [eventName, handler] of Object.entries(custom)) {
+        if (handler && typeof handler === 'function') {
+          events[eventName] = handler;
+        }
+      }
+    }
+
     return events;
   }
 }

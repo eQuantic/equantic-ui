@@ -3,9 +3,11 @@ import { liftArith, liftCmp } from './nullable';
 
 describe('Nullable lifted operators', () => {
   it('liftArith returns null when either operand is null/undefined', () => {
-    expect(liftArith(null, 5, (a, b) => a + b)).toBeNull();
-    expect(liftArith(3, null, (a, b) => a + b)).toBeNull();
-    expect(liftArith(undefined, 5, (a, b) => a + b)).toBeNull();
+    // Explicit type args: a literal null/undefined operand would otherwise make TS infer the
+    // generic as null, leaving the (never-invoked) callback params possibly-null under strict mode.
+    expect(liftArith<number, number, number>(null, 5, (a, b) => a + b)).toBeNull();
+    expect(liftArith<number, number, number>(3, null, (a, b) => a + b)).toBeNull();
+    expect(liftArith<number, number, number>(undefined, 5, (a, b) => a + b)).toBeNull();
   });
 
   it('liftArith applies the op when both operands are present', () => {
@@ -21,9 +23,9 @@ describe('Nullable lifted operators', () => {
 
   it('liftCmp returns false when either operand is null/undefined', () => {
     // The .NET divergence: null < 5 is FALSE, not a numeric coercion.
-    expect(liftCmp(null, 5, (a, b) => a < b)).toBe(false);
-    expect(liftCmp(5, null, (a, b) => a > b)).toBe(false);
-    expect(liftCmp(null, null, (a, b) => a >= b)).toBe(false);
+    expect(liftCmp<number, number>(null, 5, (a, b) => a < b)).toBe(false);
+    expect(liftCmp<number, number>(5, null, (a, b) => a > b)).toBe(false);
+    expect(liftCmp<number, number>(null, null, (a, b) => a >= b)).toBe(false);
   });
 
   it('liftCmp applies the predicate when both operands are present', () => {

@@ -146,6 +146,7 @@
     </Target>
 
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
+        DependsOnTargets="ResolveReferences"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' != ''">
         <PropertyGroup>
             <!-- Standard components source files are packaged in eQuantic.UI.Components package -->
@@ -172,8 +173,21 @@
 
         <Message Text="eQuantic.UI: Compiling components..." Importance="high" />
         <MakeDir Directories="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)" />
+
+        <!-- Hand eqc the exact assemblies csc compiles against (resolved by ResolveReferences above) so
+             its semantic model resolves eQuantic.UI.*, NuGet and project references identically to the
+             real build — without this the transpiler can't see base types like HtmlElement.Children and
+             degrades member calls (e.g. IList.Add → .add instead of .push). -->
+        <MakeDir Directories="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)" />
+        <PropertyGroup>
+            <_EqcRefsFile>$(MSBuildProjectDirectory)/$(IntermediateOutputPath)equantic.refs.txt</_EqcRefsFile>
+        </PropertyGroup>
+        <WriteLinesToFile File="$(_EqcRefsFile)"
+            Lines="@(ReferencePathWithRefAssemblies)"
+            Overwrite="true" WriteOnlyWhenDifferent="true" />
+
         <Exec
-            Command="dotnet $(EqcCliPath) &quot;$(MSBuildProjectDirectory);$(_StandardComponentsDir)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath)$(_BunArg)"
+            Command="dotnet $(EqcCliPath) &quot;$(MSBuildProjectDirectory);$(_StandardComponentsDir)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_BunArg)"
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
     </Target>

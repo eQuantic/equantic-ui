@@ -127,7 +127,7 @@ function ticksFromUnit(value: number, ticksPerUnit: bigint): bigint {
   return BigInt(Math.round(value * Number(ticksPerUnit / TICKS_PER_MILLISECOND))) * TICKS_PER_MILLISECOND;
 }
 
-interface TimeSpanFactory {
+export interface TimeSpanFactory {
   (ticks: bigint | number): TimeSpan;
   (hours: number, minutes: number, seconds: number): TimeSpan;
   (days: number, hours: number, minutes: number, seconds: number): TimeSpan;
@@ -165,7 +165,9 @@ function timeSpanImpl(...args: number[] | bigint[]): TimeSpan {
   return new TimeSpan(ticks);
 }
 
-export const timeSpan = timeSpanImpl as TimeSpanFactory;
+// Callable base + attached static factories (fromDays/parse/…): the impl is the overloaded call
+// signature and the statics are assigned just below, so the two-step `unknown` cast is required.
+export const timeSpan = timeSpanImpl as unknown as TimeSpanFactory;
 timeSpan.fromDays = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_DAY));
 timeSpan.fromHours = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_HOUR));
 timeSpan.fromMinutes = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_MINUTE));
@@ -278,7 +280,7 @@ export class DateTime {
   }
 }
 
-interface DateTimeFactory {
+export interface DateTimeFactory {
   (ticks: bigint): DateTime;
   (year: number, month: number, day: number): DateTime;
   (year: number, month: number, day: number, hour: number, minute: number, second: number): DateTime;
@@ -392,7 +394,7 @@ export class DateOnly {
   }
 }
 
-interface DateOnlyFactory {
+export interface DateOnlyFactory {
   (year: number, month: number, day: number): DateOnly;
   fromDayNumber(dayNumber: number): DateOnly;
   fromDateTime(dt: DateTime): DateOnly;
@@ -456,7 +458,7 @@ export class TimeOnly {
   }
 }
 
-interface TimeOnlyFactory {
+export interface TimeOnlyFactory {
   (hour: number, minute: number): TimeOnly;
   (hour: number, minute: number, second: number): TimeOnly;
   (hour: number, minute: number, second: number, millisecond: number): TimeOnly;
@@ -557,7 +559,7 @@ export class DateTimeOffset {
   toJSON(): string { return `${new DateTime(this.localTicks).toJSON()}${offsetString(this.offsetTicks)}`; }
 }
 
-interface DateTimeOffsetFactory {
+export interface DateTimeOffsetFactory {
   (dateTime: DateTime, offset: TimeSpan): DateTimeOffset;
   (ticks: bigint, offset: TimeSpan): DateTimeOffset;
   (year: number, month: number, day: number, hour: number, minute: number, second: number, offset: TimeSpan): DateTimeOffset;

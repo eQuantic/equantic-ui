@@ -19,6 +19,12 @@ var sourceDirs = args[0].Split(';', StringSplitOptions.RemoveEmptyEntries | Stri
 var outputDir = args[1].Trim();
 var bunPath = args.ToList().Contains("--bun") ? args[args.ToList().IndexOf("--bun") + 1] : null;
 var isWatchMode = args.Any(a => a == "--watch");
+// --refs <file>: a newline-delimited list of the assemblies MSBuild resolved for this project
+// (@(ReferencePathWithRefAssemblies)). Feeding these to the semantic model makes eqc's type resolution
+// identical to the real csc build — eQuantic.UI.Core/Components, NuGet and project references all resolve,
+// independent of TargetFramework or configuration. Without it, base types like HtmlElement.Children
+// (IList<IComponent>) stay unresolved and member calls degrade to naive camel-casing (.Add → .add).
+var refsFile = args.ToList().Contains("--refs") ? args[args.ToList().IndexOf("--refs") + 1] : null;
 
 // Determine intermediate directory based on primary source dir
 var primarySourceDir = sourceDirs[0];
@@ -66,32 +72,49 @@ try
 
     if (allSourceFiles.Count > 0)
     {
-        // Find referenced assemblies
         var assemblyPaths = new List<string>();
 
-        // Add standard .NET assemblies
-        assemblyPaths.Add(typeof(object).Assembly.Location); // System.Private.CoreLib
-        assemblyPaths.Add(typeof(Enumerable).Assembly.Location); // System.Linq
-        assemblyPaths.Add(typeof(List<>).Assembly.Location); // System.Collections
-
-        // Try to find ALL assemblies in bin folder (including NuGet packages)
-        var binFolder = Path.Combine(primarySourceDir, "bin", "Debug", "net8.0");
-        if (Directory.Exists(binFolder))
+        // Preferred path: the exact reference set MSBuild resolved for this project, handed to us via
+        // --refs. This is what csc itself compiles against, so the semantic model resolves every type
+        // the real build does (eQuantic.UI.*, NuGet, project references) with no TFM/config guessing.
+        var usingExplicitRefs = false;
+        if (!string.IsNullOrEmpty(refsFile) && File.Exists(refsFile))
         {
-            // Get all DLLs in bin folder
-            var allDlls = Directory.GetFiles(binFolder, "*.dll", SearchOption.TopDirectoryOnly);
-            foreach (var dll in allDlls)
+            foreach (var line in File.ReadAllLines(refsFile))
             {
-                var fileName = Path.GetFileName(dll);
-                // Include eQuantic.UI assemblies and common dependencies
-                if (fileName.StartsWith("eQuantic.UI", StringComparison.OrdinalIgnoreCase) ||
-                    fileName.StartsWith("Microsoft.CodeAnalysis", StringComparison.OrdinalIgnoreCase) ||
-                    fileName.StartsWith("System.", StringComparison.OrdinalIgnoreCase))
-                {
-                    assemblyPaths.Add(dll);
-                }
+                var path = line.Trim();
+                if (path.Length > 0 && File.Exists(path))
+                    assemblyPaths.Add(path);
             }
-            Console.WriteLine($"   Found {assemblyPaths.Count - 3} assemblies in bin folder");
+            usingExplicitRefs = assemblyPaths.Count > 0;
+            Console.WriteLine($"   Using {assemblyPaths.Count} MSBuild-resolved references from {Path.GetFileName(refsFile)}");
+        }
+
+        if (!usingExplicitRefs)
+        {
+            // Fallback for direct CLI use without --refs: the running BCL plus any eQuantic/System/Roslyn
+            // assemblies emitted to the project's bin tree. Scan every TFM/config dir (deduping by file
+            // name) instead of hardcoding one — the old net8.0 hardcode silently dropped all references.
+            assemblyPaths.Add(typeof(object).Assembly.Location);   // System.Private.CoreLib
+            assemblyPaths.Add(typeof(Enumerable).Assembly.Location); // System.Linq
+            assemblyPaths.Add(typeof(List<>).Assembly.Location);   // System.Collections
+
+            var binRoot = Path.Combine(primarySourceDir, "bin");
+            if (Directory.Exists(binRoot))
+            {
+                var seen = new HashSet<string>(assemblyPaths.Select(Path.GetFileName)!, StringComparer.OrdinalIgnoreCase);
+                foreach (var dll in Directory.GetFiles(binRoot, "*.dll", SearchOption.AllDirectories))
+                {
+                    var fileName = Path.GetFileName(dll);
+                    var isCandidate =
+                        fileName.StartsWith("eQuantic.UI", StringComparison.OrdinalIgnoreCase) ||
+                        fileName.StartsWith("Microsoft.CodeAnalysis", StringComparison.OrdinalIgnoreCase) ||
+                        fileName.StartsWith("System.", StringComparison.OrdinalIgnoreCase);
+                    if (isCandidate && seen.Add(fileName))
+                        assemblyPaths.Add(dll);
+                }
+                Console.WriteLine($"   Found {assemblyPaths.Count - 3} assemblies in bin tree (fallback)");
+            }
         }
 
         Console.WriteLine($"   Creating compilation for {allSourceFiles.Count} files with {assemblyPaths.Count} references...");
@@ -100,11 +123,14 @@ try
         var csprojFiles = Directory.GetFiles(primarySourceDir, "*.csproj", SearchOption.TopDirectoryOnly);
         var assemblyName = csprojFiles.Length > 0 ? Path.GetFileNameWithoutExtension(csprojFiles[0]) : "DynamicAssembly";
 
-        // Create compilation with all sources
+        // When we have the complete MSBuild reference set, use it verbatim. Injecting the runtime BCL
+        // impl assemblies on top of the targeting-pack ref assemblies would duplicate identities and
+        // muddy resolution, so only add the standard fallback set when --refs was not supplied.
         projectCompilation = ProjectCompilationHelper.CreateCompilationFromSources(
             allSourceFiles,
             assemblyPaths,
-            assemblyName: assemblyName
+            assemblyName: assemblyName,
+            addStandardReferences: !usingExplicitRefs
         );
 
         compiler.SetProjectCompilation(projectCompilation);
