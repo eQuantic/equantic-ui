@@ -75,9 +75,8 @@ public class ComplexScenarioTests
         // 4. Math.Clamp -> Math.min(Math.max(val, min), max)
         Assert.Contains("let safeTimeout = Math.min(Math.max(config['timeout'], 100), 5000);", js);
 
-        // 5. Pattern Matching IIFE
-        // ((() => { s = input; return typeof input === 'string'; })())
-        Assert.Contains("(() => { s = input; return typeof input === 'string'; })()", js);
+        // 5. Pattern Matching: the bound variable is assigned inside the condition (guarded by &&).
+        Assert.Contains("(typeof input === 'string' && (s = input, true))", js);
 
         // 6. Lambdas & List
         Assert.Contains("let values = [1, 2, 3];", js);
