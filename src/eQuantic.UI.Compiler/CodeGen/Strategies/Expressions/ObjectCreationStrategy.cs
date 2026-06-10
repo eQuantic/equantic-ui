@@ -160,39 +160,43 @@ public class ObjectCreationStrategy : IConversionStrategy
 
     private string ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)
     {
+        // `new() { … }` / `new() { [k]=v }` → delegate to the initializer (array / object / dictionary).
         if (creation.Initializer != null)
         {
              return context.Converter.ConvertExpression(creation.Initializer);
         }
 
-        // Try to get type from semantic model
-        var symbol = context.SemanticHelper.GetSymbol(creation);
-        if (symbol is IMethodSymbol ms)
+        var ms = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
+        var typeDisplay = ms?.ContainingType.ToDisplayString() ?? context.ExpectedType ?? "";
+
+        // Collection / dictionary target with no initializer → empty literal.
+        if (typeDisplay.Contains("List<") || typeDisplay.Contains("IEnumerable<") ||
+            typeDisplay.Contains("Collection<") || typeDisplay.TrimEnd('?').EndsWith("[]"))
         {
-            var typeName = ms.ContainingType.ToDisplayString();
-            if (typeName.Contains("List<") || typeName.Contains("IEnumerable<") || typeName.Contains("Collection<"))
-            {
-                return "[]";
-            }
-            if (typeName.Contains("Dictionary<"))
-            {
-                return "{}";
-            }
+            return "[]";
+        }
+        if (typeDisplay.Contains("Dictionary<") || typeDisplay.Contains("IDictionary<"))
+        {
+            return "{}";
         }
 
-        // Fallback to ExpectedType hint
-        if (context.ExpectedType != null)
+        // Target-typed `new(args)` on a named type (record/class): `Item _x = new(9, "z")` → `new Item(9, 'z')`.
+        var args = string.Join(", ",
+            creation.ArgumentList?.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression))
+            ?? System.Linq.Enumerable.Empty<string>());
+        var typeName = ms?.ContainingType.Name;
+        if (string.IsNullOrEmpty(typeName) || typeName == "Object")
         {
-            if (context.ExpectedType.Contains("List<") || context.ExpectedType.Contains("IEnumerable<") || context.ExpectedType.EndsWith("[]"))
-            {
-                return "[]";
-            }
-            if (context.ExpectedType.Contains("Dictionary<") || context.ExpectedType.Contains("IDictionary<"))
-            {
-                return "{}";
-            }
+            // No semantic info: fall back to the field/var's declared type (without nullability/generics noise).
+            var et = (context.ExpectedType ?? "").Trim().TrimEnd('?');
+            if (et.Contains("<")) et = et.Substring(0, et.IndexOf('<'));
+            typeName = string.IsNullOrEmpty(et) ? null : et;
         }
-        
+        if (!string.IsNullOrEmpty(typeName))
+        {
+            return $"new {typeName}({args})";
+        }
+
         return "{}";
     }
 

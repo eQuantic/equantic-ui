@@ -64,6 +64,24 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
+    public void BareArrayBraceInitializer_BecomesArray()
+    {
+        var ts = Ts("public class C : StatelessComponent { private static readonly string[] N = { \"a\", \"b\", \"c\" }; " +
+                    "public override IComponent Build(RenderContext c) => new Text(N[0]); }");
+        ts.Should().Contain("static n: string[] = ['a', 'b', 'c'];");
+    }
+
+    [Fact]
+    public void TargetTypedNew_InFieldInitializer_ConstructsNamedType()
+    {
+        var ts = Ts("public record Item(int Id, string Label); " +
+                    "public class C : StatelessComponent { private readonly Item _x = new(9, \"z\"); " +
+                    "public override IComponent Build(RenderContext c) => new Text(_x.Label); }");
+        ts.Should().Contain("new Item(9, 'z')");
+        ts.Should().NotContain("_x: Item = {}");
+    }
+
+    [Fact]
     public void PrimitiveTypes_AreNotImported()
     {
         // A property/var of a C# primitive type must never become `import { int } from "./int"`.
