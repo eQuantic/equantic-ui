@@ -24,6 +24,21 @@ public class TypeScriptEmitter
     private ComponentDependencyResolver? _dependencyResolver;
 
     /// <summary>
+    /// C# primitive and .NET-compat type names that map to JS primitives or the <c>$eq.*</c> runtime —
+    /// never a user module, so they must be excluded from generated <c>import { X } from "./X"</c> lines.
+    /// </summary>
+    private static readonly HashSet<string> NonImportableTypes = new(StringComparer.Ordinal)
+    {
+        // C# primitives
+        "int", "uint", "long", "ulong", "short", "ushort", "byte", "sbyte",
+        "float", "double", "decimal", "bool", "char", "string", "object", "void", "dynamic", "nint", "nuint",
+        // BCL / .NET-compat types backed by the runtime or JS built-ins
+        "DateTime", "DateTimeOffset", "TimeSpan", "DateOnly", "TimeOnly", "Guid", "Math",
+        "Convert", "Console", "Enumerable", "Task", "Action", "Func", "Nullable",
+        "StringBuilder", "Regex", "Exception", "Type", "Uri",
+    };
+
+    /// <summary>
     /// Sets the dependency resolver for automatic dependency detection
     /// </summary>
     public void SetDependencyResolver(ComponentDependencyResolver resolver)
@@ -206,20 +221,41 @@ public class TypeScriptEmitter
                 }
                 else if (!component.IsAbstract)
                 {
-                    // For stateless (non-abstract) with positional constructors (Text, Heading, etc.)
-                    if (component.Constructors.Any(ctor => ctor.Parameters.Count > 0))
-                    {
-                        var ctor = component.Constructors.OrderByDescending(ct => ct.Parameters.Count).First();
-                        var paramList = string.Join(", ", ctor.Parameters.Select(p => $"{p.Name.ToCamelCase()}?: any"));
+                    // Computed/get-set/static properties become real TS members (auto-props flow through
+                    // the base Object.assign(props) instead).
+                    EmitComponentProperties(component, c);
 
-                        c.Constructor($"{paramList}, props?: any", () =>
+                    // Constructor: assign positional params, apply auto-property defaults (only when a prop
+                    // wasn't supplied — the base ctor's Object.assign runs first), then run the C# ctor body.
+                    var ctorDef = component.Constructors.OrderByDescending(ct => ct.Parameters.Count).FirstOrDefault();
+                    var ctorParams = ctorDef?.Parameters ?? new System.Collections.Generic.List<ParameterDefinition>();
+                    var autoDefaults = component.Properties
+                        .Where(p => !p.IsStatic && p.DefaultValueNode != null && IsAutoProperty(p))
+                        .ToList();
+                    var hasCtorBody = ctorDef?.BodyNode != null;
+                    if (ctorParams.Count > 0 || autoDefaults.Count > 0 || hasCtorBody)
+                    {
+                        var paramList = string.Join(", ", ctorParams.Select(p => $"{p.Name.ToCamelCase()}?: any"));
+                        var signature = paramList.Length > 0 ? $"{paramList}, props?: any" : "props?: any";
+                        c.Constructor(signature, () =>
                         {
                             c.Raw("super(props);");
-                            // Assign explicit parameters as properties
-                            foreach (var param in ctor.Parameters)
+                            foreach (var param in ctorParams)
                             {
                                 var camelName = param.Name.ToCamelCase();
                                 c.Raw($"if ({camelName} !== undefined) this.{camelName} = {camelName};");
+                            }
+                            _converter.SetCurrentClass(component.Name);
+                            foreach (var p in autoDefaults)
+                            {
+                                var cn = p.Name.ToCamelCase();
+                                var def = _converter.ConvertExpression(p.DefaultValueNode!, p.Type);
+                                c.Raw($"if (this.{cn} === undefined) this.{cn} = {def};");
+                            }
+                            if (hasCtorBody)
+                            {
+                                var body = StripJsBraces(_converter.Convert(ctorDef!.BodyNode!));
+                                if (!string.IsNullOrWhiteSpace(body)) c.Raw(body, ctorDef.BodyNode);
                             }
                         });
                     }
@@ -238,6 +274,15 @@ public class TypeScriptEmitter
                                 jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
                             }
                             c.Raw(jsBody, component.BuildMethodNode.Body);
+                         }
+                         else if (component.BuildMethodNode?.ExpressionBody != null)
+                         {
+                            // Expression-bodied Build: `IComponent Build(ctx) => new Box {…};`. Convert the
+                            // whole expression (handles trees, ternaries, switch-expressions, method calls,
+                            // interpolation — anything the converter knows) and return it.
+                            _converter.SetCurrentClass(component.Name);
+                            var expr = _converter.ConvertExpression(component.BuildMethodNode.ExpressionBody.Expression);
+                            c.Raw($"return {expr};", component.BuildMethodNode.ExpressionBody.Expression);
                          }
                          else if (component.BuildTree != null)
                          {
@@ -399,6 +444,12 @@ public class TypeScriptEmitter
             if (string.IsNullOrEmpty(cleanType) || cleanType == "string" || cleanType == "number" || cleanType == "boolean" || cleanType == "any")
                 continue;
 
+            // C# primitives and .NET-compat types map to JS primitives or the `$eq.*` runtime — they are
+            // NEVER user modules, so a stray reference (e.g. an `int` property type, a `DateTime`/`Math`
+            // usage) must not become `import { int } from "./int"`.
+            if (NonImportableTypes.Contains(cleanType))
+                continue;
+
             // Skip HtmlNode - it's a type-only interface, not a runtime class
             if (cleanType == "HtmlNode")
                 continue;
@@ -439,7 +490,11 @@ public class TypeScriptEmitter
         {
             if (userComp == component.Name) continue;
             var isEmittedType = knownComponents.Contains(userComp) || knownRecords.Contains(userComp);
-            if (knownComponents.Count + knownRecords.Count > 0 && !isEmittedType)
+            // When a resolver is present it is authoritative: import ONLY types we actually emit
+            // (records/components it discovered). This drops references that aren't modules — primitives,
+            // static-field names read as ClassName.X, helper-class names, etc. — instead of inventing a
+            // bogus `./X`. (Without a resolver we keep the old permissive behavior for isolated snippets.)
+            if (_dependencyResolver != null && !isEmittedType)
                 continue;
             importsBuilder.Import(new[] { userComp }, $"./{userComp}");
         }
@@ -613,6 +668,93 @@ public class TypeScriptEmitter
         // No-op: Stateless components are fully handled by Emit()
     }
     
+    /// <summary>True for a pure auto-property (`{ get; set; }` / `{ get; init; }`) — no expression body and
+    /// no accessor with a body. Auto-props flow through the base Object.assign(props); only computed/get-set
+    /// properties need an emitted accessor.</summary>
+    private static bool IsAutoProperty(PropertyDefinition p)
+    {
+        var node = p.Node;
+        if (node == null) return true;
+        if (node.ExpressionBody != null) return false;
+        if (node.AccessorList == null) return true;
+        return node.AccessorList.Accessors.All(a => a.Body == null && a.ExpressionBody == null);
+    }
+
+    /// <summary>Unwrap a converted block body (`{ … }`) to its inner statements for inlining into an
+    /// accessor / constructor.</summary>
+    private static string StripJsBraces(string js)
+    {
+        js = js.Trim();
+        if (js.StartsWith("{") && js.EndsWith("}")) js = js.Substring(1, js.Length - 2).Trim();
+        return js;
+    }
+
+    /// <summary>
+    /// Emit a component's non-auto properties as real TS members: an expression-bodied or block-bodied
+    /// get-only property becomes a getter; get/set with bodies become accessors; a static auto-property
+    /// becomes a static field. Pure instance auto-properties are intentionally NOT emitted — the base
+    /// Object.assign(props) populates them (with the ctor applying any default).
+    /// </summary>
+    private void EmitComponentProperties(ComponentDefinition component, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        foreach (var prop in component.Properties)
+        {
+            var node = prop.Node;
+            if (node == null) continue;
+            var name = prop.Name.ToCamelCase();
+            var stat = prop.IsStatic ? "static " : "";
+
+            // `int X => expr;`
+            if (node.ExpressionBody != null)
+            {
+                _converter.SetCurrentClass(component.Name);
+                var expr = _converter.ConvertExpression(node.ExpressionBody.Expression);
+                c.Raw($"{stat}get {name}() {{ return {expr}; }}", node);
+                continue;
+            }
+
+            if (node.AccessorList != null)
+            {
+                var accessors = node.AccessorList.Accessors;
+                var getter = accessors.FirstOrDefault(a => a.Keyword.Text == "get");
+                var setter = accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
+                var getterHasBody = getter != null && (getter.Body != null || getter.ExpressionBody != null);
+                var setterHasBody = setter != null && (setter.Body != null || setter.ExpressionBody != null);
+
+                if (getterHasBody || setterHasBody)
+                {
+                    _converter.SetCurrentClass(component.Name);
+                    if (getterHasBody)
+                    {
+                        var body = getter!.ExpressionBody != null
+                            ? $"return {_converter.ConvertExpression(getter.ExpressionBody.Expression)};"
+                            : StripJsBraces(_converter.Convert(getter.Body!));
+                        c.Raw($"{stat}get {name}() {{ {body} }}", getter);
+                    }
+                    if (setterHasBody)
+                    {
+                        // C# setters use the implicit `value` parameter, which survives conversion as-is.
+                        var body = setter!.ExpressionBody != null
+                            ? $"{_converter.ConvertExpression(setter.ExpressionBody.Expression)};"
+                            : StripJsBraces(_converter.Convert(setter.Body!));
+                        c.Raw($"{stat}set {name}(value) {{ {body} }}", setter);
+                    }
+                    continue;
+                }
+
+                // Pure auto-property: only static ones need an explicit member (no props flow to the class).
+                if (prop.IsStatic)
+                {
+                    _converter.SetCurrentClass(component.Name);
+                    var def = prop.DefaultValueNode != null
+                        ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
+                        : (prop.DefaultValue != null ? ConvertToTsValue(prop.DefaultValue, prop.Type) : null);
+                    c.Field(name, CSharpTypeToTypeScript(prop.Type), def, node, isStatic: true);
+                }
+            }
+        }
+    }
+
     private void EmitMethod(MethodDefinition method, TypeScriptCodeBuilder.ClassBuilder c, string? className = null)
     {
         var parameters = string.Join(", ", method.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));

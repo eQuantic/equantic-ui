@@ -172,18 +172,25 @@ public class MethodDefinition
     public List<ParameterDefinition> Parameters { get; set; } = new();
     public string Body { get; set; } = string.Empty;
     public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? SyntaxNode { get; set; }
+    /// <summary>The body block — works for constructors too (whose declaration isn't a
+    /// <see cref="MethodDeclarationSyntax"/>), so the emitter can transpile and run a ctor's body.</summary>
+    public Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax? BodyNode { get; set; }
 }
 
 /// <summary>
 /// Represents a property definition
 /// </summary>
-public class PropertyDefinition 
+public class PropertyDefinition
 {
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public string? DefaultValue { get; set; }
     public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? DefaultValueNode { get; set; }
     public bool IsPublic { get; set; }
+    public bool IsStatic { get; set; }
+    /// <summary>The declaration syntax — lets the emitter inspect a computed property's expression body
+    /// (<c>X =&gt; expr</c>) or get/set accessor bodies, distinguishing auto-properties from computed ones.</summary>
+    public Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax? Node { get; set; }
 }
 
 /// <summary>

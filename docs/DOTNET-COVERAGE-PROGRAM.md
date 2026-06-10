@@ -134,13 +134,26 @@ Design notes:
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function
   calls were emitted as `this.fn()`.)
-- **Component class members**: methods ✅, constructors ✅, properties ✅, and **fields ✅** — a component
-  may declare `static`/`const` data (`private static readonly List<Person> People = new() {…}`) and
-  instance fields; they are emitted as `static`/instance class members with transpiled initializers,
-  referenced through the class (`ClassName.field`, never `this.` for statics), and any type used only in a
-  field initializer is reactively imported. (Surfaced + fixed during the Phase 2 sample: see
-  `docs/PHASE-2-CLIENT-ROUTER-PLAN.md` M3; compiler test `StaticFieldRepro`.) Cross-ref: **Phase 2 client
-  router** is complete — `RenderContext.Route` (params/query) is the routing-facing surface.
+- **Component class members**: a developer can author a page many ways and the transpiler covers them
+  (hardened by an exhaustive authoring-coverage sweep — 10 categories, ~280 patterns via `AuthoringProbe`):
+  - **Fields ✅** — `static`/`const`/instance, with transpiled initializers; statics referenced as
+    `ClassName.field` (never `this.`); a type used only in a field initializer is reactively imported.
+  - **Properties ✅** — auto (`{get;set;}`, with default applied in the ctor only when a prop wasn't
+    supplied), computed get-only (`int X => expr`), get/set with accessor bodies, and `static` properties
+    all emit as real TS getters/accessors/members. (Were previously dropped → `this.x` undefined.)
+  - **Constructors ✅** — the C# ctor body now runs (e.g. `C(int id){ _id = id; }` emits `this._id = id`),
+    not just the positional param→prop auto-assign. (Chaining `:this`/`:base`, overloads and C# 12 primary
+    constructors remain on the backlog.)
+  - **Expression-bodied `Build`** (`=> new Box{…}`) ✅ — was emitting "Build method not implemented".
+  - **Import collector ✅** — only types we actually emit (records/components/enums the resolver scanned)
+    are imported; primitives (`int`/`bool`), `$eq`/BCL-compat types (`DateTime`/`Math`/`Guid`/…) and
+    static-field names read as `ClassName.X` no longer leak as bogus `import { X } from "./X"`.
+  - Methods ✅, server actions ✅.
+  (Surfaced + fixed via the Phase 2 sample + authoring sweep: see `docs/PHASE-2-CLIENT-ROUTER-PLAN.md` M3;
+  compiler tests `ComponentStaticFieldTests`, `AuthoringCoverageTests`. Remaining niche gaps — bare
+  array-brace/target-typed-`new()` field initializers, static helper-class bodies, enum dict-keys & casts,
+  advanced pattern-matching, raw/verbatim-interpolated strings — are tracked as a backlog.) Cross-ref:
+  **Phase 2 client router** is complete; `RenderContext.Route` (params/query) is the routing-facing surface.
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
   pointers raise `EQ2001`; `goto`/`goto case`/`goto default` raise `EQ2002` (no JS equivalent). `unsafe`/
   `fixed`/`lock` blocks unwrap to their body (lock is a no-op — JS is single-threaded — and pointer ops

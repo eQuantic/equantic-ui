@@ -341,7 +341,9 @@ public class ComponentParser
                 Type = prop.Type.ToString(),
                 DefaultValue = prop.Initializer?.Value.ToString(),
                 DefaultValueNode = prop.Initializer?.Value,
-                IsPublic = isPublic
+                IsPublic = isPublic,
+                IsStatic = prop.Modifiers.Any(SyntaxKind.StaticKeyword),
+                Node = prop
             });
         }
         
@@ -429,7 +431,8 @@ public class ComponentParser
                 Name = ctor.Identifier.Text,
                 ReturnType = "void",
                 Body = ctor.Body?.ToString() ?? ctor.ExpressionBody?.Expression.ToString() ?? "",
-                SyntaxNode = null
+                SyntaxNode = null,
+                BodyNode = ctor.Body
             };
 
             foreach (var param in ctor.ParameterList.Parameters)
