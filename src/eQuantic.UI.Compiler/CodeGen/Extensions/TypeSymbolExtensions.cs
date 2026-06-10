@@ -51,6 +51,22 @@ public static class TypeSymbolExtensions
         return false;
     }
 
+    /// <summary>
+    /// True when the type derives (transitively) from <c>ComponentState</c> — a <c>StatefulComponent</c>'s
+    /// state class. A state class is owned by its page: the page's module emits it complete (via
+    /// <c>ParseStateClass</c>) and <c>createState()</c> news it up from that same module, so it must never
+    /// also be emitted as a standalone component module (which produced a broken duplicate carrying only
+    /// <c>build()</c>). This is a strict subset of <see cref="IsUiComponent"/>.
+    /// </summary>
+    public static bool IsComponentState(this ITypeSymbol? type)
+    {
+        for (var t = type; t != null; t = t.BaseType)
+        {
+            if (t.Name == "ComponentState") return true;
+        }
+        return false;
+    }
+
     /// <summary>Returns the underlying <c>T</c> of a <c>Nullable&lt;T&gt;</c>, or the type itself.</summary>
     public static ITypeSymbol? UnwrapNullable(this ITypeSymbol? type)
     {
