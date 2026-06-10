@@ -26,8 +26,14 @@ function segments(path: string): string[] {
   return path.split('/').filter((s) => s.length > 0);
 }
 
-/** The parameter name of a `{name}` / `{name:constraint}` template segment, or null for a literal. */
-function paramName(templateSegment: string): string | null {
+interface ParamSegment {
+  name: string;
+  /** Lower-cased inline constraint (`int`, `guid`, …), or null when unconstrained. */
+  constraint: string | null;
+}
+
+/** Parses a `{name}` / `{name:constraint}` template segment, or returns null for a literal. */
+function paramSegment(templateSegment: string): ParamSegment | null {
   if (
     templateSegment.length < 2 ||
     templateSegment[0] !== '{' ||
@@ -37,7 +43,32 @@ function paramName(templateSegment: string): string | null {
   }
   const inner = templateSegment.slice(1, -1);
   const colon = inner.indexOf(':');
-  return colon >= 0 ? inner.slice(0, colon) : inner;
+  return colon >= 0
+    ? { name: inner.slice(0, colon), constraint: inner.slice(colon + 1).toLowerCase() }
+    : { name: inner, constraint: null };
+}
+
+/**
+ * The inline route constraints we mirror client-side so a value that the server would reject (and 404)
+ * doesn't match here either. Unknown/parameterised constraints (e.g. `minlength(2)`, `regex(...)`) are
+ * accepted — the server remains the source of truth for those.
+ */
+const CONSTRAINT_TESTS: Record<string, RegExp> = {
+  int: /^-?\d+$/,
+  long: /^-?\d+$/,
+  bool: /^(true|false)$/i,
+  double: /^-?\d+(\.\d+)?$/,
+  float: /^-?\d+(\.\d+)?$/,
+  decimal: /^-?\d+(\.\d+)?$/,
+  guid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+  alpha: /^[a-z]+$/i,
+};
+
+function satisfiesConstraint(value: string, constraint: string | null): boolean {
+  if (!constraint) return true;
+  const base = constraint.split('(')[0]; // strip args, e.g. minlength(2) → minlength
+  const test = CONSTRAINT_TESTS[base];
+  return test ? test.test(value) : true; // unknown → accept; server validates
 }
 
 /**
@@ -52,11 +83,13 @@ export function matchPattern(pattern: string, path: string): Record<string, stri
 
   const params: Record<string, string> = {};
   for (let i = 0; i < pat.length; i++) {
-    const name = paramName(pat[i]);
-    if (name === null) {
+    const param = paramSegment(pat[i]);
+    if (param === null) {
       if (pat[i].toLowerCase() !== seg[i].toLowerCase()) return null;
     } else {
-      params[name] = decodeURIComponent(seg[i]);
+      const value = decodeURIComponent(seg[i]);
+      if (!satisfiesConstraint(value, param.constraint)) return null;
+      params[param.name] = value;
     }
   }
   return params;
@@ -78,5 +111,5 @@ export function matchRoute(routes: readonly RouteEntry[], path: string): RouteMa
 }
 
 function paramCount(pattern: string): number {
-  return segments(pattern).filter((s) => paramName(s) !== null).length;
+  return segments(pattern).filter((s) => paramSegment(s) !== null).length;
 }

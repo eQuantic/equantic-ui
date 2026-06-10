@@ -1,4 +1,5 @@
 import { type RouteEntry, type RouteMatch, matchRoute } from './route-table';
+import { setCurrentRouteFrom } from './current-route';
 
 /**
  * Called when the router activates a route — load the page's bundle and render it into the app root.
@@ -21,19 +22,29 @@ export interface RouterOptions {
   win?: Window;
 }
 
+/** Where to scroll after a navigation renders: the top of the page, or a restored position (back/forward). */
+type ScrollTarget = 'top' | { x: number; y: number };
+
+interface HistoryScrollState {
+  eqScroll?: { x: number; y: number };
+}
+
 /**
- * Client-side router (Phase 2, M0). Turns internal navigation into SPA navigation: it intercepts
- * eligible same-origin `<a>` clicks, pushes a History entry, and asks the host to render the matched
- * page — no full reload — and re-renders on `popstate` (back/forward). Links that don't match a known
- * route, or that aren't SPA-eligible (external, `target=_blank`, modified click, `download`, `rel=external`,
- * `data-native`, hash-only), are left to the browser, so server-rendered/non-SPA pages keep working.
+ * Client-side router (Phase 2). Turns internal navigation into SPA navigation: it intercepts eligible
+ * same-origin `<a>` clicks, pushes a History entry, and asks the host to render the matched page — no
+ * full reload — and re-renders on `popstate` (back/forward). It also publishes the active route's
+ * params/query (so `context.Route` works), updates `document.title`, and manages scroll position
+ * (reset to top on a forward navigation, restored on back/forward). Links that don't match a known
+ * route, or that aren't SPA-eligible (external, `target=_blank`, modified click, `download`,
+ * `rel=external`, `data-native`, hash-only), are left to the browser, so server-rendered/non-SPA pages
+ * keep working.
  */
 export class Router {
   private readonly routes: readonly RouteEntry[];
   private readonly onNavigate: NavigateHandler;
   private readonly win: Window;
   private readonly clickListener: (e: MouseEvent) => void;
-  private readonly popListener: () => void;
+  private readonly popListener: (e: PopStateEvent) => void;
   private started = false;
   /** Monotonic navigation id — the host's handler compares against it to ignore superseded loads. */
   private navToken = 0;
@@ -43,13 +54,18 @@ export class Router {
     this.onNavigate = options.onNavigate;
     this.win = options.win ?? window;
     this.clickListener = (e) => this.onClick(e);
-    this.popListener = () => void this.dispatch(this.win.location.href);
+    this.popListener = (e) => void this.dispatch(this.win.location.href, e.state);
   }
 
   /** Begins intercepting navigation. Idempotent. */
   start(): void {
     if (this.started) return;
     this.started = true;
+    // Own scroll restoration so it stays in sync with our async page swaps (default 'auto' restores
+    // before the new page has rendered).
+    if ('scrollRestoration' in this.win.history) {
+      this.win.history.scrollRestoration = 'manual';
+    }
     this.win.document.addEventListener('click', this.clickListener, true);
     this.win.addEventListener('popstate', this.popListener);
   }
@@ -73,26 +89,51 @@ export class Router {
       this.win.location.assign(href);
       return false;
     }
-    this.win.history.pushState(null, '', url.pathname + url.search + url.hash);
-    await this.activate(match, url);
+    await this.goForward(match, url);
     return true;
   }
 
-  /** Renders whatever the current URL resolves to (used on `popstate`). */
-  private async dispatch(href: string): Promise<void> {
+  /** A forward navigation: save the outgoing scroll, push the new entry, render, then scroll to top. */
+  private goForward(match: RouteMatch, url: URL): Promise<void> {
+    this.saveScroll();
+    this.win.history.pushState(null, '', url.pathname + url.search + url.hash);
+    return this.activate(match, url, 'top');
+  }
+
+  /** Renders whatever the current URL resolves to (used on `popstate`), restoring its saved scroll. */
+  private async dispatch(href: string, state: unknown): Promise<void> {
     const url = new URL(href, this.win.location.href);
     const match = matchRoute(this.routes, url.pathname);
-    if (match) await this.activate(match, url);
+    if (!match) return;
+    const saved = (state as HistoryScrollState | null)?.eqScroll;
+    await this.activate(match, url, saved ?? 'top');
   }
 
   /**
    * Begins rendering a matched route: stamps a fresh navigation id (so a later navigation supersedes
-   * this one), updates the document title, and hands off to the host handler with a staleness check.
+   * this one), publishes the route data, updates the document title, hands off to the host handler with
+   * a staleness check, and applies the scroll once it renders (if still current).
    */
-  private activate(match: RouteMatch, url: URL): Promise<void> {
+  private async activate(match: RouteMatch, url: URL, scroll: ScrollTarget): Promise<void> {
     const token = ++this.navToken;
+    setCurrentRouteFrom(match, url);
     if (match.title) this.win.document.title = match.title;
-    return Promise.resolve(this.onNavigate(match, url, () => token === this.navToken));
+    await Promise.resolve(this.onNavigate(match, url, () => token === this.navToken));
+    if (token === this.navToken) this.applyScroll(scroll);
+  }
+
+  /** Stores the current scroll position on the current History entry, for restoration on back/forward. */
+  private saveScroll(): void {
+    const state = (this.win.history.state as HistoryScrollState | null) ?? {};
+    this.win.history.replaceState(
+      { ...state, eqScroll: { x: this.win.scrollX, y: this.win.scrollY } },
+      '',
+    );
+  }
+
+  private applyScroll(scroll: ScrollTarget): void {
+    if (scroll === 'top') this.win.scrollTo(0, 0);
+    else this.win.scrollTo(scroll.x, scroll.y);
   }
 
   private onClick(e: MouseEvent): void {
@@ -114,8 +155,7 @@ export class Router {
     if (!match) return; // unknown route → let the browser navigate (server fallthrough)
 
     e.preventDefault();
-    this.win.history.pushState(null, '', url.pathname + url.search + url.hash);
-    void this.activate(match, url);
+    void this.goForward(match, url);
   }
 
   /** Whether an anchor opts into (rather than out of) SPA interception. */

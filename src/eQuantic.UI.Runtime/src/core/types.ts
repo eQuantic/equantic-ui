@@ -31,6 +31,8 @@ export interface StyleClass {
 export interface RenderContext {
   getService<T>(key: ServiceKey<T>): T | undefined;
   serviceProvider?: ServiceProvider;
+  /** Active route data — parameters + query string (C# `context.Route`). */
+  route?: import('../router/current-route').RouteData;
 }
 
 /**

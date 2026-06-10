@@ -39,13 +39,15 @@ routes fall through to the server (real 404). Behavior is covered by runtime tes
       via `__EQ_CONFIG.routes`), matching paths (incl. `{param}` / `{param:type}`) to page bundles.
 - [ ] A **`Router`** in the runtime intercepts internal `<a>` clicks, `pushState`s, loads + renders the
       target page into `#app`, and handles `popstate` (back/forward) — no full reload.
-- [ ] **Route parameters** (`/users/{id}`) and query string are parsed and exposed to the page via
-      `RenderContext` (a typed accessor), matching the server's binding.
+- [x] **Route parameters** (`/users/{id}`) and query string are parsed and exposed to the page via
+      `RenderContext` (`context.Route.Param("id")` / `context.Route.Query("q")`), matching the server's
+      binding (SSR populates it from the HTTP route values + query; client nav from the matched route).
 - [ ] **Persistent layout**: a shell can stay mounted across navigations, with only the routed content
       swapped (no re-mount of the nav/sidebar).
 - [ ] **`Link`** opts into SPA navigation (and external/`target=_blank`/modified clicks fall back to the
       browser); optional **prefetch** on hover.
-- [ ] **Scroll restoration**: scroll resets to top on push, restores on back/forward.
+- [x] **Scroll restoration**: `scrollRestoration='manual'`; scroll resets to top on a forward
+      navigation and is restored from the History entry on back/forward.
 - [ ] **Route guards** hook (a `CanActivate`-style async check that can cancel/redirect a navigation).
 - [ ] Runtime tests (happy-dom) cover: click → SPA nav, back/forward, param/query parsing, guard
       cancel/redirect, fallthrough to server on unmatched. Green in CI.
@@ -80,9 +82,13 @@ a route table, intercepts internal link clicks → `pushState` → `mountPage` (
 `<a>` swaps the page without a reload and updates `history`; back/forward works; an external/unmatched
 link is left to the browser.
 
-**M1 — Params + query + scroll.** Route-pattern matching with `{param}`/query, exposed via
-`RenderContext`; scroll reset on push / restore on pop. Acceptance: a `/users/{id}` page reads its `id`
-client-side identically to SSR; conformance/runtime tests green.
+**M1 — Params + query + scroll. ✅ DONE.** Route-pattern matching with `{param}` (+ inline constraints
+`:int`/`:guid`/… mirrored client-side) and query, exposed via `RenderContext.Route` (`Param`/`Query`);
+scroll reset on a forward nav / restored on back/forward (`scrollRestoration='manual'`). SSR populates
+`RenderContext.Route` from the HTTP route values + query (AsyncLocal, like the service provider) so the
+first load matches client nav. 21 router vitest cases (matcher, params/query, constraints, scroll, title,
+race-guard, hash, fallthrough). Remaining acceptance detail (end-to-end `/users/{id}` page through a real
+build) folds into M3's sample.
 
 **M2 — Persistent layout + `Link` + prefetch + guards.** A shell stays mounted across navigations; `Link`
 opts into SPA nav with hover prefetch; a route-guard hook can cancel/redirect. Acceptance: navigating
