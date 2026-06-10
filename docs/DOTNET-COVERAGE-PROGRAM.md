@@ -81,7 +81,8 @@ Design notes:
   wraps via `| 0`/`>>> 0`, checked throws `OverflowException`; long/ulong are exact BigInt and pass
   through; default-context overflow does NOT wrap — JS float64 — a documented divergence).
 - **Numeric types**: int ✅, double ✅, decimal ✅(exact `Decimal`, wire-as-string + hydration),
-  long/ulong ✅(BigInt, wire-as-string), float ✅, parsing/Convert ✅, overflow ⬜.
+  long/ulong ✅(BigInt, wire-as-string), float ✅, parsing/Convert ✅; explicit `checked`/`unchecked`
+  overflow ✅, default-context overflow = documented divergence (JS float64 doesn't wrap — not a gap).
 - **Strings**: core methods ✅, format specifiers ✅(F/X/N), padding/split/join ✅, interpolation ✅,
   `Trim(char)` ✅, char ops ✅, StringBuilder ✅(compat type), `StringComparison`/IgnoreCase ✅
   (Equals/StartsWith/EndsWith/Contains/IndexOf under Ordinal + IgnoreCase fold both sides; culture-
@@ -92,12 +93,16 @@ Design notes:
   Reverse ✅; Join (order-preserving hash join), GroupJoin (left/group join), ToLookup ✅ (primitive
   keys); OrderBy/OrderByDescending + ThenBy/ThenByDescending ✅ (single stable composite sort, source
   copied); IGrouping ✅ (each group is the items array + a `key` prop — iterable, `g.Key`, `g.Sum()`,
-  etc., first-occurrence order); remaining — ILookup `[key]` indexer ⬜ (use iteration/First).
+  etc., first-occurrence order); **ILookup `[key]` indexer ✅** (returns the group for a key, or an empty
+  sequence for an absent key — never throws).
 - **Collections**: List ✅, Dictionary ✅ (string/number/enum keys → plain object; **record/struct/tuple
   keys → `$eq.collections.valueMap`**, a structurally-keyed map so two equal-by-value keys collide as in
   .NET — construction, `d[k]` get/set, `ContainsKey`/`Add`/`Remove`/`Clear`/`TryGetValue`/
   `GetValueOrDefault`, `Keys`/`Values`/`Count`, `foreach` over `{key,value}` all routed; the plain-object
-  path is untouched), HashSet ✅, Queue ✅, Stack ✅ (compat types), LinkedList ⬜, sorted collections ⬜.
+  path is untouched), HashSet ✅, Queue ✅, Stack ✅, **LinkedList ✅** (doubly-linked, `First`/`Last`
+  nodes), **sorted collections ✅** (`SortedSet`, `SortedDictionary`, `SortedList` → key-sorted
+  enumeration via `$eq.collections.sorted*`; default comparer — culture-sensitive string ordering out of
+  scope) — all compat types.
 - **Types**: enum ✅, Guid ✅, DateTime ✅, TimeSpan ✅, DateOnly ✅, TimeOnly ✅, DateTimeOffset ✅
   (all tick-precise compat; DateTimeOffset = wall-clock + offset, compared by the instant),
   Nullable ✅ (HasValue/Value, GetValueOrDefault()/(fallback) with a type-aware default, lifted

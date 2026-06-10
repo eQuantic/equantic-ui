@@ -101,6 +101,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<AggregateStrategy>();
         _strategyRegistry.Register<ToDictionaryStrategy>();
         _strategyRegistry.Register<ToLookupStrategy>();
+        _strategyRegistry.Register<LookupIndexerStrategy>();
         _strategyRegistry.Register<JoinStrategy>();
         _strategyRegistry.Register<GroupJoinStrategy>();
         _strategyRegistry.Register<ZipStrategy>();
@@ -173,6 +174,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<StringBuilderStrategy>();
         _strategyRegistry.Register<QueueStackStrategy>();
         _strategyRegistry.Register<ValueKeyedDictionaryStrategy>(); // Priority 25 - structurally-keyed dictionaries
+        _strategyRegistry.Register<SortedDictionaryStrategy>();     // Priority 25 - key-sorted dictionaries
         _strategyRegistry.Register<RegexStrategy>();
         _strategyRegistry.Register<HashSetStrategy>();
         _strategyRegistry.Register<NumericConstantStrategy>();

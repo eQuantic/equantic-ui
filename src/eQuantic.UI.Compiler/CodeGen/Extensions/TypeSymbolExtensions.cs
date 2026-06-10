@@ -184,6 +184,28 @@ public static class TypeSymbolExtensions
             && named.TypeArguments[0].IsStructuralValueType();
     }
 
+    /// <summary>
+    /// True when <paramref name="type"/> is a key-sorted dictionary — <c>SortedDictionary&lt;K, V&gt;</c>
+    /// or the generic <c>SortedList&lt;K, V&gt;</c>. These keep their keys ordered, so they route to the
+    /// runtime <c>$eq.collections.sortedDictionary</c>/<c>sortedList</c> (sorted <c>Keys</c>/<c>Values</c>/
+    /// iteration) rather than the plain-object dictionary form. <see cref="SortedDictionaryFactory"/>
+    /// picks the matching runtime factory.
+    /// </summary>
+    public static bool IsSortedDictionary(this ITypeSymbol? type)
+    {
+        if (type is not INamedTypeSymbol named) return false;
+        var def = named.OriginalDefinition;
+        if (def?.ContainingNamespace?.ToDisplayString() != "System.Collections.Generic") return false;
+        return def.Name is "SortedDictionary" or "SortedList" && named.TypeArguments.Length == 2;
+    }
+
+    /// <summary>The runtime factory (<c>$eq.collections.sortedDictionary</c>/<c>sortedList</c>) for a
+    /// sorted dictionary type, or <c>null</c> when it is not one.</summary>
+    public static string? SortedDictionaryFactory(this ITypeSymbol? type) =>
+        type is INamedTypeSymbol { OriginalDefinition.Name: "SortedList" } ? Eq.SortedList
+        : type.IsSortedDictionary() ? Eq.SortedDictionary
+        : null;
+
     /// <summary>The element type of an array or <c>IEnumerable&lt;T&gt;</c>, or <c>null</c>.</summary>
     public static ITypeSymbol? GetEnumerableElementType(this ITypeSymbol? collectionType)
     {

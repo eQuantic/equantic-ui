@@ -4,7 +4,8 @@ import { round } from './utils/dotnet-math';
 import { format, parseEnum } from './utils/format';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
-import { queue, stack, valueMap } from './utils/collections';
+import { queue, stack, valueMap, linkedList } from './utils/collections';
+import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp } from './utils/nullable';
 import { equals } from './utils/equals';
 import { StyleBuilder } from './utils/style-builder';
@@ -31,8 +32,11 @@ export const $eq = {
   time: { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset },
   /** Enum parsing (member-name string). */
   enums: { parse: parseEnum },
-  /** Collections — Queue (FIFO), Stack (LIFO), ValueMap (structurally-keyed dictionary). */
-  collections: { queue, stack, valueMap },
+  /**
+   * Collections — Queue (FIFO), Stack (LIFO), ValueMap (structurally-keyed dictionary), LinkedList,
+   * and the sorted family (SortedSet / SortedDictionary / SortedList).
+   */
+  collections: { queue, stack, valueMap, linkedList, sortedSet, sortedDictionary, sortedList },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
   nullable: { arith: liftArith, cmp: liftCmp },
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */

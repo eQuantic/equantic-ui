@@ -560,7 +560,7 @@ genuinely impossible.
 | **Date & Time** | `DateTime`, `DateTimeOffset`, `TimeSpan`, `DateOnly`, `TimeOnly` — tick-precise compat (formatting, arithmetic, comparison) |
 | **Nullable** | `Nullable<T>` — `HasValue`/`Value`/`GetValueOrDefault`, lifted arithmetic/relational with null-propagation |
 | **String / Text** | `Split`, `Replace`, `StartsWith`/`EndsWith`/`Contains` (+ `StringComparison`/IgnoreCase), `Substring`, `IndexOf`, `PadLeft/Right`, `Trim*`, `Join`, `Concat`, `Format` (F/X/N specifiers), `StringBuilder` |
-| **Collections** | `List`, `Dictionary` (string/number keys → object; **record/struct/tuple keys → structural `valueMap`**), `HashSet`, `Queue`, `Stack` |
+| **Collections** | `List`, `Dictionary` (string/number keys → object; **record/struct/tuple keys → structural `valueMap`**), `HashSet`, `Queue`, `Stack`, `LinkedList`, sorted family (`SortedSet`/`SortedDictionary`/`SortedList`) |
 | **Dictionary** | `ContainsKey`, `TryGetValue`, `GetValueOrDefault`, `Add`, `Remove`, `Clear`, `Keys`, `Values`, `Count`, indexer get/set, `foreach` |
 | **Enum** | `Enum.Parse<T>`, `Enum.TryParse<T>`, `Enum.GetValues<T>`, `Enum.GetNames<T>`, `Enum.IsDefined` |
 | **LINQ** | `Select`/`SelectMany`/`Where` (+ indexed), `OrderBy`/`ThenBy` (stable composite), `GroupBy`, `Join`/`GroupJoin`/`ToLookup`, `ToDictionary`/`ToList`/`ToArray`, `Distinct(By)`/`Min(By)`/`Max(By)`, `Take(While)`/`Skip(While)`, `Aggregate`/`Sum`/`Average`/`Count`/`Any`/`All`/`First`/`Last`, `Zip`/`Chunk`/`Concat`/`Reverse` |
