@@ -67,6 +67,16 @@ public static class TypeSymbolExtensions
         return false;
     }
 
+    /// <summary>
+    /// True when the type is an enum annotated with <c>[Flags]</c>. Such enums are designed to be
+    /// OR-combined (<c>Read | Write</c>) — a value the member-name string representation cannot express —
+    /// so the transpiler represents <c>[Flags]</c> enums NUMERICALLY (members emit their underlying value),
+    /// while non-flags enums keep the member-name string.
+    /// </summary>
+    public static bool IsFlagsEnum(this ITypeSymbol? type) =>
+        type is { TypeKind: TypeKind.Enum }
+        && type.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute");
+
     /// <summary>Returns the underlying <c>T</c> of a <c>Nullable&lt;T&gt;</c>, or the type itself.</summary>
     public static ITypeSymbol? UnwrapNullable(this ITypeSymbol? type)
     {

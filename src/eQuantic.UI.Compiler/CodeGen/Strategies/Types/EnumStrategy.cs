@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -54,7 +55,18 @@ public class EnumStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)node;
         var member = memberAccess.Name.Identifier.Text;
 
-        // Enums are always represented by their member name as a string (e.g. SizeVariant.Medium ->
+        // A [Flags] enum is represented NUMERICALLY: its members exist to be OR-combined (`Read | Write`),
+        // which a member-name string cannot express. Emit the underlying value so bitwise ops / HasFlag /
+        // casts behave like .NET.
+        if (context.SemanticHelper.GetSymbol(node) is IFieldSymbol field
+            && field.ContainingType.IsFlagsEnum()
+            && field.HasConstantValue)
+        {
+            return System.Convert.ToInt64(field.ConstantValue, CultureInfo.InvariantCulture)
+                .ToString(CultureInfo.InvariantCulture);
+        }
+
+        // Non-flags enums are represented by their member name as a string (e.g. SizeVariant.Medium ->
         // 'medium'), never by their numeric value. A string is verbose and easy to identify,
         // and is stable regardless of the underlying value or build configuration (previously
         // the semantic path emitted a number while the fallback emitted a string). camelCase
