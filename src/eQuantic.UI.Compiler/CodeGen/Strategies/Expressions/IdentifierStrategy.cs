@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -80,6 +81,19 @@ public class IdentifierStrategy : IConversionStrategy
 
                     return result;
                 }
+            }
+
+            // C# 12 primary-constructor parameter captured in an instance member (e.g. referenced in Build):
+            // it behaves like an instance field, so emit `this.<name>`. A primary constructor is the one whose
+            // declaring syntax is the type declaration itself (not a ConstructorDeclaration), which tells it
+            // apart from an ordinary ctor's parameters (those stay locals inside their own ctor body).
+            if (symbol is IParameterSymbol primaryParam
+                && primaryParam.ContainingSymbol is IMethodSymbol { MethodKind: MethodKind.Constructor } pctor
+                && pctor.DeclaringSyntaxReferences.Any(r => r.GetSyntax() is TypeDeclarationSyntax))
+            {
+                if (identifier.Parent is MemberAccessExpressionSyntax pma && pma.Name == identifier)
+                    return name.ToCamelCase();
+                return $"this.{name.ToCamelCase()}";
             }
         }
 

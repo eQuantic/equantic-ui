@@ -141,9 +141,11 @@ Design notes:
   - **Properties ✅** — auto (`{get;set;}`, with default applied in the ctor only when a prop wasn't
     supplied), computed get-only (`int X => expr`), get/set with accessor bodies, and `static` properties
     all emit as real TS getters/accessors/members. (Were previously dropped → `this.x` undefined.)
-  - **Constructors ✅** — the C# ctor body now runs (e.g. `C(int id){ _id = id; }` emits `this._id = id`),
-    not just the positional param→prop auto-assign. (Chaining `:this`/`:base`, overloads and C# 12 primary
-    constructors remain on the backlog.)
+  - **Constructors ✅** — the C# ctor body runs (e.g. `C(int id){ _id = id; }` emits `this._id = id`), not
+    just the positional param→prop auto-assign. **C# 12 primary constructors ✅** — `class C(int id, string
+    label)` captures the params as instance state (`this.id = id`), referenced as `this.<name>` in members.
+    (Constructor OVERLOADS and `:this`/`:base` delegation remain a backlog item — JS has a single
+    constructor, so picking one + delegating is a deeper change.)
   - **Expression-bodied `Build`** (`=> new Box{…}`) ✅ — was emitting "Build method not implemented".
   - **Field initializers ✅** — bare collection-initializer braces (`= { a, b }` / `= new[]{…}`) emit a JS
     array `[...]`; target-typed `new(args)` on a named type emits `new Type(args)` (was dropping the type).
@@ -174,8 +176,8 @@ Design notes:
   compiler tests `ComponentStaticFieldTests`, `AuthoringCoverageTests`, `StringStrategyTests`,
   `EnumCastStrategyTests`, `EnumFlagsStrategyTests`; conformance `EnumConformanceTests`, `StringConformanceTests`.
   Remaining niche gaps — advanced pattern-matching (property/positional `var` bindings, list patterns),
-  ctor chaining (`:this`/`:base`) & C# 12 primary constructors, generic-component `new T()` (JS type erasure)
-  — are tracked as a backlog.) Cross-ref:
+  constructor overloads & `:this`/`:base` delegation (JS single ctor), generic-component `new T()` (JS type
+  erasure) — are tracked as a backlog.) Cross-ref:
   **Phase 2 client router** is complete; `RenderContext.Route` (params/query) is the routing-facing surface.
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
   pointers raise `EQ2001`; `goto`/`goto case`/`goto default` raise `EQ2002` (no JS equivalent). `unsafe`/
