@@ -488,10 +488,12 @@ public class TypeScriptEmitter
         // skip-list — so any referenced type that we emit is imported, and anything else is left alone.
         var knownComponents = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
         var knownRecords = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
+        var knownStaticHelpers = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
             if (userComp == component.Name) continue;
-            var isEmittedType = knownComponents.Contains(userComp) || knownRecords.Contains(userComp);
+            var isEmittedType = knownComponents.Contains(userComp) || knownRecords.Contains(userComp)
+                                || knownStaticHelpers.Contains(userComp);
             // When a resolver is present it is authoritative: import ONLY types we actually emit
             // (records/components it discovered). This drops references that aren't modules — primitives,
             // static-field names read as ClassName.X, helper-class names, etc. — instead of inventing a
@@ -755,6 +757,80 @@ public class TypeScriptEmitter
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Emit a C# <c>static class</c> utility as its own TS module: <c>export class X { static foo() {…}
+    /// static get bar() {…} static baz = … }</c>, plus imports for any record/component/helper it uses.
+    /// </summary>
+    public string EmitStaticHelperModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel)
+    {
+        if (semanticModel != null) _converter.SetSemanticModel(semanticModel);
+        _converter.SetCurrentClass(cls.Identifier.Text);
+        _converter.UsedHelpers.Clear();
+        var name = cls.Identifier.Text;
+
+        var builder = new TypeScriptCodeBuilder();
+        builder.Class(name, null, c =>
+        {
+            foreach (var f in cls.Members.OfType<FieldDeclarationSyntax>())
+            {
+                foreach (var v in f.Declaration.Variables)
+                {
+                    var def = v.Initializer != null
+                        ? _converter.ConvertExpression(v.Initializer.Value, f.Declaration.Type.ToString())
+                        : null;
+                    c.Field(v.Identifier.Text.ToCamelCase(), CSharpTypeToTypeScript(f.Declaration.Type.ToString()), def, v, isStatic: true);
+                }
+            }
+            foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
+            {
+                var pn = p.Identifier.Text.ToCamelCase();
+                if (p.ExpressionBody != null)
+                {
+                    c.Raw($"static get {pn}() {{ return {_converter.ConvertExpression(p.ExpressionBody.Expression)}; }}", p);
+                }
+                else if (p.AccessorList != null)
+                {
+                    var g = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
+                    if (g?.ExpressionBody != null)
+                        c.Raw($"static get {pn}() {{ return {_converter.ConvertExpression(g.ExpressionBody.Expression)}; }}", g);
+                    else if (g?.Body != null)
+                        c.Raw($"static get {pn}() {{ {StripJsBraces(_converter.Convert(g.Body))} }}", g);
+                    else if (p.Initializer != null)
+                        c.Field(pn, CSharpTypeToTypeScript(p.Type.ToString()), _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()), p, isStatic: true);
+                }
+            }
+            foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
+            {
+                var mn = m.Identifier.Text.ToCamelCase();
+                var pars = string.Join(", ", m.ParameterList.Parameters.Select(pp => $"{pp.Identifier.Text}: {CSharpTypeToTypeScript(pp.Type?.ToString() ?? "object")}"));
+                var isAsync = m.ReturnType.ToString().StartsWith("Task");
+                string mbody;
+                if (m.Body != null) mbody = StripJsBraces(_converter.Convert(m.Body));
+                else if (m.ExpressionBody != null) mbody = $"return {_converter.ConvertExpression(m.ExpressionBody.Expression)};";
+                else continue;
+                c.Raw($"static {(isAsync ? "async " : "")}{mn}({pars}) {{ {mbody} }}", m);
+            }
+        });
+
+        // Imports: $eq (if used) + any record/component/static-helper this class references.
+        var ib = new TypeScriptCodeBuilder();
+        var core = new HashSet<string>(_converter.UsedHelpers);
+        if (core.Count > 0) ib.Import(core, "@equantic/runtime");
+        var knownComp = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
+        var knownRec = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
+        var knownHelp = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
+        foreach (var t in CollectComponentTypesFromNode(cls, new HashSet<string> { name }).Distinct().OrderBy(x => x))
+        {
+            var ct = t.Trim().TrimEnd('?');
+            if (ct.Contains('<')) ct = ct.Split('<')[0];
+            if (ct.Contains('.')) ct = ct.Substring(ct.LastIndexOf('.') + 1);
+            if (string.IsNullOrEmpty(ct) || ct == name || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
+            if (knownComp.Contains(ct) || knownRec.Contains(ct) || knownHelp.Contains(ct))
+                ib.Import(new[] { ct }, $"./{ct}");
+        }
+        return ib.ToString() + builder.ToString();
     }
 
     private void EmitMethod(MethodDefinition method, TypeScriptCodeBuilder.ClassBuilder c, string? className = null)
