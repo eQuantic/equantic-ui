@@ -35,20 +35,25 @@ public class SwitchExpressionStrategy : IConversionStrategy
             }
 
             var condition = ConvertPattern(arm.Pattern, "_s", context);
-            var boundName = GetBoundName(arm.Pattern);
+
+            // Collect EVERY variable a pattern binds, anywhere in it, with the access path to reach it:
+            // top-level (`var v`/`Type t`), nested in property/positional subpatterns (`{ X: var x }`,
+            // `(0, var y)`), and list elements/slices (`[var a, .. var rest]`). Each is declared before the
+            // when-clause and result so both can reference it.
+            var bindings = new List<(string Name, string Access)>();
+            CollectBindings(arm.Pattern, "_s", bindings, context);
             var armResult = context.Converter.ConvertExpression(arm.Expression);
 
-            if (boundName != null)
+            if (bindings.Count > 0)
             {
-                // Patterns like `var v` / `Type t` capture a variable. Bind it in a
-                // block so both the when-clause and the result can reference it.
+                var declare = string.Concat(bindings.Select(b => $"const {b.Name} = {b.Access}; "));
                 var inner = $"return {armResult};";
                 if (arm.WhenClause != null)
                 {
                     var whenCond = context.Converter.ConvertExpression(arm.WhenClause.Condition);
                     inner = $"if ({whenCond}) return {armResult};";
                 }
-                sb.Append($" if ({condition}) {{ const {boundName} = _s; {inner} }}");
+                sb.Append($" if ({condition}) {{ {declare}{inner} }}");
             }
             else
             {
@@ -71,21 +76,84 @@ public class SwitchExpressionStrategy : IConversionStrategy
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Returns the variable name captured by a pattern (var v / Type t / Type(..) p),
-    /// or null when the pattern binds nothing.
-    /// </summary>
-    private static string? GetBoundName(PatternSyntax pattern)
-    {
-        VariableDesignationSyntax? designation = pattern switch
-        {
-            VarPatternSyntax v => v.Designation,
-            DeclarationPatternSyntax d => d.Designation,
-            RecursivePatternSyntax r => r.Designation,
-            _ => null
-        };
+    private static string Camel(string name) =>
+        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);
 
-        return designation is SingleVariableDesignationSyntax single ? single.Identifier.Text : null;
+    /// <summary>
+    /// Walks a pattern collecting every variable it binds together with the JS access path to reach it,
+    /// so the switch arm can declare them before the when-clause/result. Covers top-level designations
+    /// (<c>var v</c> / <c>Type t</c> / <c>Type(..) p</c>), nested property (<c>{ X: var x }</c>) and
+    /// positional (<c>(0, var y)</c>) subpatterns, list elements / slice (<c>[var a, .. var rest]</c>), and
+    /// the bind-able half of <c>and</c> patterns.
+    /// </summary>
+    private static void CollectBindings(PatternSyntax pattern, string access,
+        List<(string Name, string Access)> bindings, ConversionContext context)
+    {
+        switch (pattern)
+        {
+            case VarPatternSyntax { Designation: SingleVariableDesignationSyntax v }:
+                bindings.Add((v.Identifier.Text, access));
+                break;
+
+            case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d }:
+                bindings.Add((d.Identifier.Text, access));
+                break;
+
+            case RecursivePatternSyntax recursive:
+                if (recursive.Designation is SingleVariableDesignationSyntax r)
+                    bindings.Add((r.Identifier.Text, access));
+                if (recursive.PositionalPatternClause != null)
+                    for (int i = 0; i < recursive.PositionalPatternClause.Subpatterns.Count; i++)
+                        CollectBindings(recursive.PositionalPatternClause.Subpatterns[i].Pattern,
+                            $"{access}[{i}]", bindings, context);
+                if (recursive.PropertyPatternClause != null)
+                    foreach (var sp in recursive.PropertyPatternClause.Subpatterns)
+                    {
+                        var propName = sp.NameColon?.Name.ToString() ?? sp.ExpressionColon?.Expression.ToString();
+                        if (propName != null)
+                            CollectBindings(sp.Pattern, $"{access}.{Camel(propName)}", bindings, context);
+                    }
+                break;
+
+            case ListPatternSyntax list:
+                CollectListBindings(list, access, bindings, context);
+                break;
+
+            case ParenthesizedPatternSyntax paren:
+                CollectBindings(paren.Pattern, access, bindings, context);
+                break;
+
+            case BinaryPatternSyntax { } binary when binary.OperatorToken.IsKind(SyntaxKind.AndKeyword):
+                // `> 0 and var x` binds via the right side; `or` can't bind reliably so it's skipped.
+                CollectBindings(binary.Left, access, bindings, context);
+                CollectBindings(binary.Right, access, bindings, context);
+                break;
+        }
+    }
+
+    private static void CollectListBindings(ListPatternSyntax list, string access,
+        List<(string Name, string Access)> bindings, ConversionContext context)
+    {
+        var (before, after, sliceIndex) = SliceShape(list);
+        for (int i = 0; i < before; i++)
+            CollectBindings(list.Patterns[i], $"{access}[{i}]", bindings, context);
+
+        if (sliceIndex >= 0 && list.Patterns[sliceIndex] is SlicePatternSyntax { Pattern: { } slicePat })
+            // `.. var rest` binds the middle slice.
+            CollectBindings(slicePat, $"{access}.slice({before}, {access}.length - {after})", bindings, context);
+
+        for (int j = 0; j < after; j++)
+            CollectBindings(list.Patterns[sliceIndex + 1 + j], $"{access}[{access}.length - {after - j}]", bindings, context);
+    }
+
+    /// <summary>(elementsBeforeSlice, elementsAfterSlice, sliceIndex) — sliceIndex is -1 for a fixed-length
+    /// list pattern (no <c>..</c>).</summary>
+    private static (int Before, int After, int SliceIndex) SliceShape(ListPatternSyntax list)
+    {
+        for (int i = 0; i < list.Patterns.Count; i++)
+            if (list.Patterns[i] is SlicePatternSyntax)
+                return (i, list.Patterns.Count - i - 1, i);
+        return (list.Patterns.Count, 0, -1);
     }
 
     private string ConvertPattern(PatternSyntax pattern, string varName, ConversionContext context)
@@ -155,6 +223,9 @@ public class SwitchExpressionStrategy : IConversionStrategy
                 }
                 return "false";
 
+            case ListPatternSyntax list:
+                return ConvertListPattern(list, varName, context);
+
             case VarPatternSyntax _:
                 return "true"; // Always matches
 
@@ -164,9 +235,42 @@ public class SwitchExpressionStrategy : IConversionStrategy
                  var logicOp = binary.OperatorToken.IsKind(SyntaxKind.OrKeyword) ? "||" : "&&";
                  return $"({left} {logicOp} {rightPattern})";
 
+            case ParenthesizedPatternSyntax paren:
+                 return ConvertPattern(paren.Pattern, varName, context);
+
             default:
                 return "false";
         }
+    }
+
+    /// <summary>
+    /// List pattern → length check plus element checks. Fixed length (<c>[a, b]</c>) asserts an exact
+    /// length and matches each element by index; a single slice (<c>[a, .., z]</c>) asserts a minimum
+    /// length and matches the leading elements from the start and trailing ones from the end. The slice
+    /// itself imposes no element check (any middle); its binding is handled by <see cref="CollectBindings"/>.
+    /// </summary>
+    private string ConvertListPattern(ListPatternSyntax list, string varName, ConversionContext context)
+    {
+        var (before, after, sliceIndex) = SliceShape(list);
+        var checks = new List<string>();
+
+        checks.Add(sliceIndex < 0
+            ? $"{varName}.length === {list.Patterns.Count}"
+            : $"{varName}.length >= {before + after}");
+
+        for (int i = 0; i < before; i++)
+        {
+            var sub = ConvertPattern(list.Patterns[i], $"{varName}[{i}]", context);
+            if (sub != "true") checks.Add(sub);
+        }
+        for (int j = 0; j < after; j++)
+        {
+            var sub = ConvertPattern(list.Patterns[sliceIndex + 1 + j],
+                $"{varName}[{varName}.length - {after - j}]", context);
+            if (sub != "true") checks.Add(sub);
+        }
+
+        return "(" + string.Join(" && ", checks) + ")";
     }
 
     public int Priority => 0;
