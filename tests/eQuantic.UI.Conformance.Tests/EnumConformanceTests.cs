@@ -25,4 +25,22 @@ public class EnumConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertSameAsDotNet(expression, Prelude);
     }
+
+    /// <summary>
+    /// Numeric casts: the transpiler bridges the string representation with the enum's compile-time
+    /// name↔value table, so `(int)enum` yields the real underlying value and `(EnumType)int` yields a
+    /// member comparable to other members. These produce primitives (int/bool), so they conform exactly.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("(int)Status.Active")]     // -> 0
+    [InlineData("(int)Status.Pending")]    // -> 1
+    [InlineData("(int)Status.Inactive")]   // -> 2
+    [InlineData("(Status)1 == Status.Pending")]    // int -> enum, compared by member -> true
+    [InlineData("(Status)2 == Status.Pending")]    // -> false
+    [InlineData("(int)(Status)2")]                 // round-trip -> 2
+    public void EnumCasts_MatchDotNet(string expression)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertSameAsDotNet(expression, Prelude);
+    }
 }

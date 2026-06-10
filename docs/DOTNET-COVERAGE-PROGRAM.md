@@ -154,15 +154,19 @@ Design notes:
     record path) and reactively imported, so `Helpers.Format(x)` resolves instead of leaking an import.
   - **`string.Format` ✅** — routes to `$eq.text.stringFormat`, which substitutes positional `{i}` / `{i:spec}`
     placeholders (the specifier reuses the interpolation formatter, so `{0:F2}` works) and unescapes `{{`/`}}`.
+  - **Enum numeric casts ✅** — enums stay member-name strings (so equality / `switch` / dict-keys behave like
+    .NET), and `(int)enum` / `(EnumType)int` bridge the string↔value gap via the enum's compile-time
+    name↔value table: constant-fold to a literal (`(int)Status.Pending` → `1`, `(Status)1` → `'pending'`) or
+    inline a generated map indexed by the operand. Was silently `Math.trunc('pending')` → `NaN`.
   - **Import collector ✅** — only types we actually emit (records/components/enums the resolver scanned)
     are imported; primitives (`int`/`bool`), `$eq`/BCL-compat types (`DateTime`/`Math`/`Guid`/…) and
     static-field names read as `ClassName.X` no longer leak as bogus `import { X } from "./X"`.
   - Methods ✅, server actions ✅.
   (Surfaced + fixed via the Phase 2 sample + authoring sweep: see `docs/PHASE-2-CLIENT-ROUTER-PLAN.md` M3;
-  compiler tests `ComponentStaticFieldTests`, `AuthoringCoverageTests`, `StringStrategyTests`. Remaining niche
-  gaps — enum dict-keys & `(int)`-casts (a deliberate design call: enums are string-represented), advanced
-  pattern-matching, raw/verbatim-interpolated strings, ctor chaining (`:this`/`:base`) & C# 12 primary
-  constructors — are tracked as a backlog.) Cross-ref:
+  compiler tests `ComponentStaticFieldTests`, `AuthoringCoverageTests`, `StringStrategyTests`,
+  `EnumCastStrategyTests`; conformance `EnumConformanceTests`. Remaining niche gaps — `[Flags]` bitwise enum
+  combinators (string repr can't `|`), advanced pattern-matching, raw/verbatim-interpolated strings, ctor
+  chaining (`:this`/`:base`) & C# 12 primary constructors — are tracked as a backlog.) Cross-ref:
   **Phase 2 client router** is complete; `RenderContext.Route` (params/query) is the routing-facing surface.
 - **Unsupported (fail-on-unsupported)**: ✅ **landed** — typed-reference intrinsics, pointers, function
   pointers raise `EQ2001`; `goto`/`goto case`/`goto default` raise `EQ2002` (no JS equivalent). `unsafe`/
