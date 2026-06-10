@@ -41,9 +41,11 @@ public class DynamicElement : HtmlElement
         var attributes = BuildAttributes();
         if (CustomAttributes != null)
         {
-            foreach (var (key, value) in CustomAttributes)
+            // Iterate via Keys (transpiles to Object.keys → iterable) rather than `foreach (var (k,v) in
+            // dict)`: foreach-with-tuple-deconstruction over a dictionary has no transpilation strategy.
+            foreach (var key in CustomAttributes.Keys)
             {
-                attributes[key] = value;
+                attributes[key] = CustomAttributes[key];
             }
         }
 
