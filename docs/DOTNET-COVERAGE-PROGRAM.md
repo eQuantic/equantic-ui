@@ -178,10 +178,14 @@ Design notes:
   Advanced **switch-expression patterns ✅** — nested `var` bindings in property (`{ X: var x }`) and
   positional (`(0, var y)`) subpatterns, list patterns (`[]` / `[a, b]` / `[var a, .. var rest, var z]`),
   and relational + `and` binding (`> 0 and var n`) — collect every binding with its access path and declare
-  them in the arm (`EnumConformanceTests`-style `PatternConformanceTests`). Remaining niche gaps — the same
-  advanced patterns inside switch STATEMENTS / `is` expressions (expression form done), positional patterns
-  over records (need `Deconstruct` element mapping, not index access), constructor overloads & `:this`/
-  `:base` delegation (JS single ctor) — are tracked as a
+  them in the arm. **Switch STATEMENTS with pattern labels ✅** — a switch using `case Type t:` / `case {…}:`
+  / `case … when …:` is rewritten to an `if/else` chain (shared `PatternConverter`): value bound once to
+  `_s`, bindings hoisted and assigned inside the arm condition (so `when` sees them and a failing `when`
+  falls through), `default` → trailing `else`; a constant-only switch keeps the native JS `switch`.
+  **Positional patterns over records ✅** — read by `Deconstruct` member (`.x`/`.y`), not index (a record is a
+  plain object). (`PatternConformanceTests`, `SwitchStatementPatternTests`.) Remaining niche gaps — the same
+  advanced patterns inside `is` expressions (switch forms done; `is` binds only its top-level designation),
+  constructor overloads & `:this`/`:base` delegation (JS single ctor) — are tracked as a
   backlog.) **Generic components** — the `<T>` class declaration transpiles, but `new T()` (instantiating a
   type parameter) raises **EQ2003**: generic args are erased at runtime in JS, so the concrete ctor is
   unknown. Authors pass a factory/value instead of constructing `T` directly. Cross-ref:
