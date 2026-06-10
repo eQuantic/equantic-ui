@@ -186,8 +186,11 @@ Design notes:
   plain object). **`is` patterns ✅** — share the same `PatternConverter`, so `if (p is { X: 0, Y: var y })`
   binds the nested `var y` (assigned inside the condition, to a slot `IfStatementStrategy` hoists). (Tests:
   `PatternConformanceTests`, `SwitchStatementPatternTests`, `ModernPatternsTests`, `NewExpressionStrategyTests`.)
-  Remaining niche gap — constructor overloads & `:this`/`:base` delegation (JS has a single constructor) — is
-  tracked as a backlog.) **Generic components** — the `<T>` class declaration transpiles, but `new T()` (instantiating a
+  **Known limitation** — constructor OVERLOADS and `:this`/`:base` delegation: JS classes have a single
+  constructor, so a component can declare ONE constructor (or a C# 12 primary ctor). Multiple overloads or
+  `:this(…)`/`:base(args)` delegation aren't transpiled; idiomatically components are built with
+  object-initializers (`new C { Prop = … }`) or optional parameters, which fully work.) **Generic components**
+  — the `<T>` class declaration transpiles, but `new T()` (instantiating a
   type parameter) raises **EQ2003**: generic args are erased at runtime in JS, so the concrete ctor is
   unknown. Authors pass a factory/value instead of constructing `T` directly. Cross-ref:
   **Phase 2 client router** is complete; `RenderContext.Route` (params/query) is the routing-facing surface.
