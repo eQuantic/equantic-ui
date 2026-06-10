@@ -96,10 +96,11 @@ public class TypeScriptCodeBuilder
             _builder = builder;
         }
 
-        public void Field(string name, string type, string? defaultValue = null, SyntaxNode? sourceNode = null)
+        public void Field(string name, string type, string? defaultValue = null, SyntaxNode? sourceNode = null, bool isStatic = false)
         {
             var init = defaultValue != null ? $" = {defaultValue}" : "";
-            _builder.Line($"{name}: {type}{init};", sourceNode);
+            var prefix = isStatic ? "static " : "";
+            _builder.Line($"{prefix}{name}: {type}{init};", sourceNode);
         }
 
         public void Property(string name, string type, bool isPublic = true, SyntaxNode? sourceNode = null)

@@ -22,14 +22,17 @@ public class EnumStrategy : IConversionStrategy
         if (member == "Value" || member == "HasValue")
             return false;
 
-        // Semantic Check
+        // Semantic check. When the semantic model resolved a symbol, TRUST it: it's an enum member only
+        // if the symbol is an enum field. Anything else with the same PascalCase.Upper shape — a property
+        // (e.g. List.Count), a static field (Widget.Items), a method — is NOT an enum, so we must not fall
+        // through to the loose heuristic below (which would mistranslate Items.Count → 'count').
         var symbol = context.SemanticHelper.GetSymbol(node);
-        if (symbol != null && symbol.Kind == SymbolKind.Field && symbol.ContainingType.TypeKind == TypeKind.Enum)
+        if (symbol != null)
         {
-            return true;
+            return symbol.Kind == SymbolKind.Field && symbol.ContainingType?.TypeKind == TypeKind.Enum;
         }
 
-        // Heuristic fallback (if semantic fails or is missing)
+        // Heuristic fallback — ONLY when there is no semantic info to rely on.
         var expr = memberAccess.Expression.ToString();
         bool isPascalCase = !expr.Contains('.') &&
                            !expr.StartsWith("this.") &&

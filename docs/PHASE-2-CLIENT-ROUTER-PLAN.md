@@ -34,23 +34,25 @@ the target page's bundle loads (reusing the existing split bundles), its compone
 root, browser back/forward works, and the initial SSR load still hydrates exactly as today. Unmatched
 routes fall through to the server (real 404). Behavior is covered by runtime tests (happy-dom).
 
-### Exit criteria (Phase 2 is "done" when)
-- [ ] A **client route table** is available in the browser (generated from `[Page]` attributes, injected
-      via `__EQ_CONFIG.routes`), matching paths (incl. `{param}` / `{param:type}`) to page bundles.
-- [ ] A **`Router`** in the runtime intercepts internal `<a>` clicks, `pushState`s, loads + renders the
-      target page into `#app`, and handles `popstate` (back/forward) — no full reload.
+### Exit criteria (Phase 2 is "done" when) — ✅ ALL MET
+- [x] A **client route table** is available in the browser (generated from `[Page]` attributes, injected
+      via `__EQ_CONFIG.routes`), matching paths (incl. `{param}` / `{param:type}`) to page bundles. *(M0)*
+- [x] A **`Router`** in the runtime intercepts internal `<a>` clicks, `pushState`s, loads + renders the
+      target page into `#app`, and handles `popstate` (back/forward) — no full reload. *(M0)*
 - [x] **Route parameters** (`/users/{id}`) and query string are parsed and exposed to the page via
       `RenderContext` (`context.Route.Param("id")` / `context.Route.Query("q")`), matching the server's
       binding (SSR populates it from the HTTP route values + query; client nav from the matched route).
-- [ ] **Persistent layout**: a shell can stay mounted across navigations, with only the routed content
-      swapped (no re-mount of the nav/sidebar).
-- [ ] **`Link`** opts into SPA navigation (and external/`target=_blank`/modified clicks fall back to the
-      browser); optional **prefetch** on hover.
+      *(M1; demonstrated by the `Users`/`UserDetail` sample pages in M3.)*
+- [x] **Persistent layout**: a shell stays mounted across navigations, with only the routed content
+      swapped (no re-mount of the nav/sidebar) — via reconcile-on-navigate. *(M2a)*
+- [x] **`Link`** opts into SPA navigation (and external/`target=_blank`/modified clicks fall back to the
+      browser); **prefetch** on hover/focus (`data-prefetch`). *(M2b)*
 - [x] **Scroll restoration**: `scrollRestoration='manual'`; scroll resets to top on a forward
-      navigation and is restored from the History entry on back/forward.
-- [ ] **Route guards** hook (a `CanActivate`-style async check that can cancel/redirect a navigation).
-- [ ] Runtime tests (happy-dom) cover: click → SPA nav, back/forward, param/query parsing, guard
-      cancel/redirect, fallthrough to server on unmatched. Green in CI.
+      navigation and is restored from the History entry on back/forward. *(M1)*
+- [x] **Route guards** hook (a `CanActivate`-style async check that can cancel/redirect a navigation).
+      *(M2c; demonstrated by the `/admin` auth gate in M3.)*
+- [x] Runtime tests (happy-dom) cover: click → SPA nav, back/forward, param/query parsing, guard
+      cancel/redirect, fallthrough to server on unmatched. Green in CI. *(250 vitest)*
 
 ## Workstreams
 
@@ -113,8 +115,25 @@ target bundle before any click; a `window.__eqGuards` guard blocks `/counter` (U
 `/showcase` through — all with zero console errors. Tests: 250 vitest (+15: persistent-layout, prefetch,
 guards) + .NET compiler 377 / conformance 492 / server 37.
 
-**M3 — Sample + docs.** A multi-page sample demonstrates SPA nav, params, a guard and a persistent
-layout; update the wiki + `DOTNET-COVERAGE-PROGRAM` cross-links and mark Phase 2 ✅ in `ROADMAP.md`.
+**M3 — Sample + docs. ✅ DONE.** `samples/DefaultUIDashboard` now demonstrates the whole phase end-to-end:
+a persistent shell (navbar) across SPA navigation; route params via `/users` → `/users/{id:int}` reading
+`context.Route.Param("id")` (+ `?role=` query); and a route guard gating `/admin` (redirect to `/login`
+when signed out, allowed after sign-in) registered through `window.__eqGuards` and driven entirely by C#
+`Link`s. Verified live (chrome-devtools): shell DOM persists through param + guard navigations, params
+render on SSR + SPA + direct load, the guard cancels/redirects/allows — zero console errors.
+
+Bringing the sample up surfaced and fixed three real compiler/build gaps (a developer can author pages many
+ways; all must work):
+- **Static / `const` fields on components.** `private static readonly List<Person> People = new() {…}` was
+  dropped by the parser, emitted nowhere, referenced as `this.people` (undefined), and `People.Count`
+  mistranslated to the bogus enum literal `'count'`. Now: component fields are parsed (static/instance),
+  emitted as `static`/instance class members with transpiled initializers, referenced as `ClassName.field`
+  (`IdentifierStrategy`), and types used only in a field initializer are reactively imported. The
+  `EnumStrategy` PascalCase heuristic no longer fires when the semantic model resolved a non-enum symbol
+  (it was turning `Items.Count` into `'count'`). (Compiler test `StaticFieldRepro`.)
+- **bun `--splitting` nested page entries.** Without `--root`, bun inferred the repo root as the base and
+  wrote entries to `wwwroot/_equantic/samples/…/ts/Dashboard.js`, which the boot's flat `/_equantic/<Page>.js`
+  404'd on (stale flat entries had masked it). Fixed with `--root <intermediate-ts-dir>` so entries are flat.
 
 ## Decisions / principles
 
