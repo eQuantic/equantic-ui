@@ -23,6 +23,13 @@ public class StringConformanceTests
     [InlineData("(\"Hello\" + \" \" + \"World\")")]
     [InlineData("$\"{1 + 1} and {2 * 2}\"")]            // interpolation -> "2 and 4"
     [InlineData("\"Hello\".Length > 3")]
+    // Interpolated-string text edge cases (template-literal escaping).
+    [InlineData("$\"{{literal}} {1 + 1}\"")]            // doubled braces -> "{literal} 2"
+    [InlineData("$\"a {1} b}} c {{\"")]                 // trailing/leading escaped braces -> "a 1 b} c {"
+    [InlineData("$\"price ${{0}}={1}\"")]              // $ before escaped brace -> "price ${0}=1"
+    [InlineData("$@\"path\\to {1} end\"")]              // verbatim interpolated: backslash is literal
+    [InlineData("@\"C:\\x\\y\"")]                        // verbatim literal: "C:\x\y"
+    [InlineData("$\"\"\"raw {1} \"q\" end\"\"\"")]      // raw interpolated: literal quotes survive
     public void Strings_MatchDotNet(string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

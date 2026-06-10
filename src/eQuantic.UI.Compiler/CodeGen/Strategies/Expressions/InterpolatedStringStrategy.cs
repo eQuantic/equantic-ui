@@ -27,8 +27,10 @@ public class InterpolatedStringStrategy : IConversionStrategy
             switch (content)
             {
                 case InterpolatedStringTextSyntax text:
-                    // Escape backticks in template literal
-                    sb.Append(text.TextToken.Text.Replace("`", "\\`"));
+                    // Use the DECODED value, not the raw source: this collapses doubled braces ({{ -> {,
+                    // }} -> }), unescapes verbatim "" -> ", and processes regular escapes — matching .NET's
+                    // string value. Then re-escape only what a JS template literal treats specially.
+                    sb.Append(EscapeForTemplate(text.TextToken.ValueText));
                     break;
                 case InterpolationSyntax interpolation:
                     sb.Append("${");
@@ -57,6 +59,17 @@ public class InterpolatedStringStrategy : IConversionStrategy
         sb.Append('`');
         return sb.ToString();
     }
+
+    /// <summary>
+    /// Prepare decoded interpolated-string text for a JS template literal. First collapse the doubled
+    /// braces that escape a literal brace in C# interpolation (<c>{{</c> -> <c>{</c>, <c>}}</c> -> <c>}</c>) —
+    /// <c>ValueText</c> leaves these doubled. Then escape what a template literal treats specially: backslash
+    /// (first, so we don't double-escape), backtick, and the <c>${</c> opener (done last so a <c>${</c>
+    /// produced by the brace collapse, e.g. from <c>$"${{x}}"</c>, is also neutralised).
+    /// </summary>
+    private static string EscapeForTemplate(string s) =>
+        s.Replace("{{", "{").Replace("}}", "}")
+         .Replace("\\", "\\\\").Replace("`", "\\`").Replace("${", "\\${");
 
     public int Priority => 10;
 }
