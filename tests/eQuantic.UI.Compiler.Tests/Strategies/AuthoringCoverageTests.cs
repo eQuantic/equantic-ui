@@ -135,6 +135,18 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
+    public void NewTypeParameter_RaisesEQ2003()
+    {
+        // `new T()` on a generic component can't be transpiled (JS erases generic args), so it must fail
+        // the build with a clear diagnostic rather than emit broken `new T()`.
+        var src = Header + "public class GenC<T> : StatelessComponent where T : new() { " +
+                  "public override IComponent Build(RenderContext c) { var x = new T(); return new Box(); } }";
+        var result = new ComponentCompiler().CompileSource(src).Single(r => r.ComponentName == "GenC");
+        result.Success.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Code == "EQ2003");
+    }
+
+    [Fact]
     public void PrimaryConstructor_ParamsBecomeAssignedFields()
     {
         // C# 12 primary ctor: params are captured as instance state, assigned in the constructor and
