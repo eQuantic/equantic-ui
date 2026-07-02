@@ -296,6 +296,22 @@ Bun and the JS bundling chain, the TypeScript runtime.
 8. Track N2 — cross-target widget façade (one component set rendering to DOM *and* Photon) — scoped
    and scheduled only after M5.
 
+## Status log
+
+- **2026-06-10 — M0 kickoff landed** (W3/W7 slices + the engine-facing seam of W1):
+  `eQuantic.UI.Native.Engine` (geometry with y-down convention, CSS-rule radius normalization,
+  sRGB⇄linear color model, flat heap-free `Paint`/`DrawCommand`/`DisplayList` + builder with baked
+  transforms, and `Sdf.cs` — the **normative** per-corner rrect/stroke/coverage math the shaders will
+  transliterate); `eQuantic.UI.Native.Engine.Reference` (scalar CPU rasterizer: linear premultiplied
+  blending, sRGB-interpolated gradients, inverse-transform sampling, sRGB readback — plan D7);
+  golden-image harness (dependency-free PNG codec over `ZLibStream` + CRC32, `EQ_UPDATE_GOLDENS=1`
+  regen flow, actual/×8-diff artifacts on failure — plan D8) with the **first 14 golden cases**
+  committed (clear, rects, blending, per-corner/overflow rrects, circle, borders, gradients,
+  rotate/scale transforms, and a composed UI card) plus 19 unit tests over the normative math.
+  The fine-grained RHI (`IDevice`/`ICommandList`/…) is deliberately deferred to the Metal spike so
+  real GPU code shapes it (noted on `IRenderBackend`). Next: Metal offscreen spike on macOS
+  (objc-interop decision), Slang toolchain spike, then the same 14 goldens running on Metal.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
