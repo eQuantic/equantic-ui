@@ -120,6 +120,21 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
 - **Phase 6 — First-party embedded CSS engine** + documented provider contract.
 - **Phase 7 — Global state** (signals/context) + performance budgets & benchmarks.
 
+## Track N — Native mobile via proprietary GPU engine ("Photon")
+
+A **parallel track**, independent of web Phases 3–7 (different runtime, different team profile).
+Strategic decision (2026-06-10): mobile starts **directly with a proprietary GPU backend** — native
+Metal (iOS/macOS) + native Vulkan (Android), offline-precompiled shaders (Slang → SPIR-V/metallib),
+SDF-first rasterization for the UI primitive set — with **no Skia tier** (the engine is the product
+differentiator; a Skia tier would bake foreign canvas semantics into the framework, the trap Impeller
+had to dig Flutter out of). On native, C# runs via AOT — the C#→JS transpiler is web-only; what
+carries over is the component authoring model, the keyed-LIS reconciler algorithm, theming concepts
+(as typed styles — no CSS plane on native), and the embedded-toolchain/SDK packaging philosophy
+(shader compiler embedded like Bun). Guarded from day 0 by a **golden-image harness** on a physical
+device farm — the conformance culture applied to pixels. Milestones M0 (triangle + harness, months
+0–3) through M5 (v1 preview, months 15–18); 2–3 senior graphics engineers, not a side quest.
+→ full plan: `docs/NATIVE-GPU-ENGINE-PLAN.md`.
+
 ## Definition of "production-ready" (per pillar)
 - **0 JS**: any unsupported C# fails the build with a clear message; conformance suite green; C#
   debuggable in the browser.
