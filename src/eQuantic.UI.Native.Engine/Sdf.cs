@@ -42,7 +42,7 @@ public static class Sdf
     /// <summary>
     /// Signed distance to the CENTERED stroke of a shape: the band of width <paramref name="strokeWidth"/>
     /// straddling the fill edge — <c>|d| − strokeWidth / 2</c>. (CSS-style INNER borders are produced at
-    /// the widget layer by insetting the shape by half the width first; the engine primitive stays pure.)
+    /// the component layer by insetting the shape by half the width first; the engine primitive stays pure.)
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float Stroke(float distance, float strokeWidth) =>

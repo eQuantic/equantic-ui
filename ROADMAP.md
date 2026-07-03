@@ -75,7 +75,7 @@ code-splitting, hydration-time benchmarks, tree-shaking verification, and a perf
 ### 3. Flutter-like DX
 The `Build(context)` model is genuinely Flutter-like. Missing the productivity multipliers:
 **true hot reload with state preservation** (today it is full reload), richer/more predictable layout
-widgets, and layout/diagnostic tooling.
+components, and layout/diagnostic tooling.
 
 ### 4. shadcn-like components
 77 components is a respectable start, but shadcn's value is **polish + accessibility + variants**.
@@ -133,7 +133,10 @@ carries over is the component authoring model, the keyed-LIS reconciler algorith
 (shader compiler embedded like Bun). Guarded from day 0 by a **golden-image harness** on a physical
 device farm — the conformance culture applied to pixels. Milestones M0 (triangle + harness, months
 0–3) through M5 (v1 preview, months 15–18); 2–3 senior graphics engineers, not a side quest.
-→ full plan: `docs/NATIVE-GPU-ENGINE-PLAN.md`.
+→ full plan: `docs/NATIVE-GPU-ENGINE-PLAN.md`. **Architecture decision (2026-07-03):** components are
+authored ONCE in a shared assembly (abstract nodes + typed tokens in `eQuantic.UI.Primitives`) and
+lowered per target by realizers — DOM/CSS on web, Photon pixels on native — so the two platforms are
+written practically identically → `docs/SHARED-COMPONENTS-PLAN.md`.
 
 ## Definition of "production-ready" (per pillar)
 - **0 JS**: any unsupported C# fails the build with a clear message; conformance suite green; C#

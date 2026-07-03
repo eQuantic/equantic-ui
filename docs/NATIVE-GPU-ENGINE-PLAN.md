@@ -54,11 +54,15 @@ Bring the eQuantic.UI authoring model — C# components, `Build(context)`, `SetS
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │ Authoring (C#) — UNCHANGED MODEL                                    │
-│   StatefulComponent/StatelessComponent · Build(context) · SetState │
+│   StatefulComponent/StatelessComponent · Build(context) · SetState  │
 │   IAppTheme theming · DI/services                                   │
 ├─────────────────────────────────────────────────────────────────────┤
-│ Widget layer (native) — eQuantic.UI.Native.Widgets                  │
-│   Box/Text/Image/Button/ScrollView/… → typed styles (no CSS)        │
+│ SHARED components — eQuantic.UI.Components + .Primitives (once!)    │
+│   Box/Text/Image/Button/… authored against abstract nodes +         │
+│   typed tokens; realized per target (SHARED-COMPONENTS-PLAN.md)     │
+├─────────────────────────────────────────────────────────────────────┤
+│ NATIVE REALIZER — eQuantic.UI.Native.Components                     │
+│   abstract nodes → Photon primitives · typed styles → values        │
 │   Layout: flex/stack/absolute (own C# implementation)               │
 ├─────────────────────────────────────────────────────────────────────┤
 │ Render tree + Reconciler — eQuantic.UI.Native.Framework             │
@@ -67,7 +71,7 @@ Bring the eQuantic.UI authoring model — C# components, `Build(context)`, `SetS
 │   Compositor: layers, damage/dirty-region tracking                  │
 ├─────────────────────────────────────────────────────────────────────┤
 │ ENGINE CORE ("Photon") — eQuantic.UI.Native.Engine        ★ the IP  │
-│   Display list → render passes → draw batches                      │
+│   Display list → render passes → draw batches                       │
 │   SDF pipelines (rrect/border/shadow), gradient, image, glyph       │
 │   Atlas manager (glyphs, images) · PSO registry (fixed, precompiled)│
 ├─────────────────────────────────────────────────────────────────────┤
@@ -94,7 +98,9 @@ Bring the eQuantic.UI authoring model — C# components, `Build(context)`, `SetS
 - `eQuantic.UI.Native.Engine` — engine core + HAL interfaces (pure C#, no platform code).
 - `eQuantic.UI.Native.Engine.Metal` / `.Engine.Vulkan` / `.Engine.Reference` — backends.
 - `eQuantic.UI.Native.Framework` — primitive tree, reconciler, compositor, layout.
-- `eQuantic.UI.Native.Widgets` — the component library for native.
+- `eQuantic.UI.Primitives` — SHARED: value types, design tokens, typed styles, abstract nodes (zero deps).
+- `eQuantic.UI.Native.Components` — the NATIVE REALIZER (abstract → Photon) + component renderers; the
+  component library itself is the shared `eQuantic.UI.Components` (see `SHARED-COMPONENTS-PLAN.md`).
 - `eQuantic.UI.Native.Ios` / `.Android` — platform shells.
 - `eQuantic.UI.Native.Toolchain.{Osx64,OsxArm64,Win64,Linux64}` — the **embedded shader compiler**
   (Slang + SPIR-V tools), zipped per platform exactly like `eQuantic.UI.Runtime.*` embeds Bun today.
@@ -150,15 +156,17 @@ Bring the eQuantic.UI authoring model — C# components, `Build(context)`, `SetS
   build vs raster into two threads (Flutter-style) is a v2 optimization gated on real traces, not
   adopted preemptively.
 - **D11 — Typed styles, not CSS.** Tailwind/ClassName is a *web* styling plane and does not exist on
-  native. Native widgets take typed style props (`Style { Padding, Background, CornerRadius, … }`);
+  native. Native components take typed style props (`Style { Padding, Background, CornerRadius, … }`);
   `IAppTheme`/variants/sizes carry over **conceptually** (theme objects returning typed styles instead
   of class strings). `StyleBuilder`(string CVA) stays web-only. This is the largest authoring-surface
   divergence and is stated here so nobody "discovers" it in month 9.
-- **D12 — The widget trees are siblings, not the same tree.** `HtmlElement` deliberately mirrors the
-  DOM 1:1 (existing design rule) — it must not be bent into a native abstraction. Native gets its own
-  primitive/widget tree under the **same component authoring model** (`Build`, `SetState`, props,
-  children). A shared cross-target widget façade ("write once, render DOM or Photon") is a *later
-  convergence project* (Track N2), intentionally out of v1.
+- **D12 (revised 2026-07-03) — One shared authoring layer; sibling trees only at REALIZATION.**
+  Components are written ONCE, in a shared assembly, against an abstract visual vocabulary + the typed
+  tokens (`eQuantic.UI.Primitives`); per-target REALIZERS lower the abstract tree — web to
+  `HtmlElement`/DOM + CSS (HtmlElement keeps its 1:1 DOM mirror as the realizer's target vocabulary),
+  native to Photon primitive trees. This PROMOTES the old "Track N2 façade (later)" to the foundation —
+  see `docs/SHARED-COMPONENTS-PLAN.md` for the full architecture (styling plane, escape hatches,
+  layout-parity harness, migration).
 
 ## v1 primitive set (the exact fence)
 
@@ -208,10 +216,12 @@ regression-gated like the test suites).
   keyboard/IME hooks, app lifecycle, NativeAOT project template), Android host (NativeActivity or
   thin Java host + ANativeWindow, Choreographer, MotionEvent, IME hooks, lifecycle/surface loss —
   Vulkan swapchain recreation is a first-class test case).
-- **W6 — Framework + widgets.** C# port of the keyed-LIS reconciler over the primitive tree; flex/
-  stack/absolute layout engine (own C#, Yoga-binding as fallback plan only); gesture system (tap,
-  drag, fling with platform scroll physics curves); core widgets: Box, Text, Image, Button,
-  ScrollView, TextInput(M4), List with recycling(M3); typed styles + `IAppTheme` mapping.
+- **W6 — Framework + shared components (native realizer).** C# port of the keyed-LIS reconciler over
+  the primitive tree; flex/stack/absolute layout engine (own C#, Yoga-binding as fallback plan only);
+  gesture system (tap, drag, fling with platform scroll physics curves); the NATIVE REALIZER for the
+  shared abstract vocabulary (`docs/SHARED-COMPONENTS-PLAN.md`): Box, Text, Image, Button, ScrollView,
+  TextInput(M4), List with recycling(M3) — authored once in the shared `eQuantic.UI.Components`,
+  lowered here to Photon primitives; typed styles + tokens come from `eQuantic.UI.Primitives`.
 - **W7 — Golden harness + device CI.** Golden runner app (renders case manifests, captures via
   readback, compares), fuzzy diff metrics, per-backend golden storage, device farm wiring, allocation
   regression tests, frame-budget perf harness.
@@ -268,7 +278,7 @@ regression-gated like the test suites).
 
 2–3 strong graphics/systems engineers. W1+W2 serialize first (M0); W3/W4 parallelize after; W5 starts
 at M0 (shells are needed to run on devices); W6 can start as pure-C# work immediately (reconciler/
-layout/widgets against the Reference backend). 12–18 months to M5 preview is realistic **only** with
+layout/components against the Reference backend). 12–18 months to M5 preview is realistic **only** with
 the v1 fence enforced; the classic failure mode is spending month 4 on dashed strokes.
 
 ## What carries over from today's codebase — and what doesn't
@@ -293,8 +303,9 @@ Bun and the JS bundling chain, the TypeScript runtime.
 7. **WebGPU as a 4th backend** (far future): the same HAL could target WebGPU — which would let the
    *native* engine render on the web without the DOM, converging the two stacks. Deliberately parked;
    noted so the HAL design doesn't preclude it.
-8. Track N2 — cross-target widget façade (one component set rendering to DOM *and* Photon) — scoped
-   and scheduled only after M5.
+8. ~~Track N2 — cross-target component façade — after M5.~~ **Superseded (2026-07-03): promoted to the
+   foundational architecture** — components are authored once in a shared assembly and realized per
+   target from day one. See `docs/SHARED-COMPONENTS-PLAN.md` and D12 (revised).
 
 ## Status log
 
@@ -312,10 +323,24 @@ Bun and the JS bundling chain, the TypeScript runtime.
   real GPU code shapes it (noted on `IRenderBackend`). Next: Metal offscreen spike on macOS
   (objc-interop decision), Slang toolchain spike, then the same 14 goldens running on Metal.
 
+- **2026-07-03 — Design System + shared architecture landed.** The Photon Design System handoff
+  (Claude Design) is preserved at `docs/design/Photon-Design-System.dc.html` and implemented as the
+  SHARED token layer: `eQuantic.UI.Primitives` (new, zero-dep) holds `Color`, the full token set
+  (§01–§08: paired light/dark `ColorToken`s, `VariantColors` with Pressed-as-token, type scale with
+  Dynamic Type clamps, spacing/radius/icon/touch scales, analytic `ShadowSpec` elevation, motion), the
+  `IAppTheme` contract + `PhotonTheme`, and the target-neutral Button style resolver (variant × size ×
+  state; derived Outline/Ghost/Link; disabled = 38% group; focus double-ring). The engine now DEPENDS
+  on Primitives (dependency inverted); `eQuantic.UI.Native.Components` is the native REALIZER
+  (`ButtonRenderer` → display list). Spec fidelity is tested: token value pins, **recomputed WCAG
+  contrast for every claimed pair**, resolver rules, and golden button matrices (9 variants × 4
+  states, light + dark) rendered through the engine. Same day: **D12 revised / N2 promoted** —
+  components are authored once in a shared assembly and realized per target
+  (`docs/SHARED-COMPONENTS-PLAN.md`). Native suite: 94 tests, 16 goldens.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
 the device matrix; the Dashboard demo runs at 120 Hz with zero steady-state allocations and all frame
 budgets met; VoiceOver/TalkBack navigate it; shaders are 100% precompiled (runtime pipeline creation
 asserts); an external dev ships a template app in minutes; and the supported v1 surface (primitives,
-widgets, styles) is documented with the same honesty as `docs/DOTNET-COVERAGE-PROGRAM.md`.
+components, styles) is documented with the same honesty as `docs/DOTNET-COVERAGE-PROGRAM.md`.
