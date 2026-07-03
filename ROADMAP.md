@@ -117,7 +117,11 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
   form state (dirty/touched), async submit wired to Server Actions.
 - **Phase 5 — Component polish & accessibility**: finish existing components, add focus/keyboard/aria,
   variant coverage, a component test harness — before adding new components.
-- **Phase 6 — First-party embedded CSS engine** + documented provider contract.
+- **Phase 6 — First-party embedded CSS engine** + documented provider contract. **Normative
+  (2026-07-03): the embedded CSS follows exactly the same design system as mobile** — the Photon
+  Design System, generated at build time from the shared `eQuantic.UI.Primitives` tokens (single
+  source of truth; no hand-maintained CSS values, parity tested). Tailwind/other engines remain
+  interop options, never the design-system source. → `docs/SHARED-COMPONENTS-PLAN.md`.
 - **Phase 7 — Global state** (signals/context) + performance budgets & benchmarks.
 
 ## Track N — Native mobile via proprietary GPU engine ("Photon")

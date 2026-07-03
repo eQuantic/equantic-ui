@@ -58,10 +58,23 @@ library is composition above it, in shared code.
 - **Typed styles + tokens are canonical.** Native consumes values directly; web lowers them to CSS.
 - Web lowering v1: **inline styles / CSS custom properties** generated from typed styles — simple,
   SSR-friendly, no Tailwind dependency for shared components.
-- Later: the **first-party CSS engine (web Phase 6)** consumes the same tokens and emits utility
-  classes — the two efforts share one contract.
+- **NORMATIVE — one design system, both targets (recorded 2026-07-03):** the web's **embedded
+  first-party CSS** (web Phase 6 — no preference for Tailwind or any other engine) must follow
+  **exactly the same design system as mobile**: the Photon Design System
+  (`docs/design/Photon-Design-System.dc.html`), whose single source of truth is the C# token layer in
+  `eQuantic.UI.Primitives`. Concretely:
+  - Every CSS artifact the embedded engine ships — custom properties per theme mode, utility classes,
+    component classes — is **GENERATED at build time from the Primitives tokens**. Hand-maintained CSS
+    copies of token values are forbidden; there is no second palette, type scale, radius scale,
+    elevation ramp or motion table to drift.
+  - Parity is **tested**, not promised: token → generated-CSS value tests (the same pins + recomputed
+    WCAG checks that guard the C# side), and the cross-target visual/layout harnesses compare the two
+    realizations of the same component.
+  - A Photon DS change therefore lands in one place (Primitives) and reaches native values and web CSS
+    in the same build.
 - **`ClassName`/Tailwind is a web-only escape hatch** on shared components: honored by the web
-  realizer, ignored by native (analyzer warning). Web-only components keep full Tailwind power.
+  realizer, ignored by native (analyzer warning). Web-only components keep full Tailwind power —
+  but Tailwind is interop/compat, never the source of the design system.
 
 ## Anti-lowest-common-denominator (first-class escape hatches)
 
