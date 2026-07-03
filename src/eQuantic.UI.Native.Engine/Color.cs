@@ -1,27 +1,11 @@
+using eQuantic.UI.Primitives;
+
 namespace eQuantic.UI.Native.Engine;
 
 /// <summary>
-/// An sRGB color with straight (non-premultiplied) alpha — the authoring-facing representation.
-/// Rendering happens in LINEAR premultiplied space (see <see cref="ColorSpace"/>): shaders and the
-/// reference rasterizer decode sRGB → linear, premultiply, blend, and encode back at present time —
-/// matching GPU behavior with an sRGB render target.
-/// </summary>
-public readonly record struct Color(byte R, byte G, byte B, byte A)
-{
-    public static Color FromRgb(byte r, byte g, byte b) => new(r, g, b, 255);
-    public static Color FromRgba(byte r, byte g, byte b, byte a) => new(r, g, b, a);
-
-    /// <summary>This color with alpha scaled by <paramref name="opacity"/> (0..1).</summary>
-    public Color WithOpacity(float opacity) =>
-        this with { A = (byte)Math.Clamp((int)MathF.Round(A * opacity), 0, 255) };
-
-    public static readonly Color Transparent = new(0, 0, 0, 0);
-    public static readonly Color Black = new(0, 0, 0, 255);
-    public static readonly Color White = new(255, 255, 255, 255);
-}
-
-/// <summary>
-/// A linear-space, PREMULTIPLIED color — the blending representation. Only rasterizers touch this.
+/// A linear-space, PREMULTIPLIED color — the engine's blending representation (rendering happens in
+/// linear premultiplied space, mirroring GPU behavior with an sRGB render target). Only rasterizers
+/// touch this; the authoring-facing type is the shared <see cref="Primitives.Color"/>.
 /// </summary>
 public readonly record struct LinearColor(float R, float G, float B, float A)
 {

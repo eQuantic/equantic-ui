@@ -1,3 +1,4 @@
+using eQuantic.UI.Primitives;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Engine.Reference;
 using eQuantic.UI.Native.Engine.Tests.Golden;
@@ -112,7 +113,7 @@ public class GoldenSceneTests
     [Fact]
     public void CardComposition() => Run("card-composition", b =>
     {
-        // A miniature "UI card": the primitives composing the way the widget layer will drive them.
+        // A miniature "UI card": the primitives composing the way the component layer will drive them.
         var card = new RRect(new Rect(20, 15, 120, 90), new CornerRadii(10));
         b.FillRRect(card, Paint.Solid(Color.FromRgb(38, 41, 51)));
         b.StrokeRRect(card, 2, Paint.Solid(Color.FromRgb(58, 63, 77)));

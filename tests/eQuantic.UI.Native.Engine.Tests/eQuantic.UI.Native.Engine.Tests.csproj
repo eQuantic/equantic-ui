@@ -24,6 +24,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine\eQuantic.UI.Native.Engine.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine.Reference\eQuantic.UI.Native.Engine.Reference.csproj" />
+    <ProjectReference Include="..\..\src\eQuantic.UI.Native.Components\eQuantic.UI.Native.Components.csproj" />
+    <ProjectReference Include="..\..\src\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
   </ItemGroup>
 
 </Project>

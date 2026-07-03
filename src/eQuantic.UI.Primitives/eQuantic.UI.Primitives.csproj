@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>eQuantic.UI.Primitives</PackageId>
+    <Description>eQuantic.UI shared design language — color and layout value types, design tokens (light/dark), typed styles, and the abstract visual vocabulary components are authored against. Zero dependencies; consumed by BOTH the web realizer (DOM/CSS) and the native Photon realizer (see docs/SHARED-COMPONENTS-PLAN.md).</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+</Project>
