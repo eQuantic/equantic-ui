@@ -55,6 +55,22 @@ export {
 export { liftArith, liftCmp } from './utils/nullable';
 export { equals } from './utils/equals';
 export { $eq } from './eq';
+
+// Shared abstract vocabulary (write-once components) — client-side lowering to HtmlNode.
+export { lowerVisualNode, tokenValue } from './shared/lowering';
+export type { LoweringContext } from './shared/lowering';
+export type {
+  VisualNodeValue,
+  BoxNode,
+  FlexNodeValue,
+  TextNode,
+  PressableNode,
+  FlexibleNode,
+  SpacerNode,
+  ComponentNode,
+  ColorTokenValue,
+  ColorValue,
+} from './shared/nodes';
 export { StyleBuilder } from './utils/style-builder';
 export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
