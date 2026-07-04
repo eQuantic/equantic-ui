@@ -11,11 +11,15 @@ public sealed class LayoutContext
         Theme = theme;
         Measurer = measurer;
         TypeScale = typeScale;
+        Components = new ComponentContext(theme, typeScale);
     }
 
     public IAppTheme Theme { get; }
     public ITextMeasurer Measurer { get; }
     public float TypeScale { get; }
+
+    /// <summary>The mode-free context handed to <see cref="UiComponent.Build"/> during expansion.</summary>
+    public ComponentContext Components { get; }
 }
 
 /// <summary>A laid-out node: source, ABSOLUTE bounds (after the layout pass), children, text metrics.</summary>
@@ -55,6 +59,9 @@ public static class LayoutEngine
         Text text => MeasureText(text, maxW, ctx),
         Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx),
         Flexible flexible => MeasureWrapper(flexible, flexible.Child, maxW, maxH, ctx),
+        // A component expands INLINE: Build produces its subtree (pure, mode-free), which is measured
+        // in place — the component wraps it in the layout tree, drawing nothing itself.
+        UiComponent component => MeasureWrapper(component, component.Build(ctx.Components), maxW, maxH, ctx),
         Spacer => new LayoutNode(node), // zero outside a flex container (layout-only)
         _ => new LayoutNode(node),
     };
@@ -71,7 +78,7 @@ public static class LayoutEngine
     private static LayoutNode MeasureText(Text text, float maxW, LayoutContext ctx)
     {
         var result = new LayoutNode(text);
-        var style = ctx.Theme.Type(text.Role);
+        var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
         var measurement = ctx.Measurer.Measure(text.Content, style, ctx.TypeScale, maxW, text.MaxLines);
         result.Text = measurement;
         result.Bounds = new Rect(0, 0, measurement.Width, measurement.Height);
@@ -196,7 +203,7 @@ public static class LayoutEngine
                 {
                     if (children[i] is not Text text) continue;
                     var reduced = MathF.Max(0, mains[i] - deficit * (mains[i] / textTotal));
-                    var style = ctx.Theme.Type(text.Role);
+                    var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
                     var remeasured = ctx.Measurer.Measure(text.Content, style, ctx.TypeScale, reduced,
                         Math.Max(1, text.MaxLines));
                     var node = new LayoutNode(text) { Text = remeasured };
@@ -286,8 +293,10 @@ public static class LayoutEngine
                 CrossAlign.End => crossExtent - childCross,
                 _ => 0,
             };
-            if (flex.Cross == CrossAlign.Stretch && children[i] is not Text)
+            if (flex.Cross == CrossAlign.Stretch && children[i] is not Text
+                && CrossSizeKind(children[i], horizontal) != SizeKind.Fixed)
             {
+                // CSS parity: stretch fills AUTO cross sizes only — an explicit cross size is kept.
                 childCross = crossExtent;
                 child.Bounds = horizontal
                     ? child.Bounds with { Height = crossExtent }
@@ -306,6 +315,17 @@ public static class LayoutEngine
     }
 
     // ---- helpers ----------------------------------------------------------------------------------
+
+    /// <summary>The child's declared size KIND on the flex cross axis (wrappers look through to their
+    /// content; components can't be known without building — treated as Hug, i.e. stretchable).</summary>
+    private static SizeKind CrossSizeKind(VisualNode node, bool horizontal) => node switch
+    {
+        Box box => (horizontal ? box.Style.Height : box.Style.Width).Kind,
+        FlexNode flex => (horizontal ? flex.Height : flex.Width).Kind,
+        Pressable pressable => CrossSizeKind(pressable.Child, horizontal),
+        Flexible flexible => CrossSizeKind(flexible.Child, horizontal),
+        _ => SizeKind.Hug,
+    };
 
     private static float CapMax(float available, float styleMax) =>
         styleMax > 0 ? MathF.Min(available, styleMax) : available;

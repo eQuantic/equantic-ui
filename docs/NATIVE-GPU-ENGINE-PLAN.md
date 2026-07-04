@@ -358,6 +358,25 @@ Bun and the JS bundling chain, the TypeScript runtime.
   tests, 19 goldens. Next: the shared Button/Text components authored on this vocabulary, the web
   realizer (TS lowering + token→CSS generation), Metal spike.
 
+- **2026-07-03 — Shared components + component model + host loop landed.** The SHARED component model
+  lives in `eQuantic.UI.Primitives`: `UiComponent` IS a `VisualNode` (components compose into any
+  tree; the layout engine expands `Build(ComponentContext)` INLINE), with `StatelessComponent` /
+  `StatefulComponent` (+`SetState` → `StateInvalidated`) mirroring the web authoring shape;
+  `ComponentContext` is deliberately MODE-FREE — components author tokens, never resolved colors
+  (`ColorToken.WithOpacity` covers the disabled 38% group at token level). New
+  **`eQuantic.UI.Components.Shared`** (staging assembly, refs Primitives ONLY — merges into
+  `eQuantic.UI.Components` when the web realizer lands): **Button** (spec A12 — Pressable → Box → Row
+  → Text, size-table metrics via a system `Text.StyleOverride`, derived variants, MinWidth 64,
+  Expand, disabled swallows presses; pressed/focus visuals await the interaction system) and **Card**
+  (B1 — Elevated/Outlined/Filled, Radius.Lg, S4 padding; Elevated renders a border fallback until the
+  engine's E1 shadow lands). `PhotonHost` (native realizer package) closes the v1 frame loop:
+  retained root, `SetState` → `NeedsRender`, `Tap` dispatch to §08-expanded hit regions (topmost wins,
+  disabled swallows). Layout fix en route: cross-axis **Stretch no longer overrides an explicit cross
+  size** (CSS parity). Proven end-to-end by the native **Counter app test** (tap → SetState → rebuild;
+  state bar 24→96dp over 3 taps) and goldens `shared-buttons`, `counter-initial`,
+  `counter-after-3-taps`. Native suite: 129 tests, 22 goldens. Next: web realizer (TS lowering +
+  token→CSS — the same Button on both targets), Metal spike.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

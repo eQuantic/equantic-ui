@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>eQuantic.UI.Components.Shared</PackageId>
+    <Description>eQuantic.UI SHARED component library — components authored ONCE against the abstract vocabulary and tokens (eQuantic.UI.Primitives), realized per target (DOM/CSS on web, Photon pixels on native). Staging assembly: merges into eQuantic.UI.Components as the web realizer lands (docs/SHARED-COMPONENTS-PLAN.md).</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Primitives ONLY — a shared component that needed anything platform-specific would be a bug. -->
+    <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+  </ItemGroup>
+
+</Project>
