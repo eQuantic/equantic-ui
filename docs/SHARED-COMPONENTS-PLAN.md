@@ -165,8 +165,17 @@ rejected.)
    OPT-IN `<EnableEQuanticSharedComponents>true</…>` — the shared library intentionally reuses names
    (Button, Card…), so a default-on scan would collide with the standard web components until the
    unification swaps them in. Default builds are byte-identical (sample-verified).
-   Remaining (the Core unification slice): C#-side SSR of shared components inside Core pages (an
-   IComponent adapter over WebRealizer), name-collision resolution (shared components REPLACE the
-   standard ones), flipping the SDK gate to default-on, boot-time `setPhotonTheme` registration.
+   Unification slice 1 ✅ (2026-07-04): the Core⇄Shared SSR bridge. `eQuantic.UI.Web.VisualNodeComponent`
+   is an `IComponent` adapter over `WebRealizer.Lower` — a Core page composes write-once components
+   (`new VisualNodeComponent(new Card(...))`) anywhere an IComponent fits, server-rendered against
+   `PhotonTheme.Instance` (or an explicit theme). Client-side the SAME call resolves to the runtime's
+   mirror class, lowering with the ambient theme — the hydration-parity pair. Routing is powered by
+   the new `[RuntimeProvided]` attribute (Primitives): any type carrying it imports from
+   `@equantic/runtime`, extending the namespace rule to runtime-backed adapters living elsewhere.
+   Boot-time theming needed no new machinery: `setPhotonTheme` inside the existing `__registerTheme`
+   hook swaps what the ambient lowering resolves (spec-tested).
+   Remaining (unification slice 2): name-collision resolution — shared components REPLACE the
+   standard web ones (per-origin module namespacing in the emitter/resolver, or the library swap),
+   then the SDK gate flips to default-on and a real sample page ships.
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
 5. Layout conformance harness lands with step 2 and gates every layout feature after it.

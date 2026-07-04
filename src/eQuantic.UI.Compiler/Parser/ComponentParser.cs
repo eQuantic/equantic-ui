@@ -606,8 +606,13 @@ public class ComponentParser
 
             if (ComponentModelBaseNames.Contains(type.Name)) continue;
 
+            // Runtime-provided = the shared-vocabulary namespace, OR any type opting in explicitly
+            // with [RuntimeProvided] (runtime-backed adapters living outside Primitives).
             var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-            if (ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives."))
+            var isRuntimeProvided = ns == "eQuantic.UI.Primitives"
+                || ns.StartsWith("eQuantic.UI.Primitives.")
+                || type.GetAttributes().Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute");
+            if (isRuntimeProvided)
                 definition.RuntimeProvidedTypes.Add(type.Name);
         }
     }
