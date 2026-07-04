@@ -14,6 +14,7 @@
     <PackageReference Include="FluentAssertions" Version="7.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.5.23" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" />
   </ItemGroup>
 
@@ -25,6 +26,7 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine\eQuantic.UI.Native.Engine.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Framework\eQuantic.UI.Native.Framework.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine.Reference\eQuantic.UI.Native.Engine.Reference.csproj" />
+    <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine.Metal\eQuantic.UI.Native.Engine.Metal.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Components\eQuantic.UI.Native.Components.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Components.Shared\eQuantic.UI.Components.Shared.csproj" />
