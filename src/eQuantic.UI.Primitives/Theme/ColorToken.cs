@@ -18,6 +18,11 @@ public readonly record struct ColorToken(Color Light, Color Dark)
     public ColorToken(Color both) : this(both, both) { }
 
     public Color Resolve(ThemeMode mode) => mode == ThemeMode.Dark ? Dark : Light;
+
+    /// <summary>Both modes with alpha scaled by <paramref name="opacity"/> — e.g. the disabled 38% group
+    /// applied at the token level by components that author mode-free trees.</summary>
+    public ColorToken WithOpacity(float opacity) =>
+        new(Light.WithOpacity(opacity), Dark.WithOpacity(opacity));
 }
 
 /// <summary>

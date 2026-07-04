@@ -120,4 +120,32 @@ public class AbstractNodeGoldenTests
 
     [Fact]
     public void AbstractCard_Dark() => Run("abstract-card-dark", ThemeMode.Dark, 340, 200, BuildCard());
+
+    [Fact]
+    public void SharedButtons()
+    {
+        // The SHARED Button component (one source, both targets) — variants and the size ramp.
+        var variants = new Row(gap: Space.S2);
+        variants.Add(new eQuantic.UI.Components.Shared.Button("Pay", Variant.Primary));
+        variants.Add(new eQuantic.UI.Components.Shared.Button("Later", Variant.Secondary));
+        variants.Add(new eQuantic.UI.Components.Shared.Button("Del", Variant.Destructive));
+        variants.Add(new eQuantic.UI.Components.Shared.Button("Skip", Variant.Outline));
+
+        var sizes = new Row(gap: Space.S2);
+        sizes.Add(new eQuantic.UI.Components.Shared.Button("S", size: SizeVariant.Small));
+        sizes.Add(new eQuantic.UI.Components.Shared.Button("M", size: SizeVariant.Medium));
+        sizes.Add(new eQuantic.UI.Components.Shared.Button("L", size: SizeVariant.Large));
+        sizes.Add(new eQuantic.UI.Components.Shared.Button("XL", size: SizeVariant.XLarge));
+
+        var states = new Row(gap: Space.S2);
+        states.Add(new eQuantic.UI.Components.Shared.Button("Disabled") { Disabled = true });
+        states.Add(new eQuantic.UI.Components.Shared.Button("CTA expand") { Expand = true });
+
+        var root = new Column(gap: Space.S3) { Padding = EdgeInsets.All(Space.S4), Width = SizeValue.Fill };
+        root.Add(variants);
+        root.Add(sizes);
+        root.Add(states);
+
+        Run("shared-buttons", ThemeMode.Light, 380, 190, root);
+    }
 }

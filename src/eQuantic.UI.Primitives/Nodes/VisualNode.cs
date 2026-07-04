@@ -104,6 +104,13 @@ public sealed class Text : VisualNode
 
     /// <summary>0 = unlimited lines.</summary>
     public int MaxLines { get; init; }
+
+    /// <summary>
+    /// SYSTEM COMPONENTS ONLY: overrides the role's <see cref="TypeStyle"/> with an exact style from a
+    /// design-system table (e.g. the Button label sizes 13/15/16/17 per spec A12). App code uses roles —
+    /// free-form font sizes remain outside the component API (spec A8).
+    /// </summary>
+    public TypeStyle? StyleOverride { get; init; }
 }
 
 /// <summary>
