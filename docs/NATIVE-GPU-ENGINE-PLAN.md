@@ -377,6 +377,21 @@ Bun and the JS bundling chain, the TypeScript runtime.
   `counter-after-3-taps`. Native suite: 129 tests, 22 goldens. Next: web realizer (TS lowering +
   token→CSS — the same Button on both targets), Metal spike.
 
+- **2026-07-04 — Web realizer slice 1 landed** (`SHARED-COMPONENTS-PLAN.md` migration step 3).
+  New `eQuantic.UI.Web`: `WebRealizer` lowers the SAME abstract trees the native realizer turns into
+  Photon pixels to `HtmlElement`/DOM (SSR path): Box→div with `box-sizing:border-box` (inside-border
+  parity), Row/Column→CSS flex (Flexible → `flex: n 1 0%` = native leftover-by-weight; `min-width:0`
+  keeps the truncation contract), Text→role-classed span (+system StyleOverride inline), Pressable→
+  neutralized `<button>` (aria-label, disabled swallows, OnPressed→OnClick). Colors lower as
+  `light-dark()` straight from tokens — the DOM stays MODE-FREE like the abstract tree.
+  `PhotonCssGenerator` produces the NORMATIVE embedded stylesheet from the tokens (custom properties,
+  `.eq-type-*` role classes, `.eq-elevation-*` shadows, motion vars) with per-value parity tests —
+  the "web embedded CSS = mobile design system" rule is now enforced by CI. The shared Button/Card
+  lower with exact spec metrics (the write-once proof test composes the native golden card tree as
+  DOM). Core `HtmlStyle` gained white-space/text-overflow/box-sizing (additive DOM mirrors). New web
+  suite: 26 tests. Remaining slice 2: TS-runtime lowering (hydration parity) + eqc transpilation of
+  shared sources; then the Metal spike.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
