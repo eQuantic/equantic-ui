@@ -98,12 +98,15 @@ public class SemanticModelProvider
             return updatedCompilation.GetSemanticModel(tree);
         }
 
-        // Fallback: Create minimal compilation (old behavior)
+        // Fallback: Create minimal compilation (old behavior). Nullable enabled — see
+        // ProjectCompilationHelper: disabled annotations turn `Action?` into Nullable<Action> and
+        // silently break overload binding.
         var compilation = CSharpCompilation.Create(
             "eQuantic.UI.DynamicAssembly",
             new[] { tree },
             _references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
 
         return compilation.GetSemanticModel(tree);
     }

@@ -24,6 +24,14 @@ public class ComponentDefinition
     /// Whether it's a stateful (has state) or stateless component
     /// </summary>
     public bool IsStateful { get; set; }
+
+    /// <summary>
+    /// True for the SHARED stateful shape (<c>eQuantic.UI.Primitives.StatefulComponent</c>): state as
+    /// fields on the component itself, direct <c>SetState</c> — no <c>CreateState</c>/state-class split.
+    /// Emitted extending the runtime's <c>SharedStatefulComponent</c>; structurally handled like a
+    /// stateless component otherwise (<see cref="IsStateful"/> stays false).
+    /// </summary>
+    public bool IsSharedStateful { get; set; }
     
     /// <summary>
     /// Name of the state class (for stateful components)

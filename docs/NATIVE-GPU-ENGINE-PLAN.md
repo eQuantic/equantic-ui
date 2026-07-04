@@ -440,6 +440,20 @@ Bun and the JS bundling chain, the TypeScript runtime.
   C# single source and byte-pinned in CI. See `docs/SHARED-COMPONENTS-PLAN.md` (migration step 3)
   for the full slice log. Suites: vitest 284, web 32, compiler 412, conformance 526 — all green.
 
+- **2026-07-04 — Web slice 2C landed: shared STATEFUL components on web + SDK wiring.** The
+  `SharedCounter` proof — the same fields+SetState+Build shape as the native CounterAppTests
+  component — is real eqc output executing in vitest: mount → click → `setState` → rAF re-render,
+  the web mirror of the native tap → SetState → rebuild golden. New `SharedStatefulComponent`
+  runtime base (direct-SetState, no state-class split); the parser routes bases that semantically
+  resolve to `eQuantic.UI.Primitives.StatefulComponent` there. Three silent-wrong-code compiler
+  fixes en route: named-argument REORDERING to real parameter positions (defaults fill the gaps),
+  implicit value-type field defaults (`int _count;` → `= 0`), and NULLABLE-enabled Roslyn
+  compilations in eqc (disabled annotations made `Action?` parse as `Nullable<Action>` and silently
+  broke overload binding). `Components.Shared` now ships `tools/source` and the SDK scans it behind
+  the opt-in `EnableEQuanticSharedComponents` gate (name collisions with the standard web components
+  until the unification). Suites: vitest 286, web 33, compiler 412, conformance 526, native 144,
+  server 37. Full log in `docs/SHARED-COMPONENTS-PLAN.md`.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

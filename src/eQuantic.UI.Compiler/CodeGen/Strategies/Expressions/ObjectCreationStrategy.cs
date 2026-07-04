@@ -60,10 +60,10 @@ public class ObjectCreationStrategy : IConversionStrategy
         }
 
         var arguments = "";
-        
+
         if (creation.ArgumentList != null && creation.ArgumentList.Arguments.Count > 0)
         {
-             arguments = string.Join(", ", creation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
+             arguments = string.Join(", ", OrderedArguments(creation, context));
         }
 
         var initializer = "";
@@ -114,6 +114,68 @@ public class ObjectCreationStrategy : IConversionStrategy
     }
 
     /// <summary>
+    /// Converts a creation's arguments in the CONSTRUCTOR's parameter order. JS has no named arguments,
+    /// so `new Button("x", onPressed: f)` must emit `f` at the parameter's real position with the
+    /// skipped parameters filled from their C# defaults (`'primary'`, `'medium'`) — emitting call-site
+    /// order would silently bind values to the wrong parameters. Without a resolvable constructor
+    /// symbol or named arguments, syntactic order passes through untouched.
+    /// </summary>
+    private static IReadOnlyList<string> OrderedArguments(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
+    {
+        var args = creation.ArgumentList!.Arguments;
+        var converted = args.Select(a => context.Converter.ConvertExpression(a.Expression)).ToList();
+        if (!args.Any(a => a.NameColon != null)) return converted;
+
+        if (context.SemanticHelper.GetSymbol(creation) is not IMethodSymbol ctor)
+            return converted;
+
+        var slots = new string?[ctor.Parameters.Length];
+        var positional = 0;
+        for (var i = 0; i < args.Count; i++)
+        {
+            var name = args[i].NameColon?.Name.Identifier.Text;
+            var ordinal = name == null
+                ? positional++
+                : ctor.Parameters.FirstOrDefault(p => p.Name == name)?.Ordinal ?? -1;
+            if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = converted[i];
+        }
+
+        var lastSet = Array.FindLastIndex(slots, s => s != null);
+        var ordered = new List<string>();
+        for (var i = 0; i <= lastSet; i++)
+            ordered.Add(slots[i] ?? ParameterDefaultLiteral(ctor.Parameters[i]));
+        return ordered;
+    }
+
+    /// <summary>The TS literal for a parameter's C# default value — enum members lower to their
+    /// camelCase member-name string, matching the enum representation everywhere else.</summary>
+    private static string ParameterDefaultLiteral(IParameterSymbol parameter)
+    {
+        if (!parameter.HasExplicitDefaultValue || parameter.ExplicitDefaultValue is null) return "null";
+        var value = parameter.ExplicitDefaultValue;
+
+        var enumType = parameter.Type.TypeKind == TypeKind.Enum ? parameter.Type
+            : parameter.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
+                ? nullable.TypeArguments[0]
+                : null;
+        if (enumType is { TypeKind: TypeKind.Enum })
+        {
+            var member = enumType.GetMembers().OfType<IFieldSymbol>()
+                .FirstOrDefault(f => f.HasConstantValue && Equals(f.ConstantValue, value));
+            if (member != null) return $"'{member.Name.ToCamelCase()}'";
+        }
+
+        return value switch
+        {
+            bool flag => flag ? "true" : "false",
+            string text => $"'{text}'",
+            float f => f.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            double d => d.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            _ => System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "null",
+        };
+    }
+
+    /// <summary>
     /// Builds a <c>new T(...)</c> construction for a record/struct, mapping positional arguments and any
     /// object initializer (<c>{ Name = … }</c>) onto the constructor's positional value members (in the
     /// type's declaration order). Members left unset before the last supplied one get their default
@@ -135,7 +197,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         {
             var parts = new List<string>();
             if (creation.ArgumentList != null)
-                parts.AddRange(creation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
+                parts.AddRange(OrderedArguments(creation, context));
             if (creation.Initializer != null)
                 parts.Add(context.Converter.ConvertExpression(creation.Initializer));
             return $"new {type.Name}({string.Join(", ", parts)})";

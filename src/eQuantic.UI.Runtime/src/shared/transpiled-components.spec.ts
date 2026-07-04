@@ -8,8 +8,8 @@
 
 import { describe, expect, it } from 'vitest';
 import type { HtmlNode } from '../core/types';
-import { Button } from './__transpiled__/Button.generated';
-import { Card } from './__transpiled__/Card.generated';
+import { Button } from './__transpiled__/Button';
+import { Card } from './__transpiled__/Card';
 import { Column, Text } from './vocabulary';
 
 describe('transpiled shared Button (real eqc output)', () => {

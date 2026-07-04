@@ -5,7 +5,12 @@
 // Core
 export { Component, HtmlElement } from './core/types';
 export type { IComponent, HtmlNode, RenderContext, StyleClass, EventHandler } from './core/types';
-export { StatelessComponent, StatefulComponent, ComponentState } from './core/component';
+export {
+  StatelessComponent,
+  StatefulComponent,
+  SharedStatefulComponent,
+  ComponentState,
+} from './core/component';
 export {
   ServiceProvider,
   ServiceCollectionBuilder,

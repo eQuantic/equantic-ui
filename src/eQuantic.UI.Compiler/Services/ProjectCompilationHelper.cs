@@ -120,12 +120,15 @@ public static class ProjectCompilationHelper
             AddReference(assemblyPath);
         }
 
-        // Create compilation
+        // Create compilation. Nullable annotations MUST be enabled: without them `Action?`/`string?`
+        // in referenced signatures parse as Nullable<T> (invalid for reference types), overload
+        // resolution fails, and the transpiler silently loses its semantic bindings.
         var compilation = CSharpCompilation.Create(
             assemblyName,
             syntaxTrees,
             references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
 
         return compilation;
     }
