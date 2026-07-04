@@ -20,11 +20,14 @@ public class ComponentCompiler
 
     public ComponentCompiler()
     {
+        // The provider must exist BEFORE the parser receives it — the old order handed the parser a
+        // null provider, silently disabling every semantic-model path in parsing (base-type walks,
+        // runtime-provided type discovery) and leaving only the syntactic heuristics.
+        _semanticModelProvider = new SemanticModelProvider();
         _parser = new ComponentParser();
         _parser.SetSemanticModelProvider(_semanticModelProvider);
         _tsEmitter = new TypeScriptEmitter();
         _cssEmitter = new CssEmitter();
-        _semanticModelProvider = new SemanticModelProvider();
         _sourceMapGenerator = new SourceMapGenerator();
         _styleProviderRegistry = new StyleProviderRegistry();
         _styleProviderRegistry.DiscoverProviders();

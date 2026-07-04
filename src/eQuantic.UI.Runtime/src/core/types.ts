@@ -33,6 +33,9 @@ export interface RenderContext {
   serviceProvider?: ServiceProvider;
   /** Active route data — parameters + query string (C# `context.Route`). */
   route?: import('../router/current-route').RouteData;
+  /** The active Photon theme (C# `context.Theme`) — what transpiled SHARED components read; typed
+   * loosely here to keep core/types dependency-free of the shared vocabulary. */
+  theme?: unknown;
 }
 
 /**

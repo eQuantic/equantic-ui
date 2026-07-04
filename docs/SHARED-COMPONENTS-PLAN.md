@@ -133,7 +133,21 @@ rejected.)
    Slice 2A ✅ (2026-07-04): the TypeScript-runtime lowering (`src/shared/lowering.ts` over the
    transpiled node shapes in `nodes.ts`) mirrors the WebRealizer rule-for-rule, with a CROSS-PINNED
    byte-exact style-string literal asserted by BOTH suites (hydration parity is a tested contract,
-   including the canonical CSS property order). Remaining slice 2B: eqc transpilation of the shared
-   C# sources + boot/component-render integration (theme registry, vocabulary classes in the runtime).
+   including the canonical CSS property order).
+   Slice 2B ✅ (2026-07-04): eqc transpiles the REAL shared components and the runtime executes them.
+   Compiler: metadata value-type object initializers survive as config objects (were silently
+   dropped), C# ctor parameter defaults become JS defaults, and Primitives types route to
+   `@equantic/runtime` imports via SEMANTIC discovery (namespace-based, enums/interfaces excluded —
+   no fixed lists; also fixed the ordering bug that left the parser's semantic provider null since
+   inception). Runtime: vocabulary classes (`shared/vocabulary.ts` + `value-types.ts`) ARE the wire
+   shapes AND self-lower via `render()` with the ambient theme, so abstract trees slot into the
+   existing component pipeline with ZERO reconciler changes (and web components mix into abstract
+   trees through the same seam); `design-system.generated.ts` carries every token/theme/size-table
+   value GENERATED from the C# single source (byte-pinned like the CSS); `RenderContext.theme` feeds
+   transpiled `context.theme` reads. Proof: the committed transpiled Button/Card fixtures (pinned to
+   the live compiler output) render in vitest to the SAME values the C# WebRealizer tests pin.
+   Remaining slice 2C: SDK wiring (ship + scan `Components.Shared` sources in app builds à la
+   `tools/source`), shared STATEFUL components on web (needs the Core `SetState` unification — the
+   Primitives model has no `CreateState` split), boot-time `setPhotonTheme` registration.
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
 5. Layout conformance harness lands with step 2 and gates every layout feature after it.

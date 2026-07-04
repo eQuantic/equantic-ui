@@ -286,12 +286,14 @@ public class ComponentParser
                 }
             }
 
+            CollectRuntimeProvidedTypes(classDecl, definition);
+
             results.Add(definition);
         }
-        
+
         return results;
     }
-    
+
     private void ParsePageAttributes(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
         foreach (var attrList in classDecl.AttributeLists)
@@ -510,11 +512,54 @@ public class ComponentParser
                 ctorDef.Parameters.Add(new ParameterDefinition
                 {
                     Name = param.Identifier.Text,
-                    Type = param.Type?.ToString() ?? "object"
+                    Type = param.Type?.ToString() ?? "object",
+                    DefaultValueNode = param.Default?.Value
                 });
             }
 
             definition.Constructors.Add(ctorDef);
+        }
+    }
+
+    /// <summary>
+    /// Collects the simple names of referenced types whose containing namespace marks them as
+    /// RUNTIME-PROVIDED (the shared vocabulary in <c>eQuantic.UI.Primitives</c>) into
+    /// <see cref="ComponentDefinition.RuntimeProvidedTypes"/>. Semantic-model driven — the set follows
+    /// whatever the file actually references, with no fixed type list. Enums are excluded: they lower
+    /// to camelCase string literals and never appear as identifiers in emitted code.
+    /// </summary>
+    private void CollectRuntimeProvidedTypes(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
+    {
+        var model = TryGetSemanticModel(classDecl.SyntaxTree);
+        if (model == null) return;
+
+        foreach (var identifier in classDecl.DescendantNodes().OfType<IdentifierNameSyntax>())
+        {
+            ISymbol? symbol;
+            try { symbol = model.GetSymbolInfo(identifier).Symbol; }
+            catch { continue; }
+
+            // `new Text(...)` resolves the identifier to the CONSTRUCTOR — take its containing type.
+            var type = symbol as INamedTypeSymbol
+                       ?? (symbol is IMethodSymbol { MethodKind: MethodKind.Constructor } ctorSymbol
+                           ? ctorSymbol.ContainingType
+                           : null);
+            if (type is null) continue;
+
+            // Enums never survive into emitted code as identifiers (members lower to camelCase string
+            // literals), so importing them would reference modules that don't exist.
+            if (type.TypeKind == TypeKind.Enum)
+            {
+                definition.EnumTypes.Add(type.Name);
+                continue;
+            }
+
+            // Interfaces exist only in the C# type system — they produce no JS value to import.
+            if (type.TypeKind == TypeKind.Interface) continue;
+
+            var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+            if (ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives."))
+                definition.RuntimeProvidedTypes.Add(type.Name);
         }
     }
 

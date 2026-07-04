@@ -141,8 +141,13 @@ function lowerNode(
       return lowerSpacer(node as SpacerNode, horizontalAxis);
     case 'component':
       return lowerNode((node as ComponentNode).build(context.componentContext), context, horizontalAxis);
-    default:
+    default: {
+      // Mixing seam: a WEB component (transpiled shared component or legacy HtmlElement) composed
+      // inside an abstract tree has no nodeKind but renders itself — embed its HtmlNode directly.
+      const renderable = node as { render?: () => HtmlNode };
+      if (typeof renderable.render === 'function') return renderable.render();
       return null;
+    }
   }
 }
 

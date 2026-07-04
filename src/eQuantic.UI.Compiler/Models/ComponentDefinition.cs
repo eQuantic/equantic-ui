@@ -129,6 +129,21 @@ public class ComponentDefinition
     /// holds the declaration.
     /// </summary>
     public bool IsStaticHelper { get; set; }
+
+    /// <summary>
+    /// Simple names of referenced types the RUNTIME provides (today: the shared vocabulary in
+    /// <c>eQuantic.UI.Primitives</c> — Box/Row/Text/…, tokens, ButtonStyles). Discovered per file via the
+    /// semantic model (namespace-based, no fixed list), excluding enums (they lower to string literals).
+    /// The emitter imports these from <c>@equantic/runtime</c> instead of <c>./&lt;Type&gt;</c> modules.
+    /// </summary>
+    public HashSet<string> RuntimeProvidedTypes { get; set; } = new();
+
+    /// <summary>
+    /// Simple names of referenced ENUM types (semantic-model discovered). Enum members lower to
+    /// camelCase string literals, so these names never appear as identifiers in emitted code — the
+    /// emitter must not import them.
+    /// </summary>
+    public HashSet<string> EnumTypes { get; set; } = new();
 }
 
 /// <summary>
@@ -207,6 +222,9 @@ public class ParameterDefinition
 {
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
+    /// <summary>The C# default value expression (<c>Variant variant = Variant.Primary</c>) — emitted as a
+    /// JS default parameter so optional constructor arguments keep their C# semantics.</summary>
+    public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? DefaultValueNode { get; set; }
 }
 
 /// <summary>

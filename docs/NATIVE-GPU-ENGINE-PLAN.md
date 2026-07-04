@@ -427,6 +427,19 @@ Bun and the JS bundling chain, the TypeScript runtime.
   GPUs need Managed + sync blit). Native suite: 144 tests (129 + 15 Metal). Next: Slang toolchain
   spike (precompiled metallib), RHI extraction from the spike's shape, Vulkan.
 
+- **2026-07-04 — Web slice 2B landed: the write-once loop CLOSED on web.** The REAL shared components
+  (`eQuantic.UI.Components.Shared` Button/Card — the same classes the native goldens render) now
+  transpile through eqc and EXECUTE in the browser runtime, rendering the same values the C#
+  `WebRealizer` pins. Compiler: metadata value-type initializers emit as config objects (they were
+  silently dropped — the whole `BoxStyle { … }` vanished), C# parameter defaults become JS defaults,
+  Primitives types route to `@equantic/runtime` imports via semantic namespace discovery, and a
+  day-one ordering bug that left the parser's semantic provider null is fixed. Runtime: vocabulary
+  classes are the wire shapes AND self-lower via `render()` (abstract trees enter the existing web
+  pipeline with zero reconciler changes; legacy components mix into abstract trees through the same
+  seam), plus `design-system.generated.ts` — every token/theme/size-table value generated from the
+  C# single source and byte-pinned in CI. See `docs/SHARED-COMPONENTS-PLAN.md` (migration step 3)
+  for the full slice log. Suites: vitest 284, web 32, compiler 412, conformance 526 — all green.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

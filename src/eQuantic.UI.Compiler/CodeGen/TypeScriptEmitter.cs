@@ -237,7 +237,12 @@ public class TypeScriptEmitter
                     var hasCtorBody = ctorDef?.BodyNode != null;
                     if (ctorParams.Count > 0 || autoDefaults.Count > 0 || hasCtorBody)
                     {
-                        var paramList = string.Join(", ", ctorParams.Select(p => $"{p.Name.ToCamelCase()}?: any"));
+                        // C# optional parameters keep their defaults as JS default parameters
+                        // (`variant: any = 'primary'`) — without them `new Button("x")` would run the
+                        // body with `undefined` where C# guarantees `Variant.Primary`.
+                        var paramList = string.Join(", ", ctorParams.Select(p => p.DefaultValueNode != null
+                            ? $"{p.Name.ToCamelCase()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
+                            : $"{p.Name.ToCamelCase()}?: any"));
                         var signature = paramList.Length > 0 ? $"{paramList}, props?: any" : "props?: any";
                         c.Constructor(signature, () =>
                         {
@@ -442,6 +447,15 @@ public class TypeScriptEmitter
             componentTypes.Add(baseClass);
         }
 
+        // Runtime-provided types are a SOURCE, not just a filter: a vocabulary type referenced only
+        // inside a config-object expression (`width: SizeValue.fill`) is invisible to the syntactic
+        // collectors above, but the parser's semantic sweep saw it — without the import the emitted
+        // module throws "<Type> is not defined" at load.
+        foreach (var runtimeType in component.RuntimeProvidedTypes)
+        {
+            componentTypes.Add(runtimeType);
+        }
+
         // AUTOMATIC DEPENDENCY RESOLUTION
         // Use dependency resolver to find transitive dependencies (e.g., Row → Flex)
         if (_dependencyResolver != null)
@@ -478,6 +492,19 @@ public class TypeScriptEmitter
             // Skip runtime utilities - they're added from UsedHelpers below
             if (component.UsedHelpers.Contains(cleanType))
                 continue;
+
+            // Enum members lower to string literals — the enum type name never appears in emitted code,
+            // so importing it would reference a module that doesn't exist.
+            if (component.EnumTypes.Contains(cleanType))
+                continue;
+
+            // Types the runtime provides (the shared vocabulary — discovered semantically by the parser,
+            // see ComponentDefinition.RuntimeProvidedTypes) import from @equantic/runtime, never ./<Type>.
+            if (component.RuntimeProvidedTypes.Contains(cleanType))
+            {
+                coreImports.Add(cleanType);
+                continue;
+            }
 
             if (IsRuntimeComponent(cleanType))
             {
