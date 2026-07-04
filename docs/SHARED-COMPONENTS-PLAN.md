@@ -130,7 +130,10 @@ rejected.)
    `light-dark()` values straight from tokens, so the DOM is MODE-FREE like the abstract tree (theme
    switch = `color-scheme`). `PhotonCssGenerator` emits the NORMATIVE stylesheet (custom properties,
    type-role classes, elevation shadows, motion vars) — parity with the C# tokens is tested per value.
-   Remaining slice 2: the TypeScript-runtime lowering mirroring these exact rules client-side
-   (hydration parity) + eqc transpilation of the shared sources.
+   Slice 2A ✅ (2026-07-04): the TypeScript-runtime lowering (`src/shared/lowering.ts` over the
+   transpiled node shapes in `nodes.ts`) mirrors the WebRealizer rule-for-rule, with a CROSS-PINNED
+   byte-exact style-string literal asserted by BOTH suites (hydration parity is a tested contract,
+   including the canonical CSS property order). Remaining slice 2B: eqc transpilation of the shared
+   C# sources + boot/component-render integration (theme registry, vocabulary classes in the runtime).
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
 5. Layout conformance harness lands with step 2 and gates every layout feature after it.

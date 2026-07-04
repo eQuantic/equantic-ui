@@ -295,7 +295,14 @@ Bun and the JS bundling chain, the TypeScript runtime.
 ## Open questions (tracked decisions, not surprises)
 
 1. Engine codename/branding — "Photon" is a placeholder; decide before public docs.
-2. Vulkan binding strategy — Silk.NET vs owned slim bindings (M0 spike decides; owning is preferred).
+2. GPU binding strategy — Silk.NET vs owned slim bindings (M0 spike decides; owning is preferred).
+   **Metal side answered (2026-07-04):** the spike drives the whole pipeline through ~100 lines of
+   typed `objc_msgSend` P/Invoke (`LibraryImport`, one extern per call shape — the arm64 ABI needs
+   typed trampolines, incl. HFA `MTLClearColor` and by-reference `MTLRegion`) with **no** binding
+   framework, no C shims, and ±1 LSB parity vs the Reference. Owned slim bindings are confirmed for
+   Metal; Vulkan (C ABI, simpler interop than Obj-C) inherits the same approach unless the Android
+   spike surfaces a blocker. Lifetime management (autorelease pools, retain/release) is the remaining
+   binding-layer work item — the spike deliberately leaks per-process.
 3. Android AOT flavor — NativeAOT vs Mono AOT (M0 gate, criteria above).
 4. Bidi implementation — minimal UBA subset in C# vs small C lib (M1).
 5. MSDF glyphs — v2 candidate, only if zoom/scale-independent text proves needed.
@@ -391,6 +398,34 @@ Bun and the JS bundling chain, the TypeScript runtime.
   DOM). Core `HtmlStyle` gained white-space/text-overflow/box-sizing (additive DOM mirrors). New web
   suite: 26 tests. Remaining slice 2: TS-runtime lowering (hydration parity) + eqc transpilation of
   shared sources; then the Metal spike.
+
+- **2026-07-04 — Web slice 2A landed: TS-runtime lowering (hydration parity).** The abstract nodes
+  gained WIRE discriminators (`VisualNode.NodeKind` → `nodeKind` after transpilation) and the TS
+  runtime gained `src/shared/nodes.ts` (interfaces for the transpiled shapes) + `src/shared/lowering.ts`
+  — `lowerVisualNode()` mirroring `WebRealizer` RULE-FOR-RULE client-side, including the canonical CSS
+  property order copied from `HtmlStyle.ToCssString`. Parity is a tested contract: a CROSS-PINNED
+  byte-exact style-string literal is asserted verbatim by BOTH `WebRealizerTests` (C#) and
+  `lowering.spec.ts` (vitest), so SSR output and client lowering can only drift by failing CI.
+  13 new vitest cases (vitest 268 total); exported from the runtime index for the upcoming
+  boot/component-render integration (slice 2B: eqc transpilation of the shared C# sources).
+
+- **2026-07-04 — Metal spike landed: the first GPU frames, ±1 LSB from the Reference.** New
+  `eQuantic.UI.Native.Engine.Metal`: an offscreen `IRenderBackend` driving Metal through typed
+  `objc_msgSend` P/Invoke only (see open question 2 — answered for Metal), with ONE pipeline built at
+  device init (premultiplied src-over into `RGBA8Unorm_sRGB`, shared storage), one fullscreen-triangle
+  draw per command, and `MetalShaders.cs` — runtime-compiled MSL that TRANSLITERATES the normative
+  math: `Sdf.RoundedRect/Stroke/Coverage`, `Paint.ColorAt` (sRGB-space gradient lerp), IEC sRGB→linear,
+  and the SAME `AverageScale` AA width as the Reference (not `fwidth`), so the two rasterizers are
+  directly comparable. Readback un-premultiplies through linear space (the Reference's exact output
+  conversion). The 14 golden scenes were promoted to a shared `GoldenScenes` catalog consumed by both
+  `GoldenSceneTests` (Reference vs repo goldens, normative) and the new skippable `MetalParityTests`
+  (Metal vs Reference, fuzzy gate: max channel diff ≤ 4, ≤ 1% pixels beyond ±2). **Measured on Apple
+  Silicon: max channel diff 1 across every scene (0 on four), zero pixels beyond ±2** — the GPU passes
+  the golden harness's own ±2 tolerance, validating Sdf-as-spec (D2) and the color model (D-linear
+  blending) end-to-end on hardware. Spike fences honored: runtime MSL (Slang toolchain replaces it,
+  D3), leading-Clear-only, per-process ObjC leaks, shared-storage textures (Apple Silicon; discrete
+  GPUs need Managed + sync blit). Native suite: 144 tests (129 + 15 Metal). Next: Slang toolchain
+  spike (precompiled metallib), RHI extraction from the spike's shape, Vulkan.
 
 ## Definition of done (v1 preview)
 
