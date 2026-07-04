@@ -13,6 +13,13 @@ public abstract class VisualNode
 {
     /// <summary>Reconciler identity across rebuilds (keyed diffing) — same contract as the web SDK.</summary>
     public string? Key { get; init; }
+
+    /// <summary>
+    /// WIRE DISCRIMINATOR: the node's kind as a stable string ("box", "row", …). Realizers that receive
+    /// nodes across a serialization/transpilation boundary (the TypeScript runtime lowering) dispatch on
+    /// this instead of CLR types — class names don't survive bundling. Sealed per node type.
+    /// </summary>
+    public abstract string NodeKind { get; }
 }
 
 /// <summary>
@@ -22,6 +29,8 @@ public abstract class VisualNode
 /// </summary>
 public sealed class Box : VisualNode
 {
+    public override string NodeKind => "box";
+
     public Box(BoxStyle style = default, VisualNode? child = null)
     {
         Style = style;
@@ -66,6 +75,8 @@ public readonly record struct BoxStyle
 /// </summary>
 public sealed class Pressable : VisualNode
 {
+    public override string NodeKind => "pressable";
+
     public Pressable(VisualNode child, Action? onPressed = null)
     {
         Child = child;
@@ -88,6 +99,8 @@ public sealed class Pressable : VisualNode
 /// </summary>
 public sealed class Text : VisualNode
 {
+    public override string NodeKind => "text";
+
     public Text(string content, TypeRole role = TypeRole.BodyL, ColorToken? color = null, int maxLines = 0)
     {
         Content = content;
@@ -145,6 +158,8 @@ public abstract class FlexNode : VisualNode, IEnumerable<VisualNode>
 /// <summary>Horizontal flex (spec A2). Cross defaults to Center. Mirrors automatically in RTL (realizer concern).</summary>
 public sealed class Row : FlexNode
 {
+    public override string NodeKind => "row";
+
     public Row(float gap = 0) => Gap = gap;
     public override CrossAlign Cross { get; init; } = CrossAlign.Center;
 }
@@ -152,6 +167,8 @@ public sealed class Row : FlexNode
 /// <summary>Vertical flex (spec A2). Cross defaults to Stretch (full-width children).</summary>
 public sealed class Column : FlexNode
 {
+    public override string NodeKind => "column";
+
     public Column(float gap = 0) => Gap = gap;
     public override CrossAlign Cross { get; init; } = CrossAlign.Stretch;
 }
@@ -159,6 +176,8 @@ public sealed class Column : FlexNode
 /// <summary>Marks a flex child that shares LEFTOVER main-axis space by weight (spec A2 <c>Flex(n)</c>).</summary>
 public sealed class Flexible : VisualNode
 {
+    public override string NodeKind => "flexible";
+
     public Flexible(VisualNode child, int flex = 1)
     {
         Child = child;
@@ -176,6 +195,8 @@ public sealed class Flexible : VisualNode
 /// </summary>
 public sealed class Spacer : VisualNode
 {
+    public override string NodeKind => "spacer";
+
     public Spacer(int flex = 1) => Flex = Math.Max(1, flex);
 
     private Spacer(float fixedLength)

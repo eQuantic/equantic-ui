@@ -27,6 +27,9 @@ public sealed class ComponentContext
 /// </summary>
 public abstract class UiComponent : VisualNode
 {
+    /// <summary>All components share one wire kind — realizers expand them via <see cref="Build"/>.</summary>
+    public sealed override string NodeKind => "component";
+
     /// <summary>Produces this component's subtree. Must be PURE over component state + context —
     /// it may run more than once per frame (measurement) and on every invalidation.</summary>
     public abstract VisualNode Build(ComponentContext context);

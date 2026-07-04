@@ -46,6 +46,28 @@ public class WebRealizerTests
     }
 
     [Fact]
+    public void Box_ExactStyleString_CrossPin()
+    {
+        // CROSS-PIN: this literal is asserted verbatim by the TS runtime's lowering.spec.ts — the two
+        // realizers must produce byte-identical style strings (hydration parity).
+        var box = new Primitives.Box(new BoxStyle
+        {
+            Width = 120,
+            Height = 40,
+            Padding = EdgeInsets.Symmetric(16, 0),
+            Background = Theme.Colors(Variant.Primary).Base,
+            CornerRadius = new CornerRadii(Radius.Md),
+            BorderWidth = 1,
+            BorderColor = Theme.BorderStrong,
+        });
+
+        Render(box).Attributes["style"].Should().Be(
+            "width: 120px; height: 40px; padding: 0 16px 0 16px; " +
+            "background-color: light-dark(#0050a0, #5ca2e8); " +
+            "border: 1px solid light-dark(#c9ced6, #3d4754); border-radius: 10px; box-sizing: border-box");
+    }
+
+    [Fact]
     public void RowAndColumn_LowerToFlex_WithSpecDefaults()
     {
         var row = new Row(gap: Space.S2) { Main = MainAlign.SpaceBetween };
