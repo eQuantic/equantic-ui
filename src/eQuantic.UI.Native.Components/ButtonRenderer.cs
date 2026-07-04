@@ -32,7 +32,14 @@ public static class ButtonRenderer
             builder.FillRRect(shape, Paint.Solid(Apply(style.Fill, style.Opacity)));
 
         if (style.BorderWidth > 0 && style.BorderColor.A > 0)
-            builder.StrokeRRect(shape, style.BorderWidth, Paint.Solid(Apply(style.BorderColor, style.Opacity)));
+        {
+            // Borders draw INSIDE the bounds (spec fence): centered stroke on the half-width-deflated
+            // shape covers exactly [0, w] inward.
+            builder.StrokeRRect(
+                new RRect(bounds.Inflate(-style.BorderWidth / 2), new CornerRadii(style.CornerRadius).Deflate(style.BorderWidth / 2)),
+                style.BorderWidth,
+                Paint.Solid(Apply(style.BorderColor, style.Opacity)));
+        }
     }
 
     // Disabled is a 38% opacity GROUP in the spec; until the engine grows saveLayer opacity groups,

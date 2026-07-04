@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Native.Engine;
 
@@ -53,20 +54,6 @@ public readonly record struct Rect(float X, float Y, float Width, float Height)
         new(X - amount, Y - amount, Width + amount * 2, Height + amount * 2);
 
     public bool IsEmpty => Width <= 0 || Height <= 0;
-}
-
-/// <summary>
-/// Per-corner radii for a rounded rectangle, in the order TopLeft, TopRight, BottomRight, BottomLeft
-/// (CSS order). Use <see cref="RRect.Normalized"/> before rasterizing — raw radii may overflow the box.
-/// </summary>
-public readonly record struct CornerRadii(float TopLeft, float TopRight, float BottomRight, float BottomLeft)
-{
-    public static readonly CornerRadii Zero = new(0, 0, 0, 0);
-
-    /// <summary>Uniform radius on all four corners.</summary>
-    public CornerRadii(float uniform) : this(uniform, uniform, uniform, uniform) { }
-
-    public bool IsZero => TopLeft == 0 && TopRight == 0 && BottomRight == 0 && BottomLeft == 0;
 }
 
 /// <summary>A rounded rectangle — the workhorse UI shape (radius 0 = rect, radius = half-size = circle/pill).</summary>

@@ -337,6 +337,27 @@ Bun and the JS bundling chain, the TypeScript runtime.
   components are authored once in a shared assembly and realized per target
   (`docs/SHARED-COMPONENTS-PLAN.md`). Native suite: 94 tests, 16 goldens.
 
+- **2026-07-03 — Write-once core landed** (abstract vocabulary + C# flex + native realizer — the heart
+  of `SHARED-COMPONENTS-PLAN.md`, W6 slice 2). `eQuantic.UI.Primitives` gains the ABSTRACT NODE
+  vocabulary (specs A1/A2/A4/A8/§08): `Box`+`BoxStyle` (explicit>Fill>Hug sizing, min/max, padding —
+  no margin by design, token background, per-corner radius, uniform INSIDE border), `Row`/`Column`
+  (gap-owned flex; Row cross-defaults Center, Column Stretch), `Flexible(n)`, `Spacer` (flex/fixed),
+  role-driven `Text` (maxLines/ellipsis), `Pressable` (48dp hit contract) — plus `EdgeInsets`,
+  `SizeValue`, `MainAlign`/`CrossAlign`, and `CornerRadii` moved down from the engine. New
+  `eQuantic.UI.Native.Framework`: the C# flex `LayoutEngine` (leftover-by-weight, SpaceBetween,
+  stretch, hug-with-flexibles takes finite extent for CSS parity, flexibles collapse only when
+  unbounded, and the spec A2 TRUNCATION CONTRACT — text shrinks to ellipsis before any sibling is
+  pushed; fixed children never shrink) and the `ITextMeasurer` seam with a deterministic
+  `ApproximateTextMeasurer` stand-in (W4's HarfBuzz/FreeType plugs in here; goldens regenerate then by
+  design). `eQuantic.UI.Native.Components` gains `PhotonRealizer` (abstract tree → layout → tokens
+  resolved per mode → display list; inside-stroke borders per the fence — `ButtonRenderer` fixed to
+  match; text renders as placeholder line bars until W4; Pressable hit rects expanded to ≥48dp).
+  Tests: 17 flex geometry cases (the seed of the cross-target layout conformance suite) + goldens
+  `abstract-flex-gallery` and the WRITE-ONCE `abstract-card` (title, avatar, identity, filled +
+  outline buttons) in light + dark — one abstract tree through the whole stack. Native suite: 114
+  tests, 19 goldens. Next: the shared Button/Text components authored on this vocabulary, the web
+  realizer (TS lowering + token→CSS generation), Metal spike.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>eQuantic.UI.Native.Framework</PackageId>
+    <Description>Photon framework layer — the C# flex layout engine over the shared abstract node vocabulary, text measurement seam, and (coming) reconciler + compositor. Sits between eQuantic.UI.Primitives and the native realizer.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+    <ProjectReference Include="..\eQuantic.UI.Native.Engine\eQuantic.UI.Native.Engine.csproj" />
+  </ItemGroup>
+
+</Project>
