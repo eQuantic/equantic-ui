@@ -113,6 +113,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.UI.Native.Componen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.UI.Primitives", "src\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj", "{C8E21A4A-333F-4260-9D60-0EF7EE5CC18E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.UI.Native.Framework", "src\eQuantic.UI.Native.Framework\eQuantic.UI.Native.Framework.csproj", "{2CEE5615-602F-4B84-B3BF-179B0138240F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -639,6 +641,18 @@ Global
 		{C8E21A4A-333F-4260-9D60-0EF7EE5CC18E}.Release|x64.Build.0 = Release|Any CPU
 		{C8E21A4A-333F-4260-9D60-0EF7EE5CC18E}.Release|x86.ActiveCfg = Release|Any CPU
 		{C8E21A4A-333F-4260-9D60-0EF7EE5CC18E}.Release|x86.Build.0 = Release|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Debug|x64.Build.0 = Debug|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Debug|x86.Build.0 = Debug|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Release|x64.ActiveCfg = Release|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Release|x64.Build.0 = Release|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Release|x86.ActiveCfg = Release|Any CPU
+		{2CEE5615-602F-4B84-B3BF-179B0138240F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -692,5 +706,6 @@ Global
 		{4BFA911C-168A-4B2A-906C-219029D380FF} = {1EBDA820-0C68-4246-AB87-F1D9814EC64D}
 		{5F82561D-C93D-4A35-8FCC-6C74FC902FA6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C8E21A4A-333F-4260-9D60-0EF7EE5CC18E} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{2CEE5615-602F-4B84-B3BF-179B0138240F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\eQuantic.UI.Native.Engine\eQuantic.UI.Native.Engine.csproj" />
+    <ProjectReference Include="..\eQuantic.UI.Native.Framework\eQuantic.UI.Native.Framework.csproj" />
     <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
   </ItemGroup>
 
