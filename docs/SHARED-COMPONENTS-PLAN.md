@@ -117,10 +117,20 @@ rejected.)
 
 ## Migration path (incremental, design-system first)
 
-1. **Done first (this change):** `eQuantic.UI.Primitives` extracted — `Color` + the full token/style
-   layer moved out of the engine/native packages; the engine depends on Primitives (inverted).
-2. Abstract node vocabulary + native realizer for Box/Row/Column/Text (needs Photon layout, W6).
-3. Web realizer (TS lowering + typed-style→CSS) — proven on **Button** end-to-end (both targets, one
-   source), then Card/Badge/Chip per the design system.
+1. ✅ **Done:** `eQuantic.UI.Primitives` extracted — `Color` + the full token/style layer moved out of
+   the engine/native packages; the engine depends on Primitives (inverted).
+2. ✅ **Done:** abstract node vocabulary (Box/Row/Column/Stack-pending/Text/Pressable + Flexible/Spacer)
+   + C# flex layout (`eQuantic.UI.Native.Framework`) + native realizer; shared component model
+   (`UiComponent`/`StatelessComponent`/`StatefulComponent`+`SetState`) with Button/Card in
+   `eQuantic.UI.Components.Shared` and the `PhotonHost` frame loop (native Counter end-to-end).
+3. 🔄 **Web realizer** — slice 1 ✅ (2026-07-04): `eQuantic.UI.Web` lowers the SAME trees to
+   `HtmlElement`/DOM server-side (SSR): Box→div (border-box = inside-border parity), Row/Column→flex
+   (Flexible → `flex: n 1 0%` matching native leftover-by-weight; `min-width:0` preserves the
+   truncation contract), Text→role-classed span, Pressable→neutralized button; colors lower as
+   `light-dark()` values straight from tokens, so the DOM is MODE-FREE like the abstract tree (theme
+   switch = `color-scheme`). `PhotonCssGenerator` emits the NORMATIVE stylesheet (custom properties,
+   type-role classes, elevation shadows, motion vars) — parity with the C# tokens is tested per value.
+   Remaining slice 2: the TypeScript-runtime lowering mirroring these exact rules client-side
+   (hydration parity) + eqc transpilation of the shared sources.
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
 5. Layout conformance harness lands with step 2 and gates every layout feature after it.

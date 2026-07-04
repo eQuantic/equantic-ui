@@ -120,6 +120,9 @@ public class HtmlStyle
     public string? OverflowY { get; set; }
     public string? Transition { get; set; }
     public string? Transform { get; set; }
+    public string? WhiteSpace { get; set; }
+    public string? TextOverflow { get; set; }
+    public string? BoxSizing { get; set; }
 
     #endregion
 
@@ -209,6 +212,9 @@ public class HtmlStyle
         AddProperty(properties, "overflow-y", OverflowY);
         AddProperty(properties, "transition", Transition);
         AddProperty(properties, "transform", Transform);
+        AddProperty(properties, "white-space", WhiteSpace);
+        AddProperty(properties, "text-overflow", TextOverflow);
+        AddProperty(properties, "box-sizing", BoxSizing);
 
 
         return string.Join("; ", properties);
