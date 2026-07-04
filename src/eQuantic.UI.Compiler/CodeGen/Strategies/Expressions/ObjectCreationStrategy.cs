@@ -126,13 +126,19 @@ public class ObjectCreationStrategy : IConversionStrategy
             .OfType<TypeDeclarationSyntax>()
             .FirstOrDefault();
 
-        // No declaration available (external type) — best effort: positional args as-is.
+        // No declaration available (external/metadata type — e.g. the shared vocabulary in
+        // eQuantic.UI.Primitives): member order is unknowable, so an object initializer cannot be
+        // mapped onto positional parameters. Emit it as a trailing CONFIG OBJECT instead — the same
+        // shape UI-component classes already receive (`new Row(gap, { height: … })`), which the
+        // runtime-provided classes accept. Positional args pass through unchanged.
         if (declSyntax == null)
         {
-            var simple = creation.ArgumentList == null
-                ? string.Empty
-                : string.Join(", ", creation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
-            return $"new {type.Name}({simple})";
+            var parts = new List<string>();
+            if (creation.ArgumentList != null)
+                parts.AddRange(creation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)));
+            if (creation.Initializer != null)
+                parts.Add(context.Converter.ConvertExpression(creation.Initializer));
+            return $"new {type.Name}({string.Join(", ", parts)})";
         }
 
         var members = declSyntax.ValueMembers();

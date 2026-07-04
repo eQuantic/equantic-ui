@@ -71,6 +71,46 @@ export type {
   ColorTokenValue,
   ColorValue,
 } from './shared/nodes';
+// Vocabulary classes — what eqc-transpiled shared components instantiate (imports from
+// "@equantic/runtime" routed by the compiler's runtime-provided-type discovery).
+export {
+  VisualNode,
+  Box,
+  BoxStyle,
+  Row,
+  Column,
+  Text,
+  Pressable,
+  Flexible,
+  Spacer,
+} from './shared/vocabulary';
+export {
+  ColorToken,
+  SizeValue,
+  EdgeInsets,
+  CornerRadii,
+  TypeStyle,
+  VariantColors,
+} from './shared/value-types';
+export type { AppTheme, ShadowSpec } from './shared/value-types';
+export {
+  ComponentContext,
+  setPhotonTheme,
+  getPhotonTheme,
+  photonComponentContext,
+  ambientLoweringContext,
+} from './shared/photon-context';
+// Generated design system (tokens + theme — values from the C# single source, never hand-written).
+export {
+  Space,
+  Radius,
+  IconSize,
+  Touch,
+  Motion,
+  ButtonStyles,
+  photonTheme,
+  PhotonTheme,
+} from './shared/design-system.generated';
 export { StyleBuilder } from './utils/style-builder';
 export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 

@@ -7,6 +7,7 @@ import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
 import { getCurrentRoute } from '../router/current-route';
+import { getPhotonTheme } from '../shared/photon-context';
 
 /**
  * Base class for stateless components
@@ -26,6 +27,7 @@ export abstract class StatelessComponent extends Component {
         this.serviceProvider.getService<T>(key),
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
+      theme: getPhotonTheme(),
     };
     const component = this.build(context);
     return component.render();
@@ -150,6 +152,7 @@ export abstract class StatefulComponent extends Component {
         this.serviceProvider.getService<T>(key),
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
+      theme: getPhotonTheme(),
     };
     this.state._context = context;
 
