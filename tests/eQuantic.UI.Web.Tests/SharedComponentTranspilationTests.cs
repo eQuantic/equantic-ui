@@ -21,6 +21,31 @@ public class SharedComponentTranspilationTests
 
     private static readonly string[] SharedSources = ["Button.cs", "Card.cs"];
 
+    /// <summary>
+    /// The stateful write-once proof — the SAME authoring shape as the native CounterAppTests
+    /// component (fields + SetState + Build), composing the shared Button with a NAMED argument.
+    /// Kept as an in-test source: it is a demo/proof, not library surface.
+    /// </summary>
+    private const string SharedCounterSource = """
+        using eQuantic.UI.Components.Shared;
+        using eQuantic.UI.Primitives;
+
+        namespace eQuantic.UI.Web.Tests.Fixtures;
+
+        public sealed class SharedCounter : StatefulComponent
+        {
+            private int _count;
+
+            public override VisualNode Build(ComponentContext context)
+            {
+                var column = new Column(gap: Space.S3);
+                column.Add(new Text($"Count: {_count}", TypeRole.Title));
+                column.Add(new Button("Increment", onPressed: () => SetState(() => _count++)));
+                return column;
+            }
+        }
+        """;
+
     private static Dictionary<string, string> TranspileSharedComponents()
     {
         var root = RepoRoot();
@@ -28,32 +53,43 @@ public class SharedComponentTranspilationTests
             .Select(name => Path.Combine(root, "src", "eQuantic.UI.Components.Shared", name))
             .ToList();
 
-        // The same semantic setup the SDK gives eqc: the sources + the real Primitives reference.
+        // The same semantic setup the SDK gives eqc (full resolved references — the SDK passes
+        // @(ReferencePathWithRefAssemblies)): here, the test host's trusted platform assemblies,
+        // which already include Primitives and Components.Shared via project references. Minimal
+        // hand-picked refs are NOT equivalent — delegate facades go missing and constructor overloads
+        // silently fail to bind (breaking, e.g., named-argument reordering).
+        var counterPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "SharedCounter.cs");
         var trees = sourcePaths
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path))
             .ToList();
-        var references = new List<MetadataReference>
-        {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(System.Reflection.Assembly.Load("System.Runtime").Location),
-            MetadataReference.CreateFromFile(typeof(Primitives.Color).Assembly.Location),
-        };
+        trees.Add(CSharpSyntaxTree.ParseText(SharedCounterSource, path: counterPath));
+        // The shared sources build with <ImplicitUsings> — mirror the generated global usings, or
+        // `Action?` fails to bind (CS0246) and the semantic paths silently degrade.
+        trees.Add(CSharpSyntaxTree.ParseText(
+            "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
+            path: "GlobalUsings.g.cs"));
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .ToList();
         var compilation = CSharpCompilation.Create("SharedComponents", trees, references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
 
         var compiler = new ComponentCompiler();
         compiler.SetProjectCompilation(compilation);
 
         var modules = new Dictionary<string, string>();
-        foreach (var path in sourcePaths)
+        var compilations = sourcePaths
+            .Select(path => compiler.CompileFile(path))
+            .Append(compiler.CompileSource(SharedCounterSource, counterPath));
+        foreach (var result in compilations.SelectMany(results => results))
         {
-            foreach (var result in compiler.CompileFile(path))
-            {
-                result.Success.Should().BeTrue(
-                    $"{result.ComponentName} must transpile cleanly: " +
-                    string.Join("; ", result.Errors.Select(e => e.Message)));
-                modules[result.ComponentName] = result.TypeScript;
-            }
+            result.Success.Should().BeTrue(
+                $"{result.ComponentName} must transpile cleanly: " +
+                string.Join("; ", result.Errors.Select(e => e.Message)));
+            modules[result.ComponentName] = result.TypeScript;
         }
         return modules;
     }
@@ -64,17 +100,19 @@ public class SharedComponentTranspilationTests
         var modules = TranspileSharedComponents();
         var fixtureDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "__transpiled__");
 
+        // Fixture names have NO suffix: the transpiled Counter imports `./Button` — the module names
+        // must match what per-app emission produces so relative imports resolve in vitest.
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_TRANSPILED") == "1")
         {
             Directory.CreateDirectory(fixtureDir);
             foreach (var (name, typeScript) in modules)
-                File.WriteAllText(Path.Combine(fixtureDir, $"{name}.generated.ts"), typeScript);
+                File.WriteAllText(Path.Combine(fixtureDir, $"{name}.ts"), typeScript);
             return;
         }
 
         foreach (var (name, typeScript) in modules)
         {
-            var path = Path.Combine(fixtureDir, $"{name}.generated.ts");
+            var path = Path.Combine(fixtureDir, $"{name}.ts");
             File.Exists(path).Should().BeTrue(
                 $"the runtime executes the transpiled {name} in vitest — generate once with EQ_UPDATE_TRANSPILED=1");
             File.ReadAllText(path).Should().Be(typeScript,
@@ -102,5 +140,22 @@ public class SharedComponentTranspilationTests
 
         // The size-table tuple deconstructs as an array — the generated ButtonStyles.metrics shape.
         button.Should().Contain("let [height, padX, gap, labelSize, , radius, ] = ButtonStyles.metrics(this.size)");
+    }
+
+    [Fact]
+    public void TranspiledSharedCounter_UsesTheDirectStatefulShape()
+    {
+        var counter = TranspileSharedComponents()["SharedCounter"];
+
+        // The Primitives stateful shape: direct SetState on the component, no CreateState split.
+        counter.Should().Contain("extends SharedStatefulComponent");
+        counter.Should().NotContain("createState");
+
+        // C# implicit field default: `private int _count;` must initialize (undefined would poison ++).
+        counter.Should().Contain("_count: number = 0;");
+
+        // The NAMED argument lands at the constructor's real position, with the skipped parameters
+        // filled from their C# defaults — JS has no named arguments.
+        counter.Should().Contain("new Button('Increment', 'primary', 'medium', () => this.setState(() => this._count++))");
     }
 }

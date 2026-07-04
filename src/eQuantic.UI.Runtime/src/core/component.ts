@@ -255,6 +255,97 @@ export abstract class StatefulComponent extends Component {
 }
 
 /**
+ * Base class for SHARED stateful components — the `eQuantic.UI.Primitives.StatefulComponent` shape:
+ * state lives as fields on the component itself and `setState` triggers the rebuild directly (no
+ * `createState`/`ComponentState` split). eqc routes shared components here when their base resolves
+ * to the Primitives namespace. Deliberately parallel to {@link StatefulComponent} rather than
+ * refactored into a common base — the planned Core unification (SHARED-COMPONENTS-PLAN) owns that
+ * consolidation; duplicating the mount plumbing today keeps the battle-tested path untouched.
+ */
+export abstract class SharedStatefulComponent extends Component {
+  private _renderManager: RenderManager = new RenderManager();
+  private _mounted = false;
+  private _renderScheduled = false;
+
+  protected get serviceProvider(): ServiceProvider {
+    return getRootServiceProvider();
+  }
+
+  abstract build(context: RenderContext): Component;
+
+  /** The C# `SetState(mutate)` contract: run the mutation, then schedule a rebuild. */
+  protected setState(fn: () => void): void {
+    fn();
+    this._scheduleRender();
+  }
+
+  render(): HtmlNode {
+    const context: RenderContext = {
+      getService: <T>(key: import('./types').ServiceKey<T>) =>
+        this.serviceProvider.getService<T>(key),
+      serviceProvider: this.serviceProvider,
+      route: getCurrentRoute(),
+      theme: getPhotonTheme(),
+    };
+    return this.build(context).render();
+  }
+
+  mount(container: HTMLElement): void {
+    const node = this.render();
+    if (this._renderManager.canHydrate(container)) {
+      this._renderManager.hydrate(node, container);
+    } else {
+      this._renderManager.mount(node, container);
+    }
+    this._mounted = true;
+  }
+
+  hydrate(container: HTMLElement): void {
+    this._renderManager.hydrate(this.render(), container);
+    this._mounted = true;
+  }
+
+  mountReconcile(container: HTMLElement, previousNode: HtmlNode | null): HtmlNode {
+    const node = this.render();
+    this._renderManager.adopt(node, container, previousNode);
+    this._mounted = true;
+    return node;
+  }
+
+  /** The virtual tree currently reflected in the DOM (the diff baseline for the next navigation). */
+  getCurrentTree(): HtmlNode | null {
+    return this._renderManager.getCurrentNode();
+  }
+
+  /** Marking `_mounted=false` makes any queued rAF re-render a no-op (see StatefulComponent). */
+  disposeQuietly(): void {
+    this._mounted = false;
+  }
+
+  _scheduleRender(): void {
+    if (this._renderScheduled) return;
+    this._renderScheduled = true;
+    requestAnimationFrame(() => {
+      this._renderScheduled = false;
+      if (this._mounted) {
+        this._renderManager.update(this.render());
+      }
+    });
+  }
+
+  unmount(): void {
+    if (this._mounted) {
+      this._renderManager.unmount();
+      this._mounted = false;
+    }
+  }
+
+  getVirtualNode(): HtmlNode {
+    return this.render();
+  }
+}
+
+/**
  * Base class for component state
  */
 export abstract class ComponentState {

@@ -173,10 +173,34 @@ public class ComponentParser
                 IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword)
             };
 
-            if (baseType == "StatefulComponent")
+            if (baseType == "StatefulComponent" && BaseResolvesToPrimitives(classDecl))
+            {
+                // The SHARED stateful shape (eQuantic.UI.Primitives.StatefulComponent): state lives on
+                // the component itself and SetState rebuilds directly — no CreateState/ComponentState
+                // split. Structurally it parses like a stateless component (Build + ctors + methods +
+                // fields on the class); the emitter swaps the base for the runtime's
+                // SharedStatefulComponent.
+                definition.IsStateful = false;
+                definition.IsSharedStateful = true;
+                definition.BaseClassName = "SharedStatefulComponent";
+                ParsePageAttributes(classDecl, definition);
+
+                var sharedBuild = classDecl.DescendantNodes()
+                    .OfType<MethodDeclarationSyntax>()
+                    .FirstOrDefault(m => m.Identifier.Text == "Build");
+                if (sharedBuild != null)
+                {
+                    definition.BuildMethodNode = sharedBuild;
+                }
+
+                ParseConstructors(classDecl, definition);
+                ParseMethods(classDecl, definition);
+                ParseComponentFields(classDecl, definition);
+            }
+            else if (baseType == "StatefulComponent")
             {
                 definition.IsStateful = true;
-                
+
                 // Parse Page attributes and ServerActions
                 ParsePageAttributes(classDecl, definition);
                 ParseServerActions(classDecl, definition);
@@ -521,6 +545,29 @@ public class ComponentParser
         }
     }
 
+    /// <summary>True when the class's direct base type resolves (semantically) into the shared
+    /// <c>eQuantic.UI.Primitives</c> namespace — the write-once component model, whose stateful shape
+    /// (direct <c>SetState</c>) differs from the Core <c>CreateState</c> split.</summary>
+    private bool BaseResolvesToPrimitives(ClassDeclarationSyntax classDecl)
+    {
+        var baseSyntax = classDecl.BaseList?.Types.FirstOrDefault()?.Type;
+        if (baseSyntax == null) return false;
+        var model = TryGetSemanticModel(classDecl.SyntaxTree);
+        if (model == null) return false;
+
+        ISymbol? symbol;
+        try { symbol = model.GetSymbolInfo(baseSyntax).Symbol; }
+        catch { return false; }
+
+        var ns = (symbol as INamedTypeSymbol)?.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+        return ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives.");
+    }
+
+    /// <summary>Component-model base names — the EMITTER owns the emitted base class (e.g. the shared
+    /// stateful shape swaps to <c>SharedStatefulComponent</c>), so the semantic sweep must not import them.</summary>
+    private static readonly HashSet<string> ComponentModelBaseNames =
+        new() { "UiComponent", "StatelessComponent", "StatefulComponent" };
+
     /// <summary>
     /// Collects the simple names of referenced types whose containing namespace marks them as
     /// RUNTIME-PROVIDED (the shared vocabulary in <c>eQuantic.UI.Primitives</c>) into
@@ -556,6 +603,8 @@ public class ComponentParser
 
             // Interfaces exist only in the C# type system — they produce no JS value to import.
             if (type.TypeKind == TypeKind.Interface) continue;
+
+            if (ComponentModelBaseNames.Contains(type.Name)) continue;
 
             var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             if (ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives."))

@@ -15,4 +15,10 @@
     <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Self-contained packaging (like eQuantic.UI.Components): the C# sources ship at tools/source
+         so the SDK adds them to the eqc scan and every app transpiles the shared components to JS. -->
+    <Content Include="**\*.cs" Exclude="obj\**;bin\**" PackagePath="tools\source\" />
+  </ItemGroup>
+
 </Project>

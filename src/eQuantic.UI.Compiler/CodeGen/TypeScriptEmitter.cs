@@ -92,6 +92,9 @@ public class TypeScriptEmitter
                         var tsDefault = field.DefaultValueNode != null
                             ? _converter.ConvertExpression(field.DefaultValueNode, field.Type)
                             : (field.DefaultValue != null ? ConvertToTsValue(field.DefaultValue, field.Type) : null);
+                        // C# value types default without an initializer (`private int _count;` is 0);
+                        // an uninitialized TS field is `undefined` and would poison arithmetic (NaN).
+                        tsDefault ??= ImplicitValueTypeDefault(field.Type);
                         c.Field(field.Name.ToCamelCase(), tsType, tsDefault, field.DefaultValueNode, field.IsStatic);
                     }
                 }
@@ -362,6 +365,10 @@ public class TypeScriptEmitter
             coreImports.Add("StatefulComponent");
             coreImports.Add("ComponentState");
         }
+        else if (component.IsSharedStateful)
+        {
+            coreImports.Add("SharedStatefulComponent");
+        }
         else if (!component.IsPrimitive)
         {
             coreImports.Add("StatelessComponent");
@@ -552,6 +559,18 @@ public class TypeScriptEmitter
         return importsBuilder.ToString();
     }
     
+    /// <summary>The JS literal for C#'s implicit <c>default(T)</c> on a FIELD with no initializer —
+    /// numeric and boolean value types only; everything else stays uninitialized (≈ null).</summary>
+    private static string? ImplicitValueTypeDefault(string csharpType) => csharpType.TrimEnd('?') switch
+    {
+        "int" or "Int32" or "short" or "Int16" or "byte" or "sbyte" or "uint" or "UInt32"
+            or "ushort" or "UInt16" or "float" or "Single" or "double" or "Double" => "0",
+        "bool" or "Boolean" => "false",
+        "decimal" or "Decimal" => "$eq.num.dec(0)",
+        "long" or "Int64" or "ulong" or "UInt64" => "$eq.num.long(0)",
+        _ => null,
+    };
+
     private bool IsRuntimeComponent(string typeName)
     {
         // Only core runtime types are exported from @equantic/runtime
@@ -560,7 +579,7 @@ public class TypeScriptEmitter
         {
             "HtmlNode" or "HtmlStyle" or "ServiceKey" or "ServiceProvider" => true,
             "Component" or "BuildContext" or "HtmlElement" => true,
-            "StatefulComponent" or "StatelessComponent" or "ComponentState" => true,
+            "StatefulComponent" or "StatelessComponent" or "SharedStatefulComponent" or "ComponentState" => true,
             "getServerActionsClient" or "getRootServiceProvider" => true,
             // StyleBuilder/ClassBuilder are now emitted as `$eq.css.*` (global), not imported.
             _ => false

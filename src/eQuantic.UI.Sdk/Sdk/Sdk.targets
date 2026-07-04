@@ -159,6 +159,24 @@
             <_StandardComponentsDir
                 Condition="'$(_StandardComponentsDir)' == '' And Exists('$(_DevComponentsDir)')">
                 $(_DevComponentsDir)</_StandardComponentsDir>
+
+            <!-- SHARED (write-once) components — same resolution pattern. OPT-IN via
+                 <EnableEQuanticSharedComponents>true</EnableEQuanticSharedComponents> until the Core
+                 unification: the shared library deliberately reuses component names (Button, Card…),
+                 so scanning it by default would collide with the standard web components in the same
+                 output (docs/SHARED-COMPONENTS-PLAN.md). -->
+            <_SharedComponentsDir
+                Condition="'$(EnableEQuanticSharedComponents)' == 'true' And '$(PkgeQuantic_UI_Components_Shared)' != ''">
+                $(PkgeQuantic_UI_Components_Shared)/tools/source</_SharedComponentsDir>
+            <_DevSharedComponentsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Components.Shared</_DevSharedComponentsDir>
+            <_SharedComponentsDir
+                Condition="'$(EnableEQuanticSharedComponents)' == 'true' And '$(_SharedComponentsDir)' == '' And Exists('$(_DevSharedComponentsDir)')">
+                $(_DevSharedComponentsDir)</_SharedComponentsDir>
+
+            <_EqcSourceDirs>$(MSBuildProjectDirectory);$(_StandardComponentsDir)</_EqcSourceDirs>
+            <_EqcSourceDirs
+                Condition="'$(_SharedComponentsDir)' != '' And Exists('$(_SharedComponentsDir)')">
+                $(_EqcSourceDirs);$(_SharedComponentsDir)</_EqcSourceDirs>
         </PropertyGroup>
 
         <Error
@@ -187,7 +205,7 @@
             Overwrite="true" WriteOnlyWhenDifferent="true" />
 
         <Exec
-            Command="dotnet $(EqcCliPath) &quot;$(MSBuildProjectDirectory);$(_StandardComponentsDir)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_BunArg)"
+            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_BunArg)"
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
     </Target>

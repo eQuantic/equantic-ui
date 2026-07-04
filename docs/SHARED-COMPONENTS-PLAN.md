@@ -146,8 +146,27 @@ rejected.)
    value GENERATED from the C# single source (byte-pinned like the CSS); `RenderContext.theme` feeds
    transpiled `context.theme` reads. Proof: the committed transpiled Button/Card fixtures (pinned to
    the live compiler output) render in vitest to the SAME values the C# WebRealizer tests pin.
-   Remaining slice 2C: SDK wiring (ship + scan `Components.Shared` sources in app builds à la
-   `tools/source`), shared STATEFUL components on web (needs the Core `SetState` unification — the
-   Primitives model has no `CreateState` split), boot-time `setPhotonTheme` registration.
+   Slice 2C ✅ (2026-07-04): shared STATEFUL components run on web + SDK wiring. The Primitives
+   stateful shape (fields on the component + direct `SetState`, no `CreateState` split) transpiles —
+   the parser routes a base that RESOLVES to `eQuantic.UI.Primitives.StatefulComponent` (semantic,
+   not name-based) to the runtime's new `SharedStatefulComponent` (deliberately parallel to the Core
+   `StatefulComponent`; the Core unification consolidates them). En-route compiler fixes, each one a
+   silent-wrong-code class: named arguments now REORDER to the constructor's real parameter
+   positions with skipped parameters filled from their C# defaults (JS has no named args — before,
+   `onPressed:` landed in the `variant` slot); fields without initializers get C#'s implicit value-
+   type default (`private int _count;` → `= 0`, not `undefined`→NaN); and eqc's Roslyn compilations
+   now enable NULLABLE annotations (without it `Action?` parses as `Nullable<Action>`, overload
+   binding fails, and every semantic path silently degrades — fixed in ProjectCompilationHelper and
+   SemanticModelProvider). Proof: the `SharedCounter` fixture (the SAME authoring shape as the
+   native CounterAppTests component, composing Button with a named argument) is real eqc output
+   pinned in CI and EXECUTED in vitest — mount to DOM, click the lowered button, `setState` → rAF →
+   re-render (`Count: 0` → `3`), mirroring the native tap → SetState → rebuild golden. SDK wiring:
+   `Components.Shared` ships sources at `tools/source`; the SDK adds them to the eqc scan behind the
+   OPT-IN `<EnableEQuanticSharedComponents>true</…>` — the shared library intentionally reuses names
+   (Button, Card…), so a default-on scan would collide with the standard web components until the
+   unification swaps them in. Default builds are byte-identical (sample-verified).
+   Remaining (the Core unification slice): C#-side SSR of shared components inside Core pages (an
+   IComponent adapter over WebRealizer), name-collision resolution (shared components REPLACE the
+   standard ones), flipping the SDK gate to default-on, boot-time `setPhotonTheme` registration.
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
 5. Layout conformance harness lands with step 2 and gates every layout feature after it.
