@@ -454,6 +454,15 @@ Bun and the JS bundling chain, the TypeScript runtime.
   until the unification). Suites: vitest 286, web 33, compiler 412, conformance 526, native 144,
   server 37. Full log in `docs/SHARED-COMPONENTS-PLAN.md`.
 
+- **2026-07-04 — Unification slice 1 landed: the Core⇄Shared SSR bridge.** `VisualNodeComponent`
+  (eQuantic.UI.Web) adapts any abstract subtree into the Core `IComponent` world — Core pages compose
+  write-once components server-side through `WebRealizer`, and the transpiled call resolves to the
+  runtime's mirror class client-side (ambient theme; hydration parity by construction). New
+  `[RuntimeProvided]` attribute extends eqc's runtime-import routing beyond the Primitives namespace.
+  Boot-time theme registration proven with `setPhotonTheme` (no new machinery). Suites: vitest 289,
+  web 38, compiler 412, conformance 526, native 144, server 37. Next on this front: name-collision
+  resolution (shared REPLACES standard) → SDK gate default-on → live sample page.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

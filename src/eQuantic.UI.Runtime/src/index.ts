@@ -105,6 +105,7 @@ export {
   photonComponentContext,
   ambientLoweringContext,
 } from './shared/photon-context';
+export { VisualNodeComponent } from './shared/visual-node-component';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).
 export {
   Space,

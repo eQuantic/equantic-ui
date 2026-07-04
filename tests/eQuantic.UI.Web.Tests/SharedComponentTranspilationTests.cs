@@ -142,6 +142,54 @@ public class SharedComponentTranspilationTests
         button.Should().Contain("let [height, padX, gap, labelSize, , radius, ] = ButtonStyles.metrics(this.size)");
     }
 
+    /// <summary>A CORE page composing shared components through the adapter — the unification bridge.</summary>
+    private const string BridgePageSource = """
+        using eQuantic.UI.Core;
+        using eQuantic.UI.Components.Shared;
+        using eQuantic.UI.Web;
+
+        namespace eQuantic.UI.Web.Tests.Fixtures;
+
+        public class SharedBridgePage : StatelessComponent
+        {
+            public override IComponent Build(RenderContext context) =>
+                new VisualNodeComponent(new Card(new Button("Ok"), CardKind.Outlined));
+        }
+        """;
+
+    [Fact]
+    public void CorePage_ComposingSharedThroughTheAdapter_ImportsItFromTheRuntime()
+    {
+        var root = RepoRoot();
+        var pagePath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "SharedBridgePage.cs");
+        var trees = new List<Microsoft.CodeAnalysis.SyntaxTree>
+        {
+            CSharpSyntaxTree.ParseText(BridgePageSource, path: pagePath),
+            CSharpSyntaxTree.ParseText(
+                "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
+                path: "GlobalUsings.g.cs"),
+        };
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .ToList();
+        var compilation = CSharpCompilation.Create("BridgePage", trees, references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        var result = compiler.CompileSource(BridgePageSource, pagePath).Single();
+
+        result.Success.Should().BeTrue(string.Join("; ", result.Errors.Select(e => e.Message)));
+        // The adapter carries [RuntimeProvided] → routed to the runtime package, not ./VisualNodeComponent.
+        result.TypeScript.Should().Contain("VisualNodeComponent");
+        result.TypeScript.Should().Contain("from \"@equantic/runtime\"");
+        result.TypeScript.Should().NotContain("from \"./VisualNodeComponent\"");
+        result.TypeScript.Should().Contain("new VisualNodeComponent(new Card(new Button('Ok'), 'outlined'))");
+    }
+
     [Fact]
     public void TranspiledSharedCounter_UsesTheDirectStatefulShape()
     {
