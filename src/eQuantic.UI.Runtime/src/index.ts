@@ -41,7 +41,9 @@ export { StringBuilder, stringBuilder } from './utils/string-builder';
 export {
   Queue,
   queue,
-  Stack,
+  // The VOCABULARY Stack (spec A3) owns the bare name — the data structure stays reachable as
+  // CollectionStack and through $eq.collections (the form emitted code actually uses).
+  Stack as CollectionStack,
   stack,
   ValueMap,
   valueMap,
@@ -88,6 +90,8 @@ export {
   Pressable,
   Flexible,
   Spacer,
+  Stack,
+  Positioned,
 } from './shared/vocabulary';
 export {
   ColorToken,

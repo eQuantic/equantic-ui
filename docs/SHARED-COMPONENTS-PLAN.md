@@ -221,6 +221,16 @@ rejected.)
    `/shared` showcase updated (validated live: Badge/ProgressBar react to the counter state).
    Library: 8 write-once components; ~54 legacy web components remain (waves 2-3 gated on
    Stack/Image/Icon/ScrollView, the interaction system, the reconciler, and text input).
+   Primitive: Stack/Positioned ✅ (2026-07-05, spec A3) — the first wave-2 gate opened. Z-order
+   composition across all three realizers: the stack sizes to its largest NON-positioned child
+   (explicit W/H override), non-positioned children follow the 9-way alignment, Positioned children
+   anchor with SIGNED offsets (badge overlay = top −4 / end −4, golden-tested). Native = layout-engine
+   pass (paint order = child order); web = single-cell CSS grid (`grid-area: 1/1` per child,
+   `place-items` alignment) + absolute anchors on a relative frame, cross-pinned byte-exact with the
+   TS lowering. En route: C# switch-expression precedence bug (`(int)a % 3 switch` binds the switch
+   to the literal) and the runtime's `Stack` name collision (the vocabulary owns the bare export;
+   the data structure is `CollectionStack` + `$eq.collections`). Remaining wave-2 gates:
+   Image/Icon/ScrollView, then the interaction system and the reconciler.
    Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
    without hoisting), server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.

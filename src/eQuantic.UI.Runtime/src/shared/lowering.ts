@@ -20,8 +20,10 @@ import type {
   EdgeInsetsValue,
   FlexNodeValue,
   FlexibleNode,
+  PositionedNode,
   PressableNode,
   SizeValueValue,
+  StackNode,
   SpacerNode,
   TextNode,
   VisualNodeValue,
@@ -102,7 +104,7 @@ const fontWeights: Record<string, number> = {
 type StyleEntries = Partial<Record<string, string | undefined>>;
 
 const styleOrder = [
-  'display', 'flex-direction', 'justify-content', 'align-items', 'gap', 'flex', 'flex-grow',
+  'display', 'position', 'top', 'right', 'bottom', 'left', 'place-items', 'grid-area', 'flex-direction', 'justify-content', 'align-items', 'gap', 'flex', 'flex-grow',
   'flex-shrink', 'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height', 'padding',
   'background', 'background-color', 'border', 'border-radius', 'color', 'font-family', 'font-size',
   'font-weight', 'line-height', 'text-align', 'letter-spacing', 'box-shadow', 'opacity', 'cursor',
@@ -139,6 +141,11 @@ function lowerNode(
       return lowerFlexible(node as FlexibleNode, context, horizontalAxis);
     case 'spacer':
       return lowerSpacer(node as SpacerNode, horizontalAxis);
+    case 'stack':
+      return lowerStack(node as StackNode, context);
+    case 'positioned':
+      // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
+      return lowerNode((node as PositionedNode).child, context, horizontalAxis);
     case 'component':
       return lowerNode((node as ComponentNode).build(context.componentContext), context, horizontalAxis);
     default: {
@@ -158,6 +165,48 @@ function element(tag: string, style: StyleEntries, children: HtmlNode[] = []): H
     events: {},
     children,
   };
+}
+
+/** Spec A3 mirror of the C# WebRealizer: single-cell grid stack + absolute Positioned anchors. */
+function lowerStack(node: StackNode, context: LoweringContext): HtmlNode {
+  const alignIndex: Record<string, number> = {
+    topStart: 0, topCenter: 1, topEnd: 2, centerStart: 3, center: 4, centerEnd: 5,
+    bottomStart: 6, bottomCenter: 7, bottomEnd: 8,
+  };
+  const index = alignIndex[node.align] ?? 0;
+  const word = (part: number) => (part === 1 ? 'center' : part === 2 ? 'end' : 'start');
+  const placeItems = `${word(Math.trunc(index / 3))} ${word(index % 3)}`;
+
+  const children: HtmlNode[] = [];
+  for (const child of node.children ?? []) {
+    if (child.nodeKind === 'positioned') {
+      const positioned = child as PositionedNode;
+      const lowered = lowerNode(positioned.child, context, null);
+      if (!lowered) continue;
+      children.push(
+        element('div', {
+          position: 'absolute',
+          top: positioned.top != null ? px(positioned.top) : undefined,
+          right: positioned.end != null ? px(positioned.end) : undefined,
+          bottom: positioned.bottom != null ? px(positioned.bottom) : undefined,
+          left: positioned.start != null ? px(positioned.start) : undefined,
+        }, [lowered]),
+      );
+    } else {
+      const lowered = lowerNode(child, context, null);
+      if (!lowered) continue;
+      children.push(element('div', { 'grid-area': '1 / 1' }, [lowered]));
+    }
+  }
+
+  return element('div', {
+    display: 'grid',
+    position: 'relative',
+    top: undefined,
+    'place-items': placeItems,
+    width: sizeValue(node.width),
+    height: sizeValue(node.height),
+  }, children);
 }
 
 function textLeaf(content: string): HtmlNode {

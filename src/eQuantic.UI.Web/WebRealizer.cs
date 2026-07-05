@@ -30,6 +30,9 @@ public static class WebRealizer
     {
         Box box => LowerBox(box, context),
         FlexNode flex => LowerFlex(flex, context),
+        Stack stack => LowerStack(stack, context),
+        // A Positioned outside a Stack has no anchor frame — degrade to its child (parity with native).
+        Positioned positioned => LowerNode(positioned.Child, context, horizontalAxis),
         Text text => LowerText(text, context),
         Pressable pressable => LowerPressable(pressable, context),
         Flexible flexible => LowerFlexible(flexible, context, horizontalAxis),
@@ -37,6 +40,67 @@ public static class WebRealizer
         UiComponent component => LowerNode(component.Build(context), context, horizontalAxis),
         _ => null,
     };
+
+    /// <summary>
+    /// Spec A3 lowering: single-cell CSS grid — every NON-positioned child sits in cell 1/1
+    /// (overlapping, painted in child order) with <c>place-items</c> carrying the alignment;
+    /// Positioned children wrap in <c>position:absolute</c> against the stack's
+    /// <c>position:relative</c> frame, with signed offsets (End→right, Start→left).
+    /// </summary>
+    private static HtmlElement LowerStack(Stack stack, ComponentContext context)
+    {
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Display = Core.Display.Grid,
+                PlaceItems = PlaceItems(stack.Align),
+                Position = Core.Position.Relative,
+                Width = Size(stack.Width),
+                Height = Size(stack.Height),
+            },
+        };
+
+        foreach (var child in stack.Children)
+        {
+            if (child is Positioned positioned)
+            {
+                var lowered = LowerNode(positioned.Child, context, horizontalAxis: null);
+                if (lowered is null) continue;
+                var anchor = new RealizedElement("div")
+                {
+                    Style = new HtmlStyle
+                    {
+                        Position = Core.Position.Absolute,
+                        Top = positioned.Top is { } top ? TokenCss.Px(top) : null,
+                        Right = positioned.End is { } end ? TokenCss.Px(end) : null,
+                        Bottom = positioned.Bottom is { } bottom ? TokenCss.Px(bottom) : null,
+                        Left = positioned.Start is { } start ? TokenCss.Px(start) : null,
+                    },
+                };
+                anchor.Children.Add(lowered);
+                element.Children.Add(anchor);
+            }
+            else
+            {
+                var lowered = LowerNode(child, context, horizontalAxis: null);
+                if (lowered is null) continue;
+                var cell = new RealizedElement("div") { Style = new HtmlStyle { GridArea = "1 / 1" } };
+                cell.Children.Add(lowered);
+                element.Children.Add(cell);
+            }
+        }
+
+        return element;
+    }
+
+    /// <summary>CSS <c>place-items</c> = "&lt;align&gt; &lt;justify&gt;" (vertical then horizontal).</summary>
+    private static string PlaceItems(Alignment align)
+    {
+        var vertical = ((int)align / 3) switch { 1 => "center", 2 => "end", _ => "start" };
+        var horizontal = ((int)align % 3) switch { 1 => "center", 2 => "end", _ => "start" };
+        return $"{vertical} {horizontal}";
+    }
 
     private static HtmlElement LowerBox(Box box, ComponentContext context)
     {
