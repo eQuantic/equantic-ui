@@ -49,6 +49,7 @@ interface BoxStyleConfig {
   borderWidth?: number;
   borderColor?: ColorTokenValue;
   elevation?: number;
+  clip?: boolean;
 }
 
 /** Mirror of the C# `BoxStyle` record — constructed from the transpiled initializer config object.
@@ -66,6 +67,7 @@ export class BoxStyle {
   borderWidth = 0;
   borderColor?: ColorTokenValue;
   elevation = 0;
+  clip = false;
 
   constructor(config?: BoxStyleConfig) {
     if (!config) return;
@@ -196,6 +198,25 @@ export class Pressable extends VisualNode {
   }
 }
 
+/** Mirror of the C# `LoopMotion` (spec §06): continuous transform-only loop around one child. */
+export class LoopMotion extends VisualNode {
+  readonly nodeKind = 'loopMotion';
+  child: VisualNode;
+  effect: string;
+  fromX: number;
+  toX: number;
+  durationMs: number;
+
+  constructor(child: VisualNode, effect: string, fromX: number, toX: number, durationMs: number) {
+    super();
+    this.child = child;
+    this.effect = effect;
+    this.fromX = fromX;
+    this.toX = toX;
+    this.durationMs = durationMs;
+  }
+}
+
 export class ScrollView extends VisualNode {
   readonly nodeKind = 'scrollView';
   child: VisualNode;
@@ -204,8 +225,11 @@ export class ScrollView extends VisualNode {
   height?: SizeValue;
   offset: number;
 
-  constructor(child: VisualNode, axis = 'vertical',
-    config?: { width?: SizeValue | number; height?: SizeValue | number; offset?: number }) {
+  constructor(
+    child: VisualNode,
+    axis = 'vertical',
+    config?: { width?: SizeValue | number; height?: SizeValue | number; offset?: number },
+  ) {
     super();
     this.child = child;
     this.axis = axis;
@@ -224,8 +248,14 @@ export class Image extends VisualNode {
   alt: string;
   cornerRadius?: CornerRadii;
 
-  constructor(source: string, width: number, height: number, fit = 'cover', alt = '',
-    config?: { cornerRadius?: CornerRadii }) {
+  constructor(
+    source: string,
+    width: number,
+    height: number,
+    fit = 'cover',
+    alt = '',
+    config?: { cornerRadius?: CornerRadii },
+  ) {
     super();
     this.source = source;
     this.width = width;
@@ -243,7 +273,12 @@ export class Icon extends VisualNode {
   color: ColorTokenValue | null;
   label: string | null;
 
-  constructor(glyph: string, size = 24, color: ColorTokenValue | null = null, label: string | null = null) {
+  constructor(
+    glyph: string,
+    size = 24,
+    color: ColorTokenValue | null = null,
+    label: string | null = null,
+  ) {
     super();
     if (size !== 16 && size !== 20 && size !== 24 && size !== 32) {
       throw new RangeError(`Icon size ${size} is not on the §07 whitelist (16/20/24/32).`);
@@ -262,7 +297,10 @@ export class Stack extends VisualNode {
   height?: SizeValue;
   children: VisualNode[] = [];
 
-  constructor(align = 'topStart', config?: { width?: SizeValue | number; height?: SizeValue | number }) {
+  constructor(
+    align = 'topStart',
+    config?: { width?: SizeValue | number; height?: SizeValue | number },
+  ) {
     super();
     this.align = align;
     if (config?.width !== undefined) this.width = SizeValue.from(config.width);

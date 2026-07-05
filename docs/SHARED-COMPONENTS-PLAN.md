@@ -317,5 +317,22 @@ rejected.)
    label, a key change resets state.
    Remaining on this front: server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.
+   Animation slice 1 ✅ (2026-07-05, spec §06 — INDETERMINATE LOOP MOTION): the loop-motion
+   building block, transform-only per the spec. Vocabulary: `LoopMotion(child, effect, fromX, toX,
+   durationMs)` — a layout-transparent wrapper whose offsets are FRACTIONS OF ITS OWN WIDTH (CSS
+   translateX(%) and the native offset math share the base), plus `BoxStyle.Clip` (children confine
+   to the rrect; chrome never clips — engine PushClip / CSS overflow:hidden). NATIVE: frames are a
+   PURE function of the injected clock — `PhotonHost.RenderFrame(builder, timeMs)` samples the
+   offset (baked command transform), `RealizeResult.HasActiveMotion` keeps `NeedsRender` hot while
+   a loop runs, and `PhotonHost.ReducedMotion` renders at rest AND stops requesting frames;
+   deterministic goldens pin t=600ms. WEB: generated `@keyframes eq-slide-x` reads per-element
+   endpoints from `--eq-loop-from/to` custom properties at the style tail; duration rides the
+   animation shorthand on the `.eq-loop` div; `prefers-reduced-motion` statically disables it in
+   the generated stylesheet — all cross-pinned byte-for-byte (C# realizer ⇄ TS lowering).
+   CONSUMER: `ProgressBar(value: float? = null)` — null = indeterminate (spec B14): a full-width
+   layer sweeps the 30% flex segment -35%→105% on the 1.2s loop inside the clipping Radius.Full
+   track. Verified live in the browser (SSR + hydration + running animation at the spec velocity).
+   Skeleton shimmer stays fenced on BoxStyle gradient (2-stop; engine Paint.Linear ready); Spinner
+   stays fenced on engine arcs (or native Icon glyphs + a rotate effect).
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
 5. Layout conformance harness lands with step 2 and gates every layout feature after it.

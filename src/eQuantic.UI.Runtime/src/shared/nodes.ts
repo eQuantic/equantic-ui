@@ -67,6 +67,8 @@ export interface BoxStyleValue {
   borderColor?: ColorTokenValue;
   /** Elevation level 0-5 (§05) — resolved through the active theme's ShadowSpec. */
   elevation?: number;
+  /** Clip children to the rrect (native PushClip / CSS overflow:hidden) — loop-motion container. */
+  clip?: boolean;
 }
 
 /** Base shape every abstract node carries. */
@@ -127,9 +129,26 @@ export interface SpacerNode extends VisualNodeValue {
 }
 
 export type AlignmentValue =
-  | 'topStart' | 'topCenter' | 'topEnd'
-  | 'centerStart' | 'center' | 'centerEnd'
-  | 'bottomStart' | 'bottomCenter' | 'bottomEnd';
+  | 'topStart'
+  | 'topCenter'
+  | 'topEnd'
+  | 'centerStart'
+  | 'center'
+  | 'centerEnd'
+  | 'bottomStart'
+  | 'bottomCenter'
+  | 'bottomEnd';
+
+/** Spec §06 loop motion: a transform-only translate loop around one child. Offsets are fractions
+ * of the node's OWN width (CSS translateX(%) base == the native realizer's offset math). */
+export interface LoopMotionNode extends VisualNodeValue {
+  nodeKind: 'loopMotion';
+  child: VisualNodeValue;
+  effect: string;
+  fromX: number;
+  toX: number;
+  durationMs: number;
+}
 
 export interface ScrollViewNode extends VisualNodeValue {
   nodeKind: 'scrollView';

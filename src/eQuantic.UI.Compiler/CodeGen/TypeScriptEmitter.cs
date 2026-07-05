@@ -33,7 +33,7 @@ public class TypeScriptEmitter
         "int", "uint", "long", "ulong", "short", "ushort", "byte", "sbyte",
         "float", "double", "decimal", "bool", "char", "string", "object", "void", "dynamic", "nint", "nuint",
         // BCL / .NET-compat types backed by the runtime or JS built-ins
-        "DateTime", "DateTimeOffset", "TimeSpan", "DateOnly", "TimeOnly", "Guid", "Math",
+        "DateTime", "DateTimeOffset", "TimeSpan", "DateOnly", "TimeOnly", "Guid", "Math", "MathF",
         "Convert", "Console", "Enumerable", "Task", "Action", "Func", "Nullable",
         "StringBuilder", "Regex", "Exception", "Type", "Uri",
     };

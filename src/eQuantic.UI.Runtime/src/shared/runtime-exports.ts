@@ -33,6 +33,7 @@ export {
   Icon,
   Image,
   ScrollView,
+  LoopMotion,
 } from './vocabulary';
 export {
   Color,

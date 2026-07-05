@@ -70,6 +70,52 @@ public readonly record struct BoxStyle
     /// <summary>Elevation level 0–5 (spec §05) — the theme resolves it to the analytic ShadowSpec;
     /// exactly ONE shadow per node. Dark E1–E2 additionally want a 1dp border (component-level).</summary>
     public int Elevation { get; init; }
+
+    /// <summary>Clips the child subtree to this Box's rrect (engine PushClip / CSS overflow:hidden) —
+    /// the container side of loop motion (a sweeping segment stays inside its track). Chrome
+    /// (background/border/shadow) is the shape itself and is never clipped.</summary>
+    public bool Clip { get; init; }
+}
+
+/// <summary>Loop-motion effects (spec §06: animate transform &amp; opacity ONLY — these are all transform).</summary>
+public enum LoopEffect : byte
+{
+    /// <summary>Horizontal translate loop; offsets are FRACTIONS OF THE NODE'S OWN WIDTH, so both
+    /// realizers resolve them without knowing the parent (CSS translateX(%) has the same base).</summary>
+    SlideX = 0,
+}
+
+/// <summary>
+/// Continuous transform-only loop motion around one child (spec §06) — the indeterminate-progress /
+/// shimmer building block. Deliberately a FUNCTION OF TIME, not a stateful animator: the native
+/// realizer resolves the offset from the frame clock (pure, deterministic, golden-testable at a fixed
+/// t) and re-renders while active; the web realizer lowers to generated CSS keyframes (the browser
+/// owns the clock; `prefers-reduced-motion` statically disables it — the spec's Reduce Motion rule).
+/// </summary>
+public sealed class LoopMotion : VisualNode
+{
+    public override string NodeKind => "loopMotion";
+
+    public LoopMotion(VisualNode child, LoopEffect effect, float fromX, float toX, int durationMs)
+    {
+        Child = child;
+        Effect = effect;
+        FromX = fromX;
+        ToX = toX;
+        DurationMs = durationMs;
+    }
+
+    public VisualNode Child { get; init; }
+    public LoopEffect Effect { get; init; }
+
+    /// <summary>Loop start offset as a fraction of the node's own width (e.g. -0.35 = -35%).</summary>
+    public float FromX { get; init; }
+
+    /// <summary>Loop end offset as a fraction of the node's own width.</summary>
+    public float ToX { get; init; }
+
+    /// <summary>Loop period. The motion is linear and repeats seamlessly from <see cref="FromX"/>.</summary>
+    public int DurationMs { get; init; }
 }
 
 /// <summary>
