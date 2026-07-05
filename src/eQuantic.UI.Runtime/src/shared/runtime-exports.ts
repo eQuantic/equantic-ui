@@ -55,3 +55,25 @@ export {
   PhotonTheme,
 } from './design-system.generated';
 export { VisualNodeComponent } from './visual-node-component';
+
+// The shared component LIBRARY itself — embeds that compose other embeds (List → ListItem/Divider,
+// EmptyState → Button) resolve those names through this aggregator too. The module cycle
+// (components/X → runtime-exports → components/X) is benign: ESM live bindings only dereference at
+// build()/render() time, never during module evaluation.
+export { Button } from './components/Button';
+export { Card } from './components/Card';
+export { Divider } from './components/Divider';
+export { Badge } from './components/Badge';
+export { Chip } from './components/Chip';
+export { ProgressBar } from './components/ProgressBar';
+export { Avatar } from './components/Avatar';
+export { Banner } from './components/Banner';
+export { IconButton } from './components/IconButton';
+export { Checkbox } from './components/Checkbox';
+export { Switch } from './components/Switch';
+export { RadioGroup } from './components/RadioGroup';
+export { ListItem } from './components/ListItem';
+export { List } from './components/List';
+export { Tabs } from './components/Tabs';
+export { EmptyState } from './components/EmptyState';
+export { Skeleton } from './components/Skeleton';

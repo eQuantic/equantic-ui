@@ -263,6 +263,25 @@ rejected.)
    (paint-order traversal, wraps, skips disabled) + `ClearFocus()`, with the realizer stroking the
    two rings OUTSIDE the first descendant Box, following its radius (focus-ring golden). v1 fences:
    Shift+Tab reversal and key events join the input system; hover and gestures next.
+   Migration wave 2 ✅ (2026-07-05): SEVEN new write-once components + two fences closed —
+   **IconButton** (A13: 32/40/48/56 with §07 icons, required label, Standard/Tonal/Filled/Outline,
+   selected glyph swap outline→filled, pressed per kind), **Checkbox** (B11: 22×22 Radius.Xs,
+   BorderStrong/Primary+check, whole-row target, Error border; tristate/motion fenced),
+   **Switch** (B12: 52×32 track, 26dp thumb via Stack+Positioned by state; slide/drag/E1 fenced),
+   **RadioGroup** (B13: 22dp circles, Primary ring+10dp dot, full-width 44dp rows, selection moves
+   never clears), **ListItem/List** (B2: leading/content/trailing slots, 15/500+13, min 52/68,
+   truncation contract, pressed SurfaceSubtle, LIST owns leading-inset dividers; recycling fenced),
+   **Tabs** (B5 controlled: 48dp row, equal-width Fixed, 3dp Primary indicator inset 16 top-rounded,
+   Bold/SemiBold weights, pressed cells; Scrollable/translation fenced), **EmptyState** (B17:
+   64dp well + Xl icon, 20/600 title, ≤2-line body, actions) and **Skeleton** (B16 static shapes =
+   the spec's Reduce Motion behavior; shimmer fenced). Fences closed: **Avatar image tier** (B6
+   photo → circle-clipped cover Image) and **Banner dismiss** (20dp close through the Pressable).
+   Compiler fixes en route (silent-wrong-code): verbatim identifiers (`@checked`) leaked the `@`
+   into emitted JS (parser/identifier strategy → ValueText); the collections name-heuristic
+   HIJACKED the vocabulary `Stack` when the semantic model had resolved it (semantic resolution is
+   now authoritative in QueueStackStrategy). Library: 17 write-once components (~45 legacy remain,
+   gated on text input, overlays, animation, reconciler). All embedded in the runtime, gallery
+   goldens light+dark inspected, spec pins on every axis.
    Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
    without hoisting), server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.

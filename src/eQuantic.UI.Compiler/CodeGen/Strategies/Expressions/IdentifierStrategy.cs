@@ -22,7 +22,8 @@ public class IdentifierStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var identifier = (IdentifierNameSyntax)node;
-        var name = identifier.Identifier.Text;
+        // ValueText strips the verbatim-identifier @ (C# `@checked` → JS `checked` — not reserved there).
+        var name = identifier.Identifier.ValueText;
         
         // Map 'Component' property (in State classes) to 'this._component'
         if (name == "Component") return "this._component";

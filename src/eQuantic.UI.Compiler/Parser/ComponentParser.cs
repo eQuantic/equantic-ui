@@ -403,7 +403,7 @@ public class ComponentParser
                 {
                     actionInfo.Parameters.Add(new ParameterDefinition
                     {
-                        Name = param.Identifier.Text,
+                        Name = param.Identifier.ValueText,
                         Type = param.Type?.ToString() ?? "object"
                     });
                 }
@@ -468,7 +468,7 @@ public class ComponentParser
             {
                 methodDef.Parameters.Add(new ParameterDefinition
                 {
-                    Name = param.Identifier.Text,
+                    Name = param.Identifier.ValueText,
                     Type = param.Type?.ToString() ?? "object"
                 });
             }
@@ -499,7 +499,7 @@ public class ComponentParser
             {
                 ctorDef.Parameters.Add(new ParameterDefinition
                 {
-                    Name = param.Identifier.Text,
+                    Name = param.Identifier.ValueText,
                     Type = param.Type?.ToString() ?? "object"
                 });
             }
@@ -521,7 +521,7 @@ public class ComponentParser
             {
                 primaryDef.Parameters.Add(new ParameterDefinition
                 {
-                    Name = param.Identifier.Text,
+                    Name = param.Identifier.ValueText,
                     Type = param.Type?.ToString() ?? "object"
                 });
             }
@@ -547,7 +547,7 @@ public class ComponentParser
             {
                 ctorDef.Parameters.Add(new ParameterDefinition
                 {
-                    Name = param.Identifier.Text,
+                    Name = param.Identifier.ValueText,
                     Type = param.Type?.ToString() ?? "object",
                     DefaultValueNode = param.Default?.Value
                 });
@@ -654,7 +654,7 @@ public class ComponentParser
             {
                 methodDef.Parameters.Add(new ParameterDefinition
                 {
-                    Name = param.Identifier.Text,
+                    Name = param.Identifier.ValueText,
                     Type = param.Type?.ToString() ?? "object"
                 });
             }

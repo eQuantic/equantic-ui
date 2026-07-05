@@ -20,7 +20,11 @@ public class SharedComponentTranspilationTests
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", ".."));
 
     private static readonly string[] SharedSources =
-        ["Button.cs", "Card.cs", "Divider.cs", "Badge.cs", "Chip.cs", "ProgressBar.cs", "Avatar.cs", "Banner.cs"];
+    [
+        "Button.cs", "Card.cs", "Divider.cs", "Badge.cs", "Chip.cs", "ProgressBar.cs", "Avatar.cs",
+        "Banner.cs", "IconButton.cs", "Checkbox.cs", "Switch.cs", "RadioGroup.cs", "ListItem.cs",
+        "Tabs.cs", "EmptyState.cs",
+    ];
 
     /// <summary>
     /// The stateful write-once proof — the SAME authoring shape as the native CounterAppTests
@@ -116,7 +120,12 @@ public class SharedComponentTranspilationTests
         var embeddedDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "components");
         string Embedded(string typeScript) =>
             typeScript.Replace("from \"@equantic/runtime\"", "from \"../runtime-exports\"");
-        var embeddedNames = new[] { "Button", "Card", "Divider", "Badge", "Chip", "ProgressBar", "Avatar", "Banner" };
+        var embeddedNames = new[]
+        {
+            "Button", "Card", "Divider", "Badge", "Chip", "ProgressBar", "Avatar", "Banner",
+            "IconButton", "Checkbox", "Switch", "RadioGroup", "ListItem", "List", "Tabs",
+            "EmptyState", "Skeleton",
+        };
 
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_TRANSPILED") == "1")
         {

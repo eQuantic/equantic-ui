@@ -33,6 +33,9 @@ public sealed class Avatar : StatelessComponent
     /// <summary>Up to 2 characters (clipped per spec).</summary>
     public string Initials { get; init; }
 
+    /// <summary>Photo tier (top of the B6 fallback chain) — center-crop cover, circle-clipped.</summary>
+    public string? ImageSource { get; init; }
+
     public SizeVariant Size { get; init; }
 
     /// <summary>Tint source (deterministic hash) — falls back to the initials when omitted.</summary>
@@ -60,6 +63,15 @@ public sealed class Avatar : StatelessComponent
             SizeVariant.Large => 16f,
             _ => 22f,
         };
+
+        if (ImageSource is { } source)
+        {
+            var photo = new Image(source, side, side, ImageFit.Cover, Name ?? Initials)
+            {
+                CornerRadius = new CornerRadii(Radius.Full),
+            };
+            return Status == PresenceStatus.None ? photo : WithStatusDot(photo, side, theme);
+        }
 
         var seed = Name ?? Initials;
         var tint = theme.Colors(TintPalette[seed.Length % TintPalette.Length]);
@@ -91,8 +103,11 @@ public sealed class Avatar : StatelessComponent
             CornerRadius = new CornerRadii(Radius.Full),
         }, content);
 
-        if (Status == PresenceStatus.None) return circle;
+        return Status == PresenceStatus.None ? circle : WithStatusDot(circle, side, theme);
+    }
 
+    private VisualNode WithStatusDot(VisualNode face, float side, IAppTheme theme)
+    {
         var dotSide = MathF.Round(side / 3.3f);
         var dotFill = Status == PresenceStatus.Online ? theme.Colors(Variant.Success).Base : theme.TextMuted;
         var dot = new Box(new BoxStyle
@@ -106,7 +121,7 @@ public sealed class Avatar : StatelessComponent
         });
 
         var stack = new Stack();
-        stack.Add(circle);
+        stack.Add(face);
         stack.Add(new Positioned(dot, bottom: 0, end: 0));
         return stack;
     }
