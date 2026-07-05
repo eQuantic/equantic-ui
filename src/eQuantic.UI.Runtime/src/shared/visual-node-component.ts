@@ -9,6 +9,7 @@
 import { Component } from '../core/types';
 import type { HtmlNode } from '../core/types';
 import type { VisualNodeValue } from './nodes';
+import { ComponentInstanceStore, enterPass, exitPass } from './instance-store';
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
 import type { AppTheme } from './value-types';
@@ -16,6 +17,7 @@ import type { AppTheme } from './value-types';
 export class VisualNodeComponent extends Component {
   private readonly node: VisualNodeValue;
   private readonly theme?: AppTheme;
+  private readonly _instances = new ComponentInstanceStore();
 
   constructor(node: VisualNodeValue, theme?: AppTheme, _typeScale?: number, props?: unknown) {
     super(props);
@@ -25,8 +27,19 @@ export class VisualNodeComponent extends Component {
 
   render(): HtmlNode {
     const context = this.theme
-      ? { textPrimary: this.theme.textPrimary, componentContext: { theme: this.theme, typeScale: 1 } }
+      ? {
+          textPrimary: this.theme.textPrimary,
+          componentContext: { theme: this.theme, typeScale: 1 },
+        }
       : ambientLoweringContext();
-    return lowerVisualNode(this.node, context);
+    // Reconciler pass join (W6 slice 2): inside a host page render this JOINS the page's pass —
+    // the page owns retention (bridges are rebuilt every pass and cannot). Standalone (tests,
+    // direct embedding) this instance's own store carries retention across its renders.
+    enterPass(this._instances, null);
+    try {
+      return lowerVisualNode(this.node, context);
+    } finally {
+      exitPass();
+    }
   }
 }

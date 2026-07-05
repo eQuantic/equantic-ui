@@ -297,10 +297,25 @@ rejected.)
    `UiComponent.AdoptConfig(next)` hook (no reflection — the author decides config vs state; the
    default keeps existing config). `PhotonHost` owns the store and wires retained invalidations.
    Proven: a nested counter holds taps across its parent's SetState rebuilds, adopts fresh config,
-   and a key change resets identity/state. Slice 2 = the WEB mirror (store per render root in the
-   TS lowering + ambient context, same identity rules) — until then web keeps state hoisting.
-   Remaining on this front: reconciler slice 2 (web mirror; supersedes the old note about — unlocks nested stateful
-   without hoisting), server-driven initial state for shared pages, and the eventual merge of
+   and a key change resets identity/state.
+   Positional reconciler slice 2 ✅ (2026-07-05, W6 — WEB mirror): the SAME identity contract
+   (lowering PATH — threaded through `lowerNode` with the LayoutEngine's exact segment scheme —
+   + constructor + optional key) retires state hoisting on the browser. Ownership differs from
+   native by necessity (SPA navigation, many render roots): each PAGE INSTANCE owns a
+   `ComponentInstanceStore` (TS) and wraps its render in an ambient PASS; nested lowerings
+   (`VisualNodeComponent` bridges — rebuilt every pass, so they cannot own retention) JOIN the
+   page's pass, and each lowered root takes a unique order-stable prefix (`r0`, `r1`, …) so
+   bridges cannot collide on identity. `SharedStatefulComponent` gained `nodeKind='component'`
+   (nested instances expand through the store instead of the legacy self-render seam), `key`, and
+   an `_invalidationHook` — a retained child's SetState re-renders the HOST page, which reconciles
+   back onto the same instance. Transpiled `AdoptConfig(UiComponent next)` works end to end; the
+   compiler grew what the contract needs: `is T` patterns emit REAL `instanceof` for
+   UiComponent-derived classes (was a bare null-check), pattern types import like constructed
+   types, `UiComponent` surfaces in signatures (runtime exports it; the scanner skip now applies
+   only to base-list positions). Proven by executing REAL eqc output (NestedHost/NestedChild
+   fixtures) in vitest: the nested count survives host rebuilds, adoptConfig carries the fresh
+   label, a key change resets state.
+   Remaining on this front: server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
 5. Layout conformance harness lands with step 2 and gates every layout feature after it.

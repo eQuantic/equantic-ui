@@ -8,10 +8,9 @@
  */
 
 export { $eq } from '../eq';
-export {
-  Component,
-  HtmlElement,
-} from '../core/types';
+export { Component, HtmlElement } from '../core/types';
+// The C# `UiComponent` base as it surfaces in transpiled signatures (AdoptConfig, composition).
+export { Component as UiComponent } from '../core/types';
 export type { RenderContext as BuildContext } from '../core/types';
 export {
   StatelessComponent,

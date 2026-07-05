@@ -651,7 +651,7 @@ public class TypeScriptEmitter
                 if (memberAccess.Expression is IdentifierNameSyntax identifier)
                 {
                      var name = identifier.Identifier.Text;
-                     if (!string.IsNullOrEmpty(name) && char.IsUpper(name[0])) 
+                     if (!string.IsNullOrEmpty(name) && char.IsUpper(name[0]))
                      {
                          if (localNames == null || !localNames.Contains(name))
                          {
@@ -660,6 +660,16 @@ public class TypeScriptEmitter
                      }
                 }
             }
+        }
+
+        // `x is Foo f` lowers to `x instanceof Foo` for component-model classes (PatternConverter) —
+        // the pattern's type must import exactly like a constructed type. Non-class pattern types
+        // added here are dropped by the downstream filters (enums, exceptions, resolver-unknown).
+        foreach (var pattern in node.DescendantNodes().OfType<DeclarationPatternSyntax>())
+        {
+            var typeName = pattern.Type.ToString();
+            if (typeName.Contains('.')) typeName = typeName[(typeName.LastIndexOf('.') + 1)..];
+            types.Add(typeName);
         }
         return types;
     }

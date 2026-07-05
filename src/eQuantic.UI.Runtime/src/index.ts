@@ -11,6 +11,9 @@ export {
   SharedStatefulComponent,
   ComponentState,
 } from './core/component';
+// The C# `eQuantic.UI.Primitives.UiComponent` base surfaces in transpiled signatures (e.g. the
+// reconciler's `AdoptConfig(UiComponent next)`) — on the runtime it aliases the Component base.
+export { Component as UiComponent } from './core/types';
 export {
   ServiceProvider,
   ServiceCollectionBuilder,
@@ -36,7 +39,18 @@ export { format, stringFormat, parseEnum } from './utils/format';
 export { round } from './utils/dotnet-math';
 export { Decimal, dec } from './utils/decimal';
 export { long } from './utils/long';
-export { DateTime, dateTime, TimeSpan, timeSpan, DateOnly, dateOnly, TimeOnly, timeOnly, DateTimeOffset, dateTimeOffset } from './utils/datetime';
+export {
+  DateTime,
+  dateTime,
+  TimeSpan,
+  timeSpan,
+  DateOnly,
+  dateOnly,
+  TimeOnly,
+  timeOnly,
+  DateTimeOffset,
+  dateTimeOffset,
+} from './utils/datetime';
 export { StringBuilder, stringBuilder } from './utils/string-builder';
 export {
   Queue,

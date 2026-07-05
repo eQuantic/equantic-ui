@@ -51,6 +51,56 @@ public class SharedComponentTranspilationTests
         }
         """;
 
+    /// <summary>
+    /// The positional-reconciler proof (plan W6 slice 2) — the SAME scenario as the native
+    /// ReconcilerTests: a stateful child nested inside a stateful host. The host's SetState rebuilds
+    /// its tree with a FRESH child every pass; the web instance store must retain the child by
+    /// position (state survives) while <c>AdoptConfig</c> carries the fresh configuration over.
+    /// </summary>
+    private const string NestedReconcilerSource = """
+        using eQuantic.UI.Components.Shared;
+        using eQuantic.UI.Primitives;
+
+        namespace eQuantic.UI.Web.Tests.Fixtures;
+
+        public sealed class NestedChild : StatefulComponent
+        {
+            private int _count;
+            private string _label;
+
+            public NestedChild(string label = "child")
+            {
+                _label = label;
+            }
+
+            public override VisualNode Build(ComponentContext context)
+            {
+                var column = new Column(gap: Space.S2);
+                column.Add(new Text($"{_label}:{_count}", TypeRole.Caption));
+                column.Add(new Button("Add", onPressed: () => SetState(() => _count++)));
+                return column;
+            }
+
+            public override void AdoptConfig(UiComponent next)
+            {
+                if (next is NestedChild fresh) _label = fresh._label;
+            }
+        }
+
+        public sealed class NestedHost : StatefulComponent
+        {
+            private int _generation;
+
+            public override VisualNode Build(ComponentContext context)
+            {
+                var column = new Column(gap: Space.S2);
+                column.Add(new Button("Bump", onPressed: () => SetState(() => _generation++)));
+                column.Add(new NestedChild(label: $"g{_generation}"));
+                return column;
+            }
+        }
+        """;
+
     private static Dictionary<string, string> TranspileSharedComponents()
     {
         var root = RepoRoot();
@@ -64,10 +114,12 @@ public class SharedComponentTranspilationTests
         // hand-picked refs are NOT equivalent — delegate facades go missing and constructor overloads
         // silently fail to bind (breaking, e.g., named-argument reordering).
         var counterPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "SharedCounter.cs");
+        var nestedPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "NestedReconciler.cs");
         var trees = sourcePaths
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path))
             .ToList();
         trees.Add(CSharpSyntaxTree.ParseText(SharedCounterSource, path: counterPath));
+        trees.Add(CSharpSyntaxTree.ParseText(NestedReconcilerSource, path: nestedPath));
         // The shared sources build with <ImplicitUsings> — mirror the generated global usings, or
         // `Action?` fails to bind (CS0246) and the semantic paths silently degrade.
         trees.Add(CSharpSyntaxTree.ParseText(
@@ -94,7 +146,8 @@ public class SharedComponentTranspilationTests
         var modules = new Dictionary<string, string>();
         var compilations = sourcePaths
             .Select(path => compiler.CompileFile(path))
-            .Append(compiler.CompileSource(SharedCounterSource, counterPath));
+            .Append(compiler.CompileSource(SharedCounterSource, counterPath))
+            .Append(compiler.CompileSource(NestedReconcilerSource, nestedPath));
         foreach (var result in compilations.SelectMany(results => results))
         {
             result.Success.Should().BeTrue(
@@ -307,5 +360,21 @@ public class SharedComponentTranspilationTests
         // The NAMED argument lands at the constructor's real position, with the skipped parameters
         // filled from their C# defaults — JS has no named arguments.
         counter.Should().Contain("new Button('Increment', 'primary', 'medium', () => this.setState(() => this._count++))");
+    }
+
+    [Fact]
+    public void TranspiledNestedChild_CarriesTheAdoptConfigContract()
+    {
+        var modules = TranspileSharedComponents();
+        var child = modules["NestedChild"];
+
+        // The reconciler contract transpiles as-is: adoptConfig with the declaration-pattern type
+        // check, copying the fresh configuration into the retained instance.
+        child.Should().Contain("adoptConfig(");
+        child.Should().Contain("instanceof NestedChild");
+        child.Should().Contain("this._label = ");
+
+        // The host composes the child positionally; the web store reconciles it by lowering path.
+        modules["NestedHost"].Should().Contain("new NestedChild(");
     }
 }
