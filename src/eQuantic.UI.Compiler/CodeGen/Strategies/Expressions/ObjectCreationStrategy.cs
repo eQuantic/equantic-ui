@@ -70,6 +70,20 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (creation.Initializer != null)
         {
             initializer = context.Converter.ConvertExpression(creation.Initializer);
+            // The config object lands in the constructor's TRAILING config slot — when the call
+            // site supplied fewer positional arguments than the resolved constructor's arity, the
+            // skipped parameters fill from their C# defaults first (`new Stack { Width = … }` must
+            // emit `new Stack('topStart', {…})`, never the config in the align slot).
+            if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
+            {
+                var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
+                if (supplied < ctor.Parameters.Length)
+                {
+                    var defaults = ctor.Parameters.Skip(supplied).Select(ParameterDefaultLiteral);
+                    var filler = string.Join(", ", defaults);
+                    arguments = string.IsNullOrEmpty(arguments) ? filler : arguments + ", " + filler;
+                }
+            }
             // Append initializer to arguments if likely a UI component
             if (string.IsNullOrEmpty(arguments))
             {

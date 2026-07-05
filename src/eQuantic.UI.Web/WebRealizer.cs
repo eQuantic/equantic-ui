@@ -60,7 +60,6 @@ public static class WebRealizer
             Style = new HtmlStyle
             {
                 Display = Core.Display.Grid,
-                PlaceItems = PlaceItems(stack.Align),
                 Position = Core.Position.Relative,
                 Width = Size(stack.Width),
                 Height = Size(stack.Height),
@@ -91,7 +90,21 @@ public static class WebRealizer
             {
                 var lowered = LowerNode(child, context, horizontalAxis: null);
                 if (lowered is null) continue;
-                var cell = new RealizedElement("div") { Style = new HtmlStyle { GridArea = "1 / 1" } };
+                // The cell IS the stack's available space (the native MeasureStack contract): it
+                // stretches to the single grid cell and aligns its child via flex — so a Fill child
+                // covers the stack while a hug child sits at the Stack.Align anchor.
+                var cell = new RealizedElement("div")
+                {
+                    Style = new HtmlStyle
+                    {
+                        GridArea = "1 / 1",
+                        Display = Core.Display.Flex,
+                        JustifyContent = AlignmentJustify(stack.Align),
+                        AlignItems = AlignmentAlign(stack.Align),
+                        Width = "100%",
+                        Height = "100%",
+                    },
+                };
                 cell.Children.Add(lowered);
                 element.Children.Add(cell);
             }
@@ -122,12 +135,21 @@ public static class WebRealizer
     }
 
     /// <summary>CSS <c>place-items</c> = "&lt;align&gt; &lt;justify&gt;" (vertical then horizontal).</summary>
-    private static string PlaceItems(Alignment align)
+    /// <summary>Horizontal anchor of the 9-point alignment → flex justify-content.</summary>
+    private static JustifyContent AlignmentJustify(Alignment align) => ((int)align % 3) switch
     {
-        var vertical = ((int)align / 3) switch { 1 => "center", 2 => "end", _ => "start" };
-        var horizontal = ((int)align % 3) switch { 1 => "center", 2 => "end", _ => "start" };
-        return $"{vertical} {horizontal}";
-    }
+        1 => JustifyContent.Center,
+        2 => JustifyContent.FlexEnd,
+        _ => JustifyContent.FlexStart,
+    };
+
+    /// <summary>Vertical anchor of the 9-point alignment → flex align-items.</summary>
+    private static AlignItem AlignmentAlign(Alignment align) => ((int)align / 3) switch
+    {
+        1 => AlignItem.Center,
+        2 => AlignItem.FlexEnd,
+        _ => AlignItem.FlexStart,
+    };
 
     /// <summary>
     /// Spec A10 lowering: inline 24×24-viewBox SVG with the registry's single alpha-mask path and
@@ -368,8 +390,22 @@ public static class WebRealizer
         return element;
     }
 
+    /// <summary>Whether a node requests Fill on each axis — wrappers (Pressable's button) must
+    /// stretch for the 100% chain to reach it (the native MeasureWrapper sizes to the child).</summary>
+    private static (bool Width, bool Height) Fills(VisualNode node) => node switch
+    {
+        Box box => (box.Style.Width.Kind == SizeKind.Fill, box.Style.Height.Kind == SizeKind.Fill),
+        FlexNode flex => (flex.Width.Kind == SizeKind.Fill, flex.Height.Kind == SizeKind.Fill),
+        Stack stack => (stack.Width.Kind == SizeKind.Fill, stack.Height.Kind == SizeKind.Fill),
+        Pressable pressable => Fills(pressable.Child),
+        Flexible flexible => Fills(flexible.Child),
+        LoopMotion motion => Fills(motion.Child),
+        _ => (false, false),
+    };
+
     private static HtmlElement LowerPressable(Pressable pressable, ComponentContext context)
     {
+        var fills = Fills(pressable.Child);
         var element = new RealizedElement("button")
         {
             // Neutralize UA button chrome — the child carries ALL visuals (same as native).
@@ -381,6 +417,9 @@ public static class WebRealizer
                 FontFamily = "inherit",
                 Cursor = pressable.Disabled ? null : "pointer",
                 TextAlign = TextAlign.Start,
+                // A Fill child needs the 100% chain to pass through the button (scrim et al.).
+                Width = fills.Width ? "100%" : null,
+                Height = fills.Height ? "100%" : null,
             },
             Disabled = pressable.Disabled ? true : null,
             AriaLabel = pressable.Label,

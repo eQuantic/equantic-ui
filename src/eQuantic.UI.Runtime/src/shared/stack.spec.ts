@@ -10,8 +10,9 @@ describe('Stack (spec A3) client lowering', () => {
     const node = stack.render();
     expect(node.attributes.style).toContain('display: grid');
     expect(node.attributes.style).toContain('position: relative');
-    expect(node.attributes.style).toContain('place-items: center center');
-    expect(node.children[0].attributes.style).toContain('grid-area: 1 / 1');
+    expect(node.children[0].attributes.style).toContain(
+      'display: flex; grid-area: 1 / 1; justify-content: center; align-items: center; width: 100%; height: 100%',
+    );
     // The SAME literal StackRealizerTests pins on the C# side (hydration parity).
     expect(node.children[1].attributes.style).toBe('position: absolute; top: -4px; right: -4px');
   });
