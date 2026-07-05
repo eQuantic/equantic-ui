@@ -5,9 +5,9 @@ namespace eQuantic.UI.Components.Shared;
 /// <summary>
 /// The design system's Banner / Alert (spec B18): an inline status surface that scrolls with the
 /// content it describes — Radius.Lg, the status variant's Subtle pair fill, 12/14 padding, 13dp text
-/// with a bold lead-in instead of a separate title row, ≤ 2 text actions. v1 fences: the status icon
-/// awaits the Icon primitive; the dismiss affordance awaits Icon + the interaction system; the bold
-/// lead-in renders as two Text nodes until rich-text spans exist.
+/// with a bold lead-in instead of a separate title row, ≤ 2 text actions. v1 fences: the dismiss affordance
+/// awaits the interaction system; the bold lead-in renders as two Text nodes until rich-text spans
+/// exist.
 /// </summary>
 public sealed class Banner : StatelessComponent
 {
@@ -29,6 +29,13 @@ public sealed class Banner : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var tint = context.Theme.Colors(Status);
+        var glyph = Status switch
+        {
+            Variant.Success => Icons.CheckCircle,
+            Variant.Warning => Icons.Warning,
+            Variant.Destructive => Icons.Error,
+            _ => Icons.Info,
+        };
 
         var column = new Column(gap: Space.S1);
         column.Add(new Text(Title, TypeRole.Caption, tint.OnSubtle, maxLines: 2)
@@ -50,12 +57,17 @@ public sealed class Banner : StatelessComponent
             column.Add(actions);
         }
 
+        // Spec B18: status icon Md 20 + gap 10, top-aligned with the lead-in.
+        var content = new Row(gap: 10) { Cross = CrossAlign.Start };
+        content.Add(new Icon(glyph, IconSize.Dense, tint.OnSubtle));
+        content.Add(new Flexible(column));
+
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Padding = new EdgeInsets(14, 12, 14, 12),
             Background = tint.Subtle,
             CornerRadius = new CornerRadii(Radius.Lg),
-        }, column);
+        }, content);
     }
 }
