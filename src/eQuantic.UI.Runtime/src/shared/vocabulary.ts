@@ -192,6 +192,27 @@ export class Pressable extends VisualNode {
   }
 }
 
+export class Image extends VisualNode {
+  readonly nodeKind = 'image';
+  source: string;
+  width: number;
+  height: number;
+  fit: string;
+  alt: string;
+  cornerRadius?: CornerRadii;
+
+  constructor(source: string, width: number, height: number, fit = 'cover', alt = '',
+    config?: { cornerRadius?: CornerRadii }) {
+    super();
+    this.source = source;
+    this.width = width;
+    this.height = height;
+    this.fit = fit;
+    this.alt = alt;
+    if (config) Object.assign(this, config);
+  }
+}
+
 export class Icon extends VisualNode {
   readonly nodeKind = 'icon';
   glyph: string;

@@ -60,6 +60,8 @@ public static class LayoutEngine
         // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
         Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx),
         Text text => MeasureText(text, maxW, ctx),
+        // Images are an explicitly sized slot - layout can't infer extent from undecoded sources (A11).
+        Image image => new LayoutNode(image) { Bounds = new Rect(0, 0, image.Width, image.Height) },
         // Icons are a fixed square em-box (§07 whitelist) and ignore Dynamic Type (spec A10).
         Icon icon => new LayoutNode(icon) { Bounds = new Rect(0, 0, icon.Size, icon.Size) },
         Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx),

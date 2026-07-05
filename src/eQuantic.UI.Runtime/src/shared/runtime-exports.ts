@@ -32,6 +32,7 @@ export {
   Stack,
   Positioned,
   Icon,
+  Image,
 } from './vocabulary';
 export {
   ColorToken,

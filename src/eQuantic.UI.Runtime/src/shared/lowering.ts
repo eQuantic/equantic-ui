@@ -22,6 +22,7 @@ import type {
   FlexNodeValue,
   FlexibleNode,
   IconNode,
+  ImageNode,
   PositionedNode,
   PressableNode,
   SizeValueValue,
@@ -110,7 +111,7 @@ const styleOrder = [
   'flex-shrink', 'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height', 'padding',
   'background', 'background-color', 'border', 'border-radius', 'color', 'font-family', 'font-size',
   'font-weight', 'line-height', 'text-align', 'letter-spacing', 'box-shadow', 'opacity', 'cursor',
-  'overflow', 'white-space', 'text-overflow', 'box-sizing',
+  'overflow', 'white-space', 'text-overflow', 'box-sizing', 'object-fit',
 ] as const;
 
 function styleString(entries: StyleEntries): string {
@@ -143,6 +144,8 @@ function lowerNode(
       return lowerFlexible(node as FlexibleNode, context, horizontalAxis);
     case 'spacer':
       return lowerSpacer(node as SpacerNode, horizontalAxis);
+    case 'image':
+      return lowerImage(node as ImageNode);
     case 'icon':
       return lowerIcon(node as IconNode);
     case 'stack':
@@ -168,6 +171,29 @@ function element(tag: string, style: StyleEntries, children: HtmlNode[] = []): H
     attributes: { style: styleString(style) },
     events: {},
     children,
+  };
+}
+
+/** Spec A11 mirror: explicitly sized <img> with object-fit and the rrect clip. */
+function lowerImage(node: ImageNode): HtmlNode {
+  const fit = node.fit === 'contain' ? 'contain' : node.fit === 'stretch' ? 'fill' : 'cover';
+  const radius = node.cornerRadius;
+  const hasRadius = !!radius
+    && (radius.topLeft > 0 || radius.topRight > 0 || radius.bottomRight > 0 || radius.bottomLeft > 0);
+  return {
+    tag: 'img',
+    attributes: {
+      style: styleString({
+        width: px(node.width),
+        height: px(node.height),
+        'border-radius': hasRadius && radius ? radiusValue(radius) : undefined,
+        'object-fit': fit,
+      }),
+      src: node.source,
+      alt: node.alt ?? '',
+    },
+    events: {},
+    children: [],
   };
 }
 

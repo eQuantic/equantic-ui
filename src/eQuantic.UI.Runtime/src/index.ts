@@ -93,6 +93,7 @@ export {
   Stack,
   Positioned,
   Icon,
+  Image,
 } from './shared/vocabulary';
 export {
   ColorToken,
