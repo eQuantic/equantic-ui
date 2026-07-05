@@ -25,6 +25,11 @@ public readonly record struct DrawCommand
     public Paint Paint { get; init; }
     public float StrokeWidth { get; init; }
     public Matrix2D Transform { get; init; }
+
+    /// <summary>DEVICE-space rounded-rect clip baked by the builder (like the transform), or null =
+    /// unclipped. Rasterizers multiply pixel coverage by the clip's SDF coverage — anti-aliased clip
+    /// edges by construction.</summary>
+    public RRect? Clip { get; init; }
 }
 
 /// <summary>
@@ -49,7 +54,9 @@ public sealed class DisplayListBuilder
 {
     private readonly List<DrawCommand> _commands = new();
     private readonly Stack<Matrix2D> _stack = new();
+    private readonly Stack<RRect?> _clipStack = new();
     private Matrix2D _current = Matrix2D.Identity;
+    private RRect? _clip;
 
     public void Clear(Color color) =>
         _commands.Add(new DrawCommand { Kind = DrawCommandKind.Clear, Paint = Paint.Solid(color) });
@@ -62,6 +69,7 @@ public sealed class DisplayListBuilder
         Shape = shape.Normalized(),
         Paint = paint,
         Transform = _current,
+        Clip = _clip,
     });
 
     public void StrokeRRect(in RRect shape, float strokeWidth, in Paint paint)
@@ -74,6 +82,7 @@ public sealed class DisplayListBuilder
             Paint = paint,
             StrokeWidth = strokeWidth,
             Transform = _current,
+            Clip = _clip,
         });
     }
 
@@ -86,10 +95,37 @@ public sealed class DisplayListBuilder
 
     public void Pop() => _current = _stack.Pop();
 
+    /// <summary>
+    /// Pushes a rounded-rect clip, given in the CURRENT transform's local space and baked to device
+    /// space (v1 fence: the baked rect is the transform's AABB of the shape — exact under
+    /// translation/scale, approximate under rotation). Nested clips intersect their RECTS (AABB) and
+    /// keep the INNERMOST radii — exact for the dominant case (nested scroll viewports); fully
+    /// general rrect∩rrect joins with a real clip-stack primitive if ever needed.
+    /// </summary>
+    public void PushClip(in RRect shape)
+    {
+        _clipStack.Push(_clip);
+        var normalized = shape.Normalized();
+        var deviceRect = _current.TransformBounds(normalized.Rect);
+        var scale = _current.AverageScale();
+        var radii = new CornerRadii(
+            normalized.Radii.TopLeft * scale, normalized.Radii.TopRight * scale,
+            normalized.Radii.BottomRight * scale, normalized.Radii.BottomLeft * scale);
+        var device = new RRect(deviceRect, radii).Normalized();
+
+        _clip = _clip is { } outer
+            ? new RRect(outer.Rect.Intersect(device.Rect), device.Radii).Normalized()
+            : device;
+    }
+
+    public void PopClip() => _clip = _clipStack.Pop();
+
     public DisplayList Build()
     {
         if (_stack.Count != 0)
             throw new InvalidOperationException($"Unbalanced transform stack: {_stack.Count} unpopped PushTransform call(s).");
+        if (_clipStack.Count != 0)
+            throw new InvalidOperationException($"Unbalanced clip stack: {_clipStack.Count} unpopped PushClip call(s).");
         return new DisplayList(_commands.ToArray());
     }
 }

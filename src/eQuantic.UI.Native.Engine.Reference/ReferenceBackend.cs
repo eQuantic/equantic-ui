@@ -46,6 +46,8 @@ public sealed class ReferenceBackend : IRenderBackend
         // Device-space AABB of the (transformed) shape, padded for the AA ramp and stroke band.
         var pad = 1f + (command.Kind == DrawCommandKind.StrokeRRect ? command.StrokeWidth / 2 : 0);
         var bounds = transform.TransformBounds(shape.Rect.Inflate(pad));
+        if (command.Clip is { } clipBounds) bounds = bounds.Intersect(clipBounds.Rect.Inflate(1));
+        if (bounds.IsEmpty) return;
         var x0 = Math.Max(0, (int)MathF.Floor(bounds.Left));
         var y0 = Math.Max(0, (int)MathF.Floor(bounds.Top));
         var x1 = Math.Min(target.Width, (int)MathF.Ceiling(bounds.Right));
@@ -73,6 +75,18 @@ public sealed class ReferenceBackend : IRenderBackend
 
                 var coverage = Sdf.Coverage(d * scale);
                 if (coverage <= 0) continue;
+
+                // Clip: multiply by the clip rrect's own coverage (device space, scale 1) — the clip
+                // edge anti-aliases exactly like a shape edge.
+                if (command.Clip is { } clip)
+                {
+                    var clipDistance = Sdf.RoundedRect(
+                        device - clip.Rect.Center,
+                        new Size(clip.Rect.Width / 2, clip.Rect.Height / 2),
+                        clip.Radii);
+                    coverage *= Sdf.Coverage(clipDistance);
+                    if (coverage <= 0) continue;
+                }
 
                 var srgb = command.Paint.ColorAt(local);
                 target.BlendOver(px, py, ColorSpace.ToPremultipliedLinear(srgb, coverage));

@@ -22,7 +22,9 @@ struct DrawUniforms {
     float4 colorA;    // sRGB 0..1 straight alpha (solid / gradient start)
     float4 colorB;    // sRGB 0..1 straight alpha (gradient end)
     float4 gradient;  // start.x, start.y, end.x, end.y (LOCAL space)
-    float4 flags;     // x: 0 fill | 1 stroke · y: 0 solid | 1 linear gradient
+    float4 flags;     // x: 0 fill | 1 stroke · y: 0 solid | 1 linear gradient · z: 1 = clipped
+    float4 clipRect;  // DEVICE-space clip: center.x, center.y, halfSize.w, halfSize.h
+    float4 clipRadii; // tl, tr, br, bl
 };
 
 vertex float4 fullscreen_vertex(uint vid [[vertex_id]]) {
@@ -63,6 +65,14 @@ fragment float4 sdf_fragment(float4 position [[position]],
 
     float coverage = clamp(0.5 - d * u.inv0.w, 0.0, 1.0);  // Sdf.Coverage, device-scaled
     if (coverage <= 0.0) discard_fragment();
+
+    // Baked clip: multiply by the clip rrect's coverage in DEVICE space (scale 1) — the exact
+    // Reference math, so clip edges anti-alias identically on both rasterizers.
+    if (u.flags.z > 0.5) {
+        float cd = sd_rounded_rect(pixel - u.clipRect.xy, u.clipRect.zw, u.clipRadii);
+        coverage *= clamp(0.5 - cd, 0.0, 1.0);
+        if (coverage <= 0.0) discard_fragment();
+    }
 
     // Paint.ColorAt — gradients interpolate per-channel in sRGB space (the CSS/Skia look).
     float4 srgb = u.colorA;

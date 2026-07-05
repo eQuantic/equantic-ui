@@ -154,7 +154,12 @@ public sealed class MetalBackend : IRenderBackend
         uniforms.Flags = new Float4(
             command.Kind == DrawCommandKind.StrokeRRect ? 1 : 0,
             paint.Kind == PaintKind.LinearGradient ? 1 : 0,
-            0, 0);
+            command.Clip is null ? 0 : 1, 0);
+        if (command.Clip is { } clip)
+        {
+            uniforms.ClipRect = new Float4(clip.Rect.Center.X, clip.Rect.Center.Y, clip.Rect.Width / 2, clip.Rect.Height / 2);
+            uniforms.ClipRadii = new Float4(clip.Radii.TopLeft, clip.Radii.TopRight, clip.Radii.BottomRight, clip.Radii.BottomLeft);
+        }
         return true;
     }
 
@@ -188,7 +193,7 @@ internal struct Float4
     }
 }
 
-/// <summary>Matches the MSL <c>DrawUniforms</c> layout (eight float4s, 128 bytes).</summary>
+/// <summary>Matches the MSL <c>DrawUniforms</c> layout (ten float4s, 160 bytes).</summary>
 [StructLayout(LayoutKind.Sequential)]
 internal struct DrawUniforms
 {
@@ -200,4 +205,6 @@ internal struct DrawUniforms
     public Float4 ColorB;
     public Float4 Gradient;
     public Float4 Flags;
+    public Float4 ClipRect;
+    public Float4 ClipRadii;
 }
