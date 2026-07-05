@@ -195,8 +195,20 @@ rejected.)
    resolving to the spec values (`#5ca2e8` Primary dark, 40dp Medium row). State is HOISTED to the
    page (v1: nested component instances rebuild per pass; positional state retention arrives with
    the reconciler slice).
-   Remaining on this front: shared stateful pages as SSR entry points (server render of the
-   Primitives shape), positional state retention (reconciler slice), and the eventual merge of
+   Unification slice 3 ✅ (2026-07-05): WRITE-ONCE PAGES. A Primitives `StatefulComponent` with
+   `[Page]` is a full page with no Core wrapper: the server's SSR scan accepts `UiComponent` types
+   and bridges them through `VisualNodeComponent`/WebRealizer (the Server package now references the
+   Web realizer — the natural dependency); the client mounts the transpiled class directly
+   (`SharedStatefulComponent.mount/hydrate`, already in place since 2C). Metadata unwraps to the real
+   page instance (`IHandleMetadata` through the bridge). v1 fence: initial state = field defaults (no
+   server-driven state serialization for the shared shape). Also fixed: runtime-provided names no
+   longer seed the per-app dependency resolver (a vocabulary `Row` pulled the WEB Row's `Flex` chain
+   into pages that never used it). **Live proof:** `DefaultUIDashboard` `/counter-shared` —
+   `data-ssr="true"` with `Count: 0` in the raw server HTML, hydrated, clicks re-render to
+   `Count: 2`; the page class is verbatim PhotonHost-compatible. SSR covered by
+   `WriteOncePageSsrTests` (scan + bridge + token output).
+   Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
+   without hoisting), server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
 5. Layout conformance harness lands with step 2 and gates every layout feature after it.

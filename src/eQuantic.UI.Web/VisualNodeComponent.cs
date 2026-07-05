@@ -15,16 +15,19 @@ namespace eQuantic.UI.Web;
 [RuntimeProvided]
 public sealed class VisualNodeComponent : HtmlElement
 {
-    private readonly VisualNode _node;
     private readonly IAppTheme _theme;
     private readonly float _typeScale;
 
     public VisualNodeComponent(VisualNode node, IAppTheme? theme = null, float typeScale = 1f)
     {
-        _node = node;
+        Node = node;
         _theme = theme ?? PhotonTheme.Instance;
         _typeScale = typeScale;
     }
 
-    public override HtmlNode Render() => WebRealizer.Lower(_node, _theme, _typeScale).Render();
+    /// <summary>The wrapped abstract subtree — hosts unwrap it (e.g. the SSR pipeline probing the
+    /// actual page instance for <c>IHandleMetadata</c>).</summary>
+    public VisualNode Node { get; }
+
+    public override HtmlNode Render() => WebRealizer.Lower(Node, _theme, _typeScale).Render();
 }
