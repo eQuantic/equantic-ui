@@ -252,7 +252,7 @@ public class ServerRenderingService : IServerRenderingService
             }
             if (component is Primitives.UiComponent visualFromDi)
             {
-                return new Web.VisualNodeComponent(visualFromDi);
+                return new Web.VisualNodeComponent(visualFromDi, _options.Theme);
             }
         }
         catch
@@ -273,7 +273,7 @@ public class ServerRenderingService : IServerRenderingService
         // hydrates directly (v1 fence: no server-driven initial state — field defaults render).
         if (instance is Primitives.UiComponent visual)
         {
-            return new Web.VisualNodeComponent(visual);
+            return new Web.VisualNodeComponent(visual, _options.Theme);
         }
 
         throw new InvalidOperationException($"Cannot create instance of component type: {componentType.Name}");

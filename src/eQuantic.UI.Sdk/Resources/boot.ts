@@ -9,9 +9,12 @@ import {
   Router,
   matchRoute,
   setCurrentRouteFrom,
+  setPhotonTheme,
+  materializeTheme,
   type EqConfig,
   type HtmlNode,
   type NavigationGuard,
+  type ThemeData,
 } from '../../eQuantic.UI.Runtime/src/index';
 
 // --- Constants ---
@@ -84,7 +87,19 @@ export async function boot(): Promise<void> {
       return;
     }
 
-    // Register theme before hydration (if available)
+    // Apply the app-selected theme (SSR→client bridge) BEFORE hydration, so client renders and
+    // subsequent setState re-renders resolve the same colors/shape the server baked into the markup.
+    // The server emits window.__EQ_THEME__ = ThemeBridge.SerializeJson(options.Theme); absent it, the
+    // runtime keeps its default photonTheme.
+    const themeData = (window as unknown as { __EQ_THEME__?: ThemeData }).__EQ_THEME__;
+    if (themeData) {
+      if (isDev()) {
+        console.log('[eQuantic.UI] Applying app theme from __EQ_THEME__');
+      }
+      setPhotonTheme(materializeTheme(themeData));
+    }
+
+    // Register theme before hydration (if available) — legacy Core.Theme provider hook.
     if (typeof (window as any).__registerTheme === 'function') {
       if (isDev()) {
         console.log('[eQuantic.UI] Registering theme...');

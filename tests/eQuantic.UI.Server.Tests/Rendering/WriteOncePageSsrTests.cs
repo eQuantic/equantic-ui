@@ -35,10 +35,11 @@ public class WriteOncePageSsrTests
         }
     }
 
-    private static ServerRenderingService CreateService()
+    private static ServerRenderingService CreateService(IAppTheme? theme = null)
     {
         var options = new UIOptions();
         options.ScanAssembly(typeof(WriteOncePageSsrTests).Assembly);
+        if (theme != null) options.UseTheme(theme);
         return new ServerRenderingService(
             new ServiceCollection().BuildServiceProvider(),
             options,
@@ -72,5 +73,24 @@ public class WriteOncePageSsrTests
 
         html.Should().Contain("eq-type-caption");
         html.Should().Contain("hello");
+    }
+
+    [Fact]
+    public async Task RenderPageAsync_HonorsTheAppSelectedTheme_LoweringTheSamePageWithMaterialTokens()
+    {
+        // options.UseTheme(Material) → the SSR pipeline lowers the SAME write-once page with Material's
+        // tokens: the M3 baseline Surface (#f7f2fa / #1d1b20), NOT Photon's (#ffffff / #14181e). This is
+        // the server half of the bridge — the client half applies the matching __EQ_THEME__ at boot.
+        var service = CreateService(Material.MaterialTheme.Instance);
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().BuildServiceProvider(),
+        };
+
+        var result = await service.RenderPageAsync(nameof(WriteOnceTestPage), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("light-dark(#f7f2fa, #1d1b20)", "Material's M3 Surface token");
+        result.Html.Should().NotContain("light-dark(#ffffff, #14181e)", "the Photon Surface must be gone");
     }
 }
