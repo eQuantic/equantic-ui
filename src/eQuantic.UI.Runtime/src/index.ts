@@ -133,6 +133,9 @@ export { ListItem } from './shared/components/ListItem';
 export { List } from './shared/components/List';
 export { Tabs } from './shared/components/Tabs';
 export { EmptyState } from './shared/components/EmptyState';
+export { AppBar } from './shared/components/AppBar';
+export { BottomNavigation } from './shared/components/BottomNavigation';
+export { NavItem } from './shared/components/NavItem';
 export { Skeleton } from './shared/components/Skeleton';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).
 export {

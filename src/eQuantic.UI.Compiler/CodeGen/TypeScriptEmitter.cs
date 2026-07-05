@@ -515,6 +515,11 @@ public class TypeScriptEmitter
             if (cleanType == component.Name)
                 continue;
 
+            // Exception types lower to `new Error(...)` (ObjectCreationStrategy) — the type name never
+            // survives into emitted code, so importing it would reference a module that doesn't exist.
+            if (cleanType.EndsWith("Exception"))
+                continue;
+
             // Types the runtime provides (the shared vocabulary — discovered semantically by the parser,
             // see ComponentDefinition.RuntimeProvidedTypes) import from @equantic/runtime, never ./<Type>.
             if (component.RuntimeProvidedTypes.Contains(cleanType))

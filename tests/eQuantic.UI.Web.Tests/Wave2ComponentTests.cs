@@ -110,6 +110,46 @@ public class Wave2ComponentTests
     }
 
     [Fact]
+    public void AppBar_TitleActionsAndLimits()
+    {
+        var node = Render(new AppBar("Portfolio")
+        {
+            Actions = [new IconButton(Icons.Search, "Search"), new IconButton(Icons.Mail, "Mail")],
+        });
+        node.Attributes["style"].Should().Contain("height: 56px");
+        node.Attributes["style"].Should().Contain("padding: 0 4px 0 4px");
+
+        var overflow = () => Render(new AppBar("X")
+        {
+            Actions =
+            [
+                new IconButton(Icons.Search, "1"), new IconButton(Icons.Mail, "2"),
+                new IconButton(Icons.Close, "3"), new IconButton(Icons.Info, "4"),
+            ],
+        });
+        overflow.Should().Throw<ArgumentException>("max 3 actions per spec B3");
+    }
+
+    [Fact]
+    public void BottomNavigation_ActivePill_AndDestinationLimits()
+    {
+        var node = Render(new BottomNavigation(
+        [
+            new NavItem(Icons.Person, "Home"),
+            new NavItem(Icons.Mail, "Cards") { BadgeCount = 2 },
+            new NavItem(Icons.Search, "Search"),
+        ], selected: 0, _ => { }));
+
+        node.Attributes["style"].Should().Contain("height: 56px");
+        node.Attributes["style"].Should().Contain($"background-color: {TokenCss.Value(Theme.Surface)}");
+        var activeColumn = node.Children[0].Children[0].Children[0];
+        activeColumn.Tag.Should().Be("button", "the whole column is the target");
+
+        var tooFew = () => Render(new BottomNavigation([new NavItem(Icons.Person, "A"), new NavItem(Icons.Mail, "B")], 0));
+        tooFew.Should().Throw<ArgumentException>("2 destinations → Tabs per spec B4");
+    }
+
+    [Fact]
     public void ClosedFences_AvatarImage_And_BannerDismiss()
     {
         var avatar = Render(new Avatar("AB", SizeVariant.Large, name: "Ana") { ImageSource = "/ana.jpg" });
