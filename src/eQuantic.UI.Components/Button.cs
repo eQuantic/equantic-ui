@@ -39,7 +39,9 @@ public sealed class Button : StatelessComponent
     {
         var theme = context.Theme;
         var colors = theme.Colors(Variant);
-        var (height, padX, gap, labelSize, _, radius, _) = ButtonStyles.Metrics(Size);
+        var (height, padX, gap, labelSize, _, _, _) = ButtonStyles.Metrics(Size);
+        // Shape is theme-driven (Material overrides the ladder): XLarge rides Large, the rest Medium.
+        var radius = theme.Shape(Size == SizeVariant.XLarge ? ShapeScale.Large : ShapeScale.Medium);
 
         // Link is an inline-text control: no fill ever, minimal padding (spec A12).
         if (Variant == Variant.Link) padX = 6;

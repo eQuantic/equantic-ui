@@ -99,7 +99,7 @@ public sealed class TextInput : StatefulComponent
             Width = SizeValue.Fill,
             Height = height,
             Background = Disabled ? theme.SurfaceSubtle : theme.Surface,
-            CornerRadius = new CornerRadii(Radius.Md),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
             BorderWidth = borderWidth,
             BorderColor = borderColor,
             Padding = EdgeInsets.Symmetric(paddingX, 0),

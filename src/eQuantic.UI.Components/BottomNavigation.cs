@@ -63,7 +63,7 @@ public sealed class BottomNavigation : StatelessComponent
                 Width = 56,
                 Height = 26,
                 Background = isActive ? primary.Subtle : null,
-                CornerRadius = new CornerRadii(Radius.Full),
+                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             }, pillContent);
 
             var column = new Column(gap: 2)

@@ -51,7 +51,7 @@ public sealed class Card : StatelessComponent
             Width = Width,
             Padding = Padding,
             Background = background,
-            CornerRadius = new CornerRadii(Radius.Lg),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Large)),
             BorderWidth = borderWidth,
             BorderColor = borderColor,
             Elevation = Kind == CardKind.Elevated ? 1 : 0,

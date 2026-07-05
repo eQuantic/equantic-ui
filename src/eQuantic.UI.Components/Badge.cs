@@ -47,7 +47,7 @@ public sealed class Badge : StatelessComponent
                 Width = Ring ? 12 : 8,
                 Height = Ring ? 12 : 8,
                 Background = fill,
-                CornerRadius = new CornerRadii(Radius.Full),
+                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
                 BorderWidth = Ring ? 2f : 0f,
                 BorderColor = theme.Surface,
             });
@@ -68,7 +68,7 @@ public sealed class Badge : StatelessComponent
             MinWidth = Ring ? 20 : 16,
             Padding = EdgeInsets.Symmetric(Space.S1, 0),
             Background = fill,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             BorderWidth = Ring ? 2f : 0f,
             BorderColor = theme.Surface,
         }, content);

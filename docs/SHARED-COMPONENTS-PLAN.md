@@ -435,6 +435,24 @@ rejected.)
    hydration validation; all four guards widened to `Element`. Proven end to end: compiler inline
    unit tests, the SDK feeding 230 Lucide sources, inlined glyphs through the Bun bundle, SSR, and
    a vitest client re-render swapping the DOM `<path d>` + fill on setState.
+   THEMING = IAppTheme; MATERIAL 3 write-once ✅ (2026-07-05, slice 1): the sustainable customization
+   mechanism is that theming IS providing an `IAppTheme` — the SAME act whether you use Material or
+   brand your own; the realizers already consume it generically. Reformulated `Primitives.IAppTheme`
+   (additive): `Variant.Tertiary` (M3's tertiary role; Photon tones it from Info) and a
+   `Shape(ShapeScale)` accessor so CORNER SHAPE is theme-driven — radii moved OUT of the static
+   `Radius` class INTO the theme; every write-once component (and the Button size table's shape) now
+   reads `context.Theme.Shape(scale)`, both realizers + the web CSS gen + the TS design-system gen
+   source radii from the theme, and eqc transpiles `theme.shape('medium')` cleanly. Photon returns
+   its own ladder (values IDENTICAL → zero golden churn, proving the refactor transparent). New
+   `eQuantic.UI.Material` package (Primitives ONLY, target-neutral) = `MaterialTheme : IAppTheme`
+   with the fixed M3 BASELINE (seed #6750A4): M3 color roles → VariantColors, M3 type scale →
+   TypeRole, M3 shape scale → ShapeScale, M3 elevation. The entire legacy Material (Core.Theme CSS
+   classes, `M3.cs`, per-component CSS themes, MaterialDashboard sample) was DELETED — it dies with
+   Web.Components. Proven: the same shared components render M3 on the web realizer (primary #6750A4,
+   containers, 12/16/28 shape — cross-pinned) AND as native Photon pixels (Material gallery goldens,
+   light+dark — unmistakably M3, swap-the-theme only). Fences (later slices): dynamic color from a
+   seed (HCT tonal palettes) and the app-wide theme-selection wiring (SSR bridge + client boot + the
+   per-app theme-TS delivery so an app SELECTS Material for hydration).
    Animation slice 2 ✅ (2026-07-05, spec A1/B16 — GRADIENT + SHIMMER): `BoxStyle.Gradient` exposes
    the engine fence's exact gradient primitive — `LinearGradient(From, To, Direction)`, two TOKEN
    stops on a straight axis (ToRight/ToBottom), drawing OVER the solid background (CSS

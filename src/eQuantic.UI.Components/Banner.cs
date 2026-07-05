@@ -77,7 +77,7 @@ public sealed class Banner : StatelessComponent
             Width = SizeValue.Fill,
             Padding = new EdgeInsets(14, 12, 14, 12),
             Background = tint.Subtle,
-            CornerRadius = new CornerRadii(Radius.Lg),
+            CornerRadius = new CornerRadii(context.Theme.Shape(ShapeScale.Large)),
         }, content);
     }
 }

@@ -75,6 +75,9 @@ public sealed class PhotonTheme : IAppTheme
         Subtle: Token(0xE4F3F8, 0x0A2A32),
         OnSubtle: Token(0x0A5468, 0x9FDCEB));
 
+    // Tertiary — Photon has no distinct tertiary palette; it reuses Info (the contrasting accent).
+    private static readonly VariantColors TertiaryColors = InfoColors;
+
     public VariantColors Colors(Variant variant)
     {
         var transparent = new ColorToken(Color.Transparent);
@@ -86,6 +89,7 @@ public sealed class PhotonTheme : IAppTheme
             Variant.Success => SuccessColors,
             Variant.Warning => WarningColors,
             Variant.Info => InfoColors,
+            Variant.Tertiary => TertiaryColors,
             // Derived (§01): transparent fill + Text tokens; pressed fill = SurfaceSubtle.
             Variant.Outline or Variant.Ghost => new VariantColors(
                 Base: transparent,
@@ -128,6 +132,18 @@ public sealed class PhotonTheme : IAppTheme
         3 => new ShadowSpec(6, 16, -2, Shadow(0.16f, 0.52f)),
         4 => new ShadowSpec(12, 28, -4, Shadow(0.20f, 0.56f)),
         _ => new ShadowSpec(20, 44, -6, Shadow(0.26f, 0.62f)),
+    };
+
+    // ---- Shape (§04) — Photon's radius ladder, now theme-sourced -------------------------------
+    public float Shape(ShapeScale scale) => scale switch
+    {
+        ShapeScale.None => 0,
+        ShapeScale.ExtraSmall => Radius.Xs,
+        ShapeScale.Small => Radius.Sm,
+        ShapeScale.Medium => Radius.Md,
+        ShapeScale.Large => Radius.Lg,
+        ShapeScale.ExtraLarge => Radius.Xl,
+        _ => Radius.Full,
     };
 
     private static ColorToken Shadow(float lightAlpha, float darkAlpha) => new(

@@ -34,7 +34,7 @@ public sealed class EmptyState : StatelessComponent
             Width = 64,
             Height = 64,
             Background = theme.SurfaceSubtle,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
         }, wellContent);
 
         var column = new Column(gap: 0)
@@ -111,9 +111,9 @@ public sealed class Skeleton : StatelessComponent
         };
         var radius = Shape switch
         {
-            SkeletonShape.Line => Radius.Full,
-            SkeletonShape.Circle => Radius.Full,
-            _ => Radius.Md,
+            SkeletonShape.Line => theme.Shape(ShapeScale.Full),
+            SkeletonShape.Circle => theme.Shape(ShapeScale.Full),
+            _ => theme.Shape(ShapeScale.Medium),
         };
 
         // The glint: two mirrored 2-stop gradients make the symmetric highlight band inside the

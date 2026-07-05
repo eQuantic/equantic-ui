@@ -1,30 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <IncludeBuildOutput>true</IncludeBuildOutput>
-        <IsPackable>true</IsPackable>
-        <PackageId>eQuantic.UI.Material</PackageId>
-        <Description>Material Design 3 integration for eQuantic.UI.</Description>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <PackageId>eQuantic.UI.Material</PackageId>
+    <Description>Material Design 3 theme for eQuantic.UI — a write-once IAppTheme (M3 baseline color, type scale, shape scale, elevation) that themes the shared components on BOTH web and native. Target-neutral: references eQuantic.UI.Primitives only.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
-        <ProjectReference Include="..\eQuantic.UI.Compiler\eQuantic.UI.Compiler.csproj" />
-        <ProjectReference Include="..\eQuantic.UI.Web.Components\eQuantic.UI.Web.Components.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Content Include="Build\eQuantic.UI.Material.targets" PackagePath="build" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <EmbeddedResource Include="Scripts\*.js" />
-        <EmbeddedResource Include="Styles\**\*.css" />
-    </ItemGroup>
+  <ItemGroup>
+    <!-- Primitives ONLY: a theme is target-neutral token data, exactly like a component. -->
+    <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+  </ItemGroup>
 
 </Project>

@@ -64,7 +64,7 @@ public sealed class ProgressBar : StatefulComponent
                 Width = SizeValue.Fill,
                 Height = height,
                 Background = theme.SurfaceSubtle,
-                CornerRadius = new CornerRadii(Radius.Full),
+                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             };
             if (filledWeight > 0)
             {
@@ -72,7 +72,7 @@ public sealed class ProgressBar : StatefulComponent
                 {
                     Height = height,
                     Background = theme.Colors(Variant).Base,
-                    CornerRadius = new CornerRadii(Radius.Full),
+                    CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
                 }), filledWeight)
                 {
                     AnimateChanges = animate,
@@ -92,7 +92,7 @@ public sealed class ProgressBar : StatefulComponent
         {
             Height = height,
             Background = theme.Colors(Variant).Base,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
         }), 300));
         segment.Add(new Spacer(700));
 
@@ -101,7 +101,7 @@ public sealed class ProgressBar : StatefulComponent
             Width = SizeValue.Fill,
             Height = height,
             Background = theme.SurfaceSubtle,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             Clip = true,
         }, new LoopMotion(segment, LoopEffect.SlideX, SweepFromX, SweepToX, SweepDurationMs));
     }

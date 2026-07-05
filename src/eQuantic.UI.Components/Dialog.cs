@@ -79,7 +79,7 @@ public sealed class Dialog : StatelessComponent
             Width = SizeValue.Fill,
             MaxWidth = 480,
             Background = theme.Surface,
-            CornerRadius = new CornerRadii(Radius.Xl),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.ExtraLarge)),
             Elevation = 5,
             Padding = EdgeInsets.All(Space.S5),
         }, body);
