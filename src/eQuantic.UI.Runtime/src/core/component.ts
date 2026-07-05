@@ -7,6 +7,7 @@ import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
 import { getCurrentRoute } from '../router/current-route';
+import { ComponentInstanceStore, enterPass, exitPass } from '../shared/instance-store';
 import { getPhotonTheme } from '../shared/photon-context';
 
 /**
@@ -14,6 +15,7 @@ import { getPhotonTheme } from '../shared/photon-context';
  */
 export abstract class StatelessComponent extends Component {
   private _renderManager: RenderManager = new RenderManager();
+  private _instances = new ComponentInstanceStore();
 
   protected get serviceProvider(): ServiceProvider {
     return getRootServiceProvider();
@@ -29,8 +31,15 @@ export abstract class StatelessComponent extends Component {
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
     };
-    const component = this.build(context);
-    return component.render();
+    // Reconciler pass fence (W6 slice 2): a stateless page cannot re-render, so nested shared
+    // stateful get no invalidator — their state persists but repaints only with the next render.
+    enterPass(this._instances, null);
+    try {
+      const component = this.build(context);
+      return component.render();
+    } finally {
+      exitPass();
+    }
   }
 
   mount(container: HTMLElement): void {
@@ -83,6 +92,7 @@ export abstract class StatelessComponent extends Component {
  * Base class for stateful components
  */
 export abstract class StatefulComponent extends Component {
+  private _instances = new ComponentInstanceStore();
   private _state: ComponentState | null = null;
   private _mounted = false;
   private _renderScheduled = false;
@@ -156,8 +166,16 @@ export abstract class StatefulComponent extends Component {
     };
     this.state._context = context;
 
-    const component = this.state.build(context);
-    return component.render();
+    // Reconciler pass (W6 slice 2): everything lowered during this page render — including
+    // VisualNodeComponent bridges — reconciles against this page's one retention pass; nested
+    // shared stateful retained inside it invalidate by re-rendering THIS page.
+    enterPass(this._instances, () => this._scheduleRender());
+    try {
+      const component = this.state.build(context);
+      return component.render();
+    } finally {
+      exitPass();
+    }
   }
 
   mount(container: HTMLElement): void {
@@ -266,6 +284,27 @@ export abstract class SharedStatefulComponent extends Component {
   private _renderManager: RenderManager = new RenderManager();
   private _mounted = false;
   private _renderScheduled = false;
+  private _instances = new ComponentInstanceStore();
+
+  /**
+   * The shared-vocabulary discriminator: nested inside an abstract tree this IS a component node —
+   * the lowering expands it through the positional store (retention) instead of the legacy mixing
+   * seam (an embedded self-render with a dead render manager). As a page ROOT the field is inert.
+   */
+  readonly nodeKind = 'component';
+
+  /** The C# `VisualNode.Key` mirror — part of the reconciler identity (path + type + key). */
+  key: string | null = null;
+
+  /** Duck-type marker the instance store keys on (avoids an import cycle with shared/). */
+  readonly _sharedStateful = true;
+
+  /**
+   * Set by the instance store when this instance is retained NESTED inside a host page (W6 slice 2):
+   * setState then re-renders the HOST (which reconciles back onto this same retained instance)
+   * instead of this component's own — never mounted — render manager.
+   */
+  _invalidationHook: (() => void) | null = null;
 
   protected get serviceProvider(): ServiceProvider {
     return getRootServiceProvider();
@@ -287,7 +326,15 @@ export abstract class SharedStatefulComponent extends Component {
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
     };
-    return this.build(context).render();
+    // Reconciler pass (W6 slice 2): as a page root this component persists by itself; its store
+    // retains the nested shared stateful its build creates. When hosted inside another page's
+    // render this JOINS the outer pass instead (the host page owns retention).
+    enterPass(this._instances, () => this._scheduleRender());
+    try {
+      return this.build(context).render();
+    } finally {
+      exitPass();
+    }
   }
 
   mount(container: HTMLElement): void {
@@ -323,6 +370,12 @@ export abstract class SharedStatefulComponent extends Component {
   }
 
   _scheduleRender(): void {
+    // Retained-nested path: bubble the invalidation to the host page; the host's re-render
+    // reconciles this position back onto this same instance (state intact, config re-adopted).
+    if (this._invalidationHook) {
+      this._invalidationHook();
+      return;
+    }
     if (this._renderScheduled) return;
     this._renderScheduled = true;
     requestAnimationFrame(() => {

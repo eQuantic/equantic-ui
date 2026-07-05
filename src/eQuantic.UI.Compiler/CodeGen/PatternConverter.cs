@@ -34,7 +34,7 @@ public static class PatternConverter
                 return $"{access} {relational.OperatorToken.Text} {context.Converter.ConvertExpression(relational.Expression)}";
 
             case DeclarationPatternSyntax declaration:
-                return TypeCheck(declaration.Type.ToString(), access);
+                return TypeCheck(declaration.Type, access, context);
 
             case RecursivePatternSyntax recursive:
                 return BuildRecursive(recursive, access, context, accessType);
@@ -192,13 +192,43 @@ public static class PatternConverter
     private static string PositionalAccess(string access, int i, IReadOnlyList<string>? names)
         => names != null && i < names.Count ? $"{access}.{names[i]}" : $"{access}[{i}]";
 
-    private static string TypeCheck(string type, string access) => type switch
+    private static string TypeCheck(TypeSyntax typeSyntax, string access, ConversionContext context)
     {
-        "string" => $"typeof {access} === 'string'",
-        "int" or "double" or "float" or "long" or "decimal" or "number" => $"typeof {access} === 'number'",
-        "bool" or "boolean" => $"typeof {access} === 'boolean'",
-        _ => $"{access} != null",
-    };
+        switch (typeSyntax.ToString())
+        {
+            case "string": return $"typeof {access} === 'string'";
+            case "int" or "double" or "float" or "long" or "decimal" or "number":
+                return $"typeof {access} === 'number'";
+            case "bool" or "boolean": return $"typeof {access} === 'boolean'";
+        }
+
+        // A class that lowers to a REAL JS class supports `instanceof` — today that is the component
+        // model (`UiComponent`-derived: shared components and pages), which the reconciler's
+        // `AdoptConfig(UiComponent next)` pattern-matches on. Everything else keeps the null-check:
+        // enums lower to string literals, value types to plain config objects, exceptions to Error.
+        if (context.SemanticModel?.GetSymbolInfo(typeSyntax).Symbol is INamedTypeSymbol
+            {
+                TypeKind: TypeKind.Class
+            } named && DerivesFromUiComponent(named))
+        {
+            return $"{access} instanceof {named.Name}";
+        }
+
+        return $"{access} != null";
+    }
+
+    private static bool DerivesFromUiComponent(INamedTypeSymbol type)
+    {
+        for (var baseType = type.BaseType; baseType != null; baseType = baseType.BaseType)
+        {
+            if (baseType.Name == "UiComponent"
+                && baseType.ContainingNamespace?.ToDisplayString() == "eQuantic.UI.Primitives")
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private static string Camel(string name) =>
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);

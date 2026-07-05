@@ -53,7 +53,14 @@ public static class RuntimeProvidedTypeScanner
             // Interfaces exist only in the C# type system — they produce no JS value to import.
             if (type.TypeKind == TypeKind.Interface) continue;
 
-            if (ComponentModelBaseNames.Contains(type.Name)) continue;
+            if (ComponentModelBaseNames.Contains(type.Name))
+            {
+                // Only the BASE-LIST position is emitter-owned (the authoring bases are swapped at
+                // emission). `UiComponent` legitimately surfaces in member signatures — the
+                // reconciler's `AdoptConfig(UiComponent next)` — and the runtime exports it.
+                var isBaseListUse = identifier.Ancestors().Any(a => a is BaseListSyntax);
+                if (type.Name != "UiComponent" || isBaseListUse) continue;
+            }
 
             var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             var isRuntimeProvided = IsRuntimeProvidedNamespace(ns)

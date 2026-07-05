@@ -11,6 +11,7 @@
 
 import type { EventHandler, HtmlNode } from '../core/types';
 import { iconPaths } from './icons.generated';
+import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
 import type {
   BoxNode,
@@ -43,8 +44,11 @@ export interface LoweringContext {
 
 /** Lowers an abstract node tree to an HtmlNode the reconciler renders. */
 export function lowerVisualNode(node: VisualNodeValue, context: LoweringContext): HtmlNode {
+  // Inside a reconciler pass each lowered root takes a unique, order-stable prefix so several
+  // bridges on one page cannot collide on identity paths; outside a pass paths are inert.
+  const rootPath = getActivePass()?.store.nextRootPath() ?? 'r';
   return (
-    lowerNode(node, context, null) ?? {
+    lowerNode(node, context, null, rootPath) ?? {
       tag: 'span',
       attributes: {},
       events: {},
@@ -109,11 +113,49 @@ const fontWeights: Record<string, number> = {
 type StyleEntries = Partial<Record<string, string | undefined>>;
 
 const styleOrder = [
-  'display', 'position', 'top', 'right', 'bottom', 'left', 'place-items', 'grid-area', 'flex-direction', 'justify-content', 'align-items', 'gap', 'flex', 'flex-grow',
-  'flex-shrink', 'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height', 'padding',
-  'background', 'background-color', 'border', 'border-radius', 'color', 'font-family', 'font-size',
-  'font-weight', 'line-height', 'text-align', 'letter-spacing', 'box-shadow', 'opacity', 'cursor',
-  'overflow', 'overflow-x', 'overflow-y', 'white-space', 'text-overflow', 'box-sizing', 'object-fit',
+  'display',
+  'position',
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'place-items',
+  'grid-area',
+  'flex-direction',
+  'justify-content',
+  'align-items',
+  'gap',
+  'flex',
+  'flex-grow',
+  'flex-shrink',
+  'width',
+  'height',
+  'min-width',
+  'min-height',
+  'max-width',
+  'max-height',
+  'padding',
+  'background',
+  'background-color',
+  'border',
+  'border-radius',
+  'color',
+  'font-family',
+  'font-size',
+  'font-weight',
+  'line-height',
+  'text-align',
+  'letter-spacing',
+  'box-shadow',
+  'opacity',
+  'cursor',
+  'overflow',
+  'overflow-x',
+  'overflow-y',
+  'white-space',
+  'text-overflow',
+  'box-sizing',
+  'object-fit',
 ] as const;
 
 function styleString(entries: StyleEntries): string {
@@ -131,34 +173,48 @@ function lowerNode(
   node: VisualNodeValue,
   context: LoweringContext,
   horizontalAxis: boolean | null,
+  path: string,
 ): HtmlNode | null {
   switch (node.nodeKind) {
     case 'box':
-      return lowerBox(node as BoxNode, context);
+      return lowerBox(node as BoxNode, context, path);
     case 'row':
     case 'column':
-      return lowerFlex(node as FlexNodeValue, context);
+      return lowerFlex(node as FlexNodeValue, context, path);
     case 'text':
       return lowerText(node as TextNode, context);
     case 'pressable':
-      return lowerPressable(node as PressableNode, context);
+      return lowerPressable(node as PressableNode, context, path);
     case 'flexible':
-      return lowerFlexible(node as FlexibleNode, context, horizontalAxis);
+      return lowerFlexible(node as FlexibleNode, context, horizontalAxis, path);
     case 'spacer':
       return lowerSpacer(node as SpacerNode, horizontalAxis);
     case 'scrollView':
-      return lowerScrollView(node as ScrollViewNode, context);
+      return lowerScrollView(node as ScrollViewNode, context, path);
     case 'image':
       return lowerImage(node as ImageNode);
     case 'icon':
       return lowerIcon(node as IconNode);
     case 'stack':
-      return lowerStack(node as StackNode, context);
+      return lowerStack(node as StackNode, context, path);
     case 'positioned':
       // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
-      return lowerNode((node as PositionedNode).child, context, horizontalAxis);
-    case 'component':
-      return lowerNode((node as ComponentNode).build(context.componentContext), context, horizontalAxis);
+      return lowerNode((node as PositionedNode).child, context, horizontalAxis, path + '/0');
+    case 'component': {
+      // W6 slice 2: resolve against the positional store BEFORE building — a retained instance
+      // (same path + type + key) keeps its state and adopts the fresh config. Mirrors the C#
+      // LayoutEngine.MeasureComponent; the build output expands at the wrapper position (path/0).
+      const pass = getActivePass();
+      const resolved = (
+        pass ? pass.store.reconcile(path, node, pass.invalidator) : node
+      ) as ComponentNode;
+      return lowerNode(
+        resolved.build(context.componentContext),
+        context,
+        horizontalAxis,
+        path + '/0',
+      );
+    }
     default: {
       // Mixing seam: a WEB component (transpiled shared component or legacy HtmlElement) composed
       // inside an abstract tree has no nodeKind but renders itself — embed its HtmlNode directly.
@@ -179,25 +235,30 @@ function element(tag: string, style: StyleEntries, children: HtmlNode[] = []): H
 }
 
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
-function lowerScrollView(node: ScrollViewNode, context: LoweringContext): HtmlNode {
+function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: string): HtmlNode {
   const vertical = node.axis !== 'horizontal';
   const children: HtmlNode[] = [];
-  const child = lowerNode(node.child, context, null);
+  const child = lowerNode(node.child, context, null, path + '/0');
   if (child) children.push(child);
-  return element('div', {
-    width: sizeValue(node.width),
-    height: sizeValue(node.height),
-    'overflow-y': vertical ? 'auto' : 'hidden',
-    'overflow-x': vertical ? 'hidden' : 'auto',
-  }, children);
+  return element(
+    'div',
+    {
+      width: sizeValue(node.width),
+      height: sizeValue(node.height),
+      'overflow-y': vertical ? 'auto' : 'hidden',
+      'overflow-x': vertical ? 'hidden' : 'auto',
+    },
+    children,
+  );
 }
 
 /** Spec A11 mirror: explicitly sized <img> with object-fit and the rrect clip. */
 function lowerImage(node: ImageNode): HtmlNode {
   const fit = node.fit === 'contain' ? 'contain' : node.fit === 'stretch' ? 'fill' : 'cover';
   const radius = node.cornerRadius;
-  const hasRadius = !!radius
-    && (radius.topLeft > 0 || radius.topRight > 0 || radius.bottomRight > 0 || radius.bottomLeft > 0);
+  const hasRadius =
+    !!radius &&
+    (radius.topLeft > 0 || radius.topRight > 0 || radius.bottomRight > 0 || radius.bottomLeft > 0);
   return {
     tag: 'img',
     attributes: {
@@ -240,52 +301,69 @@ function lowerIcon(node: IconNode): HtmlNode {
 }
 
 /** Spec A3 mirror of the C# WebRealizer: single-cell grid stack + absolute Positioned anchors. */
-function lowerStack(node: StackNode, context: LoweringContext): HtmlNode {
+function lowerStack(node: StackNode, context: LoweringContext, path: string): HtmlNode {
   const alignIndex: Record<string, number> = {
-    topStart: 0, topCenter: 1, topEnd: 2, centerStart: 3, center: 4, centerEnd: 5,
-    bottomStart: 6, bottomCenter: 7, bottomEnd: 8,
+    topStart: 0,
+    topCenter: 1,
+    topEnd: 2,
+    centerStart: 3,
+    center: 4,
+    centerEnd: 5,
+    bottomStart: 6,
+    bottomCenter: 7,
+    bottomEnd: 8,
   };
   const index = alignIndex[node.align] ?? 0;
   const word = (part: number) => (part === 1 ? 'center' : part === 2 ? 'end' : 'start');
   const placeItems = `${word(Math.trunc(index / 3))} ${word(index % 3)}`;
 
   const children: HtmlNode[] = [];
-  for (const child of node.children ?? []) {
+  const stackChildren = node.children ?? [];
+  for (let i = 0; i < stackChildren.length; i++) {
+    const child = stackChildren[i];
     if (child.nodeKind === 'positioned') {
       const positioned = child as PositionedNode;
-      const lowered = lowerNode(positioned.child, context, null);
+      const lowered = lowerNode(positioned.child, context, null, path + '/' + i + '/0');
       if (!lowered) continue;
       children.push(
-        element('div', {
-          position: 'absolute',
-          top: positioned.top != null ? px(positioned.top) : undefined,
-          right: positioned.end != null ? px(positioned.end) : undefined,
-          bottom: positioned.bottom != null ? px(positioned.bottom) : undefined,
-          left: positioned.start != null ? px(positioned.start) : undefined,
-        }, [lowered]),
+        element(
+          'div',
+          {
+            position: 'absolute',
+            top: positioned.top != null ? px(positioned.top) : undefined,
+            right: positioned.end != null ? px(positioned.end) : undefined,
+            bottom: positioned.bottom != null ? px(positioned.bottom) : undefined,
+            left: positioned.start != null ? px(positioned.start) : undefined,
+          },
+          [lowered],
+        ),
       );
     } else {
-      const lowered = lowerNode(child, context, null);
+      const lowered = lowerNode(child, context, null, path + '/' + i);
       if (!lowered) continue;
       children.push(element('div', { 'grid-area': '1 / 1' }, [lowered]));
     }
   }
 
-  return element('div', {
-    display: 'grid',
-    position: 'relative',
-    top: undefined,
-    'place-items': placeItems,
-    width: sizeValue(node.width),
-    height: sizeValue(node.height),
-  }, children);
+  return element(
+    'div',
+    {
+      display: 'grid',
+      position: 'relative',
+      top: undefined,
+      'place-items': placeItems,
+      width: sizeValue(node.width),
+      height: sizeValue(node.height),
+    },
+    children,
+  );
 }
 
 function textLeaf(content: string): HtmlNode {
   return { tag: '#text', attributes: {}, events: {}, children: [], textContent: content };
 }
 
-function lowerBox(box: BoxNode, context: LoweringContext): HtmlNode {
+function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
   const style = box.style ?? ({} as BoxStyleValue);
   const result = element('div', {
     'box-sizing': 'border-box',
@@ -295,10 +373,13 @@ function lowerBox(box: BoxNode, context: LoweringContext): HtmlNode {
     'min-height': style.minHeight && style.minHeight > 0 ? px(style.minHeight) : undefined,
     'max-width': style.maxWidth && style.maxWidth > 0 ? px(style.maxWidth) : undefined,
     'max-height': style.maxHeight && style.maxHeight > 0 ? px(style.maxHeight) : undefined,
-    padding: style.padding && !isZeroInsets(style.padding) ? paddingValue(style.padding) : undefined,
+    padding:
+      style.padding && !isZeroInsets(style.padding) ? paddingValue(style.padding) : undefined,
     'background-color': style.background ? tokenValue(style.background) : undefined,
     'border-radius':
-      style.cornerRadius && !isZeroRadii(style.cornerRadius) ? radiusValue(style.cornerRadius) : undefined,
+      style.cornerRadius && !isZeroRadii(style.cornerRadius)
+        ? radiusValue(style.cornerRadius)
+        : undefined,
     'box-shadow': (() => {
       if (!style.elevation || style.elevation <= 0) return undefined;
       const spec = getPhotonTheme().elevation(style.elevation);
@@ -312,13 +393,13 @@ function lowerBox(box: BoxNode, context: LoweringContext): HtmlNode {
   });
 
   if (box.child) {
-    const child = lowerNode(box.child, context, null);
+    const child = lowerNode(box.child, context, null, path + '/0');
     if (child) result.children.push(child);
   }
   return result;
 }
 
-function lowerFlex(flex: FlexNodeValue, context: LoweringContext): HtmlNode {
+function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string): HtmlNode {
   const horizontal = flex.nodeKind === 'row';
   const result = element('div', {
     'box-sizing': 'border-box',
@@ -332,11 +413,13 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext): HtmlNode {
     padding: flex.padding && !isZeroInsets(flex.padding) ? paddingValue(flex.padding) : undefined,
     'background-color': flex.background ? tokenValue(flex.background) : undefined,
     'border-radius':
-      flex.cornerRadius && !isZeroRadii(flex.cornerRadius) ? radiusValue(flex.cornerRadius) : undefined,
+      flex.cornerRadius && !isZeroRadii(flex.cornerRadius)
+        ? radiusValue(flex.cornerRadius)
+        : undefined,
   });
 
-  for (const child of flex.children) {
-    const lowered = lowerNode(child, context, horizontal);
+  for (let i = 0; i < flex.children.length; i++) {
+    const lowered = lowerNode(flex.children[i], context, horizontal, path + '/' + i);
     if (lowered) result.children.push(lowered);
   }
   return result;
@@ -396,7 +479,11 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   return node;
 }
 
-function lowerPressable(pressable: PressableNode, context: LoweringContext): HtmlNode {
+function lowerPressable(
+  pressable: PressableNode,
+  context: LoweringContext,
+  path: string,
+): HtmlNode {
   const disabled = pressable.disabled === true;
   const node = element('button', {
     padding: '0',
@@ -422,7 +509,7 @@ function lowerPressable(pressable: PressableNode, context: LoweringContext): Htm
     }
   }
 
-  const child = lowerNode(pressable.child, context, null);
+  const child = lowerNode(pressable.child, context, null, path + '/0');
   if (child) node.children.push(child);
   return node;
 }
@@ -431,6 +518,7 @@ function lowerFlexible(
   flexible: FlexibleNode,
   context: LoweringContext,
   horizontalAxis: boolean | null,
+  path: string,
 ): HtmlNode {
   // flex: n 1 0% — basis 0 matches the native leftover-by-weight distribution; min-size 0 lets text
   // shrink to ellipsis instead of pushing siblings (the truncation contract).
@@ -439,7 +527,7 @@ function lowerFlexible(
     'min-width': horizontalAxis !== false ? '0' : undefined,
     'min-height': horizontalAxis === false ? '0' : undefined,
   });
-  const child = lowerNode(flexible.child, context, horizontalAxis);
+  const child = lowerNode(flexible.child, context, horizontalAxis, path + '/0');
   if (child) node.children.push(child);
   return node;
 }
