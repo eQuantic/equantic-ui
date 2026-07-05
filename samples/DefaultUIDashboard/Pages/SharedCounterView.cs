@@ -43,6 +43,15 @@ public static class SharedCounterView
         // Spec B14 indeterminate: null value → the 30% segment sweeps the clipped track (1.2s loop).
         column.Add(new ProgressBar());
 
+        // Spec B16 shimmer: the split-gradient glint sweeping each placeholder (1.4s loop).
+        var loading = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
+        loading.Add(new Skeleton(SkeletonShape.Circle, 32));
+        var lines = new Column(gap: Space.S2);
+        lines.Add(new Skeleton(SkeletonShape.Line, 220));
+        lines.Add(new Skeleton(SkeletonShape.Line, 140));
+        loading.Add(lines);
+        column.Add(loading);
+
         return new Card(column, CardKind.Outlined) { Width = SizeValue.Fill };
     }
 }

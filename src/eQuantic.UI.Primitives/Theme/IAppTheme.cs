@@ -39,6 +39,9 @@ public interface IAppTheme
     ColorToken Background { get; }
     ColorToken Surface { get; }
     ColorToken SurfaceSubtle { get; }
+    /// <summary>The moving glint of the Skeleton shimmer (spec B16) — translucent white over
+    /// SurfaceSubtle in both modes; decorative, no contrast requirement.</summary>
+    ColorToken SurfaceHighlight { get; }
     ColorToken Border { get; }
     ColorToken BorderStrong { get; }
 

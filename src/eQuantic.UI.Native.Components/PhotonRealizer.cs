@@ -119,7 +119,8 @@ public static class PhotonRealizer
                 var fill = press.PendingFill ?? box.Style.Background;
                 press.PendingFill = null;
                 EmitChrome(node.Bounds, fill, box.Style.CornerRadius,
-                    box.Style.BorderColor, box.Style.BorderWidth, theme, mode, builder);
+                    box.Style.BorderColor, box.Style.BorderWidth, theme, mode, builder,
+                    box.Style.Gradient);
 
                 // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
                 // following the control's own radius — the first Box under the focused Pressable
@@ -197,6 +198,9 @@ public static class PhotonRealizer
         // Offsets are fractions of the node's OWN laid-out width — parity with CSS translateX(%).
         if (node.Source is LoopMotion loop)
         {
+            // Decorative loops (Skeleton shimmer) disappear under Reduce Motion — the spec's
+            // static-placeholder behavior; positional loops render a still frame instead.
+            if (motion.Reduced && loop.HideAtRest) return;
             var offset = ResolveLoopOffset(loop, node.Bounds.Width, motion);
             if (offset != 0) builder.PushTransform(Matrix2D.Translation(offset, 0));
             foreach (var child in node.Children)
@@ -222,7 +226,8 @@ public static class PhotonRealizer
     }
 
     private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,
-        ColorToken borderColor, float borderWidth, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder)
+        ColorToken borderColor, float borderWidth, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder,
+        LinearGradient? gradient = null)
     {
         if (bounds.IsEmpty) return;
 
@@ -231,6 +236,17 @@ public static class PhotonRealizer
             var color = bg.Resolve(mode);
             if (color.A > 0)
                 builder.FillRRect(new RRect(bounds, radius), Paint.Solid(color));
+        }
+
+        // The gradient draws OVER the solid (CSS background-image/background-color composition):
+        // Paint.Linear across the box bounds on the declared axis, stops resolved per mode.
+        if (gradient is { } g)
+        {
+            var end = g.Direction == GradientDirection.ToBottom
+                ? new Point(bounds.X, bounds.Y + bounds.Height)
+                : new Point(bounds.X + bounds.Width, bounds.Y);
+            builder.FillRRect(new RRect(bounds, radius),
+                Paint.Linear(new Point(bounds.X, bounds.Y), end, g.From.Resolve(mode), g.To.Resolve(mode)));
         }
 
         if (borderWidth > 0)

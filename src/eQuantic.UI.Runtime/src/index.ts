@@ -110,6 +110,7 @@ export {
   Image,
   ScrollView,
   LoopMotion,
+  LinearGradient,
 } from './shared/vocabulary';
 export {
   Color,

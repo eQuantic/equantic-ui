@@ -50,6 +50,7 @@ interface BoxStyleConfig {
   borderColor?: ColorTokenValue;
   elevation?: number;
   clip?: boolean;
+  gradient?: LinearGradient | null;
 }
 
 /** Mirror of the C# `BoxStyle` record — constructed from the transpiled initializer config object.
@@ -68,6 +69,7 @@ export class BoxStyle {
   borderColor?: ColorTokenValue;
   elevation = 0;
   clip = false;
+  gradient: LinearGradient | null = null;
 
   constructor(config?: BoxStyleConfig) {
     if (!config) return;
@@ -198,6 +200,23 @@ export class Pressable extends VisualNode {
   }
 }
 
+/** Mirror of the C# `LinearGradient` record: two token stops on a straight axis (engine fence). */
+export class LinearGradient {
+  from: ColorTokenValue;
+  to: ColorTokenValue;
+  direction: string;
+
+  constructor(from: ColorTokenValue, to: ColorTokenValue, direction = 'toRight') {
+    this.from = from;
+    this.to = to;
+    this.direction = direction;
+  }
+}
+
+interface LoopMotionConfig {
+  hideAtRest?: boolean;
+}
+
 /** Mirror of the C# `LoopMotion` (spec §06): continuous transform-only loop around one child. */
 export class LoopMotion extends VisualNode {
   readonly nodeKind = 'loopMotion';
@@ -206,14 +225,23 @@ export class LoopMotion extends VisualNode {
   fromX: number;
   toX: number;
   durationMs: number;
+  hideAtRest = false;
 
-  constructor(child: VisualNode, effect: string, fromX: number, toX: number, durationMs: number) {
+  constructor(
+    child: VisualNode,
+    effect: string,
+    fromX: number,
+    toX: number,
+    durationMs: number,
+    config?: LoopMotionConfig,
+  ) {
     super();
     this.child = child;
     this.effect = effect;
     this.fromX = fromX;
     this.toX = toX;
     this.durationMs = durationMs;
+    if (config) Object.assign(this, config);
   }
 }
 

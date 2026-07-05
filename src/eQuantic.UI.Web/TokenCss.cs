@@ -49,6 +49,14 @@ public static class TokenCss
     /// <summary>A fraction as a CSS percentage (loop-motion endpoints: -0.35 → "-35%").</summary>
     public static string Percent(float fraction) =>
         $"{(fraction * 100).ToString("0.##", CultureInfo.InvariantCulture)}%";
+
+    /// <summary>The 2-stop token gradient as a CSS background-image value — `light-dark()` stops
+    /// keep the DOM mode-free exactly like solid fills.</summary>
+    public static string Gradient(LinearGradient gradient)
+    {
+        var direction = gradient.Direction == GradientDirection.ToBottom ? "to bottom" : "to right";
+        return $"linear-gradient({direction}, {Value(gradient.From)}, {Value(gradient.To)})";
+    }
 }
 
 /// <summary>
@@ -72,6 +80,7 @@ public static class PhotonCssGenerator
         AppendColor(css, "background", theme.Background);
         AppendColor(css, "surface", theme.Surface);
         AppendColor(css, "surface-subtle", theme.SurfaceSubtle);
+        AppendColor(css, "surface-highlight", theme.SurfaceHighlight);
         AppendColor(css, "border", theme.Border);
         AppendColor(css, "border-strong", theme.BorderStrong);
         AppendColor(css, "text-primary", theme.TextPrimary);
@@ -160,7 +169,7 @@ public static class PhotonCssGenerator
         // animation shorthand. `prefers-reduced-motion` statically replaces movement — the browser
         // twin of PhotonHost.ReducedMotion (native renders at rest and stops requesting frames).
         css.AppendLine("@keyframes eq-slide-x { 0% { transform: translateX(var(--eq-loop-from)); } 100% { transform: translateX(var(--eq-loop-to)); } }");
-        css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-loop { animation: none; } }");
+        css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-loop { animation: none; } .eq-loop-rest-hidden { visibility: hidden; } }");
 
         return css.ToString();
     }

@@ -42,9 +42,9 @@ public sealed class Box : VisualNode
 }
 
 /// <summary>
-/// Box appearance + sizing (spec A1). v1 carries what the engine renders TODAY — solid background,
-/// inside border, per-corner radius; gradient backgrounds, Elevation shadows, Clip and Opacity groups
-/// join as the engine grows those primitives (they are speced, deliberately not stubbed here).
+/// Box appearance + sizing (spec A1) — the engine fence surfaced as style: solid background,
+/// 2-stop linear gradient, inside border, per-corner radius, Elevation shadow, rrect Clip.
+/// Opacity groups join as the engine grows that primitive (speced, deliberately not stubbed).
 /// </summary>
 public readonly record struct BoxStyle
 {
@@ -61,6 +61,11 @@ public readonly record struct BoxStyle
 
     /// <summary>Solid background token; <c>null</c> = transparent (layout-only Box).</summary>
     public ColorToken? Background { get; init; }
+
+    /// <summary>2-stop linear gradient fill (the engine fence's exact gradient primitive) — draws
+    /// OVER <see cref="Background"/> when both are set (translucent stops show the solid through,
+    /// the CSS background-image/background-color composition). <c>null</c> = no gradient.</summary>
+    public LinearGradient? Gradient { get; init; }
     public CornerRadii CornerRadius { get; init; }
 
     /// <summary>Uniform border width, drawn INSIDE the bounds (spec fence). 0 = no border.</summary>
@@ -76,6 +81,24 @@ public readonly record struct BoxStyle
     /// (background/border/shadow) is the shape itself and is never clipped.</summary>
     public bool Clip { get; init; }
 }
+
+/// <summary>Axis of a 2-stop linear gradient — the CSS keyword pair the web realizer emits; the
+/// native realizer maps it to <c>Paint.Linear</c> points over the box bounds.</summary>
+public enum GradientDirection : byte
+{
+    ToRight = 0,
+    ToBottom = 1,
+}
+
+/// <summary>
+/// The engine fence's gradient, exactly: TWO color stops on a straight axis. Stops are TOKENS
+/// (mode-free trees); realizers resolve per mode — web as <c>linear-gradient(to right|bottom, …)</c>,
+/// native as <c>Paint.Linear</c> across the box bounds.
+/// </summary>
+public readonly record struct LinearGradient(
+    ColorToken From,
+    ColorToken To,
+    GradientDirection Direction = GradientDirection.ToRight);
 
 /// <summary>Loop-motion effects (spec §06: animate transform &amp; opacity ONLY — these are all transform).</summary>
 public enum LoopEffect : byte
@@ -116,6 +139,11 @@ public sealed class LoopMotion : VisualNode
 
     /// <summary>Loop period. The motion is linear and repeats seamlessly from <see cref="FromX"/>.</summary>
     public int DurationMs { get; init; }
+
+    /// <summary>Reduce Motion policy: <c>true</c> hides the subtree entirely at rest (decorative
+    /// overlays like the Skeleton shimmer — spec B16's Reduce Motion IS the plain placeholder);
+    /// <c>false</c> renders it at its natural position (an indeterminate bar keeps a still segment).</summary>
+    public bool HideAtRest { get; init; }
 }
 
 /// <summary>

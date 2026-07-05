@@ -25,6 +25,7 @@ import type {
   FlexibleNode,
   IconNode,
   ImageNode,
+  LinearGradientValue,
   LoopMotionNode,
   PositionedNode,
   PressableNode,
@@ -138,6 +139,7 @@ const styleOrder = [
   'padding',
   'background',
   'background-color',
+  'background-image',
   'border',
   'border-radius',
   'color',
@@ -240,6 +242,12 @@ function element(tag: string, style: StyleEntries, children: HtmlNode[] = []): H
   };
 }
 
+/** Mirror of C# TokenCss.Gradient: 2-stop linear-gradient with light-dark() stops. */
+function gradientValue(gradient: LinearGradientValue): string {
+  const direction = gradient.direction === 'toBottom' ? 'to bottom' : 'to right';
+  return `linear-gradient(${direction}, ${tokenValue(gradient.from)}, ${tokenValue(gradient.to)})`;
+}
+
 /** Fraction → CSS percentage, mirroring C# TokenCss.Percent ("0.##": -0.35 → "-35%"). */
 function pct(fraction: number): string {
   return `${parseFloat((fraction * 100).toFixed(2))}%`;
@@ -251,7 +259,8 @@ function lowerLoopMotion(node: LoopMotionNode, context: LoweringContext, path: s
   const wrapper = element('div', {
     animation: `eq-slide-x ${node.durationMs}ms linear infinite`,
   });
-  wrapper.attributes['class'] = 'eq-loop';
+  wrapper.attributes['class'] =
+    node.hideAtRest === true ? 'eq-loop eq-loop-rest-hidden' : 'eq-loop';
   wrapper.attributes['style'] =
     `${wrapper.attributes['style']}; --eq-loop-from: ${pct(node.fromX)}; --eq-loop-to: ${pct(node.toX)}`;
   const child = lowerNode(node.child, context, null, path + '/0');
@@ -401,6 +410,7 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     padding:
       style.padding && !isZeroInsets(style.padding) ? paddingValue(style.padding) : undefined,
     'background-color': style.background ? tokenValue(style.background) : undefined,
+    'background-image': style.gradient ? gradientValue(style.gradient) : undefined,
     'border-radius':
       style.cornerRadius && !isZeroRadii(style.cornerRadius)
         ? radiusValue(style.cornerRadius)
