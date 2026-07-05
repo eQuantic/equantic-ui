@@ -464,10 +464,15 @@ public class TypeScriptEmitter
         }
 
         // AUTOMATIC DEPENDENCY RESOLUTION
-        // Use dependency resolver to find transitive dependencies (e.g., Row → Flex)
+        // Use dependency resolver to find transitive dependencies (e.g., Row → Flex). Runtime-provided
+        // names must NOT seed it: the resolver is name-keyed over the per-app scan, so a vocabulary
+        // "Row" would pull the WEB Row's dependency chain (Flex) into a page that never uses it.
         if (_dependencyResolver != null)
         {
-            var dependencies = _dependencyResolver.ResolveDependencies(componentTypes);
+            var perAppSeeds = componentTypes
+                .Where(t => !component.RuntimeProvidedTypes.Contains(t.Contains('.') ? t[(t.LastIndexOf('.') + 1)..] : t))
+                .ToHashSet();
+            var dependencies = _dependencyResolver.ResolveDependencies(perAppSeeds);
             foreach (var dep in dependencies)
             {
                 componentTypes.Add(dep);

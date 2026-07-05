@@ -475,6 +475,14 @@ Bun and the JS bundling chain, the TypeScript runtime.
   dead `new Container({})`), static classes with Build misdetected as components. Suites: vitest 289,
   web 39, compiler 412, conformance 526, native 144, server 37.
 
+- **2026-07-05 — Unification slice 3 landed: WRITE-ONCE PAGES.** A Primitives `StatefulComponent`
+  with `[Page]` is a full page — the server SSR scan accepts `UiComponent` types and bridges them
+  through the web realizer; the client mounts the transpiled `SharedStatefulComponent` directly.
+  Live: `/counter-shared` serves `data-ssr="true"` HTML with the initial state, hydrates, and
+  re-renders on click — and the page class is verbatim PhotonHost-compatible (the same file could
+  drive the native host today). Suites: vitest 289, web 39, compiler 412, conformance 526,
+  native 144, server 39.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

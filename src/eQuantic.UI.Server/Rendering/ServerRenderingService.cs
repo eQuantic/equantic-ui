@@ -47,7 +47,10 @@ public class ServerRenderingService : IServerRenderingService
                     .Where(t => t.GetCustomAttributes<PageAttribute>().Any() &&
                                !t.IsAbstract &&
                                (typeof(StatelessComponent).IsAssignableFrom(t) ||
-                                typeof(StatefulComponent).IsAssignableFrom(t)));
+                                typeof(StatefulComponent).IsAssignableFrom(t) ||
+                                // WRITE-ONCE pages (Photon vocabulary) — SSR bridges them through
+                                // the web realizer (see CreateComponentInstance).
+                                typeof(Primitives.UiComponent).IsAssignableFrom(t)));
 
                 foreach (var type in pageTypes)
                 {
@@ -91,9 +94,10 @@ public class ServerRenderingService : IServerRenderingService
             // Create the component instance with DI
             var component = CreateComponentInstance(pageType);
 
-            // Handle Metadata
+            // Handle Metadata (for write-once pages the real page instance sits inside the bridge)
             MetadataCollection? metadata = null;
-            if (component is IHandleMetadata metadataHandler)
+            object metadataSource = component is Web.VisualNodeComponent bridge ? bridge.Node : component;
+            if (metadataSource is IHandleMetadata metadataHandler)
             {
                 metadata = new MetadataCollection();
                 metadataHandler.ConfigureMetadata(new SeoBuilder(metadata));
@@ -246,6 +250,10 @@ public class ServerRenderingService : IServerRenderingService
             {
                 return ic;
             }
+            if (component is Primitives.UiComponent visualFromDi)
+            {
+                return new Web.VisualNodeComponent(visualFromDi);
+            }
         }
         catch
         {
@@ -257,6 +265,15 @@ public class ServerRenderingService : IServerRenderingService
         if (instance is IComponent component2)
         {
             return component2;
+        }
+
+        // A WRITE-ONCE page (eQuantic.UI.Primitives.UiComponent) is not an IComponent — bridge it
+        // through the web-realizer adapter so the SSR pipeline stays IComponent-only. The client
+        // needs no counterpart: the transpiled page extends SharedStatefulComponent, which mounts/
+        // hydrates directly (v1 fence: no server-driven initial state — field defaults render).
+        if (instance is Primitives.UiComponent visual)
+        {
+            return new Web.VisualNodeComponent(visual);
         }
 
         throw new InvalidOperationException($"Cannot create instance of component type: {componentType.Name}");
