@@ -289,11 +289,9 @@ Built on three pillars: Abstraction, Flexibility (Tailwind as "Happy Path"), Per
 
 ### Tailwind Integration
 
-```xml
-<Target Name="BuildCSS" BeforeTargets="Build">
-    <Exec Command="npx @tailwindcss/cli -i ./src/styles.css -o ./wwwroot/css/app.css --content './wwwroot/_equantic/**/*.js'" />
-</Target>
-```
+The `eQuantic.UI.Tailwind` package generates CSS automatically at build time through the
+EMBEDDED Bun (`bun x @tailwindcss/cli@<pinned>` — zero Node, zero manual targets). Consumers only
+reference the package; no build configuration is required.
 
 ## Server Integration
 
