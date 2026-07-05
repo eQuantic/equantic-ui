@@ -133,6 +133,8 @@ export {
   photonComponentContext,
   ambientLoweringContext,
 } from './shared/photon-context';
+export { materializeTheme } from './shared/theme-bridge';
+export type { ThemeData } from './shared/theme-bridge';
 export { VisualNodeComponent } from './shared/visual-node-component';
 // The shared component LIBRARY (write-once) — transpiled modules embedded in the runtime, byte-pinned
 // to the live eqc output (SharedComponentTranspilationTests). `using eQuantic.UI.Components`

@@ -1,6 +1,5 @@
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Server;
-using eQuantic.UI.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,13 +7,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddUI(options =>
 {
     options.ScanAssembly(typeof(Program).Assembly)
+           // Select the write-once design-system theme for the whole app (SSR + client). The server now
+           // emits the NORMATIVE token stylesheet AND bridges the theme to the client (boot calls
+           // setPhotonTheme) — swap this for MaterialTheme.Instance / MaterialTheme.FromSeed(seed) to
+           // rebrand every shared component with nothing else changed.
+           .UseTheme(PhotonTheme.Instance)
            .ConfigureHtmlShell(shell =>
            {
                shell.SetTitle("Counter Demo (Fluent API)")
                     .AddHeadTag("<meta name=\"description\" content=\"eQuantic.UI Demo\">")
-                    // The NORMATIVE Photon design-system stylesheet (generated from the C# tokens —
-                    // never hand-written) backing the write-once showcase page (/shared).
-                    .AddHeadTag($"<style>{PhotonCssGenerator.Generate(PhotonTheme.Instance)}</style>")
                     // Route-guard demo: register a client navigation guard via the documented
                     // window.__eqGuards hook (read once when the router boots). It gates /admin behind a
                     // demo auth flag, and interprets ?login=1 / ?logout=1 so the C# pages can drive auth

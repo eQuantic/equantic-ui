@@ -466,8 +466,21 @@ rejected.)
    follows the current TonalSpot chroma cap (primary tone-40 = #65558F = Google's live output, NOT the
    hand-tuned baseline #6750A4). Proven on BOTH realizers: 7 web color-science tests + a native Photon
    golden of the eQuantic-blue seed #0050A0 (light+dark — the purple gallery becomes blue with nothing
-   but a different `IAppTheme`). Fence (last Material slice): app-wide theme-SELECTION wiring (SSR
-   bridge + client boot + per-app theme-TS delivery so an app picks Material — or a seed — for hydration).
+   but a different `IAppTheme`).
+   THEME-SELECTION WIRING ✅ (2026-07-05, slice 3 — SSR bridge + client boot, per-app theme delivery):
+   an app selects the write-once theme with one call — `AddUI(o => o.UseTheme(MaterialTheme.Instance))`
+   (or `PhotonTheme.Instance` / `MaterialTheme.FromSeed(seed)` / a brand theme) — and the SAME
+   `IAppTheme` drives BOTH sides. Server side: `ServerRenderingService` lowers the write-once pages with
+   `options.Theme` (SSR markup gets the selected theme's resolved `light-dark()` tokens), and
+   `ServeAppShell` emits its NORMATIVE token stylesheet plus `window.__EQ_THEME__ = ThemeBridge.
+   SerializeJson(theme)` before boot. Client side: `boot()` reads `__EQ_THEME__`, `materializeTheme`s it
+   back into an `AppTheme`, and `setPhotonTheme`s it BEFORE hydration — so client re-renders resolve the
+   same colors/shape (both sides read RESOLVED values, not CSS vars). The C# serializer ↔ TS materializer
+   agree byte-for-byte via a shared fixture (`theme-bridge.photon.json`, pinned by the C# test AND
+   round-tripped in vitest back to the generated `photonTheme`). Proven: 3 C# bridge tests + 8 vitest
+   round-trip tests + a Server SSR test (a write-once page lowered with Material emits the M3 Surface,
+   not Photon's) + a live browser check (the `/shared` showcase hydrates cleanly with `__EQ_THEME__`
+   injected). The Material track is COMPLETE: baseline write-once → dynamic color → app selection.
    Animation slice 2 ✅ (2026-07-05, spec A1/B16 — GRADIENT + SHIMMER): `BoxStyle.Gradient` exposes
    the engine fence's exact gradient primitive — `LinearGradient(From, To, Direction)`, two TOKEN
    stops on a straight axis (ToRight/ToBottom), drawing OVER the solid background (CSS

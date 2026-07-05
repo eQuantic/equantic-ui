@@ -325,6 +325,17 @@ public static class UIExtensions
         var headTags = new List<string>(shell.HeadTags);
         var pageValue = pageName != null ? $"'{pageName}'" : "null";
 
+        // Write-once theme selection (options.UseTheme): emit the selected theme's NORMATIVE token
+        // stylesheet, and serialize it into window.__EQ_THEME__ so boot can setPhotonTheme before
+        // hydration (SSR markup + client re-renders then resolve the same colors/shape). Absent a
+        // selection, nothing is injected — the runtime keeps its baked-in photonTheme default.
+        string? themeDataJson = null;
+        if (options.Theme is { } appTheme)
+        {
+            headTags.Add($"<style>{eQuantic.UI.Web.PhotonCssGenerator.Generate(appTheme)}</style>");
+            themeDataJson = eQuantic.UI.Web.ThemeBridge.SerializeJson(appTheme);
+        }
+
         // Auto-inject theme initialization scripts if not already added by Tailwind
         if (!headTags.Any(t => t.Contains("__EQUANTIC_THEME_DATA")))
         {
@@ -522,7 +533,8 @@ public static class UIExtensions
                .Set("SsrContent", ssrContent)
                .Set("ConfigJson", configJson)
                .Set("IsDevelopmentBool", isDevelopment ? "true" : "false")
-               .SetOrEmpty("InitialState", serializedState != null ? $"window.__INITIAL_STATE__ = {serializedState};" : null);
+               .SetOrEmpty("InitialState", serializedState != null ? $"window.__INITIAL_STATE__ = {serializedState};" : null)
+               .SetOrEmpty("ThemeData", themeDataJson != null ? $"window.__EQ_THEME__ = {themeDataJson};" : null);
 
             // Conditions
             ctx.When("IsDevelopment", isDevelopment)
@@ -578,6 +590,22 @@ public class UIOptions
     public UIOptions WithSsr(bool enabled = true)
     {
         EnableSsr = enabled;
+        return this;
+    }
+
+    /// <summary>
+    /// The write-once design-system theme (an <see cref="eQuantic.UI.Primitives.IAppTheme"/>) this app
+    /// renders with — <c>PhotonTheme.Instance</c>, <c>MaterialTheme.Instance</c>,
+    /// <c>MaterialTheme.FromSeed(seed)</c>, or a brand theme. Null until set. When set, the SSR pipeline
+    /// lowers the shared components with it, emits its token CSS, and bridges it to the client (boot
+    /// calls <c>setPhotonTheme</c>) so hydration + client re-renders match the server.
+    /// </summary>
+    internal eQuantic.UI.Primitives.IAppTheme? Theme { get; private set; }
+
+    /// <summary>Select the write-once theme for the whole app (SSR + client). See <see cref="Theme"/>.</summary>
+    public UIOptions UseTheme(eQuantic.UI.Primitives.IAppTheme theme)
+    {
+        Theme = theme ?? throw new ArgumentNullException(nameof(theme));
         return this;
     }
 
