@@ -506,6 +506,17 @@ Bun and the JS bundling chain, the TypeScript runtime.
   like the Bun binaries (framework-dev tool — app developers never see it). Remaining D3 tail: the
   offline metallib step (xcrun metal) and pipeline caching land with the packaging milestone.
 
+- **2026-07-05 — Analytic shadow landed (§05), Metal parity held; component elevations wired.**
+  `Sdf.ShadowCoverage` is the new normative falloff — `1 − smoothstep(−1.5σ, +1.5σ, d)`, σ = blur/2 —
+  implemented identically by the Reference and the Slang shader (flags.x = 2; blur rides the
+  strokeWidth uniform slot; MSL/SPIR-V regenerated). `DrawCommandKind.ShadowRRect` bakes
+  offsetY/spread into the shape at record time. New shared golden `shadow-rrect`; the Metal parity
+  suite (now 17 scenes) held the fuzzy gate. Component layer: `BoxStyle.Elevation` (0–5, theme-
+  resolved) — native emits the shadow under the fill; web/TS lower to `box-shadow` from the SAME
+  ShadowSpec (TokenCss format, cross-consistent). Card Elevated is REAL now (E1 + the §05 dark-only
+  1dp border via a transparent-light token), Switch thumb E1, AppBar scrolled E2. BottomNavigation's
+  top-oriented E2 stays fenced (shadow orientation joins the insets work).
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

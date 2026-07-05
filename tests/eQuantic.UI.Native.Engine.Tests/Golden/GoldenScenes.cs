@@ -107,6 +107,18 @@ public static class GoldenScenes
             b.FillRRect(new RRect(new Rect(140, 95, 14, 14), new CornerRadii(7)), Paint.Solid(Warm));
         },
 
+        // The §05 analytic shadow: an elevated card (E2-ish blur) over the background, plus a
+        // small-radius chip shadow — falloff must be smooth and hug the per-corner radii.
+        ["shadow-rrect"] = b =>
+        {
+            var card = new RRect(new Rect(30, 20, 100, 70), new CornerRadii(14));
+            b.ShadowRRect(card, offsetY: 4, blur: 12, spread: 0, Color.FromRgb(0, 0, 0).WithOpacity(0.45f));
+            b.FillRRect(card, Paint.Solid(Color.FromRgb(38, 41, 51)));
+            var chip = new RRect(new Rect(100, 85, 44, 22), new CornerRadii(11));
+            b.ShadowRRect(chip, offsetY: 2, blur: 6, spread: 1, Color.FromRgb(0, 0, 0).WithOpacity(0.5f));
+            b.FillRRect(chip, Paint.Solid(Mint));
+        },
+
         // A miniature "UI card": the primitives composing the way the component layer drives them.
         ["card-composition"] = b =>
         {

@@ -76,6 +76,17 @@ public static class PhotonRealizer
         {
             case Box box:
             {
+                // §05: the analytic shadow draws under the fill (one per node, theme-resolved).
+                if (box.Style.Elevation > 0)
+                {
+                    var spec = theme.Elevation(box.Style.Elevation);
+                    if (!spec.IsNone)
+                    {
+                        builder.ShadowRRect(new RRect(node.Bounds, box.Style.CornerRadius),
+                            spec.OffsetY, spec.Blur, spec.Spread, spec.Color.Resolve(mode));
+                    }
+                }
+
                 var fill = press.PendingFill ?? box.Style.Background;
                 press.PendingFill = null;
                 EmitChrome(node.Bounds, fill, box.Style.CornerRadius,

@@ -201,6 +201,9 @@ public static class WebRealizer
                 Padding = style.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(style.Padding),
                 BackgroundColor = style.Background is { } bg ? TokenCss.Value(bg) : null,
                 BorderRadius = style.CornerRadius.IsZero ? null : TokenCss.Radius(style.CornerRadius),
+                BoxShadow = style.Elevation > 0 && !context.Theme.Elevation(style.Elevation).IsNone
+                    ? TokenCss.Shadow(context.Theme.Elevation(style.Elevation))
+                    : null,
                 Border = style.BorderWidth > 0
                     ? $"{TokenCss.Px(style.BorderWidth)} solid {TokenCss.Value(style.BorderColor)}"
                     : null,

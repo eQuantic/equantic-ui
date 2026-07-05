@@ -8,6 +8,14 @@
 
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 
+/** Companion of the C# `Color` struct — the statics transpiled code references. */
+export const Color = {
+  transparent: { r: 0, g: 0, b: 0, a: 0 } as ColorValue,
+  fromRgb(r: number, g: number, b: number): ColorValue {
+    return { r, g, b, a: 255 };
+  },
+};
+
 /** Paired light/dark color — mirrors `eQuantic.UI.Primitives.ColorToken` (channels are 0–255 bytes). */
 export class ColorToken {
   readonly light: ColorValue;

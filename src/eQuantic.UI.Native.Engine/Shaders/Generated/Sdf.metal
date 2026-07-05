@@ -10,7 +10,7 @@ struct vertexOutput_0
 };
 
 
-#line 8 "src/eQuantic.UI.Native.Engine/Shaders/Sdf.slang"
+#line 8 "/Users/admin.edgar.a.mesquita/projects/equantic/equantic-ui/src/eQuantic.UI.Native.Engine/Shaders/Sdf.slang"
 struct DrawUniforms_0
 {
     float4 inv0_0;
@@ -169,8 +169,29 @@ struct KernelContext_0
     float d_0 = sdRoundedRect_0(local_0 - u_2->rect_0.xy, u_2->rect_0.zw, u_2->radii_0);
 
 #line 59
-    float d_1;
+    bool _S5;
     if((u_2->flags_0.x) > 0.5f)
+    {
+
+#line 60
+        _S5 = (u_2->flags_0.x) < 1.5f;
+
+#line 60
+    }
+    else
+    {
+
+#line 60
+        _S5 = false;
+
+#line 60
+    }
+
+#line 60
+    float d_1;
+
+#line 60
+    if(_S5)
     {
 
 #line 60
@@ -187,98 +208,127 @@ struct KernelContext_0
 #line 60
     }
 
+#line 60
+    float coverage_0;
 
-    float coverage_0 = clamp(0.5f - d_1 * u_2->inv0_0.w, 0.0f, 1.0f);
-    if(coverage_0 <= 0.0f)
+
+
+    if((u_2->flags_0.x) > 1.5f)
+    {
+
+        float sigma_0 = u_2->inv1_0.w * u_2->inv0_0.w / 2.0f;
+        if(sigma_0 <= 0.0f)
+        {
+
+#line 68
+            coverage_0 = clamp(0.5f - d_1 * u_2->inv0_0.w, 0.0f, 1.0f);
+
+#line 68
+        }
+        else
+        {
+
+
+
+            float t_0 = clamp((d_1 * u_2->inv0_0.w + 1.5f * sigma_0) / (3.0f * sigma_0), 0.0f, 1.0f);
+
+#line 74
+            coverage_0 = 1.0f - t_0 * t_0 * (3.0f - 2.0f * t_0);
+
+#line 68
+        }
+
+#line 64
+    }
+    else
     {
 
 #line 64
-        discard_fragment();
+        coverage_0 = clamp(0.5f - d_1 * u_2->inv0_0.w, 0.0f, 1.0f);
 
 #line 64
     }
 
-#line 64
-    float coverage_1;
+#line 82
+    if(coverage_0 <= 0.0f)
+    {
+
+#line 82
+        discard_fragment();
+
+#line 82
+    }
 
 
 
     if((u_2->flags_0.z) > 0.5f)
     {
 
-        float coverage_2 = coverage_0 * clamp(0.5f - sdRoundedRect_0(pixel_0 - (&kernelContext_0)->u_1->clipRect_0.xy, (&kernelContext_0)->u_1->clipRect_0.zw, (&kernelContext_0)->u_1->clipRadii_0), 0.0f, 1.0f);
-        if(coverage_2 <= 0.0f)
+        float coverage_1 = coverage_0 * clamp(0.5f - sdRoundedRect_0(pixel_0 - (&kernelContext_0)->u_1->clipRect_0.xy, (&kernelContext_0)->u_1->clipRect_0.zw, (&kernelContext_0)->u_1->clipRadii_0), 0.0f, 1.0f);
+        if(coverage_1 <= 0.0f)
         {
 
-#line 72
+#line 90
             discard_fragment();
 
-#line 72
+#line 90
         }
 
-#line 72
-        coverage_1 = coverage_2;
+#line 90
+        coverage_0 = coverage_1;
 
-#line 68
-    }
-    else
-    {
-
-#line 68
-        coverage_1 = coverage_0;
-
-#line 68
+#line 86
     }
 
-#line 76
-    float4 _S5 = (&kernelContext_0)->u_1->colorA_0;
+#line 94
+    float4 _S6 = (&kernelContext_0)->u_1->colorA_0;
 
-#line 76
+#line 94
     float4 srgb_0;
     if((u_2->flags_0.y) > 0.5f)
     {
         float2 axis_0 = (&kernelContext_0)->u_1->gradient_0.zw - (&kernelContext_0)->u_1->gradient_0.xy;
         float len2_0 = dot(axis_0, axis_0);
 
-#line 80
-        float t_0;
+#line 98
+        float t_1;
         if(len2_0 <= 0.0f)
         {
 
-#line 81
-            t_0 = 0.0f;
+#line 99
+            t_1 = 0.0f;
 
-#line 81
+#line 99
         }
         else
         {
 
-#line 81
-            t_0 = clamp(dot(local_0 - (&kernelContext_0)->u_1->gradient_0.xy, axis_0) / len2_0, 0.0f, 1.0f);
+#line 99
+            t_1 = clamp(dot(local_0 - (&kernelContext_0)->u_1->gradient_0.xy, axis_0) / len2_0, 0.0f, 1.0f);
 
-#line 81
+#line 99
         }
 
-#line 81
-        srgb_0 = mix((&kernelContext_0)->u_1->colorA_0, (&kernelContext_0)->u_1->colorB_0, float4(t_0) );
+#line 99
+        srgb_0 = mix((&kernelContext_0)->u_1->colorA_0, (&kernelContext_0)->u_1->colorB_0, float4(t_1) );
 
-#line 77
+#line 95
     }
     else
     {
 
-#line 77
-        srgb_0 = _S5;
+#line 95
+        srgb_0 = _S6;
 
-#line 77
+#line 95
     }
 
-#line 86
-    float a_0 = srgb_0.w * coverage_1;
+#line 104
+    float a_0 = srgb_0.w * coverage_0;
 
-#line 86
-    pixelOutput_0 _S6 = { float4(float3(srgbToLinear_0(srgb_0.x), srgbToLinear_0(srgb_0.y), srgbToLinear_0(srgb_0.z)) * float3(a_0) , a_0) };
+#line 104
+    pixelOutput_0 _S7 = { float4(float3(srgbToLinear_0(srgb_0.x), srgbToLinear_0(srgb_0.y), srgbToLinear_0(srgb_0.z)) * float3(a_0) , a_0) };
 
-    return _S6;
+    return _S7;
 }
 

@@ -65,6 +65,8 @@ export interface BoxStyleValue {
   cornerRadius?: CornerRadiiValue;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
+  /** Elevation level 0-5 (§05) — resolved through the active theme's ShadowSpec. */
+  elevation?: number;
 }
 
 /** Base shape every abstract node carries. */

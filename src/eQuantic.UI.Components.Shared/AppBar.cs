@@ -63,6 +63,7 @@ public sealed class AppBar : StatelessComponent
             Height = 56,
             Padding = EdgeInsets.Symmetric(4, 0),
             Background = Scrolled ? theme.Surface : null,
+            Elevation = Scrolled ? 2 : 0,
         }, row);
     }
 }

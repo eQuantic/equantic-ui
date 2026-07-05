@@ -5,8 +5,7 @@ namespace eQuantic.UI.Components.Shared;
 /// <summary>Card surfaces (spec B1).</summary>
 public enum CardKind : byte
 {
-    /// <summary>E1 shadow (+1dp Border in dark, §05). Until the engine's shadow primitive lands, the
-    /// realizers fall back to a 1dp Border in BOTH modes — a documented degradation, not a redesign.</summary>
+    /// <summary>E1 shadow; dark mode ALSO gets a 1dp Border (§05).</summary>
     Elevated = 0,
     /// <summary>E0 + Border — quiet container for dense grids.</summary>
     Outlined = 1,
@@ -40,8 +39,12 @@ public sealed class Card : StatelessComponent
     {
         var theme = context.Theme;
         var background = Kind == CardKind.Filled ? theme.SurfaceSubtle : theme.Surface;
-        // Elevated: border fallback until the engine draws E1 shadows (see CardKind.Elevated docs).
-        var borderWidth = Kind == CardKind.Filled ? 0f : 1f;
+        var borderWidth = Kind == CardKind.Outlined ? 1f : Kind == CardKind.Elevated ? 1f : 0f;
+        // §05: Elevated = E1 shadow, and DARK mode also wants the 1dp border — a mode-free token
+        // with a transparent light side realizes exactly that on every target.
+        var borderColor = Kind == CardKind.Elevated
+            ? new ColorToken(Color.Transparent, theme.Border.Dark)
+            : theme.Border;
 
         return new Box(new BoxStyle
         {
@@ -50,7 +53,8 @@ public sealed class Card : StatelessComponent
             Background = background,
             CornerRadius = new CornerRadii(Radius.Lg),
             BorderWidth = borderWidth,
-            BorderColor = theme.Border,
+            BorderColor = borderColor,
+            Elevation = Kind == CardKind.Elevated ? 1 : 0,
         }, Child);
     }
 }

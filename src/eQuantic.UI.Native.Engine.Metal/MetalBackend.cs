@@ -152,7 +152,7 @@ public sealed class MetalBackend : IRenderBackend
         uniforms.ColorB = ToFloat4(paint.EndColor);
         uniforms.Gradient = new Float4(paint.GradientStart.X, paint.GradientStart.Y, paint.GradientEnd.X, paint.GradientEnd.Y);
         uniforms.Flags = new Float4(
-            command.Kind == DrawCommandKind.StrokeRRect ? 1 : 0,
+            command.Kind switch { DrawCommandKind.StrokeRRect => 1, DrawCommandKind.ShadowRRect => 2, _ => 0 },
             paint.Kind == PaintKind.LinearGradient ? 1 : 0,
             command.Clip is null ? 0 : 1, 0);
         if (command.Clip is { } clip)
