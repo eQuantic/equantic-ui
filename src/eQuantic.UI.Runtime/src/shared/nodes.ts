@@ -127,6 +127,15 @@ export type AlignmentValue =
   | 'centerStart' | 'center' | 'centerEnd'
   | 'bottomStart' | 'bottomCenter' | 'bottomEnd';
 
+export interface ScrollViewNode extends VisualNodeValue {
+  nodeKind: 'scrollView';
+  child: VisualNodeValue;
+  /** ScrollAxis as camelCase member string ('vertical' | 'horizontal'). */
+  axis: string;
+  width?: SizeValueValue;
+  height?: SizeValueValue;
+}
+
 export interface ImageNode extends VisualNodeValue {
   nodeKind: 'image';
   source: string;

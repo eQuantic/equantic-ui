@@ -242,8 +242,13 @@ rejected.)
    decorative). Web = sized `<img>` with object-fit + border-radius (RawAttributes carry src/alt);
    native = SurfaceSubtle placeholder box under the radius until engine texture upload (M4); TS
    mirrors complete. v1 fences: NineSlice, loading/error states, decode crossfade (asset + animation
-   systems). Remaining wave-2 gates: ScrollView (engine clip), then the interaction system and the
-   reconciler.
+   systems). Primitive: ScrollView ✅ (2026-07-05, spec A6 v1) — the child lays out UNBOUNDED on the scroll
+   axis and clips to the viewport (the new engine clip primitive on native; browser-native
+   `overflow: auto` on web, cross axis hidden — cross-pinned). Programmatic `Offset` clamps to the
+   scroll extent (golden-tested with a scrolled viewport). v1 fences: platform physics, gesture
+   capture, fling and the fading scrollbar pill join the native interaction system; the browser owns
+   web physics. ALL FOUR wave-2 primitive gates are now open (Stack/Icon/Image/ScrollView) —
+   remaining gates: the interaction system and the reconciler.
    Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
    without hoisting), server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.

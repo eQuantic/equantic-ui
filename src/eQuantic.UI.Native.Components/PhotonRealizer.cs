@@ -87,6 +87,16 @@ public static class PhotonRealizer
                 break;
         }
 
+        // A ScrollView clips its subtree to the viewport (spec A6) — the engine clip primitive.
+        if (node.Source is ScrollView)
+        {
+            builder.PushClip(new RRect(node.Bounds));
+            foreach (var child in node.Children)
+                Emit(child, theme, mode, builder, hits);
+            builder.PopClip();
+            return;
+        }
+
         foreach (var child in node.Children)
             Emit(child, theme, mode, builder, hits);
     }

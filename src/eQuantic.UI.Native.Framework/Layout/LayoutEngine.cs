@@ -57,6 +57,7 @@ public static class LayoutEngine
         Box box => MeasureBox(box, maxW, maxH, ctx),
         FlexNode flex => MeasureFlex(flex, maxW, maxH, ctx),
         Stack stack => MeasureStack(stack, maxW, maxH, ctx),
+        ScrollView scroll => MeasureScrollView(scroll, maxW, maxH, ctx),
         // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
         Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx),
         Text text => MeasureText(text, maxW, ctx),
@@ -125,6 +126,34 @@ public static class LayoutEngine
             }
         }
 
+        return result;
+    }
+
+    /// <summary>Spec A6: the child lays out UNBOUNDED on the scroll axis (bounded content measures its
+    /// natural extent) and is offset by the programmatic scroll position; the viewport itself resolves
+    /// explicit &gt; Fill &gt; hug-the-child (capped by the available space). Clipping happens at the
+    /// realizer via the engine clip primitive.</summary>
+    private static LayoutNode MeasureScrollView(ScrollView scroll, float maxW, float maxH, LayoutContext ctx)
+    {
+        var result = new LayoutNode(scroll);
+        var horizontal = scroll.Axis == ScrollAxis.Horizontal;
+
+        var child = Measure(scroll.Child,
+            horizontal ? float.PositiveInfinity : maxW,
+            horizontal ? maxH : float.PositiveInfinity, ctx);
+        result.Children.Add(child);
+
+        var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));
+        var height = ResolveSelf(scroll.Height, maxH, MathF.Min(child.Bounds.Height, maxH));
+        result.Bounds = new Rect(0, 0, width, height);
+
+        var maxOffset = MathF.Max(0, horizontal ? child.Bounds.Width - width : child.Bounds.Height - height);
+        var offset = Math.Clamp(scroll.Offset, 0, maxOffset);
+        child.Bounds = child.Bounds with
+        {
+            X = horizontal ? -offset : 0,
+            Y = horizontal ? 0 : -offset,
+        };
         return result;
     }
 

@@ -192,6 +192,25 @@ export class Pressable extends VisualNode {
   }
 }
 
+export class ScrollView extends VisualNode {
+  readonly nodeKind = 'scrollView';
+  child: VisualNode;
+  axis: string;
+  width?: SizeValue;
+  height?: SizeValue;
+  offset: number;
+
+  constructor(child: VisualNode, axis = 'vertical',
+    config?: { width?: SizeValue | number; height?: SizeValue | number; offset?: number }) {
+    super();
+    this.child = child;
+    this.axis = axis;
+    this.offset = config?.offset ?? 0;
+    if (config?.width !== undefined) this.width = SizeValue.from(config.width);
+    if (config?.height !== undefined) this.height = SizeValue.from(config.height);
+  }
+}
+
 export class Image extends VisualNode {
   readonly nodeKind = 'image';
   source: string;

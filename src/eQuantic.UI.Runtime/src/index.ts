@@ -94,6 +94,7 @@ export {
   Positioned,
   Icon,
   Image,
+  ScrollView,
 } from './shared/vocabulary';
 export {
   ColorToken,

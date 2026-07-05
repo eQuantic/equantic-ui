@@ -263,3 +263,36 @@ public sealed class Positioned : VisualNode
     public float? Bottom { get; init; }
     public float? Start { get; init; }
 }
+
+/// <summary>Scroll axis (spec A6).</summary>
+public enum ScrollAxis : byte
+{
+    Vertical = 0,
+    Horizontal = 1,
+}
+
+/// <summary>
+/// A scrolling viewport (spec A6) — BOUNDED content only (virtualized lists are the List component).
+/// The child lays out UNBOUNDED on the scroll axis and is clipped to the viewport. v1 fences: the
+/// platform physics (decay/fling/rubber-band), gesture capture and the fading scrollbar pill join
+/// with the native interaction system; today the scroll position is the programmatic
+/// <see cref="Offset"/> (web realizes as native browser scrolling, which owns its own physics).
+/// </summary>
+public sealed class ScrollView : VisualNode
+{
+    public sealed override string NodeKind => "scrollView";
+
+    public ScrollView(VisualNode child, ScrollAxis axis = ScrollAxis.Vertical)
+    {
+        Child = child;
+        Axis = axis;
+    }
+
+    public VisualNode Child { get; }
+    public ScrollAxis Axis { get; init; }
+    public SizeValue Width { get; init; }
+    public SizeValue Height { get; init; }
+
+    /// <summary>Programmatic scroll position in dp (≥ 0, toward the content end).</summary>
+    public float Offset { get; init; }
+}
