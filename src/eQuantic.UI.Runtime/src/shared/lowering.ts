@@ -25,6 +25,7 @@ import type {
   ImageNode,
   PositionedNode,
   PressableNode,
+  ScrollViewNode,
   SizeValueValue,
   StackNode,
   SpacerNode,
@@ -111,7 +112,7 @@ const styleOrder = [
   'flex-shrink', 'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height', 'padding',
   'background', 'background-color', 'border', 'border-radius', 'color', 'font-family', 'font-size',
   'font-weight', 'line-height', 'text-align', 'letter-spacing', 'box-shadow', 'opacity', 'cursor',
-  'overflow', 'white-space', 'text-overflow', 'box-sizing', 'object-fit',
+  'overflow', 'overflow-x', 'overflow-y', 'white-space', 'text-overflow', 'box-sizing', 'object-fit',
 ] as const;
 
 function styleString(entries: StyleEntries): string {
@@ -144,6 +145,8 @@ function lowerNode(
       return lowerFlexible(node as FlexibleNode, context, horizontalAxis);
     case 'spacer':
       return lowerSpacer(node as SpacerNode, horizontalAxis);
+    case 'scrollView':
+      return lowerScrollView(node as ScrollViewNode, context);
     case 'image':
       return lowerImage(node as ImageNode);
     case 'icon':
@@ -172,6 +175,20 @@ function element(tag: string, style: StyleEntries, children: HtmlNode[] = []): H
     events: {},
     children,
   };
+}
+
+/** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
+function lowerScrollView(node: ScrollViewNode, context: LoweringContext): HtmlNode {
+  const vertical = node.axis !== 'horizontal';
+  const children: HtmlNode[] = [];
+  const child = lowerNode(node.child, context, null);
+  if (child) children.push(child);
+  return element('div', {
+    width: sizeValue(node.width),
+    height: sizeValue(node.height),
+    'overflow-y': vertical ? 'auto' : 'hidden',
+    'overflow-x': vertical ? 'hidden' : 'auto',
+  }, children);
 }
 
 /** Spec A11 mirror: explicitly sized <img> with object-fit and the rrect clip. */

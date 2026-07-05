@@ -31,6 +31,7 @@ public static class WebRealizer
         Box box => LowerBox(box, context),
         FlexNode flex => LowerFlex(flex, context),
         Stack stack => LowerStack(stack, context),
+        ScrollView scroll => LowerScrollView(scroll, context),
         // A Positioned outside a Stack has no anchor frame — degrade to its child (parity with native).
         Positioned positioned => LowerNode(positioned.Child, context, horizontalAxis),
         Text text => LowerText(text, context),
@@ -93,6 +94,27 @@ public static class WebRealizer
             }
         }
 
+        return element;
+    }
+
+    /// <summary>Spec A6 lowering: native browser scrolling — <c>overflow-y/x: auto</c> on the axis
+    /// (the browser owns physics, momentum and the scrollbar); the cross axis stays hidden so content
+    /// never leaks. The programmatic Offset is a native-side concept (browser scroll state lives in
+    /// the DOM).</summary>
+    private static HtmlElement LowerScrollView(ScrollView scroll, ComponentContext context)
+    {
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = Size(scroll.Width),
+                Height = Size(scroll.Height),
+                OverflowY = scroll.Axis == ScrollAxis.Vertical ? "auto" : "hidden",
+                OverflowX = scroll.Axis == ScrollAxis.Horizontal ? "auto" : "hidden",
+            },
+        };
+        var child = LowerNode(scroll.Child, context, horizontalAxis: null);
+        if (child != null) element.Children.Add(child);
         return element;
     }
 

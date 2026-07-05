@@ -33,6 +33,7 @@ export {
   Positioned,
   Icon,
   Image,
+  ScrollView,
 } from './vocabulary';
 export {
   ColorToken,
