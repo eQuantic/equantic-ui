@@ -485,6 +485,8 @@ public class TypeScriptEmitter
         {
             var cleanType = type.Trim().Replace("?", "");
             if (cleanType.Contains("<")) cleanType = cleanType.Split('<')[0];
+            // Array-typed properties reference the ELEMENT type's module (DialogAction[] → DialogAction).
+            while (cleanType.EndsWith("[]")) cleanType = cleanType[..^2].TrimEnd();
             // Extract simple name from fully-qualified names (e.g., "eQuantic.UI.Components.Navigation.Breadcrumb" → "Breadcrumb")
             if (cleanType.Contains('.')) cleanType = cleanType.Substring(cleanType.LastIndexOf('.') + 1);
 

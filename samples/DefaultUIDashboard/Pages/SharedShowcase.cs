@@ -19,7 +19,16 @@ public class SharedShowcase : StatefulComponent
 public class SharedShowcaseState : ComponentState<SharedShowcase>
 {
     private int _count = 0;
+    private bool _confirming;
+    private string _outcome = "none";
 
     public override IComponent Build(RenderContext context) =>
-        new VisualNodeComponent(SharedCounterView.Build(_count, () => SetState(() => _count++)));
+        new VisualNodeComponent(SharedCounterView.Build(_count, () => SetState(() => _count++),
+            _confirming, _outcome,
+            () => SetState(() => _confirming = true),
+            outcome => SetState(() =>
+            {
+                _outcome = outcome;
+                _confirming = false;
+            })));
 }

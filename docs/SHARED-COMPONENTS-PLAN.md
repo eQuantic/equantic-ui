@@ -354,6 +354,23 @@ rejected.)
    SetState rebuild (the reconciler preserves the element), clear + submit. v1 fences: keyboard
    hints/trailing slot (M4 IME), Cancel slide-in (state-transition motion), debounce (app-side),
    38% disabled opacity group (engine opacity primitive). Library: 21 components.
+   Overlays slice 1 ✅ (2026-07-05, Phase C infra + spec C2): the `Overlay` VIEWPORT LAYER — zero
+   in the page flow; native defers the subtree to an overlay pass painted AFTER the page
+   (painter's order, hit regions registered last so topmost-last-wins routes taps to the layer;
+   the reconciler pass now spans page + overlays — EndPass moved from LayoutEngine to the
+   realizer, overlay subtrees lay out against the viewport on stable "ov<i>" paths); web lowers
+   to the generated `.eq-overlay` fixed inset-0 stacking layer (mechanics in the stylesheet,
+   composition in the component — keep overlays out of transformed subtrees). CONSUMER: `Dialog`
+   (C2) — DECLARATIVE presence (`if (_confirming) … new Dialog(…)`), centered E5 card
+   min(480, screen−48) via an ordinary centering Column with S6 gutters, Title + BodyM body,
+   right-aligned Medium actions (Ghost first; 1-2 enforced), and the scrim as a full-viewport
+   Pressable: DISABLED by default (swallows taps — the destructive-confirm contract, matching the
+   native "disabled regions swallow" dispatch and a dead click on web), armed with OnDismiss when
+   `Dismissible`. Compiler: array-typed properties now import the ELEMENT module
+   (`DialogAction[]` minted a phantom `./DialogAction[]`). Proven end to end in the browser:
+   open → scrim blocks → action resolves → overlay leaves the tree; dismissible scrim closes.
+   v1 fences: enter/exit motion (state-transition system), focus trap/alertdialog (a11y system),
+   scroll lock under the fixed layer. Library: 22 components + DialogAction.
    Animation slice 2 ✅ (2026-07-05, spec A1/B16 — GRADIENT + SHIMMER): `BoxStyle.Gradient` exposes
    the engine fence's exact gradient primitive — `LinearGradient(From, To, Direction)`, two TOKEN
    stops on a straight axis (ToRight/ToBottom), drawing OVER the solid background (CSS
