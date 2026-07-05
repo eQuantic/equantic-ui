@@ -141,6 +141,12 @@ public static class PhotonCssGenerator
             css.AppendLine($".eq-elevation-{level} {{ box-shadow: {TokenCss.Shadow(theme.Elevation(level))}; }}");
         }
 
+        // Interaction mechanics (spec §01 pressed = token swap; feedback at Fast motion). The VALUES
+        // arrive per element as custom properties set by the realizers; only the mechanics live here.
+        css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
+        css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");
+        css.AppendLine(".eq-pressable:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
+
         return css.ToString();
     }
 

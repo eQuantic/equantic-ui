@@ -175,6 +175,7 @@ interface PressableConfig {
   disabled?: boolean;
   label?: string | null;
   key?: string | null;
+  pressedBackground?: ColorTokenValue | null;
 }
 
 export class Pressable extends VisualNode {
@@ -183,6 +184,7 @@ export class Pressable extends VisualNode {
   onPressed: (() => void) | null;
   disabled = false;
   label: string | null = null;
+  pressedBackground: ColorTokenValue | null = null;
 
   constructor(child: VisualNode, onPressed: (() => void) | null = null, config?: PressableConfig) {
     super();

@@ -36,24 +36,42 @@ public static class PhotonRealizer
         ThemeMode mode,
         DisplayListBuilder builder,
         ITextMeasurer? measurer = null,
-        float typeScale = 1f)
+        float typeScale = 1f,
+        Pressable? pressed = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale);
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context);
 
         var hits = new List<HitRegion>();
-        Emit(layout, theme, mode, builder, hits);
+        Emit(layout, theme, mode, builder, hits, new PressScope(pressed));
         return new RealizeResult(layout, hits);
     }
 
-    private static void Emit(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits)
+    /// <summary>Carries the held press through the emit walk: entering the pressed Pressable arms the
+    /// token swap, and the FIRST descendant Box consumes it (the component convention: Pressable → Box
+    /// carries the fill — the spec's "token swap on the same rrect").</summary>
+    private sealed class PressScope
     {
+        public PressScope(Pressable? pressed) => Pressed = pressed;
+        public Pressable? Pressed { get; }
+        public ColorToken? PendingFill { get; set; }
+    }
+
+    private static void Emit(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits, PressScope press)
+    {
+        if (ReferenceEquals(node.Source, press.Pressed) && press.Pressed?.PressedBackground is { } pressedFill)
+            press.PendingFill = pressedFill;
+
         switch (node.Source)
         {
             case Box box:
-                EmitChrome(node.Bounds, box.Style.Background, box.Style.CornerRadius,
+            {
+                var fill = press.PendingFill ?? box.Style.Background;
+                press.PendingFill = null;
+                EmitChrome(node.Bounds, fill, box.Style.CornerRadius,
                     box.Style.BorderColor, box.Style.BorderWidth, theme, mode, builder);
                 break;
+            }
 
             case FlexNode flex when flex.Background is not null:
                 EmitChrome(node.Bounds, flex.Background, flex.CornerRadius, default, 0, theme, mode, builder);
@@ -92,13 +110,13 @@ public static class PhotonRealizer
         {
             builder.PushClip(new RRect(node.Bounds));
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits);
+                Emit(child, theme, mode, builder, hits, press);
             builder.PopClip();
             return;
         }
 
         foreach (var child in node.Children)
-            Emit(child, theme, mode, builder, hits);
+            Emit(child, theme, mode, builder, hits, press);
     }
 
     private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,

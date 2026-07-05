@@ -93,6 +93,10 @@ public class HtmlStyle
     #endregion
 
     public string? ObjectFit { get; set; }
+
+    /// <summary>CSS custom properties (<c>--name: value</c>), emitted AFTER every ordered property —
+    /// per-element inputs for generated-stylesheet mechanics (e.g. the pressed-state swap).</summary>
+    public Dictionary<string, string>? CustomProperties { get; set; }
     public string? ObjectPosition { get; set; }
 
     #region Typography
@@ -221,6 +225,13 @@ public class HtmlStyle
         AddProperty(properties, "white-space", WhiteSpace);
         AddProperty(properties, "text-overflow", TextOverflow);
         AddProperty(properties, "box-sizing", BoxSizing);
+        // Custom properties come LAST — per-element inputs for generated-stylesheet mechanics
+        // (e.g. --eq-pressed-bg); the tail position is part of the hydration cross-pin.
+        if (CustomProperties != null)
+        {
+            foreach (var custom in CustomProperties)
+                AddProperty(properties, custom.Key, custom.Value);
+        }
 
 
         return string.Join("; ", properties);

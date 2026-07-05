@@ -83,10 +83,20 @@ public sealed class Button : StatelessComponent
             BorderColor = borderColor,
         }, content);
 
+        // Pressed (§01/A12): filled variants swap Base→Pressed on the same rrect; Outline/Ghost gain
+        // a SurfaceSubtle fill while pressed. (Link's pressed TEXT swap joins with rich text.)
+        ColorToken? pressedFill = Variant switch
+        {
+            Variant.Link => null,
+            Variant.Outline or Variant.Ghost => theme.SurfaceSubtle,
+            _ => colors.Pressed,
+        };
+
         return new Pressable(container, Disabled ? null : OnPressed)
         {
             Disabled = Disabled,
             Label = Label,
+            PressedBackground = Disabled ? null : pressedFill,
         };
     }
 }

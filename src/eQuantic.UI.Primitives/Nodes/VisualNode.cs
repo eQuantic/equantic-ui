@@ -87,6 +87,12 @@ public sealed class Pressable : VisualNode
     public Action? OnPressed { get; init; }
     public bool Disabled { get; init; }
 
+    /// <summary>Pressed-state fill (spec §01: pressed is a REAL token swap on the same rrect — never
+    /// an overlay). Framework-applied: web = generated `:active` CSS driven by a per-element custom
+    /// property; native = the realizer swaps the first descendant Box fill while the press is held.
+    /// Null = no pressed visual.</summary>
+    public ColorToken? PressedBackground { get; init; }
+
     /// <summary>Accessible name (role: button). Required when the child carries no text.</summary>
     public string? Label { get; init; }
 }

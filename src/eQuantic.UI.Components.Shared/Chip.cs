@@ -88,7 +88,12 @@ public sealed class Chip : StatelessComponent
 
         // Filter chips toggle; Tags are static annotations; Input chips act through the remove glyph.
         return Kind == ChipKind.Filter && OnPressed != null
-            ? new Pressable(box, OnPressed) { Label = Label }
+            ? new Pressable(box, OnPressed)
+            {
+                Label = Label,
+                // Spec B8 pressed: fill shift (SurfaceSubtle ↔ Pressed-subtle).
+                PressedBackground = Selected ? primary.Pressed.WithOpacity(0.24f) : theme.SurfaceSubtle,
+            }
             : box;
     }
 }
