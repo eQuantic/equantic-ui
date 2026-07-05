@@ -450,9 +450,24 @@ rejected.)
    classes, `M3.cs`, per-component CSS themes, MaterialDashboard sample) was DELETED — it dies with
    Web.Components. Proven: the same shared components render M3 on the web realizer (primary #6750A4,
    containers, 12/16/28 shape — cross-pinned) AND as native Photon pixels (Material gallery goldens,
-   light+dark — unmistakably M3, swap-the-theme only). Fences (later slices): dynamic color from a
-   seed (HCT tonal palettes) and the app-wide theme-selection wiring (SSR bridge + client boot + the
-   per-app theme-TS delivery so an app SELECTS Material for hydration).
+   light+dark — unmistakably M3, swap-the-theme only).
+   MATERIAL DYNAMIC COLOR ✅ (2026-07-05, slice 2 — HCT tonal palettes from a seed): the real M3
+   algorithm, ported from Google's material-color-utilities into `eQuantic.UI.Material/ColorScience/`
+   (ColorMath sRGB↔XYZ↔L*, Cam16 forward + ViewingConditions, HctSolver accurate CAM16 inverse with
+   chroma-reduction gamut clamp, Hct, TonalPalette). `MaterialColors` split OUT of `MaterialTheme`
+   (color half vs seed-independent type/shape/elevation): `MaterialColors.Baseline` keeps the fixed
+   slice-1 hexes (so `MaterialTheme.Instance` stays byte-identical — zero golden/CSS churn) and
+   `MaterialColors.FromSeed(seed)` derives the full TonalSpot scheme — primary c36 / secondary c16 /
+   tertiary hue+60 c24 / neutral c6 / neutral-variant c8 / error hue25 c84 (+ eQuantic Success/Warning/
+   Info at fixed hues), each role read at its canonical M3 tone. `MaterialTheme.FromSeed(Color)` is the
+   dynamic-color entry point. The port is GROUND-TRUTHED: the CAM16 forward is pinned against Google's
+   published HCT for pure red/blue AND #6750A4 (±0.5), and `FromSeed(#6750A4)` reproduces every low-
+   chroma baseline role byte-for-byte (neutrals, secondary, tertiary — Δ≤2) while the vivid primary
+   follows the current TonalSpot chroma cap (primary tone-40 = #65558F = Google's live output, NOT the
+   hand-tuned baseline #6750A4). Proven on BOTH realizers: 7 web color-science tests + a native Photon
+   golden of the eQuantic-blue seed #0050A0 (light+dark — the purple gallery becomes blue with nothing
+   but a different `IAppTheme`). Fence (last Material slice): app-wide theme-SELECTION wiring (SSR
+   bridge + client boot + per-app theme-TS delivery so an app picks Material — or a seed — for hydration).
    Animation slice 2 ✅ (2026-07-05, spec A1/B16 — GRADIENT + SHIMMER): `BoxStyle.Gradient` exposes
    the engine fence's exact gradient primitive — `LinearGradient(From, To, Direction)`, two TOKEN
    stops on a straight axis (ToRight/ToBottom), drawing OVER the solid background (CSS
