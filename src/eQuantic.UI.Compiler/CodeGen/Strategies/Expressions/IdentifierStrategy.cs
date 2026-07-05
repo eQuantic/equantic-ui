@@ -45,9 +45,10 @@ public class IdentifierStrategy : IConversionStrategy
                 // A STATIC member is reached through the class, not the instance: a bare `Items` reference
                 // to `static Items` on `Widget` must emit `Widget.items`, never `this.items` (which the
                 // uppercase fallback below would otherwise produce, leaving the value undefined at runtime).
-                // (When the identifier is the `.Name` side of `other.Member`, the receiver already qualifies
-                // it — emit just the member name.)
-                if (symbol.IsStatic && symbol.ContainingType != null && symbol.Kind != SymbolKind.Method)
+                // This holds for a static METHOD passed as a delegate too (`onPressed: Helper` → the method
+                // group `Widget.helper`; no `.bind`, statics have no receiver). (When the identifier is the
+                // `.Name` side of `other.Member`, the receiver already qualifies it — emit just the member.)
+                if (symbol.IsStatic && symbol.ContainingType != null)
                 {
                     if (identifier.Parent is MemberAccessExpressionSyntax sma && sma.Name == identifier)
                     {

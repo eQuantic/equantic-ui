@@ -301,8 +301,9 @@ public class CSharpToJsConverter
         if (node is ExpressionSyntax expr) return ConvertExpression(expr);
         if (node is BlockSyntax block) return ConvertBlock(block);
         if (node is StatementSyntax stmt) return ConvertStatement(stmt);
-        _context.Report(node, ConversionSeverity.Warning, "EQ1003",
-            $"C# node '{node.Kind()}' has no transpilation strategy; emitted verbatim and may fail at runtime.");
+        _context.Report(node, ConversionSeverity.Error, "EQ1003",
+            $"C# node '{node.Kind()}' has no transpilation strategy — it cannot be emitted as JavaScript. " +
+            "Rewrite it in a transpilable form, or add a conversion strategy for this construct.");
         return node.ToString();
     }
     
@@ -325,8 +326,9 @@ public class CSharpToJsConverter
             return result;
         }
 
-        _context.Report(expression, ConversionSeverity.Warning, "EQ1001",
-            $"C# expression '{expression.Kind()}' has no transpilation strategy; emitted verbatim and may fail at runtime.");
+        _context.Report(expression, ConversionSeverity.Error, "EQ1001",
+            $"C# expression '{expression.Kind()}' has no transpilation strategy — it cannot be emitted as JavaScript. " +
+            "Rewrite it in a transpilable form, or add a conversion strategy for this construct.");
         return expression.ToString();
     }
 
@@ -355,8 +357,9 @@ public class CSharpToJsConverter
             return ConvertBlock(block);
         }
 
-        _context.Report(stmt, ConversionSeverity.Warning, "EQ1002",
-            $"C# statement '{stmt.Kind()}' has no transpilation strategy; emitted verbatim and may fail at runtime.");
+        _context.Report(stmt, ConversionSeverity.Error, "EQ1002",
+            $"C# statement '{stmt.Kind()}' has no transpilation strategy — it cannot be emitted as JavaScript. " +
+            "Rewrite it in a transpilable form, or add a conversion strategy for this construct.");
         return stmt.ToString();
     }
 }
