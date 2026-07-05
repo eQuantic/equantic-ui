@@ -49,7 +49,7 @@ public sealed class PhotonHost
     public RealizeResult RenderFrame(DisplayListBuilder builder)
     {
         builder.Clear(_theme.Background.Resolve(Mode));
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed);
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused);
         NeedsRender = false;
         return _lastFrame;
     }
@@ -61,6 +61,47 @@ public sealed class PhotonHost
     /// region was hit.
     /// </summary>
     private Pressable? _pressed;
+    private Pressable? _focused;
+
+    /// <summary>The Pressable holding keyboard focus (the §01 double ring renders while set).</summary>
+    public Pressable? Focused => _focused;
+
+    /// <summary>
+    /// Moves focus to the next ENABLED pressable in paint order (wrapping; spec: traversal = child
+    /// order, depth-first — hit regions register in exactly that order). Returns false when the
+    /// frame has no focusable region. (v1: forward-only; Shift+Tab reversal joins the key system.)
+    /// </summary>
+    public bool FocusNext()
+    {
+        var regions = _lastFrame?.HitRegions;
+        if (regions is null || regions.Count == 0) return false;
+
+        var start = 0;
+        if (_focused is not null)
+        {
+            for (var i = 0; i < regions.Count; i++)
+            {
+                if (ReferenceEquals(regions[i].Node, _focused)) { start = i + 1; break; }
+            }
+        }
+        for (var offset = 0; offset < regions.Count; offset++)
+        {
+            var region = regions[(start + offset) % regions.Count];
+            if (region.Node.Disabled) continue;
+            _focused = region.Node;
+            NeedsRender = true;
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Clears keyboard focus (pointer interaction, escape).</summary>
+    public void ClearFocus()
+    {
+        if (_focused is null) return;
+        _focused = null;
+        NeedsRender = true;
+    }
 
     /// <summary>The Pressable currently held down (pressed visuals render while set).</summary>
     public Pressable? Pressed => _pressed;

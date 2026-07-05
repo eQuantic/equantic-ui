@@ -304,15 +304,19 @@ public static class WebRealizer
             OnClick = pressable.Disabled ? null : pressable.OnPressed,
         };
 
-        // Pressed state (spec §01): mechanics live in the GENERATED stylesheet (.eq-pressable:active);
-        // this element only carries the class and the token value as a custom property — zero JS.
-        if (pressable.PressedBackground is { } pressedFill && !pressable.Disabled)
+        // Interaction states (spec §01): mechanics live in the GENERATED stylesheet — every enabled
+        // pressable carries the class (the :focus-visible double ring is an accessibility DEFAULT);
+        // the pressed swap additionally needs its token value as a per-element custom property.
+        if (!pressable.Disabled)
         {
             element.ClassName = "eq-pressable";
-            element.Style!.CustomProperties = new Dictionary<string, string>
+            if (pressable.PressedBackground is { } pressedFill)
             {
-                ["--eq-pressed-bg"] = TokenCss.Value(pressedFill),
-            };
+                element.Style!.CustomProperties = new Dictionary<string, string>
+                {
+                    ["--eq-pressed-bg"] = TokenCss.Value(pressedFill),
+                };
+            }
         }
 
         if (LowerNode(pressable.Child, context, horizontalAxis: null) is { } child)
