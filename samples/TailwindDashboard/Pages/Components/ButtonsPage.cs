@@ -1,8 +1,8 @@
 using eQuantic.UI.Core;
 using eQuantic.UI.Core.Theme.Types;
-using eQuantic.UI.Components;
-using eQuantic.UI.Components.Layout;
-using eQuantic.UI.Components.Display;
+using eQuantic.UI.Web.Components;
+using eQuantic.UI.Web.Components.Layout;
+using eQuantic.UI.Web.Components.Display;
 using TailwindDashboard.Components;
 
 namespace TailwindDashboard.Pages.Components;

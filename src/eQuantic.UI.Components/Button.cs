@@ -1,124 +1,102 @@
-using System.Collections.Generic;
-using System.Linq;
-using eQuantic.UI.Core;
-using eQuantic.UI.Core.Theme;
-using eQuantic.UI.Core.Theme.Types;
+using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Components;
 
 /// <summary>
-/// Button component with support for variants, sizes, and theming.
+/// The design system's Button (spec A12) — authored ONCE against the abstract vocabulary: a
+/// <see cref="Pressable"/> wrapping a token-styled <see cref="Box"/> with a centered label
+/// <see cref="Row"/>. Realizes as DOM+CSS on web and Photon pixels on native from this single
+/// definition. Renders in 2–3 draws exactly as the spec budgets.
 ///
-/// Usage examples:
-/// <code>
-/// // Basic button
-/// new Button { Text = "Click me" }
-///
-/// // With variant and size
-/// new Button {
-///     Text = "Submit",
-///     Variant = Variant.Primary,
-///     Size = SizeVariant.Large,
-///     OnClick = HandleClick
-/// }
-///
-/// // With children components
-/// new Button {
-///     Variant = Variant.Outline,
-///     Children = {
-///         new Icon { Name = "check" },
-///         new Text("Confirm")
-///     }
-/// }
-/// </code>
+/// v1 (pre-interaction-system): the PRESSED/FOCUSED visuals are framework interaction states — they
+/// swap tokens on the realized tree (fill → Pressed, focus double-ring) when the gesture/focus system
+/// lands; this component authors the rest state. Loading (spinner, frozen width) joins with the
+/// animation slice.
 /// </summary>
-public class Button : StatelessComponent
+public sealed class Button : StatelessComponent
 {
-    /// <summary>
-    /// HTML button type attribute (button, submit, reset)
-    /// </summary>
-    public string Type { get; set; } = "button";
-
-    /// <summary>
-    /// Disable the button (prevents interaction)
-    /// </summary>
-    public bool Disabled { get; set; }
-
-    /// <summary>
-    /// Button text content (alternative to using Children)
-    /// </summary>
-    public string? Text { get; set; }
-
-    /// <summary>
-    /// Visual variant (Primary, Secondary, Destructive, Outline, Ghost, Link, Success, Warning, Info)
-    /// </summary>
-    public Variant Variant { get; set; } = Variant.Primary;
-
-    /// <summary>
-    /// Size variant (Small, Medium, Large, XLarge)
-    /// </summary>
-    public SizeVariant Size { get; set; } = SizeVariant.Medium;
-
-    /// <summary>
-    /// Show loading spinner and disable interaction
-    /// </summary>
-    public bool Loading { get; set; }
-
-    public override IComponent Build(RenderContext context)
+    public Button(string label, Variant variant = Variant.Primary, SizeVariant size = SizeVariant.Medium,
+        Action? onPressed = null)
     {
-        var theme = context.GetService<IAppTheme>();
-        var buttonTheme = theme?.Button;
-
-        var classValue = StyleBuilder.Create(buttonTheme?.Base)
-                            .Add(buttonTheme?.GetVariant(Variant))
-                            .Add(buttonTheme?.GetSize(Size))
-                            .Add(ClassName)
-                            .Build();
-
-        var element = new Box
-        {
-            As = "button",
-            Type = Type,
-            ClassName = classValue,
-            CustomEvents = BuildEvents()
-        };
-
-        // Disable button when loading or explicitly disabled
-        if (Disabled || Loading) element.Disabled = true;
-        if (Loading) 
-        {
-            element.DataAttributes = new Dictionary<string, string> { ["loading"] = "true" };
-        }
-
-        // Add loading spinner if loading
-        if (Loading)
-        {
-            element.Children.Add(CreateSpinner());
-        }
-
-        if (Children.Any())
-        {
-            foreach (var child in Children)
-            {
-                element.Children.Add(child);
-            }
-        }
-        else if (Text != null)
-        {
-            element.Children.Add(new Text(Text));
-        }
-
-        return element;
+        Label = label;
+        Variant = variant;
+        Size = size;
+        OnPressed = onPressed;
     }
 
-    private IComponent CreateSpinner()
+    public string Label { get; init; }
+    public Variant Variant { get; init; }
+    public SizeVariant Size { get; init; }
+    public Action? OnPressed { get; init; }
+
+    /// <summary>Disabled = the 38% opacity group over the resolved style (spec §01) + presses swallowed.</summary>
+    public bool Disabled { get; init; }
+
+    /// <summary>Fills the parent row instead of hugging the label (checkout CTAs, spec A12).</summary>
+    public bool Expand { get; init; }
+
+    public override VisualNode Build(ComponentContext context)
     {
-        // Simple CSS-based spinner (single div with animation)
-        return new Box
+        var theme = context.Theme;
+        var colors = theme.Colors(Variant);
+        var (height, padX, gap, labelSize, _, radius, _) = ButtonStyles.Metrics(Size);
+
+        // Link is an inline-text control: no fill ever, minimal padding (spec A12).
+        if (Variant == Variant.Link) padX = 6;
+        ColorToken? fill = Variant is Variant.Outline or Variant.Ghost or Variant.Link ? null : colors.Base;
+        var textColor = colors.OnBase;
+
+        var borderWidth = Variant == Variant.Outline ? 1f : 0f;
+        var borderColor = theme.BorderStrong;
+
+        if (Disabled)
         {
-            As = "span",
-            ClassName = "eq-btn-spinner",
-            AriaHidden = true
+            var opacity = theme.DisabledOpacity;
+            fill = fill?.WithOpacity(opacity);
+            textColor = textColor.WithOpacity(opacity);
+            borderColor = borderColor.WithOpacity(opacity);
+        }
+
+        // Label style comes from the spec's size table (13/15/16/17 · 600) — a system override, not a
+        // free-form size (spec A8). Single line, ellipsis — never two lines (spec A12).
+        var label = new Text(Label, TypeRole.Label, textColor, maxLines: 1)
+        {
+            StyleOverride = new TypeStyle(labelSize, labelSize, FontWeight.SemiBold, 0.1f, 1.3f),
+        };
+
+        var content = new Row(gap: gap)
+        {
+            Height = SizeValue.Fill,
+            Main = MainAlign.Center,
+        };
+        content.Add(label);
+
+        var container = new Box(new BoxStyle
+        {
+            Height = height,
+            Width = Expand ? SizeValue.Fill : SizeValue.Hug,
+            MinWidth = ButtonStyles.MinWidth,
+            Padding = EdgeInsets.Symmetric(padX, 0),
+            Background = fill,
+            CornerRadius = new CornerRadii(radius),
+            BorderWidth = borderWidth,
+            BorderColor = borderColor,
+        }, content);
+
+        // Pressed (§01/A12): filled variants swap Base→Pressed on the same rrect; Outline/Ghost gain
+        // a SurfaceSubtle fill while pressed. (Link's pressed TEXT swap joins with rich text.)
+        ColorToken? pressedFill = Variant switch
+        {
+            Variant.Link => null,
+            Variant.Outline or Variant.Ghost => theme.SurfaceSubtle,
+            _ => colors.Pressed,
+        };
+
+        return new Pressable(container, Disabled ? null : OnPressed)
+        {
+            Disabled = Disabled,
+            Label = Label,
+            PressedBackground = Disabled ? null : pressedFill,
         };
     }
 }

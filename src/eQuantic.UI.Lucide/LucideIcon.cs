@@ -1,5 +1,5 @@
 using eQuantic.UI.Core;
-using eQuantic.UI.Components;
+using eQuantic.UI.Web.Components;
 
 namespace eQuantic.UI.Lucide;
 

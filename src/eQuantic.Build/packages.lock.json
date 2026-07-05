@@ -178,12 +178,6 @@
       "equantic.ui.components": {
         "type": "Project",
         "dependencies": {
-          "eQuantic.UI.Core": "[0.1.6, )"
-        }
-      },
-      "equantic.ui.components.shared": {
-        "type": "Project",
-        "dependencies": {
           "eQuantic.UI.Primitives": "[0.1.6, )"
         }
       },
@@ -196,9 +190,9 @@
       "equantic.ui.server": {
         "type": "Project",
         "dependencies": {
-          "eQuantic.UI.Components": "[0.1.6, )",
           "eQuantic.UI.Core": "[0.1.6, )",
-          "eQuantic.UI.Web": "[0.1.6, )"
+          "eQuantic.UI.Web": "[0.1.6, )",
+          "eQuantic.UI.Web.Components": "[0.1.6, )"
         }
       },
       "equantic.ui.tailwind": {
@@ -211,9 +205,15 @@
       "equantic.ui.web": {
         "type": "Project",
         "dependencies": {
-          "eQuantic.UI.Components.Shared": "[0.1.6, )",
+          "eQuantic.UI.Components": "[0.1.6, )",
           "eQuantic.UI.Core": "[0.1.6, )",
           "eQuantic.UI.Primitives": "[0.1.6, )"
+        }
+      },
+      "equantic.ui.web.components": {
+        "type": "Project",
+        "dependencies": {
+          "eQuantic.UI.Core": "[0.1.6, )"
         }
       }
     }

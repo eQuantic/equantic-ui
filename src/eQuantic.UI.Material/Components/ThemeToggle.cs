@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using eQuantic.UI.Components;
+using eQuantic.UI.Web.Components;
 using eQuantic.UI.Core;
 
 namespace eQuantic.UI.Material.Components;

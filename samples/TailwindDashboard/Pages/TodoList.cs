@@ -1,9 +1,9 @@
 using eQuantic.UI.Core;
-using eQuantic.UI.Components;
-using eQuantic.UI.Components.Inputs;
-using eQuantic.UI.Components.Surfaces;
-using eQuantic.UI.Components.Feedback;
-using eQuantic.UI.Components.Overlays;
+using eQuantic.UI.Web.Components;
+using eQuantic.UI.Web.Components.Inputs;
+using eQuantic.UI.Web.Components.Surfaces;
+using eQuantic.UI.Web.Components.Feedback;
+using eQuantic.UI.Web.Components.Overlays;
 using eQuantic.UI.Core.Theme.Types;
 using eQuantic.UI.Core.Metadata;
 using eQuantic.UI.Core.Styling;

@@ -13,7 +13,7 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 public class AuthoringCoverageTests
 {
     private const string Header =
-        "using System; using System.Collections.Generic; using eQuantic.UI.Core; using eQuantic.UI.Components; namespace App; ";
+        "using System; using System.Collections.Generic; using eQuantic.UI.Core; using eQuantic.UI.Web.Components; namespace App; ";
 
     private static string Ts(string body) =>
         new ComponentCompiler().CompileSource(Header + body).Single(r => r.ComponentName == "C").TypeScript;

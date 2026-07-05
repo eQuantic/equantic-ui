@@ -75,7 +75,7 @@ public static class CreateCommand
 
     private static string GetCounterTemplate(string name) => $@"// App.eqx - {name}
 using eQuantic.UI.Core;
-using eQuantic.UI.Components;
+using eQuantic.UI.Web.Components;
 
 namespace {SanitizeName(name)};
 
@@ -133,7 +133,7 @@ public class AppState : ComponentState<App>
 
     private static string GetBlankTemplate(string name) => $@"// App.eqx - {name}
 using eQuantic.UI.Core;
-using eQuantic.UI.Components;
+using eQuantic.UI.Web.Components;
 
 namespace {SanitizeName(name)};
 

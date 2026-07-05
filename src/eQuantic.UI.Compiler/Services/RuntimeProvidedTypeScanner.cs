@@ -7,7 +7,7 @@ namespace eQuantic.UI.Compiler.Services;
 /// Semantic classifier of RUNTIME-PROVIDED type references — the single implementation behind every
 /// emission path (components, state classes, static helpers). A referenced type routes to
 /// <c>@equantic/runtime</c> when it lives in the shared vocabulary (<c>eQuantic.UI.Primitives</c>),
-/// the shared component library (<c>eQuantic.UI.Components.Shared</c>, whose transpiled modules ship
+/// the shared component library (<c>eQuantic.UI.Components</c>, whose transpiled modules ship
 /// embedded in the runtime — this is also what disambiguates the deliberate name reuse against the
 /// standard web components: the file's usings decide which type a name binds to), or carries
 /// <c>[RuntimeProvided]</c>. Enums are tracked separately: they lower to camelCase member-name string
@@ -23,8 +23,8 @@ public static class RuntimeProvidedTypeScanner
     public static bool IsRuntimeProvidedNamespace(string ns) =>
         ns == "eQuantic.UI.Primitives"
         || ns.StartsWith("eQuantic.UI.Primitives.")
-        || ns == "eQuantic.UI.Components.Shared"
-        || ns.StartsWith("eQuantic.UI.Components.Shared.");
+        || ns == "eQuantic.UI.Components"
+        || ns.StartsWith("eQuantic.UI.Components.");
 
     /// <summary>Walks every identifier under <paramref name="root"/>, resolving symbols through
     /// <paramref name="model"/>, and buckets runtime-provided type names and enum type names.</summary>

@@ -1,6 +1,6 @@
 using eQuantic.UI.Core;
-using eQuantic.UI.Components;
-using eQuantic.UI.Components.Surfaces;
+using eQuantic.UI.Web.Components;
+using eQuantic.UI.Web.Components.Surfaces;
 using DefaultUIDashboard.Components;
 
 namespace DefaultUIDashboard.Pages;

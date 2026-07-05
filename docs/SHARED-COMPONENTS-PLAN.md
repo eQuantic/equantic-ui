@@ -389,6 +389,21 @@ rejected.)
    the same `let` hoisting the if-statement had — `_snap = x is {} v && …` was a runtime
    ReferenceError), via the shared PatternVariableScanner (lambda bodies excluded: their bindings
    scope to the lambda). Native goldens pin the quarter-turn rosette in both modes.
+   THE MERGE ✅ (2026-07-05): `eQuantic.UI.Components.Shared` IS now `eQuantic.UI.Components` —
+   folder, project, PackageId and namespace. The legacy web set moved to
+   `eQuantic.UI.Web.Components` (assembly + namespace; satellites — icon packs, charts, Material,
+   Images, Server error pages — just swapped a using and keep compiling; it is deprecated surface
+   that dies piece by piece, no compatibility promised). Consequences wired in: eqc's
+   RuntimeProvidedTypeScanner routes `eQuantic.UI.Components[.*]` to `@equantic/runtime`; the
+   name-reuse/using disambiguation is GONE (one Button); the transpilation harness dropped the
+   legacy-dll exclusion — the enclosing-namespace rebinding gotcha is structurally impossible now
+   (the legacy set lives outside the `eQuantic.UI.Components` chain); the SDK's defaults reference
+   the new `eQuantic.UI.Components` (GeneratePathProperty feeds eqc the write-once sources at
+   tools/source) plus `eQuantic.UI.Web.Components` for the transitional web set. Pinned transpiled
+   fixtures stayed BYTE-IDENTICAL (namespaces never reach the emit). TailwindDashboard (legacy
+   showcase, already failing restore on clean HEAD — missing .local-packages source) left the
+   solution; it dies with Web.Components. All suites green; SSR smoke on both the write-once page
+   and a legacy page.
    Animation slice 2 ✅ (2026-07-05, spec A1/B16 — GRADIENT + SHIMMER): `BoxStyle.Gradient` exposes
    the engine fence's exact gradient primitive — `LinearGradient(From, To, Direction)`, two TOKEN
    stops on a straight axis (ToRight/ToBottom), drawing OVER the solid background (CSS

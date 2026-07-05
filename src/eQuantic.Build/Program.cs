@@ -162,7 +162,7 @@ var componentDirectories = new List<string>(sourceDirs);
 
 // Also scan standard component library locations relative to build tool
 var buildDir = AppContext.BaseDirectory;
-var standardComponentsPath = Path.GetFullPath(Path.Combine(buildDir, "..", "..", "..", "..", "eQuantic.UI.Components"));
+var standardComponentsPath = Path.GetFullPath(Path.Combine(buildDir, "..", "..", "..", "..", "eQuantic.UI.Web.Components"));
 if (Directory.Exists(standardComponentsPath))
 {
     componentDirectories.Add(standardComponentsPath);

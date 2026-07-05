@@ -134,7 +134,7 @@ export {
 } from './shared/photon-context';
 export { VisualNodeComponent } from './shared/visual-node-component';
 // The shared component LIBRARY (write-once) — transpiled modules embedded in the runtime, byte-pinned
-// to the live eqc output (SharedComponentTranspilationTests). `using eQuantic.UI.Components.Shared`
+// to the live eqc output (SharedComponentTranspilationTests). `using eQuantic.UI.Components`
 // in app code routes imports here; the standard web components keep their per-app ./modules, so the
 // deliberate name reuse never collides.
 export { Button } from './shared/components/Button';

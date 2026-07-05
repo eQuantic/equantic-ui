@@ -1,10 +1,10 @@
-using eQuantic.UI.Components.Shared;
+using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine.Reference;
 using eQuantic.UI.Native.Engine.Tests.Golden;
 using eQuantic.UI.Primitives;
-using List = eQuantic.UI.Components.Shared.List;
-using Switch = eQuantic.UI.Components.Shared.Switch;
+using List = eQuantic.UI.Components.List;
+using Switch = eQuantic.UI.Components.Switch;
 
 namespace eQuantic.UI.Native.Engine.Tests;
 

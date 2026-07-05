@@ -13,7 +13,7 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 public class EnumFlagsStrategyTests
 {
     private const string Header =
-        "using System; using eQuantic.UI.Core; using eQuantic.UI.Components; namespace App; " +
+        "using System; using eQuantic.UI.Core; using eQuantic.UI.Web.Components; namespace App; " +
         "[Flags] public enum Perm { None = 0, Read = 1, Write = 2, Exec = 4 } " +
         "public enum Color { Red, Green, Blue } ";
 

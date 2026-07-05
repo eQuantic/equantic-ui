@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// Transpiles the REAL shared component sources (<c>eQuantic.UI.Components.Shared</c>) with the real
+/// Transpiles the REAL shared component sources (<c>eQuantic.UI.Components</c>) with the real
 /// compiler — the same pipeline an app build runs — and pins the emitted modules committed at
 /// <c>src/eQuantic.UI.Runtime/src/shared/__transpiled__/</c>, where the runtime's vitest suite
 /// EXECUTES them against the vocabulary classes and the generated theme (the write-once proof on
@@ -32,7 +32,7 @@ public class SharedComponentTranspilationTests
     /// Kept as an in-test source: it is a demo/proof, not library surface.
     /// </summary>
     private const string SharedCounterSource = """
-        using eQuantic.UI.Components.Shared;
+        using eQuantic.UI.Components;
         using eQuantic.UI.Primitives;
 
         namespace eQuantic.UI.Web.Tests.Fixtures;
@@ -58,7 +58,7 @@ public class SharedComponentTranspilationTests
     /// position (state survives) while <c>AdoptConfig</c> carries the fresh configuration over.
     /// </summary>
     private const string NestedReconcilerSource = """
-        using eQuantic.UI.Components.Shared;
+        using eQuantic.UI.Components;
         using eQuantic.UI.Primitives;
 
         namespace eQuantic.UI.Web.Tests.Fixtures;
@@ -105,12 +105,12 @@ public class SharedComponentTranspilationTests
     {
         var root = RepoRoot();
         var sourcePaths = SharedSources
-            .Select(name => Path.Combine(root, "src", "eQuantic.UI.Components.Shared", name))
+            .Select(name => Path.Combine(root, "src", "eQuantic.UI.Components", name))
             .ToList();
 
         // The same semantic setup the SDK gives eqc (full resolved references — the SDK passes
         // @(ReferencePathWithRefAssemblies)): here, the test host's trusted platform assemblies,
-        // which already include Primitives and Components.Shared via project references. Minimal
+        // which already include Primitives and eQuantic.UI.Components via project references. Minimal
         // hand-picked refs are NOT equivalent — delegate facades go missing and constructor overloads
         // silently fail to bind (breaking, e.g., named-argument reordering).
         var counterPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "SharedCounter.cs");
@@ -125,15 +125,12 @@ public class SharedComponentTranspilationTests
         trees.Add(CSharpSyntaxTree.ParseText(
             "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
             path: "GlobalUsings.g.cs"));
-        // NOT the standard web components assembly: inside `namespace eQuantic.UI.Components.Shared`,
-        // C# resolves `Box`/`Row`/`Text` against the ENCLOSING `eQuantic.UI.Components` namespace
-        // BEFORE any using directive — referencing the web assembly here would silently rebind the
-        // library's vocabulary to the web components. The real Components.Shared build references
-        // Primitives only, and apps consume it as metadata, so only this harness could hit it.
+        // Full TPA references, INCLUDING eQuantic.UI.Web.Components: since the merge the legacy
+        // web set lives outside the eQuantic.UI.Components namespace chain, so the old
+        // enclosing-namespace rebinding gotcha is structurally impossible.
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Where(path => !Path.GetFileName(path).Equals("eQuantic.UI.Components.dll", StringComparison.OrdinalIgnoreCase))
             .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
             .ToList();
         var compilation = CSharpCompilation.Create("SharedComponents", trees, references,
@@ -234,7 +231,7 @@ public class SharedComponentTranspilationTests
     /// <summary>A CORE page composing shared components through the adapter — the unification bridge.</summary>
     private const string BridgePageSource = """
         using eQuantic.UI.Core;
-        using eQuantic.UI.Components.Shared;
+        using eQuantic.UI.Components;
         using eQuantic.UI.Web;
 
         namespace eQuantic.UI.Web.Tests.Fixtures;
@@ -313,7 +310,7 @@ public class SharedComponentTranspilationTests
         // the import resolves to. This is the collision-resolution contract of unification slice 2.
         var webPage = TranspilePage("""
             using eQuantic.UI.Core;
-            using eQuantic.UI.Components;
+            using eQuantic.UI.Web.Components;
 
             namespace eQuantic.UI.Web.Tests.Fixtures;
 
@@ -325,7 +322,7 @@ public class SharedComponentTranspilationTests
 
         var sharedPage = TranspilePage("""
             using eQuantic.UI.Core;
-            using eQuantic.UI.Components.Shared;
+            using eQuantic.UI.Components;
             using eQuantic.UI.Web;
 
             namespace eQuantic.UI.Web.Tests.Fixtures;

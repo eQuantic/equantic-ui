@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using eQuantic.UI.Core;
 using eQuantic.UI.Core.Theme.Types;
-using eQuantic.UI.Components;
-using eQuantic.UI.Components.Layout;
-using eQuantic.UI.Components.Navigation;
-using eQuantic.UI.Components.Navigation.Tabs;
-using eQuantic.UI.Components.Display;
-using eQuantic.UI.Components.Display.Accordion;
-using eQuantic.UI.Components.Navigation.NavigationMenu;
+using eQuantic.UI.Web.Components;
+using eQuantic.UI.Web.Components.Layout;
+using eQuantic.UI.Web.Components.Navigation;
+using eQuantic.UI.Web.Components.Navigation.Tabs;
+using eQuantic.UI.Web.Components.Display;
+using eQuantic.UI.Web.Components.Display.Accordion;
+using eQuantic.UI.Web.Components.Navigation.NavigationMenu;
 using TailwindDashboard.Components;
 
 namespace TailwindDashboard.Pages.Components;

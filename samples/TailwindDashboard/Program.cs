@@ -5,7 +5,7 @@ using eQuantic.UI.Charts.ChartJs;
 using eQuantic.UI.Charts.ApexCharts;
 using eQuantic.UI.Lottie;
 using eQuantic.UI.Images;
-using eQuantic.UI.Components.Display;
+using eQuantic.UI.Web.Components.Display;
 using eQuantic.UI.Core.Assets;
 
 var builder = WebApplication.CreateBuilder(args);
