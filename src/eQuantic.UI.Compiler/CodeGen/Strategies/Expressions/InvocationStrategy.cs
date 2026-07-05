@@ -85,7 +85,18 @@ public class InvocationStrategy : IConversionStrategy
 
         // Direct invocation (Function() -> function())
         bool needsThis = false;
-        
+
+        // A STATIC method reached unqualified is a sibling on the enclosing type (or a `using static`
+        // import) — it compiles to a class static, so it must be called THROUGH the class:
+        // `DashboardView.thousands(...)`, never bare `thousands(...)` (undefined at runtime) nor
+        // `this.thousands(...)`. Local functions are excluded (they are plain in-scope functions).
+        if (symbol != null && symbol.IsStatic
+            && symbol.MethodKind != MethodKind.LocalFunction
+            && symbol.ContainingType != null)
+        {
+            return $"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({args})";
+        }
+
         // Use semantic resolution if available. Local functions are NOT members of `this` even
         // though they have a containing type — they compile to a plain `function` in the same scope.
         if (symbol != null && !symbol.IsStatic && symbol.MethodKind != MethodKind.LocalFunction)

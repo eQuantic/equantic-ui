@@ -37,9 +37,12 @@ builder.Services.AddUI(options =>
                         return true;                         // allow
                       }];
                     </script>")
+                    // Page chrome follows the SELECTED theme: the UseTheme token stylesheet emits
+                    // --eq-color-* as light-dark() pairs, so body background/text track Photon (or
+                    // Material, or a seed) AND light/dark via color-scheme — no hardcoded palette.
                     .SetBaseStyles(@"
-                        :root { --primary: #6366f1; --bg: #0f172a; --text: #f8fafc; }
-                        body { background: var(--bg); color: var(--text); }
+                        body { margin: 0; font-family: system-ui, -apple-system, sans-serif;
+                               background: var(--eq-color-background); color: var(--eq-color-text-primary); }
                         .counter { padding: 2rem; }
                     ");
            });

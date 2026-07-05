@@ -38,6 +38,17 @@ public class FailOnUnsupportedTests
     }
 
     [Fact]
+    public void NoStrategyConstruct_RaisesGenericError_NotAVerbatimWarning()
+    {
+        // A construct the compiler has no strategy for (LINQ query syntax) must be a BUILD ERROR with a
+        // source location, never a warning + verbatim C# that becomes `X is not defined` at runtime —
+        // the generic no-strategy fallback (EQ1001/1002/1003) is now an error like the dedicated ones.
+        TestHelper.DiagnosticsFor("from x in items select x")
+            .Should().Contain(d => d.Severity == ConversionSeverity.Error
+                && (d.Code == "EQ1001" || d.Code == "EQ1002" || d.Code == "EQ1003"));
+    }
+
+    [Fact]
     public void UnsafeBlock_WithoutPointers_Unwraps_NoError()
     {
         // `unsafe` is just a context marker; plain code inside transpiles normally (no diagnostic).
