@@ -125,6 +125,15 @@ export { Chip } from './shared/components/Chip';
 export { ProgressBar } from './shared/components/ProgressBar';
 export { Avatar } from './shared/components/Avatar';
 export { Banner } from './shared/components/Banner';
+export { IconButton } from './shared/components/IconButton';
+export { Checkbox } from './shared/components/Checkbox';
+export { Switch } from './shared/components/Switch';
+export { RadioGroup } from './shared/components/RadioGroup';
+export { ListItem } from './shared/components/ListItem';
+export { List } from './shared/components/List';
+export { Tabs } from './shared/components/Tabs';
+export { EmptyState } from './shared/components/EmptyState';
+export { Skeleton } from './shared/components/Skeleton';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).
 export {
   Space,
