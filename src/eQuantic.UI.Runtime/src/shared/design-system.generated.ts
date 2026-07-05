@@ -154,6 +154,7 @@ export const photonTheme: AppTheme = {
   background: t(c(245, 246, 248, 255), c(12, 15, 19, 255)),
   surface: t(c(255, 255, 255, 255), c(20, 24, 30, 255)),
   surfaceSubtle: t(c(239, 241, 244, 255), c(28, 35, 43, 255)),
+  surfaceHighlight: t(c(255, 255, 255, 140), c(255, 255, 255, 18)),
   border: t(c(226, 229, 234, 255), c(42, 50, 61, 255)),
   borderStrong: t(c(201, 206, 214, 255), c(61, 71, 84, 255)),
   textPrimary: t(c(23, 27, 33, 255), c(242, 244, 247, 255)),

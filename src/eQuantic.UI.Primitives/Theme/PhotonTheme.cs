@@ -15,6 +15,7 @@ public sealed class PhotonTheme : IAppTheme
     public ColorToken Background { get; } = Token(0xF5F6F8, 0x0C0F13);
     public ColorToken Surface { get; } = Token(0xFFFFFF, 0x14181E);
     public ColorToken SurfaceSubtle { get; } = Token(0xEFF1F4, 0x1C232B);
+    public ColorToken SurfaceHighlight { get; } = new(Rgba(0xFFFFFF, 140), Rgba(0xFFFFFF, 18)); // 55% / 7%
     public ColorToken Border { get; } = Token(0xE2E5EA, 0x2A323D);
     public ColorToken BorderStrong { get; } = Token(0xC9CED6, 0x3D4754);
 

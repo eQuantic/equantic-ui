@@ -332,7 +332,20 @@ rejected.)
    CONSUMER: `ProgressBar(value: float? = null)` — null = indeterminate (spec B14): a full-width
    layer sweeps the 30% flex segment -35%→105% on the 1.2s loop inside the clipping Radius.Full
    track. Verified live in the browser (SSR + hydration + running animation at the spec velocity).
-   Skeleton shimmer stays fenced on BoxStyle gradient (2-stop; engine Paint.Linear ready); Spinner
-   stays fenced on engine arcs (or native Icon glyphs + a rotate effect).
+   Spinner stays fenced on engine arcs (or native Icon glyphs + a rotate effect).
+   Animation slice 2 ✅ (2026-07-05, spec A1/B16 — GRADIENT + SHIMMER): `BoxStyle.Gradient` exposes
+   the engine fence's exact gradient primitive — `LinearGradient(From, To, Direction)`, two TOKEN
+   stops on a straight axis (ToRight/ToBottom), drawing OVER the solid background (CSS
+   background-image/background-color composition; native emits a second FillRRect with
+   Paint.Linear across the bounds). New theme token `SurfaceHighlight` (translucent white 55%/7%)
+   flows reflectively into the generated TS/CSS. `LoopMotion.HideAtRest` completes the Reduce
+   Motion story: decorative loops disappear entirely (native skips the subtree AND reports no
+   active motion; web adds `.eq-loop-rest-hidden { visibility: hidden }` to the generated media
+   query) while positional loops keep a still frame. CONSUMER: Skeleton gained the spec B16
+   shimmer — a split 2-stop gradient glint (transparent→highlight | highlight→transparent, the
+   symmetric band within the 2-stop fence) sweeping -100%→100% on the 1.4s clock inside the
+   placeholder's clipping rrect; Reduce Motion = the plain SurfaceSubtle placeholder, exactly as
+   speced. Goldens at t=700ms both modes; verified live in the browser (mirrored computed
+   gradients, spec sweep velocity, rest-hidden class).
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
 5. Layout conformance harness lands with step 2 and gates every layout feature after it.

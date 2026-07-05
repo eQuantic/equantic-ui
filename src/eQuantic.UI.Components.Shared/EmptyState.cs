@@ -79,14 +79,16 @@ public enum SkeletonShape : byte
 
 /// <summary>
 /// The design system's Skeleton (spec B16): SurfaceSubtle placeholders that mirror the real
-/// layout's dimensions — content must replace them with ZERO shift. v1 fence: the loop-motion
-/// system exists (LoopMotion, ProgressBar indeterminate), but the translating shimmer is a
-/// GRADIENT layer (spec: 1.4s clock) — it joins when BoxStyle grows the 2-stop linear gradient
-/// (engine Paint.Linear is ready). Static SurfaceSubtle today is also exactly the spec's Reduce
-/// Motion behavior.
+/// layout's dimensions — content must replace them with ZERO shift — under the translating shimmer:
+/// a split 2-stop gradient layer (transparent→highlight | highlight→transparent) sweeping
+/// -100%→100% on the 1.4s clock, clipped by the placeholder's own rrect. Reduce Motion hides the
+/// decorative layer entirely (HideAtRest) — the spec's plain-SurfaceSubtle behavior.
 /// </summary>
 public sealed class Skeleton : StatelessComponent
 {
+    /// <summary>Spec B16 shimmer clock: every skeleton shares the phase (one document/frame clock).</summary>
+    private const int ShimmerDurationMs = 1400;
+
     public Skeleton(SkeletonShape shape, float width, float height = 0)
     {
         Shape = shape;
@@ -100,6 +102,7 @@ public sealed class Skeleton : StatelessComponent
 
     public override VisualNode Build(ComponentContext context)
     {
+        var theme = context.Theme;
         var height = Shape switch
         {
             SkeletonShape.Line => 12f,
@@ -112,12 +115,29 @@ public sealed class Skeleton : StatelessComponent
             SkeletonShape.Circle => Radius.Full,
             _ => Radius.Md,
         };
+
+        // The glint: two mirrored 2-stop gradients make the symmetric highlight band inside the
+        // engine fence (no 3-stop gradients exist). The layer is full-size, so LoopMotion's
+        // own-width fractions equal placeholder fractions.
+        var glint = new Row(gap: 0) { Width = SizeValue.Fill, Height = height };
+        glint.Add(new Flexible(new Box(new BoxStyle
+        {
+            Height = height,
+            Gradient = new LinearGradient(new ColorToken(Color.Transparent), theme.SurfaceHighlight),
+        }), 1));
+        glint.Add(new Flexible(new Box(new BoxStyle
+        {
+            Height = height,
+            Gradient = new LinearGradient(theme.SurfaceHighlight, new ColorToken(Color.Transparent)),
+        }), 1));
+
         return new Box(new BoxStyle
         {
             Width = Width,
             Height = height,
-            Background = context.Theme.SurfaceSubtle,
+            Background = theme.SurfaceSubtle,
             CornerRadius = new CornerRadii(radius),
-        });
+            Clip = true,
+        }, new LoopMotion(glint, LoopEffect.SlideX, -1f, 1f, ShimmerDurationMs) { HideAtRest = true });
     }
 }

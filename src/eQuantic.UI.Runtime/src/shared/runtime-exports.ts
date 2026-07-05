@@ -34,6 +34,7 @@ export {
   Image,
   ScrollView,
   LoopMotion,
+  LinearGradient,
 } from './vocabulary';
 export {
   Color,

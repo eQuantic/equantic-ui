@@ -201,6 +201,7 @@ public static class WebRealizer
                 MaxHeight = style.MaxHeight > 0 ? TokenCss.Px(style.MaxHeight) : null,
                 Padding = style.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(style.Padding),
                 BackgroundColor = style.Background is { } bg ? TokenCss.Value(bg) : null,
+                BackgroundImage = style.Gradient is { } gradient ? TokenCss.Gradient(gradient) : null,
                 BorderRadius = style.CornerRadius.IsZero ? null : TokenCss.Radius(style.CornerRadius),
                 BoxShadow = style.Elevation > 0 && !context.Theme.Elevation(style.Elevation).IsNone
                     ? TokenCss.Shadow(context.Theme.Elevation(style.Elevation))
@@ -229,7 +230,8 @@ public static class WebRealizer
     {
         var element = new RealizedElement("div")
         {
-            ClassName = "eq-loop",
+            // Decorative loops additionally hide under prefers-reduced-motion (generated rule).
+            ClassName = motion.HideAtRest ? "eq-loop eq-loop-rest-hidden" : "eq-loop",
             Style = new HtmlStyle
             {
                 Animation = $"eq-slide-x {motion.DurationMs}ms linear infinite",

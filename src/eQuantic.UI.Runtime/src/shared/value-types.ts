@@ -130,6 +130,7 @@ export interface AppTheme {
   background: ColorToken;
   surface: ColorToken;
   surfaceSubtle: ColorToken;
+  surfaceHighlight: ColorToken;
   border: ColorToken;
   borderStrong: ColorToken;
   textPrimary: ColorToken;

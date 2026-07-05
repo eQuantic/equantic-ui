@@ -59,7 +59,7 @@ public class LoopMotionRealizerTests
         css.Should().Contain(
             "@keyframes eq-slide-x { 0% { transform: translateX(var(--eq-loop-from)); } 100% { transform: translateX(var(--eq-loop-to)); } }");
         css.Should().Contain(
-            "@media (prefers-reduced-motion: reduce) { .eq-loop { animation: none; } }",
+            "@media (prefers-reduced-motion: reduce) { .eq-loop { animation: none; } .eq-loop-rest-hidden { visibility: hidden; } }",
             "Reduce Motion statically replaces movement — the browser twin of PhotonHost.ReducedMotion");
     }
 

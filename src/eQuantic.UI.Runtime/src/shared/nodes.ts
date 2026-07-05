@@ -69,6 +69,15 @@ export interface BoxStyleValue {
   elevation?: number;
   /** Clip children to the rrect (native PushClip / CSS overflow:hidden) — loop-motion container. */
   clip?: boolean;
+  /** 2-stop linear gradient (engine fence) — draws OVER the solid background when both are set. */
+  gradient?: LinearGradientValue | null;
+}
+
+/** Wire shape of the C# `LinearGradient`: two token stops on a straight axis. */
+export interface LinearGradientValue {
+  from: ColorTokenValue;
+  to: ColorTokenValue;
+  direction: string;
 }
 
 /** Base shape every abstract node carries. */
@@ -148,6 +157,8 @@ export interface LoopMotionNode extends VisualNodeValue {
   fromX: number;
   toX: number;
   durationMs: number;
+  /** Reduce Motion policy: decorative loops hide entirely at rest (Skeleton shimmer). */
+  hideAtRest?: boolean;
 }
 
 export interface ScrollViewNode extends VisualNodeValue {
