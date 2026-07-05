@@ -49,7 +49,7 @@ public sealed class PhotonHost
     public RealizeResult RenderFrame(DisplayListBuilder builder)
     {
         builder.Clear(_theme.Background.Resolve(Mode));
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale);
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed);
         NeedsRender = false;
         return _lastFrame;
     }
@@ -60,6 +60,58 @@ public sealed class PhotonHost
     /// swallow the tap without firing (they still exist for accessibility). Returns whether any
     /// region was hit.
     /// </summary>
+    private Pressable? _pressed;
+
+    /// <summary>The Pressable currently held down (pressed visuals render while set).</summary>
+    public Pressable? Pressed => _pressed;
+
+    /// <summary>
+    /// Begins a press: the topmost enabled hit region under the point becomes the pressed node and
+    /// the next frame renders its pressed token swap. Returns whether a region captured the press.
+    /// (v1 fence: drag-slop/cancel and fling join the gesture system.)
+    /// </summary>
+    public bool PressDown(float x, float y)
+    {
+        if (_lastFrame is null) return false;
+        var point = new Point(x, y);
+        var regions = _lastFrame.HitRegions;
+        for (var i = regions.Count - 1; i >= 0; i--)
+        {
+            var region = regions[i];
+            if (!region.Bounds.Contains(point)) continue;
+            if (region.Node.Disabled) return true; // swallowed, no visual
+            _pressed = region.Node;
+            NeedsRender = true;
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Ends a press: fires <c>OnPressed</c> when the release lands inside the pressed node's region
+    /// (release outside cancels), clears the pressed visual either way.
+    /// </summary>
+    public bool PressUp(float x, float y)
+    {
+        var pressed = _pressed;
+        if (pressed is null) return false;
+        _pressed = null;
+        NeedsRender = true;
+
+        var point = new Point(x, y);
+        var regions = _lastFrame?.HitRegions;
+        if (regions is null) return false;
+        for (var i = regions.Count - 1; i >= 0; i--)
+        {
+            var region = regions[i];
+            if (!ReferenceEquals(region.Node, pressed)) continue;
+            if (!region.Bounds.Contains(point)) return false; // canceled by releasing outside
+            pressed.OnPressed?.Invoke();
+            return true;
+        }
+        return false;
+    }
+
     public bool Tap(float x, float y)
     {
         if (_lastFrame is null) return false;

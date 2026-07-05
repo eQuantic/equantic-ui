@@ -304,6 +304,17 @@ public static class WebRealizer
             OnClick = pressable.Disabled ? null : pressable.OnPressed,
         };
 
+        // Pressed state (spec §01): mechanics live in the GENERATED stylesheet (.eq-pressable:active);
+        // this element only carries the class and the token value as a custom property — zero JS.
+        if (pressable.PressedBackground is { } pressedFill && !pressable.Disabled)
+        {
+            element.ClassName = "eq-pressable";
+            element.Style!.CustomProperties = new Dictionary<string, string>
+            {
+                ["--eq-pressed-bg"] = TokenCss.Value(pressedFill),
+            };
+        }
+
         if (LowerNode(pressable.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;

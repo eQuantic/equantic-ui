@@ -249,6 +249,15 @@ rejected.)
    capture, fling and the fading scrollbar pill join the native interaction system; the browser owns
    web physics. ALL FOUR wave-2 primitive gates are now open (Stack/Icon/Image/ScrollView) —
    remaining gates: the interaction system and the reconciler.
+   Interaction slice 1: PRESSED ✅ (2026-07-05, spec §01) — pressed is a REAL token swap declared on
+   the Pressable (`PressedBackground`), framework-applied per target with ZERO user code: web =
+   mechanics in the GENERATED stylesheet (`.eq-pressable:active > :first-child` driven by a
+   per-element `--eq-pressed-bg` custom property, Fast-motion transition, tap-highlight neutralized;
+   values via `HtmlStyle.CustomProperties`, emitted at the style tail — cross-pinned C#/TS); native =
+   `PhotonHost.PressDown/PressUp` (topmost capture, release-outside cancels, disabled swallows) with
+   the realizer swapping the first descendant Box fill while held (pressed-button golden). Button
+   (filled=Pressed token, Outline/Ghost=SurfaceSubtle, Link=fence) and Chip Filter wire it. Slice 2:
+   focus ring (double ring via :focus-visible + native focus traversal); then hover, gestures.
    Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
    without hoisting), server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.
