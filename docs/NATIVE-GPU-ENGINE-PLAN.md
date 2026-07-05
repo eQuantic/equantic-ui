@@ -494,6 +494,18 @@ Bun and the JS bundling chain, the TypeScript runtime.
   clip rect + radii, flag in flags.z). This opens the ScrollView (A6) gate. Suites: native 152
   (26 goldens, 16 Metal parity), all others green.
 
+- **2026-07-05 — Slang toolchain spike landed (D3 validated).** ONE normative shader source now
+  exists: `eQuantic.UI.Native.Engine/Shaders/Sdf.slang` (the Sdf.cs/ColorAt/ColorSpace/clip
+  transliteration, HLSL-flavored). `slangc` (v2026.12.2, official release) compiles it OFFLINE to
+  the committed `Generated/Sdf.metal` — embedded in the Metal backend, which now loads the GENERATED
+  source instead of hand-written MSL — and `Generated/Sdf.spv` (SPIR-V, ready for the Vulkan
+  backend). Toolchain findings: entry-point names and the `[[buffer(0)]]` uniform binding are
+  PRESERVED by slangc's Metal emission, so the backend needed zero interface changes; the
+  **16-scene Metal parity suite HELD the fuzzy gate unchanged** with the generated shader. Regen via
+  `scripts/generate-shaders.sh` (EQ_SLANGC); packaging: slangc ships EMBEDDED in a NuGet package
+  like the Bun binaries (framework-dev tool — app developers never see it). Remaining D3 tail: the
+  offline metallib step (xcrun metal) and pipeline caching land with the packaging milestone.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
