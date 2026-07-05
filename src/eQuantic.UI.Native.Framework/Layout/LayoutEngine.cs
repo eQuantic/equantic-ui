@@ -18,6 +18,9 @@ public sealed class LayoutContext
     public ITextMeasurer Measurer { get; }
     public float TypeScale { get; }
 
+    /// <summary>The host's positional reconciler — null keeps the v1 rebuild-everything behavior.</summary>
+    public ComponentInstanceStore? Instances { get; init; }
+
     /// <summary>The mode-free context handed to <see cref="UiComponent.Build"/> during expansion.</summary>
     public ComponentContext Components { get; }
 }
@@ -45,57 +48,67 @@ public static class LayoutEngine
 {
     public static LayoutNode Layout(VisualNode root, float viewportWidth, float viewportHeight, LayoutContext context)
     {
-        var node = Measure(root, viewportWidth, viewportHeight, context);
+        var node = Measure(root, viewportWidth, viewportHeight, context, "r");
+        context.Instances?.EndPass();
         Absolutize(node, 0, 0);
         return node;
     }
 
     // ---- measurement (bounds are PARENT-RELATIVE until Absolutize) ------------------------------
 
-    private static LayoutNode Measure(VisualNode node, float maxW, float maxH, LayoutContext ctx) => node switch
+    private static LayoutNode Measure(VisualNode node, float maxW, float maxH, LayoutContext ctx, string path) => node switch
     {
-        Box box => MeasureBox(box, maxW, maxH, ctx),
-        FlexNode flex => MeasureFlex(flex, maxW, maxH, ctx),
-        Stack stack => MeasureStack(stack, maxW, maxH, ctx),
-        ScrollView scroll => MeasureScrollView(scroll, maxW, maxH, ctx),
+        Box box => MeasureBox(box, maxW, maxH, ctx, path),
+        FlexNode flex => MeasureFlex(flex, maxW, maxH, ctx, path),
+        Stack stack => MeasureStack(stack, maxW, maxH, ctx, path),
+        ScrollView scroll => MeasureScrollView(scroll, maxW, maxH, ctx, path),
         // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
-        Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx),
+        Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx, path),
         Text text => MeasureText(text, maxW, ctx),
         // Images are an explicitly sized slot - layout can't infer extent from undecoded sources (A11).
         Image image => new LayoutNode(image) { Bounds = new Rect(0, 0, image.Width, image.Height) },
         // Icons are a fixed square em-box (§07 whitelist) and ignore Dynamic Type (spec A10).
         Icon icon => new LayoutNode(icon) { Bounds = new Rect(0, 0, icon.Size, icon.Size) },
-        Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx),
-        Flexible flexible => MeasureWrapper(flexible, flexible.Child, maxW, maxH, ctx),
+        Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx, path),
+        Flexible flexible => MeasureWrapper(flexible, flexible.Child, maxW, maxH, ctx, path),
         // A component expands INLINE: Build produces its subtree (pure, mode-free), which is measured
         // in place — the component wraps it in the layout tree, drawing nothing itself.
-        UiComponent component => MeasureWrapper(component, component.Build(ctx.Components), maxW, maxH, ctx),
+        // Components RECONCILE by position first: the retained instance (state alive) replaces the
+        // fresh one the parent just built, adopting its config; then it expands inline via Build.
+        UiComponent component => MeasureComponent(component, maxW, maxH, ctx, path),
         Spacer => new LayoutNode(node), // zero outside a flex container (layout-only)
         _ => new LayoutNode(node),
     };
 
-    private static LayoutNode MeasureWrapper(VisualNode node, VisualNode child, float maxW, float maxH, LayoutContext ctx)
+    private static LayoutNode MeasureWrapper(VisualNode node, VisualNode child, float maxW, float maxH, LayoutContext ctx, string path)
     {
         var result = new LayoutNode(node);
-        var inner = Measure(child, maxW, maxH, ctx);
+        var inner = Measure(child, maxW, maxH, ctx, path + "/0");
         result.Children.Add(inner);
         result.Bounds = new Rect(0, 0, inner.Bounds.Width, inner.Bounds.Height);
         return result;
+    }
+
+    private static LayoutNode MeasureComponent(UiComponent component, float maxW, float maxH, LayoutContext ctx, string path)
+    {
+        var resolved = ctx.Instances?.Reconcile(path, component) ?? component;
+        return MeasureWrapper(resolved, resolved.Build(ctx.Components), maxW, maxH, ctx, path);
     }
 
     /// <summary>Spec A3: sizes to the largest NON-positioned child (explicit Width/Height override);
     /// non-positioned children align by <see cref="Stack.Align"/>; Positioned children anchor to the
     /// resolved frame with signed offsets (unset axes fall back to the alignment). Paint order is
     /// child order — the LayoutNode children keep it.</summary>
-    private static LayoutNode MeasureStack(Stack stack, float maxW, float maxH, LayoutContext ctx)
+    private static LayoutNode MeasureStack(Stack stack, float maxW, float maxH, LayoutContext ctx, string path)
     {
         var result = new LayoutNode(stack);
         var contentW = 0f;
         var contentH = 0f;
 
-        foreach (var child in stack.Children)
+        for (var stackIndex = 0; stackIndex < stack.Children.Count; stackIndex++)
         {
-            var measured = Measure(child, maxW, maxH, ctx);
+            var child = stack.Children[stackIndex];
+            var measured = Measure(child, maxW, maxH, ctx, path + "/" + stackIndex);
             result.Children.Add(measured);
             if (child is Positioned) continue;
             contentW = MathF.Max(contentW, measured.Bounds.Width);
@@ -133,14 +146,14 @@ public static class LayoutEngine
     /// natural extent) and is offset by the programmatic scroll position; the viewport itself resolves
     /// explicit &gt; Fill &gt; hug-the-child (capped by the available space). Clipping happens at the
     /// realizer via the engine clip primitive.</summary>
-    private static LayoutNode MeasureScrollView(ScrollView scroll, float maxW, float maxH, LayoutContext ctx)
+    private static LayoutNode MeasureScrollView(ScrollView scroll, float maxW, float maxH, LayoutContext ctx, string path)
     {
         var result = new LayoutNode(scroll);
         var horizontal = scroll.Axis == ScrollAxis.Horizontal;
 
         var child = Measure(scroll.Child,
             horizontal ? float.PositiveInfinity : maxW,
-            horizontal ? maxH : float.PositiveInfinity, ctx);
+            horizontal ? maxH : float.PositiveInfinity, ctx, path + "/0");
         result.Children.Add(child);
 
         var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));
@@ -174,7 +187,7 @@ public static class LayoutEngine
         return result;
     }
 
-    private static LayoutNode MeasureBox(Box box, float maxW, float maxH, LayoutContext ctx)
+    private static LayoutNode MeasureBox(Box box, float maxW, float maxH, LayoutContext ctx, string path)
     {
         var result = new LayoutNode(box);
         var style = box.Style;
@@ -189,7 +202,7 @@ public static class LayoutEngine
         LayoutNode? child = null;
         if (box.Child is not null)
         {
-            child = Measure(box.Child, MathF.Max(0, childMaxW), MathF.Max(0, childMaxH), ctx);
+            child = Measure(box.Child, MathF.Max(0, childMaxW), MathF.Max(0, childMaxH), ctx, path + "/0");
             child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
             result.Children.Add(child);
         }
@@ -212,7 +225,7 @@ public static class LayoutEngine
 
     // ---- flex ------------------------------------------------------------------------------------
 
-    private static LayoutNode MeasureFlex(FlexNode flex, float maxW, float maxH, LayoutContext ctx)
+    private static LayoutNode MeasureFlex(FlexNode flex, float maxW, float maxH, LayoutContext ctx, string path)
     {
         var result = new LayoutNode(flex);
         var horizontal = flex is Row;
@@ -270,7 +283,7 @@ public static class LayoutEngine
 
             var childMaxW = horizontal ? mainAvail : crossAvail;
             var childMaxH = horizontal ? crossAvail : mainAvail;
-            var child = Measure(children[i], childMaxW, childMaxH, ctx);
+            var child = Measure(children[i], childMaxW, childMaxH, ctx, path + "/" + i);
             laid[i] = child;
             mains[i] = horizontal ? child.Bounds.Width : child.Bounds.Height;
             rigidSum += mains[i];
@@ -319,7 +332,7 @@ public static class LayoutEngine
             {
                 var childMaxW = horizontal ? share : crossAvail;
                 var childMaxH = horizontal ? crossAvail : share;
-                var child = Measure(flexible.Child, childMaxW, childMaxH, ctx);
+                var child = Measure(flexible.Child, childMaxW, childMaxH, ctx, path + "/" + i + "/0");
                 // The flexible slot IS the share on the main axis (the child fills it).
                 child.Bounds = horizontal
                     ? child.Bounds with { Width = share }

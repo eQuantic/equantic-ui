@@ -289,7 +289,17 @@ rejected.)
    More silent-wrong-code compiler hardening: exception type names never import (they lower to
    `new Error`). All embedded in the runtime, gallery
    goldens light+dark inspected, spec pins on every axis.
-   Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
+   Positional reconciler slice 1 ✅ (2026-07-05, W6 — NATIVE): nested stateful components now keep
+   their state across parent rebuilds — NO hoisting. Identity = tree PATH (threaded through the
+   layout walk) + runtime TYPE + optional Key; `ComponentInstanceStore` (Primitives) retains
+   stateful instances per pass (unvisited entries drop on EndPass — their position left the tree),
+   and the retained instance ADOPTS the fresh one's configuration through the explicit, AOT-safe
+   `UiComponent.AdoptConfig(next)` hook (no reflection — the author decides config vs state; the
+   default keeps existing config). `PhotonHost` owns the store and wires retained invalidations.
+   Proven: a nested counter holds taps across its parent's SetState rebuilds, adopts fresh config,
+   and a key change resets identity/state. Slice 2 = the WEB mirror (store per render root in the
+   TS lowering + ambient context, same identity rules) — until then web keeps state hoisting.
+   Remaining on this front: reconciler slice 2 (web mirror; supersedes the old note about — unlocks nested stateful
    without hoisting), server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
