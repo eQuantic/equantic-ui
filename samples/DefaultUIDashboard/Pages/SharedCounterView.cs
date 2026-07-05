@@ -26,6 +26,21 @@ public static class SharedCounterView
         actions.Add(new Button("Outline", Variant.Outline));
         column.Add(actions);
 
+        column.Add(new Divider());
+
+        // Wave-1 write-once components — the same classes the native goldens rasterize.
+        var gallery = new Row(gap: Space.S3) { Cross = CrossAlign.Center };
+        gallery.Add(new Avatar("AB", SizeVariant.Large, name: "Ana Beatriz"));
+        gallery.Add(new Badge(count));
+        gallery.Add(new Badge(120));
+        gallery.Add(new Chip("All", ChipKind.Filter, selected: true, onPressed: increment));
+        gallery.Add(new Chip("Beta", ChipKind.Tag) { Variant = Variant.Info });
+        column.Add(gallery);
+
+        column.Add(new Banner(Variant.Warning, "Your card expires this month.",
+            "Renew it to keep automatic payments running."));
+        column.Add(new ProgressBar(count / 10f));
+
         return new Card(column, CardKind.Outlined) { Width = SizeValue.Fill };
     }
 }

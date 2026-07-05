@@ -207,6 +207,20 @@ rejected.)
    `data-ssr="true"` with `Count: 0` in the raw server HTML, hydrated, clicks re-render to
    `Count: 2`; the page class is verbatim PhotonHost-compatible. SSR covered by
    `WriteOncePageSsrTests` (scan + bridge + token output).
+   Migration wave 1 ✅ (2026-07-05): six write-once components authored per the design handoff —
+   **Divider** (A7: 1dp Border hairline, leading/middle 16 insets, vertical), **Badge** (B7: dot 8dp,
+   count pill 16dp/10-700/"99+", Destructive default + neutral + status pairs; inline until Stack),
+   **Chip** (B8: 32dp/Radius.Full/13-600, Filter selected = Primary-subtle + border, Input remove as
+   "✕" text until Icon, Tag = Subtle pairs), **ProgressBar** (B14: SurfaceSubtle track + variant fill,
+   4/8dp, fill fraction as flex weights round(v·1000) — identical leftover-by-weight on both
+   realizers; determinate only until animation), **Avatar** (B6: 24/32/40/56 tiers, initials on a
+   deterministic Subtle tint until Image/gradients), **Banner** (B18: status Subtle fill, Radius.Lg,
+   12/14 padding, bold lead-in as two Texts until rich spans, ≤2 actions). All: web realizer pins
+   (Wave1ComponentTests), native gallery goldens light+dark (Wave1GoldenTests — visually inspected),
+   transpiled fixtures + runtime embeds + `@equantic/runtime` exports, vitest execution pins, and the
+   `/shared` showcase updated (validated live: Badge/ProgressBar react to the counter state).
+   Library: 8 write-once components; ~54 legacy web components remain (waves 2-3 gated on
+   Stack/Image/Icon/ScrollView, the interaction system, the reconciler, and text input).
    Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
    without hoisting), server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.
