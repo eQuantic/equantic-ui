@@ -54,6 +54,33 @@ public class CSharpToJsConverter
         _context.CurrentClassName = className;
     }
 
+    /// <summary>
+    /// Converts an expression that lives in a DIFFERENT syntax tree than the file being compiled —
+    /// a referenced constant's initializer, inlined at the use site (e.g. an icon pack's
+    /// <c>static readonly IconGlyph</c>). The tree's own semantic model is swapped in for the
+    /// conversion and restored after, so cross-assembly initializers resolve exactly as their
+    /// declaring compilation would bind them. Single-threaded per file, so save/restore is safe.
+    /// </summary>
+    public string ConvertExpressionWithModel(ExpressionSyntax expression, SemanticModel model)
+    {
+        var savedModel = _semanticModel;
+        var savedContextModel = _context.SemanticModel;
+        var savedHelper = _context.SemanticHelper;
+        try
+        {
+            _semanticModel = model;
+            _context.SemanticModel = model;
+            _context.SemanticHelper = new SemanticHelper(model);
+            return ConvertExpression(expression);
+        }
+        finally
+        {
+            _semanticModel = savedModel;
+            _context.SemanticModel = savedContextModel;
+            _context.SemanticHelper = savedHelper;
+        }
+    }
+
     public HashSet<string> UsedHelpers => _context.UsedHelpers;
 
     /// <summary>Diagnostics raised during the most recent conversion(s); call <see cref="ClearDiagnostics"/> between components.</summary>
@@ -190,6 +217,9 @@ public class CSharpToJsConverter
         // It's a Primitive strategy, so lets check where StringMethodStrategy is.
 
         // Legacy Expression Strategies
+        // Inlines external IconGlyph constants (pack glyphs) at the use site — must beat the fallback
+        // member access, which would emit a broken `LucideIcons.camera`.
+        _strategyRegistry.Register<InlinedConstantStrategy>();
         _strategyRegistry.Register<MemberAccessStrategy>();
         _strategyRegistry.Register<ElementAccessStrategy>();
         _strategyRegistry.Register<ObjectCreationStrategy>();

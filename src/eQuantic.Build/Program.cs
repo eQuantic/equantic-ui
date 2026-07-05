@@ -25,6 +25,11 @@ var isWatchMode = args.Any(a => a == "--watch");
 // independent of TargetFramework or configuration. Without it, base types like HtmlElement.Children
 // (IList<IComponent>) stay unresolved and member calls degrade to naive camel-casing (.Add → .add).
 var refsFile = args.ToList().Contains("--refs") ? args[args.ToList().IndexOf("--refs") + 1] : null;
+// --ref-sources <file>: newline-delimited DIRECTORIES whose .cs join the compilation as
+// SEMANTIC-ONLY reference sources (never transpiled). This is what lets eqc inline external
+// constants at the use site — an icon pack's `static readonly IconGlyph` needs its INITIALIZER,
+// which metadata (via --refs) does not carry; the pack's tools/source supplies it here.
+var refSourcesFile = args.ToList().Contains("--ref-sources") ? args[args.ToList().IndexOf("--ref-sources") + 1] : null;
 
 // Determine intermediate directory based on primary source dir
 var primarySourceDir = sourceDirs[0];
@@ -68,6 +73,25 @@ try
             Console.WriteLine($"   Including {globalUsings.Count} generated global-usings file(s)");
             allSourceFiles.AddRange(globalUsings);
         }
+    }
+
+    // Reference-only sources (icon packs etc.): their .cs enter the compilation so the semantic model
+    // can reach constant initializers for inlining, but they are NOT in sourceDirs so nothing here is
+    // transpiled to a module.
+    if (!string.IsNullOrEmpty(refSourcesFile) && File.Exists(refSourcesFile))
+    {
+        var refSourceCount = 0;
+        foreach (var dir in File.ReadAllLines(refSourcesFile).Select(l => l.Trim()).Where(l => l.Length > 0))
+        {
+            if (!Directory.Exists(dir)) continue;
+            foreach (var file in ProjectCompilationHelper.GetProjectSourceFiles(dir))
+            {
+                allSourceFiles.Add(file);
+                refSourceCount++;
+            }
+        }
+        if (refSourceCount > 0)
+            Console.WriteLine($"   Including {refSourceCount} reference-source file(s) for constant inlining");
     }
 
     if (allSourceFiles.Count > 0)

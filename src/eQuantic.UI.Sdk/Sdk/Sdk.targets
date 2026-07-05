@@ -194,8 +194,42 @@
             Lines="@(ReferencePathWithRefAssemblies)"
             Overwrite="true" WriteOnlyWhenDifferent="true" />
 
+        <!-- REFERENCE-SOURCE dirs for constant inlining (icon packs): a pack's tools/source (package
+             mode) or project dir (dev mode) enters the compilation SEMANTICALLY so eqc can inline a
+             referenced `static readonly IconGlyph` at the use site (tree-shaking each pack to the
+             glyphs used — no per-pack JS module). Reference-only: never transpiled. Any eQuantic
+             assembly that is not a core framework assembly and ships tools/source is a source pack;
+             the standard Components dir is excluded (it's already a transpiled source dir). -->
+        <ItemGroup>
+            <!-- Package mode: <pkg>/lib/<tfm>/X.dll → <pkg>/tools/source -->
+            <_EqcRefSourceCandidate Include="@(ReferencePathWithRefAssemblies->'%(RootDir)%(Directory)../../tools/source')"
+                Condition="$([System.String]::Copy('%(FileName)').StartsWith('eQuantic.UI.'))" />
+            <!-- Dev mode: a referenced pack PROJECT's directory holds its sources. -->
+            <_EqcRefSourceCandidate Include="@(ProjectReference->'%(RootDir)%(Directory)')"
+                Condition="$([System.String]::Copy('%(FileName)').StartsWith('eQuantic.UI.'))" />
+            <_EqcRefSource Include="@(_EqcRefSourceCandidate->'%(FullPath)')"
+                Condition="Exists('%(FullPath)')" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_StandardComponentsFull>$([System.IO.Path]::GetFullPath('$(_StandardComponentsDir.Trim())'))</_StandardComponentsFull>
+            <_EqcRefSourcesFile>$(MSBuildProjectDirectory)/$(IntermediateOutputPath)equantic.ref-sources.txt</_EqcRefSourcesFile>
+        </PropertyGroup>
+        <ItemGroup>
+            <!-- Drop the standard components dir (already transpiled) and any that isn't an eQuantic
+                 assembly source; keep pack dirs, deduped. -->
+            <_EqcRefSourceFinal Include="@(_EqcRefSource->Distinct())"
+                Condition="'$([System.IO.Path]::GetFullPath(%(Identity)))' != '$(_StandardComponentsFull)'" />
+        </ItemGroup>
+        <WriteLinesToFile File="$(_EqcRefSourcesFile)"
+            Lines="@(_EqcRefSourceFinal)"
+            Overwrite="true" WriteOnlyWhenDifferent="true"
+            Condition="'@(_EqcRefSourceFinal)' != ''" />
+        <PropertyGroup>
+            <_RefSourcesArg Condition="'@(_EqcRefSourceFinal)' != ''"> --ref-sources &quot;$(_EqcRefSourcesFile)&quot;</_RefSourcesArg>
+        </PropertyGroup>
+
         <Exec
-            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_BunArg)"
+            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_RefSourcesArg)$(_BunArg)"
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
     </Target>

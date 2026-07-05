@@ -153,7 +153,8 @@ export class Reconciler {
       }
 
       // Element nodes
-      if (currentElement instanceof HTMLElement) {
+      // Element (not HTMLElement) — SVG icons are SVGElement and must reconcile too.
+      if (currentElement instanceof Element) {
         this.updateAttributes(currentElement, oldNode.attributes || {}, newNode.attributes || {});
         this.updateEventListeners(currentElement, oldNode.events || {}, newNode.events || {});
         this.reconcileChildren(currentElement, oldNode.children || [], newNode.children || []);
@@ -192,14 +193,14 @@ export class Reconciler {
     if (node.attributes) {
       for (const [key, value] of Object.entries(node.attributes)) {
         if (value !== undefined && value !== null) {
-          this.applyAttribute(element as HTMLElement, key, value);
+          this.applyAttribute(element, key, value);
         }
       }
     }
 
     // Attach event handlers
     if (node.events) {
-      this.attachEventListeners(element as HTMLElement, node.events);
+      this.attachEventListeners(element, node.events);
     }
 
     // Render children (pass this element as parent to propagate SVG context)
@@ -213,7 +214,7 @@ export class Reconciler {
   /**
    * Apply attribute or property to element
    */
-  private applyAttribute(element: HTMLElement, key: string, value: any): void {
+  private applyAttribute(element: Element, key: string, value: any): void {
     if (value === undefined || value === null) {
       element.removeAttribute(key);
       if (
@@ -260,7 +261,7 @@ export class Reconciler {
    * Update element attributes (only changed ones)
    */
   private updateAttributes(
-    element: HTMLElement,
+    element: Element,
     oldAttrs: Record<string, string | undefined>,
     newAttrs: Record<string, string | undefined>,
   ): void {
@@ -283,7 +284,7 @@ export class Reconciler {
   /**
    * Attach event listeners to element
    */
-  private attachEventListeners(element: HTMLElement, events: Record<string, EventHandler>): void {
+  private attachEventListeners(element: Element, events: Record<string, EventHandler>): void {
     const elementListeners = new Map<string, EventHandler>();
     for (const [eventName, handler] of Object.entries(events)) {
       if (!handler) continue;
@@ -303,7 +304,7 @@ export class Reconciler {
    * Update event listeners (remove old, add new)
    */
   private updateEventListeners(
-    element: HTMLElement,
+    element: Element,
     oldEvents: Record<string, EventHandler>,
     newEvents: Record<string, EventHandler>,
   ): void {
@@ -430,7 +431,7 @@ export class Reconciler {
    * This algorithm is optimized for moving nodes instead of recreating them.
    */
   private reconcileChildren(
-    parentElement: HTMLElement,
+    parentElement: Element,
     oldChildren: HtmlNode[],
     newChildren: HtmlNode[],
   ): void {
@@ -759,7 +760,7 @@ export class Reconciler {
    * Cleanup event listeners for element and its children
    */
   private cleanupEventListeners(node: Node): void {
-    if (node instanceof HTMLElement) {
+    if (node instanceof Element) {
       // Remove listeners for this element
       const elementListeners = this.eventListeners.get(node);
       if (elementListeners) {
@@ -801,10 +802,10 @@ export class Reconciler {
       return result;
     }
 
-    // Element node - attach events and recurse children
-    if (!(existingElement instanceof HTMLElement)) {
+    // Element node - attach events and recurse children (Element covers SVG icons too).
+    if (!(existingElement instanceof Element)) {
       result.warnings.push(
-        `Expected HTMLElement for tag '${virtualNode.tag}', found ${existingElement.nodeName}`,
+        `Expected Element for tag '${virtualNode.tag}', found ${existingElement.nodeName}`,
       );
       result.success = false;
       return result;

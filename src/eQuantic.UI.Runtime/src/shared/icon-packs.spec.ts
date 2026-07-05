@@ -9,6 +9,7 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import { Icon, IconGlyph } from './vocabulary';
+import { SharedStatefulComponent } from '../core/component';
 
 setPhotonTheme(photonTheme);
 
@@ -40,5 +41,53 @@ describe('icon pack glyphs (C# cross-pin)', () => {
     const curated = lower(new Icon('search', 20));
     expect(curated.attributes['viewBox']).toBe('0 0 24 24');
     expect(curated.children[0].attributes['d']).toContain('M15.5 14h-.79');
+  });
+});
+
+const nextFrame = () =>
+  new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+
+/**
+ * The client-dynamic fence proven end to end: a stateful component swaps between two INLINED pack
+ * glyphs (what eqc emits for `LucideIcons.Camera` / `LucideIcons.Heart`) on setState, and the real
+ * DOM path updates — no pack module, just the glyph constructors the compiler inlines.
+ */
+class GlyphToggle extends SharedStatefulComponent {
+  private cameraShown = true;
+  private readonly camera = new IconGlyph('camera', 'M14.5 4h-5L7 7', 'stroke');
+  private readonly heart = new IconGlyph('heart', 'M12 21l-1-1');
+
+  build(): Icon {
+    return new Icon(this.cameraShown ? this.camera : this.heart, 24) as never;
+  }
+
+  toggle(): void {
+    this.setState(() => {
+      this.cameraShown = !this.cameraShown;
+    });
+  }
+}
+
+describe('inlined pack glyph in a client re-render', () => {
+  it('swaps the DOM path when state changes', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const toggle = new GlyphToggle();
+    toggle.mount(container);
+
+    const path = () => container.querySelector('path')!.getAttribute('d');
+    const svgFill = () => container.querySelector('svg')!.getAttribute('fill');
+    expect(path()).toBe('M14.5 4h-5L7 7');
+    expect(svgFill()).toBe('none'); // camera is a stroke glyph
+
+    toggle.toggle();
+    await nextFrame();
+    expect(path()).toBe('M12 21l-1-1');
+    expect(svgFill()).toBe('currentColor'); // heart is a fill glyph
+
+    container.remove();
   });
 });

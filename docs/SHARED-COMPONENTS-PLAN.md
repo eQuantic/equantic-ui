@@ -417,9 +417,24 @@ rejected.)
    Lucide 1805 / Heroicons 1288 / Radix 332 / Tabler 6178 / FA6 solid 1407 + regular 164 + brands
    495 / Phosphor 9161 / Simple 3720 / Bootstrap 2081 / Iconoir 1654; 57 skipped = 0.2%, logged:
    defs/transforms/mixed). The legacy per-pack component/provider/extensions died. Packs are
-   OPT-IN references. v1 fence: pack glyphs in CLIENT-side dynamic rebuilds need the per-app pack
-   module (tools/source ships; the SDK doesn't yet feed pack sources to eqc) — SSR + hydration and
-   native are complete; the client pack-module slice follows.
+   OPT-IN references.
+   ICON PACKS CLIENT-SIDE ✅ (2026-07-05): the client-dynamic fence closed via CROSS-ASSEMBLY
+   CONSTANT INLINING in eqc — a reference to a pack's `static readonly IconGlyph`
+   (`LucideIcons.Camera`) transpiles to the CONSTRUCTOR at the use site
+   (`new IconGlyph('camera','M…','stroke')`), tree-shaking each pack to only the glyphs referenced
+   (no per-pack JS module; the only import is IconGlyph, already runtime-provided). The initializer
+   lives in the pack SOURCE, so eqc gained `--ref-sources <file>`: directories whose .cs join the
+   compilation SEMANTICALLY (never transpiled) so the semantic model can reach initializers that
+   metadata (via --refs) doesn't carry. `InlinedConstantStrategy` (priority above the fallback
+   member access) converts the initializer with the PACK TREE's own semantic model and registers
+   IconGlyph for import. The SDK auto-discovers referenced pack source dirs (package `tools/source`
+   or dev project dir; standard Components dir excluded) and writes the `--ref-sources` list — zero
+   consumer config. A latent RECONCILER bug surfaced and was fixed: SVG elements are `SVGElement`,
+   not `HTMLElement`, so the update/cleanup/HYDRATE guards (`instanceof HTMLElement`) silently
+   skipped every client-side icon — attributes never updated on re-render and icons failed
+   hydration validation; all four guards widened to `Element`. Proven end to end: compiler inline
+   unit tests, the SDK feeding 230 Lucide sources, inlined glyphs through the Bun bundle, SSR, and
+   a vitest client re-render swapping the DOM `<path d>` + fill on setState.
    Animation slice 2 ✅ (2026-07-05, spec A1/B16 — GRADIENT + SHIMMER): `BoxStyle.Gradient` exposes
    the engine fence's exact gradient primitive — `LinearGradient(From, To, Direction)`, two TOKEN
    stops on a straight axis (ToRight/ToBottom), drawing OVER the solid background (CSS
