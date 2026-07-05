@@ -1,5 +1,4 @@
-import { BuildContext, Column, Component, ComponentContext, HtmlElement, SharedStatefulComponent, Space, Text, VisualNode } from "@equantic/runtime";
-import { Button } from "./Button";
+import { BuildContext, Button, Column, Component, ComponentContext, HtmlElement, SharedStatefulComponent, Space, Text, VisualNode } from "@equantic/runtime";
 
 export class SharedCounter extends SharedStatefulComponent {
     _count: number = 0;

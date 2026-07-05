@@ -16,8 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Self-contained packaging (like eQuantic.UI.Components): the C# sources ship at tools/source
-         so the SDK adds them to the eqc scan and every app transpiles the shared components to JS. -->
+    <!-- The library's JS lives INSIDE the runtime (transpiled modules embedded in runtime.js and
+         byte-pinned to eqc output — see SharedComponentTranspilationTests); sources still ship at
+         tools/source as reference material for consumers/tooling. -->
     <Content Include="**\*.cs" Exclude="obj\**;bin\**" PackagePath="tools\source\" />
   </ItemGroup>
 

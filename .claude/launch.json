@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "default-ui-dashboard",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "samples/DefaultUIDashboard/DefaultUIDashboard.csproj", "--no-build", "--launch-profile", "http"],
+      "port": 5201
+    }
+  ]
+}

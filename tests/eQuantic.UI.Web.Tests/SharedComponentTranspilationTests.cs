@@ -68,9 +68,15 @@ public class SharedComponentTranspilationTests
         trees.Add(CSharpSyntaxTree.ParseText(
             "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
             path: "GlobalUsings.g.cs"));
+        // NOT the standard web components assembly: inside `namespace eQuantic.UI.Components.Shared`,
+        // C# resolves `Box`/`Row`/`Text` against the ENCLOSING `eQuantic.UI.Components` namespace
+        // BEFORE any using directive — referencing the web assembly here would silently rebind the
+        // library's vocabulary to the web components. The real Components.Shared build references
+        // Primitives only, and apps consume it as metadata, so only this harness could hit it.
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Where(path => !Path.GetFileName(path).Equals("eQuantic.UI.Components.dll", StringComparison.OrdinalIgnoreCase))
             .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
             .ToList();
         var compilation = CSharpCompilation.Create("SharedComponents", trees, references,
@@ -100,13 +106,27 @@ public class SharedComponentTranspilationTests
         var modules = TranspileSharedComponents();
         var fixtureDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "__transpiled__");
 
-        // Fixture names have NO suffix: the transpiled Counter imports `./Button` — the module names
-        // must match what per-app emission produces so relative imports resolve in vitest.
+        // Two generated copies of the same pin:
+        // - __transpiled__/<N>.ts — the exact per-app emission (imports "@equantic/runtime"), executed
+        //   by the parity specs. Names carry NO suffix so relative imports between fixtures resolve.
+        // - components/<N>.ts (library components only) — the SAME bytes with the import source
+        //   rewritten to the internal aggregator, EMBEDDED in the runtime and re-exported from its
+        //   index (the shared library is runtime-provided; apps import { Button } from the runtime).
+        var embeddedDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "components");
+        string Embedded(string typeScript) =>
+            typeScript.Replace("from \"@equantic/runtime\"", "from \"../runtime-exports\"");
+        var embeddedNames = new[] { "Button", "Card" };
+
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_TRANSPILED") == "1")
         {
             Directory.CreateDirectory(fixtureDir);
+            Directory.CreateDirectory(embeddedDir);
             foreach (var (name, typeScript) in modules)
+            {
                 File.WriteAllText(Path.Combine(fixtureDir, $"{name}.ts"), typeScript);
+                if (embeddedNames.Contains(name))
+                    File.WriteAllText(Path.Combine(embeddedDir, $"{name}.ts"), Embedded(typeScript));
+            }
             return;
         }
 
@@ -117,6 +137,12 @@ public class SharedComponentTranspilationTests
                 $"the runtime executes the transpiled {name} in vitest — generate once with EQ_UPDATE_TRANSPILED=1");
             File.ReadAllText(path).Should().Be(typeScript,
                 $"the committed transpiled {name} must be regenerated (EQ_UPDATE_TRANSPILED=1) after compiler/component changes");
+
+            if (embeddedNames.Contains(name))
+            {
+                File.ReadAllText(Path.Combine(embeddedDir, $"{name}.ts")).Should().Be(Embedded(typeScript),
+                    $"the runtime-embedded {name} must match the pinned emission (EQ_UPDATE_TRANSPILED=1 regenerates both)");
+            }
         }
     }
 
@@ -188,6 +214,72 @@ public class SharedComponentTranspilationTests
         result.TypeScript.Should().Contain("from \"@equantic/runtime\"");
         result.TypeScript.Should().NotContain("from \"./VisualNodeComponent\"");
         result.TypeScript.Should().Contain("new VisualNodeComponent(new Card(new Button('Ok'), 'outlined'))");
+    }
+
+    /// <summary>Compiles a single page source against the full reference set (helper for routing tests).</summary>
+    private static string TranspilePage(string source, string fileName)
+    {
+        var pagePath = Path.Combine(RepoRoot(), "tests", "eQuantic.UI.Web.Tests", "Fixtures", fileName);
+        var trees = new List<Microsoft.CodeAnalysis.SyntaxTree>
+        {
+            CSharpSyntaxTree.ParseText(source, path: pagePath),
+            CSharpSyntaxTree.ParseText(
+                "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
+                path: "GlobalUsings.g.cs"),
+        };
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .ToList();
+        var compilation = CSharpCompilation.Create("PageProbe", trees, references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        var result = compiler.CompileSource(source, pagePath).Single();
+        result.Success.Should().BeTrue(string.Join("; ", result.Errors.Select(e => e.Message)));
+        return result.TypeScript;
+    }
+
+    [Fact]
+    public void NameReuse_Disambiguates_ByTheUsingDirective()
+    {
+        // TWO pages, one Button NAME, two libraries — the page's usings decide which module source
+        // the import resolves to. This is the collision-resolution contract of unification slice 2.
+        var webPage = TranspilePage("""
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Components;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public class WebButtonPage : StatelessComponent
+            {
+                public override IComponent Build(RenderContext context) => new Button { Text = "web" };
+            }
+            """, "WebButtonPage.cs");
+
+        var sharedPage = TranspilePage("""
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Components.Shared;
+            using eQuantic.UI.Web;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public class SharedButtonPage : StatelessComponent
+            {
+                public override IComponent Build(RenderContext context) =>
+                    new VisualNodeComponent(new Button("shared"));
+            }
+            """, "SharedButtonPage.cs");
+
+        // The standard web Button stays a per-app module…
+        webPage.Should().Contain("import { Button } from \"./Button\"");
+        // …while the shared-library Button is runtime-provided.
+        sharedPage.Should().Contain("Button");
+        sharedPage.Should().Contain("from \"@equantic/runtime\"");
+        sharedPage.Should().NotContain("from \"./Button\"");
     }
 
     [Fact]

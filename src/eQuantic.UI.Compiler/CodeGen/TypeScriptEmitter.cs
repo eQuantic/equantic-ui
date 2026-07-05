@@ -505,6 +505,11 @@ public class TypeScriptEmitter
             if (component.EnumTypes.Contains(cleanType))
                 continue;
 
+            // Never import the component's own name (a runtime-provided LIBRARY component referencing
+            // itself would otherwise import the very class it declares).
+            if (cleanType == component.Name)
+                continue;
+
             // Types the runtime provides (the shared vocabulary — discovered semantically by the parser,
             // see ComponentDefinition.RuntimeProvidedTypes) import from @equantic/runtime, never ./<Type>.
             if (component.RuntimeProvidedTypes.Contains(cleanType))
@@ -717,6 +722,14 @@ public class TypeScriptEmitter
                    }
                    c.Raw(jsBody, component.BuildMethodNode.Body);
                 }
+                else if (component.BuildMethodNode?.ExpressionBody != null)
+                {
+                    // Expression-bodied Build (`=> new X(...)`) — before this branch it silently fell
+                    // through to the empty-Container fallback, discarding the page's whole tree.
+                    _converter.SetCurrentClass(component.StateClassName);
+                    var expression = component.BuildMethodNode.ExpressionBody.Expression;
+                    c.Raw($"return {_converter.ConvertExpression(expression)};", expression);
+                }
                 else if (component.BuildTree != null)
                 {
                     c.Raw("return (");
@@ -879,9 +892,17 @@ public class TypeScriptEmitter
             }
         });
 
-        // Imports: $eq (if used) + any record/component/static-helper this class references.
+        // Imports: $eq (if used) + runtime-provided references (the same semantic routing components
+        // get — a static helper composing the shared vocabulary/library imports it from the runtime)
+        // + any record/component/static-helper this class references as per-app modules.
         var ib = new TypeScriptCodeBuilder();
         var core = new HashSet<string>(_converter.UsedHelpers);
+        var runtimeProvided = new HashSet<string>();
+        var referencedEnums = new HashSet<string>();
+        if (semanticModel != null)
+            Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, runtimeProvided, referencedEnums);
+        runtimeProvided.Remove(name);
+        core.UnionWith(runtimeProvided);
         if (core.Count > 0) ib.Import(core, "@equantic/runtime");
         var knownComp = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
         var knownRec = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
@@ -892,6 +913,7 @@ public class TypeScriptEmitter
             if (ct.Contains('<')) ct = ct.Split('<')[0];
             if (ct.Contains('.')) ct = ct.Substring(ct.LastIndexOf('.') + 1);
             if (string.IsNullOrEmpty(ct) || ct == name || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
+            if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
             if (knownComp.Contains(ct) || knownRec.Contains(ct) || knownHelp.Contains(ct))
                 ib.Import(new[] { ct }, $"./{ct}");
         }
