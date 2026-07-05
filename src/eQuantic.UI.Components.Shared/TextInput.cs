@@ -79,10 +79,12 @@ public sealed class TextInput : StatefulComponent
         var borderWidth = _focused ? 2f : 1f;
         var paddingX = _focused ? 13f : 14f; // spec: the 2dp focus border compensates with -1dp padding
 
-        var row = new Row(gap: 10) { Cross = CrossAlign.Center };
+        // Fill the container's content box so Cross=Center centers within the 48dp frame —
+        // a hug-height row would sit at the top of the Box on both targets.
+        var row = new Row(gap: 10) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
         if (Leading is { } leading)
         {
-            row.Add(new Icon(leading, IconSize.Md, theme.TextMuted));
+            row.Add(new Icon(leading, IconSize.Dense, theme.TextMuted)); // spec B9: 20dp leading glyph
         }
         row.Add(new Flexible(new TextEntry(Value, OnChanged)
         {
