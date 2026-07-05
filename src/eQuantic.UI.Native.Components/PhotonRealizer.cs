@@ -38,9 +38,13 @@ public static class PhotonRealizer
         ITextMeasurer? measurer = null,
         float typeScale = 1f,
         Pressable? pressed = null,
-        Pressable? focused = null)
+        Pressable? focused = null,
+        ComponentInstanceStore? instances = null)
     {
-        var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale);
+        var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
+        {
+            Instances = instances,
+        };
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context);
 
         var hits = new List<HitRegion>();

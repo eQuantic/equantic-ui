@@ -33,6 +33,8 @@ public sealed class PhotonHost
 
         if (root is StatefulComponent stateful)
             stateful.StateInvalidated += () => NeedsRender = true;
+        _instances.InstanceRetained += retained =>
+            retained.StateInvalidated += () => NeedsRender = true;
     }
 
     public ThemeMode Mode { get; set; }
@@ -49,7 +51,7 @@ public sealed class PhotonHost
     public RealizeResult RenderFrame(DisplayListBuilder builder)
     {
         builder.Clear(_theme.Background.Resolve(Mode));
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused);
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _instances);
         NeedsRender = false;
         return _lastFrame;
     }
@@ -60,6 +62,10 @@ public sealed class PhotonHost
     /// swallow the tap without firing (they still exist for accessibility). Returns whether any
     /// region was hit.
     /// </summary>
+    /// <summary>The positional reconciler: nested stateful components retain identity (and state)
+    /// across parent rebuilds — see ComponentInstanceStore.</summary>
+    private readonly ComponentInstanceStore _instances = new();
+
     private Pressable? _pressed;
     private Pressable? _focused;
 

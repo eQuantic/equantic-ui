@@ -33,6 +33,18 @@ public abstract class UiComponent : VisualNode
     /// <summary>Produces this component's subtree. Must be PURE over component state + context —
     /// it may run more than once per frame (measurement) and on every invalidation.</summary>
     public abstract VisualNode Build(ComponentContext context);
+
+    /// <summary>
+    /// Positional-reconciler hook: when this RETAINED instance is matched against a freshly built
+    /// one at the same tree position (same type + key), copy the fresh CONFIGURATION (constructor/
+    /// init props) from <paramref name="next"/> onto this instance — state fields stay untouched.
+    /// The default keeps the existing config (correct for components whose props never change
+    /// between parent builds). Explicit by design: no reflection, AOT-safe, and the component
+    /// author decides what is config vs state.
+    /// </summary>
+    public virtual void AdoptConfig(UiComponent next)
+    {
+    }
 }
 
 /// <summary>A component fully described by its constructor inputs — same contract as the web SDK's.</summary>
