@@ -256,8 +256,13 @@ rejected.)
    values via `HtmlStyle.CustomProperties`, emitted at the style tail — cross-pinned C#/TS); native =
    `PhotonHost.PressDown/PressUp` (topmost capture, release-outside cancels, disabled swallows) with
    the realizer swapping the first descendant Box fill while held (pressed-button golden). Button
-   (filled=Pressed token, Outline/Ghost=SurfaceSubtle, Link=fence) and Chip Filter wire it. Slice 2:
-   focus ring (double ring via :focus-visible + native focus traversal); then hover, gestures.
+   (filled=Pressed token, Outline/Ghost=SurfaceSubtle, Link=fence) and Chip Filter wire it. Interaction slice 2: FOCUS RING ✅ (2026-07-05, spec §01) — the double ring (2dp Surface gap +
+   2dp FocusRing) as an ACCESSIBILITY DEFAULT: every enabled Pressable carries `.eq-pressable`; the
+   generated stylesheet adds `:focus-visible > :first-child` box-shadows from the GLOBAL token
+   custom properties (keyboard-only, `outline: none`); native gains `PhotonHost.FocusNext()`
+   (paint-order traversal, wraps, skips disabled) + `ClearFocus()`, with the realizer stroking the
+   two rings OUTSIDE the first descendant Box, following its radius (focus-ring golden). v1 fences:
+   Shift+Tab reversal and key events join the input system; hover and gestures next.
    Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
    without hoisting), server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.

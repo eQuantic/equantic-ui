@@ -37,13 +37,14 @@ public static class PhotonRealizer
         DisplayListBuilder builder,
         ITextMeasurer? measurer = null,
         float typeScale = 1f,
-        Pressable? pressed = null)
+        Pressable? pressed = null,
+        Pressable? focused = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale);
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context);
 
         var hits = new List<HitRegion>();
-        Emit(layout, theme, mode, builder, hits, new PressScope(pressed));
+        Emit(layout, theme, mode, builder, hits, new PressScope(pressed, focused));
         return new RealizeResult(layout, hits);
     }
 
@@ -52,15 +53,24 @@ public static class PhotonRealizer
     /// carries the fill — the spec's "token swap on the same rrect").</summary>
     private sealed class PressScope
     {
-        public PressScope(Pressable? pressed) => Pressed = pressed;
+        public PressScope(Pressable? pressed, Pressable? focused)
+        {
+            Pressed = pressed;
+            Focused = focused;
+        }
+
         public Pressable? Pressed { get; }
+        public Pressable? Focused { get; }
         public ColorToken? PendingFill { get; set; }
+        public bool PendingFocusRing { get; set; }
     }
 
     private static void Emit(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits, PressScope press)
     {
         if (ReferenceEquals(node.Source, press.Pressed) && press.Pressed?.PressedBackground is { } pressedFill)
             press.PendingFill = pressedFill;
+        if (ReferenceEquals(node.Source, press.Focused))
+            press.PendingFocusRing = true;
 
         switch (node.Source)
         {
@@ -70,6 +80,23 @@ public static class PhotonRealizer
                 press.PendingFill = null;
                 EmitChrome(node.Bounds, fill, box.Style.CornerRadius,
                     box.Style.BorderColor, box.Style.BorderWidth, theme, mode, builder);
+
+                // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
+                // following the control's own radius — the first Box under the focused Pressable
+                // carries it (the same convention as the pressed fill swap).
+                if (press.PendingFocusRing)
+                {
+                    press.PendingFocusRing = false;
+                    var radii = box.Style.CornerRadius;
+                    builder.StrokeRRect(
+                        new RRect(node.Bounds.Inflate(1), new CornerRadii(
+                            radii.TopLeft + 1, radii.TopRight + 1, radii.BottomRight + 1, radii.BottomLeft + 1)),
+                        2, Paint.Solid(theme.Surface.Resolve(mode)));
+                    builder.StrokeRRect(
+                        new RRect(node.Bounds.Inflate(3), new CornerRadii(
+                            radii.TopLeft + 3, radii.TopRight + 3, radii.BottomRight + 3, radii.BottomLeft + 3)),
+                        2, Paint.Solid(theme.FocusRing.Resolve(mode)));
+                }
                 break;
             }
 

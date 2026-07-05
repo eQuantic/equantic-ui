@@ -404,13 +404,15 @@ function lowerPressable(pressable: PressableNode, context: LoweringContext): Htm
   if (disabled) node.attributes['disabled'] = '';
   if (!disabled && pressable.onPressed) node.events['click'] = pressable.onPressed as EventHandler;
 
-  // Pressed state (spec §01): mechanics live in the generated stylesheet (.eq-pressable:active) —
-  // this element carries only the class and the token value as a custom property. Mirrors the C#
-  // WebRealizer byte-for-byte (the custom property lands after the ordered style entries).
-  if (pressable.pressedBackground && !disabled) {
+  // Interaction states (spec §01): mechanics live in the generated stylesheet — every enabled
+  // pressable carries the class (:focus-visible double ring is an a11y DEFAULT); the pressed swap
+  // additionally ships its token value as a custom property at the style TAIL (the C# cross-pin).
+  if (!disabled) {
     node.attributes['class'] = 'eq-pressable';
-    node.attributes['style'] =
-      `${node.attributes['style']}; --eq-pressed-bg: ${tokenValue(pressable.pressedBackground)}`;
+    if (pressable.pressedBackground) {
+      node.attributes['style'] =
+        `${node.attributes['style']}; --eq-pressed-bg: ${tokenValue(pressable.pressedBackground)}`;
+    }
   }
 
   const child = lowerNode(pressable.child, context, null);
