@@ -41,7 +41,8 @@ public static class SharedCounterView
 
         column.Add(new Banner(Variant.Warning, "Your card expires this month.",
             "Renew it to keep automatic payments running."));
-        column.Add(new ProgressBar(count / 10f));
+        // Spec B14: forward value changes animate Base 200ms (Increment); regressions snap.
+        column.Add(new ProgressBar(count % 10 / 10f));
         // Spec B14 indeterminate: null value → the 30% segment sweeps the clipped track (1.2s loop).
         column.Add(new ProgressBar());
 
@@ -59,6 +60,15 @@ public static class SharedCounterView
         column.Add(new TextInput("", label: "Email", placeholder: "you@company.com",
             helper: "We never share it.", leading: Icons.Mail));
         column.Add(new SearchField("rio"));
+
+        // Spec B15: the canonical activity indicator — 8 staggered bars, 800ms/rev, no arcs.
+        var activity = new Row(gap: Space.S3) { Cross = CrossAlign.Center };
+        activity.Add(new Spinner(IconSize.Sm));
+        activity.Add(new Spinner(IconSize.Dense));
+        activity.Add(new Spinner(IconSize.Md));
+        activity.Add(new Spinner(IconSize.Lg));
+        activity.Add(new Text("Syncing accounts…", TypeRole.Caption));
+        column.Add(activity);
 
         // Spec C2: an interrupting decision — declarative presence, resolved by its actions.
         var confirmRow = new Row(gap: Space.S2) { Cross = CrossAlign.Center };

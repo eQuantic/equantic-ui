@@ -38,6 +38,7 @@ public static class WebRealizer
         TextEntry entry => LowerTextEntry(entry, context),
         Overlay overlay => LowerOverlay(overlay, context),
         Icon icon => LowerIcon(icon, context),
+        Spinner spinner => LowerSpinner(spinner, context),
         Primitives.Image image => LowerImage(image),
         Pressable pressable => LowerPressable(pressable, context),
         LoopMotion motion => LowerLoopMotion(motion, context),
@@ -156,6 +157,53 @@ public static class WebRealizer
     /// <c>fill="currentColor"</c> — the tint rides the CSS <c>color</c> property exactly like text
     /// (token → light-dark()). Null color inherits; null label = decorative (aria-hidden).
     /// </summary>
+    /// <summary>
+    /// Spec B15, drawn inside the fence: an SVG of 8 rrect bars (2×5 in the 16 viewBox) rotated
+    /// i·45° about the center; the phase stagger rides per-bar NEGATIVE animation-delays over the
+    /// generated 800ms 1→0.3 fade (exact parity with the native f(t) alphas). Color inherits via
+    /// currentColor exactly like Icon; the 400ms anti-flash appear delay and the Reduce Motion
+    /// pulse-in-place (delays zeroed) live in the generated stylesheet.
+    /// </summary>
+    private static HtmlElement LowerSpinner(Spinner spinner, ComponentContext context)
+    {
+        var svg = new RealizedElement("svg")
+        {
+            ClassName = "eq-spinner",
+            Style = new HtmlStyle
+            {
+                Width = TokenCss.Px(spinner.Size),
+                Height = TokenCss.Px(spinner.Size),
+                Color = spinner.Color is { } tint ? TokenCss.Value(tint) : null,
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["viewBox"] = "0 0 16 16",
+                ["fill"] = "currentColor",
+                ["aria-hidden"] = "true",
+            },
+        };
+
+        var step = Spinner.RevolutionMs / 8;
+        for (var i = 0; i < 8; i++)
+        {
+            var bar = new RealizedElement("rect")
+            {
+                Style = new HtmlStyle { AnimationDelay = $"-{i * step}ms" },
+                RawAttributes = new Dictionary<string, string>
+                {
+                    ["x"] = "7",
+                    ["y"] = "0",
+                    ["width"] = "2",
+                    ["height"] = "5",
+                    ["rx"] = "1",
+                    ["transform"] = $"rotate({i * 45} 8 8)",
+                },
+            };
+            svg.Children.Add(bar);
+        }
+        return svg;
+    }
+
     private static HtmlElement LowerIcon(Icon icon, ComponentContext context)
     {
         var svg = new RealizedElement("svg")
@@ -454,6 +502,11 @@ public static class WebRealizer
         {
             Style = new HtmlStyle
             {
+                // Spec B14 value transitions: weight changes animate Base/standard; the component
+                // omits the flag on a regression so the change SNAPS (forward-only honesty).
+                Transition = flexible.AnimateChanges
+                    ? "flex-grow var(--eq-motion-base) var(--eq-curve-standard)"
+                    : null,
                 Flex = $"{flexible.Flex} 1 0%",
                 MinWidth = horizontalAxis is not false ? "0" : null,
                 MinHeight = horizontalAxis is false ? "0" : null,

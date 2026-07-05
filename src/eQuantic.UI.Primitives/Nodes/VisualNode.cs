@@ -329,6 +329,12 @@ public sealed class Flexible : VisualNode
 
     public VisualNode Child { get; init; }
     public int Flex { get; init; }
+
+    /// <summary>Animate WEIGHT changes at Base 200ms standard (spec B14: "value changes animate…").
+    /// The composing component decides per render — forward-only contracts set it false on a
+    /// regression so the change SNAPS (honesty over smoothness). Web = a flex-grow transition;
+    /// native joins with the transition animator (until then weights snap, the documented fence).</summary>
+    public bool AnimateChanges { get; init; }
 }
 
 /// <summary>

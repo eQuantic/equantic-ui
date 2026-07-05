@@ -113,6 +113,7 @@ export {
   LinearGradient,
   TextEntry,
   Overlay,
+  Spinner,
 } from './shared/vocabulary';
 export {
   Color,

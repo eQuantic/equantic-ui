@@ -21,6 +21,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
 
         var variable = decl.Declaration.Variables.First();
         var name = variable.Identifier.Text;
+        var patternVars = PatternVariableScanner.Declarations(variable.Initializer?.Value);
         var init = variable.Initializer != null
             ? context.Converter.ConvertExpression(variable.Initializer.Value)
             : "null";
@@ -31,10 +32,10 @@ public class LocalDeclarationStrategy : IStatementStrategy
             // Since this strategy only sees the statement, we'll emit a declaration
             // and a comment. The true 100% implementation requires block-aware conversion.
             // For now, let's at least emit the declaration.
-            return $"const {name} = {init}; /* using */";
+            return $"{patternVars}const {name} = {init}; /* using */";
         }
 
-        return $"let {name} = {init};";
+        return $"{patternVars}let {name} = {init};";
     }
 
     public int Priority => 0;

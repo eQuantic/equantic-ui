@@ -37,6 +37,7 @@ export {
   LinearGradient,
   TextEntry,
   Overlay,
+  Spinner,
 } from './vocabulary';
 export {
   Color,

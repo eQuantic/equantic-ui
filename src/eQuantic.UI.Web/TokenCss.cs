@@ -168,6 +168,15 @@ public static class PhotonCssGenerator
         // centering) belongs to the component; only the layer mechanics live here.
         css.AppendLine(".eq-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; }");
 
+        // Spinner mechanics (spec B15): the 800ms sawtooth fade each bar rides with its own
+        // negative delay (the rotation phase); the 400ms anti-flash appear; Reduce Motion zeroes
+        // the stagger so the bars pulse IN PLACE — same fade, no rotation phase.
+        css.AppendLine($"@keyframes eq-spinner-fade {{ from {{ opacity: 1; }} to {{ opacity: 0.3; }} }}");
+        css.AppendLine($".eq-spinner rect {{ animation: eq-spinner-fade {Spinner.RevolutionMs}ms linear infinite; }}");
+        css.AppendLine("@keyframes eq-appear { to { opacity: 1; } }");
+        css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
+        css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-spinner rect { animation-delay: 0ms !important; } }");
+
         // Text entry mechanics (spec B9): the input is chrome-less — the container shows focus —
         // and the placeholder rides TextMuted. Values are tokens; only mechanics live here.
         css.AppendLine(".eq-entry { outline: none; }");

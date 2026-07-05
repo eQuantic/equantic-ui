@@ -188,6 +188,10 @@ public static class PhotonRealizer
                 break;
             }
 
+            case Spinner spinner:
+                EmitSpinner(node, spinner, theme, mode, builder, motion);
+                break;
+
             case Pressable pressable:
                 hits.Add(new HitRegion(ExpandHitRect(node.Bounds), pressable));
                 break;
@@ -333,6 +337,44 @@ public static class PhotonRealizer
             new RRect(new Rect(node.Bounds.X, y, MathF.Min(line.Width, node.Bounds.Width), barHeight),
                 new CornerRadii(barHeight / 3)),
             Paint.Solid(color));
+    }
+
+    /// <summary>
+    /// Spec B15, drawn INSIDE the fence: 8 rrect bars (2×5 in the 16dp em-box, scaled), rotated
+    /// i·45° about the center, opacity phase-staggered on the 800ms/rev linear clock — a pure
+    /// function of the frame time (golden-testable at fixed t). Reduce Motion keeps the fade but
+    /// drops the rotation phase: every bar pulses IN PLACE with the same alpha (spec B15) — the
+    /// spinner therefore always reports active motion (it is a functional indicator, not
+    /// decoration).
+    /// </summary>
+    private static void EmitSpinner(LayoutNode node, Spinner spinner, IAppTheme theme, ThemeMode mode,
+        DisplayListBuilder builder, MotionScope motion)
+    {
+        motion.Active = true;
+        var phase = motion.TimeMs % Spinner.RevolutionMs / Spinner.RevolutionMs;
+        var tint = (spinner.Color ?? theme.TextPrimary).Resolve(mode);
+
+        var scale = node.Bounds.Width / 16f;
+        var centerX = node.Bounds.X + node.Bounds.Width / 2;
+        var centerY = node.Bounds.Y + node.Bounds.Height / 2;
+        var bar = new RRect(
+            new Rect(centerX - scale, node.Bounds.Y, 2 * scale, 5 * scale),
+            new CornerRadii(scale));
+
+        for (var i = 0; i < 8; i++)
+        {
+            // Web parity: bar i runs the same 1→0.3 sawtooth with a -i·(rev/8) delay; Reduce
+            // Motion zeroes the stagger (all bars share the pulse).
+            var k = motion.Reduced ? phase : (((i - phase * 8) % 8) + 8) % 8 / 8;
+            var alpha = 1f - 0.7f * k;
+
+            builder.PushTransform(
+                Matrix2D.Translation(-centerX, -centerY)
+                * Matrix2D.Rotation(i * 45 * MathF.PI / 180)
+                * Matrix2D.Translation(centerX, centerY));
+            builder.FillRRect(bar, Paint.Solid(tint.WithOpacity(alpha)));
+            builder.Pop();
+        }
     }
 
     /// <summary>Hit contract (spec §08): every interactive node exposes ≥ 48dp per side — visual bounds
