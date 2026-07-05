@@ -9,6 +9,7 @@
  */
 
 import type { HtmlNode } from '../core/types';
+import { iconPaths } from './icons.generated';
 import type {
   ColorTokenValue,
   CrossAlignValue,
@@ -338,15 +339,32 @@ export class Image extends VisualNode {
   }
 }
 
+/** Mirror of the C# `IconGlyph` record: target-neutral glyph data (write-once icon packs). */
+export class IconGlyph {
+  name: string;
+  path: string;
+  style: string;
+  viewBox: string;
+  strokeWidth: number;
+
+  constructor(name: string, path: string, style = 'fill', viewBox = '0 0 24 24', strokeWidth = 2) {
+    this.name = name;
+    this.path = path;
+    this.style = style;
+    this.viewBox = viewBox;
+    this.strokeWidth = strokeWidth;
+  }
+}
+
 export class Icon extends VisualNode {
   readonly nodeKind = 'icon';
-  glyph: string;
+  glyph: IconGlyph;
   size: number;
   color: ColorTokenValue | null;
   label: string | null;
 
   constructor(
-    glyph: string,
+    glyph: string | IconGlyph,
     size = 24,
     color: ColorTokenValue | null = null,
     label: string | null = null,
@@ -355,7 +373,9 @@ export class Icon extends VisualNode {
     if (size !== 16 && size !== 20 && size !== 24 && size !== 32) {
       throw new RangeError(`Icon size ${size} is not on the §07 whitelist (16/20/24/32).`);
     }
-    this.glyph = glyph;
+    // Curated names (the transpiled `Icons` enum lowers to its camelCase member) resolve from the
+    // generated catalog; pack glyphs arrive as IconGlyph objects and pass through whole.
+    this.glyph = typeof glyph === 'string' ? new IconGlyph(glyph, iconPaths[glyph] ?? '') : glyph;
     this.size = size;
     this.color = color;
     this.label = label;

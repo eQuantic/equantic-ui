@@ -1,37 +1,38 @@
-using eQuantic.UI.Core;
-using eQuantic.UI.Web.Components;
 using eQuantic.UI.Lucide;
+using eQuantic.UI.Primitives;
 using FluentAssertions;
 
 namespace eQuantic.UI.Lucide.Tests;
 
+/// <summary>The Lucide catalog on the write-once architecture: glyphs are target-neutral
+/// <see cref="IconGlyph"/> data consumed by the Icon node on BOTH targets.</summary>
 public class LucideIconTests
 {
     [Fact]
-    public void Lucide_Check_ShouldReturnIconWithCorrectContent()
+    public void Check_IsAStrokeGlyphWithPathData()
     {
-        var icon = LucideIcons.Check();
-
-        icon.Name.Should().Be("check");
-        icon.Content.Should().HaveCount(1);
-        var element = icon.Content[0] as DynamicElement;
-        element.Should().NotBeNull();
-        element!.TagName.Should().Be("path");
-        element.CustomAttributes["d"].Should().Be("M20 6L9 17l-5-5");
+        LucideIcons.Check.Name.Should().Be("check");
+        LucideIcons.Check.Path.Should().Be("M20 6L9 17l-5-5");
+        LucideIcons.Check.Style.Should().Be(IconGlyphStyle.Stroke, "Lucide is the outline family");
+        LucideIcons.Check.ViewBox.Should().Be("0 0 24 24");
+        LucideIcons.Check.StrokeWidth.Should().Be(2);
     }
 
     [Fact]
-    public void LucideIcon_Build_ShouldReturnSvgElement()
+    public void ShapeIcons_ConvertToPathData()
     {
-        var icon = LucideIcons.Activity(size: 32, color: "red");
-        var context = new RenderContext();
-        
-        var built = icon.Build(context) as DynamicElement;
-        
-        built.Should().NotBeNull();
-        built!.TagName.Should().Be("svg");
-        built.CustomAttributes["width"].Should().Be("32");
-        built.CustomAttributes["style"].Should().Contain("color: red");
-        built.Children.Should().HaveCount(1);
+        // alarm-clock is a <circle> + <path> upstream — the generator flattens shapes to path data.
+        LucideIcons.AlarmClock.Path.Should().StartWith("M4 13a8 8 0 1 0 16 0a8 8 0 1 0 -16 0",
+            "the circle converts to two arcs");
+        LucideIcons.AlarmClock.Path.Should().Contain("M12 9v4l2 2");
+    }
+
+    [Fact]
+    public void PackGlyphs_ComposeWithTheIconNode()
+    {
+        var icon = new Icon(LucideIcons.Camera, IconSize.Md);
+        icon.Glyph.Name.Should().Be("camera");
+        icon.Glyph.Style.Should().Be(IconGlyphStyle.Stroke);
+        icon.Size.Should().Be(24);
     }
 }

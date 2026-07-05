@@ -208,10 +208,19 @@ export interface ImageNode extends VisualNodeValue {
   cornerRadius?: CornerRadiiValue;
 }
 
+/** Wire shape of the C# `IconGlyph`: target-neutral path data (any pack or the curated set). */
+export interface IconGlyphValue {
+  name: string;
+  path: string;
+  style?: string;
+  viewBox?: string;
+  strokeWidth?: number;
+}
+
 export interface IconNode extends VisualNodeValue {
   nodeKind: 'icon';
-  /** `Icons` member as a camelCase string ('search' | 'close' | …). */
-  glyph: string;
+  /** The RESOLVED glyph — curated names resolve at construction, pack glyphs arrive whole. */
+  glyph: IconGlyphValue;
   size: number;
   color?: ColorTokenValue | null;
   label?: string | null;

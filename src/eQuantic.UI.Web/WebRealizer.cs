@@ -206,6 +206,7 @@ public static class WebRealizer
 
     private static HtmlElement LowerIcon(Icon icon, ComponentContext context)
     {
+        var glyph = icon.Glyph;
         var svg = new RealizedElement("svg")
         {
             Style = new HtmlStyle
@@ -217,14 +218,26 @@ public static class WebRealizer
         };
         svg.RawAttributes = new Dictionary<string, string>
         {
-            ["viewBox"] = "0 0 24 24",
-            ["fill"] = "currentColor",
+            ["viewBox"] = glyph.ViewBox,
         };
+        // Fill glyphs are alpha masks; stroke glyphs are the outline family (2dp round — spec §07).
+        if (glyph.Style == IconGlyphStyle.Stroke)
+        {
+            svg.RawAttributes["fill"] = "none";
+            svg.RawAttributes["stroke"] = "currentColor";
+            svg.RawAttributes["stroke-width"] = glyph.StrokeWidth.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            svg.RawAttributes["stroke-linecap"] = "round";
+            svg.RawAttributes["stroke-linejoin"] = "round";
+        }
+        else
+        {
+            svg.RawAttributes["fill"] = "currentColor";
+        }
         if (icon.Label is { } label) svg.RawAttributes["aria-label"] = label;
         else svg.RawAttributes["aria-hidden"] = "true";
 
         var glyphPath = new RealizedElement("path");
-        glyphPath.RawAttributes = new Dictionary<string, string> { ["d"] = IconRegistry.Path(icon.Glyph) };
+        glyphPath.RawAttributes = new Dictionary<string, string> { ["d"] = glyph.Path };
         svg.Children.Add(glyphPath);
         return svg;
     }

@@ -1,4 +1,5 @@
 using eQuantic.UI.Components;
+using eQuantic.UI.Lucide;
 using eQuantic.UI.Primitives;
 
 namespace DefaultUIDashboard.Pages;
@@ -69,6 +70,15 @@ public static class SharedCounterView
         activity.Add(new Spinner(IconSize.Lg));
         activity.Add(new Text("Syncing accounts…", TypeRole.Caption));
         column.Add(activity);
+
+        // Icon packs on the write-once architecture: Lucide glyphs ride the SAME Icon node.
+        var packRow = new Row(gap: Space.S3) { Cross = CrossAlign.Center };
+        packRow.Add(new Icon(LucideIcons.Camera, IconSize.Md));
+        packRow.Add(new Icon(LucideIcons.AlarmClock, IconSize.Md));
+        packRow.Add(new Icon(LucideIcons.Rocket, IconSize.Md));
+        packRow.Add(new Icon(LucideIcons.Heart, IconSize.Md));
+        packRow.Add(new Text("Lucide, write-once", TypeRole.Caption));
+        column.Add(packRow);
 
         // Spec C2: an interrupting decision — declarative presence, resolved by its actions.
         var confirmRow = new Row(gap: Space.S2) { Cross = CrossAlign.Center };

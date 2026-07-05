@@ -404,6 +404,22 @@ rejected.)
    showcase, already failing restore on clean HEAD — missing .local-packages source) left the
    solution; it dies with Web.Components. All suites green; SSR smoke on both the write-once page
    and a legacy page.
+   ICON PACKS WRITE-ONCE ✅ (2026-07-05): `IconGlyph(Name, Path, Style, ViewBox, StrokeWidth)` in
+   Primitives — target-neutral geometry (fill = alpha mask, stroke = the 2dp-round outline family;
+   per-glyph viewBox for foreign grids like FA6's 512). The curated `Icons` enum resolves through
+   `CuratedIcons` (paths moved OUT of the web registry, which now just projects); the Icon node
+   holds the RESOLVED glyph and accepts any pack glyph directly. Web lowers fill/stroke with byte
+   parity across SSR and the TS lowering; native keeps the placeholder disc but now holds the path
+   — atlas-ready (W4 rasterizes the same data). All 11 packs REGENERATED at the source:
+   scripts/generate-icons.mjs (Iconify JSON) now flattens groups with attribute inheritance,
+   converts basic shapes (circle/ellipse/rect/line/polyline/polygon) to path data, drops bounding
+   ghosts, and emits one-line IconGlyph catalogs referencing Primitives ONLY (28,285 glyphs across
+   Lucide 1805 / Heroicons 1288 / Radix 332 / Tabler 6178 / FA6 solid 1407 + regular 164 + brands
+   495 / Phosphor 9161 / Simple 3720 / Bootstrap 2081 / Iconoir 1654; 57 skipped = 0.2%, logged:
+   defs/transforms/mixed). The legacy per-pack component/provider/extensions died. Packs are
+   OPT-IN references. v1 fence: pack glyphs in CLIENT-side dynamic rebuilds need the per-app pack
+   module (tools/source ships; the SDK doesn't yet feed pack sources to eqc) — SSR + hydration and
+   native are complete; the client pack-module slice follows.
    Animation slice 2 ✅ (2026-07-05, spec A1/B16 — GRADIENT + SHIMMER): `BoxStyle.Gradient` exposes
    the engine fence's exact gradient primitive — `LinearGradient(From, To, Direction)`, two TOKEN
    stops on a straight axis (ToRight/ToBottom), drawing OVER the solid background (CSS
