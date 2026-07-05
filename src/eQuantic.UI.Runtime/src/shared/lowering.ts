@@ -25,6 +25,7 @@ import type {
   FlexibleNode,
   IconNode,
   ImageNode,
+  LoopMotionNode,
   PositionedNode,
   PressableNode,
   ScrollViewNode,
@@ -152,6 +153,9 @@ const styleOrder = [
   'overflow',
   'overflow-x',
   'overflow-y',
+  'transition',
+  'transform',
+  'animation',
   'white-space',
   'text-overflow',
   'box-sizing',
@@ -191,6 +195,8 @@ function lowerNode(
       return lowerSpacer(node as SpacerNode, horizontalAxis);
     case 'scrollView':
       return lowerScrollView(node as ScrollViewNode, context, path);
+    case 'loopMotion':
+      return lowerLoopMotion(node as LoopMotionNode, context, path);
     case 'image':
       return lowerImage(node as ImageNode);
     case 'icon':
@@ -232,6 +238,25 @@ function element(tag: string, style: StyleEntries, children: HtmlNode[] = []): H
     events: {},
     children,
   };
+}
+
+/** Fraction → CSS percentage, mirroring C# TokenCss.Percent ("0.##": -0.35 → "-35%"). */
+function pct(fraction: number): string {
+  return `${parseFloat((fraction * 100).toFixed(2))}%`;
+}
+
+/** Spec §06 mirror: the generated eq-slide-x keyframes animate the wrapper; endpoints ride custom
+ * properties at the style TAIL (the C# cross-pin), duration rides the animation shorthand. */
+function lowerLoopMotion(node: LoopMotionNode, context: LoweringContext, path: string): HtmlNode {
+  const wrapper = element('div', {
+    animation: `eq-slide-x ${node.durationMs}ms linear infinite`,
+  });
+  wrapper.attributes['class'] = 'eq-loop';
+  wrapper.attributes['style'] =
+    `${wrapper.attributes['style']}; --eq-loop-from: ${pct(node.fromX)}; --eq-loop-to: ${pct(node.toX)}`;
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) wrapper.children.push(child);
+  return wrapper;
 }
 
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
@@ -390,6 +415,8 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
       style.borderWidth && style.borderWidth > 0 && style.borderColor
         ? `${px(style.borderWidth)} solid ${tokenValue(style.borderColor)}`
         : undefined,
+    // The container side of loop motion: children clip to the rrect (native PushClip twin).
+    overflow: style.clip ? 'hidden' : undefined,
   });
 
   if (box.child) {

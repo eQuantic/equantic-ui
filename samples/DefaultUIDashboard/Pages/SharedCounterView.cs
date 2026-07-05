@@ -40,6 +40,8 @@ public static class SharedCounterView
         column.Add(new Banner(Variant.Warning, "Your card expires this month.",
             "Renew it to keep automatic payments running."));
         column.Add(new ProgressBar(count / 10f));
+        // Spec B14 indeterminate: null value → the 30% segment sweeps the clipped track (1.2s loop).
+        column.Add(new ProgressBar());
 
         return new Card(column, CardKind.Outlined) { Width = SizeValue.Fill };
     }

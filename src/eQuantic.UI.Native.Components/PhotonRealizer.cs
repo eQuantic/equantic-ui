@@ -10,14 +10,19 @@ public readonly record struct HitRegion(Rect Bounds, Pressable Node);
 /// <summary>The realized frame: the laid-out tree (absolute bounds) and the interactive hit regions.</summary>
 public sealed class RealizeResult
 {
-    public RealizeResult(LayoutNode root, IReadOnlyList<HitRegion> hitRegions)
+    public RealizeResult(LayoutNode root, IReadOnlyList<HitRegion> hitRegions, bool hasActiveMotion)
     {
         Root = root;
         HitRegions = hitRegions;
+        HasActiveMotion = hasActiveMotion;
     }
 
     public LayoutNode Root { get; }
     public IReadOnlyList<HitRegion> HitRegions { get; }
+
+    /// <summary>True when the frame contains running loop motion — the host keeps scheduling frames
+    /// while set (and stops when Reduce Motion statically disables the movement).</summary>
+    public bool HasActiveMotion { get; }
 }
 
 /// <summary>
@@ -39,7 +44,9 @@ public static class PhotonRealizer
         float typeScale = 1f,
         Pressable? pressed = null,
         Pressable? focused = null,
-        ComponentInstanceStore? instances = null)
+        ComponentInstanceStore? instances = null,
+        float timeMs = 0,
+        bool reducedMotion = false)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
         {
@@ -48,8 +55,26 @@ public static class PhotonRealizer
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context);
 
         var hits = new List<HitRegion>();
-        Emit(layout, theme, mode, builder, hits, new PressScope(pressed, focused));
-        return new RealizeResult(layout, hits);
+        var motion = new MotionScope(timeMs, reducedMotion);
+        Emit(layout, theme, mode, builder, hits, new PressScope(pressed, focused), motion);
+        return new RealizeResult(layout, hits, motion.Active);
+    }
+
+    /// <summary>The frame clock for loop motion: offsets resolve as a PURE function of
+    /// <see cref="TimeMs"/> (deterministic frames — goldens pin a fixed t). Reduce Motion (spec §06)
+    /// replaces movement statically: the child renders at rest and the frame reports no active
+    /// motion, so the host stops burning frames.</summary>
+    private sealed class MotionScope
+    {
+        public MotionScope(float timeMs, bool reduced)
+        {
+            TimeMs = timeMs;
+            Reduced = reduced;
+        }
+
+        public float TimeMs { get; }
+        public bool Reduced { get; }
+        public bool Active { get; set; }
     }
 
     /// <summary>Carries the held press through the emit walk: entering the pressed Pressable arms the
@@ -69,7 +94,7 @@ public static class PhotonRealizer
         public bool PendingFocusRing { get; set; }
     }
 
-    private static void Emit(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits, PressScope press)
+    private static void Emit(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits, PressScope press, MotionScope motion)
     {
         if (ReferenceEquals(node.Source, press.Pressed) && press.Pressed?.PressedBackground is { } pressedFill)
             press.PendingFill = pressedFill;
@@ -152,13 +177,48 @@ public static class PhotonRealizer
         {
             builder.PushClip(new RRect(node.Bounds));
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, press);
+                Emit(child, theme, mode, builder, hits, press, motion);
             builder.PopClip();
             return;
         }
 
+        // A clipping Box confines its CHILDREN to its rrect (chrome already drew unclipped above) —
+        // the container side of loop motion (the sweeping segment stays inside the track).
+        if (node.Source is Box { Style.Clip: true } clipBox)
+        {
+            builder.PushClip(new RRect(node.Bounds, clipBox.Style.CornerRadius));
+            foreach (var child in node.Children)
+                Emit(child, theme, mode, builder, hits, press, motion);
+            builder.PopClip();
+            return;
+        }
+
+        // Loop motion: translate the subtree by the frame-clock offset (spec §06 transform-only).
+        // Offsets are fractions of the node's OWN laid-out width — parity with CSS translateX(%).
+        if (node.Source is LoopMotion loop)
+        {
+            var offset = ResolveLoopOffset(loop, node.Bounds.Width, motion);
+            if (offset != 0) builder.PushTransform(Matrix2D.Translation(offset, 0));
+            foreach (var child in node.Children)
+                Emit(child, theme, mode, builder, hits, press, motion);
+            if (offset != 0) builder.Pop();
+            return;
+        }
+
         foreach (var child in node.Children)
-            Emit(child, theme, mode, builder, hits, press);
+            Emit(child, theme, mode, builder, hits, press, motion);
+    }
+
+    /// <summary>The loop offset at the scope's clock: linear phase over the period, lerped between
+    /// the fractional endpoints, scaled by the node's own width. Reduce Motion → at-rest (0) and the
+    /// frame does not report active motion.</summary>
+    private static float ResolveLoopOffset(LoopMotion loop, float width, MotionScope motion)
+    {
+        if (motion.Reduced || loop.DurationMs <= 0 || width <= 0) return 0;
+        motion.Active = true;
+        var phase = motion.TimeMs % loop.DurationMs / loop.DurationMs;
+        if (phase < 0) phase += 1;
+        return (loop.FromX + (loop.ToX - loop.FromX) * phase) * width;
     }
 
     private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,

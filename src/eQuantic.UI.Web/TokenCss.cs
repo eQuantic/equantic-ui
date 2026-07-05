@@ -45,6 +45,10 @@ public static class TokenCss
     public static string Shadow(ShadowSpec spec) => spec.IsNone
         ? "none"
         : $"0 {Px(spec.OffsetY)} {Px(spec.Blur)} {Px(spec.Spread)} {Value(spec.Color)}";
+
+    /// <summary>A fraction as a CSS percentage (loop-motion endpoints: -0.35 → "-35%").</summary>
+    public static string Percent(float fraction) =>
+        $"{(fraction * 100).ToString("0.##", CultureInfo.InvariantCulture)}%";
 }
 
 /// <summary>
@@ -150,6 +154,13 @@ public static class PhotonCssGenerator
         // (:focus-visible). The shadow sits on the CHILD so it follows the control's border-radius.
         css.AppendLine(".eq-pressable { outline: none; }");
         css.AppendLine(".eq-pressable:focus-visible > :first-child { box-shadow: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
+
+        // Loop motion (spec §06, transform-only): ONE keyframe pair per effect reads its per-element
+        // endpoints from custom properties the realizers set at the style tail; duration rides the
+        // animation shorthand. `prefers-reduced-motion` statically replaces movement — the browser
+        // twin of PhotonHost.ReducedMotion (native renders at rest and stops requesting frames).
+        css.AppendLine("@keyframes eq-slide-x { 0% { transform: translateX(var(--eq-loop-from)); } 100% { transform: translateX(var(--eq-loop-to)); } }");
+        css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-loop { animation: none; } }");
 
         return css.ToString();
     }

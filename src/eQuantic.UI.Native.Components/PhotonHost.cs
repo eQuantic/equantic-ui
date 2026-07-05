@@ -41,18 +41,25 @@ public sealed class PhotonHost
     public float Width { get; }
     public float Height { get; }
 
-    /// <summary>True when state changed since the last <see cref="RenderFrame"/> (starts true).</summary>
+    /// <summary>True when state changed since the last <see cref="RenderFrame"/> (starts true), or
+    /// when the last frame carried running loop motion — animated frames keep the loop hot.</summary>
     public bool NeedsRender { get; private set; } = true;
+
+    /// <summary>The OS "Reduce Motion" accessibility setting (spec §06): loop movement renders at
+    /// rest and stops requesting frames. Platform shells (W5) feed the real setting.</summary>
+    public bool ReducedMotion { get; set; }
 
     /// <summary>
     /// Builds one frame: clears to the theme background, then lays out and lowers the root via
-    /// <see cref="PhotonRealizer"/>. Returns the realized frame (layout tree + hit regions).
+    /// <see cref="PhotonRealizer"/>. <paramref name="timeMs"/> is the frame clock loop motion samples
+    /// (injected by the platform shell — frames stay a pure function of it). Returns the realized
+    /// frame (layout tree + hit regions).
     /// </summary>
-    public RealizeResult RenderFrame(DisplayListBuilder builder)
+    public RealizeResult RenderFrame(DisplayListBuilder builder, float timeMs = 0)
     {
         builder.Clear(_theme.Background.Resolve(Mode));
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _instances);
-        NeedsRender = false;
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _instances, timeMs, ReducedMotion);
+        NeedsRender = _lastFrame.HasActiveMotion;
         return _lastFrame;
     }
 

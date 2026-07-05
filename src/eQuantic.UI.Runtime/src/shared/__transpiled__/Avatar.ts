@@ -1,5 +1,4 @@
 import { $eq, Box, BoxStyle, BuildContext, ColorToken, Component, ComponentContext, CornerRadii, HtmlElement, Icon, IconSize, Image, Positioned, Radius, Row, SizeValue, Stack, StatelessComponent, Text, TypeStyle, VariantColors, VisualNode } from "@equantic/runtime";
-import { MathF } from "./MathF";
 
 export class Avatar extends StatelessComponent {
     static tintPalette: Variant[] = ['primary', 'success', 'info', 'warning', 'destructive'];

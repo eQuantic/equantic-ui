@@ -38,6 +38,7 @@ public static class WebRealizer
         Icon icon => LowerIcon(icon, context),
         Primitives.Image image => LowerImage(image),
         Pressable pressable => LowerPressable(pressable, context),
+        LoopMotion motion => LowerLoopMotion(motion, context),
         Flexible flexible => LowerFlexible(flexible, context, horizontalAxis),
         Spacer spacer => LowerSpacer(spacer, horizontalAxis),
         UiComponent component => LowerNode(component.Build(context), context, horizontalAxis),
@@ -207,10 +208,39 @@ public static class WebRealizer
                 Border = style.BorderWidth > 0
                     ? $"{TokenCss.Px(style.BorderWidth)} solid {TokenCss.Value(style.BorderColor)}"
                     : null,
+                // The container side of loop motion: children clip to the rrect (native PushClip twin).
+                Overflow = style.Clip ? "hidden" : null,
             },
         };
 
         if (box.Child is not null && LowerNode(box.Child, context, horizontalAxis: null) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
+    /// Spec §06 loop motion: a layout-transparent div carrying the GENERATED keyframe animation —
+    /// the effect maps to a keyframe name, endpoints ride custom properties at the style tail
+    /// (fractions of the element's own width — CSS translateX(%) has the same base as the native
+    /// realizer's offset math), duration rides the animation shorthand. `prefers-reduced-motion`
+    /// disables it in the generated stylesheet (the .eq-loop class is the hook).
+    /// </summary>
+    private static HtmlElement LowerLoopMotion(LoopMotion motion, ComponentContext context)
+    {
+        var element = new RealizedElement("div")
+        {
+            ClassName = "eq-loop",
+            Style = new HtmlStyle
+            {
+                Animation = $"eq-slide-x {motion.DurationMs}ms linear infinite",
+                CustomProperties = new Dictionary<string, string>
+                {
+                    ["--eq-loop-from"] = TokenCss.Percent(motion.FromX),
+                    ["--eq-loop-to"] = TokenCss.Percent(motion.ToX),
+                },
+            },
+        };
+        if (LowerNode(motion.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;
     }

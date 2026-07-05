@@ -71,6 +71,9 @@ public static class LayoutEngine
         Icon icon => new LayoutNode(icon) { Bounds = new Rect(0, 0, icon.Size, icon.Size) },
         Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx, path),
         Flexible flexible => MeasureWrapper(flexible, flexible.Child, maxW, maxH, ctx, path),
+        // Loop motion is layout-transparent: the offset is a REALIZE-time transform (spec §06 —
+        // transform-only frames never re-lay-out).
+        LoopMotion motion => MeasureWrapper(motion, motion.Child, maxW, maxH, ctx, path),
         // A component expands INLINE: Build produces its subtree (pure, mode-free), which is measured
         // in place — the component wraps it in the layout tree, drawing nothing itself.
         // Components RECONCILE by position first: the retained instance (state alive) replaces the

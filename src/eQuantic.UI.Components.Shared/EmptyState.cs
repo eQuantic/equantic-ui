@@ -79,9 +79,11 @@ public enum SkeletonShape : byte
 
 /// <summary>
 /// The design system's Skeleton (spec B16): SurfaceSubtle placeholders that mirror the real
-/// layout's dimensions — content must replace them with ZERO shift. v1 fence: the translating
-/// shimmer gradient (single 1.4s global clock) joins the animation system; static SurfaceSubtle
-/// today is also exactly the spec's Reduce Motion behavior.
+/// layout's dimensions — content must replace them with ZERO shift. v1 fence: the loop-motion
+/// system exists (LoopMotion, ProgressBar indeterminate), but the translating shimmer is a
+/// GRADIENT layer (spec: 1.4s clock) — it joins when BoxStyle grows the 2-stop linear gradient
+/// (engine Paint.Linear is ready). Static SurfaceSubtle today is also exactly the spec's Reduce
+/// Motion behavior.
 /// </summary>
 public sealed class Skeleton : StatelessComponent
 {

@@ -109,6 +109,7 @@ export {
   Icon,
   Image,
   ScrollView,
+  LoopMotion,
 } from './shared/vocabulary';
 export {
   Color,
