@@ -55,8 +55,8 @@ public class StackLayoutTests
     public void BadgeOverlay_Golden()
     {
         var stack = new Stack();
-        stack.Add(new Avatar("AB", SizeVariant.XLarge, name: "Ana Beatriz"));
-        stack.Add(new Positioned(new Badge(3), top: -4, end: -4));
+        stack.Add(new Avatar("AB", SizeVariant.XLarge, name: "Ana Beatriz") { Status = PresenceStatus.Online });
+        stack.Add(new Positioned(new Badge(3) { Ring = true }, top: -4, end: -4));
 
         var root = new Primitives.Box(new BoxStyle { Padding = EdgeInsets.All(Space.S4) }, stack);
         using var backend = new ReferenceBackend();

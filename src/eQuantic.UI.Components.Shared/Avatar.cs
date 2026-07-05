@@ -2,6 +2,14 @@ using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Components.Shared;
 
+/// <summary>Presence tiers (spec B6): Online = Success fill, Offline = TextMuted.</summary>
+public enum PresenceStatus : byte
+{
+    None = 0,
+    Online = 1,
+    Offline = 2,
+}
+
 /// <summary>
 /// The design system's Avatar (spec B6): sizes 24/32/40/56 (S/M/L/XL), Radius.Full — never square
 /// for people. v1 renders the INITIALS fallback tier: a Subtle variant pair tinted deterministically
@@ -29,6 +37,10 @@ public sealed class Avatar : StatelessComponent
 
     /// <summary>Tint source (deterministic hash) — falls back to the initials when omitted.</summary>
     public string? Name { get; init; }
+
+    /// <summary>Presence dot (spec B6): size/3.3, Success/TextMuted fill, 2dp Surface ring,
+    /// bottom-end anchor — realized through Stack + Positioned.</summary>
+    public PresenceStatus Status { get; init; }
 
     public override VisualNode Build(ComponentContext context)
     {
@@ -60,12 +72,31 @@ public sealed class Avatar : StatelessComponent
         var content = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
         content.Add(label);
 
-        return new Box(new BoxStyle
+        var circle = new Box(new BoxStyle
         {
             Width = side,
             Height = side,
             Background = tint.Subtle,
             CornerRadius = new CornerRadii(Radius.Full),
         }, content);
+
+        if (Status == PresenceStatus.None) return circle;
+
+        var dotSide = MathF.Round(side / 3.3f);
+        var dotFill = Status == PresenceStatus.Online ? theme.Colors(Variant.Success).Base : theme.TextMuted;
+        var dot = new Box(new BoxStyle
+        {
+            Width = dotSide,
+            Height = dotSide,
+            Background = dotFill,
+            CornerRadius = new CornerRadii(Radius.Full),
+            BorderWidth = 2f,
+            BorderColor = theme.Surface,
+        });
+
+        var stack = new Stack();
+        stack.Add(circle);
+        stack.Add(new Positioned(dot, bottom: 0, end: 0));
+        return stack;
     }
 }

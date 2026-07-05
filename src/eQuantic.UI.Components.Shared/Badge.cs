@@ -28,6 +28,10 @@ public sealed class Badge : StatelessComponent
     /// <summary>The 8dp presence dot — no count.</summary>
     public bool Dot { get; init; }
 
+    /// <summary>The 2dp Surface ring the spec requires when the badge overlays content
+    /// (attach via Stack + Positioned(top: −4, end: −4)).</summary>
+    public bool Ring { get; init; }
+
     public static Badge AsDot(Variant variant = Variant.Destructive) => new(0, 99, variant) { Dot = true };
 
     public override VisualNode Build(ComponentContext context)
@@ -40,10 +44,12 @@ public sealed class Badge : StatelessComponent
         {
             return new Box(new BoxStyle
             {
-                Width = 8,
-                Height = 8,
+                Width = Ring ? 12 : 8,
+                Height = Ring ? 12 : 8,
                 Background = fill,
                 CornerRadius = new CornerRadii(Radius.Full),
+                BorderWidth = Ring ? 2f : 0f,
+                BorderColor = theme.Surface,
             });
         }
 
@@ -58,11 +64,13 @@ public sealed class Badge : StatelessComponent
 
         return new Box(new BoxStyle
         {
-            Height = 16,
-            MinWidth = 16,
+            Height = Ring ? 20 : 16,
+            MinWidth = Ring ? 20 : 16,
             Padding = EdgeInsets.Symmetric(Space.S1, 0),
             Background = fill,
             CornerRadius = new CornerRadii(Radius.Full),
+            BorderWidth = Ring ? 2f : 0f,
+            BorderColor = theme.Surface,
         }, content);
     }
 }
