@@ -104,7 +104,9 @@ dotnet msbuild -t:ClearEQuanticCache
 ```
 src/
 ├── eQuantic.UI.Core/        # Core abstractions (IComponent, HtmlElement, HtmlNode)
-├── eQuantic.UI.Components/  # Standard components (Button, Input, Container, etc.)
+├── eQuantic.UI.Primitives/  # Abstract visual vocabulary + design tokens (zero deps)
+├── eQuantic.UI.Components/  # WRITE-ONCE component library (authored against Primitives; realized per target)
+├── eQuantic.UI.Web.Components/  # Legacy web-only set (deprecated; dies piece by piece)
 ├── eQuantic.UI.Compiler/    # Roslyn-based C# to JavaScript transpiler
 ├── eQuantic.UI.Sdk/         # MSBuild SDK for project integration
 ├── eQuantic.UI.Server/      # ASP.NET Core SSR and Server Actions

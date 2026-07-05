@@ -24,7 +24,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\eQuantic.UI.Heroicons\eQuantic.UI.Heroicons.csproj" />
         <ProjectReference Include="..\..\src\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
-        <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+        <ProjectReference Include="..\..\src\eQuantic.UI.Web.Components\eQuantic.UI.Web.Components.csproj" />
     </ItemGroup>
 
 </Project>

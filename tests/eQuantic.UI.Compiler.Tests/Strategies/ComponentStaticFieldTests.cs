@@ -23,7 +23,7 @@ public class ComponentStaticFieldTests
         var src = @"
 using System.Collections.Generic;
 using eQuantic.UI.Core;
-using eQuantic.UI.Components;
+using eQuantic.UI.Web.Components;
 namespace App;
 public class Widget : StatelessComponent {
     private static readonly List<string> Items = new() { ""a"", ""b"", ""c"" };

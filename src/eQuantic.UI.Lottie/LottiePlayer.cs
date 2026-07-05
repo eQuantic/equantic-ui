@@ -1,6 +1,6 @@
 using eQuantic.UI.Core;
 using eQuantic.UI.Core.Assets;
-using eQuantic.UI.Components;
+using eQuantic.UI.Web.Components;
 
 namespace eQuantic.UI.Lottie;
 

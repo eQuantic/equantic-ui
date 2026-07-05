@@ -1,4 +1,4 @@
-using eQuantic.UI.Components.Inputs;
+using eQuantic.UI.Web.Components.Inputs;
 using FluentAssertions;
 using Xunit;
 

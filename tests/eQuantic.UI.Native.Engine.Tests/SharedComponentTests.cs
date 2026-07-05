@@ -1,4 +1,4 @@
-using eQuantic.UI.Components.Shared;
+using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
@@ -8,7 +8,7 @@ using FluentAssertions;
 namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
-/// Shared components (eQuantic.UI.Components.Shared — authored once against the abstract vocabulary,
+/// Shared components (eQuantic.UI.Components — authored once against the abstract vocabulary,
 /// zero platform dependencies): Build-tree shape, spec metrics through layout, and token purity.
 /// </summary>
 public class SharedComponentTests

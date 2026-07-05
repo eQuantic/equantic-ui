@@ -1,5 +1,5 @@
-using eQuantic.UI.Components;
-using eQuantic.UI.Components.Display;
+using eQuantic.UI.Web.Components;
+using eQuantic.UI.Web.Components.Display;
 using eQuantic.UI.Core;
 using eQuantic.UI.Core.Images;
 
@@ -25,7 +25,7 @@ public class ImageComponentOptimizationTests : IDisposable
         ImageOptimizationState.ImageSizes = [32, 48, 64, 96, 128, 256, 384];
     }
 
-    private static DynamicElement BuildImage(eQuantic.UI.Components.Display.Image image)
+    private static DynamicElement BuildImage(eQuantic.UI.Web.Components.Display.Image image)
     {
         var context = new RenderContext();
         var result = image.Build(context);
@@ -44,7 +44,7 @@ public class ImageComponentOptimizationTests : IDisposable
     [Fact]
     public void Build_NoOptimization_UsesOriginalSrc()
     {
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero"
@@ -58,7 +58,7 @@ public class ImageComponentOptimizationTests : IDisposable
     [Fact]
     public void Build_NoOptimization_UsesManualSrcSet()
     {
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -75,7 +75,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = false;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero"
@@ -94,7 +94,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -115,7 +115,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero"
@@ -135,7 +135,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -153,7 +153,7 @@ public class ImageComponentOptimizationTests : IDisposable
         ImageOptimizationState.IsEnabled = true;
         ImageOptimizationState.DefaultQuality = 80;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -172,7 +172,7 @@ public class ImageComponentOptimizationTests : IDisposable
         ImageOptimizationState.IsEnabled = true;
         ImageOptimizationState.DefaultQuality = 75;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -193,7 +193,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = false;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -212,7 +212,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -233,7 +233,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "https://cdn.example.com/image.jpg",
             Alt = "External",
@@ -251,7 +251,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "https://cdn.example.com/image.jpg",
             Alt = "External",
@@ -270,7 +270,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/my photo.jpg",
             Alt = "Photo",
@@ -290,7 +290,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -308,7 +308,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -330,7 +330,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -351,7 +351,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -370,7 +370,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",
@@ -390,7 +390,7 @@ public class ImageComponentOptimizationTests : IDisposable
     {
         ImageOptimizationState.IsEnabled = true;
 
-        var image = new eQuantic.UI.Components.Display.Image
+        var image = new eQuantic.UI.Web.Components.Display.Image
         {
             Src = "/images/hero.jpg",
             Alt = "Hero",

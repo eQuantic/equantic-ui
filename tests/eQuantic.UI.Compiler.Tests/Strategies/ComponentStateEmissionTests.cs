@@ -17,7 +17,7 @@ public class ComponentStateEmissionTests
 {
     private const string Src = @"
 using eQuantic.UI.Core;
-using eQuantic.UI.Components;
+using eQuantic.UI.Web.Components;
 namespace App;
 
 [Page(""/counter"")]

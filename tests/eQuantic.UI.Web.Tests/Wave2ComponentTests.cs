@@ -1,8 +1,8 @@
-using eQuantic.UI.Components.Shared;
+using eQuantic.UI.Components;
 using eQuantic.UI.Core;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
-using Switch = eQuantic.UI.Components.Shared.Switch;
+using Switch = eQuantic.UI.Components.Switch;
 using Variant = eQuantic.UI.Primitives.Variant;
 
 namespace eQuantic.UI.Web.Tests;

@@ -1,8 +1,8 @@
-using eQuantic.UI.Components.Shared;
+using eQuantic.UI.Components;
 using eQuantic.UI.Core;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
-using SharedButton = eQuantic.UI.Components.Shared.Button;
+using SharedButton = eQuantic.UI.Components.Button;
 using SizeVariant = eQuantic.UI.Primitives.SizeVariant;
 using Variant = eQuantic.UI.Primitives.Variant;
 

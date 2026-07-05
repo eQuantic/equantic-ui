@@ -1,6 +1,6 @@
 /**
  * The write-once proof on web, EXECUTED: the fixtures in `__transpiled__/` are the REAL eqc output
- * for `eQuantic.UI.Components.Shared` (pinned byte-for-byte by SharedComponentTranspilationTests on
+ * for `eQuantic.UI.Components` (pinned byte-for-byte by SharedComponentTranspilationTests on
  * the C# side). Here they run against the runtime vocabulary + the generated theme, and the DOM they
  * produce is asserted against the SAME values the C# WebRealizer tests pin — one C# source, compiled
  * twice (assembly for SSR/native, JS for the client), one rendering.

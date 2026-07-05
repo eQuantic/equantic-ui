@@ -161,7 +161,7 @@
                 $(_DevComponentsDir)</_StandardComponentsDir>
 
             <!-- The SHARED (write-once) component LIBRARY is RUNTIME-PROVIDED: its transpiled modules
-                 ship inside runtime.js and eqc routes `using eQuantic.UI.Components.Shared` imports
+                 ship inside runtime.js and eqc routes `using eQuantic.UI.Components` imports
                  there — no per-app scan, and the deliberate name reuse against the standard web
                  components resolves semantically (the page's usings decide). USER-AUTHORED write-once
                  components need no wiring either: they live in the app and flow through the primary

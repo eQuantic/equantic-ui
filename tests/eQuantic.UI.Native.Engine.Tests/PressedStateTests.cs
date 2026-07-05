@@ -1,4 +1,4 @@
-using eQuantic.UI.Components.Shared;
+using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine.Reference;
 using eQuantic.UI.Native.Engine.Tests.Golden;

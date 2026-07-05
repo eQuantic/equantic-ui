@@ -40,7 +40,7 @@ public class RecordPipelineTests
             File.WriteAllText(Path.Combine(dir, "Point.cs"),
                 "namespace App; public record Point(int X, int Y);");
             File.WriteAllText(Path.Combine(dir, "Card.cs"),
-                "namespace App; using eQuantic.UI.Components; " +
+                "namespace App; using eQuantic.UI.Web.Components; " +
                 "public class Card : StatelessComponent { public Point Position { get; set; } " +
                 "public override HtmlNode Build(BuildContext context) => null; }");
 
