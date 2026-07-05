@@ -17,8 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Sources ship for the eqc transpiler (client-side pack modules — see the plan's icon-pack notes). -->
+    <!-- Sources ship for the eqc transpiler (client-side inlining — see the plan's icon-pack notes). -->
     <Content Include="**\*.cs" Exclude="obj\**;bin\**" PackagePath="tools\source\" />
+    <!-- Marker: identifies this as an inlinable source pack so the SDK feeds it to eqc as ref-sources. -->
+    <Content Include="EQuanticIconPack.marker" PackagePath="tools\source\" />
   </ItemGroup>
 
 </Project>
