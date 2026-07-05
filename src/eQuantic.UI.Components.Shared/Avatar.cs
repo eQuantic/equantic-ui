@@ -65,18 +65,29 @@ public sealed class Avatar : StatelessComponent
         var tint = theme.Colors(TintPalette[seed.Length % TintPalette.Length]);
         var clipped = Initials.Length > 2 ? Initials.Substring(0, 2) : Initials;
 
-        var label = new Text(clipped, TypeRole.Caption, tint.OnSubtle, maxLines: 1)
+        // Spec B6 fallback chain (v1, no Image yet): initials → person glyph on SurfaceSubtle.
+        var hasInitials = clipped.Length > 0;
+        var glyphSize = Size switch
         {
-            StyleOverride = new TypeStyle(labelSize, labelSize, FontWeight.SemiBold, 0, 1.3f),
+            SizeVariant.Small => IconSize.Sm,
+            SizeVariant.Medium => IconSize.Dense,
+            SizeVariant.Large => IconSize.Md,
+            _ => IconSize.Lg,
         };
+        VisualNode face = hasInitials
+            ? new Text(clipped, TypeRole.Caption, tint.OnSubtle, maxLines: 1)
+            {
+                StyleOverride = new TypeStyle(labelSize, labelSize, FontWeight.SemiBold, 0, 1.3f),
+            }
+            : new Icon(Icons.Person, glyphSize, theme.TextMuted);
         var content = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
-        content.Add(label);
+        content.Add(face);
 
         var circle = new Box(new BoxStyle
         {
             Width = side,
             Height = side,
-            Background = tint.Subtle,
+            Background = hasInitials ? tint.Subtle : theme.SurfaceSubtle,
             CornerRadius = new CornerRadii(Radius.Full),
         }, content);
 

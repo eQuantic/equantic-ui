@@ -13,8 +13,8 @@ public enum ChipKind : byte
 /// <summary>
 /// The design system's Chip / Tag (spec B8): height 32, Radius.Full, 12dp X padding, 13/600 label —
 /// one size (chips don't scale with the Size enum). Filter selected = Primary-subtle fill + Primary
-/// border; Tag = Subtle pair per variant. v1 fences: the selected check and the Input close glyph
-/// await the Icon primitive (Input renders a "✕" text glyph, 48dp hit via Pressable).
+/// border; Tag = Subtle pair per variant. Filter selected shows the check (Sm 16);
+/// Input close is a real glyph (20dp visual, 48dp hit through Pressable).
 /// </summary>
 public sealed class Chip : StatelessComponent
 {
@@ -63,16 +63,17 @@ public sealed class Chip : StatelessComponent
         };
 
         var content = new Row(gap: 6) { Main = MainAlign.Center, Height = SizeValue.Fill };
+        if (Kind == ChipKind.Filter && Selected)
+        {
+            content.Add(new Icon(Icons.Check, IconSize.Sm, textColor));
+        }
         content.Add(label);
         if (Kind == ChipKind.Input && OnRemove != null)
         {
-            content.Add(new Pressable(
-                new Text("✕", TypeRole.Caption, textColor, maxLines: 1)
-                {
-                    StyleOverride = new TypeStyle(13, 16, FontWeight.SemiBold, 0, 1.3f),
-                },
-                OnRemove)
-            { Label = "Remove" });
+            content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
+            {
+                Label = "Remove",
+            });
         }
 
         var box = new Box(new BoxStyle
