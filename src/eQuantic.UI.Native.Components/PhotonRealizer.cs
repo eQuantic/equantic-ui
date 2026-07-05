@@ -63,6 +63,17 @@ public static class PhotonRealizer
                 EmitTextPlaceholder(node, text, theme, mode, builder);
                 break;
 
+            // Spec A10, W4 fence: a tinted disc at 30% alpha stands in for the glyph until the atlas
+            // lands — the same documented placeholder pattern as text bars.
+            case Icon icon:
+            {
+                var tint = (icon.Color ?? theme.TextPrimary).Resolve(mode).WithOpacity(0.30f);
+                builder.FillRRect(
+                    new RRect(node.Bounds, new CornerRadii(node.Bounds.Width / 2)),
+                    Paint.Solid(tint));
+                break;
+            }
+
             case Pressable pressable:
                 hits.Add(new HitRegion(ExpandHitRect(node.Bounds), pressable));
                 break;

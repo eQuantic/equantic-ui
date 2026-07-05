@@ -127,6 +127,15 @@ export type AlignmentValue =
   | 'centerStart' | 'center' | 'centerEnd'
   | 'bottomStart' | 'bottomCenter' | 'bottomEnd';
 
+export interface IconNode extends VisualNodeValue {
+  nodeKind: 'icon';
+  /** `Icons` member as a camelCase string ('search' | 'close' | …). */
+  glyph: string;
+  size: number;
+  color?: ColorTokenValue | null;
+  label?: string | null;
+}
+
 export interface StackNode extends VisualNodeValue {
   nodeKind: 'stack';
   align: AlignmentValue;

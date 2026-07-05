@@ -31,6 +31,7 @@ export {
   Spacer,
   Stack,
   Positioned,
+  Icon,
 } from './vocabulary';
 export {
   ColorToken,

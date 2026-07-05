@@ -10,6 +10,7 @@
  */
 
 import type { EventHandler, HtmlNode } from '../core/types';
+import { iconPaths } from './icons.generated';
 import type {
   BoxNode,
   BoxStyleValue,
@@ -20,6 +21,7 @@ import type {
   EdgeInsetsValue,
   FlexNodeValue,
   FlexibleNode,
+  IconNode,
   PositionedNode,
   PressableNode,
   SizeValueValue,
@@ -141,6 +143,8 @@ function lowerNode(
       return lowerFlexible(node as FlexibleNode, context, horizontalAxis);
     case 'spacer':
       return lowerSpacer(node as SpacerNode, horizontalAxis);
+    case 'icon':
+      return lowerIcon(node as IconNode);
     case 'stack':
       return lowerStack(node as StackNode, context);
     case 'positioned':
@@ -164,6 +168,30 @@ function element(tag: string, style: StyleEntries, children: HtmlNode[] = []): H
     attributes: { style: styleString(style) },
     events: {},
     children,
+  };
+}
+
+/** Spec A10 mirror: inline SVG, registry path, fill=currentColor riding the color token. */
+function lowerIcon(node: IconNode): HtmlNode {
+  const attributes: Record<string, string | undefined> = {
+    style: styleString({
+      width: px(node.size),
+      height: px(node.size),
+      color: node.color ? tokenValue(node.color) : undefined,
+    }),
+    viewBox: '0 0 24 24',
+    fill: 'currentColor',
+  };
+  if (node.label) attributes['aria-label'] = node.label;
+  else attributes['aria-hidden'] = 'true';
+
+  return {
+    tag: 'svg',
+    attributes,
+    events: {},
+    children: [
+      { tag: 'path', attributes: { d: iconPaths[node.glyph] ?? '' }, events: {}, children: [] },
+    ],
   };
 }
 
