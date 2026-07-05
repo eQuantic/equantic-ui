@@ -107,6 +107,7 @@ export {
   Stack,
   Positioned,
   Icon,
+  IconGlyph,
   Image,
   ScrollView,
   LoopMotion,

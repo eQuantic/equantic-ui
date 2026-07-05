@@ -10,7 +10,6 @@
  */
 
 import type { EventHandler, HtmlNode } from '../core/types';
-import { iconPaths } from './icons.generated';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
 import type {
@@ -412,15 +411,25 @@ function lowerSpinner(node: SpinnerNode): HtmlNode {
 
 /** Spec A10 mirror: inline SVG, registry path, fill=currentColor riding the color token. */
 function lowerIcon(node: IconNode): HtmlNode {
+  const glyph = node.glyph;
   const attributes: Record<string, string | undefined> = {
     style: styleString({
       width: px(node.size),
       height: px(node.size),
       color: node.color ? tokenValue(node.color) : undefined,
     }),
-    viewBox: '0 0 24 24',
-    fill: 'currentColor',
+    viewBox: glyph.viewBox ?? '0 0 24 24',
   };
+  // Fill glyphs are alpha masks; stroke glyphs are the outline family (2dp round — spec §07).
+  if (glyph.style === 'stroke') {
+    attributes['fill'] = 'none';
+    attributes['stroke'] = 'currentColor';
+    attributes['stroke-width'] = String(glyph.strokeWidth ?? 2);
+    attributes['stroke-linecap'] = 'round';
+    attributes['stroke-linejoin'] = 'round';
+  } else {
+    attributes['fill'] = 'currentColor';
+  }
   if (node.label) attributes['aria-label'] = node.label;
   else attributes['aria-hidden'] = 'true';
 
@@ -428,9 +437,7 @@ function lowerIcon(node: IconNode): HtmlNode {
     tag: 'svg',
     attributes,
     events: {},
-    children: [
-      { tag: 'path', attributes: { d: iconPaths[node.glyph] ?? '' }, events: {}, children: [] },
-    ],
+    children: [{ tag: 'path', attributes: { d: glyph.path }, events: {}, children: [] }],
   };
 }
 

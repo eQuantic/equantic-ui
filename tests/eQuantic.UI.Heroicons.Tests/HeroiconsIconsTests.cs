@@ -1,37 +1,23 @@
-using eQuantic.UI.Core;
-using eQuantic.UI.Web.Components;
 using eQuantic.UI.Heroicons;
+using eQuantic.UI.Primitives;
 using FluentAssertions;
 
 namespace eQuantic.UI.Heroicons.Tests;
 
+/// <summary>The Heroicons catalog on the write-once architecture.</summary>
 public class HeroiconsIconsTests
 {
     [Fact]
-    public void Heroicons_AcademicCap_ShouldReturnIconWithCorrectContent()
+    public void Catalog_CarriesGlyphData()
     {
-        var icon = HeroIcons.AcademicCap();
-        
-        icon.Name.Should().Be("academic-cap");
-        icon.Content.Should().NotBeEmpty();
-        
-        var firstElement = icon.Content[0] as DynamicElement;
-        firstElement.Should().NotBeNull();
-        firstElement!.TagName.Should().Be("path");
+        HeroIcons.Check.Path.Should().NotBeNullOrEmpty();
+        HeroIcons.Check.Name.Should().Be("check");
     }
 
     [Fact]
-    public void HeroiconsIcon_Build_ShouldHaveCorrectRootAttributes()
+    public void PackGlyphs_ComposeWithTheIconNode()
     {
-        var icon = HeroIcons.AcademicCap(size: 32, color: "blue");
-        var context = new RenderContext();
-        
-        var built = icon.Build(context) as DynamicElement;
-        
-        built.Should().NotBeNull();
-        built!.TagName.Should().Be("svg");
-        built.CustomAttributes["width"].Should().Be("32");
-        built.CustomAttributes["style"].Should().Contain("color: blue");
-        built.CustomAttributes["stroke"].Should().Be("currentColor");
+        var icon = new Icon(HeroIcons.Check, IconSize.Dense);
+        icon.Glyph.Path.Should().Be(HeroIcons.Check.Path);
     }
 }

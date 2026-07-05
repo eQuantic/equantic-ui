@@ -9,5 +9,10 @@
 
     <!-- No explicit package references needed - SDK includes all core packages -->
 
+    <!-- Icon packs are OPT-IN: reference the sets you use. -->
+    <ItemGroup>
+        <ProjectReference Include="../../src/eQuantic.UI.Lucide/eQuantic.UI.Lucide.csproj" />
+    </ItemGroup>
+
     <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.targets" />
 </Project>

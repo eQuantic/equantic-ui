@@ -37,7 +37,14 @@ public sealed class Icon : VisualNode
 {
     public sealed override string NodeKind => "icon";
 
+    /// <summary>A curated glyph (spec A10) — resolves through <see cref="CuratedIcons"/>.</summary>
     public Icon(Icons glyph, float size = 24, ColorToken? color = null, string? label = null)
+        : this(CuratedIcons.Resolve(glyph), size, color, label)
+    {
+    }
+
+    /// <summary>Any pack glyph (write-once icon packs are catalogs of <see cref="IconGlyph"/>).</summary>
+    public Icon(IconGlyph glyph, float size = 24, ColorToken? color = null, string? label = null)
     {
         if (size is not (16 or 20 or 24 or 32))
             throw new ArgumentOutOfRangeException(nameof(size),
@@ -48,7 +55,9 @@ public sealed class Icon : VisualNode
         Label = label;
     }
 
-    public Icons Glyph { get; }
+    /// <summary>The RESOLVED target-neutral glyph data (curated or from any pack).</summary>
+    public IconGlyph Glyph { get; }
+
     public float Size { get; }
 
     /// <summary>Tint token; null inherits the context text color (like Text).</summary>
