@@ -20,9 +20,10 @@ public class StackRealizerTests
         var style = node.Attributes["style"]!;
         style.Should().Contain("display: grid");
         style.Should().Contain("position: relative");
-        style.Should().Contain("place-items: center center");
-
-        node.Children[0].Attributes["style"].Should().Contain("grid-area: 1 / 1");
+        // Cells stretch to the stack and align their child via flex (Fill children cover;
+        // hug children anchor at the 9-point alignment — the native MeasureStack contract).
+        node.Children[0].Attributes["style"].Should().Contain(
+            "display: flex; grid-area: 1 / 1; justify-content: center; align-items: center; width: 100%; height: 100%");
         // CROSS-PIN: asserted verbatim by the TS lowering spec (hydration parity).
         node.Children[1].Attributes["style"].Should().Be("position: absolute; top: -4px; right: -4px");
     }

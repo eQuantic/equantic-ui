@@ -406,8 +406,9 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
     bottomEnd: 8,
   };
   const index = alignIndex[node.align] ?? 0;
-  const word = (part: number) => (part === 1 ? 'center' : part === 2 ? 'end' : 'start');
-  const placeItems = `${word(Math.trunc(index / 3))} ${word(index % 3)}`;
+  const flexWord = (part: number) => (part === 1 ? 'center' : part === 2 ? 'flex-end' : 'flex-start');
+  const cellJustify = flexWord(index % 3);
+  const cellAlign = flexWord(Math.trunc(index / 3));
 
   const children: HtmlNode[] = [];
   const stackChildren = node.children ?? [];
@@ -433,7 +434,22 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
     } else {
       const lowered = lowerNode(child, context, null, path + '/' + i);
       if (!lowered) continue;
-      children.push(element('div', { 'grid-area': '1 / 1' }, [lowered]));
+      // The cell IS the stack's available space (native MeasureStack contract): stretched to the
+      // grid cell, aligning its child via flex — Fill children cover, hug children anchor.
+      children.push(
+        element(
+          'div',
+          {
+            'grid-area': '1 / 1',
+            display: 'flex',
+            'justify-content': cellJustify,
+            'align-items': cellAlign,
+            width: '100%',
+            height: '100%',
+          },
+          [lowered],
+        ),
+      );
     }
   }
 
@@ -443,7 +459,6 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
       display: 'grid',
       position: 'relative',
       top: undefined,
-      'place-items': placeItems,
       width: sizeValue(node.width),
       height: sizeValue(node.height),
     },
@@ -574,12 +589,40 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   return node;
 }
 
+/** Whether a node requests Fill per axis — wrappers must stretch for the 100% chain to reach it. */
+function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
+  switch (node.nodeKind) {
+    case 'box': {
+      const style = (node as BoxNode).style ?? ({} as BoxStyleValue);
+      return { width: style.width?.kind === 'fill', height: style.height?.kind === 'fill' };
+    }
+    case 'row':
+    case 'column': {
+      const flex = node as FlexNodeValue;
+      return { width: flex.width?.kind === 'fill', height: flex.height?.kind === 'fill' };
+    }
+    case 'stack': {
+      const stack = node as StackNode;
+      return { width: stack.width?.kind === 'fill', height: stack.height?.kind === 'fill' };
+    }
+    case 'pressable':
+      return fills((node as PressableNode).child);
+    case 'flexible':
+      return fills((node as FlexibleNode).child);
+    case 'loopMotion':
+      return fills((node as LoopMotionNode).child);
+    default:
+      return { width: false, height: false };
+  }
+}
+
 function lowerPressable(
   pressable: PressableNode,
   context: LoweringContext,
   path: string,
 ): HtmlNode {
   const disabled = pressable.disabled === true;
+  const fill = fills(pressable.child);
   const node = element('button', {
     padding: '0',
     background: 'none',
@@ -587,6 +630,9 @@ function lowerPressable(
     'font-family': 'inherit',
     'text-align': 'start',
     cursor: disabled ? undefined : 'pointer',
+    // A Fill child needs the 100% chain to pass through the button (scrim et al.).
+    width: fill.width ? '100%' : undefined,
+    height: fill.height ? '100%' : undefined,
   });
 
   if (pressable.label) node.attributes['aria-label'] = pressable.label;
