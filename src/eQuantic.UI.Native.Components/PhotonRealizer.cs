@@ -63,6 +63,14 @@ public static class PhotonRealizer
                 EmitTextPlaceholder(node, text, theme, mode, builder);
                 break;
 
+            // Spec A11 fence: a SurfaceSubtle box under the radius stands in for the bitmap until the
+            // engine gains texture upload (M4) - the documented placeholder pattern.
+            case Image image:
+                builder.FillRRect(
+                    new RRect(node.Bounds, image.CornerRadius),
+                    Paint.Solid(theme.SurfaceSubtle.Resolve(mode)));
+                break;
+
             // Spec A10, W4 fence: a tinted disc at 30% alpha stands in for the glyph until the atlas
             // lands — the same documented placeholder pattern as text bars.
             case Icon icon:

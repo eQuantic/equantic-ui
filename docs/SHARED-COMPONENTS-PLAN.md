@@ -237,8 +237,13 @@ rejected.)
    `icons.generated.ts` (byte-pinned via IconTsGeneratorTests — client path data is never
    hand-written). Native renders a tinted 30% disc placeholder until the W4 atlas (the text-bars
    pattern); the atlas will rasterize from the same registry. RealizedElement gained RawAttributes
-   (verbatim, no data- prefix — SVG needs viewBox/d as-is). Remaining wave-2 gates:
-   Image/ScrollView, then the interaction system and the reconciler.
+   (verbatim, no data- prefix — SVG needs viewBox/d as-is). Primitive: Image ✅ (2026-07-05, spec A11) — explicitly sized slot (layout can't infer extent from
+   undecoded sources), Contain/Cover/Stretch fits, per-corner rrect clip, alt semantics (empty =
+   decorative). Web = sized `<img>` with object-fit + border-radius (RawAttributes carry src/alt);
+   native = SurfaceSubtle placeholder box under the radius until engine texture upload (M4); TS
+   mirrors complete. v1 fences: NineSlice, loading/error states, decode crossfade (asset + animation
+   systems). Remaining wave-2 gates: ScrollView (engine clip), then the interaction system and the
+   reconciler.
    Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
    without hoisting), server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.

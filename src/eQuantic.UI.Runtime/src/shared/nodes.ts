@@ -127,6 +127,17 @@ export type AlignmentValue =
   | 'centerStart' | 'center' | 'centerEnd'
   | 'bottomStart' | 'bottomCenter' | 'bottomEnd';
 
+export interface ImageNode extends VisualNodeValue {
+  nodeKind: 'image';
+  source: string;
+  width: number;
+  height: number;
+  /** ImageFit as camelCase member string ('contain' | 'cover' | 'stretch'). */
+  fit: string;
+  alt: string;
+  cornerRadius?: CornerRadiiValue;
+}
+
 export interface IconNode extends VisualNodeValue {
   nodeKind: 'icon';
   /** `Icons` member as a camelCase string ('search' | 'close' | …). */

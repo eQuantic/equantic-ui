@@ -35,6 +35,7 @@ public static class WebRealizer
         Positioned positioned => LowerNode(positioned.Child, context, horizontalAxis),
         Text text => LowerText(text, context),
         Icon icon => LowerIcon(icon, context),
+        Primitives.Image image => LowerImage(image),
         Pressable pressable => LowerPressable(pressable, context),
         Flexible flexible => LowerFlexible(flexible, context, horizontalAxis),
         Spacer spacer => LowerSpacer(spacer, horizontalAxis),
@@ -131,6 +132,33 @@ public static class WebRealizer
         glyphPath.RawAttributes = new Dictionary<string, string> { ["d"] = IconRegistry.Path(icon.Glyph) };
         svg.Children.Add(glyphPath);
         return svg;
+    }
+
+    /// <summary>Spec A11 lowering: an explicitly sized <c>&lt;img&gt;</c> with object-fit and the
+    /// rrect clip via border-radius; empty alt = decorative (HTML semantics).</summary>
+    private static HtmlElement LowerImage(Primitives.Image image)
+    {
+        var element = new RealizedElement("img")
+        {
+            Style = new HtmlStyle
+            {
+                Width = TokenCss.Px(image.Width),
+                Height = TokenCss.Px(image.Height),
+                ObjectFit = image.Fit switch
+                {
+                    ImageFit.Contain => "contain",
+                    ImageFit.Stretch => "fill",
+                    _ => "cover",
+                },
+                BorderRadius = image.CornerRadius.IsZero ? null : TokenCss.Radius(image.CornerRadius),
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["src"] = image.Source,
+                ["alt"] = image.Alt,
+            },
+        };
+        return element;
     }
 
     private static HtmlElement LowerBox(Box box, ComponentContext context)
