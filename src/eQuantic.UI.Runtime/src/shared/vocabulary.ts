@@ -192,6 +192,25 @@ export class Pressable extends VisualNode {
   }
 }
 
+export class Icon extends VisualNode {
+  readonly nodeKind = 'icon';
+  glyph: string;
+  size: number;
+  color: ColorTokenValue | null;
+  label: string | null;
+
+  constructor(glyph: string, size = 24, color: ColorTokenValue | null = null, label: string | null = null) {
+    super();
+    if (size !== 16 && size !== 20 && size !== 24 && size !== 32) {
+      throw new RangeError(`Icon size ${size} is not on the §07 whitelist (16/20/24/32).`);
+    }
+    this.glyph = glyph;
+    this.size = size;
+    this.color = color;
+    this.label = label;
+  }
+}
+
 export class Stack extends VisualNode {
   readonly nodeKind = 'stack';
   align: string;

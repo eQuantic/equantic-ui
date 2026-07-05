@@ -229,8 +229,16 @@ rejected.)
    `place-items` alignment) + absolute anchors on a relative frame, cross-pinned byte-exact with the
    TS lowering. En route: C# switch-expression precedence bug (`(int)a % 3 switch` binds the switch
    to the literal) and the runtime's `Stack` name collision (the vocabulary owns the bare export;
-   the data structure is `CollectionStack` + `$eq.collections`). Remaining wave-2 gates:
-   Image/Icon/ScrollView, then the interaction system and the reconciler.
+   the data structure is `CollectionStack` + `$eq.collections`). Primitive: Icon ✅ (2026-07-05, spec A10) — the asset pipeline decided and built: a curated `Icons`
+   enum (16 glyphs) + `Icon` node with the §07 size WHITELIST enforced at construction (16/20/24/32 —
+   arbitrary sizes throw, per spec); glyph path data lives ONCE in the C# `IconRegistry` (24×24
+   single-path alpha masks) — the web realizer emits inline `<svg fill=currentColor>` (tint rides
+   the color token exactly like text; decorative icons aria-hidden), and the TS lowering consumes
+   `icons.generated.ts` (byte-pinned via IconTsGeneratorTests — client path data is never
+   hand-written). Native renders a tinted 30% disc placeholder until the W4 atlas (the text-bars
+   pattern); the atlas will rasterize from the same registry. RealizedElement gained RawAttributes
+   (verbatim, no data- prefix — SVG needs viewBox/d as-is). Remaining wave-2 gates:
+   Image/ScrollView, then the interaction system and the reconciler.
    Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
    without hoisting), server-driven initial state for shared pages, and the eventual merge of
    Components.Shared into eQuantic.UI.Components as legacy web components migrate.

@@ -34,6 +34,7 @@ public static class WebRealizer
         // A Positioned outside a Stack has no anchor frame — degrade to its child (parity with native).
         Positioned positioned => LowerNode(positioned.Child, context, horizontalAxis),
         Text text => LowerText(text, context),
+        Icon icon => LowerIcon(icon, context),
         Pressable pressable => LowerPressable(pressable, context),
         Flexible flexible => LowerFlexible(flexible, context, horizontalAxis),
         Spacer spacer => LowerSpacer(spacer, horizontalAxis),
@@ -100,6 +101,36 @@ public static class WebRealizer
         var vertical = ((int)align / 3) switch { 1 => "center", 2 => "end", _ => "start" };
         var horizontal = ((int)align % 3) switch { 1 => "center", 2 => "end", _ => "start" };
         return $"{vertical} {horizontal}";
+    }
+
+    /// <summary>
+    /// Spec A10 lowering: inline 24×24-viewBox SVG with the registry's single alpha-mask path and
+    /// <c>fill="currentColor"</c> — the tint rides the CSS <c>color</c> property exactly like text
+    /// (token → light-dark()). Null color inherits; null label = decorative (aria-hidden).
+    /// </summary>
+    private static HtmlElement LowerIcon(Icon icon, ComponentContext context)
+    {
+        var svg = new RealizedElement("svg")
+        {
+            Style = new HtmlStyle
+            {
+                Width = TokenCss.Px(icon.Size),
+                Height = TokenCss.Px(icon.Size),
+                Color = icon.Color is { } tint ? TokenCss.Value(tint) : null,
+            },
+        };
+        svg.RawAttributes = new Dictionary<string, string>
+        {
+            ["viewBox"] = "0 0 24 24",
+            ["fill"] = "currentColor",
+        };
+        if (icon.Label is { } label) svg.RawAttributes["aria-label"] = label;
+        else svg.RawAttributes["aria-hidden"] = "true";
+
+        var glyphPath = new RealizedElement("path");
+        glyphPath.RawAttributes = new Dictionary<string, string> { ["d"] = IconRegistry.Path(icon.Glyph) };
+        svg.Children.Add(glyphPath);
+        return svg;
     }
 
     private static HtmlElement LowerBox(Box box, ComponentContext context)
@@ -274,16 +305,25 @@ internal sealed class RealizedElement : HtmlElement
 
     public string Tag { get; }
 
+    /// <summary>Attributes emitted VERBATIM (no data- prefix) — SVG needs viewBox/fill/d as-is.</summary>
+    public Dictionary<string, string>? RawAttributes { get; set; }
+
     public override HtmlNode Render()
     {
         var children = Children.Select(c => c.Render()).ToList();
         if (!string.IsNullOrEmpty(InnerHtml))
             children.Insert(0, HtmlNode.Text(InnerHtml));
 
+        var attributes = BuildAttributes();
+        if (RawAttributes != null)
+        {
+            foreach (var raw in RawAttributes) attributes[raw.Key] = raw.Value;
+        }
+
         return new HtmlNode
         {
             Tag = Tag,
-            Attributes = BuildAttributes(),
+            Attributes = attributes,
             Events = BuildEvents(),
             Children = children,
         };

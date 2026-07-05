@@ -92,6 +92,7 @@ export {
   Spacer,
   Stack,
   Positioned,
+  Icon,
 } from './shared/vocabulary';
 export {
   ColorToken,
