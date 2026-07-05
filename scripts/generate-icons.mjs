@@ -242,13 +242,21 @@ ${lines.join('\n')}
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Sources ship for the eqc transpiler (client-side pack modules — see the plan's icon-pack notes). -->
+    <!-- Sources ship for the eqc transpiler (client-side inlining — see the plan's icon-pack notes). -->
     <Content Include="**\\*.cs" Exclude="obj\\**;bin\\**" PackagePath="tools\\source\\" />
+    <!-- Marker: identifies this as an inlinable source pack so the SDK feeds it to eqc as ref-sources. -->
+    <Content Include="EQuanticIconPack.marker" PackagePath="tools\\source\\" />
   </ItemGroup>
 
 </Project>
 `;
     fs.writeFileSync(path.join(srcDir, `eQuantic.UI.${className}.csproj`), csproj);
+
+    // The self-declaring marker: any pack the developer installs (present or future) is discovered
+    // by the SDK via this file in tools/source — no per-pack SDK knowledge, no consumer config.
+    fs.writeFileSync(path.join(srcDir, 'EQuanticIconPack.marker'),
+        'Marker: this eQuantic.UI package ships inlinable IconGlyph constant sources (tools/source).\n' +
+        'The SDK feeds these to eqc as reference-sources so pack glyphs inline at the use site.\n');
 
     const skippedTotal = [...skipped.values()].reduce((a, b) => a + b, 0);
     console.log(`  ${iconsClassName}: ${lines.length} glyphs; skipped ${skippedTotal}` +

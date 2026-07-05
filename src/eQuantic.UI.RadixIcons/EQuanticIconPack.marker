@@ -1,0 +1,2 @@
+Marker: this eQuantic.UI package ships inlinable IconGlyph constant sources (tools/source).
+The SDK feeds these to eqc as reference-sources so pack glyphs inline at the use site.
