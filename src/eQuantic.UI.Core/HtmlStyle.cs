@@ -124,6 +124,10 @@ public class HtmlStyle
     public string? TextOverflow { get; set; }
     public string? BoxSizing { get; set; }
 
+    public string? PlaceItems { get; set; }
+
+    public string? GridArea { get; set; }
+
     #endregion
 
     /// <summary>
@@ -139,6 +143,8 @@ public class HtmlStyle
         AddProperty(properties, "right", Right);
         AddProperty(properties, "bottom", Bottom);
         AddProperty(properties, "left", Left);
+        AddProperty(properties, "place-items", PlaceItems);
+        AddProperty(properties, "grid-area", GridArea);
         AddProperty(properties, "z-index", ZIndex);
 
         AddProperty(properties, "flex-direction", FlexDirection);

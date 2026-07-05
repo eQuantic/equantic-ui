@@ -210,3 +210,56 @@ public sealed class Spacer : VisualNode
 
     public static Spacer Fixed(float length) => new(length);
 }
+
+/// <summary>Nine-position alignment for <see cref="Stack"/> children (spec A3).</summary>
+public enum Alignment : byte
+{
+    TopStart = 0, TopCenter = 1, TopEnd = 2,
+    CenterStart = 3, Center = 4, CenterEnd = 5,
+    BottomStart = 6, BottomCenter = 7, BottomEnd = 8,
+}
+
+/// <summary>
+/// Z-axis composition (spec A3): paint order = child order (last on top), hit-testing walks
+/// top-down, and the stack SIZES TO ITS LARGEST NON-POSITIONED child (explicit Width/Height
+/// override). Non-positioned children align by <see cref="Align"/>; <see cref="Positioned"/>
+/// children anchor to the stack's edges with signed offsets.
+/// </summary>
+public sealed class Stack : VisualNode
+{
+    public sealed override string NodeKind => "stack";
+
+    public Stack(Alignment align = Alignment.TopStart) => Align = align;
+
+    public Alignment Align { get; init; }
+    public SizeValue Width { get; init; }
+    public SizeValue Height { get; init; }
+    public List<VisualNode> Children { get; } = new();
+
+    public void Add(VisualNode child) => Children.Add(child);
+}
+
+/// <summary>
+/// Anchors a <see cref="Stack"/> child to the stack's edges (spec A3) — offsets may be negative
+/// (the Badge overlay attaches at top −4 / end −4). Unset axes fall back to the stack alignment.
+/// </summary>
+public sealed class Positioned : VisualNode
+{
+    public sealed override string NodeKind => "positioned";
+
+    public Positioned(VisualNode child, float? top = null, float? end = null,
+        float? bottom = null, float? start = null)
+    {
+        Child = child;
+        Top = top;
+        End = end;
+        Bottom = bottom;
+        Start = start;
+    }
+
+    public VisualNode Child { get; }
+    public float? Top { get; init; }
+    public float? End { get; init; }
+    public float? Bottom { get; init; }
+    public float? Start { get; init; }
+}

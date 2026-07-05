@@ -29,6 +29,8 @@ export {
   Pressable,
   Flexible,
   Spacer,
+  Stack,
+  Positioned,
 } from './vocabulary';
 export {
   ColorToken,

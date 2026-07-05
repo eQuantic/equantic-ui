@@ -122,6 +122,28 @@ export interface SpacerNode extends VisualNodeValue {
   fixedLength: number;
 }
 
+export type AlignmentValue =
+  | 'topStart' | 'topCenter' | 'topEnd'
+  | 'centerStart' | 'center' | 'centerEnd'
+  | 'bottomStart' | 'bottomCenter' | 'bottomEnd';
+
+export interface StackNode extends VisualNodeValue {
+  nodeKind: 'stack';
+  align: AlignmentValue;
+  width?: SizeValueValue;
+  height?: SizeValueValue;
+  children: VisualNodeValue[];
+}
+
+export interface PositionedNode extends VisualNodeValue {
+  nodeKind: 'positioned';
+  child: VisualNodeValue;
+  top?: number | null;
+  end?: number | null;
+  bottom?: number | null;
+  start?: number | null;
+}
+
 /** A shared component: the lowering expands it by calling `build(context)` (pure, mode-free). */
 export interface ComponentNode extends VisualNodeValue {
   nodeKind: 'component';

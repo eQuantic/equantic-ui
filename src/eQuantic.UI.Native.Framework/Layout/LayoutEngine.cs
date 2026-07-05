@@ -56,6 +56,9 @@ public static class LayoutEngine
     {
         Box box => MeasureBox(box, maxW, maxH, ctx),
         FlexNode flex => MeasureFlex(flex, maxW, maxH, ctx),
+        Stack stack => MeasureStack(stack, maxW, maxH, ctx),
+        // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
+        Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx),
         Text text => MeasureText(text, maxW, ctx),
         Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx),
         Flexible flexible => MeasureWrapper(flexible, flexible.Child, maxW, maxH, ctx),
@@ -73,6 +76,59 @@ public static class LayoutEngine
         result.Children.Add(inner);
         result.Bounds = new Rect(0, 0, inner.Bounds.Width, inner.Bounds.Height);
         return result;
+    }
+
+    /// <summary>Spec A3: sizes to the largest NON-positioned child (explicit Width/Height override);
+    /// non-positioned children align by <see cref="Stack.Align"/>; Positioned children anchor to the
+    /// resolved frame with signed offsets (unset axes fall back to the alignment). Paint order is
+    /// child order — the LayoutNode children keep it.</summary>
+    private static LayoutNode MeasureStack(Stack stack, float maxW, float maxH, LayoutContext ctx)
+    {
+        var result = new LayoutNode(stack);
+        var contentW = 0f;
+        var contentH = 0f;
+
+        foreach (var child in stack.Children)
+        {
+            var measured = Measure(child, maxW, maxH, ctx);
+            result.Children.Add(measured);
+            if (child is Positioned) continue;
+            contentW = MathF.Max(contentW, measured.Bounds.Width);
+            contentH = MathF.Max(contentH, measured.Bounds.Height);
+        }
+
+        var width = ResolveSelf(stack.Width, maxW, contentW);
+        var height = ResolveSelf(stack.Height, maxH, contentH);
+        result.Bounds = new Rect(0, 0, width, height);
+
+        for (var i = 0; i < stack.Children.Count; i++)
+        {
+            var child = stack.Children[i];
+            var measured = result.Children[i];
+            var cw = measured.Bounds.Width;
+            var ch = measured.Bounds.Height;
+            var (alignX, alignY) = AlignOffset(stack.Align, width - cw, height - ch);
+
+            if (child is Positioned positioned)
+            {
+                var x = positioned.Start ?? (positioned.End is { } end ? width - cw - end : alignX);
+                var y = positioned.Top ?? (positioned.Bottom is { } bottom ? height - ch - bottom : alignY);
+                measured.Bounds = measured.Bounds with { X = x, Y = y };
+            }
+            else
+            {
+                measured.Bounds = measured.Bounds with { X = alignX, Y = alignY };
+            }
+        }
+
+        return result;
+    }
+
+    private static (float X, float Y) AlignOffset(Alignment align, float slackW, float slackH)
+    {
+        var x = ((int)align % 3) switch { 1 => slackW / 2, 2 => slackW, _ => 0f };
+        var y = ((int)align / 3) switch { 1 => slackH / 2, 2 => slackH, _ => 0f };
+        return (x, y);
     }
 
     private static LayoutNode MeasureText(Text text, float maxW, LayoutContext ctx)

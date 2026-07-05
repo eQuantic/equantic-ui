@@ -192,6 +192,49 @@ export class Pressable extends VisualNode {
   }
 }
 
+export class Stack extends VisualNode {
+  readonly nodeKind = 'stack';
+  align: string;
+  width?: SizeValue;
+  height?: SizeValue;
+  children: VisualNode[] = [];
+
+  constructor(align = 'topStart', config?: { width?: SizeValue | number; height?: SizeValue | number }) {
+    super();
+    this.align = align;
+    if (config?.width !== undefined) this.width = SizeValue.from(config.width);
+    if (config?.height !== undefined) this.height = SizeValue.from(config.height);
+  }
+
+  add(child: VisualNode): void {
+    this.children.push(child);
+  }
+}
+
+export class Positioned extends VisualNode {
+  readonly nodeKind = 'positioned';
+  child: VisualNode;
+  top: number | null;
+  end: number | null;
+  bottom: number | null;
+  start: number | null;
+
+  constructor(
+    child: VisualNode,
+    top: number | null = null,
+    end: number | null = null,
+    bottom: number | null = null,
+    start: number | null = null,
+  ) {
+    super();
+    this.child = child;
+    this.top = top;
+    this.end = end;
+    this.bottom = bottom;
+    this.start = start;
+  }
+}
+
 export class Flexible extends VisualNode {
   readonly nodeKind = 'flexible';
   child: VisualNode;
