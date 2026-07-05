@@ -279,8 +279,15 @@ rejected.)
    Compiler fixes en route (silent-wrong-code): verbatim identifiers (`@checked`) leaked the `@`
    into emitted JS (parser/identifier strategy → ValueText); the collections name-heuristic
    HIJACKED the vocabulary `Stack` when the semantic model had resolved it (semantic resolution is
-   now authoritative in QueueStackStrategy). Library: 17 write-once components (~45 legacy remain,
-   gated on text input, overlays, animation, reconciler). All embedded in the runtime, gallery
+   now authoritative in QueueStackStrategy). Library: 19 write-once components (~43 legacy remain,
+   gated on text input, overlays, animation, reconciler). Wave-2 tail (same day): **AppBar** (B3:
+   56dp bar, 20/600 title single-line, leading slot, ≤3 Standard IconButtons ENFORCED — overflow
+   belongs in an ActionSheet; scrolled Surface fill owner-driven until scroll linking) and
+   **BottomNavigation** (B4: 3–5 destinations ENFORCED, equal-width full-column targets, 56×26
+   active Primary-subtle pill + filled glyph + 11/700 always-visible labels, Badge on the icon's
+   top-end via Stack). NavItem became a positional RECORD so the compiler emits its data module.
+   More silent-wrong-code compiler hardening: exception type names never import (they lower to
+   `new Error`). All embedded in the runtime, gallery
    goldens light+dark inspected, spec pins on every axis.
    Remaining on this front: positional state retention (reconciler slice — unlocks nested stateful
    without hoisting), server-driven initial state for shared pages, and the eventual merge of
