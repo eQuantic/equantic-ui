@@ -33,6 +33,7 @@ import type {
   SizeValueValue,
   StackNode,
   SpacerNode,
+  TextEntryNode,
   TextNode,
   VisualNodeValue,
 } from './nodes';
@@ -189,6 +190,8 @@ function lowerNode(
       return lowerFlex(node as FlexNodeValue, context, path);
     case 'text':
       return lowerText(node as TextNode, context);
+    case 'textEntry':
+      return lowerTextEntry(node as TextEntryNode, context);
     case 'pressable':
       return lowerPressable(node as PressableNode, context, path);
     case 'flexible':
@@ -240,6 +243,45 @@ function element(tag: string, style: StyleEntries, children: HtmlNode[] = []): H
     events: {},
     children,
   };
+}
+
+/** Spec B9/B10 mirror: the REAL chrome-less <input> — identical DOM to the C# SSR realizer, plus
+ * the client-only handlers (input → onChanged, Enter → onSubmit, focus/blur → onFocusChanged). */
+function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode {
+  const input = element('input', {
+    width: '100%',
+    padding: '0',
+    background: 'none',
+    border: 'none',
+    color: tokenValue(context.textPrimary),
+    'font-family': 'inherit',
+  });
+  input.attributes['class'] = `eq-entry eq-type-${node.role.toLowerCase()}`;
+  input.attributes['type'] = node.obscure === true ? 'password' : 'text';
+  input.attributes['value'] = node.value;
+  if (node.placeholder != null) input.attributes['placeholder'] = node.placeholder;
+  if (node.disabled === true) {
+    input.attributes['disabled'] = '';
+    return input;
+  }
+  const onChanged = node.onChanged;
+  if (onChanged) {
+    // The reconciler's input/change convention: the wrapper extracts the element value and calls
+    // the handler with it — exactly the C# Action<string> shape.
+    input.events['input'] = onChanged as unknown as EventHandler;
+  }
+  const onSubmit = node.onSubmit;
+  if (onSubmit) {
+    input.events['keydown'] = ((e: KeyboardEvent) => {
+      if (e.key === 'Enter') onSubmit();
+    }) as unknown as EventHandler;
+  }
+  const onFocusChanged = node.onFocusChanged;
+  if (onFocusChanged) {
+    input.events['focus'] = (() => onFocusChanged(true)) as EventHandler;
+    input.events['blur'] = (() => onFocusChanged(false)) as EventHandler;
+  }
+  return input;
 }
 
 /** Mirror of C# TokenCss.Gradient: 2-stop linear-gradient with light-dark() stops. */

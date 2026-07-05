@@ -147,6 +147,45 @@ public sealed class LoopMotion : VisualNode
 }
 
 /// <summary>
+/// Single-line text ENTRY (the B9/B10 primitive): value + placeholder + change/submit/focus
+/// callbacks. The web realizer lowers it to a real chrome-less <c>&lt;input&gt;</c> (the browser
+/// owns caret/selection/IME); the CONTAINER chrome (border, states, label) belongs to the
+/// composing component. Native renders the layout-correct one-line frame through the W4 text
+/// placeholder pattern — caret/selection/IME land at M4, and the spec fixes the visual contract
+/// NOW so forms don't re-layout later (spec B9).
+/// </summary>
+public sealed class TextEntry : VisualNode
+{
+    public override string NodeKind => "textEntry";
+
+    public TextEntry(string value, Action<string>? onChanged = null)
+    {
+        Value = value;
+        OnChanged = onChanged;
+    }
+
+    public string Value { get; init; }
+    public Action<string>? OnChanged { get; init; }
+
+    /// <summary>Shown in TextMuted while <see cref="Value"/> is empty — never a label substitute.</summary>
+    public string? Placeholder { get; init; }
+
+    /// <summary>Keyboard submit (Enter / the keyboard's return action).</summary>
+    public Action? OnSubmit { get; init; }
+
+    /// <summary>Focus transitions — the composing component's state hook (focused border etc.).</summary>
+    public Action<bool>? OnFocusChanged { get; init; }
+
+    public bool Disabled { get; init; }
+
+    /// <summary>Password entry: glyphs render obscured (web <c>type=password</c>).</summary>
+    public bool Obscure { get; init; }
+
+    /// <summary>Type role of the entry text (spec: TextInput rides BodyL, SearchField BodyM).</summary>
+    public TypeRole Role { get; init; } = TypeRole.BodyL;
+}
+
+/// <summary>
 /// A press-interaction surface: wraps a child, exposes an activation callback, and guarantees the
 /// spec §08 hit contract — the hit rect is expanded symmetrically to at least 48×48dp even when the
 /// visual is smaller (realizers register it; overlapping hit rects assert in debug).

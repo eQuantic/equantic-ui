@@ -111,6 +111,7 @@ export {
   ScrollView,
   LoopMotion,
   LinearGradient,
+  TextEntry,
 } from './shared/vocabulary';
 export {
   Color,
@@ -154,6 +155,8 @@ export { AppBar } from './shared/components/AppBar';
 export { BottomNavigation } from './shared/components/BottomNavigation';
 export { NavItem } from './shared/components/NavItem';
 export { Skeleton } from './shared/components/Skeleton';
+export { TextInput } from './shared/components/TextInput';
+export { SearchField } from './shared/components/SearchField';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).
 export {
   Space,

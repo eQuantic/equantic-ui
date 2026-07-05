@@ -200,6 +200,39 @@ export class Pressable extends VisualNode {
   }
 }
 
+interface TextEntryConfig {
+  placeholder?: string | null;
+  onSubmit?: (() => void) | null;
+  onFocusChanged?: ((focused: boolean) => void) | null;
+  disabled?: boolean;
+  obscure?: boolean;
+  role?: string;
+}
+
+/** Mirror of the C# `TextEntry` (spec B9/B10): single-line entry; the browser owns caret/IME. */
+export class TextEntry extends VisualNode {
+  readonly nodeKind = 'textEntry';
+  value: string;
+  onChanged: ((value: string) => void) | null;
+  placeholder: string | null = null;
+  onSubmit: (() => void) | null = null;
+  onFocusChanged: ((focused: boolean) => void) | null = null;
+  disabled = false;
+  obscure = false;
+  role = 'bodyL';
+
+  constructor(
+    value: string,
+    onChanged: ((value: string) => void) | null = null,
+    config?: TextEntryConfig,
+  ) {
+    super();
+    this.value = value;
+    this.onChanged = onChanged;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `LinearGradient` record: two token stops on a straight axis (engine fence). */
 export class LinearGradient {
   from: ColorTokenValue;

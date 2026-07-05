@@ -333,6 +333,27 @@ rejected.)
    layer sweeps the 30% flex segment -35%→105% on the 1.2s loop inside the clipping Radius.Full
    track. Verified live in the browser (SSR + hydration + running animation at the spec velocity).
    Spinner stays fenced on engine arcs (or native Icon glyphs + a rotate effect).
+   Text input ✅ (2026-07-05, spec B9/B10): the `TextEntry` PRIMITIVE — value/placeholder/
+   onChanged/onSubmit/onFocusChanged/disabled/obscure + type role — lowers to a REAL chrome-less
+   `<input>` on web (the browser owns caret/selection/IME; handlers ride the reconciler's
+   input-value convention; `.eq-entry` mechanics generated) and to the W4 one-line placeholder-bar
+   frame on native (value = TextPrimary bar, empty = TextMuted placeholder bar; the spec fixes the
+   visual contract NOW — caret/IME land at M4 without re-layout). `TextInput` is the FIRST STATEFUL
+   library component: focus is INTERNAL state fed by the entry's focus callbacks — SetState swaps
+   the 2dp Primary border (padding compensates -1dp) and the positional reconciler retains the
+   instance across the form's controlled re-renders while `AdoptConfig` carries each fresh value in
+   (the reconciler + AdoptConfig's first production consumer). B9 frame: label above (Label role,
+   6dp), Radius.Md container per size (40/48★/56; Small asserts), leading icon slot, helper/error
+   line ALWAYS reserved (5dp; error swaps Destructive without layout shift). `SearchField` (B10):
+   the 40dp Radius.Full SurfaceSubtle pill, search glyph, BodyM entry, clear-when-non-empty
+   routing "" through onChanged (controlled), Enter → onSubmit. Compiler hardening en route: the
+   `is not T x` GUARD IDIOM now transpiles correctly (bindings hoist to the enclosing block and
+   assign inside the negation — was `fresh is not defined` at runtime), and exception constructors
+   pick the semantic `message` parameter for `new Error(...)` (was throwing the param NAME).
+   Proven live in the browser: real typing, focus border swap with the DOM focus SURVIVING the
+   SetState rebuild (the reconciler preserves the element), clear + submit. v1 fences: keyboard
+   hints/trailing slot (M4 IME), Cancel slide-in (state-transition motion), debounce (app-side),
+   38% disabled opacity group (engine opacity primitive). Library: 21 components.
    Animation slice 2 ✅ (2026-07-05, spec A1/B16 — GRADIENT + SHIMMER): `BoxStyle.Gradient` exposes
    the engine fence's exact gradient primitive — `LinearGradient(From, To, Direction)`, two TOKEN
    stops on a straight axis (ToRight/ToBottom), drawing OVER the solid background (CSS

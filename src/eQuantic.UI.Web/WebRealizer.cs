@@ -35,6 +35,7 @@ public static class WebRealizer
         // A Positioned outside a Stack has no anchor frame — degrade to its child (parity with native).
         Positioned positioned => LowerNode(positioned.Child, context, horizontalAxis),
         Text text => LowerText(text, context),
+        TextEntry entry => LowerTextEntry(entry, context),
         Icon icon => LowerIcon(icon, context),
         Primitives.Image image => LowerImage(image),
         Pressable pressable => LowerPressable(pressable, context),
@@ -159,6 +160,38 @@ public static class WebRealizer
 
     /// <summary>Spec A11 lowering: an explicitly sized <c>&lt;img&gt;</c> with object-fit and the
     /// rrect clip via border-radius; empty alt = decorative (HTML semantics).</summary>
+    /// <summary>
+    /// Spec B9/B10 primitive: a REAL chrome-less &lt;input&gt; — the browser owns caret/selection/
+    /// IME. The type role rides the generated .eq-type-* class; color/reset styles are inline;
+    /// outline and ::placeholder mechanics live in the generated stylesheet (.eq-entry). The
+    /// composing component owns the container chrome. Handlers attach on the client (lowering.ts —
+    /// SSR emits no events; hydration wires them).
+    /// </summary>
+    private static HtmlElement LowerTextEntry(TextEntry entry, ComponentContext context)
+    {
+        var element = new RealizedElement("input")
+        {
+            ClassName = $"eq-entry eq-type-{entry.Role.ToString().ToLowerInvariant()}",
+            Style = new HtmlStyle
+            {
+                Width = "100%",
+                Padding = "0",
+                Background = "none",
+                Border = "none",
+                Color = TokenCss.Value(context.Theme.TextPrimary),
+                FontFamily = "inherit",
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["type"] = entry.Obscure ? "password" : "text",
+                ["value"] = entry.Value,
+            },
+        };
+        if (entry.Placeholder is { } placeholder) element.RawAttributes["placeholder"] = placeholder;
+        if (entry.Disabled) element.RawAttributes["disabled"] = "";
+        return element;
+    }
+
     private static HtmlElement LowerImage(Primitives.Image image)
     {
         var element = new RealizedElement("img")

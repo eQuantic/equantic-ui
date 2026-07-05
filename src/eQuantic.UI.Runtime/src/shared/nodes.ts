@@ -161,6 +161,19 @@ export interface LoopMotionNode extends VisualNodeValue {
   hideAtRest?: boolean;
 }
 
+/** Spec B9/B10 primitive: single-line text entry — a real chrome-less <input> on web. */
+export interface TextEntryNode extends VisualNodeValue {
+  nodeKind: 'textEntry';
+  value: string;
+  onChanged?: ((value: string) => void) | null;
+  placeholder?: string | null;
+  onSubmit?: (() => void) | null;
+  onFocusChanged?: ((focused: boolean) => void) | null;
+  disabled?: boolean;
+  obscure?: boolean;
+  role: string;
+}
+
 export interface ScrollViewNode extends VisualNodeValue {
   nodeKind: 'scrollView';
   child: VisualNodeValue;

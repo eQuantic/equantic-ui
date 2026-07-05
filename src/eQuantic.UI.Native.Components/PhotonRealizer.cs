@@ -149,6 +149,12 @@ public static class PhotonRealizer
                 EmitTextPlaceholder(node, text, theme, mode, builder);
                 break;
 
+            // Spec B9 fence: the entry renders the W4 one-line placeholder bar — value in
+            // TextPrimary, empty shows the placeholder in TextMuted. Caret/selection/IME land at M4.
+            case TextEntry entry:
+                EmitEntryPlaceholder(node, entry, theme, mode, builder);
+                break;
+
             // Spec A11 fence: a SurfaceSubtle box under the radius stands in for the bitmap until the
             // engine gains texture upload (M4) - the documented placeholder pattern.
             case Image image:
@@ -286,6 +292,26 @@ public static class PhotonRealizer
                     new CornerRadii(barHeight / 3)),
                 Paint.Solid(color));
         }
+    }
+
+    /// <summary>The TextEntry stand-in (spec B9 fence): one soft bar per the W4 text placeholder
+    /// convention — the VALUE in the entry's text color, an empty value shows the PLACEHOLDER in
+    /// TextMuted. Deterministic layout geometry until the real text stack (M4).</summary>
+    private static void EmitEntryPlaceholder(LayoutNode node, TextEntry entry, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder)
+    {
+        if (node.Text is not { } measurement || measurement.Lines.Count == 0) return;
+        var hasValue = entry.Value.Length > 0;
+        var token = hasValue ? theme.TextPrimary : theme.TextMuted;
+        var color = token.Resolve(mode).WithOpacity(0.30f);
+        var line = measurement.Lines[0];
+        if (line.Width <= 0) return;
+
+        var barHeight = measurement.LineHeight * 0.55f;
+        var y = node.Bounds.Y + (measurement.LineHeight - barHeight) / 2;
+        builder.FillRRect(
+            new RRect(new Rect(node.Bounds.X, y, MathF.Min(line.Width, node.Bounds.Width), barHeight),
+                new CornerRadii(barHeight / 3)),
+            Paint.Solid(color));
     }
 
     /// <summary>Hit contract (spec §08): every interactive node exposes ≥ 48dp per side — visual bounds

@@ -30,7 +30,15 @@ public class IfStatementStrategy : IStatementStrategy
         if (patternVars.Any())
         {
             var declarations = string.Join(" ", patternVars.Select(v => $"let {v};"));
-            // Wrap in block to keep scope clean and allow usage in 'else' contexts
+            // C# pattern variables scope to the ENCLOSING block ("definite assignment when false":
+            // `if (x is not T t) return;` leaves t usable AFTER the if — the guard idiom). Inside a
+            // block parent the declarations emit as siblings; only a brace-less composite body
+            // (`while (c) if (x is T t) …`) needs the wrapping block to stay one statement — and
+            // there no code can follow the if anyway.
+            if (ifStmt.Parent is BlockSyntax or GlobalStatementSyntax or SwitchSectionSyntax)
+            {
+                return $"{declarations} {result}";
+            }
             return $"{{ {declarations} {result} }}";
         }
 

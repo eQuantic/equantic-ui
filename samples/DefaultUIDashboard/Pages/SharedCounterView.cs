@@ -52,6 +52,12 @@ public static class SharedCounterView
         loading.Add(lines);
         column.Add(loading);
 
+        // Spec B9/B10: real text entry — the browser owns caret/IME; focus state is the
+        // component's internal SetState (watch the border swap to 2dp Primary).
+        column.Add(new TextInput("", label: "Email", placeholder: "you@company.com",
+            helper: "We never share it.", leading: Icons.Mail));
+        column.Add(new SearchField("rio"));
+
         return new Card(column, CardKind.Outlined) { Width = SizeValue.Fill };
     }
 }
