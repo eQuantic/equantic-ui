@@ -48,6 +48,7 @@ interface BoxStyleConfig {
   cornerRadius?: CornerRadii;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
+  elevation?: number;
 }
 
 /** Mirror of the C# `BoxStyle` record — constructed from the transpiled initializer config object.
@@ -64,6 +65,7 @@ export class BoxStyle {
   cornerRadius: CornerRadii = new CornerRadii();
   borderWidth = 0;
   borderColor?: ColorTokenValue;
+  elevation = 0;
 
   constructor(config?: BoxStyleConfig) {
     if (!config) return;

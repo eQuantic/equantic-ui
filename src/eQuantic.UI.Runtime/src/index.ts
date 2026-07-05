@@ -97,6 +97,7 @@ export {
   ScrollView,
 } from './shared/vocabulary';
 export {
+  Color,
   ColorToken,
   SizeValue,
   EdgeInsets,

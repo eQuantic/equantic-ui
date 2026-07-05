@@ -36,6 +36,7 @@ export {
   ScrollView,
 } from './vocabulary';
 export {
+  Color,
   ColorToken,
   SizeValue,
   EdgeInsets,

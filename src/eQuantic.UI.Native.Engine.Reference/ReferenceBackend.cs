@@ -30,6 +30,7 @@ public sealed class ReferenceBackend : IRenderBackend
                     break;
                 case DrawCommandKind.FillRRect:
                 case DrawCommandKind.StrokeRRect:
+                case DrawCommandKind.ShadowRRect:
                     RasterizeRRect(target, in command);
                     break;
             }
@@ -44,7 +45,12 @@ public sealed class ReferenceBackend : IRenderBackend
         if (inverse is null) return; // degenerate transform: zero-area shape, nothing to draw
 
         // Device-space AABB of the (transformed) shape, padded for the AA ramp and stroke band.
-        var pad = 1f + (command.Kind == DrawCommandKind.StrokeRRect ? command.StrokeWidth / 2 : 0);
+        var pad = 1f + command.Kind switch
+        {
+            DrawCommandKind.StrokeRRect => command.StrokeWidth / 2,
+            DrawCommandKind.ShadowRRect => command.StrokeWidth * 1.5f, // the falloff's 1.5σ·2 reach
+            _ => 0f,
+        };
         var bounds = transform.TransformBounds(shape.Rect.Inflate(pad));
         if (command.Clip is { } clipBounds) bounds = bounds.Intersect(clipBounds.Rect.Inflate(1));
         if (bounds.IsEmpty) return;
@@ -73,7 +79,9 @@ public sealed class ReferenceBackend : IRenderBackend
                 if (command.Kind == DrawCommandKind.StrokeRRect)
                     d = Sdf.Stroke(d, command.StrokeWidth);
 
-                var coverage = Sdf.Coverage(d * scale);
+                var coverage = command.Kind == DrawCommandKind.ShadowRRect
+                    ? Sdf.ShadowCoverage(d * scale, command.StrokeWidth * scale)
+                    : Sdf.Coverage(d * scale);
                 if (coverage <= 0) continue;
 
                 // Clip: multiply by the clip rrect's own coverage (device space, scale 1) — the clip

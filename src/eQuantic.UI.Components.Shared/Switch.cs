@@ -7,7 +7,7 @@ namespace eQuantic.UI.Components.Shared;
 /// fill, on = Primary), thumb 26dp white with a 3dp inset, realized through Stack + Positioned.
 /// The effect is immediate — a Switch never needs a Save button. v1 fences: the slide/crossfade
 /// motion, the draggable thumb (spring settle) and the press-stretch join the animation/gesture
-/// systems; the thumb's E1 shadow joins the engine shadow primitive.
+/// systems; the press-stretch joins gestures.
 /// </summary>
 public sealed class Switch : StatelessComponent
 {
@@ -41,6 +41,7 @@ public sealed class Switch : StatelessComponent
             Height = 26,
             Background = theme.Surface,
             CornerRadius = new CornerRadii(Radius.Full),
+            Elevation = 1,
         });
 
         var stack = new Stack();

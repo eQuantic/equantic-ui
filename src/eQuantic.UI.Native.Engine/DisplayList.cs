@@ -11,6 +11,10 @@ public enum DrawCommandKind : byte
 
     /// <summary>Stroke a rounded rectangle's edge with a centered band of <see cref="DrawCommand.StrokeWidth"/>.</summary>
     StrokeRRect = 2,
+
+    /// <summary>The §05 analytic rrect shadow — <see cref="DrawCommand.StrokeWidth"/> carries the BLUR;
+    /// offset/spread are baked into <see cref="DrawCommand.Shape"/> by the builder.</summary>
+    ShadowRRect = 3,
 }
 
 /// <summary>
@@ -81,6 +85,29 @@ public sealed class DisplayListBuilder
             Shape = shape.Normalized(),
             Paint = paint,
             StrokeWidth = strokeWidth,
+            Transform = _current,
+            Clip = _clip,
+        });
+    }
+
+    /// <summary>
+    /// Records the §05 analytic shadow for <paramref name="shape"/>: the shadow shape is the rrect
+    /// offset by <paramref name="offsetY"/> and inflated by <paramref name="spread"/> (baked here);
+    /// <paramref name="blur"/> rides the StrokeWidth slot. Draw it BEFORE the shape's fill.
+    /// </summary>
+    public void ShadowRRect(in RRect shape, float offsetY, float blur, float spread, Color color)
+    {
+        var rect = new Rect(shape.Rect.X, shape.Rect.Y + offsetY, shape.Rect.Width, shape.Rect.Height)
+            .Inflate(spread);
+        var radii = new CornerRadii(
+            shape.Radii.TopLeft + spread, shape.Radii.TopRight + spread,
+            shape.Radii.BottomRight + spread, shape.Radii.BottomLeft + spread);
+        _commands.Add(new DrawCommand
+        {
+            Kind = DrawCommandKind.ShadowRRect,
+            Shape = new RRect(rect, radii).Normalized(),
+            Paint = Paint.Solid(color),
+            StrokeWidth = blur,
             Transform = _current,
             Clip = _clip,
         });

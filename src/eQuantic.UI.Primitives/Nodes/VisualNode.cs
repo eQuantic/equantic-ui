@@ -66,6 +66,10 @@ public readonly record struct BoxStyle
     /// <summary>Uniform border width, drawn INSIDE the bounds (spec fence). 0 = no border.</summary>
     public float BorderWidth { get; init; }
     public ColorToken BorderColor { get; init; }
+
+    /// <summary>Elevation level 0–5 (spec §05) — the theme resolves it to the analytic ShadowSpec;
+    /// exactly ONE shadow per node. Dark E1–E2 additionally want a 1dp border (component-level).</summary>
+    public int Elevation { get; init; }
 }
 
 /// <summary>

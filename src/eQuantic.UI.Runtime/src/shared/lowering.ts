@@ -11,6 +11,7 @@
 
 import type { EventHandler, HtmlNode } from '../core/types';
 import { iconPaths } from './icons.generated';
+import { getPhotonTheme } from './photon-context';
 import type {
   BoxNode,
   BoxStyleValue,
@@ -298,6 +299,12 @@ function lowerBox(box: BoxNode, context: LoweringContext): HtmlNode {
     'background-color': style.background ? tokenValue(style.background) : undefined,
     'border-radius':
       style.cornerRadius && !isZeroRadii(style.cornerRadius) ? radiusValue(style.cornerRadius) : undefined,
+    'box-shadow': (() => {
+      if (!style.elevation || style.elevation <= 0) return undefined;
+      const spec = getPhotonTheme().elevation(style.elevation);
+      if (!spec || (spec.blur === 0 && spec.offsetY === 0 && spec.spread === 0)) return undefined;
+      return `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`;
+    })(),
     border:
       style.borderWidth && style.borderWidth > 0 && style.borderColor
         ? `${px(style.borderWidth)} solid ${tokenValue(style.borderColor)}`

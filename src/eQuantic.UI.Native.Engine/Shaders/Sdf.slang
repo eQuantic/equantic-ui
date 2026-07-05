@@ -14,7 +14,7 @@ struct DrawUniforms
     float4 colorA;    // sRGB 0..1 straight alpha (solid / gradient start)
     float4 colorB;    // sRGB 0..1 straight alpha (gradient end)
     float4 gradient;  // start.x, start.y, end.x, end.y (LOCAL space)
-    float4 flags;     // x: 0 fill | 1 stroke · y: 0 solid | 1 linear gradient · z: 1 = clipped
+    float4 flags;     // x: 0 fill | 1 stroke | 2 shadow · y: 0 solid | 1 linear gradient · z: 1 = clipped
     float4 clipRect;  // DEVICE-space clip: center.x, center.y, halfSize.w, halfSize.h
     float4 clipRadii; // tl, tr, br, bl
 };
@@ -57,10 +57,28 @@ float4 sdf_fragment(float4 position: SV_Position) : SV_Target
         pixel.x * u.inv1.x + pixel.y * u.inv1.y + u.inv1.z);
 
     float d = sdRoundedRect(local - u.rect.xy, u.rect.zw, u.radii);
-    if (u.flags.x > 0.5)
+    if (u.flags.x > 0.5 && u.flags.x < 1.5)
         d = abs(d) - u.inv1.w / 2.0;  // Sdf.Stroke — centered band
 
-    float coverage = clamp(0.5 - d * u.inv0.w, 0.0, 1.0);  // Sdf.Coverage, device-scaled
+    float coverage;
+    if (u.flags.x > 1.5)
+    {
+        // Sdf.ShadowCoverage (§05): 1 − smoothstep(−1.5σ, +1.5σ, d), σ = blur/2 — device-scaled.
+        float sigma = u.inv1.w * u.inv0.w / 2.0;
+        if (sigma <= 0.0)
+        {
+            coverage = clamp(0.5 - d * u.inv0.w, 0.0, 1.0);
+        }
+        else
+        {
+            float t = clamp((d * u.inv0.w + 1.5 * sigma) / (3.0 * sigma), 0.0, 1.0);
+            coverage = 1.0 - t * t * (3.0 - 2.0 * t);
+        }
+    }
+    else
+    {
+        coverage = clamp(0.5 - d * u.inv0.w, 0.0, 1.0);  // Sdf.Coverage, device-scaled
+    }
     if (coverage <= 0.0) discard;
 
     // Baked clip: multiply by the clip rrect's coverage in DEVICE space (scale 1) — the exact

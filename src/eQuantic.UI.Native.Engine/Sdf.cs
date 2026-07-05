@@ -50,6 +50,21 @@ public static class Sdf
         MathF.Abs(distance) - strokeWidth / 2;
 
     /// <summary>
+    /// Analytic shadow falloff (spec §05): a smooth ramp of the rrect SDF across the blur radius —
+    /// <c>1 − smoothstep(−1.5σ, +1.5σ, d)</c> with <c>σ = blur/2</c>. A normative CHOICE (a Gaussian
+    /// approximation), implemented identically by every rasterizer; blur 0 degenerates to the hard
+    /// coverage ramp.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float ShadowCoverage(float deviceDistance, float deviceBlur)
+    {
+        if (deviceBlur <= 0) return Coverage(deviceDistance);
+        var sigma = deviceBlur / 2;
+        var t = Math.Clamp((deviceDistance + 1.5f * sigma) / (3f * sigma), 0f, 1f);
+        return 1f - t * t * (3f - 2f * t); // 1 − smoothstep
+    }
+
+    /// <summary>
     /// Anti-aliased coverage (0..1) from a DEVICE-space signed distance: full at ≤ −½px, zero at ≥ +½px,
     /// linear ramp across the pixel — the shader computes the same with <c>fwidth</c>-scaled distance.
     /// </summary>
