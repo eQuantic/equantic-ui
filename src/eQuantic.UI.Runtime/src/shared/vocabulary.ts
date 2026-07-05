@@ -408,15 +408,34 @@ export class Positioned extends VisualNode {
   }
 }
 
+interface FlexibleConfig {
+  animateChanges?: boolean;
+}
+
 export class Flexible extends VisualNode {
   readonly nodeKind = 'flexible';
   child: VisualNode;
   flex: number;
+  animateChanges = false;
 
-  constructor(child: VisualNode, flex = 1) {
+  constructor(child: VisualNode, flex = 1, config?: FlexibleConfig) {
     super();
     this.child = child;
     this.flex = flex;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `Spinner` (spec B15): the 8-bar activity indicator, icon em-box sizes. */
+export class Spinner extends VisualNode {
+  readonly nodeKind = 'spinner';
+  size: number;
+  color: ColorTokenValue | null;
+
+  constructor(size = 20, color: ColorTokenValue | null = null) {
+    super();
+    this.size = size;
+    this.color = color;
   }
 }
 

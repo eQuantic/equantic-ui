@@ -8,16 +8,21 @@ namespace eQuantic.UI.Components.Shared;
 /// row width. Determinate fill realizes as flex weights (round(value·1000) vs the remainder) — the
 /// same leftover-by-weight math on both realizers, no percent sizing needed. <c>null</c> value =
 /// INDETERMINATE (spec: 30% segment sweeping -35%..105% of the track on a 1.2s loop, transform-only
-/// — LoopMotion inside a clipping track). v1 fence: determinate value changes snap (the Base 200ms
-/// forward-only transition joins the state-transition system).
+/// — LoopMotion inside a clipping track). STATEFUL for the B14 value-transition contract: the
+/// positional reconciler retains the instance across the app's controlled re-renders, and
+/// <see cref="AdoptConfig"/> compares each fresh value against the current one — forward changes
+/// animate Base 200ms standard (web: a generated flex-grow transition; native joins with the
+/// transition animator), REGRESSIONS SNAP (honesty over smoothness, spec B14).
 /// </summary>
-public sealed class ProgressBar : StatelessComponent
+public sealed class ProgressBar : StatefulComponent
 {
     /// <summary>Indeterminate sweep geometry/clock (spec B14): the 30%-of-track segment sweeps fully
     /// across — off-screen left (-35%) to off-screen right (105%) — every 1.2s.</summary>
     private const float SweepFromX = -0.35f;
     private const float SweepToX = 1.05f;
     private const int SweepDurationMs = 1200;
+
+    private bool _snapNext;
 
     public ProgressBar(float? value = null, Variant variant = Variant.Primary)
     {
@@ -26,12 +31,21 @@ public sealed class ProgressBar : StatelessComponent
     }
 
     /// <summary>Progress 0..1 (clamped); <c>null</c> = indeterminate.</summary>
-    public float? Value { get; init; }
+    public float? Value { get; private set; }
 
-    public Variant Variant { get; init; }
+    public Variant Variant { get; private set; }
 
     /// <summary>8dp meter styling (goal/quota) instead of the 4dp default.</summary>
     public bool Prominent { get; init; }
+
+    public override void AdoptConfig(UiComponent next)
+    {
+        if (next is not ProgressBar fresh) return;
+        // Forward-only (spec B14): a lower incoming value marks the NEXT build to snap.
+        _snapNext = fresh.Value is { } incoming && Value is { } current && incoming < current;
+        Value = fresh.Value;
+        Variant = fresh.Variant;
+    }
 
     public override VisualNode Build(ComponentContext context)
     {
@@ -40,6 +54,8 @@ public sealed class ProgressBar : StatelessComponent
 
         if (Value is { } value)
         {
+            var animate = !_snapNext;
+            _snapNext = false;
             var clamped = Math.Clamp(value, 0f, 1f);
             var filledWeight = (int)MathF.Round(clamped * 1000);
 
@@ -57,7 +73,10 @@ public sealed class ProgressBar : StatelessComponent
                     Height = height,
                     Background = theme.Colors(Variant).Base,
                     CornerRadius = new CornerRadii(Radius.Full),
-                }), filledWeight));
+                }), filledWeight)
+                {
+                    AnimateChanges = animate,
+                });
             }
             if (filledWeight < 1000)
             {

@@ -128,7 +128,8 @@ export interface PressableNode extends VisualNodeValue {
 export interface FlexibleNode extends VisualNodeValue {
   nodeKind: 'flexible';
   child: VisualNodeValue;
-  flex: number;
+  flex: number; /** Spec B14: weight changes animate Base/standard; omitted on a regression (snap). */
+  animateChanges?: boolean;
 }
 
 export interface SpacerNode extends VisualNodeValue {
@@ -159,6 +160,13 @@ export interface LoopMotionNode extends VisualNodeValue {
   durationMs: number;
   /** Reduce Motion policy: decorative loops hide entirely at rest (Skeleton shimmer). */
   hideAtRest?: boolean;
+}
+
+/** Spec B15: the canonical activity indicator — 8 phase-staggered rrect bars, 800ms/rev. */
+export interface SpinnerNode extends VisualNodeValue {
+  nodeKind: 'spinner';
+  size: number;
+  color?: ColorTokenValue | null;
 }
 
 /** Phase C viewport layer: the child escapes the page flow (fixed inset-0 stacking layer). */

@@ -14,7 +14,10 @@ public class ExpressionStatementStrategy : IStatementStrategy
     public string Convert(StatementSyntax node, ConversionContext context)
     {
         var exprStmt = (ExpressionStatementSyntax)node;
-        return context.Converter.ConvertExpression(exprStmt.Expression) + ";";
+        // `is` pattern bindings assign inside the converted expression — their `let`s hoist here
+        // (C# scopes them to the enclosing block; see PatternVariableScanner).
+        var declarations = PatternVariableScanner.Declarations(exprStmt.Expression);
+        return declarations + context.Converter.ConvertExpression(exprStmt.Expression) + ";";
     }
 
     public int Priority => 0;

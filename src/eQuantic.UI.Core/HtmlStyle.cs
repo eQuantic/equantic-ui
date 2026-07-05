@@ -125,6 +125,7 @@ public class HtmlStyle
     public string? Transition { get; set; }
     public string? Transform { get; set; }
     public string? Animation { get; set; }
+    public string? AnimationDelay { get; set; }
     public string? WhiteSpace { get; set; }
     public string? TextOverflow { get; set; }
     public string? BoxSizing { get; set; }
@@ -224,6 +225,7 @@ public class HtmlStyle
         AddProperty(properties, "transition", Transition);
         AddProperty(properties, "transform", Transform);
         AddProperty(properties, "animation", Animation);
+        AddProperty(properties, "animation-delay", AnimationDelay);
         AddProperty(properties, "white-space", WhiteSpace);
         AddProperty(properties, "text-overflow", TextOverflow);
         AddProperty(properties, "box-sizing", BoxSizing);

@@ -28,6 +28,7 @@ import type {
   LinearGradientValue,
   LoopMotionNode,
   OverlayNode,
+  SpinnerNode,
   PositionedNode,
   PressableNode,
   ScrollViewNode,
@@ -160,6 +161,7 @@ const styleOrder = [
   'transition',
   'transform',
   'animation',
+  'animation-delay',
   'white-space',
   'text-overflow',
   'box-sizing',
@@ -209,6 +211,8 @@ function lowerNode(
       return lowerImage(node as ImageNode);
     case 'icon':
       return lowerIcon(node as IconNode);
+    case 'spinner':
+      return lowerSpinner(node as SpinnerNode);
     case 'stack':
       return lowerStack(node as StackNode, context, path);
     case 'positioned':
@@ -368,6 +372,44 @@ function lowerImage(node: ImageNode): HtmlNode {
   };
 }
 
+/** Spec B15 mirror: 8 rrect bars in the 16 viewBox, phase stagger via per-bar negative
+ * animation-delays over the generated 800ms fade — byte parity with the C# SSR realizer. */
+function lowerSpinner(node: SpinnerNode): HtmlNode {
+  const svg: HtmlNode = {
+    tag: 'svg',
+    attributes: {
+      class: 'eq-spinner',
+      style: styleString({
+        width: px(node.size),
+        height: px(node.size),
+        color: node.color ? tokenValue(node.color) : undefined,
+      }),
+      viewBox: '0 0 16 16',
+      fill: 'currentColor',
+      'aria-hidden': 'true',
+    },
+    events: {},
+    children: [],
+  };
+  for (let i = 0; i < 8; i++) {
+    svg.children.push({
+      tag: 'rect',
+      attributes: {
+        style: `animation-delay: -${i * 100}ms`,
+        x: '7',
+        y: '0',
+        width: '2',
+        height: '5',
+        rx: '1',
+        transform: `rotate(${i * 45} 8 8)`,
+      },
+      events: {},
+      children: [],
+    });
+  }
+  return svg;
+}
+
 /** Spec A10 mirror: inline SVG, registry path, fill=currentColor riding the color token. */
 function lowerIcon(node: IconNode): HtmlNode {
   const attributes: Record<string, string | undefined> = {
@@ -406,7 +448,8 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
     bottomEnd: 8,
   };
   const index = alignIndex[node.align] ?? 0;
-  const flexWord = (part: number) => (part === 1 ? 'center' : part === 2 ? 'flex-end' : 'flex-start');
+  const flexWord = (part: number) =>
+    part === 1 ? 'center' : part === 2 ? 'flex-end' : 'flex-start';
   const cellJustify = flexWord(index % 3);
   const cellAlign = flexWord(Math.trunc(index / 3));
 
@@ -665,6 +708,11 @@ function lowerFlexible(
   // shrink to ellipsis instead of pushing siblings (the truncation contract).
   const node = element('div', {
     flex: `${flexible.flex} 1 0%`,
+    // Spec B14: weight changes animate; the component omits the flag on a regression (snap).
+    transition:
+      flexible.animateChanges === true
+        ? 'flex-grow var(--eq-motion-base) var(--eq-curve-standard)'
+        : undefined,
     'min-width': horizontalAxis !== false ? '0' : undefined,
     'min-height': horizontalAxis === false ? '0' : undefined,
   });

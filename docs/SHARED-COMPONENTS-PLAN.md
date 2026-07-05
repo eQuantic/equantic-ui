@@ -371,6 +371,24 @@ rejected.)
    open → scrim blocks → action resolves → overlay leaves the tree; dismissible scrim closes.
    v1 fences: enter/exit motion (state-transition system), focus trap/alertdialog (a11y system),
    scroll lock under the fixed layer. Library: 22 components + DialogAction.
+   Animation slice 3 ✅ (2026-07-05, spec B15 + B14 — SPINNER + VALUE TRANSITIONS): the spec
+   resolved the "arcs gate" itself — B15 is 8 rrect bars (2×5 in the 16dp em-box), opacity
+   phase-staggered, 800ms/rev linear, "no arcs exist in the engine". `Spinner` is a leaf node
+   (icon em-box sizes, §07 whitelist; color inherits like Icon). NATIVE: a pure f(t) — bar i
+   rides the 1→0.3 sawtooth at k=((i−phase·8) mod 8)/8, rotated i·45° about the center; Reduce
+   Motion drops the STAGGER only (all bars pulse in place, spec B15) and the spinner always
+   reports active motion (functional indicator). WEB: an 8-rect SVG whose rotation phase IS the
+   per-bar negative animation-delay over the generated 800ms fade — exact alpha parity with the
+   native formula; the 400ms anti-flash appear delay and the reduce-motion delay-zeroing ship in
+   the generated stylesheet. VALUE TRANSITIONS (B14): `Flexible.AnimateChanges` lowers to a
+   generated-token `flex-grow var(--eq-motion-base) var(--eq-curve-standard)` transition;
+   ProgressBar became STATEFUL — AdoptConfig compares each fresh value and a REGRESSION marks the
+   next build to snap (forward-only honesty), re-animating afterwards; native weights still snap
+   (the transition animator remains the documented fence, now consumer-ready). Compiler: `is`
+   pattern bindings HOIST in every statement position (expression/return/local-declaration got
+   the same `let` hoisting the if-statement had — `_snap = x is {} v && …` was a runtime
+   ReferenceError), via the shared PatternVariableScanner (lambda bodies excluded: their bindings
+   scope to the lambda). Native goldens pin the quarter-turn rosette in both modes.
    Animation slice 2 ✅ (2026-07-05, spec A1/B16 — GRADIENT + SHIMMER): `BoxStyle.Gradient` exposes
    the engine fence's exact gradient primitive — `LinearGradient(From, To, Direction)`, two TOKEN
    stops on a straight axis (ToRight/ToBottom), drawing OVER the solid background (CSS
