@@ -30,8 +30,9 @@ public sealed class SearchField : StatelessComponent
     {
         var theme = context.Theme;
 
-        var row = new Row(gap: 10) { Cross = CrossAlign.Center };
-        row.Add(new Icon(Icons.Search, IconSize.Md, theme.TextMuted));
+        // Fill the pill's content box so Cross=Center truly centers within the 40dp frame.
+        var row = new Row(gap: 10) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
+        row.Add(new Icon(Icons.Search, IconSize.Dense, theme.TextMuted)); // spec B10: Md-20 glyph
         row.Add(new Flexible(new TextEntry(Query, OnChanged)
         {
             Placeholder = Placeholder,
@@ -41,7 +42,7 @@ public sealed class SearchField : StatelessComponent
         if (Query.Length > 0)
         {
             row.Add(new Pressable(
-                new Icon(Icons.Close, IconSize.Md, theme.TextMuted),
+                new Icon(Icons.Close, IconSize.Dense, theme.TextMuted),
                 () => OnChanged?.Invoke(""))
             {
                 Label = "clear search",
