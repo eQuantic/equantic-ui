@@ -55,6 +55,8 @@
     <ItemGroup Condition="'$(IsEQuanticDevMode)' != 'true'">
         <PackageReference Include="eQuantic.UI.Core" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
+        <PackageReference Include="eQuantic.UI.Components.Shared" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Web" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Runtime" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
 
@@ -79,6 +81,9 @@
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
         <ProjectReference
             Include="$(_DevRootDir)eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+        <ProjectReference
+            Include="$(_DevRootDir)eQuantic.UI.Components.Shared\eQuantic.UI.Components.Shared.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Runtime\eQuantic.UI.Runtime.csproj" />
 

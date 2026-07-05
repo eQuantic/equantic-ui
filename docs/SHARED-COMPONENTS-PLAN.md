@@ -174,8 +174,29 @@ rejected.)
    `@equantic/runtime`, extending the namespace rule to runtime-backed adapters living elsewhere.
    Boot-time theming needed no new machinery: `setPhotonTheme` inside the existing `__registerTheme`
    hook swaps what the ambient lowering resolves (spec-tested).
-   Remaining (unification slice 2): name-collision resolution — shared components REPLACE the
-   standard web ones (per-origin module namespacing in the emitter/resolver, or the library swap),
-   then the SDK gate flips to default-on and a real sample page ships.
+   Unification slice 2 ✅ (2026-07-05): the shared library is RUNTIME-PROVIDED and the first live
+   page shipped. Instead of per-origin module namespacing, the transpiled library components
+   (Button/Card — already byte-pinned to eqc output) EMBED in runtime.js (`shared/components/*`,
+   same pin with the import source rewritten to an internal aggregator, avoiding a self-referential
+   package import) and export from `@equantic/runtime`. eqc routes the `eQuantic.UI.Components.Shared`
+   namespace to the runtime — so the deliberate name reuse against the standard web components
+   resolves SEMANTICALLY: `using eQuantic.UI.Components` → `./Button` (per-app module),
+   `using eQuantic.UI.Components.Shared` → runtime import (disambiguation is CI-tested). The 2C SDK
+   scan gate is GONE (nothing to scan: the library ships in the runtime; user-authored write-once
+   components flow through the primary app scan), and the SDK references Components.Shared + Web by
+   default (zero-config). Routing now covers every emission path via `RuntimeProvidedTypeScanner`
+   (components, STATE classes, STATIC HELPERS — the last two were gaps the live sample exposed).
+   More silent-wrong-code fixes en route: expression-bodied `Build` in Core state classes emitted a
+   dead `new Container({})` fallback (the whole page tree vanished); static classes with a `Build`
+   method were misdetected as components (losing their parameters). **The live proof:**
+   `samples/DefaultUIDashboard` `/shared` — a Core stateful page driving a write-once subtree
+   (Card/Buttons/type-scale from the generated Photon CSS) through `VisualNodeComponent`, verified
+   in a real browser: SSR → hydration → click → `Count: 3`, with the dark-mode `light-dark()` tokens
+   resolving to the spec values (`#5ca2e8` Primary dark, 40dp Medium row). State is HOISTED to the
+   page (v1: nested component instances rebuild per pass; positional state retention arrives with
+   the reconciler slice).
+   Remaining on this front: shared stateful pages as SSR entry points (server render of the
+   Primitives shape), positional state retention (reconciler slice), and the eventual merge of
+   Components.Shared into eQuantic.UI.Components as legacy web components migrate.
 4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
 5. Layout conformance harness lands with step 2 and gates every layout feature after it.

@@ -160,23 +160,13 @@
                 Condition="'$(_StandardComponentsDir)' == '' And Exists('$(_DevComponentsDir)')">
                 $(_DevComponentsDir)</_StandardComponentsDir>
 
-            <!-- SHARED (write-once) components — same resolution pattern. OPT-IN via
-                 <EnableEQuanticSharedComponents>true</EnableEQuanticSharedComponents> until the Core
-                 unification: the shared library deliberately reuses component names (Button, Card…),
-                 so scanning it by default would collide with the standard web components in the same
-                 output (docs/SHARED-COMPONENTS-PLAN.md). -->
-            <_SharedComponentsDir
-                Condition="'$(EnableEQuanticSharedComponents)' == 'true' And '$(PkgeQuantic_UI_Components_Shared)' != ''">
-                $(PkgeQuantic_UI_Components_Shared)/tools/source</_SharedComponentsDir>
-            <_DevSharedComponentsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Components.Shared</_DevSharedComponentsDir>
-            <_SharedComponentsDir
-                Condition="'$(EnableEQuanticSharedComponents)' == 'true' And '$(_SharedComponentsDir)' == '' And Exists('$(_DevSharedComponentsDir)')">
-                $(_DevSharedComponentsDir)</_SharedComponentsDir>
-
+            <!-- The SHARED (write-once) component LIBRARY is RUNTIME-PROVIDED: its transpiled modules
+                 ship inside runtime.js and eqc routes `using eQuantic.UI.Components.Shared` imports
+                 there — no per-app scan, and the deliberate name reuse against the standard web
+                 components resolves semantically (the page's usings decide). USER-AUTHORED write-once
+                 components need no wiring either: they live in the app and flow through the primary
+                 scan (docs/SHARED-COMPONENTS-PLAN.md, unification slice 2). -->
             <_EqcSourceDirs>$(MSBuildProjectDirectory);$(_StandardComponentsDir)</_EqcSourceDirs>
-            <_EqcSourceDirs
-                Condition="'$(_SharedComponentsDir)' != '' And Exists('$(_SharedComponentsDir)')">
-                $(_EqcSourceDirs);$(_SharedComponentsDir)</_EqcSourceDirs>
         </PropertyGroup>
 
         <Error

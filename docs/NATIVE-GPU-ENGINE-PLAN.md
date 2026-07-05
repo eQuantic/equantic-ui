@@ -463,6 +463,18 @@ Bun and the JS bundling chain, the TypeScript runtime.
   web 38, compiler 412, conformance 526, native 144, server 37. Next on this front: name-collision
   resolution (shared REPLACES standard) → SDK gate default-on → live sample page.
 
+- **2026-07-05 — Unification slice 2 landed: the shared library is RUNTIME-PROVIDED and the first
+  write-once page is LIVE.** The pinned transpiled Button/Card embed in runtime.js and export from
+  `@equantic/runtime`; eqc routes the `eQuantic.UI.Components.Shared` namespace there, so the name
+  reuse against the standard web components resolves semantically (usings decide — CI-tested). The
+  SDK references the write-once stack by default (zero-config; the 2C scan gate is gone). The live
+  proof: `DefaultUIDashboard` `/shared`, verified in a real browser — SSR → hydration → click →
+  `Count: 3`, Photon tokens resolving in dark mode to the spec values (#5ca2e8 Primary, 40dp Medium).
+  En-route compiler fixes (each silent-wrong-code): runtime routing extended to state classes and
+  static helpers (`RuntimeProvidedTypeScanner`), expression-bodied Build in state classes (emitted a
+  dead `new Container({})`), static classes with Build misdetected as components. Suites: vitest 289,
+  web 39, compiler 412, conformance 526, native 144, server 37.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

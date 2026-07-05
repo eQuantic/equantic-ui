@@ -106,6 +106,12 @@ export {
   ambientLoweringContext,
 } from './shared/photon-context';
 export { VisualNodeComponent } from './shared/visual-node-component';
+// The shared component LIBRARY (write-once) — transpiled modules embedded in the runtime, byte-pinned
+// to the live eqc output (SharedComponentTranspilationTests). `using eQuantic.UI.Components.Shared`
+// in app code routes imports here; the standard web components keep their per-app ./modules, so the
+// deliberate name reuse never collides.
+export { Button } from './shared/components/Button';
+export { Card } from './shared/components/Card';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).
 export {
   Space,

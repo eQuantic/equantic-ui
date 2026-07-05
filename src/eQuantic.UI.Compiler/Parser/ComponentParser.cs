@@ -123,6 +123,11 @@ public class ComponentParser
         var componentNames = new HashSet<string>();
         foreach (var c in classes)
         {
+            // A static class is never a component (not instantiable) — even when it declares a Build
+            // helper method (e.g. a write-once VIEW helper building an abstract tree). It flows through
+            // the static-helper emission path instead.
+            if (c.Modifiers.Any(SyntaxKind.StaticKeyword)) continue;
+
             var bn = BaseName(c);
             var hasBR = c.Members.OfType<MethodDeclarationSyntax>().Any(m => m.Identifier.Text is "Render" or "Build");
             bool direct = model?.GetDeclaredSymbol(c) is INamedTypeSymbol s
@@ -311,6 +316,13 @@ public class ComponentParser
             }
 
             CollectRuntimeProvidedTypes(classDecl, definition);
+            // A stateful component's Build lives in its STATE class — runtime-provided references
+            // there (e.g. the VisualNodeComponent bridge) must route the same way.
+            if (!string.IsNullOrEmpty(definition.StateClassName))
+            {
+                var stateDecl = classes.FirstOrDefault(c => c.Identifier.Text == definition.StateClassName);
+                if (stateDecl != null) CollectRuntimeProvidedTypes(stateDecl, definition);
+            }
 
             results.Add(definition);
         }
@@ -563,58 +575,16 @@ public class ComponentParser
         return ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives.");
     }
 
-    /// <summary>Component-model base names — the EMITTER owns the emitted base class (e.g. the shared
-    /// stateful shape swaps to <c>SharedStatefulComponent</c>), so the semantic sweep must not import them.</summary>
-    private static readonly HashSet<string> ComponentModelBaseNames =
-        new() { "UiComponent", "StatelessComponent", "StatefulComponent" };
-
     /// <summary>
-    /// Collects the simple names of referenced types whose containing namespace marks them as
-    /// RUNTIME-PROVIDED (the shared vocabulary in <c>eQuantic.UI.Primitives</c>) into
-    /// <see cref="ComponentDefinition.RuntimeProvidedTypes"/>. Semantic-model driven — the set follows
-    /// whatever the file actually references, with no fixed type list. Enums are excluded: they lower
-    /// to camelCase string literals and never appear as identifiers in emitted code.
+    /// Collects the simple names of referenced RUNTIME-PROVIDED types (and referenced enums) into the
+    /// definition — semantic-model driven via <see cref="RuntimeProvidedTypeScanner"/>, following
+    /// whatever the class actually references with no fixed type list.
     /// </summary>
     private void CollectRuntimeProvidedTypes(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
         var model = TryGetSemanticModel(classDecl.SyntaxTree);
         if (model == null) return;
-
-        foreach (var identifier in classDecl.DescendantNodes().OfType<IdentifierNameSyntax>())
-        {
-            ISymbol? symbol;
-            try { symbol = model.GetSymbolInfo(identifier).Symbol; }
-            catch { continue; }
-
-            // `new Text(...)` resolves the identifier to the CONSTRUCTOR — take its containing type.
-            var type = symbol as INamedTypeSymbol
-                       ?? (symbol is IMethodSymbol { MethodKind: MethodKind.Constructor } ctorSymbol
-                           ? ctorSymbol.ContainingType
-                           : null);
-            if (type is null) continue;
-
-            // Enums never survive into emitted code as identifiers (members lower to camelCase string
-            // literals), so importing them would reference modules that don't exist.
-            if (type.TypeKind == TypeKind.Enum)
-            {
-                definition.EnumTypes.Add(type.Name);
-                continue;
-            }
-
-            // Interfaces exist only in the C# type system — they produce no JS value to import.
-            if (type.TypeKind == TypeKind.Interface) continue;
-
-            if (ComponentModelBaseNames.Contains(type.Name)) continue;
-
-            // Runtime-provided = the shared-vocabulary namespace, OR any type opting in explicitly
-            // with [RuntimeProvided] (runtime-backed adapters living outside Primitives).
-            var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-            var isRuntimeProvided = ns == "eQuantic.UI.Primitives"
-                || ns.StartsWith("eQuantic.UI.Primitives.")
-                || type.GetAttributes().Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute");
-            if (isRuntimeProvided)
-                definition.RuntimeProvidedTypes.Add(type.Name);
-        }
+        RuntimeProvidedTypeScanner.Collect(classDecl, model, definition.RuntimeProvidedTypes, definition.EnumTypes);
     }
 
     /// <summary>
