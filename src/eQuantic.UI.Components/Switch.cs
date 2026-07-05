@@ -32,7 +32,7 @@ public sealed class Switch : StatelessComponent
             Width = 52,
             Height = 32,
             Background = trackFill,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
         });
 
         var thumb = new Box(new BoxStyle
@@ -40,7 +40,7 @@ public sealed class Switch : StatelessComponent
             Width = 26,
             Height = 26,
             Background = theme.Surface,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             Elevation = 1,
         });
 

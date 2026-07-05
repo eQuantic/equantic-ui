@@ -81,7 +81,7 @@ public sealed class Chip : StatelessComponent
             Height = 32,
             Padding = EdgeInsets.Symmetric(Space.S3, 0),
             Background = fill,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             BorderWidth = Kind == ChipKind.Filter && Selected ? 1f : 0f,
             BorderColor = primary.Base,
         }, content);

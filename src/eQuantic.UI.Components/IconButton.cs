@@ -93,7 +93,7 @@ public sealed class IconButton : StatelessComponent
             Width = side,
             Height = side,
             Background = fill,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             BorderWidth = Kind == IconButtonKind.Outline ? 1f : 0f,
             BorderColor = theme.BorderStrong,
         }, content);

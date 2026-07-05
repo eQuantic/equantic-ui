@@ -68,7 +68,7 @@ public sealed class Avatar : StatelessComponent
         {
             var photo = new Image(source, side, side, ImageFit.Cover, Name ?? Initials)
             {
-                CornerRadius = new CornerRadii(Radius.Full),
+                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             };
             return Status == PresenceStatus.None ? photo : WithStatusDot(photo, side, theme);
         }
@@ -100,7 +100,7 @@ public sealed class Avatar : StatelessComponent
             Width = side,
             Height = side,
             Background = hasInitials ? tint.Subtle : theme.SurfaceSubtle,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
         }, content);
 
         return Status == PresenceStatus.None ? circle : WithStatusDot(circle, side, theme);
@@ -115,7 +115,7 @@ public sealed class Avatar : StatelessComponent
             Width = dotSide,
             Height = dotSide,
             Background = dotFill,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             BorderWidth = 2f,
             BorderColor = theme.Surface,
         });

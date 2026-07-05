@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Color, ColorToken, Component, ComponentContext, CornerRadii, Flexible, HtmlElement, LinearGradient, LoopMotion, Radius, Row, SizeValue, StatelessComponent, VisualNode } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, Color, ColorToken, Component, ComponentContext, CornerRadii, Flexible, HtmlElement, LinearGradient, LoopMotion, Row, SizeValue, StatelessComponent, VisualNode } from "@equantic/runtime";
 
 export class Skeleton extends StatelessComponent {
     static shimmerDurationMs: number = 1400;
@@ -11,7 +11,7 @@ export class Skeleton extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let height = (() => { const _s = this.shape; if (_s === 'line') return 12; if (_s === 'circle') return this.width; return this.height > 0 ? this.height : this.width; })();let radius = (() => { const _s = this.shape; if (_s === 'line') return Radius.full; if (_s === 'circle') return Radius.full; return Radius.md; })();let glint = new Row(0, { width: SizeValue.fill, height: height });glint.add(new Flexible(new Box(new BoxStyle({ height: height, gradient: new LinearGradient(new ColorToken(Color.transparent), theme.surfaceHighlight) })), 1));glint.add(new Flexible(new Box(new BoxStyle({ height: height, gradient: new LinearGradient(theme.surfaceHighlight, new ColorToken(Color.transparent)) })), 1));return new Box(new BoxStyle({ width: this.width, height: height, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(radius), clip: true }), new LoopMotion(glint, 'slideX', -1, 1, Skeleton.shimmerDurationMs, { hideAtRest: true }));
+        let theme = context.theme;let height = (() => { const _s = this.shape; if (_s === 'line') return 12; if (_s === 'circle') return this.width; return this.height > 0 ? this.height : this.width; })();let radius = (() => { const _s = this.shape; if (_s === 'line') return theme.shape('full'); if (_s === 'circle') return theme.shape('full'); return theme.shape('medium'); })();let glint = new Row(0, { width: SizeValue.fill, height: height });glint.add(new Flexible(new Box(new BoxStyle({ height: height, gradient: new LinearGradient(new ColorToken(Color.transparent), theme.surfaceHighlight) })), 1));glint.add(new Flexible(new Box(new BoxStyle({ height: height, gradient: new LinearGradient(theme.surfaceHighlight, new ColorToken(Color.transparent)) })), 1));return new Box(new BoxStyle({ width: this.width, height: height, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(radius), clip: true }), new LoopMotion(glint, 'slideX', -1, 1, Skeleton.shimmerDurationMs, { hideAtRest: true }));
     }
 
 }

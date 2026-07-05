@@ -54,7 +54,7 @@ public sealed class SearchField : StatelessComponent
             Width = SizeValue.Fill,
             Height = 40,
             Background = theme.SurfaceSubtle,
-            CornerRadius = new CornerRadii(Radius.Full),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             Padding = EdgeInsets.Symmetric(14, 0),
         }, row);
     }

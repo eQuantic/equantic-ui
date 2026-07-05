@@ -225,7 +225,9 @@ public class SharedComponentTranspilationTests
         button.Should().Contain("minWidth: ButtonStyles.minWidth");
 
         // The size-table tuple deconstructs as an array — the generated ButtonStyles.metrics shape.
-        button.Should().Contain("let [height, padX, gap, labelSize, , radius, ] = ButtonStyles.metrics(this.size)");
+        button.Should().Contain("let [height, padX, gap, labelSize, , , ] = ButtonStyles.metrics(this.size)");
+        // Shape is theme-driven (Material overrides the ladder) — resolved from the enum member string.
+        button.Should().Contain("theme.shape(this.size === 'xLarge' ? 'large' : 'medium')");
     }
 
     /// <summary>A CORE page composing shared components through the adapter — the unification bridge.</summary>

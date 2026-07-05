@@ -1,137 +1,49 @@
 # eQuantic.UI.Material
 
-Material Design 3 theme implementation for eQuantic.UI framework.
+Material Design 3 as a **write-once theme** for eQuantic.UI — a single `IAppTheme` that themes the
+shared component library on **both** targets (web → DOM+CSS, native → Photon pixels). No component
+knows Material exists; swapping the theme is the whole change.
 
-## Installation
+This package references `eQuantic.UI.Primitives` only — a theme is target-neutral token data, exactly
+like a component.
 
-Add a reference to the `eQuantic.UI.Material` package:
+## The mechanism
 
-```xml
-<PackageReference Include="eQuantic.UI.Material" Version="1.0.0" />
-```
-
-## Setup
-
-Register the Material theme in your `Program.cs`:
+Theming eQuantic.UI = providing an `IAppTheme`. Material is one such theme; your brand is another —
+the same act:
 
 ```csharp
 using eQuantic.UI.Material;
+using eQuantic.UI.Primitives;
 
-var builder = WebApplication.CreateBuilder(args);
+// The M3 baseline theme (dynamic-color seed #6750A4 transcribed into the token contract).
+IAppTheme theme = MaterialTheme.Instance;
 
-// Add Material Design 3 theme
-builder.Services.AddMaterialTheme();
-
-// Or with custom configuration
-builder.Services.AddMaterialTheme(options => {
-    options.SourceColor = "#6750A4"; // Custom primary color
-    options.DarkMode = true;         // Default to dark mode
-    options.FontFamily = "Inter";    // Custom font
-});
+// It carries the M3 color roles, type scale, shape scale and elevation:
+theme.Colors(Variant.Primary).Base;   // #6750A4 / #D0BCFF
+theme.Colors(Variant.Tertiary).Base;  // M3 tertiary, a first-class role
+theme.Shape(ShapeScale.Large);        // 16dp (the M3 shape ladder)
+theme.Type(TypeRole.Title);           // title-large 22/28
 ```
 
-## Usage with Components
+The web realizer generates the embedded CSS from this theme; the native host renders Photon pixels
+from it. A custom brand theme is the same: implement `IAppTheme` (or, later, derive one from a seed
+color).
 
-Components automatically use the registered theme:
+## Mapping (M3 role → eQuantic token)
 
-```csharp
-// Button uses MaterialButtonTheme classes
-new Button {
-    Text = "Click me",
-    Variant = Variant.Primary,  // Uses md-button--filled
-    Size = SizeVariant.Large           // Uses md-button--large
-}
+| M3 | eQuantic |
+|---|---|
+| primary / secondary / tertiary / error | `Variant.Primary` / `Secondary` / `Tertiary` / `Destructive` (Base/OnBase = role/on-role; Subtle/OnSubtle = container/on-container) |
+| surface / surface-container-low / surface-variant | `Background` / `Surface` / `SurfaceSubtle` |
+| outline-variant / outline | `Border` / `BorderStrong` |
+| on-surface / on-surface-variant | `TextPrimary` / `TextSecondary` |
+| M3 type scale | `Type(TypeRole)` |
+| M3 shape scale | `Shape(ShapeScale)` |
 
-// Card uses MaterialCardTheme classes
-new Card {
-    Variant = CardVariant.Elevated,  // Uses md-card--elevated
-    Children = {
-        new Text("Card content")
-    }
-}
-```
+`Success` / `Warning` / `Info` are eQuantic extensions toned within the M3 language.
 
-## M3 Static Classes
+## Status
 
-Use `M3` for direct class access with IntelliSense:
-
-```csharp
-using eQuantic.UI.Material;
-
-// Typography
-new Box { ClassName = M3.Typography.HeadlineLarge }
-
-// Button variants
-new Box { ClassName = $"{M3.Button.Base} {M3.Button.Filled}" }
-
-// Cards
-new Box { ClassName = $"{M3.Card.Base} {M3.Card.Elevated}" }
-```
-
-## Dark Mode
-
-The theme script automatically handles dark mode:
-
-```html
-<!-- Add to your layout -->
-<script src="/_equantic/material-theme.js"></script>
-```
-
-### JavaScript API
-
-```javascript
-// Toggle dark mode
-eQuantic.Material.toggleTheme();
-
-// Set specific theme
-eQuantic.Material.setTheme("dark"); // 'light' | 'dark' | 'system'
-
-// Check current state
-const isDark = eQuantic.Material.isDarkMode();
-
-// Apply custom source color (generates M3 palette)
-eQuantic.Material.applySourceColor("#6750A4");
-```
-
-## CSS Custom Properties
-
-All M3 tokens are available as CSS custom properties:
-
-```css
-/* Color roles */
-var(--md-sys-color-primary)
-var(--md-sys-color-on-primary)
-var(--md-sys-color-surface)
-var(--md-sys-color-on-surface)
-
-/* Typography */
-var(--md-sys-typescale-body-large-font-size)
-var(--md-sys-typescale-headline-medium-line-height)
-
-/* Shape */
-var(--md-sys-shape-corner-medium)
-var(--md-sys-shape-corner-full)
-
-/* Elevation */
-var(--md-sys-elevation-level1)
-var(--md-sys-elevation-level3)
-```
-
-## Component Reference
-
-| Component | CSS Classes     | Variants                                |
-| --------- | --------------- | --------------------------------------- |
-| Button    | `md-button`     | filled, outlined, text, tonal, elevated |
-| Card      | `md-card`       | elevated, filled, outlined              |
-| Dialog    | `md-dialog`     | standard, fullscreen                    |
-| TextField | `md-text-field` | filled, outlined                        |
-| Checkbox  | `md-checkbox`   | checked, indeterminate                  |
-| Switch    | `md-switch`     | standard                                |
-| Tabs      | `md-tabs`       | primary, secondary                      |
-| Badge     | `md-badge`      | primary, secondary, dot                 |
-| Alert     | `md-alert`      | inline, error, warning, success         |
-| Select    | `md-select`     | standard                                |
-
-## License
-
-MIT
+v1: the fixed M3 baseline scheme. Dynamic color from a seed (HCT tonal palettes) and the app-wide
+theme-selection wiring (SSR bridge + client boot picking Material) are later slices.

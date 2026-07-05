@@ -50,7 +50,7 @@ public sealed class RadioGroup : StatelessComponent
                     Width = 10,
                     Height = 10,
                     Background = primary.Base,
-                    CornerRadius = new CornerRadii(Radius.Full),
+                    CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
                 }));
             }
 
@@ -58,7 +58,7 @@ public sealed class RadioGroup : StatelessComponent
             {
                 Width = 22,
                 Height = 22,
-                CornerRadius = new CornerRadii(Radius.Full),
+                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
                 BorderWidth = 2f,
                 BorderColor = isSelected ? primary.Base : theme.BorderStrong,
             }, circleContent);

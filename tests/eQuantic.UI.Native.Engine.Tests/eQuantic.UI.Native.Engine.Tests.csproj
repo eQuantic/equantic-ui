@@ -30,6 +30,7 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Components\eQuantic.UI.Native.Components.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+    <ProjectReference Include="..\..\src\eQuantic.UI.Material\eQuantic.UI.Material.csproj" />
   </ItemGroup>
 
 </Project>

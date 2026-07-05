@@ -12,6 +12,25 @@ public enum Variant : byte
     Success = 6,
     Warning = 7,
     Info = 8,
+    /// <summary>The M3 tertiary role — a contrasting accent for balance. Photon tones it from Info.</summary>
+    Tertiary = 9,
+}
+
+/// <summary>
+/// Corner-shape scale — a semantic ladder (M3's shape scale) themes resolve to concrete radii, so
+/// SHAPE is theme-driven: Photon returns its own radii, Material returns the M3 shape values, a brand
+/// theme returns whatever it likes. Components request a role, never a hardcoded dp.
+/// </summary>
+public enum ShapeScale : byte
+{
+    None = 0,
+    ExtraSmall = 1,
+    Small = 2,
+    Medium = 3,
+    Large = 4,
+    ExtraLarge = 5,
+    /// <summary>Fully rounded (pills, avatars) — engine-clamped to min(w,h)/2.</summary>
+    Full = 6,
 }
 
 /// <summary>
@@ -68,6 +87,9 @@ public interface IAppTheme
 
     /// <summary>Elevation level 0–5 (spec §05). Level 0 is none (+1dp Border); dark E1–E2 ALSO require a 1dp border.</summary>
     ShadowSpec Elevation(int level);
+
+    /// <summary>The corner radius (dp) for a shape role — SHAPE is theme-driven (M3 customizes it).</summary>
+    float Shape(ShapeScale scale);
 
     /// <summary>Disabled is not a color pair: a 38% opacity group over the resolved style (spec §01).</summary>
     float DisabledOpacity { get; }

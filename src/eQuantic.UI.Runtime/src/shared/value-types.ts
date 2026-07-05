@@ -144,4 +144,5 @@ export interface AppTheme {
   colors(variant: string): VariantColors;
   type(role: string): TypeStyle;
   elevation(level: number): ShadowSpec;
+  shape(scale: string): number;
 }

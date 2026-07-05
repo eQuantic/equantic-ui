@@ -129,6 +129,13 @@ const variantColors: Record<string, VariantColors> = {
     t(c(228, 243, 248, 255), c(10, 42, 50, 255)),
     t(c(10, 84, 104, 255), c(159, 220, 235, 255)),
   ),
+  tertiary: new VariantColors(
+    t(c(12, 108, 134, 255), c(76, 195, 222, 255)),
+    t(c(255, 255, 255, 255), c(6, 43, 51, 255)),
+    t(c(10, 84, 104, 255), c(110, 208, 230, 255)),
+    t(c(228, 243, 248, 255), c(10, 42, 50, 255)),
+    t(c(10, 84, 104, 255), c(159, 220, 235, 255)),
+  ),
 };
 
 const typeScale: Record<string, TypeStyle> = {
@@ -149,6 +156,16 @@ const elevations: ShadowSpec[] = [
   { offsetY: 12, blur: 28, spread: -4, color: t(c(15, 23, 32, 51), c(0, 0, 0, 143)) },
   { offsetY: 20, blur: 44, spread: -6, color: t(c(15, 23, 32, 66), c(0, 0, 0, 158)) },
 ];
+
+const shapeScale: Record<string, number> = {
+  none: 0,
+  extraSmall: 4,
+  small: 6,
+  medium: 10,
+  large: 14,
+  extraLarge: 20,
+  full: 999,
+};
 
 export const photonTheme: AppTheme = {
   background: t(c(245, 246, 248, 255), c(12, 15, 19, 255)),
@@ -173,6 +190,9 @@ export const photonTheme: AppTheme = {
   },
   elevation(level: number): ShadowSpec {
     return elevations[Math.max(0, Math.min(5, Math.trunc(level)))];
+  },
+  shape(scale: string): number {
+    return shapeScale[scale] ?? shapeScale.medium;
   },
 };
 

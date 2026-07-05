@@ -40,7 +40,7 @@ public sealed class Checkbox : StatelessComponent
             Width = 22,
             Height = 22,
             Background = Checked ? primary.Base : null,
-            CornerRadius = new CornerRadii(Radius.Xs),
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.ExtraSmall)),
             BorderWidth = Checked ? 0f : 2f,
             BorderColor = borderColor,
         }, boxContent);

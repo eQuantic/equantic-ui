@@ -42,6 +42,7 @@ public static class DesignSystemTsGenerator
         AppendVariantColors(ts, theme);
         AppendTypeScale(ts, theme);
         AppendElevations(ts, theme);
+        AppendShape(ts, theme);
         AppendTheme(ts, theme);
 
         return ts.ToString();
@@ -131,6 +132,15 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("];");
     }
 
+    private static void AppendShape(StringBuilder ts, IAppTheme theme)
+    {
+        ts.AppendLine();
+        ts.AppendLine("const shapeScale: Record<string, number> = {");
+        foreach (ShapeScale scale in Enum.GetValues<ShapeScale>())
+            ts.AppendLine($"  {Camel(scale.ToString())}: {Num(theme.Shape(scale))},");
+        ts.AppendLine("};");
+    }
+
     private static void AppendTheme(StringBuilder ts, IAppTheme theme)
     {
         ts.AppendLine();
@@ -152,6 +162,9 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("  },");
         ts.AppendLine("  elevation(level: number): ShadowSpec {");
         ts.AppendLine("    return elevations[Math.max(0, Math.min(5, Math.trunc(level)))];");
+        ts.AppendLine("  },");
+        ts.AppendLine("  shape(scale: string): number {");
+        ts.AppendLine("    return shapeScale[scale] ?? shapeScale.medium;");
         ts.AppendLine("  },");
         ts.AppendLine("};");
         ts.AppendLine();

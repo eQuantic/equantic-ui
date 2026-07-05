@@ -95,7 +95,7 @@ public static class PhotonCssGenerator
         foreach (var variant in new[]
                  {
                      Variant.Primary, Variant.Secondary, Variant.Destructive,
-                     Variant.Success, Variant.Warning, Variant.Info,
+                     Variant.Success, Variant.Warning, Variant.Info, Variant.Tertiary,
                  })
         {
             var name = variant.ToString().ToLowerInvariant();
@@ -107,12 +107,12 @@ public static class PhotonCssGenerator
             AppendColor(css, $"{name}-on-subtle", colors.OnSubtle);
         }
 
-        // Radius scale (§04) and spacing ladder (§03).
-        css.AppendLine($"  --eq-radius-xs: {TokenCss.Px(Radius.Xs)};");
-        css.AppendLine($"  --eq-radius-sm: {TokenCss.Px(Radius.Sm)};");
-        css.AppendLine($"  --eq-radius-md: {TokenCss.Px(Radius.Md)};");
-        css.AppendLine($"  --eq-radius-lg: {TokenCss.Px(Radius.Lg)};");
-        css.AppendLine($"  --eq-radius-xl: {TokenCss.Px(Radius.Xl)};");
+        // Shape scale (§04) — theme-sourced (Material overrides the ladder) — and spacing (§03).
+        css.AppendLine($"  --eq-radius-xs: {TokenCss.Px(theme.Shape(ShapeScale.ExtraSmall))};");
+        css.AppendLine($"  --eq-radius-sm: {TokenCss.Px(theme.Shape(ShapeScale.Small))};");
+        css.AppendLine($"  --eq-radius-md: {TokenCss.Px(theme.Shape(ShapeScale.Medium))};");
+        css.AppendLine($"  --eq-radius-lg: {TokenCss.Px(theme.Shape(ShapeScale.Large))};");
+        css.AppendLine($"  --eq-radius-xl: {TokenCss.Px(theme.Shape(ShapeScale.ExtraLarge))};");
         css.AppendLine("  --eq-radius-full: 9999px;");
         foreach (var (name, value) in new (string, float)[]
                  {
