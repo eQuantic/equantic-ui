@@ -65,6 +65,7 @@ public static class LayoutEngine
         // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
         Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx, path),
         Text text => MeasureText(text, maxW, ctx),
+        TextEntry entry => MeasureTextEntry(entry, maxW, ctx),
         // Images are an explicitly sized slot - layout can't infer extent from undecoded sources (A11).
         Image image => new LayoutNode(image) { Bounds = new Rect(0, 0, image.Width, image.Height) },
         // Icons are a fixed square em-box (§07 whitelist) and ignore Dynamic Type (spec A10).
@@ -187,6 +188,21 @@ public static class LayoutEngine
         var measurement = ctx.Measurer.Measure(text.Content, style, ctx.TypeScale, maxW, text.MaxLines);
         result.Text = measurement;
         result.Bounds = new Rect(0, 0, measurement.Width, measurement.Height);
+        return result;
+    }
+
+    /// <summary>A text entry is ONE line of its role, filling the available width (the field's
+    /// editable area) — height from the type scale so forms lay out identically before and after
+    /// the real caret/IME land (spec B9's fixed contract).</summary>
+    private static LayoutNode MeasureTextEntry(TextEntry entry, float maxW, LayoutContext ctx)
+    {
+        var result = new LayoutNode(entry);
+        var style = ctx.Theme.Type(entry.Role);
+        var shown = entry.Value.Length > 0 ? entry.Value : entry.Placeholder ?? string.Empty;
+        var measurement = ctx.Measurer.Measure(shown, style, ctx.TypeScale, maxW, maxLines: 1);
+        result.Text = measurement;
+        var width = float.IsFinite(maxW) ? maxW : measurement.Width;
+        result.Bounds = new Rect(0, 0, width, measurement.Height);
         return result;
     }
 

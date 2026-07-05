@@ -35,6 +35,7 @@ export {
   ScrollView,
   LoopMotion,
   LinearGradient,
+  TextEntry,
 } from './vocabulary';
 export {
   Color,
@@ -79,6 +80,8 @@ export { List } from './components/List';
 export { Tabs } from './components/Tabs';
 export { EmptyState } from './components/EmptyState';
 export { Skeleton } from './components/Skeleton';
+export { TextInput } from './components/TextInput';
+export { SearchField } from './components/SearchField';
 export { AppBar } from './components/AppBar';
 export { BottomNavigation } from './components/BottomNavigation';
 export { NavItem } from './components/NavItem';

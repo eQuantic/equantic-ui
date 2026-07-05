@@ -14,7 +14,7 @@ export class NestedChild extends SharedStatefulComponent {
     }
 
     adoptConfig(next: UiComponent) {
-        { let fresh; if ((next instanceof NestedChild && (fresh = next, true))) this._label = fresh._label; }
+        let fresh; if ((next instanceof NestedChild && (fresh = next, true))) this._label = fresh._label;
     }
 
 }

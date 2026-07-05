@@ -164,6 +164,11 @@ public static class PhotonCssGenerator
         css.AppendLine(".eq-pressable { outline: none; }");
         css.AppendLine(".eq-pressable:focus-visible > :first-child { box-shadow: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
 
+        // Text entry mechanics (spec B9): the input is chrome-less — the container shows focus —
+        // and the placeholder rides TextMuted. Values are tokens; only mechanics live here.
+        css.AppendLine(".eq-entry { outline: none; }");
+        css.AppendLine(".eq-entry::placeholder { color: var(--eq-color-text-muted); }");
+
         // Loop motion (spec §06, transform-only): ONE keyframe pair per effect reads its per-element
         // endpoints from custom properties the realizers set at the style tail; duration rides the
         // animation shorthand. `prefers-reduced-motion` statically replaces movement — the browser

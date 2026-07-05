@@ -26,17 +26,32 @@ public class IsPatternStrategy : IConversionStrategy
             var expr = context.Converter.ConvertExpression(isPattern.Expression);
             var exprType = context.SemanticHelper.GetType(isPattern.Expression);
 
+            // Peel top-level `not`s FIRST: bindings live in the inner pattern and must assign when
+            // the INNER pattern matches — C#'s definite-assignment-when-false, the guard idiom
+            // (`if (x is not T t) return;` leaves t assigned after the guard). Negating the whole
+            // bound form (`!(match && (t = x, true))`) keeps that: inner match → t assigned →
+            // expression false; no match → t untouched → expression true. Negating BEFORE the
+            // assigns would short-circuit past them exactly when C# guarantees the assignment.
+            var pattern = isPattern.Pattern;
+            var negated = false;
+            while (pattern is UnaryPatternSyntax unary && unary.OperatorToken.IsKind(SyntaxKind.NotKeyword))
+            {
+                negated = !negated;
+                pattern = unary.Pattern;
+            }
+
             // Condition + bindings come from the shared PatternConverter (same logic as the switch forms:
             // Deconstruct-aware positional access, list patterns, nested var bindings). A bound `is` pattern
             // assigns its variables — to slots IfStatementStrategy hoisted (`let x;`) — inside the condition
             // via a comma sequence, guarded by `&&` so the reads only run once the pattern has matched.
-            var condition = PatternConverter.BuildCondition(isPattern.Pattern, expr, context, exprType);
+            var condition = PatternConverter.BuildCondition(pattern, expr, context, exprType);
             var bindings = new List<(string Name, string Access)>();
-            PatternConverter.CollectBindings(isPattern.Pattern, expr, context, bindings, exprType);
+            PatternConverter.CollectBindings(pattern, expr, context, bindings, exprType);
 
-            if (bindings.Count == 0) return condition;
-            var assigns = string.Concat(bindings.Select(b => $"{b.Name} = {b.Access}, "));
-            return $"({condition} && ({assigns}true))";
+            var bound = bindings.Count == 0
+                ? condition
+                : $"({condition} && ({string.Concat(bindings.Select(b => $"{b.Name} = {b.Access}, "))}true))";
+            return negated ? $"!({bound})" : bound;
         }
 
         if (node is BinaryExpressionSyntax binary)
