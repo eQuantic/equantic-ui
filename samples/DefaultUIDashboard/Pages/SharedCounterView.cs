@@ -11,7 +11,9 @@ namespace DefaultUIDashboard.Pages;
 /// </summary>
 public static class SharedCounterView
 {
-    public static VisualNode Build(int count, Action increment)
+    public static VisualNode Build(int count, Action increment,
+        bool confirming = false, string outcome = "none",
+        Action? openConfirm = null, Action<string>? resolveConfirm = null)
     {
         var column = new Column(gap: Space.S3);
         column.Add(new Text("Write-once components", TypeRole.Title));
@@ -57,6 +59,21 @@ public static class SharedCounterView
         column.Add(new TextInput("", label: "Email", placeholder: "you@company.com",
             helper: "We never share it.", leading: Icons.Mail));
         column.Add(new SearchField("rio"));
+
+        // Spec C2: an interrupting decision — declarative presence, resolved by its actions.
+        var confirmRow = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
+        confirmRow.Add(new Button("Delete card…", Variant.Destructive, onPressed: openConfirm));
+        confirmRow.Add(new Text($"outcome: {outcome}", TypeRole.Caption));
+        column.Add(confirmRow);
+        if (confirming)
+        {
+            column.Add(new Dialog("Delete card?",
+                "\"Work Visa 4821\" will be removed and its automatic payments will stop.",
+                [
+                    new DialogAction("Keep card", () => resolveConfirm?.Invoke("kept"), Variant.Ghost),
+                    new DialogAction("Delete", () => resolveConfirm?.Invoke("deleted"), Variant.Destructive),
+                ]));
+        }
 
         return new Card(column, CardKind.Outlined) { Width = SizeValue.Fill };
     }

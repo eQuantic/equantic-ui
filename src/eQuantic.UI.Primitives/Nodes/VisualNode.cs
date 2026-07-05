@@ -147,6 +147,26 @@ public sealed class LoopMotion : VisualNode
 }
 
 /// <summary>
+/// The VIEWPORT LAYER (Phase C infrastructure): the child escapes the page flow and realizes
+/// against the viewport, painted ABOVE everything in the page pass — web lowers to a generated
+/// fixed inset-0 layer, native defers the subtree to an overlay pass after the page (painter's
+/// order) and lays it out against the viewport. The child owns its own composition (scrim,
+/// centering, sheets) from the ordinary vocabulary — Overlay is only the layer. Declarative:
+/// presence in the build shows it (`if (_confirming) … new Overlay(…)`), state removes it.
+/// </summary>
+public sealed class Overlay : VisualNode
+{
+    public override string NodeKind => "overlay";
+
+    public Overlay(VisualNode child)
+    {
+        Child = child;
+    }
+
+    public VisualNode Child { get; init; }
+}
+
+/// <summary>
 /// Single-line text ENTRY (the B9/B10 primitive): value + placeholder + change/submit/focus
 /// callbacks. The web realizer lowers it to a real chrome-less <c>&lt;input&gt;</c> (the browser
 /// owns caret/selection/IME); the CONTAINER chrome (border, states, label) belongs to the

@@ -164,6 +164,10 @@ public static class PhotonCssGenerator
         css.AppendLine(".eq-pressable { outline: none; }");
         css.AppendLine(".eq-pressable:focus-visible > :first-child { box-shadow: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
 
+        // Overlay layer (Phase C): the viewport-fixed stacking layer — composition (scrim,
+        // centering) belongs to the component; only the layer mechanics live here.
+        css.AppendLine(".eq-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; }");
+
         // Text entry mechanics (spec B9): the input is chrome-less — the container shows focus —
         // and the placeholder rides TextMuted. Values are tokens; only mechanics live here.
         css.AppendLine(".eq-entry { outline: none; }");

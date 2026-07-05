@@ -161,6 +161,12 @@ export interface LoopMotionNode extends VisualNodeValue {
   hideAtRest?: boolean;
 }
 
+/** Phase C viewport layer: the child escapes the page flow (fixed inset-0 stacking layer). */
+export interface OverlayNode extends VisualNodeValue {
+  nodeKind: 'overlay';
+  child: VisualNodeValue;
+}
+
 /** Spec B9/B10 primitive: single-line text entry — a real chrome-less <input> on web. */
 export interface TextEntryNode extends VisualNodeValue {
   nodeKind: 'textEntry';

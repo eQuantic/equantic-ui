@@ -27,6 +27,7 @@ import type {
   ImageNode,
   LinearGradientValue,
   LoopMotionNode,
+  OverlayNode,
   PositionedNode,
   PressableNode,
   ScrollViewNode,
@@ -192,6 +193,8 @@ function lowerNode(
       return lowerText(node as TextNode, context);
     case 'textEntry':
       return lowerTextEntry(node as TextEntryNode, context);
+    case 'overlay':
+      return lowerOverlay(node as OverlayNode, context, path);
     case 'pressable':
       return lowerPressable(node as PressableNode, context, path);
     case 'flexible':
@@ -243,6 +246,19 @@ function element(tag: string, style: StyleEntries, children: HtmlNode[] = []): H
     events: {},
     children,
   };
+}
+
+/** Phase C mirror: the generated fixed inset-0 stacking layer (.eq-overlay). */
+function lowerOverlay(node: OverlayNode, context: LoweringContext, path: string): HtmlNode {
+  const layer: HtmlNode = {
+    tag: 'div',
+    attributes: { class: 'eq-overlay' },
+    events: {},
+    children: [],
+  };
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) layer.children.push(child);
+  return layer;
 }
 
 /** Spec B9/B10 mirror: the REAL chrome-less <input> — identical DOM to the C# SSR realizer, plus

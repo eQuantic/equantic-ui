@@ -200,6 +200,17 @@ export class Pressable extends VisualNode {
   }
 }
 
+/** Mirror of the C# `Overlay` (Phase C): the viewport layer above the page. */
+export class Overlay extends VisualNode {
+  readonly nodeKind = 'overlay';
+  child: VisualNode;
+
+  constructor(child: VisualNode) {
+    super();
+    this.child = child;
+  }
+}
+
 interface TextEntryConfig {
   placeholder?: string | null;
   onSubmit?: (() => void) | null;

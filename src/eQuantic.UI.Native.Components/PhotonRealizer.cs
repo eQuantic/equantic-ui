@@ -56,7 +56,21 @@ public static class PhotonRealizer
 
         var hits = new List<HitRegion>();
         var motion = new MotionScope(timeMs, reducedMotion);
-        Emit(layout, theme, mode, builder, hits, new PressScope(pressed, focused), motion);
+        var overlays = new List<Overlay>();
+        Emit(layout, theme, mode, builder, hits, new PressScope(pressed, focused), motion, overlays);
+
+        // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
+        // the page (painter's order); its hit regions register after the page's, so the topmost-
+        // last-wins dispatch routes taps to the layer — a full-viewport scrim Pressable in the
+        // layer blocks (and optionally handles) everything behind it.
+        for (var i = 0; i < overlays.Count; i++)
+        {
+            var overlayLayout = LayoutEngine.Layout(overlays[i].Child, viewportWidth, viewportHeight,
+                context, rootPath: $"ov{i}");
+            Emit(overlayLayout, theme, mode, builder, hits, new PressScope(pressed, focused), motion, overlays);
+        }
+
+        context.Instances?.EndPass();
         return new RealizeResult(layout, hits, motion.Active);
     }
 
@@ -94,7 +108,7 @@ public static class PhotonRealizer
         public bool PendingFocusRing { get; set; }
     }
 
-    private static void Emit(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits, PressScope press, MotionScope motion)
+    private static void Emit(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits, PressScope press, MotionScope motion, List<Overlay> overlays)
     {
         if (ReferenceEquals(node.Source, press.Pressed) && press.Pressed?.PressedBackground is { } pressedFill)
             press.PendingFill = pressedFill;
@@ -184,7 +198,7 @@ public static class PhotonRealizer
         {
             builder.PushClip(new RRect(node.Bounds));
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, press, motion);
+                Emit(child, theme, mode, builder, hits, press, motion, overlays);
             builder.PopClip();
             return;
         }
@@ -195,8 +209,15 @@ public static class PhotonRealizer
         {
             builder.PushClip(new RRect(node.Bounds, clipBox.Style.CornerRadius));
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, press, motion);
+                Emit(child, theme, mode, builder, hits, press, motion, overlays);
             builder.PopClip();
+            return;
+        }
+
+        // An Overlay queues for the viewport pass — nothing renders in the page flow.
+        if (node.Source is Overlay overlay)
+        {
+            overlays.Add(overlay);
             return;
         }
 
@@ -210,13 +231,13 @@ public static class PhotonRealizer
             var offset = ResolveLoopOffset(loop, node.Bounds.Width, motion);
             if (offset != 0) builder.PushTransform(Matrix2D.Translation(offset, 0));
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, press, motion);
+                Emit(child, theme, mode, builder, hits, press, motion, overlays);
             if (offset != 0) builder.Pop();
             return;
         }
 
         foreach (var child in node.Children)
-            Emit(child, theme, mode, builder, hits, press, motion);
+            Emit(child, theme, mode, builder, hits, press, motion, overlays);
     }
 
     /// <summary>The loop offset at the scope's clock: linear phase over the period, lerped between

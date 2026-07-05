@@ -46,10 +46,12 @@ public sealed class LayoutNode
 /// </summary>
 public static class LayoutEngine
 {
-    public static LayoutNode Layout(VisualNode root, float viewportWidth, float viewportHeight, LayoutContext context)
+    public static LayoutNode Layout(VisualNode root, float viewportWidth, float viewportHeight, LayoutContext context,
+        string rootPath = "r")
     {
-        var node = Measure(root, viewportWidth, viewportHeight, context, "r");
-        context.Instances?.EndPass();
+        // NOTE: the reconciler pass is ENDED BY THE CALLER (PhotonRealizer) — one frame may run
+        // several Layout calls (the page plus each Overlay subtree) sharing one retention pass.
+        var node = Measure(root, viewportWidth, viewportHeight, context, rootPath);
         Absolutize(node, 0, 0);
         return node;
     }
@@ -75,6 +77,9 @@ public static class LayoutEngine
         // Loop motion is layout-transparent: the offset is a REALIZE-time transform (spec §06 —
         // transform-only frames never re-lay-out).
         LoopMotion motion => MeasureWrapper(motion, motion.Child, maxW, maxH, ctx, path),
+        // An Overlay is ZERO in the page flow — the realizer lays its child out against the
+        // VIEWPORT in the overlay pass (path "ov<i>", stable for the reconciler).
+        Overlay => new LayoutNode(node),
         // A component expands INLINE: Build produces its subtree (pure, mode-free), which is measured
         // in place — the component wraps it in the layout tree, drawing nothing itself.
         // Components RECONCILE by position first: the retained instance (state alive) replaces the

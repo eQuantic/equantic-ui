@@ -1,0 +1,3 @@
+import { $eq } from "@equantic/runtime";
+
+export class DialogAction { constructor(label = null, onPressed = null, variant = null) { this.label = label; this.onPressed = onPressed; this.variant = variant; } equals(o) { return o instanceof DialogAction && $eq.equals(this.label, o.label) && $eq.equals(this.onPressed, o.onPressed) && $eq.equals(this.variant, o.variant); } with(patch) { return new DialogAction(('label' in patch ? patch.label : this.label), ('onPressed' in patch ? patch.onPressed : this.onPressed), ('variant' in patch ? patch.variant : this.variant)); } toString() { return `DialogAction { Label = ${this.label}, OnPressed = ${this.onPressed}, Variant = ${this.variant} }`; } }

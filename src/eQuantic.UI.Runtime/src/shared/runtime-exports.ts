@@ -36,6 +36,7 @@ export {
   LoopMotion,
   LinearGradient,
   TextEntry,
+  Overlay,
 } from './vocabulary';
 export {
   Color,
@@ -81,6 +82,8 @@ export { Tabs } from './components/Tabs';
 export { EmptyState } from './components/EmptyState';
 export { Skeleton } from './components/Skeleton';
 export { TextInput } from './components/TextInput';
+export { Dialog } from './components/Dialog';
+export { DialogAction } from './components/DialogAction';
 export { SearchField } from './components/SearchField';
 export { AppBar } from './components/AppBar';
 export { BottomNavigation } from './components/BottomNavigation';

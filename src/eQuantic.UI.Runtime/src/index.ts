@@ -112,6 +112,7 @@ export {
   LoopMotion,
   LinearGradient,
   TextEntry,
+  Overlay,
 } from './shared/vocabulary';
 export {
   Color,
@@ -156,6 +157,8 @@ export { BottomNavigation } from './shared/components/BottomNavigation';
 export { NavItem } from './shared/components/NavItem';
 export { Skeleton } from './shared/components/Skeleton';
 export { TextInput } from './shared/components/TextInput';
+export { Dialog } from './shared/components/Dialog';
+export { DialogAction } from './shared/components/DialogAction';
 export { SearchField } from './shared/components/SearchField';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).
 export {

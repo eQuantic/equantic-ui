@@ -36,6 +36,7 @@ public static class WebRealizer
         Positioned positioned => LowerNode(positioned.Child, context, horizontalAxis),
         Text text => LowerText(text, context),
         TextEntry entry => LowerTextEntry(entry, context),
+        Overlay overlay => LowerOverlay(overlay, context),
         Icon icon => LowerIcon(icon, context),
         Primitives.Image image => LowerImage(image),
         Pressable pressable => LowerPressable(pressable, context),
@@ -160,6 +161,20 @@ public static class WebRealizer
 
     /// <summary>Spec A11 lowering: an explicitly sized <c>&lt;img&gt;</c> with object-fit and the
     /// rrect clip via border-radius; empty alt = decorative (HTML semantics).</summary>
+    /// <summary>
+    /// Phase C viewport layer: a generated fixed inset-0 stacking layer (.eq-overlay) — the child
+    /// owns its composition (scrim, centering) from the ordinary vocabulary. Fixed positioning
+    /// escapes the page flow visually without a portal; keep Overlays out of transformed subtrees
+    /// (LoopMotion) — CSS transforms re-anchor fixed descendants.
+    /// </summary>
+    private static HtmlElement LowerOverlay(Overlay overlay, ComponentContext context)
+    {
+        var element = new RealizedElement("div") { ClassName = "eq-overlay" };
+        if (LowerNode(overlay.Child, context, horizontalAxis: null) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
     /// <summary>
     /// Spec B9/B10 primitive: a REAL chrome-less &lt;input&gt; — the browser owns caret/selection/
     /// IME. The type role rides the generated .eq-type-* class; color/reset styles are inline;
