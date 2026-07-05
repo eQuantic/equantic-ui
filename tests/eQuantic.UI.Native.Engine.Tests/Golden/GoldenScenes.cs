@@ -87,6 +87,26 @@ public static class GoldenScenes
             b.Pop();
         },
 
+        // Clip correctness: overflowing content (a rotated rect + gradient + circle) confined to a
+        // rounded viewport — the ScrollView contract. Clip edges must anti-alias like shape edges.
+        ["clip-rrect"] = b =>
+        {
+            var viewport = new RRect(new Rect(30, 20, 100, 80), new CornerRadii(16));
+            b.PushClip(viewport);
+            b.FillRect(new Rect(10, 30, 140, 25), Paint.Linear(new Point(10, 0), new Point(150, 0), Warm, Accent));
+            b.FillRRect(new RRect(new Rect(90, 50, 70, 70), new CornerRadii(35)), Paint.Solid(Mint));
+            var center = new Point(50, 75);
+            b.PushTransform(
+                Matrix2D.Translation(-center.X, -center.Y)
+                * Matrix2D.Rotation(20 * MathF.PI / 180)
+                * Matrix2D.Translation(center.X, center.Y));
+            b.FillRect(new Rect(20, 65, 60, 20), Paint.Solid(Accent.WithOpacity(0.7f)));
+            b.Pop();
+            b.PopClip();
+            // Outside the clip, unaffected: proves the pop restored the unclipped state.
+            b.FillRRect(new RRect(new Rect(140, 95, 14, 14), new CornerRadii(7)), Paint.Solid(Warm));
+        },
+
         // A miniature "UI card": the primitives composing the way the component layer drives them.
         ["card-composition"] = b =>
         {

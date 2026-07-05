@@ -483,6 +483,17 @@ Bun and the JS bundling chain, the TypeScript runtime.
   drive the native host today). Suites: vitest 289, web 39, compiler 412, conformance 526,
   native 144, server 39.
 
+- **2026-07-05 — Engine clip primitive landed (rrect, Metal parity held).** `DrawCommand` gains a
+  nullable DEVICE-space rrect clip BAKED by the builder (`PushClip`/`PopClip` stack, like the
+  transform; nested clips intersect their AABBs and keep the innermost radii — the documented v1
+  fence, exact for nested scroll viewports). Rasterizers MULTIPLY pixel coverage by the clip's own
+  SDF coverage, so clip edges anti-alias exactly like shape edges — the same normative math on both
+  sides. New shared golden scene `clip-rrect` (overflowing gradient/circle/rotated-rect confined to
+  a rounded viewport, plus an outside-the-clip control dot); the Metal parity suite ran it
+  automatically through the shared catalog and HELD the fuzzy gate (uniforms grew to ten float4s:
+  clip rect + radii, flag in flags.z). This opens the ScrollView (A6) gate. Suites: native 152
+  (26 goldens, 16 Metal parity), all others green.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
