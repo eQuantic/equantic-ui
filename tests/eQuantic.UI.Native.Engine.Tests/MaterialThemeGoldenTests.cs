@@ -52,9 +52,25 @@ public class MaterialThemeGoldenTests
     [InlineData(ThemeMode.Dark, "material-gallery-dark")]
     public void MaterialGallery_RendersThePhotonPixels(ThemeMode mode, string golden)
     {
+        Render(MaterialTheme.Instance, mode, golden);
+    }
+
+    [Theory]
+    [InlineData(ThemeMode.Light, "material-seed-blue-light")]
+    [InlineData(ThemeMode.Dark, "material-seed-blue-dark")]
+    public void MaterialDynamicColor_FromASeed_RendersThePhotonPixels(ThemeMode mode, string golden)
+    {
+        // DYNAMIC COLOR through the same realizer: a whole M3 theme derived from the eQuantic-blue seed
+        // #0050A0 via HCT tonal palettes, rendered to pixels. The purple baseline gallery becomes blue
+        // with nothing but a different IAppTheme — the exact surface a developer brands the framework by.
+        Render(MaterialTheme.FromSeed(Color.FromRgb(0x00, 0x50, 0xA0)), mode, golden);
+    }
+
+    private static void Render(IAppTheme theme, ThemeMode mode, string golden)
+    {
         using var backend = new ReferenceBackend();
         using var surface = backend.CreateSurface(360, 320);
-        var host = new PhotonHost(Gallery(), MaterialTheme.Instance, mode, 360, 320);
+        var host = new PhotonHost(Gallery(), theme, mode, 360, 320);
         var builder = new DisplayListBuilder();
         host.RenderFrame(builder);
         backend.Render(builder.Build(), surface);
