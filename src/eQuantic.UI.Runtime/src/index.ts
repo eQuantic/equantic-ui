@@ -112,6 +112,12 @@ export { VisualNodeComponent } from './shared/visual-node-component';
 // deliberate name reuse never collides.
 export { Button } from './shared/components/Button';
 export { Card } from './shared/components/Card';
+export { Divider } from './shared/components/Divider';
+export { Badge } from './shared/components/Badge';
+export { Chip } from './shared/components/Chip';
+export { ProgressBar } from './shared/components/ProgressBar';
+export { Avatar } from './shared/components/Avatar';
+export { Banner } from './shared/components/Banner';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).
 export {
   Space,

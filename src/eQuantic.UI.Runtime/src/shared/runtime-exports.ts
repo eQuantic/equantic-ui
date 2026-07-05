@@ -7,6 +7,7 @@
  * SharedComponentTranspilationTests).
  */
 
+export { $eq } from '../eq';
 export {
   Component,
   HtmlElement,
