@@ -102,6 +102,7 @@ export {
   Column,
   Grid,
   GridTrack,
+  AdaptiveNode,
   Text,
   Pressable,
   Flexible,

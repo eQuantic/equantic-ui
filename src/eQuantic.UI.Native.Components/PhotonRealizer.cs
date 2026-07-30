@@ -52,6 +52,7 @@ public static class PhotonRealizer
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
         {
             Instances = instances,
+            SizeClass = WindowSizeClasses.FromWidth(viewportWidth),
         };
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context);
 

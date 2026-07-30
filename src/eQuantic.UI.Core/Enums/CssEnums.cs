@@ -9,6 +9,7 @@ public enum Display
     InlineFlex,
     Grid,
     InlineGrid,
+    Contents,
     None
 }
 

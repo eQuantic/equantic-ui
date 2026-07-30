@@ -267,8 +267,17 @@ rule (EQ1xxx) keeps anything untranslatable a BUILD error, never silent.
   stays on Pressable (the existing mechanism). Fences: native Focus diff joins the focus-ring
   mechanics later; native hover Opacity/Elevation diffs join with the interaction polish. Proven:
   3 web pins + 2 vitest cross-pins (exact C# hash reproduction) + 1 native hover test.
-- **S6 — Adaptive** (`WindowSizeClass`, `Adaptive<T>`, `Adaptive.Node`; web build-time media-query
-  rule variants; Photon host window class + threshold-cross relayout).
+- **S6 — Adaptive ✅ (2026-07-30):** `WindowSizeClass` (Compact <600 / Medium 600–839 /
+  Expanded ≥840, Material thresholds) + `AdaptiveNode(compact, medium?, expanded?)` — SUBTREE
+  adaptivity, fully general (a different nav, grid, direction — anything). Web: every declared
+  variant renders inside a fixed GATE class whose media blob shows it only in its range
+  (display:contents/none — zero JS, zero listeners); gate ranges encode the same fallback chain as
+  the native Resolve (no Medium → Compact serves 600–839). Photon: `LayoutContext.SizeClass`
+  derives from the viewport width; only the matching variant measures/paints; a resize across a
+  threshold swaps naturally. A lone Compact is unwrapped (no gating). Fence (S6b): fine-grained
+  `Adaptive<T>` per-declaration media variants (the gate machinery is the foundation). Proven:
+  4 native tests (variant per width, fallback) + 3 web pins + 3 vitest mirrors (byte-identical
+  gate blobs).
 - **S7 — Scroll semantics** (`Sticky`, `ZIndex`, per-axis overflow) — closes the "any layout" list.
 
 Order rationale: S1 is a fast additive win; S2 lands the engine early so S3–S7 are born atomic

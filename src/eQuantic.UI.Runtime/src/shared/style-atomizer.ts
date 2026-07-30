@@ -214,6 +214,32 @@ export function mergeAtomicDeclaration(
   node.attributes['class'] = [...semantic, ...atomic].join(' ');
 }
 
+/** Spec S6: the fixed size-class gate rules — byte-identical to the C# AdaptiveGates blobs. A gate
+ * shows its variant only inside its range (display:contents/none); ranges encode the fallback
+ * chain (a variant serves until the next DECLARED variant's threshold). */
+const ADAPTIVE_GATES: Record<string, string[]> = {
+  'eq-vc6': ['.eq-vc6{display:contents}', '@media (min-width: 600px){.eq-vc6{display:none}}'],
+  'eq-vc8': ['.eq-vc8{display:contents}', '@media (min-width: 840px){.eq-vc8{display:none}}'],
+  'eq-vm8': ['.eq-vm8{display:none}', '@media (min-width: 600px) and (max-width: 839.98px){.eq-vm8{display:contents}}'],
+  'eq-vm': ['.eq-vm{display:none}', '@media (min-width: 600px){.eq-vm{display:contents}}'],
+  'eq-vx': ['.eq-vx{display:none}', '@media (min-width: 840px){.eq-vx{display:contents}}'],
+};
+
+/** Ensure a size-class gate's rules exist in the registry (idempotent; adopted from SSR). */
+export function ensureAdaptiveGate(gate: string): void {
+  if (known.has(gate)) return;
+  known.add(gate);
+  const target = registry();
+  if (!target) return;
+  for (const rule of ADAPTIVE_GATES[gate] ?? []) {
+    try {
+      target.insertRule(rule, target.cssRules.length);
+    } catch {
+      /* gates must never take the app down */
+    }
+  }
+}
+
 // ---- the public seam ------------------------------------------------------------------------------
 
 export interface AtomizedStyle {

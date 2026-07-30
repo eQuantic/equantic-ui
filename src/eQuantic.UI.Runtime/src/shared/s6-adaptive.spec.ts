@@ -1,0 +1,48 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { lowerVisualNode } from './lowering';
+import { resetAtomizerForTests } from './style-atomizer';
+import { photonTheme } from './design-system.generated';
+import type { LoweringContext } from './lowering';
+import type { VisualNodeValue } from './nodes';
+
+const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
+const marker = (): VisualNodeValue =>
+  ({ nodeKind: 'box', style: { width: { kind: 'fixed', value: 10 }, height: { kind: 'fixed', value: 10 } } }) as unknown as VisualNodeValue;
+
+/** Spec S6 client lowering — gate classes and media blobs byte-identical to the C# realizer. */
+describe('S6 adaptive lowering (C# cross-pin)', () => {
+  beforeEach(() => resetAtomizerForTests());
+
+  it('three variants gate as compact/medium/expanded, rules land in the registry', () => {
+    const node = lowerVisualNode(
+      { nodeKind: 'adaptive', compact: marker(), medium: marker(), expanded: marker() } as unknown as VisualNodeValue,
+      ctx,
+    );
+    expect(node.children).toHaveLength(3);
+    expect(node.children[0].attributes['class']).toBe('eq-vc6');
+    expect(node.children[1].attributes['class']).toBe('eq-vm8');
+    expect(node.children[2].attributes['class']).toBe('eq-vx');
+
+    const sheet = document.getElementById('eq-atomic') as HTMLStyleElement;
+    const rules = [...(sheet.sheet?.cssRules ?? [])].map((r) => r.cssText).join('\n');
+    expect(rules).toContain('min-width: 600px');
+    expect(rules).toContain('min-width: 840px');
+  });
+
+  it('compact+expanded: compact serves the medium range (fallback parity with native)', () => {
+    const node = lowerVisualNode(
+      { nodeKind: 'adaptive', compact: marker(), expanded: marker() } as unknown as VisualNodeValue,
+      ctx,
+    );
+    expect(node.children).toHaveLength(2);
+    expect(node.children[0].attributes['class']).toBe('eq-vc8');
+  });
+
+  it('a lone compact is not gated', () => {
+    const node = lowerVisualNode(
+      { nodeKind: 'adaptive', compact: marker() } as unknown as VisualNodeValue,
+      ctx,
+    );
+    expect(node.attributes['class'] ?? '').not.toContain('eq-v');
+  });
+});
