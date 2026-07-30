@@ -14,7 +14,7 @@
 import type { EventHandler, HtmlNode } from '../core/types';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
-import { atomizeEntries } from './style-atomizer';
+import { atomizeEntries, mergeAtomicDeclaration } from './style-atomizer';
 import type {
   BoxNode,
   BoxStyleValue,
@@ -39,6 +39,7 @@ import type {
   SpacerNode,
   TextEntryNode,
   TextNode,
+  TransformValue,
   VisualNodeValue,
 } from './nodes';
 
@@ -82,6 +83,25 @@ export function px(dp: number): string {
   if (dp === 0) return '0';
   // Matches C# "0.##" formatting (up to 2 decimals, no trailing zeros).
   return `${parseFloat(dp.toFixed(2))}px`;
+}
+
+/** Bare invariant number — mirrors C# TokenCss.Number ("0.####"). */
+function num(value: number): string {
+  return `${parseFloat(value.toFixed(4))}`;
+}
+
+/** Mirrors C# TokenCss.Transform: translate → rotate → scale, only non-neutral parts. */
+function transformValue(t: TransformValue): string | undefined {
+  const tx = t.translateX ?? 0;
+  const ty = t.translateY ?? 0;
+  const rot = t.rotationDegrees ?? 0;
+  const sx = t.scaleX ?? 1;
+  const sy = t.scaleY ?? 1;
+  const parts: string[] = [];
+  if (tx !== 0 || ty !== 0) parts.push(`translate(${px(tx)}, ${px(ty)})`);
+  if (rot !== 0) parts.push(`rotate(${num(rot)}deg)`);
+  if (sx !== 1 || sy !== 1) parts.push(sx === sy ? `scale(${num(sx)})` : `scale(${num(sx)}, ${num(sy)})`);
+  return parts.length > 0 ? parts.join(' ') : undefined;
 }
 
 function radiusValue(radii: CornerRadiiValue): string {
@@ -518,6 +538,10 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
         : undefined,
     // The container side of loop motion: children clip to the rrect (native PushClip twin).
     overflow: style.clip ? 'hidden' : undefined,
+    // Spec S1 — group opacity, center-anchored static transform, one-axis-derives aspect ratio.
+    opacity: style.opacity != null && style.opacity < 1 ? num(style.opacity) : undefined,
+    transform: style.transform ? transformValue(style.transform) : undefined,
+    'aspect-ratio': style.aspectRatio && style.aspectRatio > 0 ? num(style.aspectRatio) : undefined,
   });
 
   if (box.child) {
@@ -548,7 +572,12 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string):
 
   for (let i = 0; i < flex.children.length; i++) {
     const lowered = lowerNode(flex.children[i], context, horizontal, path + '/' + i);
-    if (lowered) result.children.push(lowered);
+    if (lowered) {
+      // Spec S1 align-self: the child overrides the container's cross alignment for itself.
+      const self = flex.children[i].alignSelf;
+      if (self) mergeAtomicDeclaration(lowered, 'align-self', crossAlign(self));
+      result.children.push(lowered);
+    }
   }
   return result;
 }

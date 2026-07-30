@@ -72,6 +72,37 @@ export class EdgeInsets {
   }
 }
 
+/** Mirror of the C# `Transform2D` — components applied translate → rotate → scale, center-anchored. */
+export class Transform2D {
+  constructor(
+    readonly translateX = 0,
+    readonly translateY = 0,
+    readonly rotationDegrees = 0,
+    readonly scaleX = 1,
+    readonly scaleY = 1,
+  ) {}
+
+  static translate(x: number, y = 0): Transform2D {
+    return new Transform2D(x, y);
+  }
+  static rotate(degrees: number): Transform2D {
+    return new Transform2D(0, 0, degrees);
+  }
+  static scale(x: number, y?: number): Transform2D {
+    return new Transform2D(0, 0, 0, x, y ?? x);
+  }
+
+  withTranslate(x: number, y = 0): Transform2D {
+    return new Transform2D(x, y, this.rotationDegrees, this.scaleX, this.scaleY);
+  }
+  withRotate(degrees: number): Transform2D {
+    return new Transform2D(this.translateX, this.translateY, degrees, this.scaleX, this.scaleY);
+  }
+  withScale(uniform: number): Transform2D {
+    return new Transform2D(this.translateX, this.translateY, this.rotationDegrees, uniform, uniform);
+  }
+}
+
 export class CornerRadii {
   readonly topLeft: number;
   readonly topRight: number;

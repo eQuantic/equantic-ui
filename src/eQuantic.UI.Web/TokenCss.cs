@@ -50,6 +50,29 @@ public static class TokenCss
     public static string Percent(float fraction) =>
         $"{(fraction * 100).ToString("0.##", CultureInfo.InvariantCulture)}%";
 
+    /// <summary>A bare invariant number ("0.####") — opacity, aspect-ratio, scale factors.</summary>
+    public static string Number(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// The S1 transform components as the equivalent CSS list — translate → rotate → scale, only the
+    /// non-neutral parts, in that fixed order (the same order the native realizer's center-anchored
+    /// matrix applies). Identity → null (no declaration).
+    /// </summary>
+    public static string? Transform(Transform2D transform)
+    {
+        if (transform.IsIdentity) return null;
+        var parts = new List<string>(3);
+        if (transform.TranslateX != 0 || transform.TranslateY != 0)
+            parts.Add($"translate({Px(transform.TranslateX)}, {Px(transform.TranslateY)})");
+        if (transform.RotationDegrees != 0)
+            parts.Add($"rotate({Number(transform.RotationDegrees)}deg)");
+        if (transform.ScaleX != 1 || transform.ScaleY != 1)
+            parts.Add(transform.ScaleX == transform.ScaleY
+                ? $"scale({Number(transform.ScaleX)})"
+                : $"scale({Number(transform.ScaleX)}, {Number(transform.ScaleY)})");
+        return string.Join(" ", parts);
+    }
+
     /// <summary>The 2-stop token gradient as a CSS background-image value — `light-dark()` stops
     /// keep the DOM mode-free exactly like solid fills.</summary>
     public static string Gradient(LinearGradient gradient)

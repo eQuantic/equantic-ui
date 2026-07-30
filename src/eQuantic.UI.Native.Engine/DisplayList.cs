@@ -15,6 +15,14 @@ public enum DrawCommandKind : byte
     /// <summary>The §05 analytic rrect shadow — <see cref="DrawCommand.StrokeWidth"/> carries the BLUR;
     /// offset/spread are baked into <see cref="DrawCommand.Shape"/> by the builder.</summary>
     ShadowRRect = 3,
+
+    /// <summary>Begin a GROUP-opacity layer (spec S1): commands until the matching
+    /// <see cref="EndLayer"/> composite as ONE surface at <see cref="DrawCommand.StrokeWidth"/>
+    /// (the layer ALPHA riding the scalar slot, like blur does for shadows).</summary>
+    BeginLayer = 4,
+
+    /// <summary>Composite the current layer onto the surface below at its alpha.</summary>
+    EndLayer = 5,
 }
 
 /// <summary>
@@ -122,6 +130,29 @@ public sealed class DisplayListBuilder
 
     public void Pop() => _current = _stack.Pop();
 
+    private int _openLayers;
+
+    /// <summary>
+    /// Begins a GROUP-opacity layer: everything until <see cref="PopLayer"/> composites as one
+    /// surface at <paramref name="alpha"/> — overlapping children inside never double-blend
+    /// (the CSS <c>opacity</c> semantics). Alpha is clamped to 0–1.
+    /// </summary>
+    public void PushLayer(float alpha)
+    {
+        _openLayers++;
+        _commands.Add(new DrawCommand
+        {
+            Kind = DrawCommandKind.BeginLayer,
+            StrokeWidth = Math.Clamp(alpha, 0f, 1f),
+        });
+    }
+
+    public void PopLayer()
+    {
+        _openLayers--;
+        _commands.Add(new DrawCommand { Kind = DrawCommandKind.EndLayer });
+    }
+
     /// <summary>
     /// Pushes a rounded-rect clip, given in the CURRENT transform's local space and baked to device
     /// space (v1 fence: the baked rect is the transform's AABB of the shape — exact under
@@ -153,6 +184,8 @@ public sealed class DisplayListBuilder
             throw new InvalidOperationException($"Unbalanced transform stack: {_stack.Count} unpopped PushTransform call(s).");
         if (_clipStack.Count != 0)
             throw new InvalidOperationException($"Unbalanced clip stack: {_clipStack.Count} unpopped PushClip call(s).");
+        if (_openLayers != 0)
+            throw new InvalidOperationException($"Unbalanced layer stack: {_openLayers} unpopped PushLayer call(s).");
         return new DisplayList(_commands.ToArray());
     }
 }

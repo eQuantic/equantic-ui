@@ -92,7 +92,13 @@ public static class DashboardView
         var col = new Column(gap: Space.S2);
         var head = new Row(gap: Space.S2) { Main = MainAlign.SpaceBetween, Cross = CrossAlign.Center };
         head.Add(new Icon(glyph, IconSize.Md));
-        head.Add(new Chip(delta, ChipKind.Tag) { Variant = tone });
+        // Spec S1 in anger: the delta chip gets a sticker tilt — group opacity + a center-anchored
+        // static transform, authored once, realized as CSS here and Photon pixels on native.
+        head.Add(new Box(new BoxStyle
+        {
+            Opacity = 0.92f,
+            Transform = Transform2D.Rotate(-4f).WithScale(1.04f),
+        }, new Chip(delta, ChipKind.Tag) { Variant = tone }));
         col.Add(head);
         col.Add(new Text(value, TypeRole.Heading));
         col.Add(new Text(label, TypeRole.Caption));

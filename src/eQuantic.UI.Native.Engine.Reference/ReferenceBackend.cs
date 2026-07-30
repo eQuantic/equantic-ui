@@ -21,6 +21,10 @@ public sealed class ReferenceBackend : IRenderBackend
     public void Render(DisplayList displayList, IRenderSurface surface)
     {
         var target = (ReferenceSurface)surface;
+        // GROUP-opacity layers (spec S1): BeginLayer redirects drawing into a fresh transparent
+        // surface; EndLayer composites it over the one below at the layer's alpha — one blend for
+        // the whole group, so overlapping children never double-blend.
+        Stack<(ReferenceSurface Below, float Alpha)>? layers = null;
         foreach (ref readonly var command in displayList.Commands)
         {
             switch (command.Kind)
@@ -32,6 +36,16 @@ public sealed class ReferenceBackend : IRenderBackend
                 case DrawCommandKind.StrokeRRect:
                 case DrawCommandKind.ShadowRRect:
                     RasterizeRRect(target, in command);
+                    break;
+                case DrawCommandKind.BeginLayer:
+                    (layers ??= new()).Push((target, command.StrokeWidth));
+                    target = new ReferenceSurface(target.Width, target.Height);
+                    break;
+                case DrawCommandKind.EndLayer:
+                    var (below, alpha) = layers!.Pop();
+                    below.CompositeOver(target, alpha);
+                    target.Dispose();
+                    target = below;
                     break;
             }
         }

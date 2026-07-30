@@ -113,11 +113,33 @@ public sealed class MetalBackend : IRenderBackend
         var encoder = ObjC.Send(commandBuffer, Sel("renderCommandEncoderWithDescriptor:"), passDescriptor);
         ObjC.SendVoid(encoder, Sel("setRenderPipelineState:"), _pipeline);
 
+        // SPIKE FENCE: group-opacity layers approximate as per-command alpha (no offscreen pass in
+        // the M0 spike) — overlapping children inside a layer double-blend here; the reference
+        // backend is normative and the D3 pipeline brings the real offscreen composite.
+        var layerAlpha = 1f;
+        Stack<float>? layerStack = null;
+
         for (var i = firstDraw; i < commands.Length; i++)
         {
             ref readonly var command = ref commands[i];
             if (command.Kind == DrawCommandKind.Clear) continue; // leading clears only (spike fence)
+            if (command.Kind == DrawCommandKind.BeginLayer)
+            {
+                (layerStack ??= new()).Push(layerAlpha);
+                layerAlpha *= command.StrokeWidth;
+                continue;
+            }
+            if (command.Kind == DrawCommandKind.EndLayer)
+            {
+                layerAlpha = layerStack!.Pop();
+                continue;
+            }
             if (!TryBuildUniforms(in command, out var uniforms)) continue;
+            if (layerAlpha < 1f)
+            {
+                uniforms.ColorA.W *= layerAlpha;
+                uniforms.ColorB.W *= layerAlpha;
+            }
 
             unsafe
             {

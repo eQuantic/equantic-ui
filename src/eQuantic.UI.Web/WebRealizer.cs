@@ -355,6 +355,11 @@ public static class WebRealizer
                     : null,
                 // The container side of loop motion: children clip to the rrect (native PushClip twin).
                 Overflow = style.Clip ? "hidden" : null,
+                // Spec S1 — group opacity (native PushLayer twin), the center-anchored static
+                // transform (paint-only), and the one-axis-derives aspect ratio.
+                Opacity = style.Opacity is { } alpha && alpha < 1f ? TokenCss.Number(alpha) : null,
+                Transform = style.Transform is { } transform ? TokenCss.Transform(transform) : null,
+                AspectRatio = style.AspectRatio > 0 ? TokenCss.Number(style.AspectRatio) : null,
             },
         };
 
@@ -427,7 +432,21 @@ public static class WebRealizer
         foreach (var child in flex.Children)
         {
             if (LowerNode(child, context, horizontal) is { } lowered)
+            {
+                // Spec S1 align-self: the child overrides the container's Cross for itself.
+                if (child.AlignSelf is { } self)
+                {
+                    lowered.Style ??= new HtmlStyle();
+                    lowered.Style.AlignSelf = self switch
+                    {
+                        CrossAlign.Start => "flex-start",
+                        CrossAlign.Center => "center",
+                        CrossAlign.End => "flex-end",
+                        _ => "stretch",
+                    };
+                }
                 element.Children.Add(lowered);
+            }
         }
         return element;
     }
