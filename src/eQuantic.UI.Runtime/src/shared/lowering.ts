@@ -557,7 +557,9 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string):
     'box-sizing': 'border-box',
     display: 'flex',
     'flex-direction': horizontal ? 'row' : 'column',
-    gap: flex.gap > 0 ? px(flex.gap) : undefined,
+    // Spec S3 wrap mirror: "row-gap column-gap" in the stacking order of the container's axis.
+    'flex-wrap': flex.wrap ? 'wrap' : undefined,
+    gap: gapValue(flex, horizontal),
     'justify-content': mainAlign(flex.main),
     'align-items': crossAlign(flex.cross),
     width: sizeValue(flex.width),
@@ -593,6 +595,14 @@ function mainAlign(value: FlexNodeValue['main']): string {
     default:
       return 'flex-start';
   }
+}
+
+function gapValue(flex: FlexNodeValue, horizontal: boolean): string | undefined {
+  const run = flex.runGap ?? flex.gap;
+  if (flex.wrap && run !== flex.gap) {
+    return horizontal ? `${px(run)} ${px(flex.gap)}` : `${px(flex.gap)} ${px(run)}`;
+  }
+  return flex.gap > 0 ? px(flex.gap) : undefined;
 }
 
 function crossAlign(value: FlexNodeValue['cross']): string {

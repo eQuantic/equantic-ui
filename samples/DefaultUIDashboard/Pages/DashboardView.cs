@@ -46,7 +46,9 @@ public static class DashboardView
         body.Add(header);
 
         // KPI grid — four equal Flexible columns of Cards.
-        var kpis = new Row(gap: Space.S3) { Cross = CrossAlign.Stretch };
+        // Spec S3: the KPI row WRAPS on narrow viewports — flow layout authored once (flex-wrap on web,
+        // the Photon line-breaking pass on native).
+        var kpis = new Row(gap: Space.S3) { Cross = CrossAlign.Stretch, Wrap = true, RunGap = Space.S3 };
         kpis.Add(new Flexible(StatCard("Live users", liveUsersLabel, "+12%", Variant.Success, LucideIcons.Users)));
         kpis.Add(new Flexible(StatCard("Server load", "42%", "stable", Variant.Warning, LucideIcons.Cpu, 0.42f)));
         kpis.Add(new Flexible(StatCard("Response", "12ms", "-3ms", Variant.Info, LucideIcons.Zap)));
