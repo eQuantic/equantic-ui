@@ -301,6 +301,20 @@ export class Overlay extends VisualNode {
   }
 }
 
+/** Spec §06 enter motion: the wrapped subtree animates in on first appearance ('fade' | 'slideUp').
+ * Layout-transparent — the web lowering rides the animation class on the child's own root. */
+export class Presence extends VisualNode {
+  readonly nodeKind = 'presence';
+  child: VisualNode;
+  enter: string;
+
+  constructor(child: VisualNode, enter = 'fade') {
+    super();
+    this.child = child;
+    this.enter = enter;
+  }
+}
+
 interface TextEntryConfig {
   placeholder?: string | null;
   onSubmit?: (() => void) | null;

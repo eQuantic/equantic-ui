@@ -247,6 +247,13 @@ export interface OverlayNode extends VisualNodeValue {
   child: VisualNodeValue;
 }
 
+/** Spec §06 enter motion: the subtree animates IN when it first appears ('fade' | 'slideUp'). */
+export interface PresenceNode extends VisualNodeValue {
+  nodeKind: 'presence';
+  child: VisualNodeValue;
+  enter?: string;
+}
+
 /** Spec B9/B10 primitive: single-line text entry — a real chrome-less <input> on web. */
 export interface TextEntryNode extends VisualNodeValue {
   nodeKind: 'textEntry';

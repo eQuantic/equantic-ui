@@ -264,6 +264,42 @@ public sealed class Overlay : VisualNode
     public bool Modal { get; init; } = true;
 }
 
+/// <summary>How a <see cref="Presence"/> subtree ENTERS when it first appears (spec §06).</summary>
+public enum PresenceMotion : byte
+{
+    /// <summary>Opacity 0→1 over Motion.Base — dialog cards and scrims.</summary>
+    Fade = 0,
+    /// <summary>Rise from <see cref="Presence.SlideDistance"/> below while fading in — sheets, toasts.</summary>
+    SlideUp = 1,
+}
+
+/// <summary>
+/// ENTER MOTION for state transitions (spec §06 — the C2/C3/C4 fence): wraps a subtree whose
+/// DECLARATIVE appearance (`if (_open) …`) should animate in instead of popping. Layout-transparent
+/// like <see cref="LoopMotion"/> — the effect is paint-only (opacity layer + translate), so frames
+/// never re-lay-out. First sighting starts the entrance; a subtree that leaves and later returns
+/// replays it (presence tracking prunes departed paths). Reduce Motion replaces movement with a
+/// short crossfade (<c>Motion.ReducedCrossfadeMs</c> — spec §06's static-replacement rule). Web
+/// lowers to a mount-playing CSS animation class; native resolves a presence clock per layout path.
+/// v1 is ENTER only: exit (removal-deferred motion) stays a fence on both targets.
+/// </summary>
+public sealed class Presence : VisualNode
+{
+    public override string NodeKind => "presence";
+
+    /// <summary>The SlideUp rise distance (dp) — one spacing step, not a journey (spec §06).</summary>
+    public const float SlideDistance = 16;
+
+    public Presence(VisualNode child, PresenceMotion enter = PresenceMotion.Fade)
+    {
+        Child = child;
+        Enter = enter;
+    }
+
+    public VisualNode Child { get; init; }
+    public PresenceMotion Enter { get; init; }
+}
+
 /// <summary>
 /// Single-line text ENTRY (the B9/B10 primitive): value + placeholder + change/submit/focus
 /// callbacks. The web realizer lowers it to a real chrome-less <c>&lt;input&gt;</c> (the browser

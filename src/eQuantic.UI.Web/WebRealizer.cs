@@ -58,6 +58,7 @@ public static class WebRealizer
         Primitives.Image image => LowerImage(image),
         Pressable pressable => LowerPressable(pressable, context),
         LoopMotion motion => LowerLoopMotion(motion, context),
+        Presence presence => LowerPresence(presence, context, horizontalAxis),
         Flexible flexible => LowerFlexible(flexible, context, horizontalAxis),
         Spacer spacer => LowerSpacer(spacer, horizontalAxis),
         UiComponent component => LowerNode(component.Build(context), context, horizontalAxis),
@@ -669,6 +670,20 @@ public static class WebRealizer
         if (LowerNode(pressable.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;
+    }
+
+    /// <summary>
+    /// Enter motion (spec §06): NO wrapper element — the mount-playing animation class rides the
+    /// lowered child's own root, so flex/stack layout is untouched and the reconciler's in-place
+    /// patching never restarts the animation on unrelated re-renders (it replays only on a real
+    /// re-insertion — exactly the declarative-presence contract).
+    /// </summary>
+    private static HtmlElement? LowerPresence(Presence presence, ComponentContext context, bool? horizontalAxis)
+    {
+        if (LowerNode(presence.Child, context, horizontalAxis) is not { } child) return null;
+        var cls = presence.Enter == PresenceMotion.SlideUp ? "eq-presence-slideup" : "eq-presence-fade";
+        child.ClassName = string.IsNullOrEmpty(child.ClassName) ? cls : $"{cls} {child.ClassName}";
+        return child;
     }
 
     private static HtmlElement LowerFlexible(Flexible flexible, ComponentContext context, bool? horizontalAxis)

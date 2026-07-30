@@ -67,19 +67,22 @@ public static class PhotonRealizer
         float timeMs = 0,
         bool reducedMotion = false,
         TransitionStore? transitions = null,
-        ScrollStore? scrollOffsets = null)
+        ScrollStore? scrollOffsets = null,
+        PresenceStore? presences = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
         {
             Instances = instances,
             SizeClass = WindowSizeClasses.FromWidth(viewportWidth),
             Transitions = transitions,
+            Presences = presences,
             TimeMs = timeMs,
             ReducedMotion = reducedMotion,
             ScrollOffsets = scrollOffsets,
             ScrollMeta = new Dictionary<ScrollView, (string, float)>(),
         };
         transitions?.BeginFrame();
+        presences?.BeginFrame();
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context);
 
         var hits = new List<HitRegion>();
@@ -100,8 +103,13 @@ public static class PhotonRealizer
             Emit(overlayLayout, theme, mode, builder, hits, hovers, scrolls, context.ScrollMeta!, new PressScope(pressed, focused, hovered), motion, overlays);
         }
 
+        // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
+        // and a pruned-too-early path would replay its entrance every frame.
+        presences?.EndFrame();
         context.Instances?.EndPass();
-        return new RealizeResult(layout, hits, motion.Active || transitions is { AnyActive: true }, hovers, scrolls);
+        return new RealizeResult(layout, hits,
+            motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true },
+            hovers, scrolls);
     }
 
     /// <summary>The frame clock for loop motion: offsets resolve as a PURE function of
@@ -319,6 +327,24 @@ public static class PhotonRealizer
             foreach (var child in node.Children)
                 Emit(child, theme, mode, builder, hits, hovers, scrolls, scrollMeta, press, motion, overlays);
             if (offset != 0) builder.Pop();
+            return;
+        }
+
+        if (node.Source is Presence presence && node.Presence < 1f)
+        {
+            // Enter motion (spec §06): a mid-entrance subtree paints inside a GROUP-opacity layer
+            // (CSS-opacity semantics — overlapping children never double-blend) with the SlideUp
+            // rise as a paint-only translate. Reduce Motion drops the movement (the store already
+            // shortened the clock to the crossfade) — fade only, exactly the web media query.
+            var rise = presence.Enter == PresenceMotion.SlideUp && !motion.Reduced
+                ? (1f - node.Presence) * Presence.SlideDistance
+                : 0f;
+            if (rise != 0) builder.PushTransform(Matrix2D.Translation(0, rise));
+            builder.PushLayer(node.Presence);
+            foreach (var child in node.Children)
+                Emit(child, theme, mode, builder, hits, hovers, scrolls, scrollMeta, press, motion, overlays);
+            builder.PopLayer();
+            if (rise != 0) builder.Pop();
             return;
         }
 
