@@ -6,6 +6,7 @@
  * through onChanged. Cross-pins the C# TextInputRealizerTests byte-for-byte on the primitive.
  */
 
+import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import { SharedStatefulComponent } from '../core/component';
 import { photonTheme } from './design-system.generated';
@@ -33,13 +34,13 @@ describe('text entry primitive (C# cross-pin)', () => {
     const node = lower(new TextEntry('ana@equantic', null, { placeholder: 'you@company.com' }));
 
     expect(node.tag).toBe('input');
-    expect(node.attributes['class']).toBe('eq-entry eq-type-bodyl');
+    expect(node.attributes['class']).toMatch(/^eq-entry eq-type-bodyl(?: |$)/);
     expect(node.attributes['type']).toBe('text');
     expect(node.attributes['value']).toBe('ana@equantic');
     expect(node.attributes['placeholder']).toBe('you@company.com');
-    expect(node.attributes['style']).toBe(
-      `width: 100%; padding: 0; background: none; border: none; ` +
-        `color: ${tokenValue(photonTheme.textPrimary)}; font-family: inherit`,
+    expect(effectiveStyle(node)).toBe(
+      `background: none; border: none; color: ${tokenValue(photonTheme.textPrimary)}; ` +
+        `font-family: inherit; padding: 0; width: 100%`,
     );
   });
 
@@ -95,24 +96,31 @@ describe('TextInput end to end (transpiled component, controlled loop)', () => {
     document.body.appendChild(container);
     new FormHost().mount(container);
 
+    // Styles are atomic classes now — resolve a live element's effective declarations through
+    // the registry seam before matching.
+    const liveStyle = (el: Element) =>
+      effectiveStyle({
+        attributes: {
+          class: el.getAttribute('class') ?? undefined,
+          style: el.getAttribute('style') ?? undefined,
+        },
+      });
     const containerDiv = () =>
-      [...container.querySelectorAll('div')].find((d) =>
-        (d.getAttribute('style') ?? '').includes('border:'),
-      )!;
+      [...container.querySelectorAll('div')].find((d) => liveStyle(d).includes('border:'))!;
     const primary = tokenValue(photonTheme.colors('primary').base);
     const strong = tokenValue(photonTheme.borderStrong);
 
-    expect(containerDiv().getAttribute('style')).toContain(`border: 1px solid ${strong}`);
-    expect(containerDiv().getAttribute('style')).toContain('padding: 0 14px 0 14px');
+    expect(liveStyle(containerDiv())).toContain(`border: 1px solid ${strong}`);
+    expect(liveStyle(containerDiv())).toContain('padding: 0 14px 0 14px');
 
     container.querySelector('input')!.dispatchEvent(new Event('focus', { bubbles: true }));
     await nextFrame();
-    expect(containerDiv().getAttribute('style')).toContain(`border: 2px solid ${primary}`);
-    expect(containerDiv().getAttribute('style')).toContain('padding: 0 13px 0 13px');
+    expect(liveStyle(containerDiv())).toContain(`border: 2px solid ${primary}`);
+    expect(liveStyle(containerDiv())).toContain('padding: 0 13px 0 13px');
 
     container.querySelector('input')!.dispatchEvent(new Event('blur', { bubbles: true }));
     await nextFrame();
-    expect(containerDiv().getAttribute('style')).toContain(`border: 1px solid ${strong}`);
+    expect(liveStyle(containerDiv())).toContain(`border: 1px solid ${strong}`);
 
     container.remove();
   });

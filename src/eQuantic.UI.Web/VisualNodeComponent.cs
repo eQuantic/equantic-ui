@@ -29,5 +29,13 @@ public sealed class VisualNodeComponent : HtmlElement
     /// actual page instance for <c>IHandleMetadata</c>).</summary>
     public VisualNode Node { get; }
 
-    public override HtmlNode Render() => WebRealizer.Lower(Node, _theme, _typeScale).Render();
+    /// <summary>The atomic rules this component's markup references (docs/STYLE-SEMANTICS-PLAN.md §2)
+    /// — populated by <see cref="Render"/>; the SSR pipeline injects it as a style tag so the client
+    /// hydrates against the exact rules the markup names. When the SSR pipeline armed an ambient
+    /// sink (<see cref="StyleSink.Ambient"/>), rules flow there instead — one rule set per PAGE,
+    /// shared by every bridge the page composes.</summary>
+    public StyleSink Styles { get; } = new();
+
+    public override HtmlNode Render() =>
+        WebRealizer.Lower(Node, _theme, _typeScale, StyleSink.Ambient ?? Styles).Render();
 }

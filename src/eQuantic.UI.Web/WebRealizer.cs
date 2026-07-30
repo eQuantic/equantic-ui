@@ -20,10 +20,23 @@ namespace eQuantic.UI.Web;
 public static class WebRealizer
 {
     public static HtmlElement Lower(VisualNode node, IAppTheme theme, float typeScale = 1f)
+        => Lower(node, theme, typeScale, styles: null);
+
+    /// <summary>
+    /// Lower with ATOMIC style emission (docs/STYLE-SEMANTICS-PLAN.md §2): when a
+    /// <paramref name="styles"/> sink is given, every element's style object is converted into
+    /// deduplicated atomic classes collected into the sink — the markup carries class names and the
+    /// sink carries the (once-per-declaration) rules. Without a sink, styles stay inline (tests and
+    /// standalone lowering keep the direct form).
+    /// </summary>
+    public static HtmlElement Lower(VisualNode node, IAppTheme theme, float typeScale, StyleSink? styles)
     {
         var context = new ComponentContext(theme, typeScale);
-        return LowerNode(node, context, horizontalAxis: null)
+        var root = LowerNode(node, context, horizontalAxis: null)
                ?? new RealizedElement("span"); // layout-only nodes outside a flex row lower to nothing
+        if (styles != null)
+            StyleAtomizer.AtomizeTree(root, ThemeVarMap.For(theme), styles);
+        return root;
     }
 
     private static HtmlElement? LowerNode(VisualNode node, ComponentContext context, bool? horizontalAxis) => node switch

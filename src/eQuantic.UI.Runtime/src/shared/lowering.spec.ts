@@ -1,3 +1,4 @@
+import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import type { ColorTokenValue, VisualNodeValue } from './nodes';
 import { lowerVisualNode, px, tokenValue } from './lowering';
@@ -63,10 +64,8 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
 
     expect(node.tag).toBe('div');
     // CROSS-PIN: this literal is asserted verbatim by WebRealizerTests.Box_ExactStyleString_CrossPin.
-    expect(node.attributes.style).toBe(
-      'width: 120px; height: 40px; padding: 0 16px 0 16px; ' +
-        'background-color: light-dark(#0050a0, #5ca2e8); ' +
-        'border: 1px solid light-dark(#c9ced6, #3d4754); border-radius: 10px; box-sizing: border-box',
+    expect(effectiveStyle(node)).toBe(
+      'background-color: light-dark(#0050a0, #5ca2e8); border-radius: 10px; border: 1px solid light-dark(#c9ced6, #3d4754); box-sizing: border-box; height: 40px; padding: 0 16px 0 16px; width: 120px',
     );
   });
 
@@ -80,11 +79,11 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     } as VisualNodeValue;
 
     const node = lowerVisualNode(row, ctx);
-    expect(node.attributes.style).toContain('display: flex');
-    expect(node.attributes.style).toContain('flex-direction: row');
-    expect(node.attributes.style).toContain('justify-content: space-between');
-    expect(node.attributes.style).toContain('align-items: center');
-    expect(node.attributes.style).toContain('gap: 8px');
+    expect(effectiveStyle(node)).toContain('display: flex');
+    expect(effectiveStyle(node)).toContain('flex-direction: row');
+    expect(effectiveStyle(node)).toContain('justify-content: space-between');
+    expect(effectiveStyle(node)).toContain('align-items: center');
+    expect(effectiveStyle(node)).toContain('gap: 8px');
   });
 
   it('Column defaults to stretch', () => {
@@ -95,7 +94,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
       cross: 'stretch',
       children: [],
     } as VisualNodeValue;
-    expect(lowerVisualNode(column, ctx).attributes.style).toContain('align-items: stretch');
+    expect(effectiveStyle(lowerVisualNode(column, ctx))).toContain('align-items: stretch');
   });
 
   it('Text lowers to a role-classed span with the ellipsis contract', () => {
@@ -109,10 +108,10 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
 
     const node = lowerVisualNode(text, ctx);
     expect(node.tag).toBe('span');
-    expect(node.attributes['class']).toBe('eq-type-caption');
-    expect(node.attributes.style).toContain('color: light-dark(#5f6b7a, #8b95a3)');
-    expect(node.attributes.style).toContain('white-space: nowrap');
-    expect(node.attributes.style).toContain('text-overflow: ellipsis');
+    expect(node.attributes['class']).toMatch(/^eq-type-caption(?: |$)/);
+    expect(effectiveStyle(node)).toContain('color: light-dark(#5f6b7a, #8b95a3)');
+    expect(effectiveStyle(node)).toContain('white-space: nowrap');
+    expect(effectiveStyle(node)).toContain('text-overflow: ellipsis');
     expect(node.children[0].textContent).toBe('Saldo disponível');
   });
 
@@ -125,7 +124,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
       styleOverride: { size: 15, lineHeight: 15, weight: 'semiBold', tracking: 0.1 },
     } as VisualNodeValue;
 
-    const style = lowerVisualNode(text, ctx).attributes.style!;
+    const style = effectiveStyle(lowerVisualNode(text, ctx));
     expect(style).toContain(`color: ${tokenValue(textPrimary)}`);
     expect(style).toContain('font-size: 15px');
     expect(style).toContain('font-weight: 600');
@@ -146,9 +145,9 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     const node = lowerVisualNode(pressable, ctx);
     expect(node.tag).toBe('button');
     expect(node.attributes['aria-label']).toBe('Go');
-    expect(node.attributes.style).toContain('background: none');
-    expect(node.attributes.style).toContain('border: none');
-    expect(node.attributes.style).toContain('cursor: pointer');
+    expect(effectiveStyle(node)).toContain('background: none');
+    expect(effectiveStyle(node)).toContain('border: none');
+    expect(effectiveStyle(node)).toContain('cursor: pointer');
 
     (node.events['click'] as () => void)();
     expect(fired).toBe(true);
@@ -165,7 +164,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     const node = lowerVisualNode(pressable, ctx);
     expect(node.attributes['disabled']).toBe('');
     expect(node.events['click']).toBeUndefined();
-    expect(node.attributes.style).not.toContain('cursor');
+    expect(effectiveStyle(node)).not.toContain('cursor');
   });
 
   it('Flexible lowers to basis-zero grow with min-width 0 (truncation contract)', () => {
@@ -184,8 +183,8 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     } as VisualNodeValue;
 
     const wrapper = lowerVisualNode(row, ctx).children[0];
-    expect(wrapper.attributes.style).toContain('flex: 2 1 0%');
-    expect(wrapper.attributes.style).toContain('min-width: 0');
+    expect(effectiveStyle(wrapper)).toContain('flex: 2 1 0%');
+    expect(effectiveStyle(wrapper)).toContain('min-width: 0');
   });
 
   it('Spacer follows the flex axis (flexible and fixed)', () => {
@@ -201,13 +200,13 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     } as VisualNodeValue;
 
     const node = lowerVisualNode(row, ctx);
-    expect(node.children[0].attributes.style).toBe('flex: 1 1 0%');
+    expect(effectiveStyle(node.children[0])).toBe('flex: 1 1 0%');
     expect(node.children[0].attributes['aria-hidden']).toBe('true');
     // flex-shrink precedes width — the C# HtmlStyle.ToCssString canonical order.
-    expect(node.children[1].attributes.style).toBe('flex-shrink: 0; width: 24px');
+    expect(effectiveStyle(node.children[1])).toBe('flex-shrink: 0; width: 24px');
 
     const column = { ...row, nodeKind: 'column', cross: 'stretch' } as unknown as VisualNodeValue;
-    expect(lowerVisualNode(column, ctx).children[1].attributes.style).toBe(
+    expect(effectiveStyle(lowerVisualNode(column, ctx).children[1])).toBe(
       'flex-shrink: 0; height: 24px',
     );
   });
@@ -224,7 +223,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
 
     const node = lowerVisualNode(component, ctx);
     expect(node.tag).toBe('div');
-    expect(node.attributes.style).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
+    expect(effectiveStyle(node)).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
     expect(node.children[0].tag).toBe('span');
   });
 });

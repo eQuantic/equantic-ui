@@ -1,0 +1,11 @@
+[
+  {"prop":"padding","value":"0 16px 0 16px","rewritten":"0 16px 0 16px","class":"eq-xhcqoy"},
+  {"prop":"border-radius","value":"10px","rewritten":"10px","class":"eq-1o1uad7"},
+  {"prop":"box-sizing","value":"border-box","rewritten":"border-box","class":"eq-1eb13m5"},
+  {"prop":"width","value":"100%","rewritten":"100%","class":"eq-akjizx"},
+  {"prop":"flex","value":"1 1 0%","rewritten":"1 1 0%","class":"eq-168ghzj"},
+  {"prop":"background-color","value":"light-dark(#ffffff, #14181e)","rewritten":"var(--eq-color-surface, light-dark(#ffffff, #14181e))","class":"eq-5hocaj"},
+  {"prop":"color","value":"light-dark(#171b21, #f2f4f7)","rewritten":"var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))","class":"eq-7gvrt4"},
+  {"prop":"border","value":"1px solid light-dark(#c9ced6, #3d4754)","rewritten":"1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #3d4754))","class":"eq-1e8yzyr"},
+  {"prop":"background-color","value":"light-dark(#0050a0, #5ca2e8)","rewritten":"var(--eq-color-primary-base, light-dark(#0050a0, #5ca2e8))","class":"eq-jq1py4"}
+]

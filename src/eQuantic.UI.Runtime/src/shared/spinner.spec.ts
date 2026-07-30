@@ -5,6 +5,7 @@
  * next forward change animates again.
  */
 
+import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode, tokenValue } from './lowering';
@@ -25,19 +26,19 @@ describe('spinner lowering (C# cross-pin)', () => {
     const node = lower(new Spinner(24, photonTheme.colors('primary').base));
 
     expect(node.tag).toBe('svg');
-    expect(node.attributes['class']).toBe('eq-spinner');
+    expect(node.attributes['class']).toMatch(/^eq-spinner(?: |$)/);
     expect(node.attributes['viewBox']).toBe('0 0 16 16');
     expect(node.attributes['fill']).toBe('currentColor');
     expect(node.attributes['aria-hidden']).toBe('true');
-    expect(node.attributes['style']).toBe(
-      `width: 24px; height: 24px; color: ${tokenValue(photonTheme.colors('primary').base)}`,
+    expect(effectiveStyle(node)).toBe(
+      `color: ${tokenValue(photonTheme.colors('primary').base)}; height: 24px; width: 24px`,
     );
 
     expect(node.children).toHaveLength(8);
     node.children.forEach((bar, i) => {
       expect(bar.tag).toBe('rect');
       expect(bar.attributes['transform']).toBe(`rotate(${i * 45} 8 8)`);
-      expect(bar.attributes['style']).toBe(`animation-delay: -${i * 100}ms`);
+      expect(effectiveStyle(bar)).toBe(`animation-delay: -${i * 100}ms`);
     });
   });
 });
@@ -49,14 +50,14 @@ describe('B14 value transition (transpiled stateful ProgressBar)', () => {
     row.add(new Spacer(360));
 
     const node = lower(row);
-    expect(node.children[0].attributes['style']).toContain(
+    expect(effectiveStyle(node.children[0])).toContain(
       'transition: flex-grow var(--eq-motion-base) var(--eq-curve-standard)',
     );
   });
 
   it('forward changes animate; regressions snap for exactly one build', () => {
     const bar = new ProgressBar(0.3);
-    const fillStyle = () => lower(bar).children[0].attributes['style']!;
+    const fillStyle = () => effectiveStyle(lower(bar).children[0])!;
 
     expect(fillStyle()).toContain('transition: flex-grow');
 

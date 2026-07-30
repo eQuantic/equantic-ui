@@ -1,3 +1,4 @@
+import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import type { HtmlNode } from '../core/types';
 import { photonTheme } from './design-system.generated';
@@ -70,16 +71,14 @@ describe('vocabulary self-lowering (render)', () => {
 
     const node = box.render();
     expect(node.tag).toBe('div');
-    expect(node.attributes.style).toBe(
-      'width: 120px; height: 40px; padding: 0 16px 0 16px; ' +
-        'background-color: light-dark(#0050a0, #5ca2e8); ' +
-        'border: 1px solid light-dark(#c9ced6, #3d4754); border-radius: 10px; box-sizing: border-box',
+    expect(effectiveStyle(node)).toBe(
+      'background-color: light-dark(#0050a0, #5ca2e8); border-radius: 10px; border: 1px solid light-dark(#c9ced6, #3d4754); box-sizing: border-box; height: 40px; padding: 0 16px 0 16px; width: 120px',
     );
   });
 
   it('Text without a color inherits the generated theme textPrimary', () => {
     const node = new Text('hello').render();
-    expect(node.attributes.style).toContain(`color: ${tokenValue(photonTheme.textPrimary)}`);
+    expect(effectiveStyle(node)).toContain(`color: ${tokenValue(photonTheme.textPrimary)}`);
   });
 
   it('a web Component mixes into an abstract tree through the render seam', () => {

@@ -6,6 +6,7 @@
  * ProgressBar (REAL eqc output) sweeps its flex segment inside the clipped track.
  */
 
+import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode, tokenValue } from './lowering';
@@ -28,8 +29,8 @@ describe('loop motion lowering (C# LoopMotionRealizerTests cross-pin)', () => {
     );
 
     expect(node.tag).toBe('div');
-    expect(node.attributes['class']).toBe('eq-loop');
-    expect(node.attributes['style']).toBe(
+    expect(node.attributes['class']).toMatch(/^eq-loop(?: |$)/);
+    expect(effectiveStyle(node)).toBe(
       'animation: eq-slide-x 1200ms linear infinite; --eq-loop-from: -35%; --eq-loop-to: 105%',
     );
     expect(node.children).toHaveLength(1);
@@ -48,32 +49,33 @@ describe('loop motion lowering (C# LoopMotionRealizerTests cross-pin)', () => {
       ),
     );
 
-    expect(node.attributes['style']).toContain('border-radius: 999px; overflow: hidden');
+    expect(effectiveStyle(node)).toContain('border-radius: 999px');
+    expect(effectiveStyle(node)).toContain('overflow: hidden');
   });
 
   it('the transpiled indeterminate ProgressBar sweeps a flex segment inside the clipped track', () => {
     const track = lower(new ProgressBar());
 
-    expect(track.attributes['style']).toContain(
+    expect(effectiveStyle(track)).toContain(
       `background-color: ${tokenValue(photonTheme.surfaceSubtle)}`,
     );
-    expect(track.attributes['style']).toContain('overflow: hidden');
+    expect(effectiveStyle(track)).toContain('overflow: hidden');
 
     const layer = track.children[0];
-    expect(layer.attributes['class']).toBe('eq-loop');
-    expect(layer.attributes['style']).toContain('animation: eq-slide-x 1200ms linear infinite');
-    expect(layer.attributes['style']).toMatch(/--eq-loop-from: -35%; --eq-loop-to: 105%$/);
+    expect(layer.attributes['class']).toMatch(/^eq-loop(?: |$)/);
+    expect(effectiveStyle(layer)).toContain('animation: eq-slide-x 1200ms linear infinite');
+    expect(effectiveStyle(layer)).toMatch(/--eq-loop-from: -35%; --eq-loop-to: 105%$/);
 
     const row = layer.children[0];
-    expect(row.children[0].attributes['style']).toContain('flex: 300 1 0%');
-    expect(row.children[1].attributes['style']).toContain('flex: 700 1 0%');
+    expect(effectiveStyle(row.children[0])).toContain('flex: 300 1 0%');
+    expect(effectiveStyle(row.children[1])).toContain('flex: 700 1 0%');
   });
 
   it('the transpiled determinate ProgressBar keeps the flex-weight split', () => {
     const node = lower(new ProgressBar(0.64));
 
-    expect(node.children[0].attributes['style']).toContain('flex: 640 1 0%');
-    expect(node.children[1].attributes['style']).toContain('flex: 360 1 0%');
-    expect(node.attributes['style']).not.toContain('overflow');
+    expect(effectiveStyle(node.children[0])).toContain('flex: 640 1 0%');
+    expect(effectiveStyle(node.children[1])).toContain('flex: 360 1 0%');
+    expect(effectiveStyle(node)).not.toContain('overflow');
   });
 });

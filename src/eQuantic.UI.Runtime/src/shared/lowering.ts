@@ -6,12 +6,15 @@
  * - Box → div with `box-sizing: border-box` (Photon's inside border = the CSS parity contract);
  * - Row/Column → flex with the spec alignment defaults; Flexible → `flex: n 1 0%` + `min-size: 0`;
  * - Text → role-classed span with single-line ellipsis; Pressable → neutralized <button>;
- * - style STRINGS follow the C# `HtmlStyle.ToCssString()` property order, byte for byte.
+ * - styles lower to ATOMIC CLASSES (style-atomizer.ts twin of the C# StyleAtomizer): identical
+ *   declarations hash to identical class names on both sides, so hydration compares one sorted
+ *   class string per element; only custom-property tails stay inline.
  */
 
 import type { EventHandler, HtmlNode } from '../core/types';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
+import { atomizeEntries } from './style-atomizer';
 import type {
   BoxNode,
   BoxStyleValue,
@@ -116,66 +119,6 @@ const fontWeights: Record<string, number> = {
 
 type StyleEntries = Partial<Record<string, string | undefined>>;
 
-const styleOrder = [
-  'display',
-  'position',
-  'top',
-  'right',
-  'bottom',
-  'left',
-  'place-items',
-  'grid-area',
-  'flex-direction',
-  'justify-content',
-  'align-items',
-  'gap',
-  'flex',
-  'flex-grow',
-  'flex-shrink',
-  'width',
-  'height',
-  'min-width',
-  'min-height',
-  'max-width',
-  'max-height',
-  'padding',
-  'background',
-  'background-color',
-  'background-image',
-  'border',
-  'border-radius',
-  'color',
-  'font-family',
-  'font-size',
-  'font-weight',
-  'line-height',
-  'text-align',
-  'letter-spacing',
-  'box-shadow',
-  'opacity',
-  'cursor',
-  'overflow',
-  'overflow-x',
-  'overflow-y',
-  'transition',
-  'transform',
-  'animation',
-  'animation-delay',
-  'white-space',
-  'text-overflow',
-  'box-sizing',
-  'object-fit',
-] as const;
-
-function styleString(entries: StyleEntries): string {
-  const parts: string[] = [];
-  for (const name of styleOrder) {
-    const value = entries[name];
-    if (value !== undefined) parts.push(`${name}: ${value}`);
-  }
-  return parts.join('; ');
-}
-
 // ---- node lowering --------------------------------------------------------------------------------
 
 function lowerNode(
@@ -245,10 +188,34 @@ function lowerNode(
 function element(tag: string, style: StyleEntries, children: HtmlNode[] = []): HtmlNode {
   return {
     tag,
-    attributes: { style: styleString(style) },
+    attributes: atomicAttrs(style),
     events: {},
     children,
   };
+}
+
+/**
+ * STYLE-SEMANTICS-PLAN §2: regular declarations become sorted atomic classes (rules memoized in the
+ * registry); only the custom-property tail stays inline. `semanticClass` (eq-type-*, eq-spinner…)
+ * goes FIRST — the same merge order the C# AtomizeTree uses, so hydration compares equal strings.
+ */
+function atomicAttrs(style: StyleEntries, semanticClass?: string): Record<string, string> {
+  const atomized = atomizeEntries(style);
+  const cls = semanticClass
+    ? atomized.class
+      ? `${semanticClass} ${atomized.class}`
+      : semanticClass
+    : atomized.class;
+  const attributes: Record<string, string> = {};
+  if (cls) attributes['class'] = cls;
+  if (atomized.style) attributes['style'] = atomized.style;
+  return attributes;
+}
+
+/** Prepend a semantic class to an already-atomized element (the post-element() assignment sites). */
+function prependClass(node: HtmlNode, semanticClass: string): void {
+  const existing = node.attributes['class'];
+  node.attributes['class'] = existing ? `${semanticClass} ${existing}` : semanticClass;
 }
 
 /** Phase C mirror: the generated fixed inset-0 stacking layer (.eq-overlay). */
@@ -275,7 +242,7 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
     color: tokenValue(context.textPrimary),
     'font-family': 'inherit',
   });
-  input.attributes['class'] = `eq-entry eq-type-${node.role.toLowerCase()}`;
+  prependClass(input, `eq-entry eq-type-${node.role.toLowerCase()}`);
   input.attributes['type'] = node.obscure === true ? 'password' : 'text';
   input.attributes['value'] = node.value;
   if (node.placeholder != null) input.attributes['placeholder'] = node.placeholder;
@@ -319,11 +286,10 @@ function pct(fraction: number): string {
 function lowerLoopMotion(node: LoopMotionNode, context: LoweringContext, path: string): HtmlNode {
   const wrapper = element('div', {
     animation: `eq-slide-x ${node.durationMs}ms linear infinite`,
+    '--eq-loop-from': pct(node.fromX),
+    '--eq-loop-to': pct(node.toX),
   });
-  wrapper.attributes['class'] =
-    node.hideAtRest === true ? 'eq-loop eq-loop-rest-hidden' : 'eq-loop';
-  wrapper.attributes['style'] =
-    `${wrapper.attributes['style']}; --eq-loop-from: ${pct(node.fromX)}; --eq-loop-to: ${pct(node.toX)}`;
+  prependClass(wrapper, node.hideAtRest === true ? 'eq-loop eq-loop-rest-hidden' : 'eq-loop');
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) wrapper.children.push(child);
   return wrapper;
@@ -357,7 +323,7 @@ function lowerImage(node: ImageNode): HtmlNode {
   return {
     tag: 'img',
     attributes: {
-      style: styleString({
+      ...atomicAttrs({
         width: px(node.width),
         height: px(node.height),
         'border-radius': hasRadius && radius ? radiusValue(radius) : undefined,
@@ -377,12 +343,14 @@ function lowerSpinner(node: SpinnerNode): HtmlNode {
   const svg: HtmlNode = {
     tag: 'svg',
     attributes: {
-      class: 'eq-spinner',
-      style: styleString({
-        width: px(node.size),
-        height: px(node.size),
-        color: node.color ? tokenValue(node.color) : undefined,
-      }),
+      ...atomicAttrs(
+        {
+          width: px(node.size),
+          height: px(node.size),
+          color: node.color ? tokenValue(node.color) : undefined,
+        },
+        'eq-spinner',
+      ),
       viewBox: '0 0 16 16',
       fill: 'currentColor',
       'aria-hidden': 'true',
@@ -413,7 +381,7 @@ function lowerSpinner(node: SpinnerNode): HtmlNode {
 function lowerIcon(node: IconNode): HtmlNode {
   const glyph = node.glyph;
   const attributes: Record<string, string | undefined> = {
-    style: styleString({
+    ...atomicAttrs({
       width: px(node.size),
       height: px(node.size),
       color: node.color ? tokenValue(node.color) : undefined,
@@ -635,7 +603,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   }
 
   const node = element('span', style, [textLeaf(text.content)]);
-  node.attributes['class'] = `eq-type-${text.role.toLowerCase()}`;
+  prependClass(node, `eq-type-${text.role.toLowerCase()}`);
   return node;
 }
 
@@ -693,10 +661,11 @@ function lowerPressable(
   // pressable carries the class (:focus-visible double ring is an a11y DEFAULT); the pressed swap
   // additionally ships its token value as a custom property at the style TAIL (the C# cross-pin).
   if (!disabled) {
-    node.attributes['class'] = 'eq-pressable';
+    prependClass(node, 'eq-pressable');
     if (pressable.pressedBackground) {
-      node.attributes['style'] =
-        `${node.attributes['style']}; --eq-pressed-bg: ${tokenValue(pressable.pressedBackground)}`;
+      const tail = `--eq-pressed-bg: ${tokenValue(pressable.pressedBackground)}`;
+      const existing = node.attributes['style'];
+      node.attributes['style'] = existing ? `${existing}; ${tail}` : tail;
     }
   }
 

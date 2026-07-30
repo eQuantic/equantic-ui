@@ -1,3 +1,4 @@
+import { effectiveStyle } from './style-atomizer';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Card } from './__transpiled__/Card';
 import { photonTheme } from './design-system.generated';
@@ -14,8 +15,8 @@ describe('VisualNodeComponent (the Core⇄Shared client bridge)', () => {
     const node = adapter.render();
 
     expect(node.tag).toBe('div');
-    expect(node.attributes.style).toContain('border-radius: 14px');
-    expect(node.attributes.style).toContain('background-color: light-dark(#eff1f4, #1c232b)');
+    expect(effectiveStyle(node)).toContain('border-radius: 14px');
+    expect(effectiveStyle(node)).toContain('background-color: light-dark(#eff1f4, #1c232b)');
   });
 
   it('boot-time theme registration: setPhotonTheme swaps what the ambient lowering resolves', () => {
@@ -25,12 +26,12 @@ describe('VisualNodeComponent (the Core⇄Shared client bridge)', () => {
 
     // A Text with no explicit color inherits the REGISTERED theme's textPrimary.
     const node = new VisualNodeComponent(new Text('hello')).render();
-    expect(node.attributes.style).toContain('color: #ff00ff');
+    expect(effectiveStyle(node)).toContain('color: #ff00ff');
   });
 
   it('an explicit theme argument overrides the ambient one (the C# optional parameter)', () => {
     const custom = { ...photonTheme, textPrimary: new ColorToken({ r: 0, g: 128, b: 0, a: 255 }) };
     const node = new VisualNodeComponent(new Text('hello'), custom).render();
-    expect(node.attributes.style).toContain('color: #008000');
+    expect(effectiveStyle(node)).toContain('color: #008000');
   });
 });

@@ -6,6 +6,7 @@
  * reflects the new state, mirroring the native tap → SetState → rebuild test on Photon.
  */
 
+import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import { SharedCounter } from './__transpiled__/SharedCounter';
 
@@ -46,7 +47,7 @@ describe('transpiled SharedCounter (real eqc output, direct-SetState shape)', ()
     const buttonNode = node.children[1];
     expect(buttonNode.tag).toBe('button');
     const box = buttonNode.children[0];
-    expect(box.attributes.style).toContain('height: 40px');
-    expect(box.attributes.style).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
+    expect(effectiveStyle(box)).toContain('height: 40px');
+    expect(effectiveStyle(box)).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
   });
 });

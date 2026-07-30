@@ -138,8 +138,27 @@ public class ServerRenderingService : IServerRenderingService
                 var assets = new AssetCollection();
                 CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
 
-                // Render the component to HTML
-                var html = RenderComponent(component);
+                // Render with an AMBIENT style sink armed (STYLE-SEMANTICS-PLAN §2): every write-once
+                // bridge in the tree — top-level page or composed inside a Core component — collects
+                // its atomic rules into this one per-page set.
+                var styles = new Web.StyleSink();
+                string html;
+                Web.StyleSink.Ambient = styles;
+                try
+                {
+                    html = RenderComponent(component);
+                }
+                finally
+                {
+                    Web.StyleSink.Ambient = null;
+                }
+
+                // Inject exactly the rules this markup references, so hydration matches by class
+                // identity. The id lets the client registry adopt them instead of re-inserting.
+                if (!styles.IsEmpty)
+                {
+                    assets.Add(new InlineStyleAsset(styles.Css, "eq-atomic"));
+                }
 
                 // Serialize state for hydration (if component is stateful)
                 string? serializedState = null;

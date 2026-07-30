@@ -6,6 +6,7 @@
  * twice (assembly for SSR/native, JS for the client), one rendering.
  */
 
+import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import type { HtmlNode } from '../core/types';
 import { Button } from './__transpiled__/Button';
@@ -23,15 +24,15 @@ describe('transpiled shared Button (real eqc output)', () => {
     const box = node.children[0];
     expect(box.tag).toBe('div');
     // The Medium row of the spec A12 size table + Primary tokens — the WebRealizerTests values.
-    expect(box.attributes.style).toContain('height: 40px');
-    expect(box.attributes.style).toContain('min-width: 64px');
-    expect(box.attributes.style).toContain('padding: 0 16px 0 16px');
-    expect(box.attributes.style).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
-    expect(box.attributes.style).toContain('border-radius: 10px');
+    expect(effectiveStyle(box)).toContain('height: 40px');
+    expect(effectiveStyle(box)).toContain('min-width: 64px');
+    expect(effectiveStyle(box)).toContain('padding: 0 16px 0 16px');
+    expect(effectiveStyle(box)).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
+    expect(effectiveStyle(box)).toContain('border-radius: 10px');
 
     const label = box.children[0].children[0];
     expect(label.tag).toBe('span');
-    expect(label.attributes.style).toContain('font-size: 15px');
+    expect(effectiveStyle(label)).toContain('font-size: 15px');
     expect(label.children[0].textContent).toBe('Continuar');
   });
 
@@ -40,8 +41,8 @@ describe('transpiled shared Button (real eqc output)', () => {
     const node = outline.render();
     const box = node.children[0];
 
-    expect(box.attributes.style).toContain('border: 1px solid light-dark(#c9ced6, #3d4754)');
-    expect(box.attributes.style).not.toContain('background-color');
+    expect(effectiveStyle(box)).toContain('border: 1px solid light-dark(#c9ced6, #3d4754)');
+    expect(effectiveStyle(box)).not.toContain('background-color');
   });
 
   it('disabled applies the 38% token-level opacity group and swallows the press', () => {
@@ -60,7 +61,7 @@ describe('transpiled shared Button (real eqc output)', () => {
     expect(node.attributes.disabled).toBeDefined();
     expect(node.events.click).toBeUndefined();
     // Primary base with alpha 97 (255 × 0.38) → 8-digit hex on both modes.
-    expect(node.children[0].attributes.style).toContain(
+    expect(effectiveStyle(node.children[0])).toContain(
       'background-color: light-dark(#0050a061, #5ca2e861)',
     );
     expect(fired).toBe(false);
@@ -83,9 +84,9 @@ describe('transpiled shared Card (real eqc output)', () => {
     const node = card.render();
 
     expect(node.tag).toBe('div');
-    expect(node.attributes.style).toContain('border-radius: 14px');
-    expect(node.attributes.style).toContain('padding: 16px 16px 16px 16px');
-    expect(node.attributes.style).toContain('background-color: light-dark(#eff1f4, #1c232b)');
+    expect(effectiveStyle(node)).toContain('border-radius: 14px');
+    expect(effectiveStyle(node)).toContain('padding: 16px 16px 16px 16px');
+    expect(effectiveStyle(node)).toContain('background-color: light-dark(#eff1f4, #1c232b)');
   });
 
   it('composes transpiled components inside abstract trees (Card wrapping a Column with a Button)', () => {
@@ -96,7 +97,7 @@ describe('transpiled shared Card (real eqc output)', () => {
     const node = new Card(content, 'outlined').render();
 
     const column = node.children[0];
-    expect(column.attributes.style).toContain('flex-direction: column');
+    expect(effectiveStyle(column)).toContain('flex-direction: column');
     expect(column.children[1].tag).toBe('button');
   });
 });

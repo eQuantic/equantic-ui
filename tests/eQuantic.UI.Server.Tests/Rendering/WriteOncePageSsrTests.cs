@@ -59,10 +59,18 @@ public class WriteOncePageSsrTests
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("Count: 0", "field defaults are the v1 initial state");
-        // Mode-free token output — the same light-dark() the client lowering hydrates against.
-        result.Html.Should().Contain("light-dark(#ffffff, #14181e)", "Surface token from the theme");
-        result.Html.Should().Contain("box-sizing: border-box");
+        // ATOMIC pipeline: the markup carries class names; the rules ride an injected style asset
+        // (id eq-atomic) the client registry adopts — colors as var(--eq-color-*, resolved-fallback).
+        result.Html.Should().Contain("class=\"eq-", "styles become atomic classes");
+        result.Html.Should().NotContain("style=\"box-sizing", "regular declarations never stay inline");
+        var css = AtomicCss(result);
+        css.Should().Contain("background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))");
+        css.Should().Contain("box-sizing:border-box");
     }
+
+    private static string AtomicCss(ServerRenderResult result) =>
+        string.Join("\n", result.Assets!.RenderTags()).Should().Contain("id=\"eq-atomic\"", "the SSR injects the collected rules")
+            .And.Subject;
 
     [Fact]
     public void RenderComponent_BridgesAnAbstractTree_ThroughTheWebRealizer()
@@ -90,7 +98,9 @@ public class WriteOncePageSsrTests
         var result = await service.RenderPageAsync(nameof(WriteOnceTestPage), context);
 
         result.Success.Should().BeTrue(result.Error);
-        result.Html.Should().Contain("light-dark(#f7f2fa, #1d1b20)", "Material's M3 Surface token");
-        result.Html.Should().NotContain("light-dark(#ffffff, #14181e)", "the Photon Surface must be gone");
+        var css = AtomicCss(result);
+        css.Should().Contain("background-color:var(--eq-color-surface, light-dark(#f7f2fa, #1d1b20))",
+            "Material's M3 Surface token, var-referenced");
+        css.Should().NotContain("light-dark(#ffffff, #14181e)", "the Photon Surface must be gone");
     }
 }
