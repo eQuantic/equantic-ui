@@ -134,6 +134,19 @@ abstract class FlexNode extends VisualNode {
   }
 }
 
+/** Mirror of the C# `AdaptiveNode` (spec S6): up to three size-class variants. */
+export class AdaptiveNode extends VisualNode {
+  readonly nodeKind = 'adaptive';
+
+  constructor(
+    readonly compact: VisualNode,
+    readonly medium: VisualNode | null = null,
+    readonly expanded: VisualNode | null = null,
+  ) {
+    super();
+  }
+}
+
 /** Mirror of the C# `GridTrack` statics. */
 export class GridTrack {
   constructor(

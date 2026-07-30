@@ -15,6 +15,11 @@ public sealed class LayoutContext
     }
 
     public IAppTheme Theme { get; }
+
+    /// <summary>Spec S6: the window size class layout resolves AdaptiveNodes against — derived from
+    /// the viewport width by the realizer (re-layout happens naturally when a resize crosses a
+    /// threshold, because the class is a pure function of the width).</summary>
+    public WindowSizeClass SizeClass { get; init; }
     public ITextMeasurer Measurer { get; }
     public float TypeScale { get; }
 
@@ -64,6 +69,9 @@ public static class LayoutEngine
         FlexNode flex => MeasureFlex(flex, maxW, maxH, ctx, path),
         Stack stack => MeasureStack(stack, maxW, maxH, ctx, path),
         Grid grid => MeasureGrid(grid, maxW, maxH, ctx, path),
+        // Spec S6: an AdaptiveNode IS its resolved variant on native — the other variants never
+        // measure, never paint (the web keeps them, CSS-gated).
+        AdaptiveNode adaptive => Measure(adaptive.Resolve(ctx.SizeClass), maxW, maxH, ctx, path + "/0"),
         ScrollView scroll => MeasureScrollView(scroll, maxW, maxH, ctx, path),
         // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
         Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx, path),

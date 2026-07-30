@@ -45,6 +45,7 @@ public static class WebRealizer
         FlexNode flex => LowerFlex(flex, context),
         Stack stack => LowerStack(stack, context),
         Grid grid => LowerGrid(grid, context),
+        AdaptiveNode adaptive => LowerAdaptive(adaptive, context),
         ScrollView scroll => LowerScrollView(scroll, context),
         // A Positioned outside a Stack has no anchor frame — degrade to its child (parity with native).
         Positioned positioned => LowerNode(positioned.Child, context, horizontalAxis),
@@ -475,6 +476,35 @@ public static class WebRealizer
         return element;
     }
 
+    /// <summary>Spec S6: every DECLARED variant renders, each inside a gate whose fixed media rules
+    /// show it only in its size-class range (display:contents keeps gates transparent to flex/grid).
+    /// The ranges encode the same fallback chain the native Resolve uses — zero JS, zero listeners.</summary>
+    private static HtmlElement LowerAdaptive(AdaptiveNode adaptive, ComponentContext context)
+    {
+        var wrapper = new RealizedElement("div") { Style = new HtmlStyle { Display = Display.Contents } };
+
+        void AddVariant(VisualNode variant, string gate)
+        {
+            if (LowerNode(variant, context, horizontalAxis: null) is not { } lowered) return;
+            var gated = new RealizedElement("div") { AdaptiveGate = gate };
+            gated.Children.Add(lowered);
+            wrapper.Children.Add(gated);
+        }
+
+        // A lone Compact needs no gating — it IS the tree at every size.
+        if (adaptive.Medium is null && adaptive.Expanded is null)
+            return LowerNode(adaptive.Compact, context, horizontalAxis: null) ?? wrapper;
+
+        AddVariant(adaptive.Compact, adaptive.Medium is not null
+            ? AdaptiveGates.CompactUntilMedium
+            : AdaptiveGates.CompactUntilExpanded);
+        if (adaptive.Medium is { } medium)
+            AddVariant(medium, adaptive.Expanded is not null ? AdaptiveGates.MediumUntilExpanded : AdaptiveGates.MediumOpen);
+        if (adaptive.Expanded is { } expanded)
+            AddVariant(expanded, AdaptiveGates.Expanded);
+        return wrapper;
+    }
+
     /// <summary>Spec S4: CSS Grid — tracks as "px | Nfr | auto", the gap pair, spans per child.</summary>
     private static HtmlElement LowerGrid(Grid grid, ComponentContext context)
     {
@@ -661,8 +691,11 @@ public static class WebRealizer
 
 /// <summary>A lowered element: a generic <see cref="HtmlElement"/> with an explicit tag — the web
 /// realizer's only output shape (mirrors the web SDK's generic div container).</summary>
-internal sealed class RealizedElement : HtmlElement, IPseudoStyled
+internal sealed class RealizedElement : HtmlElement, IPseudoStyled, IAdaptiveGated
 {
+    /// <summary>Spec S6: the size-class gate this element carries (fixed class + media blob).</summary>
+    public string? AdaptiveGate { get; set; }
+
     public RealizedElement(string tag) => Tag = tag;
 
     public string Tag { get; }

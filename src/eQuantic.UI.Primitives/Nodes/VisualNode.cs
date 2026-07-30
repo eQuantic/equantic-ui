@@ -528,6 +528,62 @@ public sealed class Grid : VisualNode, IEnumerable<VisualNode>
     IEnumerator IEnumerable.GetEnumerator() => _children.GetEnumerator();
 }
 
+/// <summary>Spec S6 — the Material window size classes: the ONLY responsive vocabulary app code
+/// speaks. Web realizes them as build-time media queries; Photon resolves from the window width.</summary>
+public enum WindowSizeClass : byte
+{
+    /// <summary>&lt; 600dp — phones portrait.</summary>
+    Compact = 0,
+    /// <summary>600–839dp — tablets portrait, foldables.</summary>
+    Medium = 1,
+    /// <summary>≥ 840dp — tablets landscape, desktop.</summary>
+    Expanded = 2,
+}
+
+public static class WindowSizeClasses
+{
+    public const float MediumMinDp = 600;
+    public const float ExpandedMinDp = 840;
+
+    public static WindowSizeClass FromWidth(float dp) => dp switch
+    {
+        >= ExpandedMinDp => WindowSizeClass.Expanded,
+        >= MediumMinDp => WindowSizeClass.Medium,
+        _ => WindowSizeClass.Compact,
+    };
+}
+
+/// <summary>
+/// Spec S6 — a subtree that ADAPTS to the window size class: up to three variants, resolved by the
+/// fallback chain (Expanded → Medium → Compact). Fully general responsiveness — a different nav, a
+/// different grid, a different direction — with ZERO listeners: the web realizer emits every
+/// declared variant gated by build-time media queries (display:contents/none); Photon lays out only
+/// the variant matching the window class and re-lays-out when the class crosses a threshold.
+/// </summary>
+public sealed class AdaptiveNode : VisualNode
+{
+    public override string NodeKind => "adaptive";
+
+    public AdaptiveNode(VisualNode compact, VisualNode? medium = null, VisualNode? expanded = null)
+    {
+        Compact = compact;
+        Medium = medium;
+        Expanded = expanded;
+    }
+
+    public VisualNode Compact { get; }
+    public VisualNode? Medium { get; }
+    public VisualNode? Expanded { get; }
+
+    /// <summary>The variant for a class — missing variants fall back toward Compact.</summary>
+    public VisualNode Resolve(WindowSizeClass sizeClass) => sizeClass switch
+    {
+        WindowSizeClass.Expanded => Expanded ?? Medium ?? Compact,
+        WindowSizeClass.Medium => Medium ?? Compact,
+        _ => Compact,
+    };
+}
+
 public sealed class Stack : VisualNode
 {
     public sealed override string NodeKind => "stack";

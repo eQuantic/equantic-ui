@@ -56,6 +56,14 @@ public static class StyleAtomizer
                 : null;
         }
 
+        // Spec S6: an adaptive gate registers its fixed media blob (idempotent) — the class shows
+        // the variant only inside its size-class range (display:contents/none, zero JS).
+        if (element is IAdaptiveGated { AdaptiveGate: { } gate })
+        {
+            sink.AddAdaptiveGate(gate);
+            element.ClassName = string.IsNullOrEmpty(element.ClassName) ? gate : $"{element.ClassName} {gate}";
+        }
+
         // Spec S5 pseudo-variant classes come AFTER the base atomic set — the same order the TS
         // lowering appends them (hydration compares the class attribute as one string).
         if (element is IPseudoStyled { PseudoDeclarations: { Count: > 0 } pseudos })
@@ -104,6 +112,12 @@ public interface IPseudoStyled
     List<(string Pseudo, string Prop, string Value)> PseudoDeclarations { get; }
 }
 
+/// <summary>Spec S6 channel: an adaptive-variant wrapper carrying its size-class GATE.</summary>
+public interface IAdaptiveGated
+{
+    string? AdaptiveGate { get; }
+}
+
 /// <summary>
 /// The atomic-rule registry of one render (SSR) or one app (client twin): class → declaration,
 /// insert-once. <see cref="Css"/> is what the server injects next to the page so hydration sees the
@@ -141,6 +155,11 @@ public sealed class StyleSink
 
     public bool IsEmpty => _rules.Count == 0;
 
+    /// <summary>Spec S6: the FIXED gate rules — visible ranges follow the AdaptiveNode fallback
+    /// chain (a variant shows until the next DECLARED variant takes over). Raw blobs, one per gate
+    /// class, byte-identical to the TS twin.</summary>
+    public void AddAdaptiveGate(string gate) => _rules.TryAdd(gate, "\u0002" + AdaptiveGates.Css(gate));
+
     /// <summary>Every collected rule, sorted by class name (deterministic output for tests/caching).</summary>
     public string Css
     {
@@ -149,6 +168,7 @@ public sealed class StyleSink
             var css = new StringBuilder();
             foreach (var rule in _rules.OrderBy(r => r.Key, StringComparer.Ordinal))
             {
+                if (rule.Value.StartsWith('\u0002')) { css.Append(rule.Value[1..]); continue; }
                 var split = rule.Value.IndexOf('\u0001');
                 if (split >= 0)
                     css.Append('.').Append(rule.Key).Append(rule.Value[..split])
@@ -159,6 +179,37 @@ public sealed class StyleSink
             return css.ToString();
         }
     }
+}
+
+/// <summary>Spec S6: the size-class gate vocabulary — class names and their media blobs, shared
+/// verbatim by the C# realizer and the TS lowering. Ranges encode the fallback chain: a variant is
+/// visible from its own threshold until the next DECLARED variant's threshold.</summary>
+public static class AdaptiveGates
+{
+    /// <summary>Compact hidden from 600dp (a Medium variant exists).</summary>
+    public const string CompactUntilMedium = "eq-vc6";
+
+    /// <summary>Compact hidden from 840dp (no Medium — Compact serves until Expanded).</summary>
+    public const string CompactUntilExpanded = "eq-vc8";
+
+    /// <summary>Medium from 600dp, hidden from 840dp (an Expanded variant exists).</summary>
+    public const string MediumUntilExpanded = "eq-vm8";
+
+    /// <summary>Medium from 600dp, open-ended (no Expanded).</summary>
+    public const string MediumOpen = "eq-vm";
+
+    /// <summary>Expanded from 840dp.</summary>
+    public const string Expanded = "eq-vx";
+
+    public static string Css(string gate) => gate switch
+    {
+        CompactUntilMedium => ".eq-vc6{display:contents}@media (min-width: 600px){.eq-vc6{display:none}}",
+        CompactUntilExpanded => ".eq-vc8{display:contents}@media (min-width: 840px){.eq-vc8{display:none}}",
+        MediumUntilExpanded => ".eq-vm8{display:none}@media (min-width: 600px) and (max-width: 839.98px){.eq-vm8{display:contents}}",
+        MediumOpen => ".eq-vm{display:none}@media (min-width: 600px){.eq-vm{display:contents}}",
+        Expanded => ".eq-vx{display:none}@media (min-width: 840px){.eq-vx{display:contents}}",
+        _ => throw new ArgumentOutOfRangeException(nameof(gate), gate, "Unknown adaptive gate."),
+    };
 }
 
 /// <summary>

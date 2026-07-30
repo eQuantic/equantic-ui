@@ -14,7 +14,7 @@
 import type { EventHandler, HtmlNode } from '../core/types';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
-import { atomizeEntries, atomizePseudo, mergeAtomicDeclaration } from './style-atomizer';
+import { atomizeEntries, atomizePseudo, ensureAdaptiveGate, mergeAtomicDeclaration } from './style-atomizer';
 import type {
   BoxNode,
   BoxStyleValue,
@@ -37,6 +37,7 @@ import type {
   SizeValueValue,
   StackNode,
   SpacerNode,
+  AdaptiveNodeValue,
   GridNode,
   StyleDiffValue,
   TextEntryNode,
@@ -181,6 +182,8 @@ function lowerNode(
       return lowerStack(node as StackNode, context, path);
     case 'grid':
       return lowerGrid(node as unknown as GridNode, context, path);
+    case 'adaptive':
+      return lowerAdaptive(node as unknown as AdaptiveNodeValue, context, path);
     case 'positioned':
       // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
       return lowerNode((node as PositionedNode).child, context, horizontalAxis, path + '/0');
@@ -764,6 +767,31 @@ function lowerFlexible(
   const child = lowerNode(flexible.child, context, horizontalAxis, path + '/0');
   if (child) node.children.push(child);
   return node;
+}
+
+/** Spec S6 mirror of the C# LowerAdaptive: every declared variant gated by the fixed media rules. */
+function lowerAdaptive(node: AdaptiveNodeValue, context: LoweringContext, path: string): HtmlNode {
+  if (!node.medium && !node.expanded) {
+    return (
+      lowerNode(node.compact, context, null, path + '/0') ?? element('div', { display: 'contents' })
+    );
+  }
+  const wrapper = element('div', { display: 'contents' });
+  const addVariant = (variant: VisualNodeValue, gate: string, index: number) => {
+    const lowered = lowerNode(variant, context, null, `${path}/${index}`);
+    if (!lowered) return;
+    ensureAdaptiveGate(gate);
+    wrapper.children.push({
+      tag: 'div',
+      attributes: { class: gate },
+      events: {},
+      children: [lowered],
+    });
+  };
+  addVariant(node.compact, node.medium ? 'eq-vc6' : 'eq-vc8', 0);
+  if (node.medium) addVariant(node.medium, node.expanded ? 'eq-vm8' : 'eq-vm', 1);
+  if (node.expanded) addVariant(node.expanded, 'eq-vx', 2);
+  return wrapper;
 }
 
 /** Spec S4 mirror: CSS Grid — identical track/gap/span strings to the C# LowerGrid. */

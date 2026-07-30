@@ -59,6 +59,15 @@ export interface GridTrackValue {
   value: number;
 }
 
+/** Spec S6 — a subtree that adapts to the window size class (up to 3 variants). */
+export interface AdaptiveNodeValue {
+  nodeKind: 'adaptive';
+  key?: string | null;
+  compact: VisualNodeValue;
+  medium?: VisualNodeValue | null;
+  expanded?: VisualNodeValue | null;
+}
+
 /** Spec S4 — the 2D grid container (auto-flow, explicit column tracks). */
 export interface GridNode {
   nodeKind: 'grid';
