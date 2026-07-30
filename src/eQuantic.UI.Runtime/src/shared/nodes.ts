@@ -59,6 +59,14 @@ export interface GridTrackValue {
   value: number;
 }
 
+/** Spec S7 — scroll-anchored chrome: in flow until scrolling pins it at `offset`. */
+export interface StickyNode {
+  nodeKind: 'sticky';
+  key?: string | null;
+  child: VisualNodeValue;
+  offset: number;
+}
+
 /** Spec S6 — a subtree that adapts to the window size class (up to 3 variants). */
 export interface AdaptiveNodeValue {
   nodeKind: 'adaptive';

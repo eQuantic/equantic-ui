@@ -621,6 +621,10 @@ public sealed class Positioned : VisualNode
     public float? End { get; init; }
     public float? Bottom { get; init; }
     public float? Start { get; init; }
+
+    /// <summary>Spec S7: explicit stacking inside the Stack — higher paints (and hit-tests) on top.
+    /// Equal values keep declaration order (stable). 0 = flow order.</summary>
+    public int ZIndex { get; init; }
 }
 
 /// <summary>Scroll axis (spec A6).</summary>
@@ -628,6 +632,8 @@ public enum ScrollAxis : byte
 {
     Vertical = 0,
     Horizontal = 1,
+    /// <summary>Spec S7: scrolls on both axes (tables, canvases).</summary>
+    Both = 2,
 }
 
 /// <summary>
@@ -637,6 +643,29 @@ public enum ScrollAxis : byte
 /// with the native interaction system; today the scroll position is the programmatic
 /// <see cref="Offset"/> (web realizes as native browser scrolling, which owns its own physics).
 /// </summary>
+/// <summary>
+/// Spec S7 — scroll-anchored chrome (section headers): the child renders in flow, but PINS to the
+/// start of the scroll viewport once scrolling would push it out, offset by <see cref="Offset"/>.
+/// v1 scope: vertical scrolling (CSS <c>position: sticky; top</c>); the Photon pinning joins the
+/// native scroll compositor when engine scrolling lands — until then it renders in flow (correct
+/// at scroll offset 0).
+/// </summary>
+public sealed class Sticky : VisualNode
+{
+    public override string NodeKind => "sticky";
+
+    public Sticky(VisualNode child, float offset = 0)
+    {
+        Child = child;
+        Offset = offset;
+    }
+
+    public VisualNode Child { get; }
+
+    /// <summary>Distance from the viewport's start edge while pinned (dp).</summary>
+    public float Offset { get; init; }
+}
+
 public sealed class ScrollView : VisualNode
 {
     public sealed override string NodeKind => "scrollView";

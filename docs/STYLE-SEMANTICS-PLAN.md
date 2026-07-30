@@ -278,7 +278,18 @@ rule (EQ1xxx) keeps anything untranslatable a BUILD error, never silent.
   `Adaptive<T>` per-declaration media variants (the gate machinery is the foundation). Proven:
   4 native tests (variant per width, fallback) + 3 web pins + 3 vitest mirrors (byte-identical
   gate blobs).
-- **S7 — Scroll semantics** (`Sticky`, `ZIndex`, per-axis overflow) — closes the "any layout" list.
+- **S7 — Scroll semantics ✅ (2026-07-30):** `Sticky(child, offset)` (CSS position:sticky at the
+  offset, z-index 1; native renders in flow — the pinning joins the scroll compositor with engine
+  scrolling, fence on the node), `Positioned.ZIndex` (web z-index on the anchor; Photon stable-sorts
+  the Stack's paint order — topmost last, hit-testing follows), and `ScrollAxis.Both` (auto on both
+  axes on web). Proven: 3 web pins + 3 vitest mirrors + 1 native paint-order test.
+
+**TRACK S COMPLETE (2026-07-30).** The style semantics closes: one abstract vocabulary
+(flex/wrap/grid/stack/scroll/sticky + paint + type roles + states + adaptive), zero CSS authored,
+realized on DOM and Photon from the same C#, emitted through the atomic engine (O(distinct
+declarations), theme-var rules, class-identity hydration). Remaining fences live with their slices:
+S2b eqc build-time extraction, S6b fine-grained Adaptive<T>, native scroll compositor pinning,
+Metal offscreen layers (D3), GridArea pinning.
 
 Order rationale: S1 is a fast additive win; S2 lands the engine early so S3–S7 are born atomic
 (each later slice pins its output once, already in final form).

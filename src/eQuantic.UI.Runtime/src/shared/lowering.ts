@@ -39,6 +39,7 @@ import type {
   SpacerNode,
   AdaptiveNodeValue,
   GridNode,
+  StickyNode,
   StyleDiffValue,
   TextEntryNode,
   TextNode,
@@ -184,6 +185,8 @@ function lowerNode(
       return lowerGrid(node as unknown as GridNode, context, path);
     case 'adaptive':
       return lowerAdaptive(node as unknown as AdaptiveNodeValue, context, path);
+    case 'sticky':
+      return lowerSticky(node as unknown as StickyNode, context, path);
     case 'positioned':
       // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
       return lowerNode((node as PositionedNode).child, context, horizontalAxis, path + '/0');
@@ -333,8 +336,8 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
     {
       width: sizeValue(node.width),
       height: sizeValue(node.height),
-      'overflow-y': vertical ? 'auto' : 'hidden',
-      'overflow-x': vertical ? 'hidden' : 'auto',
+      'overflow-y': node.axis === 'horizontal' ? 'hidden' : 'auto',
+      'overflow-x': node.axis === 'vertical' ? 'hidden' : 'auto',
     },
     children,
   );
@@ -468,6 +471,8 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
           'div',
           {
             position: 'absolute',
+            // Spec S7: explicit stacking — flow order otherwise (painter's parity).
+            'z-index': (positioned.zIndex ?? 0) !== 0 ? `${positioned.zIndex}` : undefined,
             top: positioned.top != null ? px(positioned.top) : undefined,
             right: positioned.end != null ? px(positioned.end) : undefined,
             bottom: positioned.bottom != null ? px(positioned.bottom) : undefined,
@@ -767,6 +772,18 @@ function lowerFlexible(
   const child = lowerNode(flexible.child, context, horizontalAxis, path + '/0');
   if (child) node.children.push(child);
   return node;
+}
+
+/** Spec S7 mirror of the C# LowerSticky: CSS sticky at `offset` from the viewport start. */
+function lowerSticky(node: StickyNode, context: LoweringContext, path: string): HtmlNode {
+  const wrapper = element('div', {
+    position: 'sticky',
+    top: px(node.offset),
+    'z-index': '1',
+  });
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) wrapper.children.push(child);
+  return wrapper;
 }
 
 /** Spec S6 mirror of the C# LowerAdaptive: every declared variant gated by the fixed media rules. */
