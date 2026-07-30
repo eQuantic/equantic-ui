@@ -118,6 +118,7 @@ export {
   LinearGradient,
   TextEntry,
   Overlay,
+  Presence,
   Spinner,
 } from './shared/vocabulary';
 export {

@@ -65,10 +65,12 @@ public sealed class BottomSheet : StatelessComponent
             Height = SizeValue.Fill,
             Main = MainAlign.End,
         };
-        anchor.Add(sheet);
+        // Enter motion (spec §06): the sheet RISES while the scrim fades — two presences in one
+        // layer, because sliding the full-viewport scrim would expose a gap at the top.
+        anchor.Add(new Presence(sheet, PresenceMotion.SlideUp));
 
         var layers = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        layers.Add(scrim);
+        layers.Add(new Presence(scrim));
         layers.Add(anchor);
         return new Overlay(layers);
     }

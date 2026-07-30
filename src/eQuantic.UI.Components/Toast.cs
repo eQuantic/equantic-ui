@@ -68,7 +68,8 @@ public sealed class Toast : StatelessComponent
             Cross = CrossAlign.Center,
             Padding = EdgeInsets.Symmetric(Space.S4, Space.S6),
         };
-        anchor.Add(pill);
+        // Enter motion (spec §06): the pill rises into place (SlideUp) — the toast entrance.
+        anchor.Add(new Presence(pill, PresenceMotion.SlideUp));
 
         return new Overlay(anchor) { Modal = false };
     }

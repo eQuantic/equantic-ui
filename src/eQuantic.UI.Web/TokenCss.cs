@@ -194,6 +194,15 @@ public static class PhotonCssGenerator
         css.AppendLine(".eq-overlay-passthrough { pointer-events: none; }");
         css.AppendLine(".eq-overlay-passthrough .eq-pressable { pointer-events: auto; }");
 
+        // Enter motion (spec §06 — Presence): a mount-playing animation on the subtree's own root
+        // element (no wrapper — the class rides the lowered child, so flex/stack layout is
+        // untouched). Reduce Motion replaces movement with the spec's short crossfade.
+        css.AppendLine("@keyframes eq-presence-fade { from { opacity: 0; } }");
+        css.AppendLine($"@keyframes eq-presence-slideup {{ from {{ opacity: 0; transform: translateY({TokenCss.Px(Presence.SlideDistance)}); }} }}");
+        css.AppendLine(".eq-presence-fade { animation: eq-presence-fade var(--eq-motion-base) ease-out; }");
+        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
+        css.AppendLine($"@media (prefers-reduced-motion: reduce) {{ .eq-presence-fade, .eq-presence-slideup {{ animation: eq-presence-fade {Motion.ReducedCrossfadeMs}ms ease-out; }} }}");
+
         // Spinner mechanics (spec B15): the 800ms sawtooth fade each bar rides with its own
         // negative delay (the rotation phase); the 400ms anti-flash appear; Reduce Motion zeroes
         // the stagger so the bars pulse IN PLACE — same fade, no rotation phase.

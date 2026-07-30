@@ -30,6 +30,7 @@ import type {
   LinearGradientValue,
   LoopMotionNode,
   OverlayNode,
+  PresenceNode,
   SpinnerNode,
   PositionedNode,
   PressableNode,
@@ -173,6 +174,8 @@ function lowerNode(
       return lowerScrollView(node as ScrollViewNode, context, path);
     case 'loopMotion':
       return lowerLoopMotion(node as LoopMotionNode, context, path);
+    case 'presence':
+      return lowerPresence(node as PresenceNode, context, horizontalAxis, path);
     case 'image':
       return lowerImage(node as ImageNode);
     case 'icon':
@@ -246,6 +249,20 @@ function atomicAttrs(style: StyleEntries, semanticClass?: string): Record<string
 function prependClass(node: HtmlNode, semanticClass: string): void {
   const existing = node.attributes['class'];
   node.attributes['class'] = existing ? `${semanticClass} ${existing}` : semanticClass;
+}
+
+/** Spec §06 mirror: enter motion — NO wrapper; the mount-playing animation class rides the lowered
+ * child's own root (identical DOM to the C# SSR realizer, so hydration adopts it untouched). */
+function lowerPresence(
+  node: PresenceNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  if (!child) return null;
+  prependClass(child, node.enter === 'slideUp' ? 'eq-presence-slideup' : 'eq-presence-fade');
+  return child;
 }
 
 /** Phase C mirror: the generated fixed inset-0 stacking layer (.eq-overlay). */

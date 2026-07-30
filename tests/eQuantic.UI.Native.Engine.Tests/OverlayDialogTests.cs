@@ -139,8 +139,11 @@ public class OverlayDialogTests
         using var backend = new ReferenceBackend();
         using var surface = backend.CreateSurface(360, 300);
         var host = new PhotonHost(PageWithDialog(), PhotonTheme.Instance, mode, 360, 300);
+        // Frame 1 starts the enter motion; the golden pins the SETTLED state (byte-identical to
+        // the pre-motion golden — the entrance leaves no residue at rest).
+        host.RenderFrame(new DisplayListBuilder());
         var builder = new DisplayListBuilder();
-        host.RenderFrame(builder);
+        host.RenderFrame(builder, timeMs: 1000);
         backend.Render(builder.Build(), surface);
 
         GoldenImage.Match(surface, golden);

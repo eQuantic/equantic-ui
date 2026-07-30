@@ -96,6 +96,7 @@ public sealed class Dialog : StatelessComponent
         var layers = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
         layers.Add(scrim);
         layers.Add(centering);
-        return new Overlay(layers);
+        // Enter motion (spec §06): the whole layer fades in as one — scrim and card together.
+        return new Overlay(new Presence(layers));
     }
 }

@@ -24,6 +24,10 @@ public sealed class LayoutContext
     /// <summary>Spec B14: the host's value-transition animator (null = values snap).</summary>
     public TransitionStore? Transitions { get; init; }
 
+    /// <summary>Spec §06: the host's enter-motion clock behind <see cref="Presence"/> (null = subtrees
+    /// appear settled — SSR-like single-shot renders and layout-only tests need no entrance).</summary>
+    public PresenceStore? Presences { get; init; }
+
     /// <summary>Scroll compositor v1: the host's scroll offsets (null = programmatic Offset only).</summary>
     public ScrollStore? ScrollOffsets { get; init; }
 
@@ -55,6 +59,11 @@ public sealed class LayoutNode
     public Rect Bounds { get; internal set; }
     public List<LayoutNode> Children { get; } = new();
     public TextMeasurement? Text { get; internal set; }
+
+    /// <summary>Entrance progress (0..1) stamped at MEASURE time when <see cref="Source"/> is a
+    /// <see cref="Presence"/> — the emit pass reads it (paths exist only during layout). 1 = settled
+    /// (no presence clock in the context, or the entrance finished).</summary>
+    public float Presence { get; internal set; } = 1f;
 }
 
 /// <summary>
@@ -107,6 +116,9 @@ public static class LayoutEngine
         // Loop motion is layout-transparent: the offset is a REALIZE-time transform (spec §06 —
         // transform-only frames never re-lay-out).
         LoopMotion motion => MeasureWrapper(motion, motion.Child, maxW, maxH, ctx, path),
+        // Enter motion is layout-transparent too (opacity layer + paint-only translate) — but the
+        // progress is resolved HERE, where the stable path exists, and stamped on the node.
+        Presence presence => MeasurePresence(presence, maxW, maxH, ctx, path),
         // An Overlay is ZERO in the page flow — the realizer lays its child out against the
         // VIEWPORT in the overlay pass (path "ov<i>", stable for the reconciler).
         Overlay => new LayoutNode(node),
@@ -132,6 +144,15 @@ public static class LayoutEngine
     {
         var resolved = ctx.Instances?.Reconcile(path, component) ?? component;
         return MeasureWrapper(resolved, resolved.Build(ctx.Components), maxW, maxH, ctx, path);
+    }
+
+    /// <summary>A transparent wrapper that also resolves the ENTRANCE progress against the host's
+    /// presence clock, keyed by this stable path — the emit pass applies the paint-only effect.</summary>
+    private static LayoutNode MeasurePresence(Presence presence, float maxW, float maxH, LayoutContext ctx, string path)
+    {
+        var result = MeasureWrapper(presence, presence.Child, maxW, maxH, ctx, path);
+        result.Presence = ctx.Presences?.Progress(path, ctx.TimeMs, ctx.ReducedMotion) ?? 1f;
+        return result;
     }
 
     /// <summary>Spec A3: sizes to the largest NON-positioned child (explicit Width/Height override);

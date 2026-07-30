@@ -91,8 +91,12 @@ public class OverlayComponentsTests
         using var backend = new ReferenceBackend();
         using var surface = backend.CreateSurface(360, 400);
         var host = new PhotonHost(root, PhotonTheme.Instance, mode, 360, 400);
+        // Two frames: the first (t=0) starts the enter motion; the golden pins the SETTLED state
+        // (t past Motion.Base) — byte-identical to the pre-motion goldens, proving the entrance
+        // leaves no residue at rest.
+        host.RenderFrame(new DisplayListBuilder());
         var builder = new DisplayListBuilder();
-        host.RenderFrame(builder);
+        host.RenderFrame(builder, timeMs: 1000);
         backend.Render(builder.Build(), surface);
         GoldenImage.Match(surface, golden);
     }

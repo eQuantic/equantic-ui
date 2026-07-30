@@ -38,6 +38,7 @@ export {
   LinearGradient,
   TextEntry,
   Overlay,
+  Presence,
   Spinner,
 } from './vocabulary';
 export {

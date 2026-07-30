@@ -58,7 +58,7 @@ public sealed class PhotonHost
     public RealizeResult RenderFrame(DisplayListBuilder builder, float timeMs = 0)
     {
         builder.Clear(_theme.Background.Resolve(Mode));
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls);
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences);
         NeedsRender = _lastFrame.HasActiveMotion;
         return _lastFrame;
     }
@@ -77,6 +77,7 @@ public sealed class PhotonHost
     private VisualNode? _hovered;
     private readonly TransitionStore _transitions = new();
     private readonly ScrollStore _scrolls = new();
+    private readonly PresenceStore _presences = new();
     private Pressable? _focused;
 
     /// <summary>The Pressable holding keyboard focus (the §01 double ring renders while set).</summary>

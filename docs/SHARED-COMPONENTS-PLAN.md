@@ -479,6 +479,27 @@ rejected.)
    the MODALITY contract as dispatch tests (toast: the page button behind it still presses AND the
    toast action works; sheet: the scrim blocks the page and resolves dismiss). v1 fences: enter/exit
    motion (state-transition system), toast queueing, drag-to-dismiss + detents (gestures).
+   ENTER MOTION ✅ (2026-07-30, spec §06 — the C2/C3/C4 enter half of the state-transition fence):
+   `Presence(child, enter: Fade|SlideUp)` joins the vocabulary — a layout-transparent wrapper whose
+   subtree ANIMATES IN on first appearance (declarative `if (_open)` contract; SlideDistance 16dp,
+   Base 200ms, smoothstep stand-in; Reduce Motion replaces movement with the ReducedCrossfadeMs 120
+   crossfade — the token finally earns its keep). WEB: no wrapper element — the mount-playing
+   animation class (`.eq-presence-fade/slideup` + generated keyframes) rides the lowered child's OWN
+   root, so flex/stack layout is untouched, hydration adopts SSR markup unchanged, and the
+   reconciler's in-place patching never restarts it (replays only on real re-insertion). NATIVE:
+   `PresenceStore` — a pure presence clock per stable layout path (first sighting starts the
+   entrance; departed paths PRUNE at end-of-frame so a re-entry replays; progress stamps onto the
+   LayoutNode at measure time where paths exist) — and the realizer paints mid-flight frames inside
+   a `PushLayer(alpha)` GROUP-opacity layer (CSS-opacity semantics) with the SlideUp rise as a
+   paint-only translate; settled frames emit no layer (zero rest cost — the six overlay goldens
+   passed BYTE-IDENTICAL under the new two-frame settle harness). Components: Dialog fades as one
+   layer; BottomSheet = scrim fade + sheet SlideUp (two presences in one layer — sliding the
+   full-viewport scrim would gap the top); Toast pill SlideUp. Proven: 7 native tests (store clock,
+   re-entry replay, layer alpha = progress, reduced drops the slide, active-motion scheduling) + 2
+   mid-entrance goldens (sheet at progress 0.5, light+dark) + 3 web realizer tests + 3 vitest
+   lowering specs + live browser check (computed animationName = eq-presence-fade on the client-
+   opened Dialog). Remaining fences: EXIT motion (removal-deferred — web needs reconciler removal
+   deferral, native needs command retention for departed subtrees), toast queueing, gestures.
    THEME-SELECTION WIRING ✅ (2026-07-05, slice 3 — SSR bridge + client boot, per-app theme delivery):
    an app selects the write-once theme with one call — `AddUI(o => o.UseTheme(MaterialTheme.Instance))`
    (or `PhotonTheme.Instance` / `MaterialTheme.FromSeed(seed)` / a brand theme) — and the SAME
