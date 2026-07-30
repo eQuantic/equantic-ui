@@ -14,7 +14,7 @@
 import type { EventHandler, HtmlNode } from '../core/types';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
-import { atomizeEntries, mergeAtomicDeclaration } from './style-atomizer';
+import { atomizeEntries, atomizePseudo, mergeAtomicDeclaration } from './style-atomizer';
 import type {
   BoxNode,
   BoxStyleValue,
@@ -38,6 +38,7 @@ import type {
   StackNode,
   SpacerNode,
   GridNode,
+  StyleDiffValue,
   TextEntryNode,
   TextNode,
   TransformValue,
@@ -547,11 +548,37 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     'aspect-ratio': style.aspectRatio && style.aspectRatio > 0 ? num(style.aspectRatio) : undefined,
   });
 
+  if (style.hover) appendDiff(result, ':hover', style.hover);
+  if (style.focus) appendDiff(result, ':focus-visible', style.focus);
+
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');
     if (child) result.children.push(child);
   }
   return result;
+}
+
+/** Spec S5 mirror of the C# AppendDiff — identical declaration strings, pseudo-hashed classes. */
+function appendDiff(node: HtmlNode, pseudo: string, diff: StyleDiffValue): void {
+  const entries: Record<string, string | undefined> = {};
+  if (diff.background) entries['background-color'] = tokenValue(diff.background);
+  if (diff.borderWidth != null && diff.borderColor) {
+    entries['border'] = `${px(diff.borderWidth)} solid ${tokenValue(diff.borderColor)}`;
+  } else if (diff.borderColor) {
+    entries['border-color'] = tokenValue(diff.borderColor);
+  }
+  if (diff.elevation != null) {
+    const spec = getPhotonTheme().elevation(diff.elevation);
+    if (spec && (spec.blur !== 0 || spec.offsetY !== 0 || spec.spread !== 0)) {
+      entries['box-shadow'] = `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`;
+    }
+  }
+  if (diff.opacity != null) entries['opacity'] = num(diff.opacity);
+  const classes = atomizePseudo(pseudo, entries);
+  if (classes) {
+    const existing = node.attributes['class'];
+    node.attributes['class'] = existing ? `${existing} ${classes}` : classes;
+  }
 }
 
 function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string): HtmlNode {

@@ -364,9 +364,29 @@ public static class WebRealizer
             },
         };
 
+        if (box.Style.Hover is { IsEmpty: false } hover)
+            AppendDiff(element, ":hover", hover, context);
+        if (box.Style.Focus is { IsEmpty: false } focus)
+            AppendDiff(element, ":focus-visible", focus, context);
+
         if (box.Child is not null && LowerNode(box.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;
+    }
+
+    /// <summary>Spec S5: a StyleDiff's set members as pseudo-state declarations (base values keep).</summary>
+    private static void AppendDiff(RealizedElement element, string pseudo, in StyleDiff diff, ComponentContext context)
+    {
+        if (diff.Background is { } bg)
+            element.PseudoDeclarations.Add((pseudo, "background-color", TokenCss.Value(bg)));
+        if (diff is { BorderWidth: { } bw, BorderColor: { } bc })
+            element.PseudoDeclarations.Add((pseudo, "border", $"{TokenCss.Px(bw)} solid {TokenCss.Value(bc)}"));
+        else if (diff.BorderColor is { } onlyColor)
+            element.PseudoDeclarations.Add((pseudo, "border-color", TokenCss.Value(onlyColor)));
+        if (diff.Elevation is { } level && !context.Theme.Elevation(level).IsNone)
+            element.PseudoDeclarations.Add((pseudo, "box-shadow", TokenCss.Shadow(context.Theme.Elevation(level))));
+        if (diff.Opacity is { } alpha)
+            element.PseudoDeclarations.Add((pseudo, "opacity", TokenCss.Number(alpha)));
     }
 
     /// <summary>
@@ -641,11 +661,15 @@ public static class WebRealizer
 
 /// <summary>A lowered element: a generic <see cref="HtmlElement"/> with an explicit tag — the web
 /// realizer's only output shape (mirrors the web SDK's generic div container).</summary>
-internal sealed class RealizedElement : HtmlElement
+internal sealed class RealizedElement : HtmlElement, IPseudoStyled
 {
     public RealizedElement(string tag) => Tag = tag;
 
     public string Tag { get; }
+
+    /// <summary>Spec S5: hover/focus diff declarations, converted to pseudo-variant atomic rules by
+    /// the atomizer pass (pseudo-classes need the ATOMIC pipeline — inline styles can't express them).</summary>
+    public List<(string Pseudo, string Prop, string Value)> PseudoDeclarations { get; } = new();
 
     /// <summary>Attributes emitted VERBATIM (no data- prefix) — SVG needs viewBox/fill/d as-is.</summary>
     public Dictionary<string, string>? RawAttributes { get; set; }

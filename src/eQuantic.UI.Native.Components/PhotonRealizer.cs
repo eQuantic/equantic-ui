@@ -44,6 +44,7 @@ public static class PhotonRealizer
         float typeScale = 1f,
         Pressable? pressed = null,
         Pressable? focused = null,
+        VisualNode? hovered = null,
         ComponentInstanceStore? instances = null,
         float timeMs = 0,
         bool reducedMotion = false)
@@ -57,7 +58,7 @@ public static class PhotonRealizer
         var hits = new List<HitRegion>();
         var motion = new MotionScope(timeMs, reducedMotion);
         var overlays = new List<Overlay>();
-        Emit(layout, theme, mode, builder, hits, new PressScope(pressed, focused), motion, overlays);
+        Emit(layout, theme, mode, builder, hits, new PressScope(pressed, focused, hovered), motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -67,7 +68,7 @@ public static class PhotonRealizer
         {
             var overlayLayout = LayoutEngine.Layout(overlays[i].Child, viewportWidth, viewportHeight,
                 context, rootPath: $"ov{i}");
-            Emit(overlayLayout, theme, mode, builder, hits, new PressScope(pressed, focused), motion, overlays);
+            Emit(overlayLayout, theme, mode, builder, hits, new PressScope(pressed, focused, hovered), motion, overlays);
         }
 
         context.Instances?.EndPass();
@@ -96,14 +97,19 @@ public static class PhotonRealizer
     /// carries the fill — the spec's "token swap on the same rrect").</summary>
     private sealed class PressScope
     {
-        public PressScope(Pressable? pressed, Pressable? focused)
+        public PressScope(Pressable? pressed, Pressable? focused, VisualNode? hovered = null)
         {
             Pressed = pressed;
             Focused = focused;
+            Hovered = hovered;
         }
 
         public Pressable? Pressed { get; }
         public Pressable? Focused { get; }
+
+        /// <summary>Spec S5: the node the pointer is over — its Box applies its Hover diff. Fed by
+        /// the host's pointer tracking (the gesture slice); tests pass it directly.</summary>
+        public VisualNode? Hovered { get; }
         public ColorToken? PendingFill { get; set; }
         public bool PendingFocusRing { get; set; }
     }
@@ -163,8 +169,17 @@ public static class PhotonRealizer
 
                 var fill = press.PendingFill ?? box.Style.Background;
                 press.PendingFill = null;
+                var borderColor = box.Style.BorderColor;
+                var borderWidth = box.Style.BorderWidth;
+                // Spec S5: the hovered Box applies its Hover diff (pressed still wins on fill).
+                if (ReferenceEquals(node.Source, press.Hovered) && box.Style.Hover is { IsEmpty: false } hover)
+                {
+                    if (press.PendingFill is null && hover.Background is { } hoverFill) fill = hoverFill;
+                    if (hover.BorderColor is { } hoverBorder) borderColor = hoverBorder;
+                    if (hover.BorderWidth is { } hoverWidth) borderWidth = hoverWidth;
+                }
                 EmitChrome(node.Bounds, fill, box.Style.CornerRadius,
-                    box.Style.BorderColor, box.Style.BorderWidth, theme, mode, builder,
+                    borderColor, borderWidth, theme, mode, builder,
                     box.Style.Gradient);
 
                 // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,

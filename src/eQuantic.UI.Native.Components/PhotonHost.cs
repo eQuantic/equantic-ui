@@ -58,7 +58,7 @@ public sealed class PhotonHost
     public RealizeResult RenderFrame(DisplayListBuilder builder, float timeMs = 0)
     {
         builder.Clear(_theme.Background.Resolve(Mode));
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _instances, timeMs, ReducedMotion);
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion);
         NeedsRender = _lastFrame.HasActiveMotion;
         return _lastFrame;
     }
@@ -74,6 +74,7 @@ public sealed class PhotonHost
     private readonly ComponentInstanceStore _instances = new();
 
     private Pressable? _pressed;
+    private VisualNode? _hovered;
     private Pressable? _focused;
 
     /// <summary>The Pressable holding keyboard focus (the §01 double ring renders while set).</summary>
@@ -118,6 +119,13 @@ public sealed class PhotonHost
 
     /// <summary>The Pressable currently held down (pressed visuals render while set).</summary>
     public Pressable? Pressed => _pressed;
+
+    /// <summary>Spec S5: the node under the pointer — its Box applies its Hover diff on the next
+    /// frame. Set by the platform shell's pointer tracking (the gesture slice owns the wiring).</summary>
+    public VisualNode? Hovered => _hovered;
+
+    /// <summary>Updates the hover target (pointer-over). Null clears it (pointer left / touch).</summary>
+    public void SetHovered(VisualNode? node) => _hovered = node;
 
     /// <summary>
     /// Begins a press: the topmost enabled hit region under the point becomes the pressed node and

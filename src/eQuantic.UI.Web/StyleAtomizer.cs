@@ -56,6 +56,18 @@ public static class StyleAtomizer
                 : null;
         }
 
+        // Spec S5 pseudo-variant classes come AFTER the base atomic set — the same order the TS
+        // lowering appends them (hydration compares the class attribute as one string).
+        if (element is IPseudoStyled { PseudoDeclarations: { Count: > 0 } pseudos })
+        {
+            var classes = new List<string>();
+            foreach (var (pseudo, prop, value) in pseudos)
+                classes.Add(sink.ClassFor(prop, vars.Rewrite(value), pseudo));
+            classes.Sort(StringComparer.Ordinal);
+            var joined = string.Join(" ", classes);
+            element.ClassName = string.IsNullOrEmpty(element.ClassName) ? joined : $"{element.ClassName} {joined}";
+        }
+
         foreach (var child in element.Children)
         {
             if (child is HtmlElement childElement)
@@ -86,6 +98,12 @@ public static class StyleAtomizer
     }
 }
 
+/// <summary>Spec S5 channel: elements carrying pseudo-state declarations for the atomizer pass.</summary>
+public interface IPseudoStyled
+{
+    List<(string Pseudo, string Prop, string Value)> PseudoDeclarations { get; }
+}
+
 /// <summary>
 /// The atomic-rule registry of one render (SSR) or one app (client twin): class → declaration,
 /// insert-once. <see cref="Css"/> is what the server injects next to the page so hydration sees the
@@ -108,11 +126,16 @@ public sealed class StyleSink
 
     private readonly Dictionary<string, string> _rules = new();
 
-    public string ClassFor(string property, string value)
+    public string ClassFor(string property, string value) => ClassFor(property, value, pseudo: null);
+
+    /// <summary>Spec S5: a PSEUDO-VARIANT rule of the same atomic family — the declaration only
+    /// applies under <paramref name="pseudo"/> (":hover", ":focus-visible"). The pseudo is part of
+    /// the hash, so hover and base variants of the same declaration are distinct classes.</summary>
+    public string ClassFor(string property, string value, string? pseudo)
     {
         var declaration = $"{property}:{value}";
-        var className = $"eq-{StyleAtomizer.Hash(declaration)}";
-        _rules.TryAdd(className, declaration);
+        var className = $"eq-{StyleAtomizer.Hash(pseudo is null ? declaration : $"{pseudo}|{declaration}")}";
+        _rules.TryAdd(className, pseudo is null ? declaration : $"{pseudo}\u0001{declaration}");
         return className;
     }
 
@@ -125,7 +148,14 @@ public sealed class StyleSink
         {
             var css = new StringBuilder();
             foreach (var rule in _rules.OrderBy(r => r.Key, StringComparer.Ordinal))
-                css.Append('.').Append(rule.Key).Append('{').Append(rule.Value).Append('}');
+            {
+                var split = rule.Value.IndexOf('\u0001');
+                if (split >= 0)
+                    css.Append('.').Append(rule.Key).Append(rule.Value[..split])
+                       .Append('{').Append(rule.Value[(split + 1)..]).Append('}');
+                else
+                    css.Append('.').Append(rule.Key).Append('{').Append(rule.Value).Append('}');
+            }
             return css.ToString();
         }
     }

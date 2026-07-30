@@ -111,6 +111,36 @@ public readonly record struct BoxStyle
     /// 0 = none.
     /// </summary>
     public float AspectRatio { get; init; }
+
+    /// <summary>Spec S5: style DIFF applied while the pointer hovers (never fires on touch) —
+    /// CSS <c>:hover</c> on web, the pointer-over interaction on Photon. <c>null</c> = none.</summary>
+    public StyleDiff? Hover { get; init; }
+
+    /// <summary>Spec S5: style DIFF applied while focused — CSS <c>:focus-visible</c> on web,
+    /// the focus interaction on Photon. <c>null</c> = none.</summary>
+    public StyleDiff? Focus { get; init; }
+}
+
+/// <summary>
+/// A partial style applied OVER the base while an interaction state is active (spec S5) — the
+/// declarative twin of CSS pseudo-classes: no event handlers in app code, each realizer implements
+/// the state natively (pseudo-class rules on web — zero JS; the interaction system on Photon).
+/// Only the set members override; everything else keeps the base value.
+/// </summary>
+public readonly record struct StyleDiff
+{
+    public ColorToken? Background { get; init; }
+    public ColorToken? BorderColor { get; init; }
+    /// <summary><c>null</c> = keep the base border width.</summary>
+    public float? BorderWidth { get; init; }
+    /// <summary><c>null</c> = keep the base elevation.</summary>
+    public int? Elevation { get; init; }
+    /// <summary><c>null</c> = keep the base opacity.</summary>
+    public float? Opacity { get; init; }
+
+    public bool IsEmpty =>
+        Background is null && BorderColor is null && BorderWidth is null
+        && Elevation is null && Opacity is null;
 }
 
 /// <summary>
