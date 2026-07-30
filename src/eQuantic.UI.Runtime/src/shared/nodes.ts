@@ -53,6 +53,25 @@ export interface TypeStyleValue {
 export type MainAlignValue = 'start' | 'center' | 'end' | 'spaceBetween';
 export type CrossAlignValue = 'start' | 'center' | 'end' | 'stretch';
 
+/** Wire shape of the C# `GridTrack`. */
+export interface GridTrackValue {
+  kind: 'fixed' | 'fill' | 'hug';
+  value: number;
+}
+
+/** Spec S4 — the 2D grid container (auto-flow, explicit column tracks). */
+export interface GridNode {
+  nodeKind: 'grid';
+  key?: string | null;
+  columns: GridTrackValue[];
+  gap: number;
+  rowGap?: number | null;
+  padding?: EdgeInsetsValue;
+  width?: SizeValueValue;
+  height?: SizeValueValue;
+  children: VisualNodeValue[];
+}
+
 export interface BoxStyleValue {
   width?: SizeValueValue;
   height?: SizeValueValue;
@@ -99,6 +118,8 @@ export interface LinearGradientValue {
 export interface VisualNodeValue {
   nodeKind: string;
   key?: string | null;
+  /** Spec S4: grid column span (parent-interpreted; 0/1 = one column). */
+  gridSpan?: number;
   /** Spec S1 align-self: overrides the parent flex container's cross alignment for this child. */
   alignSelf?: CrossAlignValue | null;
 }

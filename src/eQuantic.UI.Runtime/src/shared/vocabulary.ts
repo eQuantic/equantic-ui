@@ -134,6 +134,62 @@ abstract class FlexNode extends VisualNode {
   }
 }
 
+/** Mirror of the C# `GridTrack` statics. */
+export class GridTrack {
+  constructor(
+    readonly kind: 'fixed' | 'fill' | 'hug',
+    readonly value: number,
+  ) {}
+
+  static fixed(dp: number): GridTrack {
+    return new GridTrack('fixed', dp);
+  }
+  static flex(weight = 1): GridTrack {
+    return new GridTrack('fill', weight);
+  }
+  static get auto(): GridTrack {
+    return new GridTrack('hug', 0);
+  }
+  static repeat(count: number, track: GridTrack): GridTrack[] {
+    return Array.from({ length: count }, () => track);
+  }
+}
+
+interface GridConfig {
+  rowGap?: number | null;
+  padding?: EdgeInsetsValue;
+  width?: SizeValue | number;
+  height?: SizeValue | number;
+}
+
+/** Mirror of the C# `Grid` (spec S4). */
+export class Grid extends VisualNode {
+  readonly nodeKind = 'grid';
+  columns: GridTrack[];
+  gap: number;
+  rowGap?: number | null;
+  padding: EdgeInsetsValue = new EdgeInsets();
+  width?: SizeValue;
+  height?: SizeValue;
+  children: VisualNode[] = [];
+
+  constructor(columns: GridTrack[], gap = 0, rowGap: number | null = null, config?: GridConfig) {
+    super();
+    this.columns = columns;
+    this.gap = gap;
+    this.rowGap = rowGap;
+    if (!config) return;
+    const { width, height, ...rest } = config;
+    Object.assign(this, rest);
+    if (width !== undefined) this.width = SizeValue.from(width);
+    if (height !== undefined) this.height = SizeValue.from(height);
+  }
+
+  add(child: VisualNode): void {
+    this.children.push(child);
+  }
+}
+
 export class Row extends FlexNode {
   readonly nodeKind = 'row';
   /** Row cross defaults to Center (spec A2). */

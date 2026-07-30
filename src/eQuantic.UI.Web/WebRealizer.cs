@@ -44,6 +44,7 @@ public static class WebRealizer
         Box box => LowerBox(box, context),
         FlexNode flex => LowerFlex(flex, context),
         Stack stack => LowerStack(stack, context),
+        Grid grid => LowerGrid(grid, context),
         ScrollView scroll => LowerScrollView(scroll, context),
         // A Positioned outside a Stack has no anchor frame — degrade to its child (parity with native).
         Positioned positioned => LowerNode(positioned.Child, context, horizontalAxis),
@@ -447,6 +448,45 @@ public static class WebRealizer
                         CrossAlign.End => "flex-end",
                         _ => "stretch",
                     };
+                }
+                element.Children.Add(lowered);
+            }
+        }
+        return element;
+    }
+
+    /// <summary>Spec S4: CSS Grid — tracks as "px | Nfr | auto", the gap pair, spans per child.</summary>
+    private static HtmlElement LowerGrid(Grid grid, ComponentContext context)
+    {
+        var tracks = string.Join(" ", grid.Columns.Select(t => t.Kind switch
+        {
+            SizeKind.Fixed => TokenCss.Px(t.Value),
+            SizeKind.Fill => $"{TokenCss.Number(t.Value)}fr",
+            _ => "auto",
+        }));
+        var rowGap = grid.RowGap ?? grid.Gap;
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                BoxSizing = "border-box",
+                Display = Display.Grid,
+                GridTemplateColumns = tracks,
+                Gap = rowGap != grid.Gap ? $"{TokenCss.Px(rowGap)} {TokenCss.Px(grid.Gap)}"
+                    : grid.Gap > 0 ? TokenCss.Px(grid.Gap) : null,
+                Width = Size(grid.Width),
+                Height = Size(grid.Height),
+                Padding = grid.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(grid.Padding),
+            },
+        };
+        foreach (var child in grid.Children)
+        {
+            if (LowerNode(child, context, horizontalAxis: null) is { } lowered)
+            {
+                if (child.GridSpan > 1)
+                {
+                    lowered.Style ??= new HtmlStyle();
+                    lowered.Style.GridColumn = $"span {child.GridSpan}";
                 }
                 element.Children.Add(lowered);
             }

@@ -63,6 +63,7 @@ public static class LayoutEngine
         Box box => MeasureBox(box, maxW, maxH, ctx, path),
         FlexNode flex => MeasureFlex(flex, maxW, maxH, ctx, path),
         Stack stack => MeasureStack(stack, maxW, maxH, ctx, path),
+        Grid grid => MeasureGrid(grid, maxW, maxH, ctx, path),
         ScrollView scroll => MeasureScrollView(scroll, maxW, maxH, ctx, path),
         // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
         Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx, path),
@@ -584,6 +585,121 @@ public static class LayoutEngine
         result.Bounds = horizontal ? new Rect(0, 0, main, cross) : new Rect(0, 0, cross, main);
         return result;
     }
+
+    /// <summary>
+    /// Spec S4 — the grid track-sizing pass (CSS Grid twin, v1 auto-flow): Fixed tracks take their
+    /// dp; Auto tracks size to their widest starting single-span item; Flex tracks share the
+    /// remaining width by weight (collapsing to 0 in unbounded space). Children flow left→right,
+    /// wrapping to a new row; a span clamps to the row's remainder. Rows size to their tallest cell.
+    /// </summary>
+    private static LayoutNode MeasureGrid(Grid grid, float maxW, float maxH, LayoutContext ctx, string path)
+    {
+        var result = new LayoutNode(grid);
+        var columns = grid.Columns;
+        var count = columns.Count;
+        var rowGap = grid.RowGap ?? grid.Gap;
+        var padH = grid.Padding.Horizontal;
+
+        var avail = grid.Width.Kind == SizeKind.Fixed ? grid.Width.Value - padH
+            : !float.IsPositiveInfinity(maxW) ? maxW - padH
+            : float.PositiveInfinity;
+        var gapTotal = grid.Gap * MathF.Max(0, count - 1);
+
+        // Place children into (column, span) slots — auto-flow with span clamping.
+        var placements = new (VisualNode Node, int Column, int Span, int Row)[grid.Children.Count];
+        var col = 0;
+        var row = 0;
+        for (var i = 0; i < grid.Children.Count; i++)
+        {
+            var span = Math.Clamp(grid.Children[i].GridSpan < 1 ? 1 : grid.Children[i].GridSpan, 1, count);
+            if (col + span > count) { col = 0; row++; }
+            placements[i] = (grid.Children[i], col, span, row);
+            col += span;
+            if (col >= count) { col = 0; row++; }
+        }
+
+        // Track sizing: fixed → value; auto → widest starting single-span item; flex → weighted rest.
+        var widths = new float[count];
+        var flexTotal = 0f;
+        var used = gapTotal;
+        for (var c = 0; c < count; c++)
+        {
+            if (columns[c].Kind == SizeKind.Fixed) { widths[c] = columns[c].Value; used += widths[c]; }
+            else if (columns[c].Kind == SizeKind.Fill) flexTotal += MathF.Max(0, columns[c].Value);
+        }
+        for (var c = 0; c < count; c++)
+        {
+            if (columns[c].Kind != SizeKind.Hug) continue;
+            var widest = 0f;
+            foreach (var pl in placements)
+                if (pl.Column == c && pl.Span == 1)
+                    widest = MathF.Max(widest, Measure(pl.Node, float.PositiveInfinity, maxH, ctx, path + "/probe").Bounds.Width);
+            widths[c] = widest;
+            used += widest;
+        }
+        var leftover = float.IsPositiveInfinity(avail) ? 0 : MathF.Max(0, avail - used);
+        for (var c = 0; c < count; c++)
+            if (columns[c].Kind == SizeKind.Fill && flexTotal > 0)
+                widths[c] = leftover * (MathF.Max(0, columns[c].Value) / flexTotal);
+
+        // Measure each child at its cell width; rows size to the tallest cell.
+        var rowCount = placements.Length > 0 ? placements[^1].Row + 1 : 0;
+        var rowHeights = new float[rowCount];
+        var laid = new LayoutNode[placements.Length];
+        for (var i = 0; i < placements.Length; i++)
+        {
+            var (node, c, span, r) = placements[i];
+            var cellW = grid.Gap * (span - 1);
+            for (var k = c; k < c + span; k++) cellW += widths[k];
+            var child = Measure(node, cellW, maxH, ctx, path + "/" + i);
+            // A Fill-width child pins to the cell (the realizer paints the full extent).
+            if (CrossSizeKind(node, horizontal: false) == SizeKind.Fill || WidthKind(node) == SizeKind.Fill)
+                child.Bounds = child.Bounds with { Width = cellW };
+            laid[i] = child;
+            rowHeights[r] = MathF.Max(rowHeights[r], child.Bounds.Height);
+        }
+
+        // Arrange.
+        var xStarts = new float[count];
+        var x = grid.Padding.Start;
+        for (var c = 0; c < count; c++) { xStarts[c] = x; x += widths[c] + grid.Gap; }
+        var y = grid.Padding.Top;
+        for (var r = 0; r < rowCount; r++)
+        {
+            for (var i = 0; i < placements.Length; i++)
+            {
+                if (placements[i].Row != r) continue;
+                laid[i].Bounds = laid[i].Bounds with { X = xStarts[placements[i].Column], Y = y };
+                result.Children.Add(laid[i]);
+            }
+            y += rowHeights[r] + rowGap;
+        }
+
+        var contentW = gapTotal + grid.Padding.Horizontal;
+        foreach (var w in widths) contentW += w;
+        var width = grid.Width.Kind switch
+        {
+            SizeKind.Fixed => grid.Width.Value,
+            SizeKind.Fill when !float.IsPositiveInfinity(maxW) => maxW,
+            _ => contentW,
+        };
+        var height = grid.Height.Kind switch
+        {
+            SizeKind.Fixed => grid.Height.Value,
+            SizeKind.Fill when !float.IsPositiveInfinity(maxH) => maxH,
+            _ => (rowCount > 0 ? y - rowGap : y) + grid.Padding.Bottom,
+        };
+        result.Bounds = new Rect(0, 0, width, height);
+        return result;
+    }
+
+    private static SizeKind WidthKind(VisualNode node) => node switch
+    {
+        Box box => box.Style.Width.Kind,
+        FlexNode flex => flex.Width.Kind,
+        Grid grid => grid.Width.Kind,
+        _ => SizeKind.Hug,
+    };
 
     // ---- helpers ----------------------------------------------------------------------------------
 

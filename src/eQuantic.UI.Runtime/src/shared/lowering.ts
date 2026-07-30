@@ -37,6 +37,7 @@ import type {
   SizeValueValue,
   StackNode,
   SpacerNode,
+  GridNode,
   TextEntryNode,
   TextNode,
   TransformValue,
@@ -177,6 +178,8 @@ function lowerNode(
       return lowerSpinner(node as SpinnerNode);
     case 'stack':
       return lowerStack(node as StackNode, context, path);
+    case 'grid':
+      return lowerGrid(node as unknown as GridNode, context, path);
     case 'positioned':
       // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
       return lowerNode((node as PositionedNode).child, context, horizontalAxis, path + '/0');
@@ -734,6 +737,32 @@ function lowerFlexible(
   const child = lowerNode(flexible.child, context, horizontalAxis, path + '/0');
   if (child) node.children.push(child);
   return node;
+}
+
+/** Spec S4 mirror: CSS Grid — identical track/gap/span strings to the C# LowerGrid. */
+function lowerGrid(grid: GridNode, context: LoweringContext, path: string): HtmlNode {
+  const tracks = grid.columns
+    .map((t) => (t.kind === 'fixed' ? px(t.value) : t.kind === 'fill' ? `${num(t.value)}fr` : 'auto'))
+    .join(' ');
+  const rowGap = grid.rowGap ?? grid.gap;
+  const result = element('div', {
+    'box-sizing': 'border-box',
+    display: 'grid',
+    'grid-template-columns': tracks,
+    gap: rowGap !== grid.gap ? `${px(rowGap)} ${px(grid.gap)}` : grid.gap > 0 ? px(grid.gap) : undefined,
+    width: sizeValue(grid.width),
+    height: sizeValue(grid.height),
+    padding: grid.padding && !isZeroInsets(grid.padding) ? paddingValue(grid.padding) : undefined,
+  });
+  for (let i = 0; i < grid.children.length; i++) {
+    const lowered = lowerNode(grid.children[i], context, null, path + '/' + i);
+    if (lowered) {
+      const span = grid.children[i].gridSpan;
+      if (span && span > 1) mergeAtomicDeclaration(lowered, 'grid-column', `span ${span}`);
+      result.children.push(lowered);
+    }
+  }
+  return result;
 }
 
 function lowerSpacer(spacer: SpacerNode, horizontalAxis: boolean | null): HtmlNode | null {
