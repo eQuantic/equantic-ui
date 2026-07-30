@@ -288,8 +288,17 @@ rule (EQ1xxx) keeps anything untranslatable a BUILD error, never silent.
 (flex/wrap/grid/stack/scroll/sticky + paint + type roles + states + adaptive), zero CSS authored,
 realized on DOM and Photon from the same C#, emitted through the atomic engine (O(distinct
 declarations), theme-var rules, class-identity hydration). Remaining fences live with their slices:
-S2b eqc build-time extraction, S6b fine-grained Adaptive<T>, native scroll compositor pinning,
-Metal offscreen layers (D3), GridArea pinning.
+S2b eqc build-time extraction — DEPRIORITIZED after analysis: the theme is a RUNTIME selection
+(UseTheme), so build-time rules can't carry resolved var fallbacks; the SSR-collected + client-
+adopted path already delivers the dedup/caching/identity properties, leaving only a marginal
+render-time win. Revisit only if SSR profiling says otherwise. S6b fine-grained Adaptive<T>,
+native scroll compositor pinning, Metal offscreen layers (D3), GridArea pinning.
+
+**Gestures v1 — pointer pipeline ✅ (2026-07-30):** the realizer registers HoverRegions (Boxes
+carrying a Hover diff, paint order); `PhotonHost.PointerMove(x,y)` resolves the TOPMOST region
+under the pointer (last-contains wins — the same painter's order hit dispatch uses),
+`PointerLeave` clears; the next frame applies/restores the diff. Native hover is now REAL —
+S5's fence closes; the platform shell just feeds pointer events.
 
 Order rationale: S1 is a fast additive win; S2 lands the engine early so S3–S7 are born atomic
 (each later slice pins its output once, already in final form).

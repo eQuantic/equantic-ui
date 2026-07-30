@@ -128,6 +128,37 @@ public sealed class PhotonHost
     public void SetHovered(VisualNode? node) => _hovered = node;
 
     /// <summary>
+    /// Gestures v1 — pointer tracking: resolves the TOPMOST hover-reactive region under the pointer
+    /// (paint order, last-contains wins) and re-renders when the target changes. Feed it from the
+    /// platform shell's pointer-move events; it is a no-op until a frame has been rendered.
+    /// </summary>
+    public void PointerMove(float x, float y)
+    {
+        var regions = _lastFrame?.HoverRegions;
+        VisualNode? target = null;
+        if (regions is not null)
+        {
+            for (var i = regions.Count - 1; i >= 0; i--)
+            {
+                if (regions[i].Bounds.Contains(new Point(x, y))) { target = regions[i].Node; break; }
+            }
+        }
+        if (!ReferenceEquals(target, _hovered))
+        {
+            _hovered = target;
+            NeedsRender = true;
+        }
+    }
+
+    /// <summary>The pointer left the window (or the input is touch) — hover clears.</summary>
+    public void PointerLeave()
+    {
+        if (_hovered is null) return;
+        _hovered = null;
+        NeedsRender = true;
+    }
+
+    /// <summary>
     /// Begins a press: the topmost enabled hit region under the point becomes the pressed node and
     /// the next frame renders its pressed token swap. Returns whether a region captured the press.
     /// (v1 fence: drag-slop/cancel and fling join the gesture system.)
