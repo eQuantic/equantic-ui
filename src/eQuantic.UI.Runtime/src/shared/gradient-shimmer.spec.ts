@@ -5,6 +5,7 @@
  * clipped track, mirrored gradient halves, the 1.4s loop.
  */
 
+import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode, tokenValue } from './lowering';
@@ -36,7 +37,7 @@ describe('gradient + shimmer lowering (C# GradientShimmerRealizerTests cross-pin
       ),
     );
 
-    expect(node.attributes['style']).toContain(
+    expect(effectiveStyle(node)).toContain(
       `background-color: ${tokenValue(photonTheme.surfaceSubtle)}; ` +
         `background-image: linear-gradient(to right, #00000000, ${tokenValue(photonTheme.surfaceHighlight)})`,
     );
@@ -57,28 +58,29 @@ describe('gradient + shimmer lowering (C# GradientShimmerRealizerTests cross-pin
       ),
     );
 
-    expect(node.attributes['style']).toContain('background-image: linear-gradient(to bottom, ');
+    expect(effectiveStyle(node)).toContain('background-image: linear-gradient(to bottom, ');
   });
 
   it('the transpiled Skeleton sweeps the rest-hidden mirrored glint inside the clipped track', () => {
     const track = lower(new Skeleton('line', 160));
 
-    expect(track.attributes['style']).toContain(
+    expect(effectiveStyle(track)).toContain(
       `background-color: ${tokenValue(photonTheme.surfaceSubtle)}`,
     );
-    expect(track.attributes['style']).toContain('border-radius: 999px; overflow: hidden');
+    expect(effectiveStyle(track)).toContain('border-radius: 999px');
+    expect(effectiveStyle(track)).toContain('overflow: hidden');
 
     const layer = track.children[0];
-    expect(layer.attributes['class']).toBe('eq-loop eq-loop-rest-hidden');
-    expect(layer.attributes['style']).toContain('animation: eq-slide-x 1400ms linear infinite');
-    expect(layer.attributes['style']).toMatch(/--eq-loop-from: -100%; --eq-loop-to: 100%$/);
+    expect(layer.attributes['class']).toMatch(/^eq-loop eq-loop-rest-hidden(?: |$)/);
+    expect(effectiveStyle(layer)).toContain('animation: eq-slide-x 1400ms linear infinite');
+    expect(effectiveStyle(layer)).toMatch(/--eq-loop-from: -100%; --eq-loop-to: 100%$/);
 
     const glint = layer.children[0];
     const highlight = tokenValue(photonTheme.surfaceHighlight);
-    expect(glint.children[0].children[0].attributes['style']).toContain(
+    expect(effectiveStyle(glint.children[0].children[0])).toContain(
       `background-image: linear-gradient(to right, #00000000, ${highlight})`,
     );
-    expect(glint.children[1].children[0].attributes['style']).toContain(
+    expect(effectiveStyle(glint.children[1].children[0])).toContain(
       `background-image: linear-gradient(to right, ${highlight}, #00000000)`,
     );
   });

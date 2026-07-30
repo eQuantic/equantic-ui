@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace eQuantic.UI.Core;
 
@@ -137,11 +138,14 @@ public class HtmlStyle
     #endregion
 
     /// <summary>
-    /// Convert to CSS string for inline styles
+    /// The style's REGULAR declarations as ordered (property, value) pairs — the seam the web
+    /// realizer's StyleAtomizer consumes (each pair becomes one deduplicated atomic class).
+    /// Custom properties are deliberately NOT included: they are per-element inputs (tier 3 of the
+    /// style pipeline) and stay inline; read them from <see cref="CustomProperties"/>.
     /// </summary>
-    public string ToCssString()
+    public IReadOnlyList<KeyValuePair<string, string>> EnumerateDeclarations()
     {
-        var properties = new List<string>();
+        var properties = new List<KeyValuePair<string, string>>();
 
         AddProperty(properties, "display", Display);
         AddProperty(properties, "position", Position);
@@ -229,19 +233,31 @@ public class HtmlStyle
         AddProperty(properties, "white-space", WhiteSpace);
         AddProperty(properties, "text-overflow", TextOverflow);
         AddProperty(properties, "box-sizing", BoxSizing);
+
+        return properties;
+    }
+
+    /// <summary>
+    /// Convert to CSS string for inline styles
+    /// </summary>
+    public string ToCssString()
+    {
+        var properties = EnumerateDeclarations()
+            .Select(p => $"{p.Key}: {p.Value}")
+            .ToList();
+
         // Custom properties come LAST — per-element inputs for generated-stylesheet mechanics
         // (e.g. --eq-pressed-bg); the tail position is part of the hydration cross-pin.
         if (CustomProperties != null)
         {
             foreach (var custom in CustomProperties)
-                AddProperty(properties, custom.Key, custom.Value);
+                properties.Add($"{custom.Key}: {custom.Value}");
         }
-
 
         return string.Join("; ", properties);
     }
 
-    private static void AddProperty(List<string> properties, string name, object? value)
+    private static void AddProperty(List<KeyValuePair<string, string>> properties, string name, object? value)
     {
         if (value == null) return;
 
@@ -271,6 +287,6 @@ public class HtmlStyle
             cssValue = value.ToString()!;
         }
 
-        properties.Add($"{name}: {cssValue}");
+        properties.Add(new KeyValuePair<string, string>(name, cssValue));
     }
 }

@@ -1,5 +1,6 @@
 /** Wave-2 transpiled components: real eqc output executing against the runtime. */
 
+import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import { Checkbox } from './__transpiled__/Checkbox';
 import { IconButton } from './__transpiled__/IconButton';
@@ -21,9 +22,9 @@ describe('wave-2 transpiled components (real eqc output)', () => {
 
   it('Switch anchors the thumb by state (on=end, off=start)', () => {
     const on = new Switch(true, () => {}).render();
-    expect(on.children[0].children[1].attributes.style).toContain('right: 3px');
+    expect(effectiveStyle(on.children[0].children[1])).toContain('right: 3px');
     const off = new Switch(false, () => {}).render();
-    expect(off.children[0].children[1].attributes.style).toContain('left: 3px');
+    expect(effectiveStyle(off.children[0].children[1])).toContain('left: 3px');
   });
 
   it('IconButton fires and renders the 40dp default', () => {
@@ -31,7 +32,7 @@ describe('wave-2 transpiled components (real eqc output)', () => {
     const node = new IconButton('search', 'Search', 'standard', 'medium', () => {
       fired = true;
     }).render();
-    expect(node.children[0].attributes.style).toContain('width: 40px');
+    expect(effectiveStyle(node.children[0])).toContain('width: 40px');
     (node.events.click as () => void)();
     expect(fired).toBe(true);
   });

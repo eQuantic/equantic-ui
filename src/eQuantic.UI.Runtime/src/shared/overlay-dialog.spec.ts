@@ -4,6 +4,7 @@
  * click unless dismissible arms it with onDismiss. Cross-pins the C# OverlayDialogRealizerTests.
  */
 
+import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import { SharedStatefulComponent } from '../core/component';
 import { photonTheme } from './design-system.generated';
@@ -31,8 +32,8 @@ describe('overlay lowering (C# cross-pin)', () => {
     const node = lower(new Overlay(new Box(new BoxStyle({ width: 10, height: 10 }))));
 
     expect(node.tag).toBe('div');
-    expect(node.attributes['class']).toBe('eq-overlay');
-    expect(node.attributes['style']).toBeUndefined();
+    expect(node.attributes['class']).toMatch(/^eq-overlay(?: |$)/);
+    expect(effectiveStyle(node)).toBe('');
     expect(node.children).toHaveLength(1);
   });
 
@@ -44,11 +45,16 @@ describe('overlay lowering (C# cross-pin)', () => {
       ]),
     );
 
-    expect(node.attributes['class']).toBe('eq-overlay');
-    const html = JSON.stringify(node);
-    expect(html).toContain(tokenValue(photonTheme.scrim));
-    expect(html).toContain('border-radius: 20px');
-    expect(html).toContain('max-width: 480px');
+    expect(node.attributes['class']).toMatch(/^eq-overlay(?: |$)/);
+    // Colors/radii now live in atomic RULES the classes reference — assert through the seam.
+    const styles = JSON.stringify(
+      (function collect(n: typeof node): string[] {
+        return [effectiveStyle(n), ...n.children.flatMap((c) => collect(c as typeof node))];
+      })(node),
+    );
+    expect(styles).toContain(tokenValue(photonTheme.scrim));
+    expect(styles).toContain('border-radius: 20px');
+    expect(styles).toContain('max-width: 480px');
   });
 });
 
