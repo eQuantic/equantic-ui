@@ -261,7 +261,10 @@ function lowerPresence(
 ): HtmlNode | null {
   const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
   if (!child) return null;
-  prependClass(child, node.enter === 'slideUp' ? 'eq-presence-slideup' : 'eq-presence-fade');
+  const slide = node.enter === 'slideUp';
+  prependClass(child, slide ? 'eq-presence-slideup' : 'eq-presence-fade');
+  // The EXIT marker — the reconciler defers this element's removal while the reverse plays.
+  child.attributes['data-eq-exit'] = slide ? 'slideup' : 'fade';
   return child;
 }
 

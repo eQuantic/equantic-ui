@@ -105,11 +105,10 @@ export class Reconciler {
       return;
     }
 
-    // Case 2: No new node - remove old element
+    // Case 2: No new node - remove old element (exit motion defers a departing overlay layer)
     if (!newNode) {
       if (currentElement) {
-        this.cleanupEventListeners(currentElement);
-        parentElement.removeChild(currentElement);
+        this.removeChildWithExit(parentElement, currentElement);
       }
       return;
     }
@@ -505,8 +504,7 @@ export class Reconciler {
       while (oldStartIdx <= oldEndIdx) {
         const nodeToRemove = childNodes[oldEndIdx];
         if (nodeToRemove) {
-          this.cleanupEventListeners(nodeToRemove);
-          parentElement.removeChild(nodeToRemove);
+          this.removeChildWithExit(parentElement, nodeToRemove);
         }
         oldEndIdx--;
       }
@@ -571,10 +569,9 @@ export class Reconciler {
         }
       }
 
-      // Remove unmatched nodes
+      // Remove unmatched nodes (exit motion defers departing overlay layers)
       for (const node of toRemove) {
-        this.cleanupEventListeners(node);
-        parentElement.removeChild(node);
+        this.removeChildWithExit(parentElement, node);
       }
 
       // Move and Mount
@@ -759,6 +756,48 @@ export class Reconciler {
   /**
    * Cleanup event listeners for element and its children
    */
+  /**
+   * Spec §06 EXIT MOTION — removal with deferral: a departing `.eq-overlay` layer that carries
+   * presence subtrees (`[data-eq-exit]`) is REPARENTED to document.body (position:fixed keeps it
+   * visually identical) while the reverse animation plays, then removed on animationend (with a
+   * timeout backstop covering the reduced-motion crossfade clock). Reparenting — instead of leaving
+   * it in place — is what keeps the parent's childNodes/index math exact for the rest of the diff.
+   * Listeners are cleaned FIRST and pointer-events disabled: the departed subtree is pixels only.
+   * Anything else removes immediately.
+   */
+  private removeChildWithExit(parentElement: HTMLElement | Element, node: Node): void {
+    this.cleanupEventListeners(node);
+    if (node instanceof HTMLElement && node.classList.contains('eq-overlay')) {
+      const exits = node.querySelectorAll('[data-eq-exit]');
+      if (exits.length > 0) {
+        parentElement.removeChild(node);
+        node.setAttribute('data-eq-exiting', '');
+        node.style.pointerEvents = 'none';
+        document.body.appendChild(node);
+
+        let pending = exits.length;
+        const done = () => {
+          if (--pending <= 0 && node.parentNode) node.remove();
+        };
+        exits.forEach((el) => {
+          el.classList.add(
+            el.getAttribute('data-eq-exit') === 'slideup'
+              ? 'eq-presence-exit-slideup'
+              : 'eq-presence-exit-fade',
+          );
+          el.addEventListener('animationend', done, { once: true });
+        });
+        // Backstop: covers the longer of the exit clocks (Fast 100 / reduced crossfade 120) plus
+        // slack — fires when animations are globally disabled and animationend never arrives.
+        setTimeout(() => {
+          if (node.parentNode) node.remove();
+        }, 260);
+        return;
+      }
+    }
+    parentElement.removeChild(node);
+  }
+
   private cleanupEventListeners(node: Node): void {
     if (node instanceof Element) {
       // Remove listeners for this element

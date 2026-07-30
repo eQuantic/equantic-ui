@@ -36,9 +36,13 @@ public class PresenceRealizerTests
         css.Should().Contain("@keyframes eq-presence-fade { from { opacity: 0; } }");
         css.Should().Contain("@keyframes eq-presence-slideup { from { opacity: 0; transform: translateY(16px); } }");
         css.Should().Contain(".eq-presence-fade { animation: eq-presence-fade var(--eq-motion-base) ease-out; }");
-        // Reduce Motion: movement is REPLACED by the short crossfade (ReducedCrossfadeMs).
+        // Exit: Fast duration, held at the end state (forwards) until the deferred removal lands.
+        css.Should().Contain("@keyframes eq-presence-exit-fade { to { opacity: 0; } }");
+        css.Should().Contain(".eq-presence-exit-slideup { animation: eq-presence-exit-slideup var(--eq-motion-fast) ease-in forwards; }");
+        // Reduce Motion: BOTH directions become the short crossfade (ReducedCrossfadeMs).
         css.Should().Contain(
-            "@media (prefers-reduced-motion: reduce) { .eq-presence-fade, .eq-presence-slideup { animation: eq-presence-fade 120ms ease-out; } }");
+            "@media (prefers-reduced-motion: reduce) { .eq-presence-fade, .eq-presence-slideup { animation: eq-presence-fade 120ms ease-out; } " +
+            ".eq-presence-exit-fade, .eq-presence-exit-slideup { animation: eq-presence-exit-fade 120ms ease-in forwards; } }");
     }
 
     [Fact]
@@ -50,6 +54,8 @@ public class PresenceRealizerTests
         // No wrapper: the class and the Box's own inline style live on the SAME element.
         node.Attributes["class"].Should().StartWith("eq-presence-slideup");
         node.Attributes.Should().ContainKey("style");
+        // The EXIT marker the reconciler keys removal deferral on.
+        node.Attributes["data-eq-exit"].Should().Be("slideup");
     }
 
     [Fact]

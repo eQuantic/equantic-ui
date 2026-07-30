@@ -28,11 +28,11 @@ public class PresenceMotionTests
         store.BeginFrame();
         store.Progress("ov0", timeMs: 0, reducedMotion: false).Should().Be(0f, "the first frame starts at 0");
         store.AnyActive.Should().BeTrue("an entrance is mid-flight");
-        store.EndFrame();
+        store.EndFrame(0);
 
         store.BeginFrame();
         store.Progress("ov0", 100, false).Should().Be(0.5f, "smoothstep midpoint at Base/2");
-        store.EndFrame();
+        store.EndFrame(100);
 
         store.BeginFrame();
         store.Progress("ov0", 200, false).Should().Be(1f, "settled at Motion.Base");
@@ -45,7 +45,7 @@ public class PresenceMotionTests
         var store = new PresenceStore();
         store.BeginFrame();
         store.Progress("ov0", 0, reducedMotion: true).Should().Be(0f);
-        store.EndFrame();
+        store.EndFrame(0);
 
         store.BeginFrame();
         store.Progress("ov0", Motion.ReducedCrossfadeMs, reducedMotion: true)
@@ -59,11 +59,11 @@ public class PresenceMotionTests
 
         store.BeginFrame();
         store.Progress("ov0", 0, false);
-        store.EndFrame();
+        store.EndFrame(0);
 
         // The overlay left the tree: a frame passes without the path.
         store.BeginFrame();
-        store.EndFrame();
+        store.EndFrame(400);
 
         // It returns much later — the entrance must REPLAY (start at 0), not resume settled.
         store.BeginFrame();
@@ -125,6 +125,126 @@ public class PresenceMotionTests
             .Should().Be(0.5f, "smoothstep(60/120) on the crossfade clock");
         commands.Last(c => c.Kind == DrawCommandKind.FillRRect).Transform
             .Should().Be(Matrix2D.Identity, "reduced motion drops the slide — fade only");
+    }
+
+    // ---- Exit: the departed subtree replays its snapshot ----------------------------------------
+
+    [Fact]
+    public void Store_Departure_SpawnsAnExit_ThatFallsOverFast_AndEvictsWhenDone()
+    {
+        var store = new PresenceStore();
+        var commands = new[] { new DrawCommand { Kind = DrawCommandKind.FillRRect } };
+
+        store.BeginFrame();
+        store.Progress("ov0", 0, false);
+        store.Snapshot("ov0", PresenceMotion.SlideUp, commands);
+        store.EndFrame(0);
+
+        // The frame WITHOUT the path spawns the exit from the last snapshot.
+        store.BeginFrame();
+        store.EndFrame(300);
+        var mid = store.ActiveExits(350, reducedMotion: false);
+        mid.Should().ContainSingle();
+        mid[0].Alpha.Should().Be(0.5f, "smoothstep(50/Fast) — the layer alpha falls with the exit");
+        mid[0].Drop.Should().Be(8f, "SlideUp reverses: eased × SlideDistance downward");
+        mid[0].Commands.Should().BeSameAs(commands);
+        store.AnyActive.Should().BeTrue("the host keeps scheduling until the exit lands");
+
+        // Past Fast the exit is done and evicted — nothing replays, nothing schedules.
+        store.BeginFrame();
+        store.ActiveExits(500, false).Should().BeEmpty();
+        store.AnyActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Store_ReducedMotion_ExitIsACrossfade_NoDrop()
+    {
+        var store = new PresenceStore();
+        store.BeginFrame();
+        store.Progress("ov0", 0, true);
+        store.Snapshot("ov0", PresenceMotion.SlideUp, [new DrawCommand()]);
+        store.EndFrame(0);
+
+        store.BeginFrame();
+        store.EndFrame(200);
+        var exits = store.ActiveExits(260, reducedMotion: true);
+        exits.Should().ContainSingle();
+        exits[0].Alpha.Should().Be(0.5f, "smoothstep(60/ReducedCrossfadeMs)");
+        exits[0].Drop.Should().Be(0f, "reduced motion drops the movement — fade only");
+    }
+
+    [Fact]
+    public void Realizer_DepartedPresence_ReplaysAsPixelsOnly_ThenSettlesClean()
+    {
+        // A stateful page whose sheet leaves on dismiss — the REAL declarative-presence flow.
+        var page = new DismissiblePage();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 360, 400);
+
+        host.RenderFrame(new DisplayListBuilder());                    // sheet enters (t=0)
+        var settled = host.RenderFrame(new DisplayListBuilder(), 1000); // settled
+
+        // Dismiss through the scrim — the sheet leaves the TREE on the next frame.
+        var scrim = settled.HitRegions[^1];
+        host.PressDown(scrim.Bounds.Center.X, scrim.Bounds.Center.Y);
+        host.PressUp(scrim.Bounds.Center.X, scrim.Bounds.Center.Y);
+
+        // The first frame WITHOUT the subtree detects the departure — the exit starts HERE (alpha 1).
+        var departure = host.RenderFrame(new DisplayListBuilder(), 1050);
+        departure.HasActiveMotion.Should().BeTrue("the departure frame starts the exit clock");
+        departure.HitRegions.Should().NotContain(r => r.Node.Label == "dismiss",
+            "a departed subtree is pixels only — input passes through immediately");
+
+        // 50ms into the exit: the replay paints inside a falling-alpha layer.
+        var exiting = new DisplayListBuilder();
+        var exitFrame = host.RenderFrame(exiting, 1100);
+        exiting.Build().Commands.ToArray().Should().Contain(
+            c => c.Kind == DrawCommandKind.BeginLayer && c.StrokeWidth == 0.5f,
+            "the departed subtree replays inside a falling-alpha layer (smoothstep(50/Fast))");
+        exitFrame.HasActiveMotion.Should().BeTrue();
+
+        // Past Fast: the exit evicted — no layers, no replay, frame at rest.
+        var rest = new DisplayListBuilder();
+        var restFrame = host.RenderFrame(rest, 1300);
+        rest.Build().Commands.ToArray().Should().NotContain(c => c.Kind == DrawCommandKind.BeginLayer);
+        restFrame.HasActiveMotion.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(ThemeMode.Light, "sheet-exiting-light")]
+    [InlineData(ThemeMode.Dark, "sheet-exiting-dark")]
+    public void BottomSheet_MidExit_RendersTheFallingSheet(ThemeMode mode, string golden)
+    {
+        using var backend = new ReferenceBackend();
+        using var surface = backend.CreateSurface(360, 400);
+        var host = new PhotonHost(new DismissiblePage(), PhotonTheme.Instance, mode, 360, 400);
+
+        host.RenderFrame(new DisplayListBuilder());                    // enter starts
+        var settled = host.RenderFrame(new DisplayListBuilder(), 1000); // settled
+        var scrim = settled.HitRegions[^1];
+        host.PressDown(scrim.Bounds.Center.X, scrim.Bounds.Center.Y);
+        host.PressUp(scrim.Bounds.Center.X, scrim.Bounds.Center.Y);     // dismissed
+        host.RenderFrame(new DisplayListBuilder(), 1050);               // departure — exit starts
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 1100);                                // 50ms in: half-faded, dropping
+        backend.Render(builder.Build(), surface);
+
+        GoldenImage.Match(surface, golden);
+    }
+
+    private sealed class DismissiblePage : Primitives.StatefulComponent
+    {
+        private bool _open = true;
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: 0) { Width = SizeValue.Fill };
+            column.Add(new Text("Page", TypeRole.BodyM));
+            if (_open)
+                column.Add(new BottomSheet(new Text("Sheet", TypeRole.BodyM),
+                    onDismiss: () => SetState(() => _open = false)));
+            return column;
+        }
     }
 
     // ---- The entrance itself, as pixels ---------------------------------------------------------

@@ -681,8 +681,16 @@ public static class WebRealizer
     private static HtmlElement? LowerPresence(Presence presence, ComponentContext context, bool? horizontalAxis)
     {
         if (LowerNode(presence.Child, context, horizontalAxis) is not { } child) return null;
-        var cls = presence.Enter == PresenceMotion.SlideUp ? "eq-presence-slideup" : "eq-presence-fade";
+        var slide = presence.Enter == PresenceMotion.SlideUp;
+        var cls = slide ? "eq-presence-slideup" : "eq-presence-fade";
         child.ClassName = string.IsNullOrEmpty(child.ClassName) ? cls : $"{cls} {child.ClassName}";
+        // The EXIT marker: the reconciler defers this element's removal (reparented to body inside
+        // its fixed overlay layer) while the reverse animation plays.
+        if (child is RealizedElement realized)
+        {
+            realized.RawAttributes ??= new Dictionary<string, string>();
+            realized.RawAttributes["data-eq-exit"] = slide ? "slideup" : "fade";
+        }
         return child;
     }
 

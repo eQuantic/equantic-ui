@@ -88,7 +88,7 @@ public static class PhotonRealizer
         var hits = new List<HitRegion>();
         var hovers = new List<HoverRegion>();
         var scrolls = new List<ScrollRegion>();
-        var motion = new MotionScope(timeMs, reducedMotion);
+        var motion = new MotionScope(timeMs, reducedMotion) { Presences = presences };
         var overlays = new List<Overlay>();
         Emit(layout, theme, mode, builder, hits, hovers, scrolls, context.ScrollMeta!, new PressScope(pressed, focused, hovered), motion, overlays);
 
@@ -104,8 +104,21 @@ public static class PhotonRealizer
         }
 
         // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
-        // and a pruned-too-early path would replay its entrance every frame.
-        presences?.EndFrame();
+        // and a pruned-too-early path would replay its entrance every frame. Each departure spawns
+        // an EXIT from its last snapshot; mid-flight exits replay here, ABOVE everything (departed
+        // layers were topmost), as pixels only — no hit regions, input passes through immediately.
+        presences?.EndFrame(timeMs);
+        if (presences != null)
+        {
+            foreach (var exit in presences.ActiveExits(timeMs, reducedMotion))
+            {
+                if (exit.Drop != 0) builder.PushTransform(Matrix2D.Translation(0, exit.Drop));
+                builder.PushLayer(exit.Alpha);
+                foreach (var command in exit.Commands) builder.Replay(command);
+                builder.PopLayer();
+                if (exit.Drop != 0) builder.Pop();
+            }
+        }
         context.Instances?.EndPass();
         return new RealizeResult(layout, hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true },
@@ -127,6 +140,10 @@ public static class PhotonRealizer
         public float TimeMs { get; }
         public bool Reduced { get; }
         public bool Active { get; set; }
+
+        /// <summary>The host's presence clock — the emit pass snapshots each live presence subtree's
+        /// commands into it (the exit replay source). Null = no exit machinery (layout-only tests).</summary>
+        public PresenceStore? Presences { get; init; }
     }
 
     /// <summary>Carries the held press through the emit walk: entering the pressed Pressable arms the
@@ -330,21 +347,28 @@ public static class PhotonRealizer
             return;
         }
 
-        if (node.Source is Presence presence && node.Presence < 1f)
+        if (node.Source is Presence presence)
         {
             // Enter motion (spec §06): a mid-entrance subtree paints inside a GROUP-opacity layer
             // (CSS-opacity semantics — overlapping children never double-blend) with the SlideUp
             // rise as a paint-only translate. Reduce Motion drops the movement (the store already
             // shortened the clock to the crossfade) — fade only, exactly the web media query.
-            var rise = presence.Enter == PresenceMotion.SlideUp && !motion.Reduced
+            // Settled subtrees paint plainly (no layer cost at rest). Either way, the commands are
+            // SNAPSHOTTED by path — the frame that finds this path gone replays them as the exit
+            // (a mid-enter departure carries its inner layer, so the cross-fade composes).
+            var start = builder.CommandCount;
+            var entering = node.Presence < 1f;
+            var rise = entering && presence.Enter == PresenceMotion.SlideUp && !motion.Reduced
                 ? (1f - node.Presence) * Presence.SlideDistance
                 : 0f;
             if (rise != 0) builder.PushTransform(Matrix2D.Translation(0, rise));
-            builder.PushLayer(node.Presence);
+            if (entering) builder.PushLayer(node.Presence);
             foreach (var child in node.Children)
                 Emit(child, theme, mode, builder, hits, hovers, scrolls, scrollMeta, press, motion, overlays);
-            builder.PopLayer();
+            if (entering) builder.PopLayer();
             if (rise != 0) builder.Pop();
+            if (motion.Presences != null && node.PresencePath is { } presencePath)
+                motion.Presences.Snapshot(presencePath, presence.Enter, builder.CommandsFrom(start));
             return;
         }
 

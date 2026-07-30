@@ -23,6 +23,7 @@ describe('presence lowering (enter motion)', () => {
   it("lowers 'slideUp' (the eqc enum shape) to the slide class", () => {
     const html = lower(new Presence(new Box(new BoxStyle({})), 'slideUp'))!;
     expect(html.attributes['class']).toContain('eq-presence-slideup');
+    expect(html.attributes['data-eq-exit']).toBe('slideup');
   });
 
   it('prepends — the child keeps its own classes', () => {

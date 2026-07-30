@@ -201,7 +201,14 @@ public static class PhotonCssGenerator
         css.AppendLine($"@keyframes eq-presence-slideup {{ from {{ opacity: 0; transform: translateY({TokenCss.Px(Presence.SlideDistance)}); }} }}");
         css.AppendLine(".eq-presence-fade { animation: eq-presence-fade var(--eq-motion-base) ease-out; }");
         css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
-        css.AppendLine($"@media (prefers-reduced-motion: reduce) {{ .eq-presence-fade, .eq-presence-slideup {{ animation: eq-presence-fade {Motion.ReducedCrossfadeMs}ms ease-out; }} }}");
+        // Exit motion: the reconciler adds the exit class on removal (the layer reparents to body
+        // while it plays) — Fast duration, held at the end state until the deferred removal lands.
+        // These rules sit AFTER the enter rules, so swapping the class retargets the animation.
+        css.AppendLine("@keyframes eq-presence-exit-fade { to { opacity: 0; } }");
+        css.AppendLine($"@keyframes eq-presence-exit-slideup {{ to {{ opacity: 0; transform: translateY({TokenCss.Px(Presence.SlideDistance)}); }} }}");
+        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
+        css.AppendLine(".eq-presence-exit-slideup { animation: eq-presence-exit-slideup var(--eq-motion-fast) ease-in forwards; }");
+        css.AppendLine($"@media (prefers-reduced-motion: reduce) {{ .eq-presence-fade, .eq-presence-slideup {{ animation: eq-presence-fade {Motion.ReducedCrossfadeMs}ms ease-out; }} .eq-presence-exit-fade, .eq-presence-exit-slideup {{ animation: eq-presence-exit-fade {Motion.ReducedCrossfadeMs}ms ease-in forwards; }} }}");
 
         // Spinner mechanics (spec B15): the 800ms sawtooth fade each bar rides with its own
         // negative delay (the rotation phase); the 400ms anti-flash appear; Reduce Motion zeroes
