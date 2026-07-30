@@ -64,6 +64,10 @@ public sealed class LayoutNode
     /// <see cref="Presence"/> — the emit pass reads it (paths exist only during layout). 1 = settled
     /// (no presence clock in the context, or the entrance finished).</summary>
     public float Presence { get; internal set; } = 1f;
+
+    /// <summary>The stable layout path of a <see cref="Presence"/> node, stamped at measure time —
+    /// the emit pass keys its exit snapshot by it (paths exist only during layout).</summary>
+    public string? PresencePath { get; internal set; }
 }
 
 /// <summary>
@@ -147,11 +151,13 @@ public static class LayoutEngine
     }
 
     /// <summary>A transparent wrapper that also resolves the ENTRANCE progress against the host's
-    /// presence clock, keyed by this stable path — the emit pass applies the paint-only effect.</summary>
+    /// presence clock, keyed by this stable path — the emit pass applies the paint-only effect and
+    /// snapshots the subtree's commands by the same path (the exit replay source).</summary>
     private static LayoutNode MeasurePresence(Presence presence, float maxW, float maxH, LayoutContext ctx, string path)
     {
         var result = MeasureWrapper(presence, presence.Child, maxW, maxH, ctx, path);
         result.Presence = ctx.Presences?.Progress(path, ctx.TimeMs, ctx.ReducedMotion) ?? 1f;
+        result.PresencePath = path;
         return result;
     }
 

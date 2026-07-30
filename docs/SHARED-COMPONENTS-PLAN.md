@@ -500,6 +500,28 @@ rejected.)
    lowering specs + live browser check (computed animationName = eq-presence-fade on the client-
    opened Dialog). Remaining fences: EXIT motion (removal-deferred — web needs reconciler removal
    deferral, native needs command retention for departed subtrees), toast queueing, gestures.
+   EXIT MOTION ✅ (2026-07-30 — the state-transition system COMPLETES): a departing Presence
+   subtree animates OUT (Motion.Fast 100ms, ease-in stand-in; Reduce Motion → the same 120ms
+   crossfade rule, movement dropped). WEB: the reconciler's removal deferral — a departing
+   `.eq-overlay` carrying `[data-eq-exit]` (emitted by both realizers) is REPARENTED to
+   document.body (position:fixed keeps it visually identical, and reparenting is what keeps the
+   diffed parent's childNodes/index math exact — no skip-logic anywhere), listeners cleaned +
+   pointer-events dead (pixels only), exit classes swap the animation (exit rules sit after enter
+   rules so the class change retargets), removed on animationend per presence subtree with a
+   timeout backstop (covers reduced clock / globally-disabled animations). NATIVE: the emit pass
+   SNAPSHOTS each live presence subtree's draw commands per frame (builder gains CommandCount/
+   CommandsFrom/Replay — Replay composes the cached transform with the current one and offsets
+   baked clips under pure translation); a departure spawns an exit from the last snapshot, replayed
+   ABOVE everything inside a falling PushLayer with the SlideUp reverse drop; exits always run to
+   completion — a path re-entering mid-exit starts a fresh entrance WHILE the old copy fades (the
+   cross-fade the web gets by construction; a mid-enter departure carries its inner layer, so
+   continuity composes). Hit regions never snapshot: departed = input passes through immediately
+   (tested). Proven: 5 new native tests (exit spawn/fall/evict, reduced crossfade, realizer replay
+   through a REAL dismiss flow with pixels-only + scheduling) + 2 mid-exit goldens (sheet falling,
+   light+dark) + 2 vitest reconciler specs (deferral lifecycle; rapid re-open cross-fade) + live
+   browser check (open → resolve → copy in body with computed exit animation → self-removed via
+   real animationend). Remaining fences: toast queueing, drag-to-dismiss + detents (gestures),
+   the exact curve pack (easing stand-ins), inline (non-overlay) presence exits.
    THEME-SELECTION WIRING ✅ (2026-07-05, slice 3 — SSR bridge + client boot, per-app theme delivery):
    an app selects the write-once theme with one call — `AddUI(o => o.UseTheme(MaterialTheme.Instance))`
    (or `PhotonTheme.Instance` / `MaterialTheme.FromSeed(seed)` / a brand theme) — and the SAME

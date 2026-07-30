@@ -137,6 +137,40 @@ public sealed class DisplayListBuilder
     /// surface at <paramref name="alpha"/> — overlapping children inside never double-blend
     /// (the CSS <c>opacity</c> semantics). Alpha is clamped to 0–1.
     /// </summary>
+    /// <summary>Commands recorded so far — marks a subtree's start for presence-exit snapshots.</summary>
+    public int CommandCount => _commands.Count;
+
+    /// <summary>Copies the commands recorded since <paramref name="start"/> — the presence-exit
+    /// snapshot (a departed subtree replays these while its exit motion runs).</summary>
+    public DrawCommand[] CommandsFrom(int start)
+    {
+        var slice = new DrawCommand[_commands.Count - start];
+        _commands.CopyTo(start, slice, 0, slice.Length);
+        return slice;
+    }
+
+    /// <summary>
+    /// Re-records an ALREADY-BAKED command (a presence-exit replay): its transform composes with the
+    /// CURRENT one (cached-first — the same order nested emits produce), and a pure-translation
+    /// current also offsets the baked device-space clip so clipped content moves with its pixels.
+    /// </summary>
+    public void Replay(in DrawCommand command)
+    {
+        if (_current.IsIdentity)
+        {
+            _commands.Add(command);
+            return;
+        }
+
+        var clip = command.Clip;
+        if (clip is { } baked && _current is { M11: 1, M12: 0, M21: 0, M22: 1 })
+        {
+            var r = baked.Rect;
+            clip = baked with { Rect = new Rect(r.X + _current.M31, r.Y + _current.M32, r.Width, r.Height) };
+        }
+        _commands.Add(command with { Transform = command.Transform * _current, Clip = clip });
+    }
+
     public void PushLayer(float alpha)
     {
         _openLayers++;
