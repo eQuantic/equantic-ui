@@ -100,6 +100,8 @@ export {
   BoxStyle,
   Row,
   Column,
+  Grid,
+  GridTrack,
   Text,
   Pressable,
   Flexible,

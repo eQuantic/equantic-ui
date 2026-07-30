@@ -21,6 +21,10 @@ public abstract class VisualNode
     /// </summary>
     public CrossAlign? AlignSelf { get; init; }
 
+    /// <summary>Spec S4: how many grid COLUMNS this child spans (clamped to the row's remainder,
+    /// the CSS auto-flow behavior). 0/1 = one column. Ignored outside a <see cref="Grid"/>.</summary>
+    public int GridSpan { get; init; }
+
     /// <summary>
     /// WIRE DISCRIMINATOR: the node's kind as a stable string ("box", "row", …). Realizers that receive
     /// nodes across a serialization/transpilation boundary (the TypeScript runtime lowering) dispatch on
@@ -444,6 +448,56 @@ public enum Alignment : byte
 /// override). Non-positioned children align by <see cref="Align"/>; <see cref="Positioned"/>
 /// children anchor to the stack's edges with signed offsets.
 /// </summary>
+/// <summary>One grid column track (spec S4): Fixed dp, Flex weight (the CSS <c>fr</c>), or Auto
+/// (sized by its widest starting item).</summary>
+public readonly record struct GridTrack(SizeKind Kind, float Value)
+{
+    public static GridTrack Fixed(float dp) => new(SizeKind.Fixed, dp);
+    public static GridTrack Flex(float weight = 1) => new(SizeKind.Fill, weight);
+    public static GridTrack Auto => new(SizeKind.Hug, 0);
+
+    /// <summary>N copies of the same track — <c>GridTrack.Repeat(3, GridTrack.Flex())</c>.</summary>
+    public static GridTrack[] Repeat(int count, GridTrack track)
+    {
+        var tracks = new GridTrack[count];
+        Array.Fill(tracks, track);
+        return tracks;
+    }
+}
+
+/// <summary>
+/// TRUE 2D layout (spec S4 — the CSS Grid twin, v1 auto-flow): explicit column tracks, children
+/// placed left→right wrapping to new rows, per-child <see cref="VisualNode.GridSpan"/>. Rows size to
+/// their tallest cell. Realized as CSS Grid on the web and a track-sizing pass on Photon.
+/// </summary>
+public sealed class Grid : VisualNode, IEnumerable<VisualNode>
+{
+    private readonly List<VisualNode> _children = new();
+
+    public override string NodeKind => "grid";
+
+    public Grid(IReadOnlyList<GridTrack> columns, float gap = 0, float? rowGap = null)
+    {
+        Columns = columns;
+        Gap = gap;
+        RowGap = rowGap;
+    }
+
+    public IReadOnlyList<GridTrack> Columns { get; }
+
+    /// <summary>Gap between COLUMNS. <see cref="RowGap"/> defaults to it.</summary>
+    public float Gap { get; init; }
+    public float? RowGap { get; init; }
+    public EdgeInsets Padding { get; init; }
+    public SizeValue Width { get; init; }
+    public SizeValue Height { get; init; }
+
+    public IReadOnlyList<VisualNode> Children => _children;
+    public void Add(VisualNode child) => _children.Add(child);
+    public IEnumerator<VisualNode> GetEnumerator() => _children.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => _children.GetEnumerator();
+}
+
 public sealed class Stack : VisualNode
 {
     public sealed override string NodeKind => "stack";

@@ -251,8 +251,13 @@ rule (EQ1xxx) keeps anything untranslatable a BUILD error, never silent.
   "row-gap column-gap" pair in the stacking order of the axis, byte-mirrored in TS. eqc: zero
   changes (config props flow). Proven: 3 layout tests + 2 wrap goldens + 3 web pins + 3 vitest
   mirrors; the showroom KPI row now wraps on narrow viewports.
-- **S4 — Grid** (`Grid`/`GridTrack`/`GridSpan`; Photon track-sizing pass, golden-tested; web CSS
-  Grid; spans/areas).
+- **S4 — Grid ✅ (2026-07-30):** `Grid(columns, gap, rowGap)` + `GridTrack` (Fixed/Flex/Auto,
+  Repeat) + `VisualNode.GridSpan` (clamped auto-flow). Photon gained `MeasureGrid` (fixed → dp,
+  auto → widest starting single-span item, flex → weighted leftover; rows size to the tallest
+  cell). Web lowers to CSS Grid (px/Nfr/auto tracks, the gap pair, grid-column spans), TS
+  byte-mirrored. v1 fences: auto-flow only (explicit GridArea pinning later); Auto tracks ignore
+  spanning items. Proven: 3 track-sizing tests + 2 goldens (span-2 hero + auto-flow) + 2 web pins
+  + 2 vitest mirrors.
 - **S5 — State overlays** (`StyleDiff` Hover/Focus/Pressed on BoxStyle; web pseudo-class atomic
   rules; Photon interaction states; Pressable folds in).
 - **S6 — Adaptive** (`WindowSizeClass`, `Adaptive<T>`, `Adaptive.Node`; web build-time media-query
