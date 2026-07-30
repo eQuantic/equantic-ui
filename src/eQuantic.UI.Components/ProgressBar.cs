@@ -80,7 +80,9 @@ public sealed class ProgressBar : StatefulComponent
             }
             if (filledWeight < 1000)
             {
-                track.Add(new Spacer(1000 - filledWeight));
+                // B14: the counterweight animates WITH the fill — constant denominator, so the
+                // visible ratio glides instead of jumping when only one side moved.
+                track.Add(new Spacer(1000 - filledWeight) { AnimateChanges = animate });
             }
             return track;
         }

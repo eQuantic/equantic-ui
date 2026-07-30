@@ -57,13 +57,18 @@ public static class PhotonRealizer
         VisualNode? hovered = null,
         ComponentInstanceStore? instances = null,
         float timeMs = 0,
-        bool reducedMotion = false)
+        bool reducedMotion = false,
+        TransitionStore? transitions = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
         {
             Instances = instances,
             SizeClass = WindowSizeClasses.FromWidth(viewportWidth),
+            Transitions = transitions,
+            TimeMs = timeMs,
+            ReducedMotion = reducedMotion,
         };
+        transitions?.BeginFrame();
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context);
 
         var hits = new List<HitRegion>();
@@ -84,7 +89,7 @@ public static class PhotonRealizer
         }
 
         context.Instances?.EndPass();
-        return new RealizeResult(layout, hits, motion.Active, hovers);
+        return new RealizeResult(layout, hits, motion.Active || transitions is { AnyActive: true }, hovers);
     }
 
     /// <summary>The frame clock for loop motion: offsets resolve as a PURE function of

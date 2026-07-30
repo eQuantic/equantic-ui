@@ -294,6 +294,16 @@ adopted path already delivers the dedup/caching/identity properties, leaving onl
 render-time win. Revisit only if SSR profiling says otherwise. S6b fine-grained Adaptive<T>,
 native scroll compositor pinning, Metal offscreen layers (D3), GridArea pinning.
 
+**Native transition animator (B14) ✅ (2026-07-30):** `TransitionStore` — a pure-function-of-time
+value animator (mount-at-target, retarget-from-current, Reduce Motion snaps, smoothstep stand-in
+for the standard curve — motion fence). `LayoutContext.Transitions/TimeMs/ReducedMotion`; a
+`Flexible`/`Spacer` with `AnimateChanges` LAYS OUT at the interpolated weight; `HasActiveMotion`
+keeps the host scheduling until settled. FOUND & FIXED a cross-target component flaw: the
+ProgressBar's counterweight Spacer snapped while the fill animated, so the visible RATIO jumped on
+both targets — `Spacer.AnimateChanges` added to the vocabulary (web mirrors the flex-grow
+transition), the shared ProgressBar animates BOTH sides (constant denominator → the ratio glides),
+transpiled ProgressBar re-pinned (EQ_UPDATE_TRANSPILED=1).
+
 **Gestures v1 — pointer pipeline ✅ (2026-07-30):** the realizer registers HoverRegions (Boxes
 carrying a Hover diff, paint order); `PhotonHost.PointerMove(x,y)` resolves the TOPMOST region
 under the pointer (last-contains wins — the same painter's order hit dispatch uses),

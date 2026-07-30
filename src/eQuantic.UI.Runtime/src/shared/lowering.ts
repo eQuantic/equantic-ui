@@ -842,7 +842,12 @@ function lowerSpacer(spacer: SpacerNode, horizontalAxis: boolean | null): HtmlNo
 
   const style: StyleEntries =
     spacer.flex > 0
-      ? { flex: `${spacer.flex} 1 0%` }
+      ? {
+          flex: `${spacer.flex} 1 0%`,
+          transition: spacer.animateChanges
+            ? 'flex-grow var(--eq-motion-base) var(--eq-curve-standard)'
+            : undefined,
+        }
       : horizontalAxis
         ? { width: px(spacer.fixedLength), 'flex-shrink': '0' }
         : { height: px(spacer.fixedLength), 'flex-shrink': '0' };
