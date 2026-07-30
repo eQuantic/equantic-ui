@@ -27,6 +27,22 @@ public sealed class ReferenceSurface : IRenderSurface
     internal void BlendOver(int x, int y, LinearColor src) =>
         _pixels[y * Width + x] = src.Over(_pixels[y * Width + x]);
 
+    /// <summary>
+    /// Composites <paramref name="layer"/> over THIS surface at <paramref name="alpha"/> — the
+    /// group-opacity EndLayer blend. Premultiplied color scales uniformly by alpha (all four
+    /// channels), then a single source-over per pixel.
+    /// </summary>
+    internal void CompositeOver(ReferenceSurface layer, float alpha)
+    {
+        for (var i = 0; i < _pixels.Length; i++)
+        {
+            var src = layer._pixels[i];
+            if (src.A <= 0) continue;
+            var scaled = new LinearColor(src.R * alpha, src.G * alpha, src.B * alpha, src.A * alpha);
+            _pixels[i] = scaled.Over(_pixels[i]);
+        }
+    }
+
     public void ReadPixelsSrgb(Span<byte> destinationRgba)
     {
         var required = Width * Height * 4;

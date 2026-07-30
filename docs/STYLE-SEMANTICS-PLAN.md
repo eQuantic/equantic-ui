@@ -219,8 +219,17 @@ rule (EQ1xxx) keeps anything untranslatable a BUILD error, never silent.
 
 ## 3. Slices
 
-- **S1 — Paint & constraint completeness (additive):** `Opacity`, static `Transform`,
-  `AspectRatio`, `AlignSelf` — Primitives + both realizers + eqc lowering + goldens/cross-pins.
+- **S1 — Paint & constraint completeness ✅ (2026-07-30):** `BoxStyle.Opacity` (GROUP opacity — the
+  engine gained `PushLayer`/`PopLayer` + BeginLayer/EndLayer commands; the reference backend
+  composites the group ONCE offscreen, numerically pinned 0.5-over-overlap = 0.5, never 0.25;
+  the Metal spike approximates per-command, documented), `BoxStyle.Transform` (`Transform2D`
+  components translate→rotate→scale, center-anchored — rides the EXISTING per-command Matrix2D on
+  native and the equivalent CSS list on web, paint-only), `BoxStyle.AspectRatio` (one determined
+  axis derives the other, in MeasureBox and CSS), and `VisualNode.AlignSelf` (per-child cross
+  override, in the flex arrange and align-self). Proven: 3 engine tests + 2 S1 goldens
+  (opacity-overlap / rotated badge / 16:9 / align-self) + 5 web pins + 5 vitest mirrors + an eqc
+  conformance test (`Transform2D.rotate(8).withScale(1.05)` transpiles with the runtime import,
+  zero compiler changes) + live in the showroom (tilted delta chips).
 - **S2 — The atomic emission engine (the heart) ✅ (2026-07-30, core):** tiers 1½–3 landed.
   `StyleAtomizer`/`StyleSink`/`ThemeVarMap` (C#, eQuantic.UI.Web) + the byte-identical
   `style-atomizer.ts` twin (FNV-1a/base36, same var-rewrite, sorted classes) — cross-pinned by the

@@ -238,6 +238,18 @@ public static class LayoutEngine
         width = Clamp(width, style.MinWidth, style.MaxWidth);
         height = Clamp(height, style.MinHeight, style.MaxHeight);
 
+        // Spec S1 aspect-ratio (CSS twin): when exactly one axis is author-determined, the other
+        // derives from it; two explicit axes win over the ratio (no constraint fight).
+        if (style.AspectRatio > 0)
+        {
+            var widthSet = style.Width.Kind != SizeKind.Hug;
+            var heightSet = style.Height.Kind != SizeKind.Hug;
+            if (widthSet && !heightSet)
+                height = Clamp(width / style.AspectRatio, style.MinHeight, style.MaxHeight);
+            else if (heightSet && !widthSet)
+                width = Clamp(height * style.AspectRatio, style.MinWidth, style.MaxWidth);
+        }
+
         // A Fill child stretches to the resolved content box (its own measurement saw the max already;
         // pin the bounds so realizers paint the full extent).
         if (child?.Source is Box { Style.Width.Kind: SizeKind.Fill })
@@ -415,13 +427,15 @@ public static class LayoutEngine
             }
 
             var childCross = horizontal ? child.Bounds.Height : child.Bounds.Width;
-            var crossPos = (horizontal ? flex.Padding.Top : flex.Padding.Start) + flex.Cross switch
+            // Spec S1 align-self: a child may override the container's Cross for itself (CSS twin).
+            var alignment = children[i].AlignSelf ?? flex.Cross;
+            var crossPos = (horizontal ? flex.Padding.Top : flex.Padding.Start) + alignment switch
             {
                 CrossAlign.Center => (crossExtent - childCross) / 2,
                 CrossAlign.End => crossExtent - childCross,
                 _ => 0,
             };
-            if (flex.Cross == CrossAlign.Stretch && children[i] is not Text
+            if (alignment == CrossAlign.Stretch && children[i] is not Text
                 && CrossSizeKind(children[i], horizontal) != SizeKind.Fixed)
             {
                 // CSS parity: stretch fills AUTO cross sizes only — an explicit cross size is kept.

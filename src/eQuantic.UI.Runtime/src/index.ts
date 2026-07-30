@@ -122,6 +122,7 @@ export {
   SizeValue,
   EdgeInsets,
   CornerRadii,
+  Transform2D,
   TypeStyle,
   VariantColors,
 } from './shared/value-types';

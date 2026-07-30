@@ -15,6 +15,13 @@ public abstract class VisualNode
     public string? Key { get; init; }
 
     /// <summary>
+    /// Overrides the parent flex container's <see cref="FlexNode.Cross"/> for THIS child only
+    /// (spec S1 — the CSS <c>align-self</c> twin). <c>null</c> = follow the container. Ignored
+    /// outside a Row/Column.
+    /// </summary>
+    public CrossAlign? AlignSelf { get; init; }
+
+    /// <summary>
     /// WIRE DISCRIMINATOR: the node's kind as a stable string ("box", "row", …). Realizers that receive
     /// nodes across a serialization/transpilation boundary (the TypeScript runtime lowering) dispatch on
     /// this instead of CLR types — class names don't survive bundling. Sealed per node type.
@@ -80,6 +87,58 @@ public readonly record struct BoxStyle
     /// the container side of loop motion (a sweeping segment stays inside its track). Chrome
     /// (background/border/shadow) is the shape itself and is never clipped.</summary>
     public bool Clip { get; init; }
+
+    /// <summary>
+    /// GROUP opacity 0–1 (spec S1): the whole subtree (chrome + children) composites as ONE layer at
+    /// this alpha — overlapping children never double-blend (engine PushLayer / CSS opacity).
+    /// <c>null</c> = fully opaque (no layer).
+    /// </summary>
+    public float? Opacity { get; init; }
+
+    /// <summary>
+    /// Static 2D transform (spec S1), anchored at the box CENTER (the CSS default origin). PAINT
+    /// ONLY — layout is untouched, exactly like CSS transforms. <c>null</c> = identity.
+    /// </summary>
+    public Transform2D? Transform { get; init; }
+
+    /// <summary>
+    /// Width ÷ height constraint (spec S1 — the CSS <c>aspect-ratio</c> twin): when exactly one axis
+    /// is determined, the other derives from it. Both axes explicit → both win (no constraint).
+    /// 0 = none.
+    /// </summary>
+    public float AspectRatio { get; init; }
+}
+
+/// <summary>
+/// A static 2D transform as COMPONENTS, not a matrix — the closed, realizable set (spec S1): applied
+/// translate → rotate → scale, anchored at the element's center. Compose fluently:
+/// <c>Transform2D.Rotate(3).Scale(1.02f)</c>. The web realizer emits the equivalent CSS transform
+/// list; the native realizer builds the equivalent <c>Matrix2D</c> around the box center. Always
+/// reach instances through the factories/combinators — <c>default</c> is not meaningful.
+/// </summary>
+public readonly record struct Transform2D(
+    float TranslateX = 0,
+    float TranslateY = 0,
+    float RotationDegrees = 0,
+    float ScaleX = 1,
+    float ScaleY = 1)
+{
+    public static Transform2D Translate(float x, float y = 0) => new(TranslateX: x, TranslateY: y);
+    public static Transform2D Rotate(float degrees) => new(RotationDegrees: degrees);
+    public static Transform2D Scale(float uniform) => new(ScaleX: uniform, ScaleY: uniform);
+    public static Transform2D Scale(float x, float y) => new(ScaleX: x, ScaleY: y);
+
+    /// <summary>This transform with the translation components replaced.</summary>
+    public Transform2D WithTranslate(float x, float y = 0) => this with { TranslateX = x, TranslateY = y };
+
+    /// <summary>This transform with the rotation replaced.</summary>
+    public Transform2D WithRotate(float degrees) => this with { RotationDegrees = degrees };
+
+    /// <summary>This transform with the scale replaced (uniform).</summary>
+    public Transform2D WithScale(float uniform) => this with { ScaleX = uniform, ScaleY = uniform };
+
+    public bool IsIdentity =>
+        TranslateX == 0 && TranslateY == 0 && RotationDegrees == 0 && ScaleX == 1 && ScaleY == 1;
 }
 
 /// <summary>Axis of a 2-stop linear gradient — the CSS keyword pair the web realizer emits; the

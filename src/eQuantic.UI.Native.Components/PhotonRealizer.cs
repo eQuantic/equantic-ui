@@ -110,6 +110,37 @@ public static class PhotonRealizer
 
     private static void Emit(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits, PressScope press, MotionScope motion, List<Overlay> overlays)
     {
+        // Spec S1 — group opacity + static transform wrap the WHOLE box (chrome and children):
+        // opacity is one PushLayer composite (overlaps never double-blend); the transform is the
+        // center-anchored Matrix2D twin of the CSS list, paint-only (layout already ran).
+        if (node.Source is Box styled &&
+            (styled.Style.Opacity is { } sAlpha && sAlpha < 1f || styled.Style.Transform is { IsIdentity: false }))
+        {
+            var opacity = styled.Style.Opacity is { } a && a < 1f ? a : (float?)null;
+            if (opacity is { } layerAlpha) builder.PushLayer(layerAlpha);
+            var transformed = styled.Style.Transform is { IsIdentity: false } t;
+            if (transformed)
+                builder.PushTransform(CenterAnchored(styled.Style.Transform!.Value, node.Bounds.Center));
+
+            EmitNode(node, theme, mode, builder, hits, press, motion, overlays);
+
+            if (transformed) builder.Pop();
+            if (opacity is not null) builder.PopLayer();
+            return;
+        }
+
+        EmitNode(node, theme, mode, builder, hits, press, motion, overlays);
+    }
+
+    /// <summary>The CSS transform list twin: translate → rotate → scale, anchored at the box center.</summary>
+    private static Matrix2D CenterAnchored(in Transform2D t, Point center) =>
+        Matrix2D.Translation(-center.X, -center.Y)
+        * Matrix2D.Scale(t.ScaleX, t.ScaleY)
+        * Matrix2D.Rotation(t.RotationDegrees * MathF.PI / 180f)
+        * Matrix2D.Translation(center.X + t.TranslateX, center.Y + t.TranslateY);
+
+    private static void EmitNode(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits, PressScope press, MotionScope motion, List<Overlay> overlays)
+    {
         if (ReferenceEquals(node.Source, press.Pressed) && press.Pressed?.PressedBackground is { } pressedFill)
             press.PendingFill = pressedFill;
         if (ReferenceEquals(node.Source, press.Focused))

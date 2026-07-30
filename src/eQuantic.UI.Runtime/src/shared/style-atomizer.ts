@@ -193,6 +193,27 @@ function resolveVars(value: string): string {
   }
 }
 
+/**
+ * Merge ONE extra declaration into an already-atomized element (the align-self path: the parent
+ * decides a child declaration after the child lowered). The atomic segment of the class attribute is
+ * re-sorted with the new class so it stays byte-identical to the C# post-pass, which atomizes
+ * everything in a single sorted batch. Semantic (non-registry) classes keep their leading position.
+ */
+export function mergeAtomicDeclaration(
+  node: { attributes: Record<string, string | undefined> },
+  prop: string,
+  value: string,
+): void {
+  const added = atomizeEntries({ [prop]: value }).class;
+  if (!added) return;
+  const existing = (node.attributes['class'] ?? '').split(' ').filter(Boolean);
+  const semantic = existing.filter((c) => !ruleTexts.has(c));
+  const atomic = existing.filter((c) => ruleTexts.has(c));
+  atomic.push(added);
+  atomic.sort();
+  node.attributes['class'] = [...semantic, ...atomic].join(' ');
+}
+
 // ---- the public seam ------------------------------------------------------------------------------
 
 export interface AtomizedStyle {

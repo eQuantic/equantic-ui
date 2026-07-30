@@ -31,6 +31,7 @@ public class HtmlStyle
     public string? Flex { get; set; }
     public string? FlexGrow { get; set; }
     public string? FlexShrink { get; set; }
+    public string? AlignSelf { get; set; }
 
     #endregion
 
@@ -49,6 +50,7 @@ public class HtmlStyle
 
     public string? Width { get; set; }
     public string? Height { get; set; }
+    public string? AspectRatio { get; set; }
     public string? MinWidth { get; set; }
     public string? MinHeight { get; set; }
     public string? MaxWidth { get; set; }
@@ -166,6 +168,7 @@ public class HtmlStyle
         AddProperty(properties, "flex", Flex);
         AddProperty(properties, "flex-grow", FlexGrow);
         AddProperty(properties, "flex-shrink", FlexShrink);
+        AddProperty(properties, "align-self", AlignSelf);
 
         AddProperty(properties, "grid-template-columns", GridTemplateColumns);
         AddProperty(properties, "grid-template-rows", GridTemplateRows);
@@ -180,6 +183,7 @@ public class HtmlStyle
         AddProperty(properties, "min-height", MinHeight);
         AddProperty(properties, "max-width", MaxWidth);
         AddProperty(properties, "max-height", MaxHeight);
+        AddProperty(properties, "aspect-ratio", AspectRatio);
 
         AddProperty(properties, "margin", Margin);
         AddProperty(properties, "margin-top", MarginTop);

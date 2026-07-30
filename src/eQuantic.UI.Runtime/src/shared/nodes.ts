@@ -71,6 +71,21 @@ export interface BoxStyleValue {
   clip?: boolean;
   /** 2-stop linear gradient (engine fence) — draws OVER the solid background when both are set. */
   gradient?: LinearGradientValue | null;
+  /** Spec S1 group opacity 0–1 (one composited layer — CSS opacity / native PushLayer). */
+  opacity?: number | null;
+  /** Spec S1 static transform, center-anchored, paint-only (CSS transform twin). */
+  transform?: TransformValue | null;
+  /** Spec S1 width ÷ height constraint; one determined axis derives the other. 0/undefined = none. */
+  aspectRatio?: number;
+}
+
+/** Wire shape of the C# `Transform2D`: components applied translate → rotate → scale. */
+export interface TransformValue {
+  translateX?: number;
+  translateY?: number;
+  rotationDegrees?: number;
+  scaleX?: number;
+  scaleY?: number;
 }
 
 /** Wire shape of the C# `LinearGradient`: two token stops on a straight axis. */
@@ -84,6 +99,8 @@ export interface LinearGradientValue {
 export interface VisualNodeValue {
   nodeKind: string;
   key?: string | null;
+  /** Spec S1 align-self: overrides the parent flex container's cross alignment for this child. */
+  alignSelf?: CrossAlignValue | null;
 }
 
 export interface BoxNode extends VisualNodeValue {
