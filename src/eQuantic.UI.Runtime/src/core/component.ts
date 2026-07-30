@@ -9,6 +9,7 @@ import { hydrateValue } from '../utils/hydrate-value';
 import { getCurrentRoute } from '../router/current-route';
 import { ComponentInstanceStore, enterPass, exitPass } from '../shared/instance-store';
 import { getPhotonTheme } from '../shared/photon-context';
+import { scheduleRenderFlush } from './render-scheduler';
 
 /**
  * Base class for stateless components
@@ -236,8 +237,8 @@ export abstract class StatefulComponent extends Component {
    * Release lifecycle ownership when navigating away WITHOUT touching the DOM. SPA navigation already
    * reconciled the root to the next page (preserving any shared shell); calling {@link unmount} here
    * would reconcile this component's tree to null and delete that shared DOM. Marking `_mounted=false`
-   * also makes any already-queued `_scheduleRender` rAF a no-op, so a stale outgoing page can't clobber
-   * the freshly mounted one.
+   * also makes any already-queued `_scheduleRender` flush a no-op, so a stale outgoing page can't
+   * clobber the freshly mounted one.
    */
   disposeQuietly(): void {
     if (this._mounted) {
@@ -250,7 +251,9 @@ export abstract class StatefulComponent extends Component {
     if (this._renderScheduled) return;
     this._renderScheduled = true;
 
-    requestAnimationFrame(() => {
+    // Next frame while visible, timer fallback while hidden — a background tab gets no frames, and a
+    // rAF that never fires would also latch _renderScheduled, swallowing every later setState.
+    scheduleRenderFlush(() => {
       this._renderScheduled = false;
       if (this._mounted) {
         // Efficient update using reconciler
@@ -364,7 +367,7 @@ export abstract class SharedStatefulComponent extends Component {
     return this._renderManager.getCurrentNode();
   }
 
-  /** Marking `_mounted=false` makes any queued rAF re-render a no-op (see StatefulComponent). */
+  /** Marking `_mounted=false` makes any queued re-render flush a no-op (see StatefulComponent). */
   disposeQuietly(): void {
     this._mounted = false;
   }
@@ -378,7 +381,8 @@ export abstract class SharedStatefulComponent extends Component {
     }
     if (this._renderScheduled) return;
     this._renderScheduled = true;
-    requestAnimationFrame(() => {
+    // Frame-or-timer (see scheduleRenderFlush): a hidden tab must still repaint on setState.
+    scheduleRenderFlush(() => {
       this._renderScheduled = false;
       if (this._mounted) {
         this._renderManager.update(this.render());
