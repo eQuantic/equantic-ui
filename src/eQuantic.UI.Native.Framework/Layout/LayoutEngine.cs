@@ -24,6 +24,13 @@ public sealed class LayoutContext
     /// <summary>Spec B14: the host's value-transition animator (null = values snap).</summary>
     public TransitionStore? Transitions { get; init; }
 
+    /// <summary>Scroll compositor v1: the host's scroll offsets (null = programmatic Offset only).</summary>
+    public ScrollStore? ScrollOffsets { get; init; }
+
+    /// <summary>Per-frame bridge from a laid-out ScrollView to its path/max — the realizer reads it
+    /// while emitting to register scroll regions for the host's input routing.</summary>
+    public Dictionary<ScrollView, (string Path, float MaxOffset)>? ScrollMeta { get; init; }
+
     /// <summary>The frame clock the transitions resolve against (same clock as loop motion).</summary>
     public float TimeMs { get; init; }
 
@@ -206,13 +213,40 @@ public static class LayoutEngine
         result.Bounds = new Rect(0, 0, width, height);
 
         var maxOffset = MathF.Max(0, horizontal ? child.Bounds.Width - width : child.Bounds.Height - height);
-        var offset = Math.Clamp(scroll.Offset, 0, maxOffset);
+        // Scroll compositor v1: the host's stored offset wins; the node's programmatic Offset is the
+        // default until the user scrolls. The realizer registers the region via ScrollMeta.
+        var offset = Math.Clamp(ctx.ScrollOffsets?.Get(path) ?? scroll.Offset, 0, maxOffset);
+        ctx.ScrollMeta?.TryAdd(scroll, (path, maxOffset));
         child.Bounds = child.Bounds with
         {
             X = horizontal ? -offset : 0,
             Y = horizontal ? 0 : -offset,
         };
+
+        // Spec S7 — Sticky PINNING (vertical v1): a Sticky at content-y y0 shows at y0 - offset;
+        // once that would pass its own Offset from the viewport start, it pins there instead.
+        if (!horizontal && offset > 0)
+            PinSticky(child, accumulatedY: child.Bounds.Y);
+
         return result;
+    }
+
+    /// <summary>Walks the scrolled content for Sticky wrappers and clamps their viewport-relative Y
+    /// (v1: vertical, no end-of-container release — that fence joins the compositor polish). Nested
+    /// ScrollViews own their own pinning pass.</summary>
+    private static void PinSticky(LayoutNode node, float accumulatedY)
+    {
+        foreach (var child in node.Children)
+        {
+            if (child.Source is ScrollView) continue;
+            var viewportY = accumulatedY + child.Bounds.Y;
+            if (child.Source is Sticky sticky && viewportY < sticky.Offset)
+            {
+                child.Bounds = child.Bounds with { Y = child.Bounds.Y + (sticky.Offset - viewportY) };
+                continue; // the pinned subtree moves as one — no need to descend
+            }
+            PinSticky(child, accumulatedY + child.Bounds.Y);
+        }
     }
 
     private static (float X, float Y) AlignOffset(Alignment align, float slackW, float slackH)
