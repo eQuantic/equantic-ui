@@ -1,0 +1,75 @@
+using eQuantic.UI.Primitives;
+
+namespace eQuantic.UI.Components;
+
+/// <summary>
+/// The design system's BottomSheet (spec C4): a MODAL surface anchored to the bottom edge — top
+/// corners at the theme's ExtraLarge shape, E4 over the Scrim, a 32×4 drag handle centered above
+/// the content. Dismissible by DEFAULT (sheets are optional context, unlike destructive dialogs):
+/// the scrim tap fires <see cref="OnDismiss"/>. DECLARATIVE presence like the Dialog. v1 fences:
+/// enter/exit slide (state-transition system), drag-to-dismiss (gesture polish), detents.
+/// </summary>
+public sealed class BottomSheet : StatelessComponent
+{
+    public BottomSheet(VisualNode content, Action? onDismiss = null, bool dismissible = true)
+    {
+        Content = content;
+        OnDismiss = onDismiss;
+        Dismissible = dismissible;
+    }
+
+    public VisualNode Content { get; init; }
+    public Action? OnDismiss { get; init; }
+    public bool Dismissible { get; init; }
+
+    public override VisualNode Build(ComponentContext context)
+    {
+        var theme = context.Theme;
+
+        var scrim = new Pressable(new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = theme.Scrim,
+        }), Dismissible ? OnDismiss : null)
+        {
+            Disabled = !Dismissible,
+            Label = "dismiss",
+        };
+
+        var body = new Column(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Stretch };
+        // The drag handle — an affordance today, the drag-to-dismiss grip when gestures land.
+        var handleRow = new Row(gap: 0) { Width = SizeValue.Fill, Main = MainAlign.Center };
+        handleRow.Add(new Box(new BoxStyle
+        {
+            Width = 32, Height = 4,
+            Background = theme.BorderStrong,
+            CornerRadius = new CornerRadii(Radius.Full),
+        }));
+        body.Add(handleRow);
+        body.Add(Content);
+
+        var radius = theme.Shape(ShapeScale.ExtraLarge);
+        var sheet = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Background = theme.Surface,
+            CornerRadius = new CornerRadii(radius, radius, 0, 0),
+            Elevation = 4,
+            Padding = new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
+        }, body);
+
+        var anchor = new Column(gap: 0)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Main = MainAlign.End,
+        };
+        anchor.Add(sheet);
+
+        var layers = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        layers.Add(scrim);
+        layers.Add(anchor);
+        return new Overlay(layers);
+    }
+}

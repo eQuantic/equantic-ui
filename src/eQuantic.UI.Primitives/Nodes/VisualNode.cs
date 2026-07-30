@@ -257,6 +257,11 @@ public sealed class Overlay : VisualNode
     }
 
     public VisualNode Child { get; init; }
+
+    /// <summary>False = a NON-MODAL layer (toasts): pointer input passes through everywhere except
+    /// the layer's own pressables. Native is passthrough by construction (only registered regions
+    /// hit); the web realizer lowers the pointer-events variant. Default TRUE (dialogs, sheets).</summary>
+    public bool Modal { get; init; } = true;
 }
 
 /// <summary>

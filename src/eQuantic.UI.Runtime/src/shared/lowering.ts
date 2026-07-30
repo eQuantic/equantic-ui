@@ -252,7 +252,9 @@ function prependClass(node: HtmlNode, semanticClass: string): void {
 function lowerOverlay(node: OverlayNode, context: LoweringContext, path: string): HtmlNode {
   const layer: HtmlNode = {
     tag: 'div',
-    attributes: { class: 'eq-overlay' },
+    attributes: {
+      class: node.modal === false ? 'eq-overlay eq-overlay-passthrough' : 'eq-overlay',
+    },
     events: {},
     children: [],
   };

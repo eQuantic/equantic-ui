@@ -167,6 +167,8 @@ export { NavItem } from './shared/components/NavItem';
 export { Skeleton } from './shared/components/Skeleton';
 export { TextInput } from './shared/components/TextInput';
 export { Dialog } from './shared/components/Dialog';
+export { Toast } from './shared/components/Toast';
+export { BottomSheet } from './shared/components/BottomSheet';
 export { DialogAction } from './shared/components/DialogAction';
 export { SearchField } from './shared/components/SearchField';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).

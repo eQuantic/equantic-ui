@@ -467,6 +467,18 @@ rejected.)
    hand-tuned baseline #6750A4). Proven on BOTH realizers: 7 web color-science tests + a native Photon
    golden of the eQuantic-blue seed #0050A0 (light+dark — the purple gallery becomes blue with nothing
    but a different `IAppTheme`).
+   OVERLAYS C3/C4 — TOAST + BOTTOMSHEET ✅ (2026-07-30): the fenced overlay pair lands write-once.
+   `Overlay.Modal` joins the vocabulary (false = a NON-MODAL layer: native is passthrough by
+   construction — only registered regions hit; the web realizer lowers the pointer-events variant
+   `.eq-overlay-passthrough`). `Toast(message, status, actionLabel?, onAction?)` — transient,
+   non-modal, bottom-anchored inverse pill (TextPrimary fill / TextInverse label — the pair that
+   flips correctly in both modes), status dot, optional action; auto-dismiss timing is the app's
+   concern (declarative presence, like Dialog). `BottomSheet(content, onDismiss?, dismissible=true)`
+   — modal scrim + bottom-anchored Surface with ExtraLarge top corners, E4, drag-handle affordance;
+   dismissible by DEFAULT. Both embedded/transpiled (EQ_UPDATE_TRANSPILED). Proven: 4 goldens +
+   the MODALITY contract as dispatch tests (toast: the page button behind it still presses AND the
+   toast action works; sheet: the scrim blocks the page and resolves dismiss). v1 fences: enter/exit
+   motion (state-transition system), toast queueing, drag-to-dismiss + detents (gestures).
    THEME-SELECTION WIRING ✅ (2026-07-05, slice 3 — SSR bridge + client boot, per-app theme delivery):
    an app selects the write-once theme with one call — `AddUI(o => o.UseTheme(MaterialTheme.Instance))`
    (or `PhotonTheme.Instance` / `MaterialTheme.FromSeed(seed)` / a brand theme) — and the SAME
