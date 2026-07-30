@@ -339,6 +339,17 @@ public abstract class FlexNode : VisualNode, IEnumerable<VisualNode>
     private readonly List<VisualNode> _children = new();
 
     public float Gap { get; init; }
+
+    /// <summary>
+    /// Spec S3 flow wrapping (the CSS <c>flex-wrap: wrap</c> twin): children that overflow the main
+    /// extent break onto the next line. v1 scope: children keep their NATURAL main size — Flexible
+    /// weights don't distribute inside a wrapping container (use a non-wrapping Row for that).
+    /// </summary>
+    public bool Wrap { get; init; }
+
+    /// <summary>Spacing BETWEEN WRAPPED LINES (spec S3). <c>null</c> = same as <see cref="Gap"/>.</summary>
+    public float? RunGap { get; init; }
+
     public MainAlign Main { get; init; } = MainAlign.Start;
     public abstract CrossAlign Cross { get; init; }
     public EdgeInsets Padding { get; init; }

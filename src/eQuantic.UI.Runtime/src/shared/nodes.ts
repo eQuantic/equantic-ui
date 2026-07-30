@@ -114,6 +114,10 @@ export interface FlexNodeValue extends VisualNodeValue {
   gap: number;
   main: MainAlignValue;
   cross: CrossAlignValue;
+  /** Spec S3: children wrap onto new lines when the main extent overflows. */
+  wrap?: boolean;
+  /** Spec S3: spacing between wrapped lines; undefined = same as gap. */
+  runGap?: number | null;
   padding?: EdgeInsetsValue;
   width?: SizeValueValue;
   height?: SizeValueValue;

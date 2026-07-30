@@ -244,7 +244,13 @@ rule (EQ1xxx) keeps anything untranslatable a BUILD error, never silent.
   the 100-card test pins O(distinct) growth. Remaining S2b: eqc BUILD-TIME extraction of static
   styles into the generated stylesheet (today rules are collected at SSR render / client runtime —
   same dedup and identity, one render later than build).
-- **S3 — Wrap** (Row/Column `Wrap`/`RunGap`; Photon line-breaking pass; web flex-wrap atomic rules).
+- **S3 — Wrap ✅ (2026-07-30):** `FlexNode.Wrap` + `RunGap` (null = Gap). Photon gained the
+  line-breaking pass (`MeasureFlexWrapped`: natural-size children, per-line Main alignment,
+  per-child cross/AlignSelf within the line, lines stacked with RunGap; v1 scope — Flexible weights
+  do not distribute inside a wrapping container). Web lowers to `flex-wrap: wrap` + the
+  "row-gap column-gap" pair in the stacking order of the axis, byte-mirrored in TS. eqc: zero
+  changes (config props flow). Proven: 3 layout tests + 2 wrap goldens + 3 web pins + 3 vitest
+  mirrors; the showroom KPI row now wraps on narrow viewports.
 - **S4 — Grid** (`Grid`/`GridTrack`/`GridSpan`; Photon track-sizing pass, golden-tested; web CSS
   Grid; spans/areas).
 - **S5 — State overlays** (`StyleDiff` Hover/Focus/Pressed on BoxStyle; web pseudo-class atomic

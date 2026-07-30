@@ -96,6 +96,8 @@ export class Box extends VisualNode {
 interface FlexConfig {
   main?: MainAlignValue;
   cross?: CrossAlignValue;
+  wrap?: boolean;
+  runGap?: number | null;
   padding?: EdgeInsetsValue;
   width?: SizeValue | number;
   height?: SizeValue | number;
@@ -105,6 +107,9 @@ interface FlexConfig {
 
 abstract class FlexNode extends VisualNode {
   gap: number;
+  /** Spec S3 flow wrapping (children keep natural size; lines stack with runGap). */
+  wrap = false;
+  runGap?: number | null;
   main: MainAlignValue = 'start';
   abstract cross: CrossAlignValue;
   padding: EdgeInsetsValue = new EdgeInsets();

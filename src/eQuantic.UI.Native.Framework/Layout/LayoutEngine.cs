@@ -265,6 +265,8 @@ public static class LayoutEngine
 
     private static LayoutNode MeasureFlex(FlexNode flex, float maxW, float maxH, LayoutContext ctx, string path)
     {
+        if (flex.Wrap) return MeasureFlexWrapped(flex, maxW, maxH, ctx, path);
+
         var result = new LayoutNode(flex);
         var horizontal = flex is Row;
 
@@ -450,6 +452,133 @@ public static class LayoutEngine
                 : child.Bounds with { X = crossPos, Y = cursor };
             result.Children.Add(child);
             cursor += mains[i] + flex.Gap + betweenExtra;
+        }
+
+        result.Bounds = horizontal ? new Rect(0, 0, main, cross) : new Rect(0, 0, cross, main);
+        return result;
+    }
+
+    /// <summary>
+    /// Spec S3 — the wrapping flex pass (CSS flex-wrap twin, v1 scope): children measure at their
+    /// NATURAL size and break onto a new line when the next one would overflow the main extent.
+    /// Each line arranges with the container's <see cref="FlexNode.Main"/>; within its line a child
+    /// follows <see cref="FlexNode.Cross"/> (or its own AlignSelf); lines stack with RunGap.
+    /// </summary>
+    private static LayoutNode MeasureFlexWrapped(FlexNode flex, float maxW, float maxH, LayoutContext ctx, string path)
+    {
+        var result = new LayoutNode(flex);
+        var horizontal = flex is Row;
+
+        var (mainMax, crossMax) = horizontal ? (maxW, maxH) : (maxH, maxW);
+        var mainSize = horizontal ? flex.Width : flex.Height;
+        var crossSize = horizontal ? flex.Height : flex.Width;
+        var padMain = horizontal ? flex.Padding.Horizontal : flex.Padding.Vertical;
+        var padCross = horizontal ? flex.Padding.Vertical : flex.Padding.Horizontal;
+        var runGap = flex.RunGap ?? flex.Gap;
+
+        var mainAvail = mainSize.Kind == SizeKind.Fixed ? mainSize.Value - padMain
+            : !float.IsPositiveInfinity(mainMax) ? mainMax - padMain
+            : float.PositiveInfinity;
+
+        // Measure every child at natural size (wrap v1: Flexible/Spacer weights don't distribute —
+        // a Flexible degrades to its child, a flexible Spacer to nothing).
+        var measured = new List<LayoutNode>(flex.Children.Count);
+        var sources = new List<VisualNode>(flex.Children.Count);
+        for (var i = 0; i < flex.Children.Count; i++)
+        {
+            var child = flex.Children[i] is Flexible flexible ? flexible.Child : flex.Children[i];
+            if (child is Spacer) continue;
+            var node = Measure(child, mainAvail, crossMax - padCross, ctx, path + "/" + i);
+            measured.Add(node);
+            sources.Add(flex.Children[i]);
+        }
+
+        // Break into lines.
+        var lines = new List<(int Start, int Count, float Main, float Cross)>();
+        var lineStart = 0;
+        var lineMain = 0f;
+        var lineCross = 0f;
+        for (var i = 0; i < measured.Count; i++)
+        {
+            var childMain = horizontal ? measured[i].Bounds.Width : measured[i].Bounds.Height;
+            var childCross = horizontal ? measured[i].Bounds.Height : measured[i].Bounds.Width;
+            var withGap = lineMain > 0 ? lineMain + flex.Gap + childMain : childMain;
+            if (lineMain > 0 && withGap > mainAvail)
+            {
+                lines.Add((lineStart, i - lineStart, lineMain, lineCross));
+                lineStart = i;
+                lineMain = childMain;
+                lineCross = childCross;
+            }
+            else
+            {
+                lineMain = withGap;
+                lineCross = MathF.Max(lineCross, childCross);
+            }
+        }
+        if (measured.Count > lineStart)
+            lines.Add((lineStart, measured.Count - lineStart, lineMain, lineCross));
+
+        // Container extents.
+        var contentMain = 0f;
+        foreach (var line in lines) contentMain = MathF.Max(contentMain, line.Main);
+        var main = mainSize.Kind switch
+        {
+            SizeKind.Fixed => mainSize.Value,
+            SizeKind.Fill when !float.IsPositiveInfinity(mainMax) => mainMax,
+            _ => contentMain + padMain,
+        };
+        var contentCross = 0f;
+        foreach (var line in lines) contentCross += line.Cross;
+        if (lines.Count > 1) contentCross += runGap * (lines.Count - 1);
+        var cross = crossSize.Kind switch
+        {
+            SizeKind.Fixed => crossSize.Value,
+            SizeKind.Fill when !float.IsPositiveInfinity(crossMax) => crossMax,
+            _ => contentCross + padCross,
+        };
+
+        // Arrange line by line.
+        var crossCursor = horizontal ? flex.Padding.Top : flex.Padding.Start;
+        foreach (var line in lines)
+        {
+            var free = MathF.Max(0, (main - padMain) - line.Main);
+            var mainCursor = (horizontal ? flex.Padding.Start : flex.Padding.Top) + flex.Main switch
+            {
+                MainAlign.Center => free / 2,
+                MainAlign.End => free,
+                _ => 0,
+            };
+            var betweenExtra = flex.Main == MainAlign.SpaceBetween && line.Count > 1 ? free / (line.Count - 1) : 0;
+
+            for (var i = line.Start; i < line.Start + line.Count; i++)
+            {
+                var child = measured[i];
+                var childMain = horizontal ? child.Bounds.Width : child.Bounds.Height;
+                var childCross = horizontal ? child.Bounds.Height : child.Bounds.Width;
+                var alignment = sources[i].AlignSelf ?? flex.Cross;
+                var within = alignment switch
+                {
+                    CrossAlign.Center => (line.Cross - childCross) / 2,
+                    CrossAlign.End => line.Cross - childCross,
+                    _ => 0,
+                };
+                if (alignment == CrossAlign.Stretch && sources[i] is not Text)
+                {
+                    child.Bounds = horizontal
+                        ? child.Bounds with { Height = line.Cross }
+                        : child.Bounds with { Width = line.Cross };
+                    within = 0;
+                }
+
+                child.Bounds = horizontal
+                    ? child.Bounds with { X = mainCursor, Y = crossCursor + within }
+                    : child.Bounds with { X = crossCursor + within, Y = mainCursor };
+                result.Children.Add(child);
+                mainCursor += childMain + flex.Gap + betweenExtra;
+            }
+
+            crossCursor += line.Cross + runGap;
         }
 
         result.Bounds = horizontal ? new Rect(0, 0, main, cross) : new Rect(0, 0, cross, main);

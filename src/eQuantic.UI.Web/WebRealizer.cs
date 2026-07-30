@@ -406,7 +406,10 @@ public static class WebRealizer
                 BoxSizing = "border-box",
                 Display = Display.Flex,
                 FlexDirection = horizontal ? FlexDirection.Row : FlexDirection.Column,
-                Gap = flex.Gap > 0 ? TokenCss.Px(flex.Gap) : null,
+                // Spec S3 wrap: CSS gap is "row-gap column-gap" — the RUN gap rides the axis the
+                // lines stack on (rows stack vertically for a Row, horizontally for a Column).
+                FlexWrap = flex.Wrap ? FlexWrap.Wrap : null,
+                Gap = GapValue(flex, horizontal),
                 JustifyContent = flex.Main switch
                 {
                     MainAlign.Center => JustifyContent.Center,
@@ -449,6 +452,20 @@ public static class WebRealizer
             }
         }
         return element;
+    }
+
+    /// <summary>The gap declaration: single value normally; "run main" pair when wrapping with a
+    /// distinct RunGap (row-gap column-gap in the stacking order of the container's axis).</summary>
+    private static string? GapValue(FlexNode flex, bool horizontal)
+    {
+        var run = flex.RunGap ?? flex.Gap;
+        if (flex.Wrap && run != flex.Gap)
+        {
+            return horizontal
+                ? $"{TokenCss.Px(run)} {TokenCss.Px(flex.Gap)}"
+                : $"{TokenCss.Px(flex.Gap)} {TokenCss.Px(run)}";
+        }
+        return flex.Gap > 0 ? TokenCss.Px(flex.Gap) : null;
     }
 
     private static HtmlElement LowerText(Text text, ComponentContext context)
