@@ -294,6 +294,14 @@ adopted path already delivers the dedup/caching/identity properties, leaving onl
 render-time win. Revisit only if SSR profiling says otherwise. S6b fine-grained Adaptive<T>,
 native scroll compositor pinning, Metal offscreen layers (D3), GridArea pinning.
 
+**Scroll compositor v1 ✅ (2026-07-30):** `ScrollStore` (host-owned offsets keyed by layout PATH —
+trees rebuild, paths don't; the node's programmatic `Offset` is the untouched default) +
+`ScrollRegion`s collected per frame (bounds/path/max/axis, paint order) +
+`PhotonHost.ScrollBy(x, y, delta)` routing wheel/drag to the TOPMOST viewport under the pointer,
+clamped to the measured extent. STICKY PINNING is real on native: `PinSticky` clamps a Sticky's
+viewport-relative Y once scrolling would push it past its own Offset (v1: vertical; the
+end-of-container release is the remaining compositor-polish fence). The S7 native fence closes.
+
 **Native transition animator (B14) ✅ (2026-07-30):** `TransitionStore` — a pure-function-of-time
 value animator (mount-at-target, retarget-from-current, Reduce Motion snaps, smoothstep stand-in
 for the standard curve — motion fence). `LayoutContext.Transitions/TimeMs/ReducedMotion`; a

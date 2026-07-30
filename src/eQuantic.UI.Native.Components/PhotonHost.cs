@@ -58,7 +58,7 @@ public sealed class PhotonHost
     public RealizeResult RenderFrame(DisplayListBuilder builder, float timeMs = 0)
     {
         builder.Clear(_theme.Background.Resolve(Mode));
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions);
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls);
         NeedsRender = _lastFrame.HasActiveMotion;
         return _lastFrame;
     }
@@ -76,6 +76,7 @@ public sealed class PhotonHost
     private Pressable? _pressed;
     private VisualNode? _hovered;
     private readonly TransitionStore _transitions = new();
+    private readonly ScrollStore _scrolls = new();
     private Pressable? _focused;
 
     /// <summary>The Pressable holding keyboard focus (the §01 double ring renders while set).</summary>
@@ -149,6 +150,26 @@ public sealed class PhotonHost
             _hovered = target;
             NeedsRender = true;
         }
+    }
+
+    /// <summary>
+    /// Scroll compositor v1 — wheel/drag input: routes <paramref name="delta"/> (dp toward the
+    /// content end) to the TOPMOST scrollable viewport under the pointer, clamped to the frame's
+    /// measured extent. Returns true (and marks the frame dirty) when the offset changed.
+    /// </summary>
+    public bool ScrollBy(float x, float y, float delta)
+    {
+        var regions = _lastFrame?.ScrollRegions;
+        if (regions is null) return false;
+        for (var i = regions.Count - 1; i >= 0; i--)
+        {
+            var region = regions[i];
+            if (!region.Bounds.Contains(new Point(x, y))) continue;
+            if (!_scrolls.ScrollBy(region.Path, delta, region.MaxOffset, region.Fallback)) return false;
+            NeedsRender = true;
+            return true;
+        }
+        return false;
     }
 
     /// <summary>The pointer left the window (or the input is touch) — hover clears.</summary>
