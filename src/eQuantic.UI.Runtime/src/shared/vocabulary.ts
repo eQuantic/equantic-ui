@@ -134,6 +134,18 @@ abstract class FlexNode extends VisualNode {
   }
 }
 
+/** Mirror of the C# `Sticky` (spec S7): scroll-anchored chrome. */
+export class Sticky extends VisualNode {
+  readonly nodeKind = 'sticky';
+
+  constructor(
+    readonly child: VisualNode,
+    readonly offset = 0,
+  ) {
+    super();
+  }
+}
+
 /** Mirror of the C# `AdaptiveNode` (spec S6): up to three size-class variants. */
 export class AdaptiveNode extends VisualNode {
   readonly nodeKind = 'adaptive';

@@ -72,6 +72,9 @@ public static class LayoutEngine
         // Spec S6: an AdaptiveNode IS its resolved variant on native — the other variants never
         // measure, never paint (the web keeps them, CSS-gated).
         AdaptiveNode adaptive => Measure(adaptive.Resolve(ctx.SizeClass), maxW, maxH, ctx, path + "/0"),
+        // Spec S7: Sticky renders IN FLOW on native until engine scrolling lands (correct at scroll
+        // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
+        Sticky sticky => MeasureWrapper(sticky, sticky.Child, maxW, maxH, ctx, path),
         ScrollView scroll => MeasureScrollView(scroll, maxW, maxH, ctx, path),
         // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
         Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx, path),
@@ -157,6 +160,19 @@ public static class LayoutEngine
             {
                 measured.Bounds = measured.Bounds with { X = alignX, Y = alignY };
             }
+        }
+
+        // Spec S7 z-order: children paint (and hit-test, topmost-last) in ZIndex order — a stable
+        // sort keeps declaration order for equal values (flow order = the painter's default).
+        if (stack.Children.Any(c => c is Positioned { ZIndex: not 0 }))
+        {
+            var ordered = result.Children
+                .Select((node, i) => (Node: node, Z: stack.Children[i] is Positioned p ? p.ZIndex : 0, I: i))
+                .OrderBy(e => e.Z).ThenBy(e => e.I)
+                .Select(e => e.Node)
+                .ToList();
+            result.Children.Clear();
+            result.Children.AddRange(ordered);
         }
 
         return result;

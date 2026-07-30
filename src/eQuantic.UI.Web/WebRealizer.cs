@@ -46,6 +46,7 @@ public static class WebRealizer
         Stack stack => LowerStack(stack, context),
         Grid grid => LowerGrid(grid, context),
         AdaptiveNode adaptive => LowerAdaptive(adaptive, context),
+        Sticky sticky => LowerSticky(sticky, context),
         ScrollView scroll => LowerScrollView(scroll, context),
         // A Positioned outside a Stack has no anchor frame — degrade to its child (parity with native).
         Positioned positioned => LowerNode(positioned.Child, context, horizontalAxis),
@@ -97,6 +98,8 @@ public static class WebRealizer
                         Right = positioned.End is { } end ? TokenCss.Px(end) : null,
                         Bottom = positioned.Bottom is { } bottom ? TokenCss.Px(bottom) : null,
                         Left = positioned.Start is { } start ? TokenCss.Px(start) : null,
+                        // Spec S7: explicit stacking — flow order otherwise (painter's parity).
+                        ZIndex = positioned.ZIndex != 0 ? positioned.ZIndex.ToString() : null,
                     },
                 };
                 anchor.Children.Add(lowered);
@@ -133,6 +136,25 @@ public static class WebRealizer
     /// (the browser owns physics, momentum and the scrollbar); the cross axis stays hidden so content
     /// never leaks. The programmatic Offset is a native-side concept (browser scroll state lives in
     /// the DOM).</summary>
+    /// <summary>Spec S7: scroll-anchored chrome — in flow until scrolling would push it out, then
+    /// pinned at <c>Offset</c> from the viewport start (CSS sticky; v1 vertical).</summary>
+    private static HtmlElement LowerSticky(Sticky sticky, ComponentContext context)
+    {
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Position = Core.Position.Sticky,
+                Top = TokenCss.Px(sticky.Offset),
+                // Pinned chrome floats over the content it sticks above.
+                ZIndex = "1",
+            },
+        };
+        if (LowerNode(sticky.Child, context, horizontalAxis: null) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
     private static HtmlElement LowerScrollView(ScrollView scroll, ComponentContext context)
     {
         var element = new RealizedElement("div")
@@ -141,8 +163,8 @@ public static class WebRealizer
             {
                 Width = Size(scroll.Width),
                 Height = Size(scroll.Height),
-                OverflowY = scroll.Axis == ScrollAxis.Vertical ? "auto" : "hidden",
-                OverflowX = scroll.Axis == ScrollAxis.Horizontal ? "auto" : "hidden",
+                OverflowY = scroll.Axis is ScrollAxis.Vertical or ScrollAxis.Both ? "auto" : "hidden",
+                OverflowX = scroll.Axis is ScrollAxis.Horizontal or ScrollAxis.Both ? "auto" : "hidden",
             },
         };
         var child = LowerNode(scroll.Child, context, horizontalAxis: null);

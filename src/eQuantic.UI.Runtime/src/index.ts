@@ -103,6 +103,7 @@ export {
   Grid,
   GridTrack,
   AdaptiveNode,
+  Sticky,
   Text,
   Pressable,
   Flexible,
