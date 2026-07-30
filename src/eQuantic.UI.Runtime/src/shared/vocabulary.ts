@@ -291,10 +291,13 @@ export class Pressable extends VisualNode {
 export class Overlay extends VisualNode {
   readonly nodeKind = 'overlay';
   child: VisualNode;
+  /** False = non-modal layer (toasts): pointer passes through except the layer's pressables. */
+  modal = true;
 
-  constructor(child: VisualNode) {
+  constructor(child: VisualNode, config?: { modal?: boolean }) {
     super();
     this.child = child;
+    if (config) Object.assign(this, config);
   }
 }
 

@@ -24,6 +24,7 @@ public class SharedComponentTranspilationTests
         "Button.cs", "Card.cs", "Divider.cs", "Badge.cs", "Chip.cs", "ProgressBar.cs", "Avatar.cs",
         "Banner.cs", "IconButton.cs", "Checkbox.cs", "Switch.cs", "RadioGroup.cs", "ListItem.cs",
         "Tabs.cs", "EmptyState.cs", "AppBar.cs", "BottomNavigation.cs", "TextInput.cs", "SearchField.cs", "Dialog.cs",
+        "Toast.cs", "BottomSheet.cs",
     ];
 
     /// <summary>
@@ -175,6 +176,7 @@ public class SharedComponentTranspilationTests
             "Button", "Card", "Divider", "Badge", "Chip", "ProgressBar", "Avatar", "Banner",
             "IconButton", "Checkbox", "Switch", "RadioGroup", "ListItem", "List", "Tabs",
             "EmptyState", "Skeleton", "AppBar", "BottomNavigation", "NavItem", "TextInput", "SearchField", "Dialog", "DialogAction",
+            "Toast", "BottomSheet",
         };
 
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_TRANSPILED") == "1")

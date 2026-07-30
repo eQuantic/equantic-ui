@@ -190,6 +190,9 @@ public static class PhotonCssGenerator
         // Overlay layer (Phase C): the viewport-fixed stacking layer — composition (scrim,
         // centering) belongs to the component; only the layer mechanics live here.
         css.AppendLine(".eq-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; }");
+        // Non-modal layers (toasts): input passes through except on the layer's own pressables.
+        css.AppendLine(".eq-overlay-passthrough { pointer-events: none; }");
+        css.AppendLine(".eq-overlay-passthrough .eq-pressable { pointer-events: auto; }");
 
         // Spinner mechanics (spec B15): the 800ms sawtooth fade each bar rides with its own
         // negative delay (the rotation phase); the 400ms anti-flash appear; Reduce Motion zeroes

@@ -289,7 +289,10 @@ public static class WebRealizer
     /// </summary>
     private static HtmlElement LowerOverlay(Overlay overlay, ComponentContext context)
     {
-        var element = new RealizedElement("div") { ClassName = "eq-overlay" };
+        var element = new RealizedElement("div")
+        {
+            ClassName = overlay.Modal ? "eq-overlay" : "eq-overlay eq-overlay-passthrough",
+        };
         if (LowerNode(overlay.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;
