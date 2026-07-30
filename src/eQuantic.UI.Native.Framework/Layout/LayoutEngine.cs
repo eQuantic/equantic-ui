@@ -20,6 +20,15 @@ public sealed class LayoutContext
     /// the viewport width by the realizer (re-layout happens naturally when a resize crosses a
     /// threshold, because the class is a pure function of the width).</summary>
     public WindowSizeClass SizeClass { get; init; }
+
+    /// <summary>Spec B14: the host's value-transition animator (null = values snap).</summary>
+    public TransitionStore? Transitions { get; init; }
+
+    /// <summary>The frame clock the transitions resolve against (same clock as loop motion).</summary>
+    public float TimeMs { get; init; }
+
+    /// <summary>Reduce Motion: transitions snap statically (spec §06 parity with loop motion).</summary>
+    public bool ReducedMotion { get; init; }
     public ITextMeasurer Measurer { get; }
     public float TypeScale { get; }
 
@@ -325,7 +334,7 @@ public static class LayoutEngine
         var children = flex.Children;
         var laid = new LayoutNode?[children.Count];
         var mains = new float[children.Count];
-        var flexWeights = new int[children.Count];
+        var flexWeights = new float[children.Count];
         var gapTotal = flex.Gap * MathF.Max(0, children.Count - 1);
 
         // Pass 1 — rigid children (flexibles deferred; text measured at full availability first).
@@ -335,10 +344,14 @@ public static class LayoutEngine
             switch (children[i])
             {
                 case Flexible f:
-                    flexWeights[i] = f.Flex;
+                    // Spec B14: an AnimateChanges weight LAYS OUT at the animator's interpolated
+                    // value — forward changes glide over Motion.Base, everything else snaps.
+                    flexWeights[i] = ctx.Transitions?.Resolve(path + "/" + i, f.Flex, ctx.TimeMs,
+                        f.AnimateChanges, ctx.ReducedMotion) ?? f.Flex;
                     continue;
                 case Spacer { Flex: > 0 } s:
-                    flexWeights[i] = s.Flex;
+                    flexWeights[i] = ctx.Transitions?.Resolve(path + "/" + i, s.Flex, ctx.TimeMs,
+                        s.AnimateChanges, ctx.ReducedMotion) ?? s.Flex;
                     continue;
                 case Spacer fixedSpacer:
                     mains[i] = fixedSpacer.FixedLength;
@@ -383,7 +396,7 @@ public static class LayoutEngine
         }
 
         // Pass 2 — distribute leftover to flexible children by weight.
-        var flexTotal = 0;
+        var flexTotal = 0f;
         foreach (var w in flexWeights) flexTotal += w;
         var leftover = mainBounded ? MathF.Max(0, mainAvail - rigidSum - gapTotal) : 0f;
 

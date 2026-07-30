@@ -461,6 +461,10 @@ public sealed class Spacer : VisualNode
     public int Flex { get; init; }
     public float FixedLength { get; init; }
 
+    /// <summary>Spec B14: weight changes animate over Motion.Base — pair with an animated Flexible
+    /// so the RATIO glides (constant denominator) instead of jumping when the counterweight snaps.</summary>
+    public bool AnimateChanges { get; init; }
+
     public static Spacer Fixed(float length) => new(length);
 }
 

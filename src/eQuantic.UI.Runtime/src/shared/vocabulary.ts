@@ -549,6 +549,8 @@ export class Spacer extends VisualNode {
   readonly nodeKind = 'spacer';
   flex: number;
   fixedLength: number;
+  /** Spec B14: weight changes animate over Motion.Base (pairs with an animated Flexible). */
+  animateChanges = false;
 
   constructor(flex = 1) {
     super();
