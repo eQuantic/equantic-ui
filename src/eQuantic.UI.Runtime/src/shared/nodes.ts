@@ -96,6 +96,19 @@ export interface BoxStyleValue {
   transform?: TransformValue | null;
   /** Spec S1 width ÷ height constraint; one determined axis derives the other. 0/undefined = none. */
   aspectRatio?: number;
+  /** Spec S5: style diff while hovered (CSS :hover — never fires on touch). */
+  hover?: StyleDiffValue | null;
+  /** Spec S5: style diff while focused (CSS :focus-visible). */
+  focus?: StyleDiffValue | null;
+}
+
+/** Wire shape of the C# `StyleDiff` — only set members override the base. */
+export interface StyleDiffValue {
+  background?: ColorTokenValue | null;
+  borderColor?: ColorTokenValue | null;
+  borderWidth?: number | null;
+  elevation?: number | null;
+  opacity?: number | null;
 }
 
 /** Wire shape of the C# `Transform2D`: components applied translate → rotate → scale. */

@@ -258,8 +258,15 @@ rule (EQ1xxx) keeps anything untranslatable a BUILD error, never silent.
   byte-mirrored. v1 fences: auto-flow only (explicit GridArea pinning later); Auto tracks ignore
   spanning items. Proven: 3 track-sizing tests + 2 goldens (span-2 hero + auto-flow) + 2 web pins
   + 2 vitest mirrors.
-- **S5 — State overlays** (`StyleDiff` Hover/Focus/Pressed on BoxStyle; web pseudo-class atomic
-  rules; Photon interaction states; Pressable folds in).
+- **S5 — State overlays ✅ (2026-07-30):** `StyleDiff` (Background/BorderColor/BorderWidth/
+  Elevation/Opacity, set-members-override) + `BoxStyle.Hover`/`Focus`. Web: PSEUDO-VARIANT atomic
+  rules — the pseudo is part of the hash (`.eq-x:hover{…}`, `:focus-visible`), rules ride theme
+  vars, zero JS; pseudo classes append AFTER the base set on both producers (hydration identity).
+  Photon: the host tracks a Hovered node (`SetHovered` — the gesture slice owns pointer wiring);
+  the realizer applies the Hover diff on the hovered Box (pressed still wins on fill). Pressed
+  stays on Pressable (the existing mechanism). Fences: native Focus diff joins the focus-ring
+  mechanics later; native hover Opacity/Elevation diffs join with the interaction polish. Proven:
+  3 web pins + 2 vitest cross-pins (exact C# hash reproduction) + 1 native hover test.
 - **S6 — Adaptive** (`WindowSizeClass`, `Adaptive<T>`, `Adaptive.Node`; web build-time media-query
   rule variants; Photon host window class + threshold-cross relayout).
 - **S7 — Scroll semantics** (`Sticky`, `ZIndex`, per-axis overflow) — closes the "any layout" list.
