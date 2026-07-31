@@ -21,6 +21,10 @@ struct DrawUniforms
 
 ConstantBuffer<DrawUniforms> u;
 
+// W4b: the A8 coverage raster a Texture command samples (glyph blocks; images later). Bound only
+// by the textured pipeline; the SDF fragment never references it.
+Texture2D<float> coverageTexture;
+
 // ColorSpace.SrgbToLinear — the exact IEC 61966-2-1 piecewise curve.
 float srgbToLinear(float c)
 {
@@ -104,4 +108,37 @@ float4 sdf_fragment(float4 position: SV_Position) : SV_Target
     float a = srgb.a * coverage;
     float3 lin = float3(srgbToLinear(srgb.r), srgbToLinear(srgb.g), srgbToLinear(srgb.b)) * a;
     return float4(lin, a);  // premultiplied linear; the sRGB target encodes on store
+}
+
+// W4b — DrawCommandKind.Texture: A8 coverage × tint, NEAREST via texel Load (rasters are
+// device-scale, texels map 1:1 — no sampler, no filtering, exact parity with the Reference).
+// Uniform reuse: rect packs the draw rect (center/half); gradient.xy carries the texture size.
+[shader("fragment")]
+float4 textured_fragment(float4 position: SV_Position) : SV_Target
+{
+    float2 pixel = position.xy;
+    float2 local = float2(
+        pixel.x * u.inv0.x + pixel.y * u.inv0.y + u.inv0.z,
+        pixel.x * u.inv1.x + pixel.y * u.inv1.y + u.inv1.z);
+
+    // UV inside the draw rect — outside is empty (the Reference's early-out).
+    float2 rectMin = u.rect.xy - u.rect.zw;
+    float2 uv = (local - rectMin) / (u.rect.zw * 2.0);
+    if (uv.x < 0.0 || uv.x >= 1.0 || uv.y < 0.0 || uv.y >= 1.0) discard;
+
+    int tx = min(int(u.gradient.x) - 1, int(uv.x * u.gradient.x));
+    int ty = min(int(u.gradient.y) - 1, int(uv.y * u.gradient.y));
+    float coverage = coverageTexture.Load(int3(tx, ty, 0));
+    if (coverage <= 0.0) discard;
+
+    if (u.flags.z > 0.5)
+    {
+        float cd = sdRoundedRect(pixel - u.clipRect.xy, u.clipRect.zw, u.clipRadii);
+        coverage *= clamp(0.5 - cd, 0.0, 1.0);
+        if (coverage <= 0.0) discard;
+    }
+
+    float a = u.colorA.a * coverage;
+    float3 lin = float3(srgbToLinear(u.colorA.r), srgbToLinear(u.colorA.g), srgbToLinear(u.colorA.b)) * a;
+    return float4(lin, a);
 }
