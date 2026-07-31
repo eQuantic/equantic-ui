@@ -56,6 +56,15 @@ internal static partial class ObjC
     [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
     internal static partial void SendVoid(IntPtr receiver, IntPtr selector, MTLClearColor color);
 
+    /// <summary>setFragmentTexture:atIndex: — binds the coverage texture (W4b).</summary>
+    [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
+    internal static partial void SendVoid(IntPtr receiver, IntPtr selector, IntPtr arg1, ulong arg2);
+
+    /// <summary>replaceRegion:mipmapLevel:withBytes:bytesPerRow: — texture uploads (W4b).</summary>
+    [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
+    internal static partial void SendVoid(IntPtr receiver, IntPtr selector,
+        MTLRegion region, ulong mipmapLevel, IntPtr bytes, ulong bytesPerRow);
+
     // setFragmentBytes:length:atIndex:
     [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
     internal static partial void SendVoid(IntPtr receiver, IntPtr selector, IntPtr bytes, ulong length, ulong index);

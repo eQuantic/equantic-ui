@@ -109,6 +109,24 @@ public static class GoldenScenes
 
         // The §05 analytic shadow: an elevated card (E2-ish blur) over the background, plus a
         // small-radius chip shadow — falloff must be smooth and hug the per-corner radii.
+        // W4b: the Texture command — a deterministic A8 coverage raster (checker + ramp)
+        // tinted by the paint, one copy clipped by an rrect. Nearest sampling on BOTH backends.
+        ["texture-coverage"] = b =>
+        {
+            const int tw = 16, th = 12;
+            var alpha = new byte[tw * th];
+            for (var y = 0; y < th; y++)
+                for (var x = 0; x < tw; x++)
+                    alpha[y * tw + x] = (x / 2 + y / 2) % 2 == 0
+                        ? (byte)255
+                        : (byte)(x * 255 / (tw - 1));
+            var raster = new TextureData(tw, th, alpha);
+            b.Texture(new Rect(12, 12, 64, 48), Color.FromRgb(31, 111, 235), raster);
+            b.PushClip(new RRect(new Rect(96, 24, 48, 48), new CornerRadii(16)));
+            b.Texture(new Rect(88, 16, 64, 64), Mint, raster);
+            b.PopClip();
+        },
+
         ["shadow-rrect"] = b =>
         {
             var card = new RRect(new Rect(30, 20, 100, 70), new CornerRadii(14));

@@ -89,8 +89,8 @@ public sealed class PhotonWindow
         var host = new PhotonHost(root, theme, mode, _width, _height, textService)
         {
             RenderScale = scale,
-            // W4b: set TextRasterizer = textService once the Metal textured pipeline lands —
-            // until then the window shows the deterministic bars over CORRECT CoreText layout.
+            // W4b: the Metal textured pipeline is live — REAL glyphs on screen.
+            TextRasterizer = textService,
         };
 
         var clock = Stopwatch.StartNew();

@@ -570,6 +570,19 @@ Bun and the JS bundling chain, the TypeScript runtime.
   CORRECT CoreText layout until then), ellipsis glyph on truncation, icon/image rasters riding the
   same primitive, CTFont per-process cache.
 
+- **2026-07-31 — W4b: REAL TEXT ON SCREEN — the Metal textured pipeline (Slang round-trip).**
+  `textured_fragment` joins the ONE normative Slang source (regenerated with slangc 2026.14.1 —
+  MSL + SPIR-V recommitted): A8 coverage × tint via texel `Load` (NEAREST by definition, no
+  sampler bindings — exact Reference parity), clip multiplying like the SDF path, texture size
+  riding the gradient uniform slot. MetalBackend: per-(format, textured) pipeline cache, R8Unorm
+  uploads cached by raster IDENTITY (replaceRegion bindings), a 1×1 dummy keeps the shared texture
+  binding valid for SDF passes, and RenderCore switches pipelines per command run. The
+  `texture-coverage` scene joins the golden catalog — Reference golden + Metal parity in one
+  entry; parity held at 17/17 scenes. The WINDOW now renders REAL San Francisco glyphs
+  (PhotonWindow plugs CoreTextService as measurer AND rasterizer; self-test 120 frames, exit 0).
+  Remaining W4 tail: icon glyph rasters riding the same primitive (the 30% disc placeholder),
+  image decode/upload (A11/M4), ellipsis on truncation, texture eviction policy.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
