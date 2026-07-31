@@ -47,11 +47,38 @@ public sealed class TextureData
         Width = width;
         Height = height;
         Alpha = alpha;
+        Format = TextureFormat.A8;
     }
+
+    private TextureData(int width, int height, byte[] pixels, TextureFormat format)
+    {
+        Width = width;
+        Height = height;
+        Alpha = pixels;
+        Format = format;
+    }
+
+    /// <summary>W4 images: straight sRGB RGBA bytes (4 per pixel) — rasterizers premultiply.</summary>
+    public static TextureData Rgba(int width, int height, byte[] rgba) =>
+        new(width, height, rgba, TextureFormat.Rgba8);
 
     public int Width { get; }
     public int Height { get; }
+
+    /// <summary>A8: one coverage byte per pixel. Rgba8: 4 straight-sRGB bytes per pixel.</summary>
     public byte[] Alpha { get; }
+
+    public TextureFormat Format { get; }
+}
+
+/// <summary>How a <see cref="TextureData"/>'s bytes are interpreted.</summary>
+public enum TextureFormat : byte
+{
+    /// <summary>Coverage-only; the draw command's paint is the color (text, icons).</summary>
+    A8 = 0,
+
+    /// <summary>Straight sRGB color with alpha (images) — the paint tint is ignored.</summary>
+    Rgba8 = 1,
 }
 
 public readonly record struct DrawCommand

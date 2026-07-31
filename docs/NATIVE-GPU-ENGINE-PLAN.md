@@ -604,6 +604,16 @@ Bun and the JS bundling chain, the TypeScript runtime.
   the Resizable style + a 320×240 content minimum. Proven: resize contract tests (viewport
   adoption, Fill re-layout, same-host dispatch after resize, same-size no-op) + window self-test.
 
+- **2026-07-31 — W4 images: the Rgba8 texture path (the last Texture consumer).**
+  `TextureData.Rgba` (straight sRGB, texel color wins over tint), the `textured_rgba_fragment` in
+  the ONE Slang source (Load/nearest; premultiplies the linear sample), per-kind Metal pipelines +
+  sRGB RGBA uploads, and the NORMATIVE Reference branch. `IImageLoader` is the platform seam
+  (Image.Source → RgbaImage); the realizer owns the FIT math (Stretch/Contain centered/Cover
+  clipped to the node rrect) with per-source caching; no loader → the placeholder box (tests
+  unchanged). `texture-rgba` joins the golden catalog — parity held 18/18. Remaining: the macOS
+  CoreGraphics/ImageIO loader wired into the shell (the seam + fake-loader tests landed first),
+  bilinear for scaled images, URL/async sources.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

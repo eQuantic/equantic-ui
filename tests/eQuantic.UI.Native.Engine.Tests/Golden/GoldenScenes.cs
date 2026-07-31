@@ -127,6 +127,21 @@ public static class GoldenScenes
             b.PopClip();
         },
 
+        // W4 images: an Rgba8 texture (2×2 color quad) in the three fits' geometry — texel color
+        // wins over the tint, alpha blends, the covered copy clips to an rrect.
+        ["texture-rgba"] = b =>
+        {
+            var rgba = TextureData.Rgba(2, 2, new byte[]
+            {
+                255, 0, 0, 255,   0, 255, 0, 255,
+                0, 0, 255, 255,   255, 255, 255, 128,
+            });
+            b.Texture(new Rect(10, 10, 60, 40), new Color(0, 0, 0, 255), rgba);
+            b.PushClip(new RRect(new Rect(90, 14, 48, 48), new CornerRadii(14)));
+            b.Texture(new Rect(84, 8, 60, 60), new Color(0, 0, 0, 255), rgba);
+            b.PopClip();
+        },
+
         ["shadow-rrect"] = b =>
         {
             var card = new RRect(new Rect(30, 20, 100, 70), new CornerRadii(14));
