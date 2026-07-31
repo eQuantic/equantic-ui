@@ -52,7 +52,11 @@ public sealed class PhotonHost
     /// <summary>W4: the platform text service (null = deterministic placeholder bars).</summary>
     public Framework.ITextRasterizer? TextRasterizer { get; set; }
 
+    /// <summary>W4: the platform icon service (null = disc placeholders).</summary>
+    public Framework.IIconRasterizer? IconRasterizer { get; set; }
+
     private readonly TextRasterCache _textCache = new();
+    private readonly IconRasterCache _iconCache = new();
 
     /// <summary>Device pixels per dp (the shell's backingScaleFactor). Layout, input and hit
     /// regions stay in dp; the emitted commands are wrapped in one root scale so the GPU
@@ -75,7 +79,7 @@ public sealed class PhotonHost
         builder.Clear(_theme.Background.Resolve(Mode));
         if (RenderScale != 1f) builder.PushTransform(Engine.Matrix2D.Scale(RenderScale, RenderScale));
         _lastTimeMs = timeMs;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale);
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache);
         if (RenderScale != 1f) builder.Pop();
         NeedsRender = _lastFrame.HasActiveMotion;
         return _lastFrame;

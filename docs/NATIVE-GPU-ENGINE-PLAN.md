@@ -583,6 +583,19 @@ Bun and the JS bundling chain, the TypeScript runtime.
   Remaining W4 tail: icon glyph rasters riding the same primitive (the 30% disc placeholder),
   image decode/upload (A11/M4), ellipsis on truncation, texture eviction policy.
 
+- **2026-07-31 — W4 icons: REAL GLYPHS — the 30% disc retires.**
+  `SvgPath` joins the Framework: a pure-C# SVG path-data parser (full command set, quadratics
+  elevate exactly, arcs convert via F.6.5 into ≤90° cubics; SVG lexing incl. compact arc flags;
+  malformed data degrades, never throws) — the ONE normalizer every platform rasterizer consumes.
+  `IIconRasterizer` is the platform seam; macOS implements it with CoreGraphics only (fill nonzero
+  / stroke round-cap-round-join — the pack convention — through a viewBox→pixel CTM, stroke widths
+  in glyph units). The realizer draws icons as tinted Texture commands (per-host cache keyed by
+  glyph VALUE + size + scale; color rides the tint — modes share rasters); no service → the disc.
+  The Select's chevron, the curated set and pack glyphs all render REAL in the window and the
+  Reference alike (6 parser tests incl. every curated glyph; suites Native 285). Fences: fill-rule
+  evenodd (IconGlyph carries none), atlas packing (one texture per glyph today), image decode
+  (A11/M4 — the remaining Texture consumer).
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
