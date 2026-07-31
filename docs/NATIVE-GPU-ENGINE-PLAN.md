@@ -614,6 +614,16 @@ Bun and the JS bundling chain, the TypeScript runtime.
   CoreGraphics/ImageIO loader wired into the shell (the seam + fake-loader tests landed first),
   bilinear for scaled images, URL/async sources.
 
+- **2026-07-31 — W4 images COMPLETE on macOS: the ImageIO/CoreGraphics loader.**
+  `CoreGraphicsImageLoader` (SYSTEM frameworks only): any OS-decodable format → straight sRGB RGBA
+  (CG's premultiplied output un-premultiplied at the boundary), stateless — the host caches per
+  source. Wired into the window AND the offscreen proof; the demo shows one of the engine's own
+  goldens decoded and drawn through the Rgba8 texture path (image delivered). Known issue filed:
+  a fixed-size Image STRETCHES under a Column's Cross=Stretch (the "stretch-fills-auto-only"
+  layout contract says explicit sizes should hug — layout fix pending; Contain keeps the picture
+  correct inside the stretched bounds meanwhile). Fences: bilinear for scaled images, URL/async
+  sources with loading states.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

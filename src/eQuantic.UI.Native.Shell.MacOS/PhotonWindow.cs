@@ -96,6 +96,7 @@ public sealed class PhotonWindow
             RenderScale = scale,
             // W4b: the Metal textured pipeline is live — REAL glyphs on screen.
             TextRasterizer = textService,
+            ImageLoader = new CoreGraphicsImageLoader(),
             IconRasterizer = new CoreGraphicsIconRasterizer(),
         };
 
