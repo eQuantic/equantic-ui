@@ -204,7 +204,14 @@ public static class UIExtensions
             if (File.Exists(path))
             {
                 context.Response.ContentType = "application/javascript";
-                context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+                // Hot reload rewrites fixed-name bundles in place — immutable caching would pin the
+                // browser to the pre-edit code forever. Dev revalidates; prod stays immutable.
+                var uiOptions = context.RequestServices.GetRequiredService<UIOptions>();
+                var dev = uiOptions.HotReload
+                    ?? context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
+                context.Response.Headers["Cache-Control"] = dev
+                    ? "no-cache"
+                    : "public, max-age=31536000, immutable";
                 await context.Response.SendFileAsync(path);
             }
             else
@@ -264,6 +271,16 @@ public static class UIExtensions
     public static IEndpointRouteBuilder MapUI(this IEndpointRouteBuilder endpoints)
     {
         var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
+
+        // Phase 3 hot reload — DEVELOPMENT only unless forced: watch sources, re-run the SDK's
+        // eqc target, notify browsers over SSE (the runtime replays live state after the reload).
+        var environment = endpoints.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+        if (options.HotReload ?? environment.IsDevelopment())
+        {
+            var hotReload = new HotReload.HotReloadService(environment.ContentRootPath);
+            hotReload.Start();
+            endpoints.MapGet("/_equantic/hmr", hotReload.HandleClient);
+        }
 
         // Apply package endpoint configurations
         foreach (var configuration in options.EndpointConfigurations)
@@ -537,6 +554,9 @@ public class UIOptions
     /// Individual pages can opt-out using [Page(DisableSsr = true)].
     /// </remarks>
     public bool EnableSsr { get; set; } = true;
+
+    /// <summary>Phase 3 hot reload (SSE + eqc rebuild on save). Null = auto: ON in Development.</summary>
+    public bool? HotReload { get; set; }
 
     public UIOptions WithSsr(bool enabled = true)
     {

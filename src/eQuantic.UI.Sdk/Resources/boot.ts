@@ -56,6 +56,26 @@ export async function boot(): Promise<void> {
   if (initialized) return;
   initialized = true;
 
+  // Phase 3 hot reload replay: state captured just before the HMR reload re-enters through the
+  // ORDINARY SSR-hydration mechanic (window.__INITIAL_STATE__ + hydrateValue) — zero new paths.
+  try {
+    const saved = sessionStorage.getItem('__eq_hmr__');
+    if (saved) {
+      sessionStorage.removeItem('__eq_hmr__');
+      const parsed = JSON.parse(saved) as { url: string; state: Record<string, unknown> };
+      if (parsed.url === location.href) {
+        (window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ = {
+          ...((window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ ?? {}),
+          ...parsed.state,
+        };
+      }
+    }
+  } catch {
+    /* best effort */
+  }
+
+  initHotReload();
+
   if (isDev()) {
     console.log('eQuantic.UI Runtime initializing...');
   }
@@ -331,4 +351,38 @@ function escapeHtml(unsafe: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Phase 3 hot reload (v1): listen on the DEV-only SSE endpoint; on a rebuild, capture the live
+ * page state (the stateful page's data fields) and reload — the boot replays it through the
+ * SSR-hydration mechanic. In production the endpoint 404s and the source closes itself.
+ */
+function initHotReload(): void {
+  if (typeof EventSource === 'undefined') return;
+  try {
+    const source = new EventSource('/_equantic/hmr');
+    source.onerror = () => source.close();
+    source.onmessage = () => {
+      try {
+        const holder = currentComponent as unknown as { _state?: Record<string, unknown> } | null;
+        const state = holder?._state;
+        if (state) {
+          const data: Record<string, unknown> = {};
+          for (const key of Object.keys(state)) {
+            const value = state[key];
+            if (typeof value === 'function') continue;
+            if (key === '_component' || key === '_context' || key === '_needsRender') continue;
+            data[key] = value;
+          }
+          sessionStorage.setItem('__eq_hmr__', JSON.stringify({ url: location.href, state: data }));
+        }
+      } catch {
+        /* reload without state rather than not at all */
+      }
+      location.reload();
+    };
+  } catch {
+    /* no SSE in this host */
+  }
 }
