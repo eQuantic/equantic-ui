@@ -517,6 +517,26 @@ Bun and the JS bundling chain, the TypeScript runtime.
   1dp border via a transparent-light token), Switch thumb E1, AppBar scrolled E2. BottomNavigation's
   top-oriented E2 stays fenced (shadow orientation joins the insets work).
 
+- **2026-07-31 — Status-log sync: the 2026-07-30 wave (logged in detail in the SHARED/STYLE plans).**
+  The engine/native layer grew far past the last entry while this log slept; the systems, briefly,
+  with their homes: **group-opacity layers** — `DisplayList` gained `BeginLayer`/`EndLayer`
+  (`PushLayer(alpha)`/`PopLayer`, balance-checked); the Reference backend composites a real offscreen
+  layer, the Metal spike approximates per-command alpha (documented fence, D3 offscreen pass pending).
+  **Static transforms** — center-anchored `Matrix2D` from `Transform2D` (translate→rotate→scale).
+  **Scroll compositor v1** — `ScrollStore` (path-keyed offsets), `ScrollRegion` routing in
+  `PhotonRealizer`, `PhotonHost.ScrollBy`, real `PinSticky` (vertical; end-of-container release
+  fenced). **Value-transition animator (B14)** — `TransitionStore`, pure f(t) smoothstep, resolves
+  flex weights during layout. **Pointer pipeline** — `HoverRegion`s + `PointerMove`/`PointerLeave`
+  (real hover on Photon). **Enter/exit motion** — `PresenceStore` presence clocks per layout path +
+  display-list command SNAPSHOTS replayed for exits (departed subtrees animate out as pixels only).
+  **Drag-to-dismiss** — `DragStore` (input-driven follow, released glide as f(t)), `DragRegion`s,
+  the press/move/up state machine with slop-cancel. **Navigation seam** — `LinkRegion`s +
+  `PhotonHost.NavigationRequested` (the platform shell's future router hook). Suites at sync time:
+  Native 266+, goldens 62 (incl. mid-drag sheet states). The long poles are UNCHANGED and are the
+  point of the next phase: W4 text (HarfBuzz/FreeType/atlas), W5 platform shells (macOS first as
+  dogfood), RHI extraction + Vulkan, toolchain packaging (metallib + pipeline caching), ObjC
+  lifetime management. All M0–M5 exit boxes remain open.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

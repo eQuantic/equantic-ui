@@ -44,7 +44,7 @@ class CounterState extends ComponentState<CounterPage> {
 
 class CounterPage extends StatefulComponent {
   createState(): CounterState {
-    return new CounterState(this as never);
+    return new CounterState(); // the base render pass wires setComponent(this)
   }
 }
 

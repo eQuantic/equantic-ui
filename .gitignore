@@ -48,3 +48,7 @@ coverage/
 src/eQuantic.UI.Runtime.*/tools/bun/bun-darwin
 src/eQuantic.UI.Runtime.*/tools/bun/bun-linux
 src/eQuantic.UI.Runtime.*/tools/bun/bun.exe
+
+# Playwright e2e output
+tests/e2e/playwright-report/
+tests/e2e/test-results/

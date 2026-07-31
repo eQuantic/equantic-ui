@@ -8,18 +8,18 @@
 
 import { Component } from '../core/types';
 import type { HtmlNode } from '../core/types';
-import type { VisualNodeValue } from './nodes';
+import type { ComponentChild, VisualNodeValue } from './nodes';
 import { ComponentInstanceStore, enterPass, exitPass } from './instance-store';
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
 import type { AppTheme } from './value-types';
 
 export class VisualNodeComponent extends Component {
-  private readonly node: VisualNodeValue;
+  private readonly node: VisualNodeValue | ComponentChild;
   private readonly theme?: AppTheme;
   private readonly _instances = new ComponentInstanceStore();
 
-  constructor(node: VisualNodeValue, theme?: AppTheme, _typeScale?: number, props?: unknown) {
+  constructor(node: VisualNodeValue | ComponentChild, theme?: AppTheme, _typeScale?: number, props?: unknown) {
     super(props);
     this.node = node;
     this.theme = theme;
@@ -37,7 +37,9 @@ export class VisualNodeComponent extends Component {
     // direct embedding) this instance's own store carries retention across its renders.
     enterPass(this._instances, null);
     try {
-      return lowerVisualNode(this.node, context);
+      // Component roots are wire-compatible: the lowering expands them via build() (nodeKind
+      // dispatch), so the cast states what the runtime already does.
+      return lowerVisualNode(this.node as VisualNodeValue, context);
     } finally {
       exitPass();
     }

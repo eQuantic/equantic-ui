@@ -221,7 +221,7 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// type's declaration order). Members left unset before the last supplied one get their default
     /// literal; trailing unset members are omitted (the constructor's parameter defaults cover them).
     /// </summary>
-    private static string BuildValueTypeConstruction(ObjectCreationExpressionSyntax creation, ITypeSymbol type, ConversionContext context)
+    private static string BuildValueTypeConstruction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type, ConversionContext context)
     {
         var declSyntax = type.DeclaringSyntaxReferences
             .Select(r => r.GetSyntax())
@@ -280,14 +280,42 @@ public class ObjectCreationStrategy : IConversionStrategy
 
     private string ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)
     {
-        // `new() { … }` / `new() { [k]=v }` → delegate to the initializer (array / object / dictionary).
-        if (creation.Initializer != null)
-        {
-             return context.Converter.ConvertExpression(creation.Initializer);
-        }
-
         var ms = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
         var typeDisplay = ms?.ContainingType.ToDisplayString() ?? context.ExpectedType ?? "";
+
+        if (creation.Initializer != null)
+        {
+            var target = ms?.ContainingType;
+
+            // Records and user structs keep full value semantics: map args + initializer onto the
+            // positional constructor exactly like the explicit `new T(...) { … }` path.
+            if (target is { IsRecord: true }
+                || (target is { TypeKind: TypeKind.Struct } && target.IsStructuralValueType()))
+            {
+                return BuildValueTypeConstruction(creation, target, context);
+            }
+
+            // A named class target (`Badge b = new(0, 99, variant) { Dot = true }`) must CONSTRUCT —
+            // ordered args, skipped parameters filled from their C# defaults, initializer as the
+            // trailing config object (the runtime component classes' contract). Delegating to the
+            // initializer here would silently return a bare object instead of an instance.
+            if (target is { SpecialType: SpecialType.None, TypeKind: TypeKind.Class }
+                && !typeDisplay.Contains("List<") && !typeDisplay.Contains("Dictionary<")
+                && !typeDisplay.Contains("IEnumerable<") && !typeDisplay.Contains("Collection<"))
+            {
+                var ctorArgs = creation.ArgumentList is { Arguments.Count: > 0 }
+                    ? OrderedArguments(creation, context).ToList()
+                    : new List<string>();
+                if (ms != null && ctorArgs.Count < ms.Parameters.Length)
+                    ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(ParameterDefaultLiteral));
+                ctorArgs.Add(context.Converter.ConvertExpression(creation.Initializer));
+                return $"new {target.Name}({string.Join(", ", ctorArgs)})";
+            }
+
+            // `new() { … }` / `new() { [k]=v }` on collections/dictionaries (or with no resolvable
+            // named target) → the initializer IS the value (array / object / dictionary literal).
+            return context.Converter.ConvertExpression(creation.Initializer);
+        }
 
         // Collection / dictionary target with no initializer → empty literal.
         if (typeDisplay.Contains("List<") || typeDisplay.Contains("IEnumerable<") ||

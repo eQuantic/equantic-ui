@@ -5,11 +5,10 @@ export class NestedChild extends SharedStatefulComponent {
     _label: string;
     constructor(label: any = 'child', props?: any) {
         super(props);
-        if (label !== undefined) this.label = label;
         this._label = label;
     }
 
-    build(context: BuildContext) {
+    build(_context: BuildContext) {
         let column = new Column(Space.s2);column.add(new Text(`${this._label}:${this._count}`, 'caption'));column.add(new Button('Add', 'primary', 'medium', () => this.setState(() => this._count++)));return column;
     }
 

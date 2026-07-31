@@ -3,6 +3,7 @@
  */
 
 import { Component, HtmlNode, RenderContext } from './types';
+import type { VisualNodeValue } from '../shared/nodes';
 import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
@@ -22,7 +23,10 @@ export abstract class StatelessComponent extends Component {
     return getRootServiceProvider();
   }
 
-  abstract build(context: RenderContext): Component;
+  // The union documents today's two authoring worlds compiling to the SAME runtime base: Core
+  // pages build Component trees (this render path), write-once components build vocabulary
+  // values (expanded by the lowering — they never reach render() below).
+  abstract build(context: RenderContext): Component | VisualNodeValue;
 
   render(): HtmlNode {
     const context: RenderContext = {
@@ -36,7 +40,7 @@ export abstract class StatelessComponent extends Component {
     // stateful get no invalidator — their state persists but repaints only with the next render.
     enterPass(this._instances, null);
     try {
-      const component = this.build(context);
+      const component = this.build(context) as Component;
       return component.render();
     } finally {
       exitPass();
@@ -172,7 +176,7 @@ export abstract class StatefulComponent extends Component {
     // shared stateful retained inside it invalidate by re-rendering THIS page.
     enterPass(this._instances, () => this._scheduleRender());
     try {
-      const component = this.state.build(context);
+      const component = this.state.build(context) as Component;
       return component.render();
     } finally {
       exitPass();
@@ -313,7 +317,10 @@ export abstract class SharedStatefulComponent extends Component {
     return getRootServiceProvider();
   }
 
-  abstract build(context: RenderContext): Component;
+  // The union documents today's two authoring worlds compiling to the SAME runtime base: Core
+  // pages build Component trees (this render path), write-once components build vocabulary
+  // values (expanded by the lowering — they never reach render() below).
+  abstract build(context: RenderContext): Component | VisualNodeValue;
 
   /** The C# `SetState(mutate)` contract: run the mutation, then schedule a rebuild. */
   protected setState(fn: () => void): void {
@@ -334,7 +341,7 @@ export abstract class SharedStatefulComponent extends Component {
     // render this JOINS the outer pass instead (the host page owns retention).
     enterPass(this._instances, () => this._scheduleRender());
     try {
-      return this.build(context).render();
+      return (this.build(context) as Component).render();
     } finally {
       exitPass();
     }
@@ -405,19 +412,19 @@ export abstract class SharedStatefulComponent extends Component {
 /**
  * Base class for component state
  */
-export abstract class ComponentState {
-  private _component: StatefulComponent | null = null;
+export abstract class ComponentState<TComponent extends StatefulComponent = StatefulComponent> {
+  private _component: TComponent | null = null;
   _context: RenderContext | null = null;
   _needsRender = false;
 
-  get component(): StatefulComponent {
+  get component(): TComponent {
     if (!this._component) {
       throw new Error('State not initialized');
     }
     return this._component;
   }
 
-  setComponent(component: StatefulComponent): void {
+  setComponent(component: TComponent): void {
     this._component = component;
   }
 
@@ -433,7 +440,10 @@ export abstract class ComponentState {
   /**
    * Build the component tree
    */
-  abstract build(context: RenderContext): Component;
+  // The union documents today's two authoring worlds compiling to the SAME runtime base: Core
+  // pages build Component trees (this render path), write-once components build vocabulary
+  // values (expanded by the lowering — they never reach render() below).
+  abstract build(context: RenderContext): Component | VisualNodeValue;
 
   // Lifecycle hooks
   onInit(): void {}

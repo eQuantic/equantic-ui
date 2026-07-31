@@ -145,6 +145,11 @@ export interface LinearGradientValue {
 }
 
 /** Base shape every abstract node carries. */
+/** A shared component instance sitting in a child slot — the lowering expands it via build(). */
+export interface ComponentChild {
+  build(context: unknown): unknown;
+}
+
 export interface VisualNodeValue {
   nodeKind: string;
   key?: string | null;
@@ -208,6 +213,8 @@ export interface SpacerNode extends VisualNodeValue {
   nodeKind: 'spacer';
   flex: number;
   fixedLength: number;
+  /** Spec B14: weight changes animate Base/standard; omitted on a regression (snap). */
+  animateChanges?: boolean;
 }
 
 export type AlignmentValue =
@@ -245,6 +252,8 @@ export interface SpinnerNode extends VisualNodeValue {
 export interface OverlayNode extends VisualNodeValue {
   nodeKind: 'overlay';
   child: VisualNodeValue;
+  /** false = non-modal layer (Toast): pointer events pass through outside the child. */
+  modal?: boolean;
 }
 
 /** Spec §06 enter motion: the subtree animates IN when it first appears ('fade' | 'slideUp'). */
@@ -336,6 +345,8 @@ export interface PositionedNode extends VisualNodeValue {
   end?: number | null;
   bottom?: number | null;
   start?: number | null;
+  /** Spec S7: explicit stacking inside the Stack — higher paints on top; 0 = flow order. */
+  zIndex?: number;
 }
 
 /** A shared component: the lowering expands it by calling `build(context)` (pure, mode-free). */

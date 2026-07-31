@@ -33,10 +33,15 @@ public class RecordTypeEmitter
         // A base record is emitted as its own module — import it so `extends` resolves.
         var (baseName, _, _) = BaseInfo(type);
         if (baseName != null) imports.Append($"import {{ {baseName} }} from \"./{baseName}\";\n");
-        return imports.Append("\nexport ").Append(Emit(type)).Append('\n').ToString();
+        return imports.Append("\nexport ").Append(Emit(type, tsTypeDeclarations: true)).Append('\n').ToString();
     }
 
-    public string Emit(TypeDeclarationSyntax type)
+    /// <param name="type">The record/struct declaration to emit.</param>
+    /// <param name="tsTypeDeclarations">Emit the TYPE-ONLY <c>declare</c> member declarations. They are
+    /// TypeScript syntax (no runtime code — they restore checking on <c>record.x</c> for the .ts module
+    /// path) and MUST stay off for plain-JS consumers: the conformance harness executes the emitted
+    /// class as <c>.mjs</c>, where <c>declare</c> is a parse error.</param>
+    public string Emit(TypeDeclarationSyntax type, bool tsTypeDeclarations = false)
     {
         var name = type.Identifier.Text;
         var members = type.ValueMembers();
@@ -48,24 +53,31 @@ public class RecordTypeEmitter
         // TYPE-ONLY member declarations: they restore checking on `record.x` without emitting any runtime
         // code (the constructor below does the assigning). Only OWN members are declared — the ones passed
         // to the base record's primary constructor are already declared by the base module.
-        foreach (var m in members)
-            if (!passedToBase.Contains(m.Display)) sb.Append($"declare {m.Js}: {m.TsType}; ");
+        if (tsTypeDeclarations)
+            foreach (var m in members)
+                if (!passedToBase.Contains(m.Display)) sb.Append($"declare {m.Js}: {m.TsType}; ");
 
         // constructor(x = …, y = …) { [super(…);] this.<own> = …; } — defaults cover omitted args;
         // members passed to the base record's primary constructor are assigned by `super`, not here.
-        sb.Append($"constructor({string.Join(", ", members.Select(m => $"{m.Js} = {m.Default}"))}) {{ ");
+        // TS mode annotates ctor params (`label: any = null`) — a bare `= null` default would make
+        // TypeScript infer the param TYPE as `null`. Plain-JS mode stays annotation-free (.mjs).
+        sb.Append(tsTypeDeclarations
+            ? $"constructor({string.Join(", ", members.Select(m => $"{m.Js}: any = {m.Default}"))}) {{ "
+            : $"constructor({string.Join(", ", members.Select(m => $"{m.Js} = {m.Default}"))}) {{ ");
         if (baseName != null) sb.Append($"super({superArgs}); ");
         foreach (var m in members)
             if (!passedToBase.Contains(m.Display)) sb.Append($"this.{m.Js} = {m.Js}; ");
         sb.Append("} ");
 
         // Structural equality — $eq.equals(a, b) delegates here when `a` is an instance.
-        sb.Append($"equals(o) {{ return o instanceof {name}");
+        // Param annotations are TS-only (the plain-JS conformance path must stay parseable as .mjs).
+        sb.Append(tsTypeDeclarations ? $"equals(o: unknown) {{ return o instanceof {name}"
+            : $"equals(o) {{ return o instanceof {name}");
         foreach (var m in members) sb.Append($" && $eq.equals(this.{m.Js}, o.{m.Js})");
         sb.Append("; } ");
 
         // with(patch): copy preserving the prototype (a spread would drop the methods).
-        sb.Append($"with(patch) {{ return new {name}(");
+        sb.Append(tsTypeDeclarations ? $"with(patch: any) {{ return new {name}(" : $"with(patch) {{ return new {name}(");
         sb.Append(string.Join(", ", members.Select(m => $"('{m.Js}' in patch ? patch.{m.Js} : this.{m.Js})")));
         sb.Append("); } ");
 

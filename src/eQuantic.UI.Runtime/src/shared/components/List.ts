@@ -10,7 +10,7 @@ export class List extends StatelessComponent {
         this.items = items;this.dividers = dividers;
     }
 
-    build(context: BuildContext) {
+    build(_context: BuildContext) {
         let column = new Column(0, { width: SizeValue.fill });for (let i = 0; i < this.items.length; i++) {column.add(this.items[i]);if (this.dividers && i < this.items.length - 1) column.add(new Divider('leading'));}return column;
     }
 

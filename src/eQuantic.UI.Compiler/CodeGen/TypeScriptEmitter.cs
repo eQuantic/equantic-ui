@@ -88,7 +88,7 @@ public class TypeScriptEmitter
                     foreach (var field in component.ComponentFields)
                     {
                         if (component.IsPrimitive && !field.IsStatic) continue;
-                        var tsType = CSharpTypeToTypeScript(field.Type);
+                        var tsType = DeclarationType(component, field.Type);
                         var tsDefault = field.DefaultValueNode != null
                             ? _converter.ConvertExpression(field.DefaultValueNode, field.Type)
                             : (field.DefaultValue != null ? ConvertToTsValue(field.DefaultValue, field.Type) : null);
@@ -212,7 +212,7 @@ public class TypeScriptEmitter
                     foreach (var method in component.Methods)
                     {
                         if (method.Name == "Build" || method.Name == "Render") continue;
-                        EmitMethod(method, c, component.Name);
+                        EmitMethod(method, c, component, component.Name);
                     }
                 }
                 else if (component.IsStateful)
@@ -253,6 +253,12 @@ public class TypeScriptEmitter
                             foreach (var param in ctorParams)
                             {
                                 var camelName = param.Name.ToCamelCase();
+                                // PRIMARY-constructor params are implicit fields — always assign. With an
+                                // EXPLICIT ctor body, only params that map onto a real auto-property assign
+                                // here; one that merely feeds a private/state field (`NestedChild(label)` →
+                                // `_label`) has no `this.<name>` to write — the C# ctor body does the wiring.
+                                if (hasCtorBody && !component.Properties.Any(pr => !pr.IsStatic && pr.Name.ToCamelCase() == camelName))
+                                    continue;
                                 c.Raw($"if ({camelName} !== undefined) this.{camelName} = {camelName};");
                             }
                             _converter.SetCurrentClass(component.Name);
@@ -270,8 +276,11 @@ public class TypeScriptEmitter
                         });
                     }
 
-                    // Build method
-                    c.Method("build", "context: BuildContext", false, () =>
+                    // Build method — underscore the param when the body never uses it
+                    // (noUnusedParameters-clean output; the override contract ignores names).
+                    var buildParamName = component.BuildMethodNode?.Body?.ToString().Contains("context") == false
+                        ? "_context" : "context";
+                    c.Method("build", $"{buildParamName}: BuildContext", false, () =>
                     {
                          if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
                          {
@@ -311,7 +320,7 @@ public class TypeScriptEmitter
                     foreach (var method in component.Methods)
                     {
                         if (method.Name == "Build" || method.Name == "Render") continue;
-                        EmitMethod(method, c, component.Name);
+                        EmitMethod(method, c, component, component.Name);
                     }
                 }
                 // Abstract classes: no build method emitted
@@ -732,7 +741,7 @@ public class TypeScriptEmitter
             // Custom methods (Phase 2: Semantic Body)
             foreach (var method in component.Methods)
             {
-                EmitMethod(method, c, component.StateClassName);
+                EmitMethod(method, c, component, component.StateClassName);
             }
             
             // Build method
@@ -933,7 +942,7 @@ public class TypeScriptEmitter
                     var def = prop.DefaultValueNode != null
                         ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
                         : (prop.DefaultValue != null ? ConvertToTsValue(prop.DefaultValue, prop.Type) : null);
-                    c.Field(name, CSharpTypeToTypeScript(prop.Type), def, node, isStatic: true);
+                    c.Field(name, DeclarationType(component, prop.Type), def, node, isStatic: true);
                 }
                 else
                 {
@@ -1026,14 +1035,19 @@ public class TypeScriptEmitter
         return ib.ToString() + builder.ToString();
     }
 
-    private void EmitMethod(MethodDefinition method, TypeScriptCodeBuilder.ClassBuilder c, string? className = null)
+    private void EmitMethod(MethodDefinition method, TypeScriptCodeBuilder.ClassBuilder c, ComponentDefinition component, string? className = null)
     {
         // Abstract methods (no body, no expression body) have nothing to emit — the concrete subclass
         // supplies the implementation, and TS needs no abstract stub on the base.
         if (method.SyntaxNode != null && method.SyntaxNode.Body == null && method.SyntaxNode.ExpressionBody == null)
             return;
 
-        var parameters = string.Join(", ", method.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
+        // Same resolvability contract as property declarations: a signature must never introduce a
+        // name the module cannot import (enums degrade to string — their runtime representation).
+        // Params the body never mentions get the TS underscore convention (noUnusedParameters).
+        var bodyText = method.SyntaxNode?.Body?.ToString() ?? method.SyntaxNode?.ExpressionBody?.ToString() ?? "";
+        var parameters = string.Join(", ", method.Parameters.Select(p =>
+            $"{(bodyText.Contains(p.Name) ? p.Name : "_" + p.Name)}: {DeclarationType(component, p.Type)}"));
         var methodName = method.Name.ToCamelCase();
         
         // Lifecycle mapping

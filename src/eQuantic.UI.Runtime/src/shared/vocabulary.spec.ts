@@ -104,3 +104,18 @@ describe('vocabulary self-lowering (render)', () => {
     expect(fired).toBe(true);
   });
 });
+
+describe('FlexNode config survives construction (ES2022 field order)', () => {
+  // Regression: derived `cross` field initializers ran AFTER super() and overwrote the config's
+  // explicit value — every transpiled `new Row(gap, { cross: 'stretch' })` silently fell back to
+  // the per-kind default, diverging hydration classes from SSR (caught by the e2e identity test).
+  it('Row keeps an explicit cross from the ctor config', () => {
+    expect(new Row(8, { cross: 'stretch' }).cross).toBe('stretch');
+    expect(new Row(8).cross).toBe('center');
+  });
+
+  it('Column keeps an explicit cross from the ctor config', () => {
+    expect(new Column(8, { cross: 'center' }).cross).toBe('center');
+    expect(new Column(8).cross).toBe('stretch');
+  });
+});

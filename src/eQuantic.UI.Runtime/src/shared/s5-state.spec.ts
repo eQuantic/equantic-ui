@@ -30,7 +30,8 @@ describe('S5 state overlays (C# cross-pin)', () => {
     const expected = `eq-${hashDeclaration(`:hover|background-color:${rewritten}`)}`;
     const classes = (node.attributes['class'] ?? '').split(' ');
     expect(classes).toContain(expected);
-    expect(classes[classes.length - 1]).toBe(expected, 'pseudo variants come last');
+    // pseudo variants come last
+    expect(classes[classes.length - 1]).toBe(expected);
   });
 
   it('focus diff uses :focus-visible with the border shorthand', () => {
