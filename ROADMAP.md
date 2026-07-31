@@ -142,6 +142,31 @@ authored ONCE in a shared assembly (abstract nodes + typed tokens in `eQuantic.U
 lowered per target by realizers — DOM/CSS on web, Photon pixels on native — so the two platforms are
 written practically identically → `docs/SHARED-COMPONENTS-PLAN.md`.
 
+## Track E — VS Code extension "eQuantic UI" (the visual editor)
+
+Added 2026-07-31 (Edgar's directive): a first-party VS Code extension that turns the SDK into a
+VISUAL development environment — live screen preview, click-to-select components in the viewer, a
+property panel that EDITS the C# source, up to full visual editing. Zero third-party by
+construction: the extension is plain VS Code API + the SDK itself (eqc, the dev server, the web
+realizer render the preview; nothing new renders pixels).
+
+Every pillar it needs already exists in the product:
+- **Preview = the real web realizer** in a webview (SSR + runtime — the preview IS the product,
+  never a lookalike), with the dev server driving rebuilds (Phase 3 hot reload compounds here).
+- **Click-to-select**: the component tree + stable layout paths already power hit-testing and the
+  reconciler; the same identity maps a click in the viewer to a `VisualNode` and (via the V3
+  source maps eqc already emits) to the exact C# line.
+- **Property editing**: Roslyn rewrites the component's object initializers/constructor args in
+  place — the same semantic machinery the compiler uses, run in reverse; typed tokens
+  (Variant/Space/Radius/TypeRole) make every property a dropdown/slider, not a string.
+- **Full editing (the horizon)**: palette of write-once components, insert/move/delete nodes,
+  native (Photon) preview riding the SAME abstract tree.
+
+Milestones: **E1** live preview panel (open a `[Page]`/component → rendered webview, auto-reload
+on save) · **E2** inspection (click-to-select, highlight, component tree view, jump-to-source)
+· **E3** property panel with two-way C# editing · **E4** full visual editing (insert/move/delete
+from the component palette). Plan doc lands when the track starts.
+
 ## Definition of "production-ready" (per pillar)
 - **0 JS**: any unsupported C# fails the build with a clear message; conformance suite green; C#
   debuggable in the browser.
