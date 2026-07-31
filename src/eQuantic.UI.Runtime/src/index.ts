@@ -180,6 +180,15 @@ export { Toast } from './shared/components/Toast';
 export { BottomSheet } from './shared/components/BottomSheet';
 export { DialogAction } from './shared/components/DialogAction';
 export { SearchField } from './shared/components/SearchField';
+export { Menu } from './shared/components/Menu';
+export { MenuItem } from './shared/components/MenuItem';
+export { Select } from './shared/components/Select';
+export { Popover } from './shared/components/Popover';
+export { Tooltip } from './shared/components/Tooltip';
+export { Drawer } from './shared/components/Drawer';
+export { Accordion } from './shared/components/Accordion';
+export { AccordionItem } from './shared/components/AccordionItem';
+export { Table } from './shared/components/Table';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).
 export {
   Space,

@@ -81,6 +81,33 @@ public static class SharedCounterView
         packRow.Add(new Text("Lucide, write-once", TypeRole.Caption));
         column.Add(packRow);
 
+        // Waves 3/3b: anchored overlays + the excision-backlog closers, ALL self-stateful —
+        // the page adds no state for any of these.
+        column.Add(new Divider());
+        column.Add(new Text("Anchored & wave 3b", TypeRole.Title));
+        var anchoredRow = new Row(gap: Space.S3) { Cross = CrossAlign.Center, Width = SizeValue.Fill };
+        anchoredRow.Add(new Flexible(new Select(new[] { "Small", "Medium", "Large" }, 1)));
+        anchoredRow.Add(new Menu(new Button("Actions", Variant.Outline), new[]
+        {
+            new MenuItem("Rename") { Icon = Icons.Person },
+            new MenuItem("Share"),
+            new MenuItem("Delete") { Icon = Icons.Close, Destructive = true },
+        }));
+        anchoredRow.Add(new Tooltip(new Icon(Icons.Info, IconSize.Md), "Hover-revealed, zero JS"));
+        column.Add(anchoredRow);
+        column.Add(new Accordion(new[]
+        {
+            new AccordionItem("General") { Content = new Text("Workspace defaults live here.", TypeRole.BodyM) },
+            new AccordionItem("Advanced") { Content = new Text("Sharp tools, use with care.", TypeRole.BodyM) },
+        }, openIndex: 0));
+        column.Add(new Table(
+            new[] { "Name", "Role", "Status" },
+            new[]
+            {
+                new[] { "Ana", "Admin", "Active" },
+                new[] { "João", "Editor", "Away" },
+            }));
+
         // Spec C2: an interrupting decision — declarative presence, resolved by its actions.
         var confirmRow = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
         confirmRow.Add(new Button("Delete card…", Variant.Destructive, onPressed: openConfirm));
