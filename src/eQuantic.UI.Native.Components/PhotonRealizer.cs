@@ -89,7 +89,9 @@ public static class PhotonRealizer
         DragStore? drags = null,
         Framework.ITextRasterizer? textRasterizer = null,
         TextRasterCache? textCache = null,
-        float renderScale = 1f)
+        float renderScale = 1f,
+        Framework.IIconRasterizer? iconRasterizer = null,
+        IconRasterCache? iconCache = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
         {
@@ -120,6 +122,8 @@ public static class PhotonRealizer
             TextCache = textCache,
             RenderScale = renderScale,
             TypeScale = typeScale,
+            IconRasterizer = iconRasterizer,
+            IconCache = iconCache,
         };
         var overlays = new List<Overlay>();
         var dragRegions = new List<DragRegion>();
@@ -182,6 +186,10 @@ public static class PhotonRealizer
         /// <summary>W4: the platform text service + per-host raster cache (null = placeholder bars).</summary>
         public Framework.ITextRasterizer? TextRasterizer { get; init; }
         public TextRasterCache? TextCache { get; init; }
+
+        /// <summary>W4: the platform icon service + per-host raster cache (null = disc placeholder).</summary>
+        public Framework.IIconRasterizer? IconRasterizer { get; init; }
+        public IconRasterCache? IconCache { get; init; }
         public float RenderScale { get; init; } = 1f;
         public float TypeScale { get; init; } = 1f;
         public bool Active { get; set; }
@@ -330,10 +338,21 @@ public static class PhotonRealizer
             // lands — the same documented placeholder pattern as text bars.
             case Icon icon:
             {
-                var tint = (icon.Color ?? theme.TextPrimary).Resolve(mode).WithOpacity(0.30f);
+                // W4: REAL glyph when the platform service is present — one A8 raster per
+                // (glyph, size, scale), drawn as a tinted Texture command. No service → the
+                // documented 30% disc placeholder (tests, headless).
+                if (motion.IconRasterizer is { } icons
+                    && (motion.IconCache ?? IconRasterCache.Shared)
+                        .Get(icons, icon.Glyph, icon.Size, motion.RenderScale) is { } raster)
+                {
+                    var tint = (icon.Color ?? theme.TextPrimary).Resolve(mode);
+                    builder.Texture(node.Bounds, tint, raster);
+                    break;
+                }
+                var placeholder = (icon.Color ?? theme.TextPrimary).Resolve(mode).WithOpacity(0.30f);
                 builder.FillRRect(
                     new RRect(node.Bounds, new CornerRadii(node.Bounds.Width / 2)),
-                    Paint.Solid(tint));
+                    Paint.Solid(placeholder));
                 break;
             }
 

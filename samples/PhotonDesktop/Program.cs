@@ -16,6 +16,7 @@ if (Array.IndexOf(args, "--render-png") is var pngIndex and >= 0)
     {
         RenderScale = 2f,
         TextRasterizer = text,
+        IconRasterizer = new eQuantic.UI.Native.Shell.MacOS.CoreGraphicsIconRasterizer(),
     };
     var builder = new eQuantic.UI.Native.Engine.DisplayListBuilder();
     host.RenderFrame(builder);
@@ -59,6 +60,12 @@ sealed class DesktopDemo : StatefulComponent
         body.Add(new ProgressBar(_count % 10 / 10f));
         body.Add(new Select(new[] { "Small", "Medium", "Large" }, _size,
             onChanged: i => SetState(() => _size = i)));
+
+        var icons = new Row(gap: Space.S3) { Cross = CrossAlign.Center };
+        foreach (var glyph in new[] { Icons.Search, Icons.CheckCircle, Icons.Warning, Icons.Heart, Icons.Mail, Icons.Person })
+            icons.Add(new Icon(glyph, IconSize.Md, theme.TextSecondary));
+        icons.Add(new Icon(Icons.HeartFilled, IconSize.Lg, theme.Colors(Variant.Destructive).Base));
+        body.Add(icons);
 
         var page = new Column(gap: 0) { Width = SizeValue.Fill, Padding = EdgeInsets.All(Space.S6) };
         page.Add(new Card(body) { Width = SizeValue.Fill });
