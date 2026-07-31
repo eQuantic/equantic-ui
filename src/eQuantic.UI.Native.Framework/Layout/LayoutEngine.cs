@@ -837,6 +837,18 @@ public static class LayoutEngine
         FlexNode flex => (horizontal ? flex.Height : flex.Width).Kind,
         Pressable pressable => CrossSizeKind(pressable.Child, horizontal),
         Flexible flexible => CrossSizeKind(flexible.Child, horizontal),
+        // Always-explicit nodes: their constructors demand a size — stretch must never override.
+        Image => SizeKind.Fixed,
+        Icon => SizeKind.Fixed,
+        Spinner => SizeKind.Fixed,
+        Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
+        // Layout-transparent wrappers delegate to what they wrap.
+        Sticky sticky => CrossSizeKind(sticky.Child, horizontal),
+        Presence presence => CrossSizeKind(presence.Child, horizontal),
+        LoopMotion loop => CrossSizeKind(loop.Child, horizontal),
+        DragDismiss drag => CrossSizeKind(drag.Child, horizontal),
+        Link link => CrossSizeKind(link.Child, horizontal),
+        Anchored anchored => CrossSizeKind(anchored.Anchor, horizontal),
         _ => SizeKind.Hug,
     };
 

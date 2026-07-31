@@ -60,4 +60,18 @@ public class ImageRenderTests
         command.Shape.Rect.Height.Should().Be(50);
         command.Shape.Rect.Y.Should().Be(25);
     }
+
+    [Fact]
+    public void FixedImage_RefusesColumnStretch()
+    {
+        // The layout contract: stretch fills AUTO cross sizes only — an Image's size is always
+        // explicit (the constructor demands it), so a stretching Column must not widen it.
+        var column = new Column(gap: 0) { Width = SizeValue.Fill }; // Cross defaults to Stretch
+        column.Add(new Image("x", 240, 160));
+
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 800, 600);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        frame.Root.Children[0].Bounds.Width.Should().Be(240, "explicit sizes hug under Stretch");
+        frame.Root.Children[0].Bounds.Height.Should().Be(160);
+    }
 }
