@@ -308,22 +308,10 @@ public class SharedComponentTranspilationTests
     }
 
     [Fact]
-    public void NameReuse_Disambiguates_ByTheUsingDirective()
+    public void SharedLibraryTypes_AreRuntimeProvided_NeverPerAppModules()
     {
-        // TWO pages, one Button NAME, two libraries — the page's usings decide which module source
-        // the import resolves to. This is the collision-resolution contract of unification slice 2.
-        var webPage = TranspilePage("""
-            using eQuantic.UI.Core;
-            using eQuantic.UI.Web.Components;
-
-            namespace eQuantic.UI.Web.Tests.Fixtures;
-
-            public class WebButtonPage : StatelessComponent
-            {
-                public override IComponent Build(RenderContext context) => new Button { Text = "web" };
-            }
-            """, "WebButtonPage.cs");
-
+        // The shared-library Button (the ONLY Button since the legacy web set was excised) is
+        // runtime-provided: the import routes to @equantic/runtime, never to a per-app module.
         var sharedPage = TranspilePage("""
             using eQuantic.UI.Core;
             using eQuantic.UI.Components;
@@ -338,9 +326,6 @@ public class SharedComponentTranspilationTests
             }
             """, "SharedButtonPage.cs");
 
-        // The standard web Button stays a per-app module…
-        webPage.Should().Contain("import { Button } from \"./Button\"");
-        // …while the shared-library Button is runtime-provided.
         sharedPage.Should().Contain("Button");
         sharedPage.Should().Contain("from \"@equantic/runtime\"");
         sharedPage.Should().NotContain("from \"./Button\"");

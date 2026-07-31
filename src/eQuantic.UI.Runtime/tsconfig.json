@@ -7,6 +7,11 @@
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    // Transpiled fixtures import the runtime exactly like emitted app code does; mirrors the alias
+    // in vitest.config.ts so tsc resolves the same module the test runner does.
+    "paths": {
+      "@equantic/runtime": ["./src/index.ts"]
+    },
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,

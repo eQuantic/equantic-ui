@@ -1,6 +1,9 @@
-import { $eq, Box, BoxStyle, BuildContext, ColorToken, Component, ComponentContext, CornerRadii, HtmlElement, Positioned, Pressable, Stack, StatelessComponent, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, Positioned, Pressable, Stack, StatelessComponent } from "../runtime-exports";
 
 export class Switch extends StatelessComponent {
+    declare on: boolean;
+    declare onChanged: () => void;
+    declare disabled: boolean;
     constructor(on?: any, onChanged: any = null, props?: any) {
         super(props);
         if (on !== undefined) this.on = on;

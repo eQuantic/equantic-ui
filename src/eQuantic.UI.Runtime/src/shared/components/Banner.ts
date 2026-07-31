@@ -1,6 +1,12 @@
-import { $eq, Box, BoxStyle, BuildContext, Button, Column, Component, ComponentContext, CornerRadii, EdgeInsets, Flexible, HtmlElement, Icon, IconSize, Pressable, Row, SizeValue, Space, StatelessComponent, Text, TypeStyle, VariantColors, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconSize, Pressable, Row, SizeValue, Space, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class Banner extends StatelessComponent {
+    declare status: string;
+    declare title: string;
+    declare body: string;
+    declare primaryAction: Button;
+    declare secondaryAction: Button;
+    declare onDismiss: () => void;
     constructor(status?: any, title?: any, body: any = null, props?: any) {
         super(props);
         if (status !== undefined) this.status = status;

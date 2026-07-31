@@ -1,6 +1,11 @@
-import { $eq, Box, BoxStyle, BuildContext, Button, Column, Component, ComponentContext, CornerRadii, EdgeInsets, HtmlElement, Icon, IconSize, Row, SizeValue, Space, Spacer, StatelessComponent, Text, TypeStyle, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, EdgeInsets, Icon, IconSize, Row, SizeValue, Space, Spacer, StatelessComponent, Text, TypeStyle } from "@equantic/runtime";
 
 export class EmptyState extends StatelessComponent {
+    declare icon: string;
+    declare title: string;
+    declare body: string;
+    declare action: Button;
+    declare secondaryAction: Button;
     constructor(icon?: any, title?: any, body: any = null, props?: any) {
         super(props);
         if (icon !== undefined) this.icon = icon;

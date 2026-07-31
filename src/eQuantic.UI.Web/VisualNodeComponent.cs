@@ -12,7 +12,7 @@ namespace eQuantic.UI.Web;
 /// the cross-pinned suites guarantee. The DOM stays MODE-FREE (light-dark()), so SSR needs no theme
 /// mode — only the token source, defaulting to <see cref="PhotonTheme.Instance"/>.
 /// </summary>
-[RuntimeProvided]
+[Primitives.RuntimeProvided]
 public sealed class VisualNodeComponent : HtmlElement
 {
     private readonly IAppTheme _theme;

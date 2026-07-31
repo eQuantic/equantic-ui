@@ -1,6 +1,9 @@
-import { $eq, Box, BoxStyle, BuildContext, Column, Component, ComponentContext, CornerRadii, DragDismiss, EdgeInsets, HtmlElement, Overlay, Presence, Pressable, Radius, Row, SizeValue, Space, Stack, StatelessComponent, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, DragDismiss, EdgeInsets, Overlay, Presence, Pressable, Radius, Row, SizeValue, Space, Stack, StatelessComponent, VisualNode } from "@equantic/runtime";
 
 export class BottomSheet extends StatelessComponent {
+    declare content: VisualNode;
+    declare onDismiss: () => void;
+    declare dismissible: boolean;
     constructor(content?: any, onDismiss: any = null, dismissible: any = true, props?: any) {
         super(props);
         if (content !== undefined) this.content = content;

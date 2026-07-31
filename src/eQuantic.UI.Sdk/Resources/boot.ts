@@ -4,7 +4,6 @@
 export * from '../../eQuantic.UI.Runtime/src/index';
 
 import {
-  StyleBuilder,
   getReconciler,
   Router,
   matchRoute,
@@ -36,12 +35,6 @@ interface MountableComponent {
   disposeQuietly?(): void;
 }
 
-declare global {
-  interface Window {
-    StyleBuilder: typeof StyleBuilder;
-  }
-}
-
 // --- Helpers ---
 function isDev(): boolean {
   return typeof window !== 'undefined' && window.__EQ_DEV__ === true;
@@ -55,11 +48,6 @@ let initialized = false;
  * tree (so a shared layout shell is preserved) and disposes it without tearing down the reconciled DOM.
  */
 let currentComponent: MountableComponent | null = null;
-
-// Expose StyleBuilder globally for back-compat ($eq and other helpers are imported by name).
-if (typeof window !== 'undefined') {
-  window.StyleBuilder = StyleBuilder;
-}
 
 /**
  * Bootstraps the eQuantic application
@@ -99,13 +87,6 @@ export async function boot(): Promise<void> {
       setPhotonTheme(materializeTheme(themeData));
     }
 
-    // Register theme before hydration (if available) — legacy Core.Theme provider hook.
-    if (typeof (window as any).__registerTheme === 'function') {
-      if (isDev()) {
-        console.log('[eQuantic.UI] Registering theme...');
-      }
-      (window as any).__registerTheme();
-    }
 
     // Seed the active route from the initial URL before mounting, so SSR hydration sees the same
     // route params/query the server rendered with (a param page would otherwise mismatch).

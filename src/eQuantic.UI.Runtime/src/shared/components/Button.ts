@@ -1,6 +1,12 @@
-import { Box, BoxStyle, BuildContext, ButtonStyles, ColorToken, Component, ComponentContext, CornerRadii, EdgeInsets, HtmlElement, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle, VariantColors, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, ButtonStyles, CornerRadii, EdgeInsets, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class Button extends StatelessComponent {
+    declare label: string;
+    declare variant: string;
+    declare size: string;
+    declare onPressed: () => void;
+    declare disabled: boolean;
+    declare expand: boolean;
     constructor(label?: any, variant: any = 'primary', size: any = 'medium', onPressed: any = null, props?: any) {
         super(props);
         if (label !== undefined) this.label = label;

@@ -1,6 +1,9 @@
-import { $eq, Box, BoxStyle, BuildContext, Column, Component, ComponentContext, CornerRadii, EdgeInsets, Flexible, HtmlElement, Pressable, Row, SizeValue, Space, StatelessComponent, Text, TypeStyle, VariantColors, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Row, SizeValue, Space, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class Tabs extends StatelessComponent {
+    declare labels: any;
+    declare selected: number;
+    declare onSelect: any;
     constructor(labels?: any, selected?: any, onSelect: any = null, props?: any) {
         super(props);
         if (labels !== undefined) this.labels = labels;

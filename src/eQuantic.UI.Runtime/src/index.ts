@@ -4,7 +4,11 @@
 
 // Core
 export { Component, HtmlElement } from './core/types';
+export { DynamicElement } from './core/dynamic-element';
 export type { IComponent, HtmlNode, RenderContext, StyleClass, EventHandler } from './core/types';
+// The C# `BuildContext` mirror — transpiled components declare `build(context: BuildContext)`, so the
+// name must resolve here exactly as it does in shared/runtime-exports.
+export type { RenderContext as BuildContext } from './core/types';
 export {
   StatelessComponent,
   StatefulComponent,
@@ -250,98 +254,6 @@ declare global {
   interface Window {
     __EQ_CONFIG?: EqConfig;
     __EQ_DEV__?: boolean;
-    __registerTheme?: () => void;
   }
 }
 
-/**
- * Boot the application.
- * This is the main entry point called from the HTML shell.
- *
- * The boot process:
- * 1. Reads configuration from window.__EQ_CONFIG (set by server)
- * 2. Dynamically imports the page component module
- * 3. If SSR was used (data-ssr="true"), hydrates the existing DOM
- * 4. Otherwise, does a full client-side render
- *
- * @example
- * ```html
- * <script type="module">
- *   import { boot } from "@equantic/runtime";
- *   boot();
- * </script>
- * ```
- */
-export async function boot(): Promise<void> {
-  let overlay: typeof import('./dev/error-overlay') | null = null;
-  const isDev = window.__EQ_DEV__;
-
-  // Import error overlay in development
-  if (isDev) {
-    overlay = await import('./dev/error-overlay');
-  }
-
-  const { logger } = await import('./utils/logger');
-
-  logger.debug('Starting boot process...');
-  const config = window.__EQ_CONFIG;
-
-  if (!config || !config.page) {
-    logger.warn('No page configured in __EQ_CONFIG');
-    return;
-  }
-
-  const container = document.getElementById('app');
-  if (!container) {
-    logger.error('Container #app not found');
-    return;
-  }
-
-  // Register theme before hydration (if available)
-  if (typeof (window as any).__registerTheme === 'function') {
-    logger.debug('Registering theme...');
-    (window as any).__registerTheme();
-  }
-
-  try {
-    // Import the page component module dynamically
-    // The version query string ensures cache busting on new builds
-    const modulePath = `/_equantic/${config.page}.js?v=${config.version}`;
-    const pageModule = await import(/* @vite-ignore */ modulePath);
-
-    // Look for the default export or the class with the same name as the page
-    const PageClass = pageModule.default || pageModule[config.page];
-
-    if (!PageClass) {
-      console.error(`[eQuantic.UI] Page class '${config.page}' not found in module`);
-      return;
-    }
-
-    // Create and mount the component
-    // The mount() method will automatically detect SSR and hydrate if needed
-    const component = new PageClass();
-
-    if (config.ssr) {
-      console.debug(`[eQuantic.UI] Hydrating SSR page: ${config.page}`);
-    } else {
-      console.debug(`[eQuantic.UI] Client-side rendering page: ${config.page}`);
-    }
-
-    component.mount(container);
-  } catch (error) {
-    console.error(`[eQuantic.UI] Failed to boot page '${config.page}':`, error);
-
-    // Show error to user in development
-    if (isDev && overlay && container.dataset.ssr !== 'true') {
-      overlay.errorOverlay.show({
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-    } else if (container.dataset.ssr !== 'true') {
-      container.innerHTML = `<div style="color: red; padding: 20px;">
-        <h2>Failed to load page</h2>
-        <pre>${error instanceof Error ? error.message : String(error)}</pre>
-      </div>`;
-    }
-  }
-}

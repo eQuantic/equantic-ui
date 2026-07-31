@@ -1,6 +1,11 @@
-import { $eq, Box, BoxStyle, BuildContext, Button, Column, Component, ComponentContext, CornerRadii, DialogAction, EdgeInsets, HtmlElement, Overlay, Presence, Pressable, Row, SizeValue, Space, Stack, StatelessComponent, Text, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, DialogAction, EdgeInsets, Overlay, Presence, Pressable, Row, SizeValue, Space, Stack, StatelessComponent, Text } from "../runtime-exports";
 
 export class Dialog extends StatelessComponent {
+    declare title: string;
+    declare body: string;
+    declare actions: DialogAction[];
+    declare dismissible: boolean;
+    declare onDismiss: () => void;
     constructor(title?: any, body?: any, actions?: any, dismissible: any = false, onDismiss: any = null, props?: any) {
         super(props);
         if (title !== undefined) this.title = title;

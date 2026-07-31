@@ -1,10 +1,13 @@
-import { $eq, Box, BoxStyle, BuildContext, Component, ComponentContext, CornerRadii, Flexible, HtmlElement, LoopMotion, Row, SharedStatefulComponent, SizeValue, Spacer, UiComponent, VisualNode } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Row, SharedStatefulComponent, SizeValue, Spacer, UiComponent } from "@equantic/runtime";
 
 export class ProgressBar extends SharedStatefulComponent {
     static sweepFromX: number = -0.35;
     static sweepToX: number = 1.05;
     static sweepDurationMs: number = 1200;
     _snapNext: boolean = false;
+    declare value: number;
+    declare variant: string;
+    declare prominent: boolean;
     constructor(value: any = null, variant: any = 'primary', props?: any) {
         super(props);
         if (value !== undefined) this.value = value;

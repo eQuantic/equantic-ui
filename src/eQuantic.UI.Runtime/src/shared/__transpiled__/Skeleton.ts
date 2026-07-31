@@ -1,7 +1,10 @@
-import { $eq, Box, BoxStyle, BuildContext, Color, ColorToken, Component, ComponentContext, CornerRadii, Flexible, HtmlElement, LinearGradient, LoopMotion, Row, SizeValue, StatelessComponent, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Color, ColorToken, CornerRadii, Flexible, LinearGradient, LoopMotion, Row, SizeValue, StatelessComponent } from "@equantic/runtime";
 
 export class Skeleton extends StatelessComponent {
     static shimmerDurationMs: number = 1400;
+    declare shape: string;
+    declare width: number;
+    declare height: number;
     constructor(shape?: any, width?: any, height: any = 0, props?: any) {
         super(props);
         if (shape !== undefined) this.shape = shape;

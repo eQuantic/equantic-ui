@@ -1,6 +1,12 @@
-import { Box, BoxStyle, BuildContext, ColorToken, Component, ComponentContext, CornerRadii, EdgeInsets, HtmlElement, Icon, IconSize, Pressable, Row, SizeValue, Space, StatelessComponent, Text, TypeStyle, VariantColors, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, IconSize, Pressable, Row, SizeValue, Space, StatelessComponent, Text, TypeStyle } from "@equantic/runtime";
 
 export class Chip extends StatelessComponent {
+    declare label: string;
+    declare kind: string;
+    declare selected: boolean;
+    declare onPressed: () => void;
+    declare onRemove: () => void;
+    declare variant: string;
     constructor(label?: any, kind: any = 'filter', selected: any = false, onPressed: any = null, onRemove: any = null, props?: any) {
         super(props);
         if (label !== undefined) this.label = label;

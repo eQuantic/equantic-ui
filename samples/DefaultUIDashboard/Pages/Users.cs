@@ -1,19 +1,22 @@
-using eQuantic.UI.Core;
-using eQuantic.UI.Web.Components;
-using eQuantic.UI.Web.Components.Layout;
 using DefaultUIDashboard.Components;
+using eQuantic.UI.Components;
+using eQuantic.UI.Core;
+using eQuantic.UI.Primitives;
+using eQuantic.UI.Web;
+using StatelessComponent = eQuantic.UI.Core.StatelessComponent;
 
 namespace DefaultUIDashboard.Pages;
 
 /// <summary>
-/// Route-params demo. <c>/users</c> lists people; each row is a SPA link to <c>/users/{id}</c>. The
-/// detail page below reads the matched <c>id</c> from <see cref="RenderContext.Route"/> — the same value
-/// whether the page was server-rendered (direct load / refresh) or reached by client navigation.
+/// Route-params demo, migrated: <c>/users</c> lists people (write-once ListItems inside SPA anchor
+/// rows); the detail page reads the matched <c>id</c> from <see cref="RenderContext.Route"/> — the
+/// same value whether server-rendered or reached by client navigation. Keeps the transpiler demos:
+/// a value-type record emitted as a named JS class and a static data field referenced as
+/// <c>Users.people</c>.
 /// </summary>
 [Page("/users", Title = "Users")]
 public class Users : StatelessComponent
 {
-    // Static data field — emitted as a `static` class member and referenced as `Users.people`.
     private static readonly List<Person> People = new()
     {
         new Person(1, "Ada Lovelace", "Engineering"),
@@ -24,72 +27,56 @@ public class Users : StatelessComponent
 
     public override IComponent Build(RenderContext context)
     {
-        var list = new Box { ClassName = "eq-space-y-3" };
-        foreach (var p in People)
-            list.Children.Add(new UserRow(p.Id, p.Name, p.Team));
+        var header = new Column(gap: Space.S1);
+        header.Add(new Text("Users", TypeRole.Heading));
+        header.Add(new Text(
+            $"{People.Count} people · click a row to open /users/{{id}}", TypeRole.Caption));
 
-        return new DefaultDashboardShell
+        var shell = new SampleShell { ActivePath = "/users" };
+        shell.Children.Add(new VisualNodeComponent(header));
+
+        foreach (var p in People)
         {
-            ActivePath = "/users",
-            Children = {
-                new Box {
-                    ClassName = "eq-max-w-3xl eq-mx-auto eq-mt-12",
-                    Children = {
-                        new Heading("Users", 1) { ClassName = "eq-text-3xl eq-font-bold eq-mb-2" },
-                        new Text($"{People.Count} people · click a row to open /users/{{id}}")
-                        {
-                            ClassName = "eq-text-secondary eq-text-sm eq-mb-8 eq-block"
-                        },
-                        list
-                    }
-                }
-            }
-        };
+            // The row is a plain anchor (SPA link the router intercepts) wrapping a write-once
+            // ListItem — navigation stays declarative, the visuals stay in the shared library.
+            var row = new Row(gap: Space.S3) { Cross = CrossAlign.Center, Width = SizeValue.Fill };
+            row.Add(new Avatar(Initials(p.Name), SizeVariant.Medium, name: p.Name));
+            var text = new Column(gap: 0);
+            text.Add(new Text(p.Name, TypeRole.Label));
+            text.Add(new Text(p.Team, TypeRole.Caption));
+            row.Add(new Flexible(text));
+            row.Add(new Text($"#{p.Id} →", TypeRole.Caption));
+
+            var anchor = new DynamicElement
+            {
+                TagName = "a",
+                CustomAttributes = new Dictionary<string, string>
+                {
+                    ["href"] = $"/users/{p.Id}",
+                    ["style"] = "display:block;text-decoration:none;color:inherit;margin-top:12px;",
+                },
+            };
+            anchor.Children.Add(new VisualNodeComponent(
+                new Card(row, CardKind.Outlined) { Width = SizeValue.Fill }));
+            shell.Children.Add(anchor);
+        }
+
+        return shell;
+    }
+
+    private string Initials(string name)
+    {
+        var parts = name.Split(' ');
+        return parts.Length > 1 ? $"{parts[0][0]}{parts[1][0]}" : name[..1];
     }
 }
 
 /// <summary>One person model — a value-type record emitted as a named JS class.</summary>
 public record Person(int Id, string Name, string Team);
 
-/// <summary>A clickable row that SPA-navigates to the user's detail route.</summary>
-public class UserRow : StatelessComponent
-{
-    private readonly int _id;
-    private readonly string _name;
-    private readonly string _team;
-
-    public UserRow(int id, string name, string team)
-    {
-        _id = id;
-        _name = name;
-        _team = team;
-    }
-
-    public override IComponent Build(RenderContext context)
-    {
-        return new Link
-        {
-            Href = $"/users/{_id}",
-            ClassName = "eq-flex eq-items-center eq-justify-between eq-surface-subtle eq-border eq-rounded-xl eq-px-6 eq-py-4 hover:eq-surface-hover eq-transition-colors",
-            Children = {
-                new Box {
-                    Children = {
-                        new Text(_name) { ClassName = "eq-font-semibold eq-block" },
-                        new Text(_team) { ClassName = "eq-text-secondary eq-text-sm" }
-                    }
-                },
-                new Box {
-                    ClassName = "eq-text-secondary eq-text-sm",
-                    Children = { new Text($"#{_id} →") }
-                }
-            }
-        };
-    }
-}
-
 /// <summary>
-/// The params target: <c>/users/{id}</c>. Reads the route parameter (and an optional <c>?role=</c> query)
-/// straight from <see cref="RenderContext.Route"/>.
+/// The params target: <c>/users/{id}</c>. Reads the route parameter (and an optional <c>?role=</c>
+/// query) straight from <see cref="RenderContext.Route"/>.
 /// </summary>
 [Page("/users/{id:int}", Title = "User Detail")]
 public class UserDetail : StatelessComponent
@@ -99,31 +86,25 @@ public class UserDetail : StatelessComponent
         var id = context.Route.Param("id") ?? "?";
         var role = context.Route.Query("role") ?? "member";
 
-        return new DefaultDashboardShell
+        var body = new Column(gap: Space.S3) { Cross = CrossAlign.Center, Padding = EdgeInsets.All(Space.S6) };
+        body.Add(new Avatar(id, SizeVariant.XLarge, name: $"User {id}"));
+        body.Add(new Text($"User #{id}", TypeRole.Title));
+        body.Add(new Text($"Route param id = {id} · query role = {role}", TypeRole.Caption));
+
+        var back = new DynamicElement
         {
-            ActivePath = "/users",
-            Children = {
-                new Box {
-                    ClassName = "eq-max-w-md eq-mx-auto eq-mt-20 eq-surface-subtle eq-border eq-rounded-2xl eq-p-10 eq-text-center",
-                    Children = {
-                        new Box {
-                            ClassName = "eq-w-20 eq-h-20 eq-rounded-full eq-btn-primary eq-mx-auto eq-mb-6 eq-flex eq-items-center eq-justify-center eq-text-3xl eq-font-black",
-                            Children = { new Text(id) }
-                        },
-                        new Heading($"User #{id}", 1) { ClassName = "eq-text-2xl eq-font-bold eq-mb-2" },
-                        new Text($"Route param id = {id} · query role = {role}")
-                        {
-                            ClassName = "eq-text-secondary eq-text-sm eq-mb-8 eq-block"
-                        },
-                        new Link
-                        {
-                            Href = "/users",
-                            ClassName = "eq-btn-outline eq-px-6 eq-py-2 eq-rounded-lg eq-inline-block",
-                            Children = { new Text("← Back to users") }
-                        }
-                    }
-                }
-            }
+            TagName = "a",
+            InnerText = "← Back to users",
+            CustomAttributes = new Dictionary<string, string>
+            {
+                ["href"] = "/users",
+                ["style"] = "display:inline-block;margin-top:16px;color:var(--eq-color-link);",
+            },
         };
+
+        var shell = new SampleShell { ActivePath = "/users" };
+        shell.Children.Add(new VisualNodeComponent(new Card(body, CardKind.Outlined) { Width = SizeValue.Fill }));
+        shell.Children.Add(back);
+        return shell;
     }
 }

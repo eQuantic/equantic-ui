@@ -26,7 +26,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\eQuantic.UI.Images\eQuantic.UI.Images.csproj" />
-    <ProjectReference Include="..\..\src\eQuantic.UI.Web.Components\eQuantic.UI.Web.Components.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
   </ItemGroup>

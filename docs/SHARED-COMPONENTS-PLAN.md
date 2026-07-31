@@ -541,6 +541,30 @@ rejected.)
    follow → glide-back → dismiss → exit → self-clean). The showcase gained the Share sheet. v1
    fences: detents (partial heights), flick-velocity dismissal, horizontal axis, nested-scroll
    interplay.
+   LEGACY EXCISION ✅ (2026-07-30 — Edgar's directive: ZERO legacy running in parallel): the entire
+   legacy web world is DELETED. Gone: `eQuantic.UI.Web.Components` (93 files — the parallel component
+   library), `Core/Theme` (~50 files: the legacy IAppTheme + per-component theme interfaces +
+   ThemeProvider/__registerTheme injection + C# StyleBuilder) and `Core/Theming` (PresetThemes/
+   DesignTokens), `Tailwind/Theme` (per-component Tailwind themes + AddTailwind registrations +
+   theme.js/dark-mode.js endpoints — the package is now ONLY build-time CSS generation + the
+   stylesheet link + the dark-mode FOUC helper), the legacy `equantic.css` endpoint/EnableDefaultCss,
+   the legacy boot() in runtime index.ts (ONE boot now — the SDK's), the window.StyleBuilder global,
+   and samples/TailwindDashboard. MIGRATED: `DynamicElement` moved to Core as the generic escape
+   hatch ([RuntimeProvided] name-matched twin attribute in Core; TS mirror in the runtime — exported
+   from BOTH index and runtime-exports), Server error pages (Core-only, inline-styled,
+   self-contained), the 5 satellite files (Charts.ApexCharts/ChartJs/Lottie — they only ever used
+   DynamicElement), AuthoringProbe (→ the write-once Components assembly), and the ENTIRE sample:
+   SampleShell (Core + DynamicElement anchors reading the UseTheme token variables) + Counter/Users/
+   Auth as Core pages composing write-once views through the bridge (Showcase deleted — /shared IS
+   the showcase). The legacy sample pages were already silently broken client-side (`new Box(` with
+   no import — the Grid-class bug); the migration FIXED them: all five flows proven live (counter
+   ticks, SPA nav, /users/{id} params, guard redirect, login). BONUS: Images.Tests went 19-failing →
+   76/76 green (the failures were all in the legacy Display.Image component tests). EVERY suite in
+   the repo is green. Learnings: fully-qualified `new eQuantic.UI.Primitives.Text(...)` transpiles
+   verbatim (use simple names); component-class private STATIC methods aren't emitted (call sites
+   qualify but the member is missing — follow-up filed; instance methods work). Follow-up fence: a
+   write-once `Link` node (SPA anchors are DynamicElement for now).
+
    THEME-SELECTION WIRING ✅ (2026-07-05, slice 3 — SSR bridge + client boot, per-app theme delivery):
    an app selects the write-once theme with one call — `AddUI(o => o.UseTheme(MaterialTheme.Instance))`
    (or `PhotonTheme.Instance` / `MaterialTheme.FromSeed(seed)` / a brand theme) — and the SAME

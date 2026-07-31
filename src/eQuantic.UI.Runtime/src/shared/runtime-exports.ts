@@ -42,6 +42,7 @@ export {
   DragDismiss,
   Spinner,
 } from './vocabulary';
+export { DynamicElement } from '../core/dynamic-element';
 export {
   Color,
   ColorToken,

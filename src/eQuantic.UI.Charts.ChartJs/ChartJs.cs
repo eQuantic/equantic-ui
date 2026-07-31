@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using eQuantic.UI.Core;
-using eQuantic.UI.Web.Components;
 using eQuantic.UI.Charts.ChartJs.Models;
 
 namespace eQuantic.UI.Charts.ChartJs;

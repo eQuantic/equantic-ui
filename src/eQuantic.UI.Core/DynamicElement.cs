@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using eQuantic.UI.Core;
+namespace eQuantic.UI.Core;
 
-namespace eQuantic.UI.Web.Components;
-
+/// <summary>
+/// The ESCAPE HATCH for custom tags and web components (<c>&lt;dotlottie-player&gt;</c>, raw
+/// <c>&lt;script&gt;</c>, plain anchors) — any tag, arbitrary attributes, optional raw text.
+/// Runtime-provided: the client mirror lives in the runtime bundle.
+/// </summary>
+[RuntimeProvided]
 public class DynamicElement : HtmlElement
 {
     public string? InnerText { get; set; }

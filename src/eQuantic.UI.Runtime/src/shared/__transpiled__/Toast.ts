@@ -1,6 +1,10 @@
-import { $eq, Box, BoxStyle, BuildContext, Column, Component, ComponentContext, CornerRadii, EdgeInsets, HtmlElement, Overlay, Presence, Pressable, Radius, Row, SizeValue, Space, StatelessComponent, Text, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Overlay, Presence, Pressable, Radius, Row, SizeValue, Space, StatelessComponent, Text } from "@equantic/runtime";
 
 export class Toast extends StatelessComponent {
+    declare message: string;
+    declare status: string;
+    declare actionLabel: string;
+    declare onAction: () => void;
     constructor(message?: any, status: any = 'info', actionLabel: any = null, onAction: any = null, props?: any) {
         super(props);
         if (message !== undefined) this.message = message;

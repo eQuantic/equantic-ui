@@ -1,6 +1,8 @@
-import { $eq, BuildContext, Column, Component, ComponentContext, Divider, HtmlElement, ListItem, SizeValue, StatelessComponent, VisualNode } from "../runtime-exports";
+import { BuildContext, Column, Divider, SizeValue, StatelessComponent } from "../runtime-exports";
 
 export class List extends StatelessComponent {
+    declare items: any;
+    declare dividers: boolean;
     constructor(items?: any, dividers: any = true, props?: any) {
         super(props);
         if (items !== undefined) this.items = items;

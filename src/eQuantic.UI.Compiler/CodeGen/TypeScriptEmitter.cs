@@ -348,15 +348,29 @@ public class TypeScriptEmitter
         // Generate component code without imports
         var componentCode = _builder.ToString();
 
-        // Generate imports based on populated UsedHelpers
-        var importsCode = GenerateImports(component);
+        // Generate imports based on populated UsedHelpers. The emitted body is the authority on what is
+        // actually referenced, so it is passed in to drop imports the scan over-collected.
+        var importsCode = GenerateImports(component, componentCode);
 
         // Return imports + component code
         return importsCode + "\n" + componentCode;
     }
     
-    private string GenerateImports(ComponentDefinition component)
+    /// <summary>Every identifier the emitted body mentions — the authority on which imports are live.</summary>
+    private static HashSet<string> ReferencedIdentifiers(string emittedBody) =>
+        System.Text.RegularExpressions.Regex
+            .Matches(emittedBody, @"[A-Za-z_$][A-Za-z0-9_$]*")
+            .Select(m => m.Value)
+            .ToHashSet();
+
+    /// <param name="emittedBody">The already-emitted class body. The type scan is deliberately permissive
+    /// (it walks the build tree, member bodies, field initializers and declared property types, plus the
+    /// resolver's transitive closure) so nothing needed is ever missed; filtering the result against what
+    /// the body actually mentions removes the over-collection instead of narrowing the scan and risking a
+    /// missing import — an unused import is only a warning, a missing one is a runtime "X is not defined".</param>
+    private string GenerateImports(ComponentDefinition component, string emittedBody)
     {
+        var referenced = ReferencedIdentifiers(emittedBody);
         // Core runtime imports
         var coreImports = new HashSet<string> { "Component", "BuildContext", "HtmlElement" };
 
@@ -551,7 +565,7 @@ public class TypeScriptEmitter
 
         // Create a temporary builder for imports only
         var importsBuilder = new TypeScriptCodeBuilder();
-        importsBuilder.Import(coreImports, "@equantic/runtime");
+        importsBuilder.Import(coreImports.Where(referenced.Contains), "@equantic/runtime");
 
         // Import user types that we actually emit as their own module: UI components AND data records
         // (each gets a generated .ts file). The set is discovered by scanning the project — no fixed
@@ -569,6 +583,8 @@ public class TypeScriptEmitter
             // static-field names read as ClassName.X, helper-class names, etc. — instead of inventing a
             // bogus `./X`. (Without a resolver we keep the old permissive behavior for isolated snippets.)
             if (_dependencyResolver != null && !isEmittedType)
+                continue;
+            if (!referenced.Contains(userComp))
                 continue;
             importsBuilder.Import(new[] { userComp }, $"./{userComp}");
         }
@@ -772,6 +788,67 @@ public class TypeScriptEmitter
         // No-op: Stateless components are fully handled by Emit()
     }
     
+    /// <summary>TS names that always resolve without an import.</summary>
+    private static readonly HashSet<string> IntrinsicTsTypes = new()
+    {
+        "string", "number", "boolean", "any", "unknown", "void", "null", "undefined", "Date",
+        "object", "symbol", "bigint", "never",
+    };
+
+    /// <summary>
+    /// The TS type for a TYPE-ONLY property declaration. A declaration must never introduce a name the
+    /// emitted module cannot resolve — that would just trade a TS2339 for a TS2304 — so the type is kept
+    /// only when this module is known to import it: intrinsics, runtime-provided vocabulary, and types the
+    /// resolver actually emits as their own module (property types feed the import scan, see GetImports).
+    /// C# enums lower to string literals and have no TS counterpart, so they degrade to <c>string</c>;
+    /// anything else unresolvable degrades to <c>any</c>, which still restores checking on the rest.
+    /// </summary>
+    private string DeclarationType(ComponentDefinition component, string? csharpType)
+    {
+        var ts = CSharpTypeToTypeScript(csharpType);
+
+        // Structural forms (`X[]`, `(a: X) => void`, `Record<…>`) are only as resolvable as their parts;
+        // keep them only when every bare identifier they mention resolves.
+        var suffix = "";
+        while (ts.EndsWith("[]"))
+        {
+            ts = ts[..^2];
+            suffix += "[]";
+        }
+        if (ts.Contains('<') || ts.Contains("=>") || ts.Contains('('))
+            return IsResolvableTsName(component, ts) ? ts + suffix : "any" + suffix;
+
+        // Enum members lower to string literals, so `string` describes the runtime value exactly.
+        if (component.EnumTypes.Contains(ts)) return "string" + suffix;
+
+        return (IsResolvableTsName(component, ts) ? ts : "any") + suffix;
+    }
+
+    /// <summary>Whether <paramref name="ts"/> resolves in the emitted module — see <see cref="DeclarationType"/>.</summary>
+    private bool IsResolvableTsName(ComponentDefinition component, string ts)
+    {
+        if (string.IsNullOrEmpty(ts)) return false;
+        if (IntrinsicTsTypes.Contains(ts)) return true;
+
+        // A composite (`(x: Foo) => void`, `Record<string, any>`): every identifier inside must resolve.
+        if (ts.Contains('<') || ts.Contains("=>") || ts.Contains('('))
+        {
+            var names = System.Text.RegularExpressions.Regex
+                .Matches(ts, @"[A-Za-z_][A-Za-z0-9_]*")
+                .Select(m => m.Value)
+                .Where(n => n is not ("void" or "Record"));
+            return names.All(n => IsResolvableTsName(component, n));
+        }
+
+        // Enum members lower to string literals, so the enum NAME has no TS counterpart to import.
+        if (component.EnumTypes.Contains(ts)) return false;
+
+        if (component.RuntimeProvidedTypes.Contains(ts) || IsRuntimeComponent(ts)) return true;
+
+        return (_dependencyResolver?.GetAllComponents().Contains(ts) ?? false)
+            || (_dependencyResolver?.GetAllRecords().Contains(ts) ?? false);
+    }
+
     /// <summary>True for a pure auto-property (`{ get; set; }` / `{ get; init; }`) — no expression body and
     /// no accessor with a body. Auto-props flow through the base Object.assign(props); only computed/get-set
     /// properties need an emitted accessor.</summary>
@@ -846,14 +923,21 @@ public class TypeScriptEmitter
                     continue;
                 }
 
-                // Pure auto-property: only static ones need an explicit member (no props flow to the class).
+                // Pure auto-property. A static one carries its initializer as a real field; an INSTANCE one
+                // is populated from outside the class body (base Object.assign(props) / the ctor), so it is
+                // emitted TYPE-ONLY — the declaration restores type checking on `this.x` without emitting
+                // runtime code that would clobber the assigned value under useDefineForClassFields.
+                _converter.SetCurrentClass(component.Name);
                 if (prop.IsStatic)
                 {
-                    _converter.SetCurrentClass(component.Name);
                     var def = prop.DefaultValueNode != null
                         ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
                         : (prop.DefaultValue != null ? ConvertToTsValue(prop.DefaultValue, prop.Type) : null);
                     c.Field(name, CSharpTypeToTypeScript(prop.Type), def, node, isStatic: true);
+                }
+                else
+                {
+                    c.Field(name, DeclarationType(component, prop.Type), null, node, isDeclare: true);
                 }
             }
         }

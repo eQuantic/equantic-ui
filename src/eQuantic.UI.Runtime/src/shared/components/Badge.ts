@@ -1,6 +1,12 @@
-import { Box, BoxStyle, BuildContext, ColorToken, Component, ComponentContext, CornerRadii, EdgeInsets, HtmlElement, Row, SizeValue, Space, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Row, SizeValue, Space, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class Badge extends StatelessComponent {
+    declare count: number;
+    declare max: number;
+    declare variant: string;
+    declare neutral: boolean;
+    declare dot: boolean;
+    declare ring: boolean;
     constructor(count: any = 0, max: any = 99, variant: any = 'destructive', props?: any) {
         super(props);
         if (count !== undefined) this.count = count;
