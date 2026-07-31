@@ -10,7 +10,7 @@ public readonly record struct HitRegion(Rect Bounds, Pressable Node);
 /// <summary>Spec S5/gestures: a hover-reactive region — a Box carrying a Hover diff. The host's
 /// pointer tracking resolves the TOPMOST region under the pointer (paint order = registration
 /// order, so last-contains wins).</summary>
-public readonly record struct HoverRegion(Rect Bounds, Box Node);
+public readonly record struct HoverRegion(Rect Bounds, VisualNode Node);
 
 /// <summary>Scroll compositor v1: a scrollable viewport — the host routes wheel/drag input to the
 /// TOPMOST region under the pointer and adjusts its stored offset (clamped to MaxOffset).</summary>
@@ -245,6 +245,16 @@ public static class PhotonRealizer
         EmitNode(node, theme, mode, builder, hits, hovers, scrolls, drags, links, scrollMeta, press, motion, overlays);
     }
 
+    /// <summary>Centers a panel on the anchor's X WITHOUT measuring it: a symmetric fixed-width
+    /// row around the center point with Main=Center (panels wider than 2× the center overflow —
+    /// the documented flip/clamp fence).</summary>
+    private static VisualNode CenteredOn(VisualNode panel, float centerX)
+    {
+        var row = new Row(gap: 0) { Main = MainAlign.Center, Width = 2 * centerX };
+        row.Add(panel);
+        return row;
+    }
+
     /// <summary>The CSS transform list twin: translate → rotate → scale, anchored at the box center.</summary>
     private static Matrix2D CenterAnchored(in Transform2D t, Point center) =>
         Matrix2D.Translation(-center.X, -center.Y)
@@ -404,11 +414,21 @@ public static class PhotonRealizer
         {
             foreach (var child in node.Children)
                 Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, scrollMeta, press, motion, overlays);
-            if (!anchored.Open) return;
+
+            // Wave 3b hover reveal (the Tooltip mechanism): the anchor registers for the host's
+            // pointer tracking; the panel opens while hovered — no scrim (leave = closed).
+            var hoverOpen = false;
+            if (anchored.OpenOnHover)
+            {
+                hovers.Add(new HoverRegion(node.Bounds, anchored));
+                hoverOpen = ReferenceEquals(press.Hovered, anchored);
+            }
+            if (!anchored.Open && !hoverOpen) return;
 
             var filler = new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill });
             var layer = new Stack();
-            layer.Add(anchored.OnDismiss is { } dismiss
+            // Hover-open panels take no scrim: leaving the anchor closes them.
+            layer.Add(anchored.OnDismiss is { } dismiss && !hoverOpen
                 ? new Pressable(filler, dismiss) { Label = "Dismiss" }
                 : filler);
 
@@ -422,6 +442,8 @@ public static class PhotonRealizer
                 AnchorPlacement.BottomEnd => new Positioned(panel, top: b.Bottom + gap, end: motion.ViewportW - b.Right),
                 AnchorPlacement.TopStart => new Positioned(panel, bottom: motion.ViewportH - b.Y + gap, start: b.X),
                 AnchorPlacement.TopEnd => new Positioned(panel, bottom: motion.ViewportH - b.Y + gap, end: motion.ViewportW - b.Right),
+                AnchorPlacement.BottomCenter => new Positioned(CenteredOn(panel, b.Center.X), top: b.Bottom + gap, start: 0),
+                AnchorPlacement.TopCenter => new Positioned(CenteredOn(panel, b.Center.X), bottom: motion.ViewportH - b.Y + gap, start: 0),
                 _ => new Positioned(panel, top: b.Bottom + gap, start: b.X),
             });
             overlays.Add(new Overlay(layer));

@@ -14,6 +14,11 @@ public class StringStaticStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
+        // `string.Empty` — the static PROPERTY (no invocation): the empty string literal.
+        if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" } property
+            && property.Expression.ToString() is "string" or "String" or "System.String")
+            return true;
+
         if (node is not InvocationExpressionSyntax invocation) return false;
         
         var methodAccess = invocation.Expression as MemberAccessExpressionSyntax;
@@ -42,6 +47,9 @@ public class StringStaticStrategy : IConversionStrategy
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
+        if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" })
+            return "''";
+
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;

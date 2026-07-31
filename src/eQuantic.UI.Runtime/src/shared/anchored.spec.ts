@@ -66,4 +66,12 @@ describe('anchored lowering (C# cross-pin)', () => {
     };
     expect(panel.attributes['class']).toContain('eq-anchor-match');
   });
+
+  it('openOnHover lowers the reveal host with the panel always present (C# cross-pin)', () => {
+    const host = lowerVisualNode(anchored({ openOnHover: true, placement: 'topCenter' }), ctx);
+    expect(host.attributes['class']).toBe('eq-anchorhost eq-hoverreveal');
+    expect(host.children).toHaveLength(2);
+    const panel = host.children[1] as { attributes: Record<string, string> };
+    expect(panel.attributes['class']).toMatch(/^eq-anchor-panel eq-anchor-t-center /);
+  });
 });

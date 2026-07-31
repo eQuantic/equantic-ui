@@ -43,6 +43,8 @@ export {
   Link,
   Spinner,
   Anchored,
+  Grid,
+  GridTrack,
   StyleDiff,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';

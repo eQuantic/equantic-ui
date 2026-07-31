@@ -203,6 +203,13 @@ public static class PhotonCssGenerator
         css.AppendLine(".eq-anchor-t-start { bottom: 100%; inset-inline-start: 0; }");
         css.AppendLine(".eq-anchor-t-end { bottom: 100%; inset-inline-end: 0; }");
         css.AppendLine(".eq-anchor-match { min-width: 100%; }");
+        css.AppendLine(".eq-anchor-b-center { top: 100%; inset-inline-start: 50%; transform: translateX(-50%); }");
+        css.AppendLine(".eq-anchor-t-center { bottom: 100%; inset-inline-start: 50%; transform: translateX(-50%); }");
+        // Wave 3b hover reveal (the Tooltip mechanism): the panel exists in the DOM but only shows
+        // while the HOST is hovered — pure CSS, zero JS, never on touch (hover media handled by
+        // the browser's hover emulation rules).
+        css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
+        css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
 
         // Link mechanics: the anchor is pure semantics — the child owns every visual (the Pressable
         // contract). display:block keeps flex/stack sizing natural.
