@@ -57,6 +57,7 @@ public sealed class Menu : StatefulComponent
             {
                 Cross = CrossAlign.Center,
                 Width = SizeValue.Fill,
+                Height = SizeValue.Fill,
             };
             if (item.Icon is { } glyph)
                 row.Add(new Icon(glyph, IconSize.Dense,

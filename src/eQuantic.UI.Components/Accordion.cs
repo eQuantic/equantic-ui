@@ -63,7 +63,7 @@ public sealed class Accordion : StatefulComponent
             var index = i;
             var open = IsOpen(i);
 
-            var header = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill };
+            var header = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
             header.Add(new Text(item.Title, TypeRole.Label));
             header.Add(new Flexible(new Spacer()));
             header.Add(new Icon(open ? Icons.ChevronUp : Icons.ChevronDown, IconSize.Sm, theme.TextSecondary));
