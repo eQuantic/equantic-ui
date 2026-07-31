@@ -49,6 +49,11 @@ public sealed class PhotonHost
     /// rest and stops requesting frames. Platform shells (W5) feed the real setting.</summary>
     public bool ReducedMotion { get; set; }
 
+    /// <summary>Device pixels per dp (the shell's backingScaleFactor). Layout, input and hit
+    /// regions stay in dp; the emitted commands are wrapped in one root scale so the GPU
+    /// rasters at native resolution (retina).</summary>
+    public float RenderScale { get; set; } = 1f;
+
     /// <summary>The NAVIGATION seam (write-once Link): a tap no pressable claims, landing on a link
     /// region, reports the href here — the platform shell maps it to a page (the native router's
     /// future home). Null = links are inert (visuals only).</summary>
@@ -63,8 +68,10 @@ public sealed class PhotonHost
     public RealizeResult RenderFrame(DisplayListBuilder builder, float timeMs = 0)
     {
         builder.Clear(_theme.Background.Resolve(Mode));
+        if (RenderScale != 1f) builder.PushTransform(Engine.Matrix2D.Scale(RenderScale, RenderScale));
         _lastTimeMs = timeMs;
         _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags);
+        if (RenderScale != 1f) builder.Pop();
         NeedsRender = _lastFrame.HasActiveMotion;
         return _lastFrame;
     }

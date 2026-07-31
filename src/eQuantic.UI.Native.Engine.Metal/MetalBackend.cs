@@ -22,6 +22,9 @@ public sealed class MetalBackend : IRenderBackend
     private readonly IntPtr _device;
     private readonly IntPtr _queue;
     private readonly IntPtr _pipeline;
+    private readonly IntPtr _vertexFn;
+    private readonly IntPtr _fragmentFn;
+    private readonly Dictionary<ulong, IntPtr> _pipelines = new();
 
     /// <summary>True when a Metal device exists (Apple hardware; CI without GPU skips).</summary>
     public static bool IsSupported =>
@@ -38,22 +41,32 @@ public sealed class MetalBackend : IRenderBackend
 
         _queue = ObjC.Send(_device, Sel("newCommandQueue"));
 
-        // Compile the spike shader and build the ONE pipeline (premultiplied src-over, sRGB target).
+        // Compile the spike shader once; pipelines are built PER TARGET FORMAT (offscreen
+        // surfaces are RGBA8_sRGB; a window's CAMetalLayer only offers BGRA8 variants).
         var library = ObjC.Send(_device, Sel("newLibraryWithSource:options:error:"),
             ObjC.NSString(MetalShaders.Source), IntPtr.Zero, out var libraryError);
         if (library == IntPtr.Zero)
             throw new InvalidOperationException(
                 $"MSL compilation failed: {DescribeError(libraryError)}");
 
-        var vertexFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("fullscreen_vertex"));
-        var fragmentFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("sdf_fragment"));
+        _vertexFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("fullscreen_vertex"));
+        _fragmentFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("sdf_fragment"));
+        _pipeline = PipelineFor(PixelFormatRgba8UnormSrgb);
+    }
+
+    /// <summary>MTLPixelFormatBGRA8Unorm_sRGB — the CAMetalLayer window format (shell path).</summary>
+    public const ulong PixelFormatBgra8UnormSrgb = 81;
+
+    private IntPtr PipelineFor(ulong pixelFormat)
+    {
+        if (_pipelines.TryGetValue(pixelFormat, out var cached)) return cached;
 
         var descriptor = ObjC.Send(ObjC.Send(ObjC.objc_getClass("MTLRenderPipelineDescriptor"), Sel("alloc")), Sel("init"));
-        ObjC.SendVoid(descriptor, Sel("setVertexFunction:"), vertexFn);
-        ObjC.SendVoid(descriptor, Sel("setFragmentFunction:"), fragmentFn);
+        ObjC.SendVoid(descriptor, Sel("setVertexFunction:"), _vertexFn);
+        ObjC.SendVoid(descriptor, Sel("setFragmentFunction:"), _fragmentFn);
 
         var attachment = ObjC.Send(ObjC.Send(descriptor, Sel("colorAttachments")), Sel("objectAtIndexedSubscript:"), 0ul);
-        ObjC.SendVoid(attachment, Sel("setPixelFormat:"), PixelFormatRgba8UnormSrgb);
+        ObjC.SendVoid(attachment, Sel("setPixelFormat:"), pixelFormat);
         ObjC.SendVoid(attachment, Sel("setBlendingEnabled:"), true);
         // Premultiplied source-over: dst' = src + dst · (1 − src.A) — LinearColor.Over, in hardware.
         const ulong factorOne = 1;                    // MTLBlendFactorOne
@@ -63,14 +76,19 @@ public sealed class MetalBackend : IRenderBackend
         ObjC.SendVoid(attachment, Sel("setDestinationRGBBlendFactor:"), factorOneMinusSourceAlpha);
         ObjC.SendVoid(attachment, Sel("setDestinationAlphaBlendFactor:"), factorOneMinusSourceAlpha);
 
-        _pipeline = ObjC.Send(_device, Sel("newRenderPipelineStateWithDescriptor:error:"),
+        var pipeline = ObjC.Send(_device, Sel("newRenderPipelineStateWithDescriptor:error:"),
             descriptor, out var pipelineError);
-        if (_pipeline == IntPtr.Zero)
+        if (pipeline == IntPtr.Zero)
             throw new InvalidOperationException(
                 $"Pipeline creation failed: {DescribeError(pipelineError)}");
+        _pipelines[pixelFormat] = pipeline;
+        return pipeline;
     }
 
     public RenderBackendKind Kind => RenderBackendKind.Metal;
+
+    /// <summary>The MTLDevice handle — the shell hands it to the window's CAMetalLayer.</summary>
+    public IntPtr DeviceHandle => _device;
 
     public IRenderSurface CreateSurface(int width, int height)
     {
@@ -88,6 +106,19 @@ public sealed class MetalBackend : IRenderBackend
     public void Render(DisplayList displayList, IRenderSurface surface)
     {
         var target = (MetalSurface)surface;
+        RenderCore(displayList, target.Texture, _pipeline, IntPtr.Zero);
+    }
+
+    /// <summary>
+    /// Shell path: encode the display list straight into a WINDOW drawable's texture and present
+    /// it on commit. The pipeline is resolved (and cached) for the layer's pixel format — the
+    /// shaders are format-agnostic; the write swizzle is the hardware's.
+    /// </summary>
+    public void RenderToDrawable(DisplayList displayList, IntPtr drawableTexture, ulong pixelFormat, IntPtr drawable)
+        => RenderCore(displayList, drawableTexture, PipelineFor(pixelFormat), drawable);
+
+    private void RenderCore(DisplayList displayList, IntPtr targetTexture, IntPtr pipeline, IntPtr presentDrawable)
+    {
 
         // The pass clears to the display list's leading Clear command (ours always start with one).
         var clearColor = Color.Transparent;
@@ -101,7 +132,7 @@ public sealed class MetalBackend : IRenderBackend
 
         var passDescriptor = ObjC.Send(ObjC.objc_getClass("MTLRenderPassDescriptor"), Sel("renderPassDescriptor"));
         var attachment = ObjC.Send(ObjC.Send(passDescriptor, Sel("colorAttachments")), Sel("objectAtIndexedSubscript:"), 0ul);
-        ObjC.SendVoid(attachment, Sel("setTexture:"), target.Texture);
+        ObjC.SendVoid(attachment, Sel("setTexture:"), targetTexture);
         ObjC.SendVoid(attachment, Sel("setLoadAction:"), LoadActionClear);
         ObjC.SendVoid(attachment, Sel("setStoreAction:"), StoreActionStore);
         // Clear colors are written pre-encoding (linear) — mirror ColorSpace.ToPremultipliedLinear.
@@ -111,7 +142,7 @@ public sealed class MetalBackend : IRenderBackend
 
         var commandBuffer = ObjC.Send(_queue, Sel("commandBuffer"));
         var encoder = ObjC.Send(commandBuffer, Sel("renderCommandEncoderWithDescriptor:"), passDescriptor);
-        ObjC.SendVoid(encoder, Sel("setRenderPipelineState:"), _pipeline);
+        ObjC.SendVoid(encoder, Sel("setRenderPipelineState:"), pipeline);
 
         // SPIKE FENCE: group-opacity layers approximate as per-command alpha (no offscreen pass in
         // the M0 spike) — overlapping children inside a layer double-blend here; the reference
@@ -150,6 +181,8 @@ public sealed class MetalBackend : IRenderBackend
         }
 
         ObjC.SendVoid(encoder, Sel("endEncoding"));
+        if (presentDrawable != IntPtr.Zero)
+            ObjC.SendVoid(commandBuffer, Sel("presentDrawable:"), presentDrawable);
         ObjC.SendVoid(commandBuffer, Sel("commit"));
         ObjC.SendVoid(commandBuffer, Sel("waitUntilCompleted"));
     }
