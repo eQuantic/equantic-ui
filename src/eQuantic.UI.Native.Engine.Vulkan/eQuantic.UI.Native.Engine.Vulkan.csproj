@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>eQuantic.UI.Native.Engine.Vulkan</PackageId>
+    <Description>Photon Vulkan backend — the Vulkan implementation of the engine's RHI (IRhiDevice/IRhiCommandList) for Android and any Vulkan host, driven by the shared RhiRenderer encode loop. Slim owned bindings (LibraryImport, C ABI — no binding framework), offline-precompiled SPIR-V (Slang, plan D3), fixed pipeline registry (plan D5).</Description>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Slang-GENERATED SPIR-V (plan D3): one normative source (Engine/Shaders/Sdf.slang)
+         compiled offline — all four entry points ship in one module (SPIR-V 1.5 → Vulkan 1.2),
+         loaded once at device init. Zero runtime shader compilation. -->
+    <EmbeddedResource Include="..\eQuantic.UI.Native.Engine\Shaders\Generated\Sdf.spv" LogicalName="Photon.Sdf.spv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+    <ProjectReference Include="..\eQuantic.UI.Native.Engine\eQuantic.UI.Native.Engine.csproj" />
+  </ItemGroup>
+
+</Project>

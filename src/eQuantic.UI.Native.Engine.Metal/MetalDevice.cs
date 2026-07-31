@@ -1,0 +1,193 @@
+using eQuantic.UI.Primitives;
+
+namespace eQuantic.UI.Native.Engine.Metal;
+
+/// <summary>
+/// The Metal <see cref="IRhiDevice"/>: owns the MTLDevice/queue, loads the offline-compiled
+/// metallib (plan D3 — the MSL source path stays as the dev fallback so a fresh Slang regen
+/// without the Metal Toolchain still runs), and builds the FIXED pipeline set per target pixel
+/// format (plan D5; the offscreen SDF pipeline is created with the device, fail-fast). Interop is
+/// the spike-proven slim typed <c>objc_msgSend</c> layer (<see cref="ObjC"/>); Objective-C object
+/// lifetimes stay per-process — the documented fence, owned by the binding layer's retain/release
+/// work item (plan open question 2).
+/// </summary>
+public sealed class MetalDevice : IRhiDevice
+{
+    internal const ulong PixelFormatRgba8UnormSrgb = 71; // MTLPixelFormatRGBA8Unorm_sRGB
+    internal const ulong PixelFormatBgra8UnormSrgb = 81; // MTLPixelFormatBGRA8Unorm_sRGB (CAMetalLayer)
+    private const ulong PixelFormatR8Unorm = 10;
+    private const ulong LoadActionClear = 2;
+    private const ulong StoreActionStore = 1;
+    private const ulong TextureUsageRenderTarget = 0x04;
+    private const ulong StorageModeShared = 0;
+
+    private readonly IntPtr _device;
+    private readonly IntPtr _queue;
+    private readonly IntPtr _vertexFn;
+    private readonly IntPtr _fragmentFn;
+    private readonly IntPtr _texturedFn;
+    private readonly IntPtr _texturedRgbaFn;
+    private readonly Dictionary<(ulong Format, RhiPipelineKind Kind), IntPtr> _pipelines = new();
+
+    public MetalDevice()
+    {
+        if (!OperatingSystem.IsMacOS())
+            throw new PlatformNotSupportedException("The Metal backend requires macOS/Apple hardware.");
+
+        _device = ObjC.MTLCreateSystemDefaultDevice();
+        if (_device == IntPtr.Zero)
+            throw new PlatformNotSupportedException("No Metal device available.");
+
+        _queue = ObjC.Send(_device, Sel("newCommandQueue"));
+
+        // D3: the PRECOMPILED metallib loads first — zero runtime shader compilation (the
+        // engine's founding thesis). The MSL source path stays as the dev fallback.
+        var library = TryLoadPrecompiledLibrary();
+        if (library == IntPtr.Zero)
+        {
+            library = ObjC.Send(_device, Sel("newLibraryWithSource:options:error:"),
+                ObjC.NSString(MetalShaders.Source), IntPtr.Zero, out var libraryError);
+            if (library == IntPtr.Zero)
+                throw new InvalidOperationException(
+                    $"MSL compilation failed: {DescribeError(libraryError)}");
+        }
+
+        _vertexFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("fullscreen_vertex"));
+        _fragmentFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("sdf_fragment"));
+        _texturedFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("textured_fragment"));
+        _texturedRgbaFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("textured_rgba_fragment"));
+        _ = PipelineState(PixelFormatRgba8UnormSrgb, RhiPipelineKind.Sdf);
+    }
+
+    /// <summary>The MTLDevice handle — the shell hands it to the window's CAMetalLayer.</summary>
+    public IntPtr Handle => _device;
+
+    public IRhiRenderTarget CreateRenderTarget(int width, int height)
+    {
+        var descriptor = ObjC.Send(ObjC.objc_getClass("MTLTextureDescriptor"),
+            Sel("texture2DDescriptorWithPixelFormat:width:height:mipmapped:"),
+            PixelFormatRgba8UnormSrgb, (ulong)width, (ulong)height, false);
+        ObjC.SendVoid(descriptor, Sel("setUsage:"), TextureUsageRenderTarget);
+        ObjC.SendVoid(descriptor, Sel("setStorageMode:"), StorageModeShared);
+
+        var texture = ObjC.Send(_device, Sel("newTextureWithDescriptor:"), descriptor);
+        if (texture == IntPtr.Zero) throw new InvalidOperationException("Metal render-target creation failed.");
+        return new MetalRenderTarget(texture, width, height);
+    }
+
+    public IRhiTexture CreateTexture(TextureData data)
+    {
+        var rgba = data.Format == TextureFormat.Rgba8;
+        var descriptor = ObjC.Send(ObjC.objc_getClass("MTLTextureDescriptor"),
+            Sel("texture2DDescriptorWithPixelFormat:width:height:mipmapped:"),
+            rgba ? PixelFormatRgba8UnormSrgb : PixelFormatR8Unorm, (ulong)data.Width, (ulong)data.Height, false);
+        ObjC.SendVoid(descriptor, Sel("setStorageMode:"), StorageModeShared);
+        var texture = ObjC.Send(_device, Sel("newTextureWithDescriptor:"), descriptor);
+        if (texture == IntPtr.Zero) throw new InvalidOperationException("Metal texture creation failed.");
+        var bytesPerRow = (ulong)data.Width * (rgba ? 4ul : 1ul);
+        unsafe
+        {
+            fixed (byte* bytes = data.Alpha)
+            {
+                ObjC.SendVoid(texture, Sel("replaceRegion:mipmapLevel:withBytes:bytesPerRow:"),
+                    new MTLRegion { Width = (ulong)data.Width, Height = (ulong)data.Height, Depth = 1 },
+                    0, (IntPtr)bytes, bytesPerRow);
+            }
+        }
+        return new MetalTexture(texture, data.Width, data.Height);
+    }
+
+    public IRhiCommandList Begin(IRhiRenderTarget target, Color clearColor) =>
+        BeginPass(((MetalRenderTarget)target).Texture, PixelFormatRgba8UnormSrgb, IntPtr.Zero, clearColor);
+
+    /// <summary>Shell path: a pass targeting a WINDOW drawable's texture — the drawable is
+    /// presented when the command list submits. Pipelines resolve for the layer's pixel format
+    /// (the shaders are format-agnostic; the write swizzle is the hardware's).</summary>
+    public IRhiCommandList BeginDrawable(IntPtr drawableTexture, ulong pixelFormat, IntPtr drawable, Color clearColor) =>
+        BeginPass(drawableTexture, pixelFormat, drawable, clearColor);
+
+    private MetalCommandList BeginPass(IntPtr targetTexture, ulong pixelFormat, IntPtr drawable, Color clearColor)
+    {
+        var passDescriptor = ObjC.Send(ObjC.objc_getClass("MTLRenderPassDescriptor"), Sel("renderPassDescriptor"));
+        var attachment = ObjC.Send(ObjC.Send(passDescriptor, Sel("colorAttachments")), Sel("objectAtIndexedSubscript:"), 0ul);
+        ObjC.SendVoid(attachment, Sel("setTexture:"), targetTexture);
+        ObjC.SendVoid(attachment, Sel("setLoadAction:"), LoadActionClear);
+        ObjC.SendVoid(attachment, Sel("setStoreAction:"), StoreActionStore);
+        // Clear colors are written pre-encoding (linear) — mirror ColorSpace.ToPremultipliedLinear.
+        var linear = ColorSpace.ToPremultipliedLinear(clearColor);
+        ObjC.SendVoid(attachment, Sel("setClearColor:"),
+            new MTLClearColor { Red = linear.R, Green = linear.G, Blue = linear.B, Alpha = linear.A });
+
+        var commandBuffer = ObjC.Send(_queue, Sel("commandBuffer"));
+        var encoder = ObjC.Send(commandBuffer, Sel("renderCommandEncoderWithDescriptor:"), passDescriptor);
+        return new MetalCommandList(this, commandBuffer, encoder, pixelFormat, drawable);
+    }
+
+    // Kind mapping: Sdf → sdf_fragment, TexturedA8 → textured_fragment, TexturedRgba → textured_rgba_fragment.
+    internal IntPtr PipelineState(ulong pixelFormat, RhiPipelineKind kind)
+    {
+        if (_pipelines.TryGetValue((pixelFormat, kind), out var cached)) return cached;
+
+        var descriptor = ObjC.Send(ObjC.Send(ObjC.objc_getClass("MTLRenderPipelineDescriptor"), Sel("alloc")), Sel("init"));
+        ObjC.SendVoid(descriptor, Sel("setVertexFunction:"), _vertexFn);
+        ObjC.SendVoid(descriptor, Sel("setFragmentFunction:"), kind switch
+        {
+            RhiPipelineKind.TexturedA8 => _texturedFn,
+            RhiPipelineKind.TexturedRgba => _texturedRgbaFn,
+            _ => _fragmentFn,
+        });
+
+        var attachment = ObjC.Send(ObjC.Send(descriptor, Sel("colorAttachments")), Sel("objectAtIndexedSubscript:"), 0ul);
+        ObjC.SendVoid(attachment, Sel("setPixelFormat:"), pixelFormat);
+        ObjC.SendVoid(attachment, Sel("setBlendingEnabled:"), true);
+        // Premultiplied source-over: dst' = src + dst · (1 − src.A) — LinearColor.Over, in hardware.
+        const ulong factorOne = 1;                    // MTLBlendFactorOne
+        const ulong factorOneMinusSourceAlpha = 5;    // MTLBlendFactorOneMinusSourceAlpha
+        ObjC.SendVoid(attachment, Sel("setSourceRGBBlendFactor:"), factorOne);
+        ObjC.SendVoid(attachment, Sel("setSourceAlphaBlendFactor:"), factorOne);
+        ObjC.SendVoid(attachment, Sel("setDestinationRGBBlendFactor:"), factorOneMinusSourceAlpha);
+        ObjC.SendVoid(attachment, Sel("setDestinationAlphaBlendFactor:"), factorOneMinusSourceAlpha);
+
+        var pipeline = ObjC.Send(_device, Sel("newRenderPipelineStateWithDescriptor:error:"),
+            descriptor, out var pipelineError);
+        if (pipeline == IntPtr.Zero)
+            throw new InvalidOperationException(
+                $"Pipeline creation failed: {DescribeError(pipelineError)}");
+        _pipelines[(pixelFormat, kind)] = pipeline;
+        return pipeline;
+    }
+
+    /// <summary>Loads the embedded offline-compiled metallib (dispatch_data with the DEFAULT
+    /// destructor — libdispatch copies the buffer). Zero = fall back to source compilation.</summary>
+    private IntPtr TryLoadPrecompiledLibrary()
+    {
+        using var stream = typeof(MetalDevice).Assembly.GetManifestResourceStream("Photon.Sdf.metallib");
+        if (stream is null) return IntPtr.Zero;
+        var bytes = new byte[stream.Length];
+        stream.ReadExactly(bytes);
+        unsafe
+        {
+            fixed (byte* buffer = bytes)
+            {
+                var data = ObjC.dispatch_data_create((IntPtr)buffer, (nuint)bytes.Length, IntPtr.Zero, IntPtr.Zero);
+                if (data == IntPtr.Zero) return IntPtr.Zero;
+                return ObjC.Send(_device, Sel("newLibraryWithData:error:"), data, out _);
+            }
+        }
+    }
+
+    private static IntPtr Sel(string name) => ObjC.sel_registerName(name);
+
+    private static string DescribeError(IntPtr nsError)
+    {
+        if (nsError == IntPtr.Zero) return "(no NSError)";
+        var description = ObjC.Send(nsError, ObjC.sel_registerName("localizedDescription"));
+        return ObjC.NSStringToManaged(description) ?? "(unreadable NSError)";
+    }
+
+    public void Dispose()
+    {
+        // Objective-C objects leak per-process (no autorelease pool / retain-release management
+        // yet) — the binding layer decision (plan open question 2) owns lifetime handling.
+    }
+}

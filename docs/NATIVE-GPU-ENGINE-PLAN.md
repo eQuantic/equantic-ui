@@ -631,6 +631,41 @@ Bun and the JS bundling chain, the TypeScript runtime.
   fulfilled. Window presents are asynchronous (drawable-pool backpressure). Parity 18/18 through
   the binary path. Remaining D3 tail: pipeline caching across launches (binary archives).
 
+- **2026-07-31 — W1 LANDS: the RHI extracted — and VULKAN RENDERS, ±1 LSB from the Reference.**
+  The fine-grained RHI now exists in the engine (`Rhi.cs`), EXTRACTED from the Metal spike's
+  proven shape per the 2026-06-10 deferral, not invented ahead of it: `IRhiDevice` /
+  `IRhiRenderTarget` / `IRhiTexture` / `IRhiCommandList`, `RhiPipelineKind` (the D5 fixed
+  registry as a CLOSED enum — the interface cannot express creating a pipeline at draw time),
+  the normative 160-byte `DrawUniforms` block (moved up from the Metal backend, now shared, with
+  `TryBuild` as the one encode math), and `RhiRenderer` — the display-list encode loop
+  (leading-Clear→pass-clear, the layer-alpha spike fence, textured pipeline switching, the
+  identity-keyed texture cache + 1×1 dummy binds) hoisted ONCE above the backends, so GPU
+  targets can only differ in API calls, never in frame semantics. Metal reimplemented over the
+  RHI (`MetalDevice`/`MetalCommandList`/`MetalTexture` + the `MetalBackend` adapter; public
+  surface — `DeviceHandle`, `PixelFormatBgra8UnormSrgb`, `RenderToDrawable` — unchanged, the
+  shell untouched); Metal parity held 18/18 and the window self-test presented 120/120 through
+  the shared encoder. NEW `eQuantic.UI.Native.Engine.Vulkan`: OWNED slim bindings (~48 typed
+  `LibraryImport` externs + exact-ABI structs — open question 2's answer extended to the C ABI,
+  simpler than Obj-C as predicted), instance at Vulkan 1.2 (the committed `Sdf.spv` is SPIR-V
+  1.5) with conditional portability enumeration/subset for dev ICDs, device requiring
+  `shaderDrawParameters` (slangc lowers `SV_VertexID` via `gl_BaseVertex` → the DrawParameters
+  capability), ONE shader module carrying all four entry points (D3's Vulkan half redeemed),
+  per-draw uniforms through a persistently-mapped dynamic-offset UNIFORM RING — 160 B exceeds
+  the 128 B push-constant floor the spec guarantees; stride 256 = the alignment ceiling, so no
+  limits struct is ever queried — descriptor sets cached per (coverage, color) view pair,
+  one-shot staging uploads, readback via `TRANSFER_SRC` finalLayout → buffer → the SHARED
+  `RhiReadback` un-premultiply (Metal and Vulkan readbacks can only agree). MEASURED through
+  MoltenVK as a DEV ICD (D1 untouched — the product ships native Vulkan on Android, native Metal
+  on Apple, no translation layer ever; brew `vulkan-loader` + `molten-vk` are dev-machine
+  tooling): all 18 golden scenes at **max channel diff 1, zero pixels beyond ±2, exact-0 on the
+  same four scenes Metal zeroes** — the two GPU backends are pixel-twins through one encoder and
+  one Slang source. `VulkanParityTests` mirrors the Metal suite case-for-case (skips without a
+  loader). Suite: native 327, all three backends green on one host — the M0 pixel gate is
+  satisfied everywhere but "on physical devices" (Android hardware = the W5 shell's milestone).
+  Fences: offscreen-only (the swapchain arrives with the Android shell), submits always wait
+  (real fences join the frame loop), 4096-draw uniform ring per pass, descriptor pool sized 1024
+  pairs.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
