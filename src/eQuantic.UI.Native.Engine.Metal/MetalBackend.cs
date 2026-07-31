@@ -262,7 +262,12 @@ public sealed class MetalBackend : IRenderBackend
         if (presentDrawable != IntPtr.Zero)
             ObjC.SendVoid(commandBuffer, Sel("presentDrawable:"), presentDrawable);
         ObjC.SendVoid(commandBuffer, Sel("commit"));
-        ObjC.SendVoid(commandBuffer, Sel("waitUntilCompleted"));
+        // WINDOW frames present asynchronously — the CAMetalLayer's drawable pool provides the
+        // backpressure (nextDrawable blocks when the queue is full), so the CPU never stalls on
+        // the GPU. Offscreen renders (goldens, parity readbacks) still wait: the caller reads
+        // pixels right after.
+        if (presentDrawable == IntPtr.Zero)
+            ObjC.SendVoid(commandBuffer, Sel("waitUntilCompleted"));
     }
 
     private static bool TryBuildUniforms(in DrawCommand command, out DrawUniforms uniforms)
