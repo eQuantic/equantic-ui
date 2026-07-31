@@ -37,6 +37,9 @@ public sealed class ReferenceBackend : IRenderBackend
                 case DrawCommandKind.ShadowRRect:
                     RasterizeRRect(target, in command);
                     break;
+                case DrawCommandKind.Texture:
+                    RasterizeTexture(target, in command, displayList.Textures);
+                    break;
                 case DrawCommandKind.BeginLayer:
                     (layers ??= new()).Push((target, command.StrokeWidth));
                     target = new ReferenceSurface(target.Width, target.Height);
@@ -47,6 +50,63 @@ public sealed class ReferenceBackend : IRenderBackend
                     target.Dispose();
                     target = below;
                     break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// W4 texture fill (NORMATIVE): the A8 raster samples as COVERAGE with nearest filtering —
+    /// rasters are generated at device scale, so texels map 1:1 and stay crisp; the paint color is
+    /// the tint. Clip multiplies exactly like the rrect path.
+    /// </summary>
+    private static void RasterizeTexture(ReferenceSurface target, in DrawCommand command, IReadOnlyList<TextureData> textures)
+    {
+        if (command.TextureId < 0 || command.TextureId >= textures.Count) return;
+        var texture = textures[command.TextureId];
+        var rect = command.Shape.Rect;
+        var transform = command.Transform;
+        var inverse = transform.Invert();
+        if (inverse is null || rect.Width <= 0 || rect.Height <= 0) return;
+
+        var bounds = transform.TransformBounds(rect);
+        if (command.Clip is { } clipBounds) bounds = bounds.Intersect(clipBounds.Rect.Inflate(1));
+        if (bounds.IsEmpty) return;
+        var x0 = Math.Max(0, (int)MathF.Floor(bounds.Left));
+        var y0 = Math.Max(0, (int)MathF.Floor(bounds.Top));
+        var x1 = Math.Min(target.Width, (int)MathF.Ceiling(bounds.Right));
+        var y1 = Math.Min(target.Height, (int)MathF.Ceiling(bounds.Bottom));
+        if (x1 <= x0 || y1 <= y0) return;
+
+        var inv = inverse.Value;
+        var tint = command.Paint.Color;
+
+        for (var py = y0; py < y1; py++)
+        {
+            for (var px = x0; px < x1; px++)
+            {
+                var device = new Point(px + 0.5f, py + 0.5f);
+                var local = inv.Transform(device);
+
+                var u = (local.X - rect.X) / rect.Width;
+                var v = (local.Y - rect.Y) / rect.Height;
+                if (u < 0 || u >= 1 || v < 0 || v >= 1) continue;
+
+                var tx = Math.Min(texture.Width - 1, (int)(u * texture.Width));
+                var ty = Math.Min(texture.Height - 1, (int)(v * texture.Height));
+                var coverage = texture.Alpha[ty * texture.Width + tx] / 255f;
+                if (coverage <= 0) continue;
+
+                if (command.Clip is { } clip)
+                {
+                    var clipDistance = Sdf.RoundedRect(
+                        device - clip.Rect.Center,
+                        new Size(clip.Rect.Width / 2, clip.Rect.Height / 2),
+                        clip.Radii);
+                    coverage *= Sdf.Coverage(clipDistance);
+                    if (coverage <= 0) continue;
+                }
+
+                target.BlendOver(px, py, ColorSpace.ToPremultipliedLinear(tint, coverage));
             }
         }
     }

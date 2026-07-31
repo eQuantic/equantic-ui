@@ -154,6 +154,9 @@ public sealed class MetalBackend : IRenderBackend
         {
             ref readonly var command = ref commands[i];
             if (command.Kind == DrawCommandKind.Clear) continue; // leading clears only (spike fence)
+            // W4b fence: the textured pipeline (Slang round-trip) hasn't landed — skip, never
+            // draw a solid block where text should be. The Reference backend is normative.
+            if (command.Kind == DrawCommandKind.Texture) continue;
             if (command.Kind == DrawCommandKind.BeginLayer)
             {
                 (layerStack ??= new()).Push(layerAlpha);

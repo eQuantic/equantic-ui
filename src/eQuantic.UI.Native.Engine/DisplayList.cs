@@ -23,6 +23,11 @@ public enum DrawCommandKind : byte
 
     /// <summary>Composite the current layer onto the surface below at its alpha.</summary>
     EndLayer = 5,
+
+    /// <summary>W4: fill <see cref="DrawCommand.Shape"/>'s rect sampling the A8 texture
+    /// (<see cref="DrawCommand.TextureId"/>) as coverage, tinted by the paint color — text
+    /// blocks and (later) images. Nearest sampling: rasters are generated at device scale.</summary>
+    Texture = 6,
 }
 
 /// <summary>
@@ -30,6 +35,25 @@ public enum DrawCommandKind : byte
 /// maps local → device (baked by the builder from its transform stack, so rasterizers never track
 /// state). Radii are pre-normalized by the builder.
 /// </summary>
+/// <summary>
+/// An A8 coverage bitmap a draw command samples (W4 text: one raster per Text block, tinted by the
+/// command's paint). Referenced by index into the display list's texture table; equality is
+/// IDENTITY (the caches reuse instances), never a byte compare.
+/// </summary>
+public sealed class TextureData
+{
+    public TextureData(int width, int height, byte[] alpha)
+    {
+        Width = width;
+        Height = height;
+        Alpha = alpha;
+    }
+
+    public int Width { get; }
+    public int Height { get; }
+    public byte[] Alpha { get; }
+}
+
 public readonly record struct DrawCommand
 {
     public DrawCommandKind Kind { get; init; }
@@ -37,6 +61,10 @@ public readonly record struct DrawCommand
     public Paint Paint { get; init; }
     public float StrokeWidth { get; init; }
     public Matrix2D Transform { get; init; }
+
+    /// <summary>Index into <see cref="DisplayList.Textures"/> for <see cref="DrawCommandKind.Texture"/>;
+    /// -1 otherwise.</summary>
+    public int TextureId { get; init; }
 
     /// <summary>DEVICE-space rounded-rect clip baked by the builder (like the transform), or null =
     /// unclipped. Rasterizers multiply pixel coverage by the clip's SDF coverage — anti-aliased clip
@@ -50,12 +78,21 @@ public readonly record struct DrawCommand
 /// </summary>
 public sealed class DisplayList
 {
+    private static readonly TextureData[] NoTextures = Array.Empty<TextureData>();
     private readonly DrawCommand[] _commands;
+    private readonly TextureData[] _textures;
 
-    internal DisplayList(DrawCommand[] commands) => _commands = commands;
+    internal DisplayList(DrawCommand[] commands, TextureData[]? textures = null)
+    {
+        _commands = commands;
+        _textures = textures ?? NoTextures;
+    }
 
     public ReadOnlySpan<DrawCommand> Commands => _commands;
     public int Count => _commands.Length;
+
+    /// <summary>The frame's texture table (<see cref="DrawCommand.TextureId"/> indexes here).</summary>
+    public IReadOnlyList<TextureData> Textures => _textures;
 }
 
 /// <summary>
@@ -74,6 +111,30 @@ public sealed class DisplayListBuilder
         _commands.Add(new DrawCommand { Kind = DrawCommandKind.Clear, Paint = Paint.Solid(color) });
 
     public void FillRect(Rect rect, in Paint paint) => FillRRect(new RRect(rect), paint);
+
+    private readonly List<TextureData> _textures = new();
+
+    /// <summary>Registers a texture for this frame's list and returns its id (identity dedupe —
+    /// the text cache hands the SAME instance every frame, so each raster uploads/registers once).</summary>
+    public int RegisterTexture(TextureData texture)
+    {
+        for (var i = 0; i < _textures.Count; i++)
+            if (ReferenceEquals(_textures[i], texture)) return i;
+        _textures.Add(texture);
+        return _textures.Count - 1;
+    }
+
+    /// <summary>W4: draw <paramref name="texture"/> into <paramref name="rect"/> tinted by
+    /// <paramref name="tint"/> (the A8 raster is pure coverage; color lives here).</summary>
+    public void Texture(in Rect rect, Color tint, TextureData texture) => _commands.Add(new DrawCommand
+    {
+        Kind = DrawCommandKind.Texture,
+        Shape = new RRect(rect, default),
+        Paint = Paint.Solid(tint),
+        TextureId = RegisterTexture(texture),
+        Transform = _current,
+        Clip = _clip,
+    });
 
     public void FillRRect(in RRect shape, in Paint paint) => _commands.Add(new DrawCommand
     {
@@ -220,6 +281,6 @@ public sealed class DisplayListBuilder
             throw new InvalidOperationException($"Unbalanced clip stack: {_clipStack.Count} unpopped PushClip call(s).");
         if (_openLayers != 0)
             throw new InvalidOperationException($"Unbalanced layer stack: {_openLayers} unpopped PushLayer call(s).");
-        return new DisplayList(_commands.ToArray());
+        return new DisplayList(_commands.ToArray(), _textures.Count > 0 ? _textures.ToArray() : null);
     }
 }
