@@ -1,75 +1,28 @@
 using eQuantic.UI.Core;
+using eQuantic.UI.Primitives;
+using eQuantic.UI.Web;
+using StatelessComponent = eQuantic.UI.Core.StatelessComponent;
 
 namespace DefaultUIDashboard.Components;
 
 /// <summary>
-/// The demo's PERSISTENT shell: a slim top nav of plain anchors (SPA links the router intercepts)
-/// over the page body. Core-authored with <see cref="DynamicElement"/> — no component library, no
-/// stylesheet dependency (inline styles read the UseTheme token variables, so the chrome follows
-/// the selected theme). Every page renders the same shell shape, which is what lets the
-/// reconcile-on-navigate keep its DOM (and scroll) across page swaps.
+/// The demo's PERSISTENT shell: a WRITE-ONCE nav bar (real <see cref="Link"/> nodes — SSR-crawlable
+/// anchors the SPA router intercepts; the SAME bar would rasterize on Photon with taps routed
+/// through the host's navigation seam) over the page body. Every page renders the same shell shape,
+/// which is what lets reconcile-on-navigate keep the bar's DOM across page swaps. The body wrapper
+/// is the one CORE-level structural element (<see cref="DynamicElement"/> — the escape hatch), since
+/// it hosts arbitrary IComponent children.
 /// </summary>
 public class SampleShell : StatelessComponent
 {
     public string ActivePath { get; set; } = "/";
     public List<IComponent> Children { get; } = new();
 
-    private sealed record NavLink(string Href, string Label);
-
-    private static readonly List<NavLink> Nav =
-    [
-        new NavLink("/", "Showroom"),
-        new NavLink("/shared", "Components"),
-        new NavLink("/counter", "Counter"),
-        new NavLink("/users", "Users"),
-        new NavLink("/admin", "Admin"),
-    ];
-
     public override IComponent Build(RenderContext context)
     {
-        var bar = new DynamicElement
-        {
-            TagName = "nav",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["style"] = "display:flex;align-items:center;gap:4px;padding:10px 16px;" +
-                            "border-bottom:1px solid var(--eq-color-border);" +
-                            "background:var(--eq-color-surface);position:sticky;top:0;z-index:50;",
-            },
-        };
-
-        var brand = new DynamicElement
-        {
-            TagName = "a",
-            InnerText = "eQuantic.UI",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["href"] = "/",
-                ["style"] = "font-weight:800;margin-right:12px;text-decoration:none;color:var(--eq-color-text-primary);",
-            },
-        };
-        bar.Children.Add(brand);
-
-        foreach (var link in Nav)
-        {
-            var active = link.Href == ActivePath;
-            bar.Children.Add(new DynamicElement
-            {
-                TagName = "a",
-                InnerText = link.Label,
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["href"] = link.Href,
-                    ["style"] = "padding:6px 12px;border-radius:999px;text-decoration:none;font-size:14px;" +
-                                (active
-                                    ? "background:var(--eq-color-primary-subtle);color:var(--eq-color-primary-on-subtle);font-weight:600;"
-                                    : "color:var(--eq-color-text-secondary);"),
-                },
-            });
-        }
-
         var root = new DynamicElement { TagName = "div" };
-        root.Children.Add(bar);
+        root.Children.Add(new VisualNodeComponent(new ShellBar { ActivePath = ActivePath }));
+
         var body = new DynamicElement
         {
             TagName = "main",
@@ -81,5 +34,52 @@ public class SampleShell : StatelessComponent
         foreach (var child in Children) body.Children.Add(child);
         root.Children.Add(body);
         return root;
+    }
+}
+
+/// <summary>The write-once nav bar: brand + pill links, colors and shape from the ACTIVE theme.</summary>
+public class ShellBar : eQuantic.UI.Primitives.StatelessComponent
+{
+    private sealed record NavEntry(string Href, string Label);
+
+    private static readonly List<NavEntry> Nav =
+    [
+        new NavEntry("/", "Showroom"),
+        new NavEntry("/shared", "Components"),
+        new NavEntry("/counter", "Counter"),
+        new NavEntry("/users", "Users"),
+        new NavEntry("/admin", "Admin"),
+    ];
+
+    public string ActivePath { get; init; } = "/";
+
+    public override VisualNode Build(ComponentContext context)
+    {
+        var theme = context.Theme;
+        var bar = new Row(gap: Space.S1)
+        {
+            Cross = CrossAlign.Center,
+            Width = SizeValue.Fill,
+            Padding = EdgeInsets.Symmetric(Space.S4, Space.S2),
+            Background = theme.Surface,
+        };
+
+        bar.Add(new Link("/", new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(Space.S2, Space.S1) },
+            new Text("eQuantic.UI", TypeRole.Label))));
+
+        foreach (var entry in Nav)
+        {
+            var active = entry.Href == ActivePath;
+            var pill = new Box(new BoxStyle
+            {
+                Padding = EdgeInsets.Symmetric(Space.S3, 6),
+                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+                Background = active ? theme.Colors(Variant.Primary).Subtle : null,
+            }, new Text(entry.Label, TypeRole.Caption,
+                active ? theme.Colors(Variant.Primary).OnSubtle : theme.TextSecondary));
+            bar.Add(new Link(entry.Href, pill));
+        }
+
+        return bar;
     }
 }

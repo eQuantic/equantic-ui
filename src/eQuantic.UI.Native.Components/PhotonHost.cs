@@ -49,6 +49,11 @@ public sealed class PhotonHost
     /// rest and stops requesting frames. Platform shells (W5) feed the real setting.</summary>
     public bool ReducedMotion { get; set; }
 
+    /// <summary>The NAVIGATION seam (write-once Link): a tap no pressable claims, landing on a link
+    /// region, reports the href here — the platform shell maps it to a page (the native router's
+    /// future home). Null = links are inert (visuals only).</summary>
+    public Action<string>? NavigationRequested { get; set; }
+
     /// <summary>
     /// Builds one frame: clears to the theme background, then lays out and lowers the root via
     /// <see cref="PhotonRealizer"/>. <paramref name="timeMs"/> is the frame clock loop motion samples
@@ -272,7 +277,7 @@ public sealed class PhotonHost
         _drag = null;
 
         var pressed = _pressed;
-        if (pressed is null) return false;
+        if (pressed is null) return ResolveLink(x, y);
         _pressed = null;
         NeedsRender = true;
 
@@ -285,6 +290,22 @@ public sealed class PhotonHost
             if (!ReferenceEquals(region.Node, pressed)) continue;
             if (!region.Bounds.Contains(point)) return false; // canceled by releasing outside
             pressed.OnPressed?.Invoke();
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>A tap that no pressable claimed: the TOPMOST link region under the point navigates
+    /// through the host's seam (a Pressable INSIDE a link wins — checked before this).</summary>
+    private bool ResolveLink(float x, float y)
+    {
+        var regions = _lastFrame?.LinkRegions;
+        if (regions is null || NavigationRequested is null) return false;
+        var point = new Point(x, y);
+        for (var i = regions.Count - 1; i >= 0; i--)
+        {
+            if (!regions[i].Bounds.Contains(point)) continue;
+            NavigationRequested(regions[i].Node.Href);
             return true;
         }
         return false;

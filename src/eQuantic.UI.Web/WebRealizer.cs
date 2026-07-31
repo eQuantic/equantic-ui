@@ -57,6 +57,7 @@ public static class WebRealizer
         Spinner spinner => LowerSpinner(spinner, context),
         Primitives.Image image => LowerImage(image),
         Pressable pressable => LowerPressable(pressable, context),
+        Link link => LowerLink(link, context),
         LoopMotion motion => LowerLoopMotion(motion, context),
         Presence presence => LowerPresence(presence, context, horizontalAxis),
         DragDismiss drag => LowerDragDismiss(drag, context, horizontalAxis),
@@ -669,6 +670,30 @@ public static class WebRealizer
         }
 
         if (LowerNode(pressable.Child, context, horizontalAxis: null) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
+    /// Navigation semantics: a REAL <c>&lt;a href&gt;</c> (SSR-crawlable, router-intercepted) whose
+    /// UA chrome is neutralized — the child owns all visuals, exactly the Pressable contract. A Fill
+    /// child gets the 100% pass-through chain the same way.
+    /// </summary>
+    private static HtmlElement LowerLink(Link link, ComponentContext context)
+    {
+        var fills = Fills(link.Child);
+        var element = new RealizedElement("a")
+        {
+            ClassName = "eq-link",
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : null,
+                Height = fills.Height ? "100%" : null,
+            },
+            AriaLabel = link.Label,
+            RawAttributes = new Dictionary<string, string> { ["href"] = link.Href },
+        };
+        if (LowerNode(link.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;
     }

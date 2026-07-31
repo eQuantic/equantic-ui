@@ -194,6 +194,10 @@ public static class PhotonCssGenerator
         css.AppendLine(".eq-overlay-passthrough { pointer-events: none; }");
         css.AppendLine(".eq-overlay-passthrough .eq-pressable { pointer-events: auto; }");
 
+        // Link mechanics: the anchor is pure semantics — the child owns every visual (the Pressable
+        // contract). display:block keeps flex/stack sizing natural.
+        css.AppendLine(".eq-link { display: block; text-decoration: none; color: inherit; }");
+
         // Enter motion (spec §06 — Presence): a mount-playing animation on the subtree's own root
         // element (no wrapper — the class rides the lowered child, so flex/stack layout is
         // untouched). Reduce Motion replaces movement with the spec's short crossfade.

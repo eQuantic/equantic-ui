@@ -47,24 +47,16 @@ public class Users : StatelessComponent
             row.Add(new Flexible(text));
             row.Add(new Text($"#{p.Id} →", TypeRole.Caption));
 
-            var anchor = new DynamicElement
-            {
-                TagName = "a",
-                CustomAttributes = new Dictionary<string, string>
-                {
-                    ["href"] = $"/users/{p.Id}",
-                    ["style"] = "display:block;text-decoration:none;color:inherit;margin-top:12px;",
-                },
-            };
-            anchor.Children.Add(new VisualNodeComponent(
-                new Card(row, CardKind.Outlined) { Width = SizeValue.Fill }));
-            shell.Children.Add(anchor);
+            // A WRITE-ONCE link row: the Card is the child; the Link supplies the semantics.
+            var linked = new Column(gap: 0) { Padding = new EdgeInsets(0, Space.S3, 0, 0) };
+            linked.Add(new Link($"/users/{p.Id}", new Card(row, CardKind.Outlined) { Width = SizeValue.Fill }));
+            shell.Children.Add(new VisualNodeComponent(linked));
         }
 
         return shell;
     }
 
-    private string Initials(string name)
+    private static string Initials(string name)
     {
         var parts = name.Split(' ');
         return parts.Length > 1 ? $"{parts[0][0]}{parts[1][0]}" : name[..1];
@@ -86,25 +78,25 @@ public class UserDetail : StatelessComponent
         var id = context.Route.Param("id") ?? "?";
         var role = context.Route.Query("role") ?? "member";
 
-        var body = new Column(gap: Space.S3) { Cross = CrossAlign.Center, Padding = EdgeInsets.All(Space.S6) };
-        body.Add(new Avatar(id, SizeVariant.XLarge, name: $"User {id}"));
-        body.Add(new Text($"User #{id}", TypeRole.Title));
-        body.Add(new Text($"Route param id = {id} · query role = {role}", TypeRole.Caption));
-
-        var back = new DynamicElement
-        {
-            TagName = "a",
-            InnerText = "← Back to users",
-            CustomAttributes = new Dictionary<string, string>
-            {
-                ["href"] = "/users",
-                ["style"] = "display:inline-block;margin-top:16px;color:var(--eq-color-link);",
-            },
-        };
-
         var shell = new SampleShell { ActivePath = "/users" };
-        shell.Children.Add(new VisualNodeComponent(new Card(body, CardKind.Outlined) { Width = SizeValue.Fill }));
-        shell.Children.Add(back);
+        shell.Children.Add(new VisualNodeComponent(new UserDetailView { Id = id, Role = role }));
         return shell;
+    }
+}
+
+/// <summary>The detail body as a WRITE-ONCE component — theme-aware (link color from the contract).</summary>
+public class UserDetailView : eQuantic.UI.Primitives.StatelessComponent
+{
+    public string Id { get; init; } = "?";
+    public string Role { get; init; } = "member";
+
+    public override VisualNode Build(ComponentContext context)
+    {
+        var body = new Column(gap: Space.S3) { Cross = CrossAlign.Center, Padding = EdgeInsets.All(Space.S6) };
+        body.Add(new Avatar(Id, SizeVariant.XLarge, name: $"User {Id}"));
+        body.Add(new Text($"User #{Id}", TypeRole.Title));
+        body.Add(new Text($"Route param id = {Id} · query role = {Role}", TypeRole.Caption));
+        body.Add(new Link("/users", new Text("← Back to users", TypeRole.Label, context.Theme.LinkColor)));
+        return new Card(body, CardKind.Outlined) { Width = SizeValue.Fill };
     }
 }

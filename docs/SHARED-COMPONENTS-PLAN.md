@@ -541,6 +541,20 @@ rejected.)
    follow → glide-back → dismiss → exit → self-clean). The showcase gained the Share sheet. v1
    fences: detents (partial heights), flick-velocity dismissal, horizontal axis, nested-scroll
    interplay.
+   LINK NODE ✅ (2026-07-30 — navigation joins the vocabulary): `Link(href, child) { Label }` — the
+   child owns ALL visuals (the Pressable contract); Link adds semantics + interaction. WEB: a REAL
+   `<a href>` (SSR-crawlable; the SPA router intercepts internal clicks, so guards/prefetch apply
+   for free), UA chrome neutralized by the generated `.eq-link`, Fill children get the 100%
+   pass-through chain. NATIVE: layout-transparent wrapper, LinkRegions in paint order, and the
+   HOST's navigation seam — `PhotonHost.NavigationRequested` (the platform shell maps hrefs to
+   pages; the native router's future home). A Pressable INSIDE a link wins the tap (anchor
+   semantics, tested). The sample sheds its DynamicElement anchors: ShellBar/UserDetailView/
+   AdminView/LoginView are write-once components (theme-aware pills, CTA with Box chrome) — the
+   escape hatch remains only as the Core-level structural wrapper. Proven: 4 native tests + 3 web
+   realizer tests + 2 vitest specs + the five live browser flows re-run green through write-once
+   links. NOTE: conformance red at this commit is the PARALLEL in-flight compiler work (record
+   `declare` emission), not this slice.
+
    LEGACY EXCISION ✅ (2026-07-30 — Edgar's directive: ZERO legacy running in parallel): the entire
    legacy web world is DELETED. Gone: `eQuantic.UI.Web.Components` (93 files — the parallel component
    library), `Core/Theme` (~50 files: the legacy IAppTheme + per-component theme interfaces +

@@ -315,6 +315,21 @@ export class Presence extends VisualNode {
   }
 }
 
+/** Navigation semantics: the child becomes a link to href — the child owns all visuals. */
+export class Link extends VisualNode {
+  readonly nodeKind = 'link';
+  href: string;
+  child: VisualNode;
+  label: string | null = null;
+
+  constructor(href: string, child: VisualNode, config?: { label?: string | null }) {
+    super();
+    this.href = href;
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Gestures v2: vertical drag-to-dismiss (the sheet contract) — release past the threshold fires
  * onDismiss; short of it, the pointer-capture controller glides the subtree back. */
 export class DragDismiss extends VisualNode {
