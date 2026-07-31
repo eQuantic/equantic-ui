@@ -83,20 +83,3 @@ public class UserDetail : StatelessComponent
         return shell;
     }
 }
-
-/// <summary>The detail body as a WRITE-ONCE component — theme-aware (link color from the contract).</summary>
-public class UserDetailView : eQuantic.UI.Primitives.StatelessComponent
-{
-    public string Id { get; init; } = "?";
-    public string Role { get; init; } = "member";
-
-    public override VisualNode Build(ComponentContext context)
-    {
-        var body = new Column(gap: Space.S3) { Cross = CrossAlign.Center, Padding = EdgeInsets.All(Space.S6) };
-        body.Add(new Avatar(Id, SizeVariant.XLarge, name: $"User {Id}"));
-        body.Add(new Text($"User #{Id}", TypeRole.Title));
-        body.Add(new Text($"Route param id = {Id} · query role = {Role}", TypeRole.Caption));
-        body.Add(new Link("/users", new Text("← Back to users", TypeRole.Label, context.Theme.LinkColor)));
-        return new Card(body, CardKind.Outlined) { Width = SizeValue.Fill };
-    }
-}
