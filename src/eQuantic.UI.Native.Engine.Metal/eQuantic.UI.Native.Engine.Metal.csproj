@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>eQuantic.UI.Native.Engine.Metal</PackageId>
-    <Description>Photon Metal backend (M0 spike) — renders display lists on Apple GPUs via direct Objective-C interop, offscreen. Shaders are runtime-compiled MSL transliterating the engine's normative SDF math; the production path (offline Slang → metallib, plan D3) replaces that once the toolchain lands.</Description>
+    <Description>Photon Metal backend — the Metal implementation of the engine's RHI (IRhiDevice/IRhiCommandList), driven by the shared RhiRenderer encode loop. Direct Objective-C interop, offline-precompiled shaders (Slang → metallib, plan D3), fixed pipeline registry (plan D5).</Description>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible>true</IsAotCompatible>
     <InvariantGlobalization>true</InvariantGlobalization>

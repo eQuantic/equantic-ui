@@ -12,8 +12,10 @@ public enum RenderBackendKind : byte
 /// <summary>
 /// The engine-facing seam a rendering backend implements: create surfaces, render display lists into
 /// them. This is deliberately the COARSE contract — the fine-grained RHI underneath the GPU backends
-/// (IDevice/ICommandList/IPipeline/IBuffer/ITexture, plan W1) is introduced WITH the first Metal
-/// implementation so its abstractions are shaped by real GPU code rather than invented ahead of it.
+/// (plan W1) lives in <c>Rhi.cs</c> (<see cref="IRhiDevice"/>/<see cref="IRhiCommandList"/>/…,
+/// extracted 2026-07 from the proven Metal spike shape); GPU backends implement it and adapt to this
+/// seam through <see cref="RhiSurface"/> + <see cref="RhiRenderer"/>. The Reference backend stays a
+/// direct implementation — a CPU rasterizer has no device to abstract.
 /// </summary>
 public interface IRenderBackend : IDisposable
 {

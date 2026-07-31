@@ -1,34 +1,18 @@
-using System.Runtime.InteropServices;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Native.Engine.Metal;
 
 /// <summary>
-/// The Photon Metal backend (M0 spike): renders display lists into offscreen
-/// <c>RGBA8Unorm_sRGB</c> textures on the system GPU. One render pass per frame, one pipeline built
-/// once at device init (runtime-compiled MSL for the spike — the offline Slang toolchain replaces
-/// that, plan D3), one fullscreen-triangle draw per command with the SDF evaluated in the fragment —
-/// the same sampling model as the Reference backend, so the two are pixel-comparable.
+/// The Photon Metal backend: the coarse <see cref="IRenderBackend"/> adapter over
+/// <see cref="MetalDevice"/> (the Metal RHI implementation) and the SHARED
+/// <see cref="RhiRenderer"/> encode loop — the same loop the Vulkan backend runs, so the two GPU
+/// backends can only differ in API calls, never in frame semantics. Shaders come precompiled
+/// (offline metallib, plan D3); pipelines are the fixed registry (plan D5).
 /// </summary>
 public sealed class MetalBackend : IRenderBackend
 {
-    private const ulong PixelFormatRgba8UnormSrgb = 71; // MTLPixelFormatRGBA8Unorm_sRGB
-    private const ulong LoadActionClear = 2;
-    private const ulong StoreActionStore = 1;
-    private const ulong PrimitiveTypeTriangle = 3;
-    private const ulong TextureUsageRenderTarget = 0x04;
-    private const ulong StorageModeShared = 0;
-
-    private readonly IntPtr _device;
-    private readonly IntPtr _queue;
-    private readonly IntPtr _pipeline;
-    private readonly IntPtr _vertexFn;
-    private readonly IntPtr _fragmentFn;
-    private readonly IntPtr _texturedFn;
-    private readonly IntPtr _texturedRgbaFn;
-    private readonly Dictionary<(ulong Format, byte Kind), IntPtr> _pipelines = new();
-    private readonly Dictionary<TextureData, IntPtr> _textures = new();
-    private IntPtr _dummyTexture;
+    private readonly MetalDevice _device;
+    private readonly RhiRenderer _renderer;
 
     /// <summary>True when a Metal device exists (Apple hardware; CI without GPU skips).</summary>
     public static bool IsSupported =>
@@ -36,337 +20,41 @@ public sealed class MetalBackend : IRenderBackend
 
     public MetalBackend()
     {
-        if (!OperatingSystem.IsMacOS())
-            throw new PlatformNotSupportedException("The Metal backend requires macOS/Apple hardware.");
-
-        _device = ObjC.MTLCreateSystemDefaultDevice();
-        if (_device == IntPtr.Zero)
-            throw new PlatformNotSupportedException("No Metal device available.");
-
-        _queue = ObjC.Send(_device, Sel("newCommandQueue"));
-
-        // D3: the PRECOMPILED metallib loads first — zero runtime shader compilation (the
-        // engine's founding thesis). The MSL source path stays as the dev fallback (a fresh
-        // Slang regen without the Metal Toolchain still runs).
-        var library = TryLoadPrecompiledLibrary();
-        if (library == IntPtr.Zero)
-        {
-            library = ObjC.Send(_device, Sel("newLibraryWithSource:options:error:"),
-                ObjC.NSString(MetalShaders.Source), IntPtr.Zero, out var libraryError);
-            if (library == IntPtr.Zero)
-                throw new InvalidOperationException(
-                    $"MSL compilation failed: {DescribeError(libraryError)}");
-        }
-
-        _vertexFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("fullscreen_vertex"));
-        _fragmentFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("sdf_fragment"));
-        _texturedFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("textured_fragment"));
-        _texturedRgbaFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("textured_rgba_fragment"));
-        _pipeline = PipelineFor(PixelFormatRgba8UnormSrgb);
-    }
-
-    /// <summary>MTLPixelFormatBGRA8Unorm_sRGB — the CAMetalLayer window format (shell path).</summary>
-    public const ulong PixelFormatBgra8UnormSrgb = 81;
-
-    private const ulong PixelFormatR8Unorm = 10;
-
-    /// <summary>Uploads (and caches by IDENTITY — the raster caches reuse instances) an A8
-    /// coverage raster as an R8 texture. Per-process lifetime (the documented spike leak fence).</summary>
-    private IntPtr TextureFor(TextureData data)
-    {
-        if (_textures.TryGetValue(data, out var cached)) return cached;
-        var rgba = data.Format == TextureFormat.Rgba8;
-        var descriptor = ObjC.Send(ObjC.objc_getClass("MTLTextureDescriptor"),
-            Sel("texture2DDescriptorWithPixelFormat:width:height:mipmapped:"),
-            rgba ? PixelFormatRgba8UnormSrgb : PixelFormatR8Unorm, (ulong)data.Width, (ulong)data.Height, false);
-        ObjC.SendVoid(descriptor, Sel("setStorageMode:"), StorageModeShared);
-        var texture = ObjC.Send(_device, Sel("newTextureWithDescriptor:"), descriptor);
-        if (texture == IntPtr.Zero) throw new InvalidOperationException("Metal texture creation failed.");
-        var bytesPerRow = (ulong)data.Width * (rgba ? 4ul : 1ul);
-        unsafe
-        {
-            fixed (byte* bytes = data.Alpha)
-            {
-                ObjC.SendVoid(texture, Sel("replaceRegion:mipmapLevel:withBytes:bytesPerRow:"),
-                    new MTLRegion { Width = (ulong)data.Width, Height = (ulong)data.Height, Depth = 1 },
-                    0, (IntPtr)bytes, bytesPerRow);
-            }
-        }
-        _textures[data] = texture;
-        return texture;
-    }
-
-    /// <summary>The slangc-generated entry points share ONE texture binding — a 1×1 dummy keeps
-    /// the SDF pipeline valid under strict API validation.</summary>
-    private IntPtr DummyTexture() => _dummyTexture != IntPtr.Zero
-        ? _dummyTexture
-        : _dummyTexture = TextureFor(new TextureData(1, 1, new byte[] { 0 }));
-
-    // Kind: 0 = SDF, 1 = A8 coverage texture, 2 = RGBA image texture.
-    private IntPtr PipelineFor(ulong pixelFormat, byte kind = 0)
-    {
-        if (_pipelines.TryGetValue((pixelFormat, kind), out var cached)) return cached;
-
-        var descriptor = ObjC.Send(ObjC.Send(ObjC.objc_getClass("MTLRenderPipelineDescriptor"), Sel("alloc")), Sel("init"));
-        ObjC.SendVoid(descriptor, Sel("setVertexFunction:"), _vertexFn);
-        ObjC.SendVoid(descriptor, Sel("setFragmentFunction:"), kind switch { 1 => _texturedFn, 2 => _texturedRgbaFn, _ => _fragmentFn });
-
-        var attachment = ObjC.Send(ObjC.Send(descriptor, Sel("colorAttachments")), Sel("objectAtIndexedSubscript:"), 0ul);
-        ObjC.SendVoid(attachment, Sel("setPixelFormat:"), pixelFormat);
-        ObjC.SendVoid(attachment, Sel("setBlendingEnabled:"), true);
-        // Premultiplied source-over: dst' = src + dst · (1 − src.A) — LinearColor.Over, in hardware.
-        const ulong factorOne = 1;                    // MTLBlendFactorOne
-        const ulong factorOneMinusSourceAlpha = 5;    // MTLBlendFactorOneMinusSourceAlpha
-        ObjC.SendVoid(attachment, Sel("setSourceRGBBlendFactor:"), factorOne);
-        ObjC.SendVoid(attachment, Sel("setSourceAlphaBlendFactor:"), factorOne);
-        ObjC.SendVoid(attachment, Sel("setDestinationRGBBlendFactor:"), factorOneMinusSourceAlpha);
-        ObjC.SendVoid(attachment, Sel("setDestinationAlphaBlendFactor:"), factorOneMinusSourceAlpha);
-
-        var pipeline = ObjC.Send(_device, Sel("newRenderPipelineStateWithDescriptor:error:"),
-            descriptor, out var pipelineError);
-        if (pipeline == IntPtr.Zero)
-            throw new InvalidOperationException(
-                $"Pipeline creation failed: {DescribeError(pipelineError)}");
-        _pipelines[(pixelFormat, kind)] = pipeline;
-        return pipeline;
+        _device = new MetalDevice();
+        _renderer = new RhiRenderer(_device);
     }
 
     public RenderBackendKind Kind => RenderBackendKind.Metal;
 
+    /// <summary>MTLPixelFormatBGRA8Unorm_sRGB — the CAMetalLayer window format (shell path).</summary>
+    public const ulong PixelFormatBgra8UnormSrgb = MetalDevice.PixelFormatBgra8UnormSrgb;
+
     /// <summary>The MTLDevice handle — the shell hands it to the window's CAMetalLayer.</summary>
-    public IntPtr DeviceHandle => _device;
+    public IntPtr DeviceHandle => _device.Handle;
 
-    public IRenderSurface CreateSurface(int width, int height)
-    {
-        var descriptor = ObjC.Send(ObjC.objc_getClass("MTLTextureDescriptor"),
-            Sel("texture2DDescriptorWithPixelFormat:width:height:mipmapped:"),
-            PixelFormatRgba8UnormSrgb, (ulong)width, (ulong)height, false);
-        ObjC.SendVoid(descriptor, Sel("setUsage:"), TextureUsageRenderTarget);
-        ObjC.SendVoid(descriptor, Sel("setStorageMode:"), StorageModeShared);
+    public IRenderSurface CreateSurface(int width, int height) =>
+        new RhiSurface(_device.CreateRenderTarget(width, height));
 
-        var texture = ObjC.Send(_device, Sel("newTextureWithDescriptor:"), descriptor);
-        if (texture == IntPtr.Zero) throw new InvalidOperationException("Metal texture creation failed.");
-        return new MetalSurface(texture, width, height);
-    }
-
-    public void Render(DisplayList displayList, IRenderSurface surface)
-    {
-        var target = (MetalSurface)surface;
-        RenderCore(displayList, target.Texture, PixelFormatRgba8UnormSrgb, IntPtr.Zero);
-    }
+    public void Render(DisplayList displayList, IRenderSurface surface) =>
+        _renderer.Render(displayList, ((RhiSurface)surface).Target);
 
     /// <summary>
     /// Shell path: encode the display list straight into a WINDOW drawable's texture and present
-    /// it on commit. The pipeline is resolved (and cached) for the layer's pixel format — the
-    /// shaders are format-agnostic; the write swizzle is the hardware's.
+    /// it on commit. Presents are ASYNCHRONOUS — the CAMetalLayer's drawable pool provides the
+    /// backpressure (nextDrawable blocks when the queue is full), so the CPU never stalls on the
+    /// GPU. Offscreen renders (goldens, parity readbacks) go through <see cref="Render"/> and
+    /// wait: the caller reads pixels right after.
     /// </summary>
     public void RenderToDrawable(DisplayList displayList, IntPtr drawableTexture, ulong pixelFormat, IntPtr drawable)
-        => RenderCore(displayList, drawableTexture, pixelFormat, drawable);
-
-    private void RenderCore(DisplayList displayList, IntPtr targetTexture, ulong pixelFormat, IntPtr presentDrawable)
     {
-        var pipeline = PipelineFor(pixelFormat);
-        var activeKind = (byte)0;
-
-        // The pass clears to the display list's leading Clear command (ours always start with one).
-        var clearColor = Color.Transparent;
-        var firstDraw = 0;
-        var commands = displayList.Commands;
-        if (commands.Length > 0 && commands[0].Kind == DrawCommandKind.Clear)
-        {
-            clearColor = commands[0].Paint.Color;
-            firstDraw = 1;
-        }
-
-        var passDescriptor = ObjC.Send(ObjC.objc_getClass("MTLRenderPassDescriptor"), Sel("renderPassDescriptor"));
-        var attachment = ObjC.Send(ObjC.Send(passDescriptor, Sel("colorAttachments")), Sel("objectAtIndexedSubscript:"), 0ul);
-        ObjC.SendVoid(attachment, Sel("setTexture:"), targetTexture);
-        ObjC.SendVoid(attachment, Sel("setLoadAction:"), LoadActionClear);
-        ObjC.SendVoid(attachment, Sel("setStoreAction:"), StoreActionStore);
-        // Clear colors are written pre-encoding (linear) — mirror ColorSpace.ToPremultipliedLinear.
-        var linear = ColorSpace.ToPremultipliedLinear(clearColor);
-        ObjC.SendVoid(attachment, Sel("setClearColor:"),
-            new MTLClearColor { Red = linear.R, Green = linear.G, Blue = linear.B, Alpha = linear.A });
-
-        var commandBuffer = ObjC.Send(_queue, Sel("commandBuffer"));
-        var encoder = ObjC.Send(commandBuffer, Sel("renderCommandEncoderWithDescriptor:"), passDescriptor);
-        ObjC.SendVoid(encoder, Sel("setRenderPipelineState:"), pipeline);
-        // The generated entry points share the texture bindings — keep both valid for every path.
-        ObjC.SendVoid(encoder, Sel("setFragmentTexture:atIndex:"), DummyTexture(), 0ul);
-        ObjC.SendVoid(encoder, Sel("setFragmentTexture:atIndex:"), DummyTexture(), 1ul);
-
-        // SPIKE FENCE: group-opacity layers approximate as per-command alpha (no offscreen pass in
-        // the M0 spike) — overlapping children inside a layer double-blend here; the reference
-        // backend is normative and the D3 pipeline brings the real offscreen composite.
-        var layerAlpha = 1f;
-        Stack<float>? layerStack = null;
-
-        for (var i = firstDraw; i < commands.Length; i++)
-        {
-            ref readonly var command = ref commands[i];
-            if (command.Kind == DrawCommandKind.Clear) continue; // leading clears only (spike fence)
-            // W4b: a Texture command switches to the textured pipeline (A8 coverage × tint,
-            // Load-based nearest — exact Reference parity), binds the uploaded raster, and reuses
-            // the SDF uniforms with the texture size riding the gradient slot.
-            if (command.Kind == DrawCommandKind.Texture)
-            {
-                if (command.TextureId < 0 || command.TextureId >= displayList.Textures.Count) continue;
-                var data = displayList.Textures[command.TextureId];
-                if (!TryBuildUniforms(in command, out var textured)) continue;
-                if (layerAlpha < 1f) textured.ColorA.W *= layerAlpha;
-                textured.Gradient = new Float4(data.Width, data.Height, 0, 0);
-                textured.Flags = new Float4(0, 0, command.Clip is null ? 0 : 1, 0);
-
-                var kind = data.Format == TextureFormat.Rgba8 ? (byte)2 : (byte)1;
-                if (activeKind != kind)
-                {
-                    ObjC.SendVoid(encoder, Sel("setRenderPipelineState:"), PipelineFor(pixelFormat, kind));
-                    activeKind = kind;
-                }
-                ObjC.SendVoid(encoder, Sel("setFragmentTexture:atIndex:"), TextureFor(data), kind == 2 ? 1ul : 0ul);
-                unsafe
-                {
-                    ObjC.SendVoid(encoder, Sel("setFragmentBytes:length:atIndex:"),
-                        (IntPtr)(&textured), (ulong)sizeof(DrawUniforms), 0);
-                }
-                ObjC.SendVoid(encoder, Sel("drawPrimitives:vertexStart:vertexCount:"), PrimitiveTypeTriangle, 0, 3);
-                continue;
-            }
-            if (activeKind != 0)
-            {
-                ObjC.SendVoid(encoder, Sel("setRenderPipelineState:"), pipeline);
-                activeKind = 0;
-            }
-            if (command.Kind == DrawCommandKind.BeginLayer)
-            {
-                (layerStack ??= new()).Push(layerAlpha);
-                layerAlpha *= command.StrokeWidth;
-                continue;
-            }
-            if (command.Kind == DrawCommandKind.EndLayer)
-            {
-                layerAlpha = layerStack!.Pop();
-                continue;
-            }
-            if (!TryBuildUniforms(in command, out var uniforms)) continue;
-            if (layerAlpha < 1f)
-            {
-                uniforms.ColorA.W *= layerAlpha;
-                uniforms.ColorB.W *= layerAlpha;
-            }
-
-            unsafe
-            {
-                ObjC.SendVoid(encoder, Sel("setFragmentBytes:length:atIndex:"),
-                    (IntPtr)(&uniforms), (ulong)sizeof(DrawUniforms), 0);
-            }
-            ObjC.SendVoid(encoder, Sel("drawPrimitives:vertexStart:vertexCount:"), PrimitiveTypeTriangle, 0, 3);
-        }
-
-        ObjC.SendVoid(encoder, Sel("endEncoding"));
-        if (presentDrawable != IntPtr.Zero)
-            ObjC.SendVoid(commandBuffer, Sel("presentDrawable:"), presentDrawable);
-        ObjC.SendVoid(commandBuffer, Sel("commit"));
-        // WINDOW frames present asynchronously — the CAMetalLayer's drawable pool provides the
-        // backpressure (nextDrawable blocks when the queue is full), so the CPU never stalls on
-        // the GPU. Offscreen renders (goldens, parity readbacks) still wait: the caller reads
-        // pixels right after.
-        if (presentDrawable == IntPtr.Zero)
-            ObjC.SendVoid(commandBuffer, Sel("waitUntilCompleted"));
-    }
-
-    private static bool TryBuildUniforms(in DrawCommand command, out DrawUniforms uniforms)
-    {
-        uniforms = default;
-        var inverse = command.Transform.Invert();
-        if (inverse is null) return false;
-        var inv = inverse.Value;
-        var scale = command.Transform.AverageScale();
-        if (scale <= 0) return false;
-
-        var shape = command.Shape;
-        var paint = command.Paint;
-
-        uniforms.Inv0 = new Float4(inv.M11, inv.M21, inv.M31, scale);
-        uniforms.Inv1 = new Float4(inv.M12, inv.M22, inv.M32, command.StrokeWidth);
-        uniforms.Rect = new Float4(shape.Rect.Center.X, shape.Rect.Center.Y, shape.Rect.Width / 2, shape.Rect.Height / 2);
-        uniforms.Radii = new Float4(shape.Radii.TopLeft, shape.Radii.TopRight, shape.Radii.BottomRight, shape.Radii.BottomLeft);
-        uniforms.ColorA = ToFloat4(paint.Color);
-        uniforms.ColorB = ToFloat4(paint.EndColor);
-        uniforms.Gradient = new Float4(paint.GradientStart.X, paint.GradientStart.Y, paint.GradientEnd.X, paint.GradientEnd.Y);
-        uniforms.Flags = new Float4(
-            command.Kind switch { DrawCommandKind.StrokeRRect => 1, DrawCommandKind.ShadowRRect => 2, _ => 0 },
-            paint.Kind == PaintKind.LinearGradient ? 1 : 0,
-            command.Clip is null ? 0 : 1, 0);
-        if (command.Clip is { } clip)
-        {
-            uniforms.ClipRect = new Float4(clip.Rect.Center.X, clip.Rect.Center.Y, clip.Rect.Width / 2, clip.Rect.Height / 2);
-            uniforms.ClipRadii = new Float4(clip.Radii.TopLeft, clip.Radii.TopRight, clip.Radii.BottomRight, clip.Radii.BottomLeft);
-        }
-        return true;
-    }
-
-    private static Float4 ToFloat4(Color color) =>
-        new(color.R / 255f, color.G / 255f, color.B / 255f, color.A / 255f);
-
-    /// <summary>Loads the embedded offline-compiled metallib (dispatch_data with the DEFAULT
-    /// destructor — libdispatch copies the buffer). Zero = fall back to source compilation.</summary>
-    private IntPtr TryLoadPrecompiledLibrary()
-    {
-        using var stream = typeof(MetalBackend).Assembly.GetManifestResourceStream("Photon.Sdf.metallib");
-        if (stream is null) return IntPtr.Zero;
-        var bytes = new byte[stream.Length];
-        stream.ReadExactly(bytes);
-        unsafe
-        {
-            fixed (byte* buffer = bytes)
-            {
-                var data = ObjC.dispatch_data_create((IntPtr)buffer, (nuint)bytes.Length, IntPtr.Zero, IntPtr.Zero);
-                if (data == IntPtr.Zero) return IntPtr.Zero;
-                return ObjC.Send(_device, Sel("newLibraryWithData:error:"), data, out _);
-            }
-        }
-    }
-
-    private static IntPtr Sel(string name) => ObjC.sel_registerName(name);
-
-    private static string DescribeError(IntPtr nsError)
-    {
-        if (nsError == IntPtr.Zero) return "(no NSError)";
-        var description = ObjC.Send(nsError, ObjC.sel_registerName("localizedDescription"));
-        return ObjC.NSStringToManaged(description) ?? "(unreadable NSError)";
+        var commands = _device.BeginDrawable(drawableTexture, pixelFormat, drawable, RhiRenderer.ClearColorOf(displayList));
+        _renderer.Encode(displayList, commands);
+        commands.Submit(waitUntilCompleted: false);
     }
 
     public void Dispose()
     {
-        // Spike: ObjC objects leak-per-process (no autorelease pool management yet) — the binding
-        // layer decision (open question 2) owns lifetime handling for the real backend.
+        _renderer.Dispose();
+        _device.Dispose();
     }
-}
-
-[StructLayout(LayoutKind.Sequential)]
-internal struct Float4
-{
-    public float X, Y, Z, W;
-
-    public Float4(float x, float y, float z, float w)
-    {
-        X = x; Y = y; Z = z; W = w;
-    }
-}
-
-/// <summary>Matches the MSL <c>DrawUniforms</c> layout (ten float4s, 160 bytes).</summary>
-[StructLayout(LayoutKind.Sequential)]
-internal struct DrawUniforms
-{
-    public Float4 Inv0;
-    public Float4 Inv1;
-    public Float4 Rect;
-    public Float4 Radii;
-    public Float4 ColorA;
-    public Float4 ColorB;
-    public Float4 Gradient;
-    public Float4 Flags;
-    public Float4 ClipRect;
-    public Float4 ClipRadii;
 }
