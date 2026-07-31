@@ -301,6 +301,33 @@ public sealed class Presence : VisualNode
 }
 
 /// <summary>
+/// Gestures v2 — VERTICAL drag-to-dismiss (the sheet contract): the child follows a downward drag
+/// (paint-only translate — layout untouched); releasing past <see cref="ThresholdDp"/> fires
+/// <see cref="OnDismiss"/> (state then removes the subtree and the EXIT motion completes from the
+/// dragged position), releasing short glides back over Motion.Base. Taps inside still work — a drag
+/// only engages past the Touch.PressCancelSlop, which also cancels the in-flight press. On web a
+/// pointer-capture controller drives the same contract through the <c>data-eq-drag-dismiss</c>
+/// marker. v1 fences: detents (partial heights), flick-velocity dismissal, horizontal axis, and
+/// nested-scroll interplay.
+/// </summary>
+public sealed class DragDismiss : VisualNode
+{
+    public override string NodeKind => "dragDismiss";
+
+    /// <summary>Release at or past this drag distance (dp) dismisses; short of it glides back.</summary>
+    public const float ThresholdDp = 96;
+
+    public DragDismiss(VisualNode child, Action? onDismiss = null)
+    {
+        Child = child;
+        OnDismiss = onDismiss;
+    }
+
+    public VisualNode Child { get; init; }
+    public Action? OnDismiss { get; init; }
+}
+
+/// <summary>
 /// Single-line text ENTRY (the B9/B10 primitive): value + placeholder + change/submit/focus
 /// callbacks. The web realizer lowers it to a real chrome-less <c>&lt;input&gt;</c> (the browser
 /// owns caret/selection/IME); the CONTAINER chrome (border, states, label) belongs to the
@@ -688,6 +715,32 @@ public enum ScrollAxis : byte
 /// with the native interaction system; today the scroll position is the programmatic
 /// <see cref="Offset"/> (web realizes as native browser scrolling, which owns its own physics).
 /// </summary>
+/// <summary>
+/// Gestures v2 — makes its subtree VERTICALLY DRAG-DISMISSIBLE (bottom sheets): while the pointer
+/// drags down past the press-cancel slop, the subtree translates with the finger (paint-only);
+/// releasing beyond <see cref="ThresholdDp"/> fires <see cref="OnDismiss"/>, otherwise it snaps
+/// back. Layout-transparent. Native owns the gesture (the host's pointer pipeline); on web the
+/// wrapper is inert v1 — sheets dismiss via scrim/actions there (pointer-capture drag is the web
+/// gesture fence).
+/// </summary>
+public sealed class DragDismissible : VisualNode
+{
+    public override string NodeKind => "dragDismissible";
+
+    public DragDismissible(VisualNode child, Action? onDismiss, float thresholdDp = 96)
+    {
+        Child = child;
+        OnDismiss = onDismiss;
+        ThresholdDp = thresholdDp;
+    }
+
+    public VisualNode Child { get; }
+    public Action? OnDismiss { get; init; }
+
+    /// <summary>Drag distance (dp) past which release dismisses instead of snapping back.</summary>
+    public float ThresholdDp { get; init; }
+}
+
 /// <summary>
 /// Spec S7 — scroll-anchored chrome (section headers): the child renders in flow, but PINS to the
 /// start of the scroll viewport once scrolling would push it out, offset by <see cref="Offset"/>.

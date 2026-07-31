@@ -58,7 +58,8 @@ public sealed class PhotonHost
     public RealizeResult RenderFrame(DisplayListBuilder builder, float timeMs = 0)
     {
         builder.Clear(_theme.Background.Resolve(Mode));
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences);
+        _lastTimeMs = timeMs;
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags);
         NeedsRender = _lastFrame.HasActiveMotion;
         return _lastFrame;
     }
@@ -78,6 +79,14 @@ public sealed class PhotonHost
     private readonly TransitionStore _transitions = new();
     private readonly ScrollStore _scrolls = new();
     private readonly PresenceStore _presences = new();
+    private readonly DragStore _drags = new();
+
+    /// <summary>The in-flight drag candidate: armed on press inside a drag region, ACTIVATED once
+    /// the pointer travels past the slop (which cancels the pressable press), resolved on release.</summary>
+    private (string Path, DragDismiss Node, float StartY, bool Active)? _drag;
+
+    /// <summary>The clock of the last rendered frame — glide-backs anchor to it on release.</summary>
+    private float _lastTimeMs;
     private Pressable? _focused;
 
     /// <summary>The Pressable holding keyboard focus (the §01 double ring renders while set).</summary>
@@ -137,6 +146,26 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerMove(float x, float y)
     {
+        // Gestures v2: a pressed pointer travelling inside a drag surface becomes a DRAG once it
+        // passes the slop — the pressable press cancels (spec §08's cancel rule) and the subtree
+        // follows the pointer (downward only) until release.
+        if (_drag is { } drag)
+        {
+            var dy = y - drag.StartY;
+            if (!drag.Active && dy > Touch.PressCancelSlop)
+            {
+                _drag = drag with { Active = true };
+                _pressed = null;
+                drag = _drag.Value;
+            }
+            if (drag.Active)
+            {
+                _drags.Drag(drag.Path, dy);
+                NeedsRender = true;
+                return;
+            }
+        }
+
         var regions = _lastFrame?.HoverRegions;
         VisualNode? target = null;
         if (regions is not null)
@@ -190,6 +219,18 @@ public sealed class PhotonHost
     {
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
+
+        // Gestures v2: arm the topmost drag surface under the point as a CANDIDATE — it only
+        // becomes a drag once the pointer travels past the slop (taps inside keep working).
+        _drag = null;
+        var dragRegions = _lastFrame.DragRegions;
+        for (var i = dragRegions.Count - 1; i >= 0; i--)
+        {
+            if (!dragRegions[i].Bounds.Contains(point)) continue;
+            _drag = (dragRegions[i].Path, dragRegions[i].Node, y, false);
+            break;
+        }
+
         var regions = _lastFrame.HitRegions;
         for (var i = regions.Count - 1; i >= 0; i--)
         {
@@ -200,7 +241,7 @@ public sealed class PhotonHost
             NeedsRender = true;
             return true;
         }
-        return false;
+        return _drag is not null;
     }
 
     /// <summary>
@@ -209,6 +250,27 @@ public sealed class PhotonHost
     /// </summary>
     public bool PressUp(float x, float y)
     {
+        // Gestures v2: an ACTIVE drag resolves here — past the threshold it dismisses (state then
+        // removes the subtree and the presence EXIT completes from the dragged position); short of
+        // it, the offset glides back over Motion.Base. Either way the press was already cancelled.
+        if (_drag is { Active: true } drag)
+        {
+            _drag = null;
+            var dy = y - drag.StartY;
+            if (dy >= DragDismiss.ThresholdDp)
+            {
+                _drags.Drop(drag.Path);
+                drag.Node.OnDismiss?.Invoke();
+            }
+            else
+            {
+                _drags.Release(drag.Path, _lastTimeMs);
+            }
+            NeedsRender = true;
+            return true;
+        }
+        _drag = null;
+
         var pressed = _pressed;
         if (pressed is null) return false;
         _pressed = null;

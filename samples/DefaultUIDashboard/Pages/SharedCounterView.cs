@@ -14,7 +14,8 @@ public static class SharedCounterView
 {
     public static VisualNode Build(int count, Action increment,
         bool confirming = false, string outcome = "none",
-        Action? openConfirm = null, Action<string>? resolveConfirm = null)
+        Action? openConfirm = null, Action<string>? resolveConfirm = null,
+        bool sharing = false, Action? openShare = null, Action? closeShare = null)
     {
         var column = new Column(gap: Space.S3);
         column.Add(new Text("Write-once components", TypeRole.Title));
@@ -83,8 +84,19 @@ public static class SharedCounterView
         // Spec C2: an interrupting decision — declarative presence, resolved by its actions.
         var confirmRow = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
         confirmRow.Add(new Button("Delete card…", Variant.Destructive, onPressed: openConfirm));
+        confirmRow.Add(new Button("Share…", Variant.Outline, onPressed: openShare));
         confirmRow.Add(new Text($"outcome: {outcome}", TypeRole.Caption));
         column.Add(confirmRow);
+
+        // Spec C4 + gestures v2: a dismissible sheet — scrim tap closes it, and so does DRAGGING it
+        // down past the threshold (the exit motion completes from the dragged position).
+        if (sharing)
+        {
+            var share = new Column(gap: Space.S2);
+            share.Add(new Text("Share this card", TypeRole.Title));
+            share.Add(new Text("Drag me down to dismiss — or tap the scrim.", TypeRole.BodyM));
+            column.Add(new BottomSheet(share, onDismiss: closeShare));
+        }
         if (confirming)
         {
             column.Add(new Dialog("Delete card?",

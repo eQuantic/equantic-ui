@@ -66,8 +66,11 @@ public sealed class BottomSheet : StatelessComponent
             Main = MainAlign.End,
         };
         // Enter motion (spec §06): the sheet RISES while the scrim fades — two presences in one
-        // layer, because sliding the full-viewport scrim would expose a gap at the top.
-        anchor.Add(new Presence(sheet, PresenceMotion.SlideUp));
+        // layer, because sliding the full-viewport scrim would expose a gap at the top. A
+        // dismissible sheet is also DRAGGABLE (gestures v2): pull it down past the threshold and
+        // OnDismiss fires — the exit motion then completes from wherever the drag left it.
+        VisualNode sheetNode = Dismissible ? new DragDismiss(sheet, OnDismiss) : sheet;
+        anchor.Add(new Presence(sheetNode, PresenceMotion.SlideUp));
 
         var layers = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
         layers.Add(new Presence(scrim));

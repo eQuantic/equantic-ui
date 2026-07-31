@@ -254,6 +254,14 @@ export interface PresenceNode extends VisualNodeValue {
   enter?: string;
 }
 
+/** Gestures v2: vertical drag-to-dismiss — the child follows a downward drag; releasing past the
+ * threshold fires onDismiss, short of it glides back. */
+export interface DragDismissNode extends VisualNodeValue {
+  nodeKind: 'dragDismiss';
+  child: VisualNodeValue;
+  onDismiss?: (() => void) | null;
+}
+
 /** Spec B9/B10 primitive: single-line text entry — a real chrome-less <input> on web. */
 export interface TextEntryNode extends VisualNodeValue {
   nodeKind: 'textEntry';

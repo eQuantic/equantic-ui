@@ -315,6 +315,21 @@ export class Presence extends VisualNode {
   }
 }
 
+/** Gestures v2: vertical drag-to-dismiss (the sheet contract) — release past the threshold fires
+ * onDismiss; short of it, the pointer-capture controller glides the subtree back. */
+export class DragDismiss extends VisualNode {
+  readonly nodeKind = 'dragDismiss';
+  static readonly thresholdDp = 96;
+  child: VisualNode;
+  onDismiss: (() => void) | null;
+
+  constructor(child: VisualNode, onDismiss: (() => void) | null = null) {
+    super();
+    this.child = child;
+    this.onDismiss = onDismiss;
+  }
+}
+
 interface TextEntryConfig {
   placeholder?: string | null;
   onSubmit?: (() => void) | null;

@@ -20,6 +20,7 @@ public class SharedShowcaseState : ComponentState<SharedShowcase>
 {
     private int _count = 0;
     private bool _confirming;
+    private bool _sharing;
     private string _outcome = "none";
 
     public override IComponent Build(RenderContext context) =>
@@ -30,5 +31,8 @@ public class SharedShowcaseState : ComponentState<SharedShowcase>
             {
                 _outcome = outcome;
                 _confirming = false;
-            })));
+            }),
+            _sharing,
+            () => SetState(() => _sharing = true),
+            () => SetState(() => _sharing = false)));
 }

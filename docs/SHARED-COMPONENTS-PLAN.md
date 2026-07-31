@@ -522,6 +522,25 @@ rejected.)
    browser check (open → resolve → copy in body with computed exit animation → self-removed via
    real animationend). Remaining fences: toast queueing, drag-to-dismiss + detents (gestures),
    the exact curve pack (easing stand-ins), inline (non-overlay) presence exits.
+   GESTURES V2 — DRAG-TO-DISMISS ✅ (2026-07-30, the sheet contract): `DragDismiss(child,
+   onDismiss)` joins the vocabulary (ThresholdDp 96) — a dismissible BottomSheet is now DRAGGABLE:
+   the child follows a downward drag (paint-only translate), release past the threshold fires
+   OnDismiss (state removes the subtree and the presence EXIT completes from the dragged position —
+   the snapshot carries the drag transform, so the combo composes for free), release short glides
+   back over Motion.Base. Taps inside keep working: the drag only ACTIVATES past
+   Touch.PressCancelSlop, which also cancels the in-flight pressable press (the spec §08 cancel
+   rule, now real). NATIVE: `DragStore` (active follow = raw, input-driven; released = smoothstep
+   glide as f(t)), drag regions by stable path (topmost-last routing like scroll), the host's
+   press/move/up state machine. WEB: ONE document-level pointer delegate (lazy-installed by the
+   lowering, idempotent) — `data-eq-drag-dismiss` marks the surface (threshold as the value, one
+   source of truth), follow/glide via inline transform/transition, past-threshold dispatches the
+   `eq-drag-dismiss` CustomEvent the reconciler-attached handler resolves into onDismiss, and an
+   activated drag SQUASHES the trailing click so inner buttons never fire. Proven: 8 native tests
+   (store math, region registration, slop-tap, follow+press-cancel, glide, dismiss→exit combo) + 2
+   mid-drag goldens + 3 vitest controller specs + a live browser run of the FULL contract (marker →
+   follow → glide-back → dismiss → exit → self-clean). The showcase gained the Share sheet. v1
+   fences: detents (partial heights), flick-velocity dismissal, horizontal axis, nested-scroll
+   interplay.
    THEME-SELECTION WIRING ✅ (2026-07-05, slice 3 — SSR bridge + client boot, per-app theme delivery):
    an app selects the write-once theme with one call — `AddUI(o => o.UseTheme(MaterialTheme.Instance))`
    (or `PhotonTheme.Instance` / `MaterialTheme.FromSeed(seed)` / a brand theme) — and the SAME

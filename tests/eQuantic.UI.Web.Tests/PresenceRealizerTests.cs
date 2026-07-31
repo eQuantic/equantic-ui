@@ -74,4 +74,28 @@ public class PresenceRealizerTests
         sheet.Should().Contain(c => c.Contains("eq-presence-fade"));
         sheet.Should().Contain(c => c.Contains("eq-presence-slideup"));
     }
+
+    [Fact]
+    public void DismissibleSheet_CarriesTheDragMarker_NonDismissibleDoesNot()
+    {
+        static List<string> Attrs(HtmlNode node)
+        {
+            var found = new List<string>();
+            void Walk(HtmlNode n)
+            {
+                if (n.Attributes.TryGetValue("data-eq-drag-dismiss", out var v) && v != null) found.Add(v);
+                foreach (var child in n.Children) Walk(child);
+            }
+            Walk(node);
+            return found;
+        }
+
+        // Gestures v2: the SSR half emits the marker (threshold as the value — one source of truth);
+        // the client controller drives the actual drag.
+        Attrs(WebRealizer.Lower(new BottomSheet(new Text("Hi", TypeRole.BodyM)), Theme).Render())
+            .Should().ContainSingle().Which.Should().Be("96");
+
+        Attrs(WebRealizer.Lower(new BottomSheet(new Text("Hi", TypeRole.BodyM)) { Dismissible = false }, Theme).Render())
+            .Should().BeEmpty("a non-dismissible sheet is not draggable");
+    }
 }

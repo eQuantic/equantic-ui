@@ -39,6 +39,7 @@ export {
   TextEntry,
   Overlay,
   Presence,
+  DragDismiss,
   Spinner,
 } from './vocabulary';
 export {
