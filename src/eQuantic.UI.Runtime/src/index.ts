@@ -107,6 +107,8 @@ export {
   Grid,
   GridTrack,
   AdaptiveNode,
+  Anchored,
+  StyleDiff,
   Sticky,
   Text,
   Pressable,

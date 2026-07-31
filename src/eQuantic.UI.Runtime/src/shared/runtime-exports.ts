@@ -42,6 +42,8 @@ export {
   DragDismiss,
   Link,
   Spinner,
+  Anchored,
+  StyleDiff,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';
 export {

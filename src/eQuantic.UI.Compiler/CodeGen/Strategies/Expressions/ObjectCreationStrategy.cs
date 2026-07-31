@@ -216,6 +216,80 @@ public class ObjectCreationStrategy : IConversionStrategy
     }
 
     /// <summary>
+    /// Value members of a record/struct we have no syntax for, in the SAME order
+    /// <see cref="TypeDeclarationExtensions.ValueMembers"/> produces (and therefore the same order
+    /// RecordTypeEmitter emitted the constructor in): primary-constructor parameters, then settable
+    /// instance properties, then public instance fields. Empty when the type has no usable symbol.
+    /// </summary>
+    private static IReadOnlyList<ValueMember> SymbolValueMembers(INamedTypeSymbol? type)
+    {
+        if (type == null) return new List<ValueMember>();
+
+        // The abstract VOCABULARY (BoxStyle, EdgeInsets, …) is runtime-provided by a HAND-WRITTEN TS twin
+        // that takes a trailing config object — only types whose twin the compiler EMITS (RecordTypeEmitter,
+        // e.g. the shared component library's NavItem) have the positional constructor this mapping needs.
+        var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+        if (ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives."))
+            return new List<ValueMember>();
+
+        // The primary constructor: the widest one that is not the record's synthesized copy constructor.
+        var primary = type.InstanceConstructors
+            .Where(c => c.Parameters.Length > 0
+                        && !(c.Parameters.Length == 1
+                             && SymbolEqualityComparer.Default.Equals(c.Parameters[0].Type, type)))
+            .OrderByDescending(c => c.Parameters.Length)
+            .FirstOrDefault();
+
+        var members = new List<ValueMember>();
+        var seen = new HashSet<string>();
+
+        if (primary != null)
+            foreach (var p in primary.Parameters)
+                if (seen.Add(p.Name))
+                    members.Add(new ValueMember(p.Name, p.Name.ToCamelCase(), SymbolDefault(p.Type), "any"));
+
+        foreach (var member in type.GetMembers())
+        {
+            // `EqualityContract` is the record's synthesized type discriminator, never a value member.
+            if (member is IPropertySymbol { IsStatic: false, IsImplicitlyDeclared: false } prop
+                && prop.DeclaredAccessibility == Accessibility.Public
+                && prop.SetMethod != null
+                && prop.Name != "EqualityContract"
+                && seen.Add(prop.Name))
+            {
+                members.Add(new ValueMember(prop.Name, prop.Name.ToCamelCase(), SymbolDefault(prop.Type), "any"));
+            }
+            else if (member is IFieldSymbol { IsStatic: false, IsImplicitlyDeclared: false } field
+                     && field.DeclaredAccessibility == Accessibility.Public
+                     && seen.Add(field.Name))
+            {
+                members.Add(new ValueMember(field.Name, field.Name.ToCamelCase(), SymbolDefault(field.Type), "any"));
+            }
+        }
+
+        return members;
+    }
+
+    /// <summary>JS literal for <c>default(T)</c> from a type SYMBOL — mirrors the syntax-side
+    /// <c>DefaultFor</c> so both paths fill unset slots identically.</summary>
+    private static string SymbolDefault(ITypeSymbol type)
+    {
+        if (type.NullableAnnotation == NullableAnnotation.Annotated) return "null";
+        if (type.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T) return "null";
+
+        return type.SpecialType switch
+        {
+            SpecialType.System_Int32 or SpecialType.System_Int16 or SpecialType.System_Byte
+                or SpecialType.System_SByte or SpecialType.System_UInt32 or SpecialType.System_UInt16
+                or SpecialType.System_Double or SpecialType.System_Single => "0",
+            SpecialType.System_Boolean => "false",
+            SpecialType.System_Decimal => "$eq.num.dec(0)",
+            SpecialType.System_Int64 or SpecialType.System_UInt64 => "$eq.num.long(0)",
+            _ => "null",
+        };
+    }
+
+    /// <summary>
     /// Builds a <c>new T(...)</c> construction for a record/struct, mapping positional arguments and any
     /// object initializer (<c>{ Name = … }</c>) onto the constructor's positional value members (in the
     /// type's declaration order). Members left unset before the last supplied one get their default
@@ -228,12 +302,19 @@ public class ObjectCreationStrategy : IConversionStrategy
             .OfType<TypeDeclarationSyntax>()
             .FirstOrDefault();
 
-        // No declaration available (external/metadata type — e.g. the shared vocabulary in
-        // eQuantic.UI.Primitives): member order is unknowable, so an object initializer cannot be
-        // mapped onto positional parameters. Emit it as a trailing CONFIG OBJECT instead — the same
-        // shape UI-component classes already receive (`new Row(gap, { height: … })`), which the
-        // runtime-provided classes accept. Positional args pass through unchanged.
-        if (declSyntax == null)
+        // No declaration syntax (external/metadata type — a record from a referenced assembly, e.g. the
+        // shared component library's NavItem): the SYMBOL still carries the member order, so recover it
+        // there and map positionally exactly as the syntax path does. A record's emitted constructor is
+        // positional-only, so a trailing config object would silently land in the next positional slot
+        // (`new NavItem(icon, label, { badgeCount: 3 })` sets selectedIcon and leaves badgeCount 0 —
+        // SSR renders the badge, the hydrated client does not).
+        var members = declSyntax != null
+            ? declSyntax.ValueMembers()
+            : SymbolValueMembers(type as INamedTypeSymbol);
+
+        // Neither syntax nor a usable symbol: fall back to a trailing CONFIG OBJECT — the shape
+        // UI-component classes accept (`new Row(gap, { height: … })`). Positional args pass through.
+        if (members.Count == 0)
         {
             var parts = new List<string>();
             if (creation.ArgumentList != null)
@@ -243,7 +324,6 @@ public class ObjectCreationStrategy : IConversionStrategy
             return $"new {type.Name}({string.Join(", ", parts)})";
         }
 
-        var members = declSyntax.ValueMembers();
         var values = new string?[members.Count];
 
         // Positional constructor arguments fill the leading members.

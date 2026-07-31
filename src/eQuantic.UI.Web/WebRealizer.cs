@@ -47,6 +47,7 @@ public static class WebRealizer
         Grid grid => LowerGrid(grid, context),
         AdaptiveNode adaptive => LowerAdaptive(adaptive, context),
         Sticky sticky => LowerSticky(sticky, context),
+        Anchored anchored => LowerAnchored(anchored, context),
         ScrollView scroll => LowerScrollView(scroll, context),
         // A Positioned outside a Stack has no anchor frame — degrade to its child (parity with native).
         Positioned positioned => LowerNode(positioned.Child, context, horizontalAxis),
@@ -141,6 +142,54 @@ public static class WebRealizer
     /// the DOM).</summary>
     /// <summary>Spec S7: scroll-anchored chrome — in flow until scrolling would push it out, then
     /// pinned at <c>Offset</c> from the viewport start (CSS sticky; v1 vertical).</summary>
+    /// <summary>
+    /// Wave 3 anchored overlay: a position:relative host wrapping the anchor; while Open, an
+    /// invisible fixed scrim (a real Pressable — tap-outside dismisses through the ordinary event
+    /// pipeline) and the absolute panel, positioned ENTIRELY by the generated placement classes
+    /// (no JS). The gap rides the margin on the placement axis as an atomic declaration. Keep
+    /// anchors out of overflow-hidden scrollers and transformed subtrees (the documented fences).
+    /// </summary>
+    private static HtmlElement LowerAnchored(Anchored anchored, ComponentContext context)
+    {
+        var host = new RealizedElement("div") { ClassName = "eq-anchorhost" };
+        if (LowerNode(anchored.Anchor, context, horizontalAxis: null) is { } anchor)
+            host.Children.Add(anchor);
+
+        if (!anchored.Open) return host;
+
+        if (anchored.OnDismiss is { } dismiss
+            && LowerNode(new Pressable(new Box(), dismiss) { Label = "Dismiss" }, context, horizontalAxis: null) is { } scrim)
+        {
+            scrim.ClassName = string.IsNullOrEmpty(scrim.ClassName)
+                ? "eq-anchor-scrim" : $"{scrim.ClassName} eq-anchor-scrim";
+            host.Children.Add(scrim);
+        }
+
+        var top = anchored.Placement is AnchorPlacement.TopStart or AnchorPlacement.TopEnd;
+        var panel = new RealizedElement("div")
+        {
+            ClassName = "eq-anchor-panel " + PlacementClass(anchored.Placement)
+                + (anchored.MatchAnchorWidth ? " eq-anchor-match" : ""),
+            Style = new HtmlStyle
+            {
+                MarginTop = top ? null : TokenCss.Px(anchored.Gap),
+                MarginBottom = top ? TokenCss.Px(anchored.Gap) : null,
+            },
+        };
+        if (LowerNode(anchored.Panel, context, horizontalAxis: null) is { } content)
+            panel.Children.Add(content);
+        host.Children.Add(panel);
+        return host;
+    }
+
+    private static string PlacementClass(AnchorPlacement placement) => placement switch
+    {
+        AnchorPlacement.BottomEnd => "eq-anchor-b-end",
+        AnchorPlacement.TopStart => "eq-anchor-t-start",
+        AnchorPlacement.TopEnd => "eq-anchor-t-end",
+        _ => "eq-anchor-b-start",
+    };
+
     private static HtmlElement LowerSticky(Sticky sticky, ComponentContext context)
     {
         var element = new RealizedElement("div")
@@ -764,8 +813,17 @@ public static class WebRealizer
     {
         if (horizontalAxis is null) return null; // layout-only outside a flex container
 
+        // Spec B14: a weighted spacer is the ratio's COUNTERWEIGHT (ProgressBar), so its weight changes
+        // must animate exactly like the Flexible fill's — otherwise the fill glides while the spacer
+        // snaps, and SSR loses class identity against the TS twin (lowerSpacer).
         var style = spacer.Flex > 0
-            ? new HtmlStyle { Flex = $"{spacer.Flex} 1 0%" }
+            ? new HtmlStyle
+            {
+                Transition = spacer.AnimateChanges
+                    ? "flex-grow var(--eq-motion-base) var(--eq-curve-standard)"
+                    : null,
+                Flex = $"{spacer.Flex} 1 0%",
+            }
             : horizontalAxis.Value
                 ? new HtmlStyle { Width = TokenCss.Px(spacer.FixedLength), FlexShrink = "0" }
                 : new HtmlStyle { Height = TokenCss.Px(spacer.FixedLength), FlexShrink = "0" };

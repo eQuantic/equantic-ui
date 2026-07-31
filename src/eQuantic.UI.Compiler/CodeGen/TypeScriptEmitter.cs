@@ -234,8 +234,12 @@ public class TypeScriptEmitter
                     // wasn't supplied — the base ctor's Object.assign runs first), then run the C# ctor body.
                     var ctorDef = component.Constructors.OrderByDescending(ct => ct.Parameters.Count).FirstOrDefault();
                     var ctorParams = ctorDef?.Parameters ?? new System.Collections.Generic.List<ParameterDefinition>();
+                    // Auto-properties that must hold a value even when the caller supplies none: an explicit
+                    // C# initializer, or (enums) the implicit zero-member default the server-side C# has and
+                    // `undefined` does not — see PropertyDefinition.ImplicitDefaultJs.
                     var autoDefaults = component.Properties
-                        .Where(p => !p.IsStatic && p.DefaultValueNode != null && IsAutoProperty(p))
+                        .Where(p => !p.IsStatic && IsAutoProperty(p)
+                                    && (p.DefaultValueNode != null || p.ImplicitDefaultJs != null))
                         .ToList();
                     var hasCtorBody = ctorDef?.BodyNode != null;
                     if (ctorParams.Count > 0 || autoDefaults.Count > 0 || hasCtorBody)
@@ -265,7 +269,9 @@ public class TypeScriptEmitter
                             foreach (var p in autoDefaults)
                             {
                                 var cn = p.Name.ToCamelCase();
-                                var def = _converter.ConvertExpression(p.DefaultValueNode!, p.Type);
+                                var def = p.DefaultValueNode != null
+                                    ? _converter.ConvertExpression(p.DefaultValueNode, p.Type)
+                                    : p.ImplicitDefaultJs!;
                                 c.Raw($"if (this.{cn} === undefined) this.{cn} = {def};");
                             }
                             if (hasCtorBody)

@@ -5,6 +5,8 @@ import { photonTheme } from './design-system.generated';
 import { tokenValue } from './lowering';
 import { Box, BoxStyle, Column, Pressable, Row, Spacer, Text } from './vocabulary';
 import { ColorToken, CornerRadii, EdgeInsets, SizeValue } from './value-types';
+import { Avatar } from './components/Avatar';
+import { ComponentContext } from './photon-context';
 
 describe('vocabulary value types', () => {
   it('normalizes raw numbers to fixed sizes (the C# implicit float→SizeValue)', () => {
@@ -117,5 +119,31 @@ describe('FlexNode config survives construction (ES2022 field order)', () => {
   it('Column keeps an explicit cross from the ctor config', () => {
     expect(new Column(8, { cross: 'center' }).cross).toBe('center');
     expect(new Column(8).cross).toBe('stretch');
+  });
+});
+
+describe('transpiled components carry C#’s implicit value-type defaults', () => {
+  // Regression (the motion family's half of the same e2e identity failure): an unset C# enum property
+  // is its ZERO member, but the emitted class left it `undefined` — so `status === 'none'`, true on the
+  // server, took the other branch after hydration and every Avatar grew a presence dot the SSR never
+  // emitted. eqc now seeds the zero member in the constructor; an explicit value still wins.
+  it('an omitted enum property defaults to its zero member, not undefined', () => {
+    expect(new Avatar('AB').status).toBe('none');
+    expect(new Avatar('AB', 'small').status).toBe('none');
+  });
+
+  it('an explicitly supplied enum value still wins', () => {
+    expect(new Avatar('AB', 'small', 'Ana', { status: 'online' }).status).toBe('online');
+  });
+
+  it('the default keeps the presence dot OFF, matching the SSR tree', () => {
+    // With status defaulted to 'none' the build returns the bare circle (a Box); a leaked `undefined`
+    // wrapped it in a Stack + Positioned dot instead — the exact extra elements the e2e diff showed.
+    const built = new Avatar('AB').build(
+      new ComponentContext(photonTheme) as unknown as Parameters<Avatar['build']>[0],
+    ) as unknown as {
+      nodeKind: string;
+    };
+    expect(built.nodeKind).toBe('box');
   });
 });

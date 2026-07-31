@@ -67,6 +67,21 @@ export interface StickyNode {
   offset: number;
 }
 
+/** Wave 3 placements — the four anchor corners (flip/clamp is the positioning fence). */
+export type AnchorPlacementValue = 'bottomStart' | 'bottomEnd' | 'topStart' | 'topEnd';
+
+/** Wave 3 anchored overlay: floating panel positioned relative to the in-flow anchor. */
+export interface AnchoredNode extends VisualNodeValue {
+  nodeKind: 'anchored';
+  anchor: VisualNodeValue;
+  panel: VisualNodeValue;
+  placement?: AnchorPlacementValue;
+  gap?: number;
+  open?: boolean;
+  onDismiss?: (() => void) | null;
+  matchAnchorWidth?: boolean;
+}
+
 /** Spec S6 — a subtree that adapts to the window size class (up to 3 variants). */
 export interface AdaptiveNodeValue {
   nodeKind: 'adaptive';

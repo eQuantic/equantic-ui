@@ -221,6 +221,14 @@ public class PropertyDefinition
     public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? DefaultValueNode { get; set; }
     public bool IsPublic { get; set; }
     public bool IsStatic { get; set; }
+    /// <summary>
+    /// The JS literal for C#'s implicit <c>default(T)</c> on a property with NO initializer, when leaving
+    /// it <c>undefined</c> would change behavior. An unset C# enum property is its zero member, and the
+    /// lowered form is a string (<c>'none'</c>) that code compares with <c>===</c> — so `undefined` silently
+    /// takes the other branch and the client diverges from SSR. Null when the C# default and `undefined`
+    /// behave alike (reference types, and the falsy value types).
+    /// </summary>
+    public string? ImplicitDefaultJs { get; set; }
     /// <summary>The declaration syntax — lets the emitter inspect a computed property's expression body
     /// (<c>X =&gt; expr</c>) or get/set accessor bodies, distinguishing auto-properties from computed ones.</summary>
     public Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax? Node { get; set; }

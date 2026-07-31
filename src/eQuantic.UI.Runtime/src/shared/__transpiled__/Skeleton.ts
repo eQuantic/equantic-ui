@@ -10,6 +10,7 @@ export class Skeleton extends StatelessComponent {
         if (shape !== undefined) this.shape = shape;
         if (width !== undefined) this.width = width;
         if (height !== undefined) this.height = height;
+        if (this.shape === undefined) this.shape = 'line';
         this.shape = shape;this.width = width;this.height = height;
     }
 

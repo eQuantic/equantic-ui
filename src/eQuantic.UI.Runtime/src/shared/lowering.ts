@@ -43,6 +43,7 @@ import type {
   SpacerNode,
   AdaptiveNodeValue,
   GridNode,
+  AnchoredNode,
   StickyNode,
   StyleDiffValue,
   TextEntryNode,
@@ -197,6 +198,8 @@ function lowerNode(
       return lowerAdaptive(node as unknown as AdaptiveNodeValue, context, path);
     case 'sticky':
       return lowerSticky(node as unknown as StickyNode, context, path);
+    case 'anchored':
+      return lowerAnchored(node as unknown as AnchoredNode, context, path);
     case 'positioned':
       // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
       return lowerNode((node as PositionedNode).child, context, horizontalAxis, path + '/0');
@@ -838,6 +841,67 @@ function lowerFlexible(
 }
 
 /** Spec S7 mirror of the C# LowerSticky: CSS sticky at `offset` from the viewport start. */
+/**
+ * Wave 3 mirror of the C# LowerAnchored: position:relative host (generated .eq-anchorhost),
+ * invisible fixed scrim as a REAL pressable while dismissible, and the absolute panel positioned
+ * ENTIRELY by the generated placement classes — the gap rides the margin as an atomic declaration.
+ */
+function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: string): HtmlNode {
+  const host: HtmlNode = {
+    tag: 'div',
+    attributes: { class: 'eq-anchorhost' },
+    events: {},
+    children: [],
+  };
+  const anchor = lowerNode(node.anchor, context, null, path + '/0');
+  if (anchor) host.children.push(anchor);
+  if (node.open !== true) return host;
+
+  if (node.onDismiss) {
+    const scrim = lowerNode(
+      {
+        nodeKind: 'pressable',
+        child: { nodeKind: 'box' },
+        onPressed: node.onDismiss,
+        label: 'Dismiss',
+      } as unknown as VisualNodeValue,
+      context,
+      null,
+      path + '/s',
+    );
+    if (scrim) {
+      const existing = scrim.attributes['class'];
+      scrim.attributes['class'] = existing ? `${existing} eq-anchor-scrim` : 'eq-anchor-scrim';
+      host.children.push(scrim);
+    }
+  }
+
+  const top = node.placement === 'topStart' || node.placement === 'topEnd';
+  const gap = node.gap ?? 4;
+  const panel = element('div', top ? { 'margin-bottom': px(gap) } : { 'margin-top': px(gap) });
+  if (node.matchAnchorWidth === true) prependClass(panel, 'eq-anchor-match');
+  prependClass(panel, anchorPlacementClass(node.placement));
+  prependClass(panel, 'eq-anchor-panel');
+  const content = lowerNode(node.panel, context, null, path + '/1');
+  if (content) panel.children.push(content);
+  host.children.push(panel);
+  return host;
+}
+
+/** The C# PlacementClass twin. */
+function anchorPlacementClass(placement: AnchoredNode['placement']): string {
+  switch (placement) {
+    case 'bottomEnd':
+      return 'eq-anchor-b-end';
+    case 'topStart':
+      return 'eq-anchor-t-start';
+    case 'topEnd':
+      return 'eq-anchor-t-end';
+    default:
+      return 'eq-anchor-b-start';
+  }
+}
+
 function lowerSticky(node: StickyNode, context: LoweringContext, path: string): HtmlNode {
   const wrapper = element('div', {
     position: 'sticky',

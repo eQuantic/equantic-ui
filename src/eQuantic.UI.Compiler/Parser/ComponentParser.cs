@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -28,6 +29,28 @@ public class ComponentParser
         try { return _semanticModelProvider.GetSemanticModel(tree); }
         catch { return null; }
     }
+    /// <summary>
+    /// The JS literal for an uninitialized ENUM property's C# default — its zero member, lowered exactly
+    /// as <c>EnumStrategy</c> lowers a member access ([Flags] numerically, otherwise the camelCase member
+    /// name as a string). Returns null for every other type, where C#'s default and JS `undefined` behave
+    /// alike. Without this the client leaves the property `undefined`, and a `status === 'none'` test that
+    /// is TRUE on the server silently takes the other branch after hydration.
+    /// </summary>
+    private string? ImplicitEnumDefaultJs(PropertyDeclarationSyntax prop)
+    {
+        var model = TryGetSemanticModel(prop.SyntaxTree);
+        if (model?.GetTypeInfo(prop.Type).Type is not INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return null;
+
+        var zero = enumType.GetMembers()
+            .OfType<IFieldSymbol>()
+            .FirstOrDefault(f => f.HasConstantValue
+                && Convert.ToInt64(f.ConstantValue, CultureInfo.InvariantCulture) == 0);
+        if (zero == null) return null; // no zero member: C# default is an unnamed value — leave it alone
+
+        return enumType.IsFlagsEnum() ? "0" : $"'{zero.Name.ToCamelCase()}'";
+    }
+
     /// <summary>
     /// Parse a .eqx file and extract component definitions
     /// </summary>
@@ -431,6 +454,7 @@ public class ComponentParser
                 Type = prop.Type.ToString(),
                 DefaultValue = prop.Initializer?.Value.ToString(),
                 DefaultValueNode = prop.Initializer?.Value,
+                ImplicitDefaultJs = prop.Initializer == null ? ImplicitEnumDefaultJs(prop) : null,
                 IsPublic = isPublic,
                 IsStatic = prop.Modifiers.Any(SyntaxKind.StaticKeyword),
                 Node = prop

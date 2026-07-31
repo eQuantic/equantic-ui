@@ -12,6 +12,7 @@ export class Badge extends StatelessComponent {
         if (count !== undefined) this.count = count;
         if (max !== undefined) this.max = max;
         if (variant !== undefined) this.variant = variant;
+        if (this.variant === undefined) this.variant = 'primary';
         this.count = count;this.max = max;this.variant = variant;
     }
 

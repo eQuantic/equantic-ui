@@ -7,6 +7,8 @@ export class Divider extends StatelessComponent {
         super(props);
         if (inset !== undefined) this.inset = inset;
         if (axis !== undefined) this.axis = axis;
+        if (this.inset === undefined) this.inset = 'none';
+        if (this.axis === undefined) this.axis = 'horizontal';
         this.inset = inset;this.axis = axis;
     }
 

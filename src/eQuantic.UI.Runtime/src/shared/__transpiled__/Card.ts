@@ -9,6 +9,7 @@ export class Card extends StatelessComponent {
         super(props);
         if (child !== undefined) this.child = child;
         if (kind !== undefined) this.kind = kind;
+        if (this.kind === undefined) this.kind = 'elevated';
         if (this.padding === undefined) this.padding = EdgeInsets.all(Space.s4);
         this.child = child;this.kind = kind;
     }

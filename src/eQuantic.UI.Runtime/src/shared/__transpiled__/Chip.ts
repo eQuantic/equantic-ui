@@ -14,6 +14,7 @@ export class Chip extends StatelessComponent {
         if (selected !== undefined) this.selected = selected;
         if (onPressed !== undefined) this.onPressed = onPressed;
         if (onRemove !== undefined) this.onRemove = onRemove;
+        if (this.kind === undefined) this.kind = 'filter';
         if (this.variant === undefined) this.variant = 'secondary';
         this.label = label;this.kind = kind;this.selected = selected;this.onPressed = onPressed;this.onRemove = onRemove;
     }
