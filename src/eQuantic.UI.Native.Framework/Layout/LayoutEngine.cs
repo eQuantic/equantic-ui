@@ -31,6 +31,9 @@ public sealed class LayoutContext
     /// <summary>Scroll compositor v1: the host's scroll offsets (null = programmatic Offset only).</summary>
     public ScrollStore? ScrollOffsets { get; init; }
 
+    /// <summary>Gestures v2: the host's drag offsets behind <see cref="DragDismiss"/> (null = at rest).</summary>
+    public DragStore? Drags { get; init; }
+
     /// <summary>Per-frame bridge from a laid-out ScrollView to its path/max — the realizer reads it
     /// while emitting to register scroll regions for the host's input routing.</summary>
     public Dictionary<ScrollView, (string Path, float MaxOffset)>? ScrollMeta { get; init; }
@@ -68,6 +71,14 @@ public sealed class LayoutNode
     /// <summary>The stable layout path of a <see cref="Presence"/> node, stamped at measure time —
     /// the emit pass keys its exit snapshot by it (paths exist only during layout).</summary>
     public string? PresencePath { get; internal set; }
+
+    /// <summary>The drag offset (dp downward) of a <see cref="DragDismiss"/> node, resolved at
+    /// measure time against the host's drag clock — the emit pass paints the translate.</summary>
+    public float DragOffset { get; internal set; }
+
+    /// <summary>The stable layout path of a <see cref="DragDismiss"/> node — the host routes drag
+    /// input by it (registered with the frame's drag regions at emit).</summary>
+    public string? DragPath { get; internal set; }
 }
 
 /// <summary>
@@ -123,6 +134,8 @@ public static class LayoutEngine
         // Enter motion is layout-transparent too (opacity layer + paint-only translate) — but the
         // progress is resolved HERE, where the stable path exists, and stamped on the node.
         Presence presence => MeasurePresence(presence, maxW, maxH, ctx, path),
+        // Drag-to-dismiss follows the same pattern: transparent for layout, offset stamped by path.
+        DragDismiss drag => MeasureDragDismiss(drag, maxW, maxH, ctx, path),
         // An Overlay is ZERO in the page flow — the realizer lays its child out against the
         // VIEWPORT in the overlay pass (path "ov<i>", stable for the reconciler).
         Overlay => new LayoutNode(node),
@@ -158,6 +171,17 @@ public static class LayoutEngine
         var result = MeasureWrapper(presence, presence.Child, maxW, maxH, ctx, path);
         result.Presence = ctx.Presences?.Progress(path, ctx.TimeMs, ctx.ReducedMotion) ?? 1f;
         result.PresencePath = path;
+        return result;
+    }
+
+    /// <summary>A transparent wrapper that resolves the current DRAG offset against the host's drag
+    /// clock (active follow or glide-back), keyed by this stable path — the emit pass paints the
+    /// translate and registers the drag region the host routes input by.</summary>
+    private static LayoutNode MeasureDragDismiss(DragDismiss drag, float maxW, float maxH, LayoutContext ctx, string path)
+    {
+        var result = MeasureWrapper(drag, drag.Child, maxW, maxH, ctx, path);
+        result.DragOffset = ctx.Drags?.Resolve(path, ctx.TimeMs) ?? 0f;
+        result.DragPath = path;
         return result;
     }
 

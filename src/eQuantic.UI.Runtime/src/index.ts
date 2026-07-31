@@ -119,6 +119,7 @@ export {
   TextEntry,
   Overlay,
   Presence,
+  DragDismiss,
   Spinner,
 } from './shared/vocabulary';
 export {

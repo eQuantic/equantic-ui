@@ -59,6 +59,7 @@ public static class WebRealizer
         Pressable pressable => LowerPressable(pressable, context),
         LoopMotion motion => LowerLoopMotion(motion, context),
         Presence presence => LowerPresence(presence, context, horizontalAxis),
+        DragDismiss drag => LowerDragDismiss(drag, context, horizontalAxis),
         Flexible flexible => LowerFlexible(flexible, context, horizontalAxis),
         Spacer spacer => LowerSpacer(spacer, horizontalAxis),
         UiComponent component => LowerNode(component.Build(context), context, horizontalAxis),
@@ -690,6 +691,23 @@ public static class WebRealizer
         {
             realized.RawAttributes ??= new Dictionary<string, string>();
             realized.RawAttributes["data-eq-exit"] = slide ? "slideup" : "fade";
+        }
+        return child;
+    }
+
+    /// <summary>
+    /// Gestures v2 (SSR half): the drag marker rides the child's own root — the CLIENT runtime's
+    /// pointer-capture controller drives the actual drag (the server only emits the marker; the
+    /// dismiss callback attaches client-side through the lowering mirror's custom event).
+    /// </summary>
+    private static HtmlElement? LowerDragDismiss(DragDismiss drag, ComponentContext context, bool? horizontalAxis)
+    {
+        if (LowerNode(drag.Child, context, horizontalAxis) is not { } child) return null;
+        if (child is RealizedElement realized)
+        {
+            realized.RawAttributes ??= new Dictionary<string, string>();
+            realized.RawAttributes["data-eq-drag-dismiss"] =
+                DragDismiss.ThresholdDp.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
         return child;
     }

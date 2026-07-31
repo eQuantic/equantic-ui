@@ -12,6 +12,7 @@
  */
 
 import type { EventHandler, HtmlNode } from '../core/types';
+import { installDragDismissController } from '../dom/drag-dismiss';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
 import { atomizeEntries, atomizePseudo, ensureAdaptiveGate, mergeAtomicDeclaration } from './style-atomizer';
@@ -28,6 +29,7 @@ import type {
   IconNode,
   ImageNode,
   LinearGradientValue,
+  DragDismissNode,
   LoopMotionNode,
   OverlayNode,
   PresenceNode,
@@ -176,6 +178,8 @@ function lowerNode(
       return lowerLoopMotion(node as LoopMotionNode, context, path);
     case 'presence':
       return lowerPresence(node as PresenceNode, context, horizontalAxis, path);
+    case 'dragDismiss':
+      return lowerDragDismiss(node as DragDismissNode, context, horizontalAxis, path);
     case 'image':
       return lowerImage(node as ImageNode);
     case 'icon':
@@ -265,6 +269,26 @@ function lowerPresence(
   prependClass(child, slide ? 'eq-presence-slideup' : 'eq-presence-fade');
   // The EXIT marker — the reconciler defers this element's removal while the reverse plays.
   child.attributes['data-eq-exit'] = slide ? 'slideup' : 'fade';
+  return child;
+}
+
+/** Gestures v2 mirror: the drag marker + dismiss event ride the child's own root (no wrapper —
+ * identical DOM to the C# SSR realizer). The pointer-capture controller installs lazily on the
+ * first lowering: it drives the follow/glide and dispatches `eq-drag-dismiss` past the threshold,
+ * which the reconciler-attached handler resolves into the component's onDismiss. */
+function lowerDragDismiss(
+  node: DragDismissNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  if (!child) return null;
+  child.attributes['data-eq-drag-dismiss'] = '96'; // DragDismiss.ThresholdDp — cross-pinned
+  if (node.onDismiss) {
+    child.events['eq-drag-dismiss'] = node.onDismiss as EventHandler;
+  }
+  installDragDismissController();
   return child;
 }
 
