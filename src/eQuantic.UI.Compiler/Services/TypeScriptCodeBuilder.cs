@@ -123,9 +123,9 @@ public class TypeScriptCodeBuilder
             _builder.Line("");
         }
         
-        public void Method(string name, string parameters, bool isAsync, Action bodyAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null)
+        public void Method(string name, string parameters, bool isAsync, Action bodyAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool isStatic = false)
         {
-            var prefix = isAsync ? "async " : "";
+            var prefix = (isStatic ? "static " : "") + (isAsync ? "async " : "");
             var generics = typeParameters != null && typeParameters.Any() ? $"<{string.Join(", ", typeParameters)}>" : "";
             _builder.Line($"{prefix}{name}{generics}({parameters}) {{", sourceNode);
             _builder.Indent();

@@ -6,9 +6,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
-/// <summary>One value member of a record/struct — its declared name, camelCased JS name, and the JS
-/// literal for its <c>default(T)</c> (used for omitted constructor arguments).</summary>
-public readonly record struct ValueMember(string Display, string Js, string Default);
+/// <summary>One value member of a record/struct — its declared name, camelCased JS name, the JS
+/// literal for its <c>default(T)</c> (used for omitted constructor arguments), and the TS type for its
+/// type-only declaration.</summary>
+public readonly record struct ValueMember(string Display, string Js, string Default, string TsType);
 
 /// <summary>
 /// Extracts the value members of a record/struct declaration — the data that participates in
@@ -26,7 +27,7 @@ public static class TypeDeclarationExtensions
         if (type.ParameterList != null)
         {
             foreach (var p in type.ParameterList.Parameters)
-                members.Add(new ValueMember(p.Identifier.Text, p.Identifier.Text.ToCamelCase(), DefaultFor(p.Type)));
+                members.Add(new ValueMember(p.Identifier.Text, p.Identifier.Text.ToCamelCase(), DefaultFor(p.Type), TsTypeFor(p.Type)));
         }
 
         foreach (var member in type.Members)
@@ -38,19 +39,45 @@ public static class TypeDeclarationExtensions
                     when !prop.Modifiers.Any(SyntaxKind.StaticKeyword)
                          && prop.ExpressionBody == null
                          && prop.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)) == true:
-                    members.Add(new ValueMember(prop.Identifier.Text, prop.Identifier.Text.ToCamelCase(), DefaultFor(prop.Type)));
+                    members.Add(new ValueMember(prop.Identifier.Text, prop.Identifier.Text.ToCamelCase(), DefaultFor(prop.Type), TsTypeFor(prop.Type)));
                     break;
 
                 // Public instance fields (common in plain structs).
                 case FieldDeclarationSyntax field
                     when field.Modifiers.Any(SyntaxKind.PublicKeyword) && !field.Modifiers.Any(SyntaxKind.StaticKeyword):
                     foreach (var v in field.Declaration.Variables)
-                        members.Add(new ValueMember(v.Identifier.Text, v.Identifier.Text.ToCamelCase(), DefaultFor(field.Declaration.Type)));
+                        members.Add(new ValueMember(v.Identifier.Text, v.Identifier.Text.ToCamelCase(), DefaultFor(field.Declaration.Type), TsTypeFor(field.Declaration.Type)));
                     break;
             }
         }
 
         return members;
+    }
+
+    /// <summary>
+    /// TS type for a value member's TYPE-ONLY declaration, from the declared type syntax (name-based —
+    /// this emitter runs pre-symbol). Only types whose TS counterpart is certain WITHOUT an import are
+    /// named; everything else (records, enums, vocabulary types, and <c>decimal</c>/<c>long</c>, which
+    /// lower to <c>$eq</c> objects rather than JS numbers) stays <c>any</c>, since a name the emitted
+    /// module cannot resolve would just trade one error for another. A member that defaults to null is
+    /// declared nullable, matching the constructor's own default.
+    /// </summary>
+    private static string TsTypeFor(TypeSyntax? type)
+    {
+        var raw = type?.ToString() ?? "";
+        var name = raw.TrimEnd('?');
+
+        var ts = name switch
+        {
+            "string" or "String" or "Guid" => "string",
+            "int" or "Int32" or "short" or "Int16" or "byte" or "sbyte"
+                or "uint" or "UInt32" or "ushort" or "UInt16"
+                or "double" or "Double" or "float" or "Single" => "number",
+            "bool" or "Boolean" => "boolean",
+            _ => "any",
+        };
+
+        return ts != "any" && DefaultFor(type) == "null" ? $"{ts} | null" : ts;
     }
 
     /// <summary>JS literal for <c>default(T)</c> from the declared type syntax (name-based — the emitter

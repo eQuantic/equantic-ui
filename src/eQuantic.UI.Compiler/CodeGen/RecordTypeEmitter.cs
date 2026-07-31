@@ -45,6 +45,12 @@ public class RecordTypeEmitter
         var sb = new StringBuilder();
         sb.Append($"class {name}{(baseName != null ? $" extends {baseName}" : "")} {{ ");
 
+        // TYPE-ONLY member declarations: they restore checking on `record.x` without emitting any runtime
+        // code (the constructor below does the assigning). Only OWN members are declared — the ones passed
+        // to the base record's primary constructor are already declared by the base module.
+        foreach (var m in members)
+            if (!passedToBase.Contains(m.Display)) sb.Append($"declare {m.Js}: {m.TsType}; ");
+
         // constructor(x = …, y = …) { [super(…);] this.<own> = …; } — defaults cover omitted args;
         // members passed to the base record's primary constructor are assigned by `super`, not here.
         sb.Append($"constructor({string.Join(", ", members.Select(m => $"{m.Js} = {m.Default}"))}) {{ ");

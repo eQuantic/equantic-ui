@@ -1074,7 +1074,7 @@ public class TypeScriptEmitter
                     body = body.Substring(1, body.Length - 2).Trim();
                 }
                 c.Raw(body);
-            }, method.TypeParameters, sourceNode: method.SyntaxNode);
+            }, method.TypeParameters, sourceNode: method.SyntaxNode, isStatic: method.IsStatic);
         }
         else
         {

@@ -201,6 +201,9 @@ public class MethodDefinition
     public List<string> TypeParameters { get; set; } = new();
     public List<ParameterDefinition> Parameters { get; set; } = new();
     public string Body { get; set; } = string.Empty;
+    /// <summary>A <c>static</c> helper belongs to the CLASS — call sites are qualified with the class
+    /// name (<c>Users.initials(…)</c>), so emitting it on the prototype would break them at runtime.</summary>
+    public bool IsStatic { get; set; }
     public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? SyntaxNode { get; set; }
     /// <summary>The body block — works for constructors too (whose declaration isn't a
     /// <see cref="MethodDeclarationSyntax"/>), so the emitter can transpile and run a ctor's body.</summary>
