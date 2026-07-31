@@ -25,6 +25,9 @@ ConstantBuffer<DrawUniforms> u;
 // by the textured pipeline; the SDF fragment never references it.
 Texture2D<float> coverageTexture;
 
+// W4 images: straight-alpha color texture (sRGB view — samples arrive linear).
+Texture2D<float4> colorTexture;
+
 // ColorSpace.SrgbToLinear — the exact IEC 61966-2-1 piecewise curve.
 float srgbToLinear(float c)
 {
@@ -141,4 +144,35 @@ float4 textured_fragment(float4 position: SV_Position) : SV_Target
     float a = u.colorA.a * coverage;
     float3 lin = float3(srgbToLinear(u.colorA.r), srgbToLinear(u.colorA.g), srgbToLinear(u.colorA.b)) * a;
     return float4(lin, a);
+}
+
+// W4 images — DrawCommandKind.Texture with an Rgba8 texture: the texel IS the color (the paint
+// tint is ignored); NEAREST via Load like the coverage path. The _sRGB texture view hands the
+// sample back LINEAR; we premultiply by its alpha (× clip coverage) for the src-over blend.
+[shader("fragment")]
+float4 textured_rgba_fragment(float4 position: SV_Position) : SV_Target
+{
+    float2 pixel = position.xy;
+    float2 local = float2(
+        pixel.x * u.inv0.x + pixel.y * u.inv0.y + u.inv0.z,
+        pixel.x * u.inv1.x + pixel.y * u.inv1.y + u.inv1.z);
+
+    float2 rectMin = u.rect.xy - u.rect.zw;
+    float2 uv = (local - rectMin) / (u.rect.zw * 2.0);
+    if (uv.x < 0.0 || uv.x >= 1.0 || uv.y < 0.0 || uv.y >= 1.0) discard;
+
+    int tx = min(int(u.gradient.x) - 1, int(uv.x * u.gradient.x));
+    int ty = min(int(u.gradient.y) - 1, int(uv.y * u.gradient.y));
+    float4 texel = colorTexture.Load(int3(tx, ty, 0));
+
+    float coverage = 1.0;
+    if (u.flags.z > 0.5)
+    {
+        float cd = sdRoundedRect(pixel - u.clipRect.xy, u.clipRect.zw, u.clipRadii);
+        coverage = clamp(0.5 - cd, 0.0, 1.0);
+    }
+
+    float a = texel.a * coverage;
+    if (a <= 0.0) discard;
+    return float4(texel.rgb * a, a);
 }

@@ -69,6 +69,11 @@ public sealed class PhotonHost
     public Framework.IIconRasterizer? IconRasterizer { get; set; }
 
     private readonly TextRasterCache _textCache = new();
+
+    /// <summary>W4: the platform image service (null = SurfaceSubtle placeholder boxes).</summary>
+    public Framework.IImageLoader? ImageLoader { get; set; }
+
+    private readonly Dictionary<string, TextureData?> _imageCache = new();
     private readonly IconRasterCache _iconCache = new();
 
     /// <summary>Device pixels per dp (the shell's backingScaleFactor). Layout, input and hit
@@ -92,7 +97,7 @@ public sealed class PhotonHost
         builder.Clear(_theme.Background.Resolve(Mode));
         if (RenderScale != 1f) builder.PushTransform(Engine.Matrix2D.Scale(RenderScale, RenderScale));
         _lastTimeMs = timeMs;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache);
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache);
         if (RenderScale != 1f) builder.Pop();
         NeedsRender = _lastFrame.HasActiveMotion;
         return _lastFrame;

@@ -25,7 +25,8 @@ public sealed class MetalBackend : IRenderBackend
     private readonly IntPtr _vertexFn;
     private readonly IntPtr _fragmentFn;
     private readonly IntPtr _texturedFn;
-    private readonly Dictionary<(ulong Format, bool Textured), IntPtr> _pipelines = new();
+    private readonly IntPtr _texturedRgbaFn;
+    private readonly Dictionary<(ulong Format, byte Kind), IntPtr> _pipelines = new();
     private readonly Dictionary<TextureData, IntPtr> _textures = new();
     private IntPtr _dummyTexture;
 
@@ -55,6 +56,7 @@ public sealed class MetalBackend : IRenderBackend
         _vertexFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("fullscreen_vertex"));
         _fragmentFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("sdf_fragment"));
         _texturedFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("textured_fragment"));
+        _texturedRgbaFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("textured_rgba_fragment"));
         _pipeline = PipelineFor(PixelFormatRgba8UnormSrgb);
     }
 
@@ -68,19 +70,21 @@ public sealed class MetalBackend : IRenderBackend
     private IntPtr TextureFor(TextureData data)
     {
         if (_textures.TryGetValue(data, out var cached)) return cached;
+        var rgba = data.Format == TextureFormat.Rgba8;
         var descriptor = ObjC.Send(ObjC.objc_getClass("MTLTextureDescriptor"),
             Sel("texture2DDescriptorWithPixelFormat:width:height:mipmapped:"),
-            PixelFormatR8Unorm, (ulong)data.Width, (ulong)data.Height, false);
+            rgba ? PixelFormatRgba8UnormSrgb : PixelFormatR8Unorm, (ulong)data.Width, (ulong)data.Height, false);
         ObjC.SendVoid(descriptor, Sel("setStorageMode:"), StorageModeShared);
         var texture = ObjC.Send(_device, Sel("newTextureWithDescriptor:"), descriptor);
         if (texture == IntPtr.Zero) throw new InvalidOperationException("Metal texture creation failed.");
+        var bytesPerRow = (ulong)data.Width * (rgba ? 4ul : 1ul);
         unsafe
         {
             fixed (byte* bytes = data.Alpha)
             {
                 ObjC.SendVoid(texture, Sel("replaceRegion:mipmapLevel:withBytes:bytesPerRow:"),
                     new MTLRegion { Width = (ulong)data.Width, Height = (ulong)data.Height, Depth = 1 },
-                    0, (IntPtr)bytes, (ulong)data.Width);
+                    0, (IntPtr)bytes, bytesPerRow);
             }
         }
         _textures[data] = texture;
@@ -93,13 +97,14 @@ public sealed class MetalBackend : IRenderBackend
         ? _dummyTexture
         : _dummyTexture = TextureFor(new TextureData(1, 1, new byte[] { 0 }));
 
-    private IntPtr PipelineFor(ulong pixelFormat, bool textured = false)
+    // Kind: 0 = SDF, 1 = A8 coverage texture, 2 = RGBA image texture.
+    private IntPtr PipelineFor(ulong pixelFormat, byte kind = 0)
     {
-        if (_pipelines.TryGetValue((pixelFormat, textured), out var cached)) return cached;
+        if (_pipelines.TryGetValue((pixelFormat, kind), out var cached)) return cached;
 
         var descriptor = ObjC.Send(ObjC.Send(ObjC.objc_getClass("MTLRenderPipelineDescriptor"), Sel("alloc")), Sel("init"));
         ObjC.SendVoid(descriptor, Sel("setVertexFunction:"), _vertexFn);
-        ObjC.SendVoid(descriptor, Sel("setFragmentFunction:"), textured ? _texturedFn : _fragmentFn);
+        ObjC.SendVoid(descriptor, Sel("setFragmentFunction:"), kind switch { 1 => _texturedFn, 2 => _texturedRgbaFn, _ => _fragmentFn });
 
         var attachment = ObjC.Send(ObjC.Send(descriptor, Sel("colorAttachments")), Sel("objectAtIndexedSubscript:"), 0ul);
         ObjC.SendVoid(attachment, Sel("setPixelFormat:"), pixelFormat);
@@ -117,7 +122,7 @@ public sealed class MetalBackend : IRenderBackend
         if (pipeline == IntPtr.Zero)
             throw new InvalidOperationException(
                 $"Pipeline creation failed: {DescribeError(pipelineError)}");
-        _pipelines[(pixelFormat, textured)] = pipeline;
+        _pipelines[(pixelFormat, kind)] = pipeline;
         return pipeline;
     }
 
@@ -156,8 +161,7 @@ public sealed class MetalBackend : IRenderBackend
     private void RenderCore(DisplayList displayList, IntPtr targetTexture, ulong pixelFormat, IntPtr presentDrawable)
     {
         var pipeline = PipelineFor(pixelFormat);
-        var texturedPipeline = PipelineFor(pixelFormat, textured: true);
-        var texturedActive = false;
+        var activeKind = (byte)0;
 
         // The pass clears to the display list's leading Clear command (ours always start with one).
         var clearColor = Color.Transparent;
@@ -182,8 +186,9 @@ public sealed class MetalBackend : IRenderBackend
         var commandBuffer = ObjC.Send(_queue, Sel("commandBuffer"));
         var encoder = ObjC.Send(commandBuffer, Sel("renderCommandEncoderWithDescriptor:"), passDescriptor);
         ObjC.SendVoid(encoder, Sel("setRenderPipelineState:"), pipeline);
-        // The generated entry points share one texture binding — keep it valid for the SDF path.
+        // The generated entry points share the texture bindings — keep both valid for every path.
         ObjC.SendVoid(encoder, Sel("setFragmentTexture:atIndex:"), DummyTexture(), 0ul);
+        ObjC.SendVoid(encoder, Sel("setFragmentTexture:atIndex:"), DummyTexture(), 1ul);
 
         // SPIKE FENCE: group-opacity layers approximate as per-command alpha (no offscreen pass in
         // the M0 spike) — overlapping children inside a layer double-blend here; the reference
@@ -207,12 +212,13 @@ public sealed class MetalBackend : IRenderBackend
                 textured.Gradient = new Float4(data.Width, data.Height, 0, 0);
                 textured.Flags = new Float4(0, 0, command.Clip is null ? 0 : 1, 0);
 
-                if (!texturedActive)
+                var kind = data.Format == TextureFormat.Rgba8 ? (byte)2 : (byte)1;
+                if (activeKind != kind)
                 {
-                    ObjC.SendVoid(encoder, Sel("setRenderPipelineState:"), texturedPipeline);
-                    texturedActive = true;
+                    ObjC.SendVoid(encoder, Sel("setRenderPipelineState:"), PipelineFor(pixelFormat, kind));
+                    activeKind = kind;
                 }
-                ObjC.SendVoid(encoder, Sel("setFragmentTexture:atIndex:"), TextureFor(data), 0ul);
+                ObjC.SendVoid(encoder, Sel("setFragmentTexture:atIndex:"), TextureFor(data), kind == 2 ? 1ul : 0ul);
                 unsafe
                 {
                     ObjC.SendVoid(encoder, Sel("setFragmentBytes:length:atIndex:"),
@@ -221,10 +227,10 @@ public sealed class MetalBackend : IRenderBackend
                 ObjC.SendVoid(encoder, Sel("drawPrimitives:vertexStart:vertexCount:"), PrimitiveTypeTriangle, 0, 3);
                 continue;
             }
-            if (texturedActive)
+            if (activeKind != 0)
             {
                 ObjC.SendVoid(encoder, Sel("setRenderPipelineState:"), pipeline);
-                texturedActive = false;
+                activeKind = 0;
             }
             if (command.Kind == DrawCommandKind.BeginLayer)
             {

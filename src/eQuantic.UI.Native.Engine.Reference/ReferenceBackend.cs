@@ -93,8 +93,22 @@ public sealed class ReferenceBackend : IRenderBackend
 
                 var tx = Math.Min(texture.Width - 1, (int)(u * texture.Width));
                 var ty = Math.Min(texture.Height - 1, (int)(v * texture.Height));
-                var coverage = texture.Alpha[ty * texture.Width + tx] / 255f;
-                if (coverage <= 0) continue;
+
+                float coverage;
+                var texel = tint;
+                if (texture.Format == TextureFormat.Rgba8)
+                {
+                    // W4 images: the texel IS the color (straight sRGB); coverage rides its alpha.
+                    var i4 = (ty * texture.Width + tx) * 4;
+                    texel = new Color(texture.Alpha[i4], texture.Alpha[i4 + 1], texture.Alpha[i4 + 2], texture.Alpha[i4 + 3]);
+                    coverage = 1f;
+                    if (texel.A == 0) continue;
+                }
+                else
+                {
+                    coverage = texture.Alpha[ty * texture.Width + tx] / 255f;
+                    if (coverage <= 0) continue;
+                }
 
                 if (command.Clip is { } clip)
                 {
@@ -106,7 +120,7 @@ public sealed class ReferenceBackend : IRenderBackend
                     if (coverage <= 0) continue;
                 }
 
-                target.BlendOver(px, py, ColorSpace.ToPremultipliedLinear(tint, coverage));
+                target.BlendOver(px, py, ColorSpace.ToPremultipliedLinear(texel, coverage));
             }
         }
     }

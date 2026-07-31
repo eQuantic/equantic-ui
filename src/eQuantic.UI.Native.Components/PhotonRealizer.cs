@@ -91,7 +91,9 @@ public static class PhotonRealizer
         TextRasterCache? textCache = null,
         float renderScale = 1f,
         Framework.IIconRasterizer? iconRasterizer = null,
-        IconRasterCache? iconCache = null)
+        IconRasterCache? iconCache = null,
+        Framework.IImageLoader? imageLoader = null,
+        Dictionary<string, TextureData?>? imageCache = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
         {
@@ -120,6 +122,8 @@ public static class PhotonRealizer
             ViewportH = viewportHeight,
             TextRasterizer = textRasterizer,
             TextCache = textCache,
+            ImageLoader = imageLoader,
+            ImageCache = imageCache,
             RenderScale = renderScale,
             TypeScale = typeScale,
             IconRasterizer = iconRasterizer,
@@ -186,6 +190,8 @@ public static class PhotonRealizer
         /// <summary>W4: the platform text service + per-host raster cache (null = placeholder bars).</summary>
         public Framework.ITextRasterizer? TextRasterizer { get; init; }
         public TextRasterCache? TextCache { get; init; }
+        public Framework.IImageLoader? ImageLoader { get; init; }
+        public Dictionary<string, TextureData?>? ImageCache { get; init; }
 
         /// <summary>W4: the platform icon service + per-host raster cache (null = disc placeholder).</summary>
         public Framework.IIconRasterizer? IconRasterizer { get; init; }
@@ -243,6 +249,64 @@ public static class PhotonRealizer
         }
 
         EmitNode(node, theme, mode, builder, hits, hovers, scrolls, drags, links, scrollMeta, press, motion, overlays);
+    }
+
+    /// <summary>
+    /// W4 images: decode through the platform loader (cached per source), draw as an Rgba8 Texture
+    /// command with the FIT math — Stretch fills, Contain letter-boxes centered, Cover fills and
+    /// CLIPS to the node's rrect. No loader / failed decode → the SurfaceSubtle placeholder box.
+    /// Nearest sampling v1 (bilinear is the scaling-quality fence).
+    /// </summary>
+    private static void EmitImage(LayoutNode node, Image image, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, MotionScope motion)
+    {
+        TextureData? data = null;
+        if (motion.ImageLoader is { } loader)
+        {
+            var cache = motion.ImageCache;
+            if (cache is null || !cache.TryGetValue(image.Source, out data))
+            {
+                var decoded = loader.Load(image.Source);
+                data = decoded is null ? null : TextureData.Rgba(decoded.Width, decoded.Height, decoded.Rgba);
+                cache?[image.Source] = data;
+            }
+        }
+        if (data is null)
+        {
+            builder.FillRRect(new RRect(node.Bounds, image.CornerRadius),
+                Paint.Solid(theme.SurfaceSubtle.Resolve(mode)));
+            return;
+        }
+
+        var b = node.Bounds;
+        Rect dest;
+        var clip = !image.CornerRadius.IsZero;
+        switch (image.Fit)
+        {
+            case ImageFit.Stretch:
+                dest = b;
+                break;
+            case ImageFit.Contain:
+            {
+                var scale = MathF.Min(b.Width / data.Width, b.Height / data.Height);
+                var w = data.Width * scale;
+                var h = data.Height * scale;
+                dest = new Rect(b.X + (b.Width - w) / 2, b.Y + (b.Height - h) / 2, w, h);
+                break;
+            }
+            default: // Cover — fills and overflows; always clipped to the bounds.
+            {
+                var scale = MathF.Max(b.Width / data.Width, b.Height / data.Height);
+                var w = data.Width * scale;
+                var h = data.Height * scale;
+                dest = new Rect(b.X + (b.Width - w) / 2, b.Y + (b.Height - h) / 2, w, h);
+                clip = true;
+                break;
+            }
+        }
+
+        if (clip) builder.PushClip(new RRect(b, image.CornerRadius));
+        builder.Texture(dest, new Color(255, 255, 255, 255), data);
+        if (clip) builder.PopClip();
     }
 
     /// <summary>Centers a panel on the anchor's X WITHOUT measuring it: a symmetric fixed-width
@@ -339,9 +403,7 @@ public static class PhotonRealizer
             // Spec A11 fence: a SurfaceSubtle box under the radius stands in for the bitmap until the
             // engine gains texture upload (M4) - the documented placeholder pattern.
             case Image image:
-                builder.FillRRect(
-                    new RRect(node.Bounds, image.CornerRadius),
-                    Paint.Solid(theme.SurfaceSubtle.Resolve(mode)));
+                EmitImage(node, image, theme, mode, builder, motion);
                 break;
 
             // Spec A10, W4 fence: a tinted disc at 30% alpha stands in for the glyph until the atlas
