@@ -17,6 +17,7 @@ if (Array.IndexOf(args, "--render-png") is var pngIndex and >= 0)
         RenderScale = 2f,
         TextRasterizer = text,
         IconRasterizer = new eQuantic.UI.Native.Shell.MacOS.CoreGraphicsIconRasterizer(),
+        ImageLoader = new eQuantic.UI.Native.Shell.MacOS.CoreGraphicsImageLoader(),
     };
     var builder = new eQuantic.UI.Native.Engine.DisplayListBuilder();
     host.RenderFrame(builder);
@@ -40,6 +41,18 @@ return 0;
 /// <summary>A write-once demo page: counter + variants row + a wave-3 Select, all library parts.</summary>
 sealed class DesktopDemo : StatefulComponent
 {
+    /// <summary>Repo-anchored demo asset (dotnet run's cwd varies) — missing = placeholder.</summary>
+    private static readonly string GoldenPath = FindRepoFile(
+        "tests/eQuantic.UI.Native.Engine.Tests/Goldens/select-open-light.png");
+
+    private static string FindRepoFile(string relative)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "eQuantic.UI.sln")))
+            dir = dir.Parent;
+        return dir is null ? relative : Path.Combine(dir.FullName, relative);
+    }
+
     private int _count;
     private int _size = 1;
 
@@ -60,6 +73,10 @@ sealed class DesktopDemo : StatefulComponent
         body.Add(new ProgressBar(_count % 10 / 10f));
         body.Add(new Select(new[] { "Small", "Medium", "Large" }, _size,
             onChanged: i => SetState(() => _size = i)));
+
+        // W4 images: a real decoded file through ImageIO — here, one of the engine's own goldens
+        // (meta: the engine rendering a picture of itself). Missing file → placeholder box.
+        body.Add(new Image(GoldenPath, 240, 160, ImageFit.Contain) { CornerRadius = new CornerRadii(8) });
 
         var icons = new Row(gap: Space.S3) { Cross = CrossAlign.Center };
         foreach (var glyph in new[] { Icons.Search, Icons.CheckCircle, Icons.Warning, Icons.Heart, Icons.Mail, Icons.Person })
