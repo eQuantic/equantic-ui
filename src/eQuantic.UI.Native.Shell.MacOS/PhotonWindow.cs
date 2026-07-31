@@ -22,7 +22,7 @@ namespace eQuantic.UI.Native.Shell.MacOS;
 /// </summary>
 public sealed class PhotonWindow
 {
-    private const ulong StyleTitledClosableMiniaturizable = 1 | 2 | 4;
+    private const ulong StyleTitledClosableMiniaturizableResizable = 1 | 2 | 4 | 8;
     private const ulong BackingBuffered = 2;
     private const ulong EventTypeLeftMouseDown = 1;
     private const ulong EventTypeLeftMouseUp = 2;
@@ -33,12 +33,16 @@ public sealed class PhotonWindow
     private readonly string _title;
     private readonly float _width;
     private readonly float _height;
+    private float _currentWidth;
+    private float _currentHeight;
 
     public PhotonWindow(string title, float width = 800, float height = 600)
     {
         _title = title;
         _width = width;
         _height = height;
+        _currentWidth = width;
+        _currentHeight = height;
     }
 
     /// <summary>Frames actually presented — the self-test's exit evidence.</summary>
@@ -61,10 +65,11 @@ public sealed class PhotonWindow
         // NSWindow + CAMetalLayer content.
         var window = Send(Send(objc_getClass("NSWindow"), Sel("alloc")),
             Sel("initWithContentRect:styleMask:backing:defer:"),
-            new CGRect(0, 0, _width, _height), StyleTitledClosableMiniaturizable, BackingBuffered, false);
+            new CGRect(0, 0, _width, _height), StyleTitledClosableMiniaturizableResizable, BackingBuffered, false);
         SendVoid(window, Sel("setTitle:"), NSString(_title));
         SendVoid(window, Sel("setReleasedWhenClosed:"), false);
         SendVoid(window, Sel("setAcceptsMouseMovedEvents:"), true);
+        SendVoid(window, Sel("setContentMinSize:"), new CGSize(320, 240));
         SendVoid(window, Sel("center"));
 
         var scale = (float)SendDouble(window, Sel("backingScaleFactor"));
@@ -120,6 +125,19 @@ public sealed class PhotonWindow
 
             if (!SendBool(window, Sel("isVisible"))) break;
 
+            // W5 resize: poll the content size each cycle (no ObjC delegate class needed) — on a
+            // change, resize the drawable and the HOST (state survives; layout adopts next frame).
+            var content = SendRect(contentView, Sel("bounds"));
+            var newW = (float)content.Width;
+            var newH = (float)content.Height;
+            if (newW > 0 && newH > 0 && (newW != _currentWidth || newH != _currentHeight))
+            {
+                _currentWidth = newW;
+                _currentHeight = newH;
+                SendVoid(layer, Sel("setDrawableSize:"), new CGSize(newW * scale, newH * scale));
+                host.Resize(newW, newH);
+            }
+
             if (host.NeedsRender || forced)
             {
                 var drawable = Send(layer, Sel("nextDrawable"));
@@ -159,7 +177,7 @@ public sealed class PhotonWindow
 
         var location = SendPoint(e, Sel("locationInWindow"));
         var x = (float)location.X;
-        var y = _height - (float)location.Y;
+        var y = _currentHeight - (float)location.Y;
 
         switch (type)
         {

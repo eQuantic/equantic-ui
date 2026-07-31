@@ -110,6 +110,10 @@ internal static partial class AppKit
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     internal static partial CGPoint SendPoint(IntPtr receiver, IntPtr selector);
 
+    // Large-struct return rides x8 on arm64 — the single msgSend entry point handles it.
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    internal static partial CGRect SendRect(IntPtr receiver, IntPtr selector);
+
     internal static IntPtr Sel(string name) => sel_registerName(name);
 
     internal static IntPtr NSString(string value)

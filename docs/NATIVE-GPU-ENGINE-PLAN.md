@@ -596,6 +596,14 @@ Bun and the JS bundling chain, the TypeScript runtime.
   evenodd (IconGlyph carries none), atlas packing (one texture per glyph today), image decode
   (A11/M4 — the remaining Texture consumer).
 
+- **2026-07-31 — W5: LIVE WINDOW RESIZE.** `PhotonHost.Resize(w,h)` adopts a new viewport WITHOUT
+  recreating the host — component instances, transitions, scroll offsets and presence clocks all
+  survive; the next frame lays out against the new size (S6 size-class changes resolve naturally).
+  The shell polls the content bounds each cycle (no ObjC delegate class needed), resizes the
+  drawable at backingScaleFactor and keeps input mapping against the CURRENT height. Window gains
+  the Resizable style + a 320×240 content minimum. Proven: resize contract tests (viewport
+  adoption, Fill re-layout, same-host dispatch after resize, same-size no-op) + window self-test.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

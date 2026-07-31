@@ -38,8 +38,8 @@ public sealed class PhotonHost
     }
 
     public ThemeMode Mode { get; set; }
-    public float Width { get; }
-    public float Height { get; }
+    public float Width { get; private set; }
+    public float Height { get; private set; }
 
     /// <summary>True when state changed since the last <see cref="RenderFrame"/> (starts true), or
     /// when the last frame carried running loop motion — animated frames keep the loop hot.</summary>
@@ -48,6 +48,19 @@ public sealed class PhotonHost
     /// <summary>The OS "Reduce Motion" accessibility setting (spec §06): loop movement renders at
     /// rest and stops requesting frames. Platform shells (W5) feed the real setting.</summary>
     public bool ReducedMotion { get; set; }
+
+    /// <summary>
+    /// W5 resize: adopts a new viewport WITHOUT recreating the host — component instances,
+    /// transitions, scroll offsets and presence clocks all survive; the next frame lays out
+    /// against the new size (size-class changes resolve naturally, S6).
+    /// </summary>
+    public void Resize(float width, float height)
+    {
+        if (width == Width && height == Height) return;
+        Width = width;
+        Height = height;
+        NeedsRender = true;
+    }
 
     /// <summary>W4: the platform text service (null = deterministic placeholder bars).</summary>
     public Framework.ITextRasterizer? TextRasterizer { get; set; }
