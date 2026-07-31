@@ -86,7 +86,10 @@ public static class PhotonRealizer
         TransitionStore? transitions = null,
         ScrollStore? scrollOffsets = null,
         PresenceStore? presences = null,
-        DragStore? drags = null)
+        DragStore? drags = null,
+        Framework.ITextRasterizer? textRasterizer = null,
+        TextRasterCache? textCache = null,
+        float renderScale = 1f)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
         {
@@ -113,6 +116,10 @@ public static class PhotonRealizer
             Presences = presences,
             ViewportW = viewportWidth,
             ViewportH = viewportHeight,
+            TextRasterizer = textRasterizer,
+            TextCache = textCache,
+            RenderScale = renderScale,
+            TypeScale = typeScale,
         };
         var overlays = new List<Overlay>();
         var dragRegions = new List<DragRegion>();
@@ -171,6 +178,12 @@ public static class PhotonRealizer
         /// <summary>Wave 3: anchored panels position against the viewport (Top/End placements).</summary>
         public float ViewportW { get; init; }
         public float ViewportH { get; init; }
+
+        /// <summary>W4: the platform text service + per-host raster cache (null = placeholder bars).</summary>
+        public Framework.ITextRasterizer? TextRasterizer { get; init; }
+        public TextRasterCache? TextCache { get; init; }
+        public float RenderScale { get; init; } = 1f;
+        public float TypeScale { get; init; } = 1f;
         public bool Active { get; set; }
 
         /// <summary>The host's presence clock — the emit pass snapshots each live presence subtree's
@@ -296,7 +309,7 @@ public static class PhotonRealizer
                 break;
 
             case Text text:
-                EmitTextPlaceholder(node, text, theme, mode, builder);
+                EmitText(node, text, theme, mode, builder, motion);
                 break;
 
             // Spec B9 fence: the entry renders the W4 one-line placeholder bar — value in
@@ -522,6 +535,31 @@ public static class PhotonRealizer
     /// verifies layout geometry in goldens, and is unmistakably a placeholder. Regenerating goldens
     /// when real glyphs arrive is by design.
     /// </summary>
+    /// <summary>
+    /// W4: REAL text when the platform service is present — one A8 raster per block (cached by
+    /// content/style/width/scale; the tint carries the color, so one raster serves both modes),
+    /// drawn as a single Texture command over the node bounds. No service → the deterministic
+    /// placeholder bars (tests, headless).
+    /// </summary>
+    private static void EmitText(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, MotionScope motion)
+    {
+        if (motion.TextRasterizer is { } rasterizer && node.Text is { } measured)
+        {
+            var style = text.StyleOverride ?? theme.Type(text.Role);
+            var raster = (motion.TextCache ?? TextRasterCache.Shared).Get(
+                rasterizer, text.Content, style, motion.TypeScale, node.Bounds.Width, text.MaxLines, motion.RenderScale);
+            if (raster is not null)
+            {
+                var color = (text.Color ?? theme.TextPrimary).Resolve(mode);
+                var rect = new Rect(node.Bounds.X, node.Bounds.Y,
+                    raster.Texture.Width / motion.RenderScale, raster.Texture.Height / motion.RenderScale);
+                builder.Texture(rect, color, raster.Texture);
+                return;
+            }
+        }
+        EmitTextPlaceholder(node, text, theme, mode, builder);
+    }
+
     private static void EmitTextPlaceholder(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder)
     {
         if (node.Text is not { } measurement) return;

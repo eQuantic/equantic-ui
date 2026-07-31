@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
 
-namespace eQuantic.UI.Native.Engine.Tests.Golden;
+namespace eQuantic.UI.Native.Engine;
 
 /// <summary>
 /// A minimal, dependency-free PNG codec for the golden-image harness (8-bit RGBA only). PNG is chosen

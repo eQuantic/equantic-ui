@@ -553,6 +553,23 @@ Bun and the JS bundling chain, the TypeScript runtime.
   (host viewport work), keyboard/IME (W4/M4), per-process ObjC lifetimes, x64 msgSend variants,
   frame pacing via CVDisplayLink (today presents block on completion).
 
+- **2026-07-31 — W4a: REAL TEXT — the engine draws glyphs (CoreText, zero third-party).**
+  The engine gained its texture primitive: `DrawCommandKind.Texture` (A8 coverage × paint tint,
+  NEAREST — rasters are device-scale, texels map 1:1), a per-frame texture table with identity
+  dedupe, and the NORMATIVE Reference rasterizer. `ITextRasterizer` joins the Framework: the
+  platform service that turns a measured block into an A8 raster — on macOS `CoreTextService`
+  implements BOTH measurer and rasterizer (system frameworks only, Edgar's zero-third-party rule;
+  HarfBuzz/FreeType are no longer the plan for platforms with a system text engine), so layout
+  breaks and raster breaks agree by construction; lines sit on the STYLE's line-height grid, and
+  the raster draws through a scaled CTM (wrap in dp, pixels at device scale). The realizer emits
+  one Texture command per Text block (per-host cache keyed by everything but color — the tint
+  carries it, light/dark share rasters); no service → the deterministic bars (tests unchanged,
+  goldens intact). PROOF: PhotonDesktop `--render-png` renders the write-once demo through the
+  Reference at 2× — San Francisco glyphs from OUR engine. Fences: **W4b — the Metal textured
+  pipeline via the Slang round-trip** (the window skips Texture commands and shows bars over
+  CORRECT CoreText layout until then), ellipsis glyph on truncation, icon/image rasters riding the
+  same primitive, CTFont per-process cache.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
