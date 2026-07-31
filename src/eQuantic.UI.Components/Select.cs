@@ -43,7 +43,7 @@ public sealed class Select : StatefulComponent
         var theme = context.Theme;
         var hasValue = SelectedIndex >= 0 && SelectedIndex < Options.Count;
 
-        var fieldRow = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill };
+        var fieldRow = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
         fieldRow.Add(new Text(hasValue ? Options[SelectedIndex] : Placeholder ?? "Select…",
             TypeRole.BodyM, hasValue ? theme.TextPrimary : theme.TextMuted, maxLines: 1));
         fieldRow.Add(new Flexible(new Spacer()));
@@ -68,7 +68,7 @@ public sealed class Select : StatefulComponent
             var index = i;
             var selected = i == SelectedIndex;
 
-            var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill };
+            var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
             row.Add(new Text(Options[i], TypeRole.BodyM,
                 selected ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary, maxLines: 1));
             if (selected)
