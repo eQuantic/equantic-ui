@@ -56,6 +56,10 @@ internal static partial class ObjC
     [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
     internal static partial void SendVoid(IntPtr receiver, IntPtr selector, MTLClearColor color);
 
+    /// <summary>dispatch_data_create — wraps the metallib bytes for newLibraryWithData (D3).</summary>
+    [LibraryImport("/usr/lib/libSystem.B.dylib")]
+    internal static partial IntPtr dispatch_data_create(IntPtr buffer, nuint size, IntPtr queue, IntPtr destructor);
+
     /// <summary>setFragmentTexture:atIndex: — binds the coverage texture (W4b).</summary>
     [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
     internal static partial void SendVoid(IntPtr receiver, IntPtr selector, IntPtr arg1, ulong arg2);
