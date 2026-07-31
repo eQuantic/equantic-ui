@@ -537,6 +537,22 @@ Bun and the JS bundling chain, the TypeScript runtime.
   dogfood), RHI extraction + Vulkan, toolchain packaging (metallib + pipeline caching), ObjC
   lifetime management. All M0–M5 exit boxes remain open.
 
+- **2026-07-31 — W5 milestone 1: the FIRST REAL PHOTON WINDOW (macOS shell).**
+  `eQuantic.UI.Native.Shell.MacOS` — NSWindow + CAMetalLayer hosting the PhotonHost, ZERO
+  third-party packages (Edgar's directive): slim typed `objc_msgSend` AppKit bindings, the
+  Metal-spike pattern, arm64-only for now. The backend grew per-format pipelines (offscreen stays
+  RGBA8_sRGB; the window layer is BGRA8_sRGB — same shaders, hardware swizzle) and
+  `RenderToDrawable` (encode straight into the drawable's texture, present on commit). The host
+  gained `RenderScale`: layout/input/hit regions stay in dp, one root scale transform rasters at
+  backingScaleFactor (retina). OS input (mouse down/up/move/drag, scroll) routes into the ordinary
+  pointer pipeline — press visuals, hover diffs and the wave-3 anchored Select all live in the
+  window. Cooperative loop: blocks on the next OS event while idle, free-runs on the frame clock
+  while motion is active. `samples/PhotonDesktop` is the dogfood app (write-once Card/Buttons/
+  ProgressBar/Select); `--self-test` presents 120 frames and exits 0 — proven on hardware
+  (120/120, exit 0; Metal parity suite held at 275 native tests). Fences: fixed window size
+  (host viewport work), keyboard/IME (W4/M4), per-process ObjC lifetimes, x64 msgSend variants,
+  frame pacing via CVDisplayLink (today presents block on completion).
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
