@@ -30,6 +30,7 @@ import type {
   ImageNode,
   LinearGradientValue,
   DragDismissNode,
+  LinkNode,
   LoopMotionNode,
   OverlayNode,
   PresenceNode,
@@ -180,6 +181,8 @@ function lowerNode(
       return lowerPresence(node as PresenceNode, context, horizontalAxis, path);
     case 'dragDismiss':
       return lowerDragDismiss(node as DragDismissNode, context, horizontalAxis, path);
+    case 'link':
+      return lowerLink(node as LinkNode, context, path);
     case 'image':
       return lowerImage(node as ImageNode);
     case 'icon':
@@ -270,6 +273,21 @@ function lowerPresence(
   // The EXIT marker — the reconciler defers this element's removal while the reverse plays.
   child.attributes['data-eq-exit'] = slide ? 'slideup' : 'fade';
   return child;
+}
+
+/** Navigation mirror: a real <a href> (the SPA router intercepts internal clicks) with UA chrome
+ * neutralized by the generated .eq-link — the child owns all visuals (the Pressable contract). */
+function lowerLink(node: LinkNode, context: LoweringContext, path: string): HtmlNode {
+  const anchor: HtmlNode = {
+    tag: 'a',
+    attributes: { class: 'eq-link', href: node.href },
+    events: {},
+    children: [],
+  };
+  if (node.label) anchor.attributes['aria-label'] = node.label;
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) anchor.children.push(child);
+  return anchor;
 }
 
 /** Gestures v2 mirror: the drag marker + dismiss event ride the child's own root (no wrapper —

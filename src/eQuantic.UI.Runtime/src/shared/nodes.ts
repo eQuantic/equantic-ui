@@ -254,6 +254,14 @@ export interface PresenceNode extends VisualNodeValue {
   enter?: string;
 }
 
+/** Navigation semantics: the child becomes a link to href (web <a>; native host seam). */
+export interface LinkNode extends VisualNodeValue {
+  nodeKind: 'link';
+  href: string;
+  child: VisualNodeValue;
+  label?: string | null;
+}
+
 /** Gestures v2: vertical drag-to-dismiss — the child follows a downward drag; releasing past the
  * threshold fires onDismiss, short of it glides back. */
 export interface DragDismissNode extends VisualNodeValue {

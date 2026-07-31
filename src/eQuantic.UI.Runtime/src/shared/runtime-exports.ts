@@ -40,6 +40,7 @@ export {
   Overlay,
   Presence,
   DragDismiss,
+  Link,
   Spinner,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';

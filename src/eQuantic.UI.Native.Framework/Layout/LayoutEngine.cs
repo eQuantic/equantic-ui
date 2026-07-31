@@ -127,6 +127,8 @@ public static class LayoutEngine
         // The Spinner shares the icon em-box contract (spec B15: sizes = the §07 whitelist).
         Spinner spinner => new LayoutNode(spinner) { Bounds = new Rect(0, 0, spinner.Size, spinner.Size) },
         Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx, path),
+        // A Link is layout-transparent (semantics + interaction only — the child owns visuals).
+        Link link => MeasureWrapper(link, link.Child, maxW, maxH, ctx, path),
         Flexible flexible => MeasureWrapper(flexible, flexible.Child, maxW, maxH, ctx, path),
         // Loop motion is layout-transparent: the offset is a REALIZE-time transform (spec §06 —
         // transform-only frames never re-lay-out).

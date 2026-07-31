@@ -124,6 +124,7 @@ export {
   Overlay,
   Presence,
   DragDismiss,
+  Link,
   Spinner,
 } from './shared/vocabulary';
 export {

@@ -328,6 +328,31 @@ public sealed class DragDismiss : VisualNode
 }
 
 /// <summary>
+/// NAVIGATION semantics in the vocabulary: the child becomes a link to <see cref="Href"/>. The child
+/// owns ALL visuals (like Pressable) — Link adds only the semantics and the interaction. Web lowers
+/// to a real <c>&lt;a href&gt;</c> (SSR-crawlable; the SPA router intercepts internal clicks, so
+/// guards/prefetch apply); native registers a link region and resolves a tap through the HOST's
+/// navigation seam (<c>PhotonHost.NavigationRequested</c> — the platform shell maps hrefs to pages).
+/// Pressables INSIDE a link win the tap (topmost dispatch), exactly like a button inside an anchor.
+/// </summary>
+public sealed class Link : VisualNode
+{
+    public override string NodeKind => "link";
+
+    public Link(string href, VisualNode child)
+    {
+        Href = href;
+        Child = child;
+    }
+
+    public string Href { get; init; }
+    public VisualNode Child { get; init; }
+
+    /// <summary>Accessible name when the child carries no text of its own (icon-only links).</summary>
+    public string? Label { get; init; }
+}
+
+/// <summary>
 /// Single-line text ENTRY (the B9/B10 primitive): value + placeholder + change/submit/focus
 /// callbacks. The web realizer lowers it to a real chrome-less <c>&lt;input&gt;</c> (the browser
 /// owns caret/selection/IME); the CONTAINER chrome (border, states, label) belongs to the
