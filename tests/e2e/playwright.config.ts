@@ -23,7 +23,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'dotnet run --project ../../samples/DefaultUIDashboard --urls http://localhost:5200',
+    command: 'dotnet run --project ../../samples/DefaultUIDashboard --no-launch-profile --urls http://localhost:5200',
+    env: {
+      // Hot reload's SSE stream keeps the network busy forever — e2e pins PRODUCTION behavior.
+      ASPNETCORE_ENVIRONMENT: 'Production',
+    },
     url: 'http://localhost:5200',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
