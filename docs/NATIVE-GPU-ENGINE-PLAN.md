@@ -624,6 +624,13 @@ Bun and the JS bundling chain, the TypeScript runtime.
   correct inside the stretched bounds meanwhile). Fences: bilinear for scaled images, URL/async
   sources with loading states.
 
+- **2026-07-31 — D3 COMPLETE: the offline metallib.** `generate-shaders.sh` now also runs
+  `xcrun metal`/`metallib` (Metal Toolchain, downloaded by Edgar) and commits `Sdf.metallib`;
+  the backend loads the PRECOMPILED library first (dispatch_data + newLibraryWithData) with the
+  MSL source path as the dev fallback — ZERO runtime shader compilation, the founding thesis
+  fulfilled. Window presents are asynchronous (drawable-pool backpressure). Parity 18/18 through
+  the binary path. Remaining D3 tail: pipeline caching across launches (binary archives).
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

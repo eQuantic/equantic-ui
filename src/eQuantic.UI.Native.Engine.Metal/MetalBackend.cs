@@ -45,13 +45,18 @@ public sealed class MetalBackend : IRenderBackend
 
         _queue = ObjC.Send(_device, Sel("newCommandQueue"));
 
-        // Compile the spike shader once; pipelines are built PER TARGET FORMAT (offscreen
-        // surfaces are RGBA8_sRGB; a window's CAMetalLayer only offers BGRA8 variants).
-        var library = ObjC.Send(_device, Sel("newLibraryWithSource:options:error:"),
-            ObjC.NSString(MetalShaders.Source), IntPtr.Zero, out var libraryError);
+        // D3: the PRECOMPILED metallib loads first — zero runtime shader compilation (the
+        // engine's founding thesis). The MSL source path stays as the dev fallback (a fresh
+        // Slang regen without the Metal Toolchain still runs).
+        var library = TryLoadPrecompiledLibrary();
         if (library == IntPtr.Zero)
-            throw new InvalidOperationException(
-                $"MSL compilation failed: {DescribeError(libraryError)}");
+        {
+            library = ObjC.Send(_device, Sel("newLibraryWithSource:options:error:"),
+                ObjC.NSString(MetalShaders.Source), IntPtr.Zero, out var libraryError);
+            if (library == IntPtr.Zero)
+                throw new InvalidOperationException(
+                    $"MSL compilation failed: {DescribeError(libraryError)}");
+        }
 
         _vertexFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("fullscreen_vertex"));
         _fragmentFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("sdf_fragment"));
@@ -303,6 +308,25 @@ public sealed class MetalBackend : IRenderBackend
 
     private static Float4 ToFloat4(Color color) =>
         new(color.R / 255f, color.G / 255f, color.B / 255f, color.A / 255f);
+
+    /// <summary>Loads the embedded offline-compiled metallib (dispatch_data with the DEFAULT
+    /// destructor — libdispatch copies the buffer). Zero = fall back to source compilation.</summary>
+    private IntPtr TryLoadPrecompiledLibrary()
+    {
+        using var stream = typeof(MetalBackend).Assembly.GetManifestResourceStream("Photon.Sdf.metallib");
+        if (stream is null) return IntPtr.Zero;
+        var bytes = new byte[stream.Length];
+        stream.ReadExactly(bytes);
+        unsafe
+        {
+            fixed (byte* buffer = bytes)
+            {
+                var data = ObjC.dispatch_data_create((IntPtr)buffer, (nuint)bytes.Length, IntPtr.Zero, IntPtr.Zero);
+                if (data == IntPtr.Zero) return IntPtr.Zero;
+                return ObjC.Send(_device, Sel("newLibraryWithData:error:"), data, out _);
+            }
+        }
+    }
 
     private static IntPtr Sel(string name) => ObjC.sel_registerName(name);
 

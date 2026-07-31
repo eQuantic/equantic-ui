@@ -16,6 +16,7 @@
          offline; runtime newLibraryWithSource still compiles MSL→binary on device (the metallib
          step joins the packaging work), but the SOURCE now comes from the shared Slang file. -->
     <EmbeddedResource Include="..\eQuantic.UI.Native.Engine\Shaders\Generated\Sdf.metal" LogicalName="Photon.Sdf.metal" />
+    <EmbeddedResource Include="..\eQuantic.UI.Native.Engine\Shaders\Generated\Sdf.metallib" LogicalName="Photon.Sdf.metallib" />
   </ItemGroup>
 
   <ItemGroup>
