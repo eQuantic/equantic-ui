@@ -25,13 +25,11 @@ function classFingerprint(html: string): string[] {
 
 test.describe('Write-once SSR + hydration', () => {
   test('hydration keeps the SSR class identity on the showroom', async ({ page }) => {
-    // KNOWN DIVERGENCE (2026-07-31, expected-fail until fixed): stateful/animated components
-    // (ProgressBar fills, Skeleton shimmer, LoopMotion bars) re-render client-side with classes
-    // the SSR didn't emit (+1 class on 4 motion elements, ~6 extra styled elements). The STATIC
-    // tree already matches byte-for-byte — the FlexNode ES2022 cross bug this test caught is
-    // fixed and pinned in vocabulary.spec.ts. When the motion family is aligned, this flips green
-    // and Playwright will flag the unexpected pass.
-    test.fail();
+    // The whole tree — static AND the stateful/animated family — now adopts by identity. The three
+    // divergences this test caught are fixed and pinned in unit tests: FlexNode's ES2022 `cross`
+    // (vocabulary.spec.ts), the Spacer counterweight's B14 transition missing from the C# realizer
+    // (WebRealizerTests), and eqc leaving an unset enum property `undefined` instead of its zero
+    // member, which grew presence dots the SSR never emitted (vocabulary.spec.ts).
 
     // The RAW server response, before any script runs — no race with the runtime boot.
     const response = await page.request.get('/');

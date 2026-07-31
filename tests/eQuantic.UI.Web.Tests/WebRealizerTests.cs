@@ -113,6 +113,36 @@ public class WebRealizerTests
         wrapper.Attributes["style"].Should().Contain("min-width: 0", "text must shrink to ellipsis, not push siblings");
     }
 
+    /// <summary>
+    /// Spec B14 / hydration identity: a WEIGHTED spacer is the ratio's counterweight (ProgressBar), so
+    /// AnimateChanges must animate its weight exactly as it does the Flexible fill's. Regression: the
+    /// realizer emitted the transition for Flexible only, so SSR shipped a bare `flex: n 1 0%` while the
+    /// TS twin (lowerSpacer) added the transition — the client repainted instead of adopting.
+    /// </summary>
+    [Fact]
+    public void Spacer_AnimateChanges_TransitionsItsWeight_LikeFlexible()
+    {
+        var row = new Row(gap: 0);
+        row.Add(new Flexible(new Primitives.Text("t"), flex: 42) { AnimateChanges = true });
+        row.Add(new Spacer { Flex = 58, AnimateChanges = true });
+        var node = Render(row);
+
+        const string transition = "transition: flex-grow var(--eq-motion-base) var(--eq-curve-standard)";
+        node.Children[0].Attributes["style"].Should().Contain(transition);
+        node.Children[1].Attributes["style"].Should().Contain(transition, "the counterweight must glide with the fill");
+        node.Children[1].Attributes["style"].Should().Contain("flex: 58 1 0%");
+    }
+
+    [Fact]
+    public void Spacer_WithoutAnimateChanges_Snaps()
+    {
+        var row = new Row(gap: 0);
+        row.Add(new Spacer { Flex = 58 });
+
+        Render(row).Children[0].Attributes["style"].Should().NotContain("transition",
+            "the component omits the flag on a regression so the change SNAPS (forward-only honesty)");
+    }
+
     [Fact]
     public void Spacer_Flexible_And_Fixed_FollowTheAxis()
     {

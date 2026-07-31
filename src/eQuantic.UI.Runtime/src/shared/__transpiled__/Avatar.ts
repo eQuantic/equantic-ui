@@ -12,6 +12,8 @@ export class Avatar extends StatelessComponent {
         if (initials !== undefined) this.initials = initials;
         if (size !== undefined) this.size = size;
         if (name !== undefined) this.name = name;
+        if (this.size === undefined) this.size = 'small';
+        if (this.status === undefined) this.status = 'none';
         this.initials = initials;this.size = size;this.name = name;
     }
 

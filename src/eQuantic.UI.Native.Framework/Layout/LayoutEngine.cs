@@ -115,6 +115,8 @@ public static class LayoutEngine
         // Spec S7: Sticky renders IN FLOW on native until engine scrolling lands (correct at scroll
         // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
         Sticky sticky => MeasureWrapper(sticky, sticky.Child, maxW, maxH, ctx, path),
+        // Wave 3: the anchor owns layout; the panel realizes in the realizer's overlay pass.
+        Anchored anchored => MeasureWrapper(anchored, anchored.Anchor, maxW, maxH, ctx, path),
         ScrollView scroll => MeasureScrollView(scroll, maxW, maxH, ctx, path),
         // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
         Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx, path),

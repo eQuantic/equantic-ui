@@ -193,6 +193,16 @@ public static class PhotonCssGenerator
         // Non-modal layers (toasts): input passes through except on the layer's own pressables.
         css.AppendLine(".eq-overlay-passthrough { pointer-events: none; }");
         css.AppendLine(".eq-overlay-passthrough .eq-pressable { pointer-events: auto; }");
+        // Wave 3 anchored overlays: relative host, absolute panel (pure CSS positioning — the
+        // placement classes are the whole mechanism), invisible fixed scrim for tap-outside.
+        css.AppendLine(".eq-anchorhost { position: relative; display: flex; flex-direction: column; }");
+        css.AppendLine(".eq-anchor-scrim { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1040; background: transparent; border: none; padding: 0; margin: 0; appearance: none; }");
+        css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; }");
+        css.AppendLine(".eq-anchor-b-start { top: 100%; inset-inline-start: 0; }");
+        css.AppendLine(".eq-anchor-b-end { top: 100%; inset-inline-end: 0; }");
+        css.AppendLine(".eq-anchor-t-start { bottom: 100%; inset-inline-start: 0; }");
+        css.AppendLine(".eq-anchor-t-end { bottom: 100%; inset-inline-end: 0; }");
+        css.AppendLine(".eq-anchor-match { min-width: 100%; }");
 
         // Link mechanics: the anchor is pure semantics — the child owns every visual (the Pressable
         // contract). display:block keeps flex/stack sizing natural.

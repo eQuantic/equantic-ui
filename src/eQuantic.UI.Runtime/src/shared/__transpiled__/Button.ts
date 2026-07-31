@@ -13,6 +13,8 @@ export class Button extends StatelessComponent {
         if (variant !== undefined) this.variant = variant;
         if (size !== undefined) this.size = size;
         if (onPressed !== undefined) this.onPressed = onPressed;
+        if (this.variant === undefined) this.variant = 'primary';
+        if (this.size === undefined) this.size = 'small';
         this.label = label;this.variant = variant;this.size = size;this.onPressed = onPressed;
     }
 

@@ -8,7 +8,7 @@
  * `render()` like on any other component; the reconciler never learns about abstract nodes).
  */
 
-import type { ComponentChild } from './nodes';
+import type { AnchorPlacementValue, ComponentChild } from './nodes';
 import type { HtmlNode } from '../core/types';
 import { iconPaths } from './icons.generated';
 import type {
@@ -45,6 +45,26 @@ export abstract class VisualNode {
  */
 export type VisualChild = VisualNode | ComponentChild;
 
+/** Mirror of the C# `StyleDiff` record (spec S5): a partial style applied over the base while
+ * an interaction state is active — only the set members override. */
+export class StyleDiff {
+  background?: ColorTokenValue | null;
+  borderColor?: ColorTokenValue | null;
+  borderWidth?: number | null;
+  elevation?: number | null;
+  opacity?: number | null;
+
+  constructor(config?: {
+    background?: ColorTokenValue | null;
+    borderColor?: ColorTokenValue | null;
+    borderWidth?: number | null;
+    elevation?: number | null;
+    opacity?: number | null;
+  }) {
+    if (config) Object.assign(this, config);
+  }
+}
+
 interface BoxStyleConfig {
   width?: SizeValue | number;
   height?: SizeValue | number;
@@ -60,6 +80,11 @@ interface BoxStyleConfig {
   elevation?: number;
   clip?: boolean;
   gradient?: LinearGradient | null;
+  opacity?: number | null;
+  transform?: unknown;
+  aspectRatio?: number;
+  hover?: StyleDiff | null;
+  focus?: StyleDiff | null;
 }
 
 /** Mirror of the C# `BoxStyle` record — constructed from the transpiled initializer config object.
@@ -79,6 +104,15 @@ export class BoxStyle {
   elevation = 0;
   clip = false;
   gradient: LinearGradient | null = null;
+  /** Spec S1 group opacity (null = opaque). */
+  opacity?: number | null;
+  /** Spec S1 static transform (the Transform2D wire shape). */
+  transform?: unknown;
+  /** Spec S1 aspect-ratio constraint (0 = none). */
+  aspectRatio = 0;
+  /** Spec S5 hover/focus diffs. */
+  hover?: StyleDiff | null;
+  focus?: StyleDiff | null;
 
   constructor(config?: BoxStyleConfig) {
     if (!config) return;
@@ -143,6 +177,37 @@ abstract class FlexNode extends VisualNode {
 
   add(child: VisualChild): void {
     this.children.push(child);
+  }
+}
+
+/** Mirror of the C# `Anchored` (wave 3): floating panel positioned relative to its anchor. */
+export class Anchored extends VisualNode {
+  readonly nodeKind = 'anchored';
+  anchor: VisualChild;
+  panel: VisualChild;
+  // Transpiled C# enums arrive as camelCase STRINGS — the union documents the valid set.
+  placement: AnchorPlacementValue | string = 'bottomStart';
+  gap = 4;
+  open = false;
+  onDismiss?: (() => void) | null;
+  matchAnchorWidth = false;
+
+  constructor(
+    anchor: VisualChild,
+    panel: VisualChild,
+    config?: {
+      placement?: AnchorPlacementValue | string;
+      gap?: number;
+      open?: boolean;
+      onDismiss?: (() => void) | null;
+      matchAnchorWidth?: boolean;
+      key?: string | null;
+    },
+  ) {
+    super();
+    this.anchor = anchor;
+    this.panel = panel;
+    if (config) Object.assign(this, config);
   }
 }
 

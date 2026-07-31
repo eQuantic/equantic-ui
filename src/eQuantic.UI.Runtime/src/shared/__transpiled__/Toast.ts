@@ -11,6 +11,7 @@ export class Toast extends StatelessComponent {
         if (status !== undefined) this.status = status;
         if (actionLabel !== undefined) this.actionLabel = actionLabel;
         if (onAction !== undefined) this.onAction = onAction;
+        if (this.status === undefined) this.status = 'primary';
         this.message = message;this.status = status;this.actionLabel = actionLabel;this.onAction = onAction;
     }
 

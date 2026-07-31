@@ -108,7 +108,12 @@ public static class PhotonRealizer
         var hits = new List<HitRegion>();
         var hovers = new List<HoverRegion>();
         var scrolls = new List<ScrollRegion>();
-        var motion = new MotionScope(timeMs, reducedMotion) { Presences = presences };
+        var motion = new MotionScope(timeMs, reducedMotion)
+        {
+            Presences = presences,
+            ViewportW = viewportWidth,
+            ViewportH = viewportHeight,
+        };
         var overlays = new List<Overlay>();
         var dragRegions = new List<DragRegion>();
         var links = new List<LinkRegion>();
@@ -162,6 +167,10 @@ public static class PhotonRealizer
 
         public float TimeMs { get; }
         public bool Reduced { get; }
+
+        /// <summary>Wave 3: anchored panels position against the viewport (Top/End placements).</summary>
+        public float ViewportW { get; init; }
+        public float ViewportH { get; init; }
         public bool Active { get; set; }
 
         /// <summary>The host's presence clock — the emit pass snapshots each live presence subtree's
@@ -352,6 +361,38 @@ public static class PhotonRealizer
         if (node.Source is Overlay overlay)
         {
             overlays.Add(overlay);
+            return;
+        }
+
+        // Wave 3 anchored overlay: the anchor renders in flow; while Open, a SYNTHETIC overlay
+        // layer carries [full-viewport filler (scrim Pressable when dismissible) + the panel
+        // Positioned from the anchor's ABSOLUTE bounds] — pure reuse of the overlay machinery,
+        // so panel pressables, hit routing and painter's order all come for free.
+        if (node.Source is Anchored anchored)
+        {
+            foreach (var child in node.Children)
+                Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, scrollMeta, press, motion, overlays);
+            if (!anchored.Open) return;
+
+            var filler = new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill });
+            var layer = new Stack();
+            layer.Add(anchored.OnDismiss is { } dismiss
+                ? new Pressable(filler, dismiss) { Label = "Dismiss" }
+                : filler);
+
+            var panel = anchored.MatchAnchorWidth
+                ? new Box(new BoxStyle { MinWidth = node.Bounds.Width }, anchored.Panel)
+                : anchored.Panel;
+            var b = node.Bounds;
+            var gap = anchored.Gap;
+            layer.Add(anchored.Placement switch
+            {
+                AnchorPlacement.BottomEnd => new Positioned(panel, top: b.Bottom + gap, end: motion.ViewportW - b.Right),
+                AnchorPlacement.TopStart => new Positioned(panel, bottom: motion.ViewportH - b.Y + gap, start: b.X),
+                AnchorPlacement.TopEnd => new Positioned(panel, bottom: motion.ViewportH - b.Y + gap, end: motion.ViewportW - b.Right),
+                _ => new Positioned(panel, top: b.Bottom + gap, start: b.X),
+            });
+            overlays.Add(new Overlay(layer));
             return;
         }
 

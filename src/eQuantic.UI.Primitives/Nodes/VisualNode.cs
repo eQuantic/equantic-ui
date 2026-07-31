@@ -264,6 +264,65 @@ public sealed class Overlay : VisualNode
     public bool Modal { get; init; } = true;
 }
 
+/// <summary>Where an <see cref="Anchored"/> panel attaches relative to its anchor (wave 3 v1: the
+/// four corner placements; centered variants and viewport flip/clamp are the positioning fence).</summary>
+public enum AnchorPlacement : byte
+{
+    BottomStart = 0,
+    BottomEnd = 1,
+    TopStart = 2,
+    TopEnd = 3,
+}
+
+/// <summary>
+/// The ANCHORED overlay (wave 3): a floating <see cref="Panel"/> positioned relative to the
+/// in-flow <see cref="Anchor"/> — the primitive under menus, selects and popovers. The anchor owns
+/// layout (the node is layout-transparent); the panel exists only while <see cref="Open"/> and
+/// paints ABOVE the page. When <see cref="OnDismiss"/> is set, an invisible viewport scrim behind
+/// the panel consumes the outside tap and fires it (tap-outside-closes). Web realizes as a
+/// position:relative host with an absolute panel — pure CSS, no JS positioning, SSR-exact; native
+/// queues a synthetic overlay layer with the panel <c>Positioned</c> from the anchor's absolute
+/// bounds. v1 fences: viewport flip/clamp (a panel near the edge does not reposition), escape from
+/// clipping ancestors on web (keep anchors out of overflow-hidden scrollers), Esc-key dismissal
+/// (a11y system).
+/// </summary>
+public sealed class Anchored : VisualNode
+{
+    public override string NodeKind => "anchored";
+
+    /// <summary>Default distance (dp) between the anchor's edge and the panel.</summary>
+    public const float DefaultGap = 4;
+
+    public Anchored(VisualNode anchor, VisualNode panel)
+    {
+        Anchor = anchor;
+        Panel = panel;
+    }
+
+    public VisualNode Anchor { get; init; }
+
+    /// <summary>The floating content. Built unconditionally so the tree shape is stable across
+    /// open/close (reconciler identity); realizers emit it only while <see cref="Open"/>.</summary>
+    public VisualNode Panel { get; init; }
+
+    public AnchorPlacement Placement { get; init; } = AnchorPlacement.BottomStart;
+
+    /// <summary>Distance (dp) between anchor and panel on the placement axis.</summary>
+    public float Gap { get; init; } = DefaultGap;
+
+    /// <summary>Controlled visibility — components own the state (Menu/Select internally,
+    /// Popover through its caller).</summary>
+    public bool Open { get; init; }
+
+    /// <summary>Fired by the invisible outside-tap scrim; null = no scrim (panel only closes
+    /// through its own actions).</summary>
+    public Action? OnDismiss { get; init; }
+
+    /// <summary>The panel refuses to be narrower than the anchor (the Select contract) —
+    /// CSS <c>min-width:100%</c> of the host; native wraps the panel in a MinWidth box.</summary>
+    public bool MatchAnchorWidth { get; init; }
+}
+
 /// <summary>How a <see cref="Presence"/> subtree ENTERS when it first appears (spec §06).</summary>
 public enum PresenceMotion : byte
 {
