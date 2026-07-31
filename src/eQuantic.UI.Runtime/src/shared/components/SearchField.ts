@@ -1,6 +1,10 @@
-import { $eq, Box, BoxStyle, BuildContext, Component, ComponentContext, CornerRadii, EdgeInsets, Flexible, HtmlElement, Icon, IconSize, Pressable, Row, SizeValue, StatelessComponent, TextEntry, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Flexible, Icon, IconSize, Pressable, Row, SizeValue, StatelessComponent, TextEntry } from "../runtime-exports";
 
 export class SearchField extends StatelessComponent {
+    declare query: string;
+    declare onChanged: (string: string) => void;
+    declare placeholder: string;
+    declare onSubmit: () => void;
     constructor(query?: any, onChanged: any = null, placeholder: any = 'Search…', onSubmit: any = null, props?: any) {
         super(props);
         if (query !== undefined) this.query = query;

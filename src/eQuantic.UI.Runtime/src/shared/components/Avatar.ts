@@ -1,7 +1,12 @@
-import { $eq, Box, BoxStyle, BuildContext, ColorToken, Component, ComponentContext, CornerRadii, HtmlElement, Icon, IconSize, Image, Positioned, Row, SizeValue, Stack, StatelessComponent, Text, TypeStyle, VariantColors, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Icon, IconSize, Image, Positioned, Row, SizeValue, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class Avatar extends StatelessComponent {
     static tintPalette: Variant[] = ['primary', 'success', 'info', 'warning', 'destructive'];
+    declare initials: string;
+    declare imageSource: string;
+    declare size: string;
+    declare name: string;
+    declare status: string;
     constructor(initials?: any, size: any = 'medium', name: any = null, props?: any) {
         super(props);
         if (initials !== undefined) this.initials = initials;

@@ -1,7 +1,17 @@
-import { $eq, Box, BoxStyle, BuildContext, ColorToken, Column, Component, ComponentContext, CornerRadii, EdgeInsets, Flexible, HtmlElement, Icon, IconSize, Row, SharedStatefulComponent, SizeValue, Text, TextEntry, UiComponent, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconSize, Row, SharedStatefulComponent, SizeValue, Text, TextEntry, UiComponent } from "@equantic/runtime";
 
 export class TextInput extends SharedStatefulComponent {
     _focused: boolean = false;
+    declare value: string;
+    declare onChanged: (string: string) => void;
+    declare label: string;
+    declare placeholder: string;
+    declare helper: string;
+    declare error: string;
+    declare leading: string;
+    declare size: string;
+    declare disabled: boolean;
+    declare obscure: boolean;
     constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', props?: any) {
         super(props);
         if (value !== undefined) this.value = value;

@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using eQuantic.UI.Core.Assets;
 using eQuantic.UI.Core.Metadata;
-using eQuantic.UI.Core.Theme;
 using eQuantic.UI.Server.Authorization;
 using eQuantic.UI.Server.Rendering;
 using Microsoft.AspNetCore.Builder;
@@ -103,10 +102,6 @@ public static class UIExtensions
         // Add SignalR services
         services.AddSignalR();
 
-        // Register EQ theme as fallback if no other theme is registered
-        // This will be overridden if Tailwind theme is added via AddTailwind()
-        services.TryAddSingleton<IAppTheme, AppThemeEQ>();
-
         // Register explicit asset providers first (WithAssetProvider<T> takes priority)
         foreach (var (serviceType, implType) in options.AssetProviders)
         {
@@ -198,34 +193,6 @@ public static class UIExtensions
                 return;
             }
             await stream.CopyToAsync(context.Response.Body);
-        });
-
-        // Map eQuantic CSS (served from wwwroot/_equantic/equantic.css)
-        endpoints.MapGet("/_equantic/equantic.css", async context =>
-        {
-            context.Response.ContentType = "text/css";
-            context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
-            var env = context.RequestServices.GetRequiredService<IWebHostEnvironment>();
-            var path = Path.Combine(env.WebRootPath, "_equantic", "equantic.css");
-
-            if (File.Exists(path))
-            {
-                await context.Response.SendFileAsync(path);
-            }
-            else
-            {
-                // Fallback to local directory (Dev scenario)
-                var localPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic", "equantic.css");
-                if (File.Exists(localPath))
-                {
-                    await context.Response.SendFileAsync(localPath);
-                }
-                else
-                {
-                    context.Response.StatusCode = 404;
-                    await context.Response.WriteAsync($"/* 404: equantic.css not found at {path} or {localPath} */");
-                }
-            }
         });
 
         // Debug/Fallback: Manually serve component files if StaticFiles misses them
@@ -334,22 +301,6 @@ public static class UIExtensions
         {
             headTags.Add($"<style>{eQuantic.UI.Web.PhotonCssGenerator.Generate(appTheme)}</style>");
             themeDataJson = eQuantic.UI.Web.ThemeBridge.SerializeJson(appTheme);
-        }
-
-        // Auto-inject theme initialization scripts if not already added by Tailwind
-        if (!headTags.Any(t => t.Contains("__EQUANTIC_THEME_DATA")))
-        {
-            var themeScript = ThemeProvider.GetInitializationScript();
-            if (!string.IsNullOrEmpty(themeScript))
-            {
-                headTags.Add(themeScript);
-            }
-
-            var darkModeScript = ThemeProvider.GetDarkModeScript();
-            if (!string.IsNullOrEmpty(darkModeScript) && !headTags.Any(t => t.Contains("data-theme")))
-            {
-                headTags.Add(darkModeScript);
-            }
         }
 
         // Initialize Metadata
@@ -541,7 +492,7 @@ public static class UIExtensions
                .When("HasInitialState", serializedState != null)
                .When("SsrEnabled", ssrEnabled)
                .When("HasServerActions", hasServerActions)
-               .When("EnableDefaultCss", options.EnableDefaultCss);
+               ;
         });
 
         context.Response.ContentType = "text/html";
@@ -675,18 +626,6 @@ public class UIOptions
 
         return this;
     }
-
-    /// <summary>
-    /// Configuration to enable/disable the default eQuantic CSS injection.
-    /// Set to false if using a custom theme provider like Tailwind.
-    /// Default is true.
-    /// </summary>
-    /// <summary>
-    /// Configuration to enable/disable the default eQuantic CSS injection.
-    /// Set to false if using a custom theme provider like Tailwind.
-    /// Default is true.
-    /// </summary>
-    public bool EnableDefaultCss { get; set; } = true;
 
     internal Type? NotFoundPageType { get; private set; }
     internal Type? ErrorPageType { get; private set; }

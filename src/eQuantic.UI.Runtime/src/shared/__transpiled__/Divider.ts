@@ -1,6 +1,8 @@
-import { Box, BoxStyle, BuildContext, Component, ComponentContext, EdgeInsets, HtmlElement, SizeValue, Space, StatelessComponent, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, EdgeInsets, SizeValue, Space, StatelessComponent } from "@equantic/runtime";
 
 export class Divider extends StatelessComponent {
+    declare inset: string;
+    declare axis: string;
     constructor(inset: any = 'none', axis: any = 'horizontal', props?: any) {
         super(props);
         if (inset !== undefined) this.inset = inset;

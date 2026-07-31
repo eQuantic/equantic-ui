@@ -1,10 +1,18 @@
-using eQuantic.UI.Core;
-using eQuantic.UI.Web.Components;
-using eQuantic.UI.Web.Components.Surfaces;
 using DefaultUIDashboard.Components;
+using eQuantic.UI.Components;
+using eQuantic.UI.Core;
+using eQuantic.UI.Primitives;
+using eQuantic.UI.Web;
+using StatefulComponent = eQuantic.UI.Core.StatefulComponent;
 
 namespace DefaultUIDashboard.Pages;
 
+/// <summary>
+/// The counter demo, migrated to the write-once library: a CORE page (state + routing) whose body is
+/// a shared-vocabulary card through the <see cref="VisualNodeComponent"/> bridge — no legacy
+/// components, no utility CSS. The three buttons are the same write-once <c>Button</c> the native
+/// realizer rasterizes.
+/// </summary>
 [Page("/counter", Title = "Counter Demo")]
 public class Counter : StatefulComponent
 {
@@ -15,51 +23,25 @@ public class CounterState : ComponentState<Counter>
 {
     private int _count = 0;
 
-    public void Increment()
-    {
-        SetState(() => _count++);
-    }
-
-    public void Decrement()
-    {
-        SetState(() => _count--);
-    }
-
-    public void Reset()
-    {
-        SetState(() => _count = 0);
-    }
-
     public override IComponent Build(RenderContext context)
     {
-        return new DefaultDashboardShell
+        var body = new Column(gap: Space.S4) { Cross = CrossAlign.Center, Padding = EdgeInsets.All(Space.S6) };
+        body.Add(new Text("Interactive counter", TypeRole.Title));
+        body.Add(new Text($"{_count}", TypeRole.Display));
+
+        var actions = new Row(gap: Space.S3) { Cross = CrossAlign.Center };
+        actions.Add(new Button("−", Variant.Outline, onPressed: () => SetState(() => _count--)));
+        actions.Add(new Button("Reset", Variant.Ghost, onPressed: () => SetState(() => _count = 0)));
+        actions.Add(new Button("+", onPressed: () => SetState(() => _count++)));
+        body.Add(actions);
+
+        return new SampleShell
         {
             ActivePath = "/counter",
-            Children = {
-                new Box {
-                    ClassName = "eq-max-w-md eq-mx-auto eq-mt-20",
-                    Children = {
-                        new Card {
-                            ClassName = "eq-surface-subtle eq-border eq-p-8 eq-text-center",
-                            Children = {
-                                new Heading("Interactive Counter", 1) { ClassName = "eq-text-3xl eq-font-bold eq-mb-8" },
-                                new Box {
-                                    ClassName = "eq-text-7xl eq-font-black eq-mb-12 eq-text-info",
-                                    Children = { new Text(_count.ToString()) }
-                                },
-                                new Box {
-                                    ClassName = "flex items-center justify-center gap-4",
-                                    Children = {
-                                        new Button { Text = "−", OnClick = Decrement, ClassName = "eq-w-16 eq-h-16 eq-text-2xl eq-rounded-xl eq-btn-outline eq-transition-all active:eq-scale-95" },
-                                        new Button { Text = "Reset", OnClick = Reset, ClassName = "eq-px-8 eq-h-16 eq-text-lg eq-font-medium eq-rounded-xl eq-btn-outline eq-transition-all active:eq-scale-95" },
-                                        new Button { Text = "+", OnClick = Increment, ClassName = "eq-w-16 eq-h-16 eq-text-2xl eq-rounded-xl eq-btn-primary eq-transition-all active:eq-scale-95 eq-shadow-lg" }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            Children =
+            {
+                new VisualNodeComponent(new Card(body, CardKind.Outlined) { Width = SizeValue.Fill }),
+            },
         };
     }
 }

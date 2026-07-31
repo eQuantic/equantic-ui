@@ -1,6 +1,9 @@
-import { $eq, Badge, Box, BoxStyle, BuildContext, ColorToken, Column, Component, ComponentContext, CornerRadii, Flexible, HtmlElement, Icon, IconSize, NavItem, Positioned, Pressable, Row, SizeValue, Stack, StatelessComponent, Text, TypeStyle, VariantColors, VisualNode } from "@equantic/runtime";
+import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconSize, Positioned, Pressable, Row, SizeValue, Stack, StatelessComponent, Text, TypeStyle } from "@equantic/runtime";
 
 export class BottomNavigation extends StatelessComponent {
+    declare items: any;
+    declare selected: number;
+    declare onSelect: any;
     constructor(items?: any, selected?: any, onSelect: any = null, props?: any) {
         super(props);
         if (items !== undefined) this.items = items;

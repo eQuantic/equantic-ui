@@ -96,10 +96,14 @@ public class TypeScriptCodeBuilder
             _builder = builder;
         }
 
-        public void Field(string name, string type, string? defaultValue = null, SyntaxNode? sourceNode = null, bool isStatic = false)
+        /// <param name="isDeclare">Emit a TYPE-ONLY field (<c>declare x: T;</c>) — no runtime code at all.
+        /// Required for properties populated from outside the class body (the base
+        /// <c>Object.assign(props)</c>): under <c>useDefineForClassFields</c> a plain declaration would
+        /// define the field as <c>undefined</c> after <c>super()</c> and wipe the assigned value.</param>
+        public void Field(string name, string type, string? defaultValue = null, SyntaxNode? sourceNode = null, bool isStatic = false, bool isDeclare = false)
         {
             var init = defaultValue != null ? $" = {defaultValue}" : "";
-            var prefix = isStatic ? "static " : "";
+            var prefix = (isDeclare ? "declare " : "") + (isStatic ? "static " : "");
             _builder.Line($"{prefix}{name}: {type}{init};", sourceNode);
         }
 

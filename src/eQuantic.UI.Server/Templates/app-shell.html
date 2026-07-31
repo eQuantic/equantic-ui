@@ -6,10 +6,7 @@
         <title>{{Title}}</title>
         {{MetadataTags}}
 
-        <!-- eQuantic Base Styles -->
-        {{#if EnableDefaultCss}}
-        <link rel="stylesheet" href="/_equantic/equantic.css?v={{BuildId}}" />
-        {{/if}} {{?BaseStyles}}
+        {{?BaseStyles}}
         <style>
             {{BaseStyles}}
         </style>

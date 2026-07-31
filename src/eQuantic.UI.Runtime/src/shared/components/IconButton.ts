@@ -1,6 +1,14 @@
-import { $eq, Box, BoxStyle, BuildContext, ColorToken, Component, ComponentContext, CornerRadii, HtmlElement, Icon, IconSize, Pressable, Row, SizeValue, StatelessComponent, VariantColors, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, Icon, IconSize, Pressable, Row, SizeValue, StatelessComponent } from "../runtime-exports";
 
 export class IconButton extends StatelessComponent {
+    declare glyph: string;
+    declare label: string;
+    declare kind: string;
+    declare size: string;
+    declare onPressed: () => void;
+    declare disabled: boolean;
+    declare selected: boolean;
+    declare selectedGlyph: string;
     constructor(glyph?: any, label?: any, kind: any = 'standard', size: any = 'medium', onPressed: any = null, props?: any) {
         super(props);
         if (glyph !== undefined) this.glyph = glyph;

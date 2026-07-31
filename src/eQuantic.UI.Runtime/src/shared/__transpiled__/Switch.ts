@@ -1,6 +1,9 @@
-import { $eq, Box, BoxStyle, BuildContext, ColorToken, Component, ComponentContext, CornerRadii, HtmlElement, Positioned, Pressable, Stack, StatelessComponent, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, CornerRadii, Positioned, Pressable, Stack, StatelessComponent } from "@equantic/runtime";
 
 export class Switch extends StatelessComponent {
+    declare on: boolean;
+    declare onChanged: () => void;
+    declare disabled: boolean;
     constructor(on?: any, onChanged: any = null, props?: any) {
         super(props);
         if (on !== undefined) this.on = on;

@@ -1,6 +1,10 @@
-import { Box, BoxStyle, BuildContext, Color, ColorToken, Component, ComponentContext, CornerRadii, EdgeInsets, HtmlElement, SizeValue, Space, StatelessComponent, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Color, ColorToken, CornerRadii, EdgeInsets, SizeValue, Space, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class Card extends StatelessComponent {
+    declare child: VisualNode;
+    declare kind: string;
+    declare padding: EdgeInsets;
+    declare width: SizeValue;
     constructor(child?: any, kind: any = 'elevated', props?: any) {
         super(props);
         if (child !== undefined) this.child = child;

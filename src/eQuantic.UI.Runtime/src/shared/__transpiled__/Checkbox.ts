@@ -1,6 +1,11 @@
-import { $eq, Box, BoxStyle, BuildContext, ColorToken, Component, ComponentContext, CornerRadii, HtmlElement, Icon, IconSize, Pressable, Row, SizeValue, Space, StatelessComponent, Text, VariantColors, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, CornerRadii, Icon, IconSize, Pressable, Row, SizeValue, Space, StatelessComponent, Text } from "@equantic/runtime";
 
 export class Checkbox extends StatelessComponent {
+    declare checked: boolean;
+    declare onChanged: () => void;
+    declare label: string;
+    declare disabled: boolean;
+    declare error: boolean;
     constructor(checked?: any, onChanged: any = null, label: any = null, props?: any) {
         super(props);
         if (checked !== undefined) this.checked = checked;

@@ -1,6 +1,10 @@
-import { $eq, Box, BoxStyle, BuildContext, Component, ComponentContext, EdgeInsets, Flexible, HtmlElement, IconButton, Row, SizeValue, Space, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, EdgeInsets, Flexible, Row, SizeValue, Space, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class AppBar extends StatelessComponent {
+    declare title: string;
+    declare leading: VisualNode;
+    declare actions: any;
+    declare scrolled: boolean;
     constructor(title?: any, props?: any) {
         super(props);
         if (title !== undefined) this.title = title;

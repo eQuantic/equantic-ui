@@ -32,8 +32,10 @@ public class SnapshotTests
         var result = emitter.Emit(component);
         
         // Assert
+        // Imports are REACTIVE: only identifiers the emitted body actually references are imported
+        // (Component/HtmlElement drop out of this synthetic component — unused imports are noise).
         var expected = @"
-import { BuildContext, Component, HtmlElement, StatelessComponent } from ""@equantic/runtime"";
+import { BuildContext, StatelessComponent } from ""@equantic/runtime"";
 import { div } from ""./div"";
 
 export class TestComponent extends StatelessComponent {

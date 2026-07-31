@@ -30,7 +30,7 @@ var source = File.ReadAllText(path);
 // Build a compilation that references the real eQuantic assemblies so the semantic model resolves the
 // component base types and standard components exactly like the SDK build does.
 var coreDll = typeof(eQuantic.UI.Core.IComponent).Assembly.Location;
-var componentsDll = typeof(eQuantic.UI.Web.Components.Box).Assembly.Location;
+var componentsDll = typeof(eQuantic.UI.Components.Button).Assembly.Location;
 var refs = new List<string>
 {
     typeof(object).Assembly.Location,
@@ -57,7 +57,7 @@ try
     // Scan the isolated snippet copy AND the standard component sources, exactly like the SDK build, so
     // built-ins (Box/Text/…) and the snippet's own records/components are all known to the import gate.
     var scanDirs = new List<string> { probeDir };
-    var stdComponents = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "eQuantic.UI.Web.Components");
+    var stdComponents = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "eQuantic.UI.Components");
     if (Directory.Exists(stdComponents)) scanDirs.Add(Path.GetFullPath(stdComponents));
     var resolver = new ComponentDependencyResolver();
     resolver.ScanSourceDirectories(scanDirs.ToArray());

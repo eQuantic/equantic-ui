@@ -33,9 +33,10 @@ export interface RenderContext {
   serviceProvider?: ServiceProvider;
   /** Active route data — parameters + query string (C# `context.Route`). */
   route?: import('../router/current-route').RouteData;
-  /** The active Photon theme (C# `context.Theme`) — what transpiled SHARED components read; typed
-   * loosely here to keep core/types dependency-free of the shared vocabulary. */
-  theme?: unknown;
+  /** The active Photon theme (C# `context.Theme`) — what transpiled SHARED components read. The import
+   * is TYPE-ONLY (erased at compile time), so core/types carries the vocabulary's types without taking
+   * any runtime dependency on it — the constraint the previous `unknown` was protecting. */
+  theme: import('../shared/value-types').AppTheme;
 }
 
 /**

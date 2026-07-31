@@ -1,6 +1,11 @@
-import { $eq, Box, BoxStyle, BuildContext, Column, Component, ComponentContext, CornerRadii, HtmlElement, Pressable, Row, SizeValue, Space, StatelessComponent, Text, VariantColors, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, Pressable, Row, SizeValue, Space, StatelessComponent, Text } from "@equantic/runtime";
 
 export class RadioGroup extends StatelessComponent {
+    declare options: any;
+    declare selected: number;
+    declare onChanged: any;
+    declare label: string;
+    declare disabled: boolean;
     constructor(options?: any, selected?: any, onChanged: any = null, label: any = null, props?: any) {
         super(props);
         if (options !== undefined) this.options = options;
