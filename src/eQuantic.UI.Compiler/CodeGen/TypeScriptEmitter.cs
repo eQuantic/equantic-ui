@@ -1251,6 +1251,12 @@ public class TypeScriptEmitter
             var itemType = tsType.Substring(12, tsType.Length - 13);
             tsType = $"{CSharpTypeToTypeScript(itemType)}[]";
         }
+        else if (tsType.StartsWith("HashSet<") && tsType.EndsWith(">"))
+        {
+            // The runtime representation IS a JS Set (HashSetStrategy constructs `new Set()`).
+            var itemType = tsType.Substring(8, tsType.Length - 9);
+            tsType = $"Set<{CSharpTypeToTypeScript(itemType)}>";
+        }
         else if (tsType.StartsWith("Task<") && tsType.EndsWith(">"))
         {
             var itemType = tsType.Substring(5, tsType.Length - 6);

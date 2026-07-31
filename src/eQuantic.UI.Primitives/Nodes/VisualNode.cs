@@ -272,6 +272,10 @@ public enum AnchorPlacement : byte
     BottomEnd = 1,
     TopStart = 2,
     TopEnd = 3,
+    /// <summary>Wave 3b: centered under the anchor (tooltips, hints).</summary>
+    BottomCenter = 4,
+    /// <summary>Wave 3b: centered above the anchor (the tooltip default).</summary>
+    TopCenter = 5,
 }
 
 /// <summary>
@@ -321,6 +325,12 @@ public sealed class Anchored : VisualNode
     /// <summary>The panel refuses to be narrower than the anchor (the Select contract) —
     /// CSS <c>min-width:100%</c> of the host; native wraps the panel in a MinWidth box.</summary>
     public bool MatchAnchorWidth { get; init; }
+
+    /// <summary>Wave 3b (the Tooltip mechanism): the panel shows while the POINTER hovers the
+    /// anchor — pure CSS on web (the generated .eq-hoverreveal rules, zero JS), the host's hover
+    /// pipeline on native. No scrim (hover leaves = closed); never fires on touch. Composes with
+    /// <see cref="Open"/> (either shows the panel).</summary>
+    public bool OpenOnHover { get; init; }
 }
 
 /// <summary>How a <see cref="Presence"/> subtree ENTERS when it first appears (spec §06).</summary>

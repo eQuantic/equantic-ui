@@ -151,9 +151,20 @@ public static class WebRealizer
     /// </summary>
     private static HtmlElement LowerAnchored(Anchored anchored, ComponentContext context)
     {
-        var host = new RealizedElement("div") { ClassName = "eq-anchorhost" };
+        var host = new RealizedElement("div")
+        {
+            // Hover reveal (wave 3b, the Tooltip mechanism): the panel stays in the DOM and the
+            // generated .eq-hoverreveal rules show it on :hover — pure CSS, no scrim, no state.
+            ClassName = anchored.OpenOnHover ? "eq-anchorhost eq-hoverreveal" : "eq-anchorhost",
+        };
         if (LowerNode(anchored.Anchor, context, horizontalAxis: null) is { } anchor)
             host.Children.Add(anchor);
+
+        if (anchored.OpenOnHover)
+        {
+            host.Children.Add(BuildAnchorPanel(anchored, context));
+            return host;
+        }
 
         if (!anchored.Open) return host;
 
@@ -165,7 +176,14 @@ public static class WebRealizer
             host.Children.Add(scrim);
         }
 
-        var top = anchored.Placement is AnchorPlacement.TopStart or AnchorPlacement.TopEnd;
+        host.Children.Add(BuildAnchorPanel(anchored, context));
+        return host;
+    }
+
+    private static RealizedElement BuildAnchorPanel(Anchored anchored, ComponentContext context)
+    {
+        var top = anchored.Placement is AnchorPlacement.TopStart or AnchorPlacement.TopEnd
+            or AnchorPlacement.TopCenter;
         var panel = new RealizedElement("div")
         {
             ClassName = "eq-anchor-panel " + PlacementClass(anchored.Placement)
@@ -178,8 +196,7 @@ public static class WebRealizer
         };
         if (LowerNode(anchored.Panel, context, horizontalAxis: null) is { } content)
             panel.Children.Add(content);
-        host.Children.Add(panel);
-        return host;
+        return panel;
     }
 
     private static string PlacementClass(AnchorPlacement placement) => placement switch
@@ -187,6 +204,8 @@ public static class WebRealizer
         AnchorPlacement.BottomEnd => "eq-anchor-b-end",
         AnchorPlacement.TopStart => "eq-anchor-t-start",
         AnchorPlacement.TopEnd => "eq-anchor-t-end",
+        AnchorPlacement.BottomCenter => "eq-anchor-b-center",
+        AnchorPlacement.TopCenter => "eq-anchor-t-center",
         _ => "eq-anchor-b-start",
     };
 

@@ -68,7 +68,13 @@ export interface StickyNode {
 }
 
 /** Wave 3 placements — the four anchor corners (flip/clamp is the positioning fence). */
-export type AnchorPlacementValue = 'bottomStart' | 'bottomEnd' | 'topStart' | 'topEnd';
+export type AnchorPlacementValue =
+  | 'bottomStart'
+  | 'bottomEnd'
+  | 'topStart'
+  | 'topEnd'
+  | 'bottomCenter'
+  | 'topCenter';
 
 /** Wave 3 anchored overlay: floating panel positioned relative to the in-flow anchor. */
 export interface AnchoredNode extends VisualNodeValue {
@@ -80,6 +86,8 @@ export interface AnchoredNode extends VisualNodeValue {
   open?: boolean;
   onDismiss?: (() => void) | null;
   matchAnchorWidth?: boolean;
+  /** Wave 3b (Tooltip): panel shows while the anchor is hovered — pure CSS on web. */
+  openOnHover?: boolean;
 }
 
 /** Spec S6 — a subtree that adapts to the window size class (up to 3 variants). */

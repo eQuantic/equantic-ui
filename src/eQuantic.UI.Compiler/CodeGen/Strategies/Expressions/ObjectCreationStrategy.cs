@@ -379,6 +379,10 @@ public class ObjectCreationStrategy : IConversionStrategy
             // ordered args, skipped parameters filled from their C# defaults, initializer as the
             // trailing config object (the runtime component classes' contract). Delegating to the
             // initializer here would silently return a bare object instead of an instance.
+            // `new() { a, b }` on a HashSet target seeds a JS Set (the HashSetStrategy contract).
+            if (typeDisplay.Contains("HashSet<"))
+                return $"new Set({context.Converter.ConvertExpression(creation.Initializer)})";
+
             if (target is { SpecialType: SpecialType.None, TypeKind: TypeKind.Class }
                 && !typeDisplay.Contains("List<") && !typeDisplay.Contains("Dictionary<")
                 && !typeDisplay.Contains("IEnumerable<") && !typeDisplay.Contains("Collection<"))
@@ -406,6 +410,11 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (typeDisplay.Contains("Dictionary<") || typeDisplay.Contains("IDictionary<"))
         {
             return "{}";
+        }
+        // Bare `new()` on a HashSet target — the runtime representation is a JS Set.
+        if (typeDisplay.Contains("HashSet<"))
+        {
+            return "new Set()";
         }
 
         // Target-typed `new(args)` on a named type (record/class): `Item _x = new(9, "z")` → `new Item(9, 'z')`.

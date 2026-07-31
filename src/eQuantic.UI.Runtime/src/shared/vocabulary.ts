@@ -191,6 +191,7 @@ export class Anchored extends VisualNode {
   open = false;
   onDismiss?: (() => void) | null;
   matchAnchorWidth = false;
+  openOnHover = false;
 
   constructor(
     anchor: VisualChild,
@@ -201,6 +202,7 @@ export class Anchored extends VisualNode {
       open?: boolean;
       onDismiss?: (() => void) | null;
       matchAnchorWidth?: boolean;
+      openOnHover?: boolean;
       key?: string | null;
     },
   ) {

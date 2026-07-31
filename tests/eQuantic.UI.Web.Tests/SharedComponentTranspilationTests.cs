@@ -26,6 +26,7 @@ public class SharedComponentTranspilationTests
         "Tabs.cs", "EmptyState.cs", "AppBar.cs", "BottomNavigation.cs", "TextInput.cs", "SearchField.cs", "Dialog.cs",
         "Toast.cs", "BottomSheet.cs",
         "Menu.cs", "Select.cs", "Popover.cs",
+        "Tooltip.cs", "Drawer.cs", "Accordion.cs", "Table.cs",
     ];
 
     /// <summary>
@@ -179,6 +180,7 @@ public class SharedComponentTranspilationTests
             "EmptyState", "Skeleton", "AppBar", "BottomNavigation", "NavItem", "TextInput", "SearchField", "Dialog", "DialogAction",
             "Toast", "BottomSheet",
             "Menu", "MenuItem", "Select", "Popover",
+            "Tooltip", "Drawer", "Accordion", "AccordionItem", "Table",
         };
 
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_TRANSPILED") == "1")

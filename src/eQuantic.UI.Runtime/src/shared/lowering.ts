@@ -849,12 +849,18 @@ function lowerFlexible(
 function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: string): HtmlNode {
   const host: HtmlNode = {
     tag: 'div',
-    attributes: { class: 'eq-anchorhost' },
+    attributes: {
+      class: node.openOnHover === true ? 'eq-anchorhost eq-hoverreveal' : 'eq-anchorhost',
+    },
     events: {},
     children: [],
   };
   const anchor = lowerNode(node.anchor, context, null, path + '/0');
   if (anchor) host.children.push(anchor);
+  if (node.openOnHover === true) {
+    host.children.push(buildAnchorPanel(node, context, path));
+    return host;
+  }
   if (node.open !== true) return host;
 
   if (node.onDismiss) {
@@ -876,7 +882,14 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
     }
   }
 
-  const top = node.placement === 'topStart' || node.placement === 'topEnd';
+  host.children.push(buildAnchorPanel(node, context, path));
+  return host;
+}
+
+/** The C# BuildAnchorPanel twin. */
+function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: string): HtmlNode {
+  const top =
+    node.placement === 'topStart' || node.placement === 'topEnd' || node.placement === 'topCenter';
   const gap = node.gap ?? 4;
   const panel = element('div', top ? { 'margin-bottom': px(gap) } : { 'margin-top': px(gap) });
   if (node.matchAnchorWidth === true) prependClass(panel, 'eq-anchor-match');
@@ -884,8 +897,7 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
   prependClass(panel, 'eq-anchor-panel');
   const content = lowerNode(node.panel, context, null, path + '/1');
   if (content) panel.children.push(content);
-  host.children.push(panel);
-  return host;
+  return panel;
 }
 
 /** The C# PlacementClass twin. */
@@ -897,6 +909,10 @@ function anchorPlacementClass(placement: AnchoredNode['placement']): string {
       return 'eq-anchor-t-start';
     case 'topEnd':
       return 'eq-anchor-t-end';
+    case 'bottomCenter':
+      return 'eq-anchor-b-center';
+    case 'topCenter':
+      return 'eq-anchor-t-center';
     default:
       return 'eq-anchor-b-start';
   }

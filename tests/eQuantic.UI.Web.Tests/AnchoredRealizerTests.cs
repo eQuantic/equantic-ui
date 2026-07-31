@@ -88,4 +88,20 @@ public class AnchoredRealizerTests
         var panel = (Core.HtmlElement)element.Children[^1];
         panel.ClassName.Should().Be("eq-anchor-panel eq-anchor-b-start eq-anchor-match");
     }
+
+    [Fact]
+    public void OpenOnHover_LowersRevealHost_PanelAlwaysPresent_NoScrim()
+    {
+        var element = Lower(new Anchored(new Text("t", TypeRole.Label), new Text("p", TypeRole.Label))
+        {
+            OpenOnHover = true,
+            Placement = AnchorPlacement.TopCenter,
+        });
+
+        element.ClassName.Should().Be("eq-anchorhost eq-hoverreveal");
+        element.Children.Should().HaveCount(2, "anchor + panel; CSS owns visibility — no scrim ever");
+        var panel = (Core.HtmlElement)element.Children[^1];
+        panel.ClassName.Should().StartWith("eq-anchor-panel eq-anchor-t-center");
+        panel.Style!.MarginBottom.Should().Be("4px", "TopCenter rides the bottom margin");
+    }
 }
