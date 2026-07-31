@@ -21,10 +21,9 @@ interface DynamicElementConfig {
 export class DynamicElement extends HtmlElement {
   tagName = 'div';
   innerText?: string;
-  className?: string;
   customAttributes?: Record<string, string>;
-  children: Array<{ render(): HtmlNode }> = [];
-  onClick?: EventHandler;
+  // className/onClick/children come typed from the HtmlElement base; the config narrows
+  // structurally at the Object.assign boundary — render() below only ever needs `render()`.
 
   constructor(config?: DynamicElementConfig) {
     super();
@@ -54,7 +53,7 @@ export class DynamicElement extends HtmlElement {
     }
 
     const events: Record<string, EventHandler> = {};
-    if (this.onClick) events['click'] = this.onClick;
+    if (this.onClick) events['click'] = this.onClick as unknown as EventHandler;
 
     return { tag: this.tagName, attributes, events, children } as HtmlNode;
   }

@@ -23,7 +23,18 @@ public static class JsExecutor
     private static bool? _bunWorks;
     private static bool? _nodeWorks;
 
-    public static bool IsAvailable => BunWorks() || NodeWorks();
+    public static bool IsAvailable
+    {
+        get
+        {
+            var available = BunWorks() || NodeWorks();
+            if (!available && Environment.GetEnvironmentVariable("EQ_REQUIRE_JS") == "1")
+                throw new InvalidOperationException(
+                    "EQ_REQUIRE_JS=1 but no JS engine works (embedded Bun crashed and Node is absent). " +
+                    "Conformance must FAIL loudly here, not skip silently — fix the runner environment.");
+            return available;
+        }
+    }
 
     /// <summary>The engine that will actually run scripts: "bun", "node", or "none".</summary>
     public static string EngineName => BunWorks() ? "bun" : NodeWorks() ? "node" : "none";

@@ -21,7 +21,11 @@ This document is that technique. It has three laws:
 
 ---
 
-## 0. Audit — where we stand today (2026-07-30, v0.1.6)
+## 0. Audit — where we stood BEFORE Track S (historical snapshot, 2026-07-30 v0.1.6)
+
+> **2026-07-31 note:** this section is the PRE-S1 photograph kept for context. Everything under
+> "Missing for any layout" was delivered by S1–S7 (§3), and the "Emission today" paragraph describes
+> the inline-style world the S2 atomic engine replaced. Read §3 for current state.
 
 **Vocabulary (Primitives):** `Box(BoxStyle)` — background token, 2-stop gradient, uniform inside
 border, per-corner radius, Elevation 0–5, Clip, Padding, Width/Height (Hug/Fill/Fixed), Min/Max.

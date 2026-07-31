@@ -391,7 +391,6 @@ function lowerLoopMotion(node: LoopMotionNode, context: LoweringContext, path: s
 
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
 function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: string): HtmlNode {
-  const vertical = node.axis !== 'horizontal';
   const children: HtmlNode[] = [];
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) children.push(child);

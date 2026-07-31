@@ -8,6 +8,7 @@
  * `render()` like on any other component; the reconciler never learns about abstract nodes).
  */
 
+import type { ComponentChild } from './nodes';
 import type { HtmlNode } from '../core/types';
 import { iconPaths } from './icons.generated';
 import type {
@@ -36,6 +37,13 @@ export abstract class VisualNode {
     return this.render();
   }
 }
+
+/**
+ * Anything a child slot accepts: a vocabulary node, or a shared COMPONENT instance (in C#,
+ * `UiComponent : VisualNode` — on the runtime components live in their own class hierarchy, so the
+ * union states the same truth structurally; the lowering expands components via `build`).
+ */
+export type VisualChild = VisualNode | ComponentChild;
 
 interface BoxStyleConfig {
   width?: SizeValue | number;
@@ -84,9 +92,9 @@ export class BoxStyle {
 export class Box extends VisualNode {
   readonly nodeKind = 'box';
   style: BoxStyle;
-  child: VisualNode | null;
+  child: VisualChild | null;
 
-  constructor(style: BoxStyle = new BoxStyle(), child: VisualNode | null = null) {
+  constructor(style: BoxStyle = new BoxStyle(), child: VisualChild | null = null) {
     super();
     this.style = style;
     this.child = child;
@@ -111,17 +119,21 @@ abstract class FlexNode extends VisualNode {
   wrap = false;
   runGap?: number | null;
   main: MainAlignValue = 'start';
-  abstract cross: CrossAlignValue;
+  /** Per-subclass default (Row=center, Column=stretch — spec A2), set by the BASE ctor: a derived
+   * field initializer would run AFTER super() and silently overwrite the config's explicit value
+   * (the ES2022 class-field order) — the exact hydration bug the e2e identity test caught. */
+  cross: CrossAlignValue;
   padding: EdgeInsetsValue = new EdgeInsets();
   width?: SizeValue;
   height?: SizeValue;
   background?: ColorTokenValue | null;
   cornerRadius: CornerRadii = new CornerRadii();
-  children: VisualNode[] = [];
+  children: VisualChild[] = [];
 
-  protected constructor(gap: number, config?: FlexConfig) {
+  protected constructor(gap: number, defaultCross: CrossAlignValue, config?: FlexConfig) {
     super();
     this.gap = gap;
+    this.cross = defaultCross;
     if (!config) return;
     const { width, height, ...rest } = config;
     Object.assign(this, rest);
@@ -129,7 +141,7 @@ abstract class FlexNode extends VisualNode {
     if (height !== undefined) this.height = SizeValue.from(height);
   }
 
-  add(child: VisualNode): void {
+  add(child: VisualChild): void {
     this.children.push(child);
   }
 }
@@ -139,7 +151,7 @@ export class Sticky extends VisualNode {
   readonly nodeKind = 'sticky';
 
   constructor(
-    readonly child: VisualNode,
+    readonly child: VisualChild,
     readonly offset = 0,
   ) {
     super();
@@ -196,7 +208,7 @@ export class Grid extends VisualNode {
   padding: EdgeInsetsValue = new EdgeInsets();
   width?: SizeValue;
   height?: SizeValue;
-  children: VisualNode[] = [];
+  children: VisualChild[] = [];
 
   constructor(columns: GridTrack[], gap = 0, rowGap: number | null = null, config?: GridConfig) {
     super();
@@ -210,28 +222,24 @@ export class Grid extends VisualNode {
     if (height !== undefined) this.height = SizeValue.from(height);
   }
 
-  add(child: VisualNode): void {
+  add(child: VisualChild): void {
     this.children.push(child);
   }
 }
 
 export class Row extends FlexNode {
   readonly nodeKind = 'row';
-  /** Row cross defaults to Center (spec A2). */
-  cross: CrossAlignValue = 'center';
 
   constructor(gap = 0, config?: FlexConfig) {
-    super(gap, config);
+    super(gap, 'center', config);
   }
 }
 
 export class Column extends FlexNode {
   readonly nodeKind = 'column';
-  /** Column cross defaults to Stretch (spec A2). */
-  cross: CrossAlignValue = 'stretch';
 
   constructor(gap = 0, config?: FlexConfig) {
-    super(gap, config);
+    super(gap, 'stretch', config);
   }
 }
 
@@ -273,13 +281,13 @@ interface PressableConfig {
 
 export class Pressable extends VisualNode {
   readonly nodeKind = 'pressable';
-  child: VisualNode;
+  child: VisualChild;
   onPressed: (() => void) | null;
   disabled = false;
   label: string | null = null;
   pressedBackground: ColorTokenValue | null = null;
 
-  constructor(child: VisualNode, onPressed: (() => void) | null = null, config?: PressableConfig) {
+  constructor(child: VisualChild, onPressed: (() => void) | null = null, config?: PressableConfig) {
     super();
     this.child = child;
     this.onPressed = onPressed;
@@ -290,11 +298,11 @@ export class Pressable extends VisualNode {
 /** Mirror of the C# `Overlay` (Phase C): the viewport layer above the page. */
 export class Overlay extends VisualNode {
   readonly nodeKind = 'overlay';
-  child: VisualNode;
+  child: VisualChild;
   /** False = non-modal layer (toasts): pointer passes through except the layer's pressables. */
   modal = true;
 
-  constructor(child: VisualNode, config?: { modal?: boolean }) {
+  constructor(child: VisualChild, config?: { modal?: boolean }) {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
@@ -305,10 +313,10 @@ export class Overlay extends VisualNode {
  * Layout-transparent — the web lowering rides the animation class on the child's own root. */
 export class Presence extends VisualNode {
   readonly nodeKind = 'presence';
-  child: VisualNode;
+  child: VisualChild;
   enter: string;
 
-  constructor(child: VisualNode, enter = 'fade') {
+  constructor(child: VisualChild, enter = 'fade') {
     super();
     this.child = child;
     this.enter = enter;
@@ -319,10 +327,10 @@ export class Presence extends VisualNode {
 export class Link extends VisualNode {
   readonly nodeKind = 'link';
   href: string;
-  child: VisualNode;
+  child: VisualChild;
   label: string | null = null;
 
-  constructor(href: string, child: VisualNode, config?: { label?: string | null }) {
+  constructor(href: string, child: VisualChild, config?: { label?: string | null }) {
     super();
     this.href = href;
     this.child = child;
@@ -335,10 +343,10 @@ export class Link extends VisualNode {
 export class DragDismiss extends VisualNode {
   readonly nodeKind = 'dragDismiss';
   static readonly thresholdDp = 96;
-  child: VisualNode;
+  child: VisualChild;
   onDismiss: (() => void) | null;
 
-  constructor(child: VisualNode, onDismiss: (() => void) | null = null) {
+  constructor(child: VisualChild, onDismiss: (() => void) | null = null) {
     super();
     this.child = child;
     this.onDismiss = onDismiss;
@@ -398,7 +406,7 @@ interface LoopMotionConfig {
 /** Mirror of the C# `LoopMotion` (spec §06): continuous transform-only loop around one child. */
 export class LoopMotion extends VisualNode {
   readonly nodeKind = 'loopMotion';
-  child: VisualNode;
+  child: VisualChild;
   effect: string;
   fromX: number;
   toX: number;
@@ -406,7 +414,7 @@ export class LoopMotion extends VisualNode {
   hideAtRest = false;
 
   constructor(
-    child: VisualNode,
+    child: VisualChild,
     effect: string,
     fromX: number,
     toX: number,
@@ -425,14 +433,14 @@ export class LoopMotion extends VisualNode {
 
 export class ScrollView extends VisualNode {
   readonly nodeKind = 'scrollView';
-  child: VisualNode;
+  child: VisualChild;
   axis: string;
   width?: SizeValue;
   height?: SizeValue;
   offset: number;
 
   constructor(
-    child: VisualNode,
+    child: VisualChild,
     axis = 'vertical',
     config?: { width?: SizeValue | number; height?: SizeValue | number; offset?: number },
   ) {
@@ -520,7 +528,7 @@ export class Stack extends VisualNode {
   align: string;
   width?: SizeValue;
   height?: SizeValue;
-  children: VisualNode[] = [];
+  children: VisualChild[] = [];
 
   constructor(
     align = 'topStart',
@@ -532,21 +540,21 @@ export class Stack extends VisualNode {
     if (config?.height !== undefined) this.height = SizeValue.from(config.height);
   }
 
-  add(child: VisualNode): void {
+  add(child: VisualChild): void {
     this.children.push(child);
   }
 }
 
 export class Positioned extends VisualNode {
   readonly nodeKind = 'positioned';
-  child: VisualNode;
+  child: VisualChild;
   top: number | null;
   end: number | null;
   bottom: number | null;
   start: number | null;
 
   constructor(
-    child: VisualNode,
+    child: VisualChild,
     top: number | null = null,
     end: number | null = null,
     bottom: number | null = null,
@@ -567,11 +575,11 @@ interface FlexibleConfig {
 
 export class Flexible extends VisualNode {
   readonly nodeKind = 'flexible';
-  child: VisualNode;
+  child: VisualChild;
   flex: number;
   animateChanges = false;
 
-  constructor(child: VisualNode, flex = 1, config?: FlexibleConfig) {
+  constructor(child: VisualChild, flex = 1, config?: FlexibleConfig) {
     super();
     this.child = child;
     this.flex = flex;
@@ -599,10 +607,11 @@ export class Spacer extends VisualNode {
   /** Spec B14: weight changes animate over Motion.Base (pairs with an animated Flexible). */
   animateChanges = false;
 
-  constructor(flex = 1) {
+  constructor(flex = 1, config?: { animateChanges?: boolean; key?: string | null }) {
     super();
     this.flex = Math.max(1, flex);
     this.fixedLength = 0;
+    if (config) Object.assign(this, config);
   }
 
   static fixed(length: number): Spacer {

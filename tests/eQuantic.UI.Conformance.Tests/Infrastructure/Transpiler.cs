@@ -52,7 +52,8 @@ public static class Transpiler
         }
         foreach (var t in valueTypes) Add(t);
 
-        return string.Join("\n", ordered.Select(emitter.Emit)) + "\n";
+        // Plain-JS emission (no TS `declare` type declarations) — this output runs as .mjs.
+        return string.Join("\n", ordered.Select(t => emitter.Emit(t))) + "\n";
     }
 
     public static string TranspileExpression(string csharpExpression, string prelude = "")

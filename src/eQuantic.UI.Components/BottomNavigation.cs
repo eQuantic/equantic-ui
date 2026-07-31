@@ -47,14 +47,8 @@ public sealed class BottomNavigation : StatelessComponent
             var glyph = isActive && item.SelectedIcon is { } filled ? filled : item.Icon;
             var tint = isActive ? primary.OnSubtle : theme.TextMuted;
 
-            VisualNode iconNode = new Icon(glyph, IconSize.Md, tint);
-            if (item.BadgeCount > 0)
-            {
-                var stack = new Stack();
-                stack.Add(iconNode);
-                stack.Add(new Positioned(new Badge(item.BadgeCount) { Ring = true }, top: -4, end: -8));
-                iconNode = stack;
-            }
+            var icon = new Icon(glyph, IconSize.Md, tint);
+            var iconNode = item.BadgeCount > 0 ? BadgedIcon(icon, item.BadgeCount) : (VisualNode)icon;
 
             var pillContent = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
             pillContent.Add(iconNode);
@@ -92,4 +86,13 @@ public sealed class BottomNavigation : StatelessComponent
             Background = theme.Surface,
         }, row);
     }
+    /// <summary>The badge overlay composition (spec B7): the count pins at the icon's top-end corner.</summary>
+    private static VisualNode BadgedIcon(Icon icon, int count)
+    {
+        var stack = new Stack();
+        stack.Add(icon);
+        stack.Add(new Positioned(new Badge(count) { Ring = true }, top: -4, end: -8));
+        return stack;
+    }
+
 }

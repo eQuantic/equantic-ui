@@ -569,12 +569,6 @@ public enum Alignment : byte
     BottomStart = 6, BottomCenter = 7, BottomEnd = 8,
 }
 
-/// <summary>
-/// Z-axis composition (spec A3): paint order = child order (last on top), hit-testing walks
-/// top-down, and the stack SIZES TO ITS LARGEST NON-POSITIONED child (explicit Width/Height
-/// override). Non-positioned children align by <see cref="Align"/>; <see cref="Positioned"/>
-/// children anchor to the stack's edges with signed offsets.
-/// </summary>
 /// <summary>One grid column track (spec S4): Fixed dp, Flex weight (the CSS <c>fr</c>), or Auto
 /// (sized by its widest starting item).</summary>
 public readonly record struct GridTrack(SizeKind Kind, float Value)
@@ -681,6 +675,12 @@ public sealed class AdaptiveNode : VisualNode
     };
 }
 
+/// <summary>
+/// Z-axis composition (spec A3): paint order = child order (last on top), hit-testing walks
+/// top-down, and the stack SIZES TO ITS LARGEST NON-POSITIONED child (explicit Width/Height
+/// override). Non-positioned children align by <see cref="Align"/>; <see cref="Positioned"/>
+/// children anchor to the stack's edges with signed offsets.
+/// </summary>
 public sealed class Stack : VisualNode
 {
     public sealed override string NodeKind => "stack";
@@ -734,39 +734,6 @@ public enum ScrollAxis : byte
 }
 
 /// <summary>
-/// A scrolling viewport (spec A6) — BOUNDED content only (virtualized lists are the List component).
-/// The child lays out UNBOUNDED on the scroll axis and is clipped to the viewport. v1 fences: the
-/// platform physics (decay/fling/rubber-band), gesture capture and the fading scrollbar pill join
-/// with the native interaction system; today the scroll position is the programmatic
-/// <see cref="Offset"/> (web realizes as native browser scrolling, which owns its own physics).
-/// </summary>
-/// <summary>
-/// Gestures v2 — makes its subtree VERTICALLY DRAG-DISMISSIBLE (bottom sheets): while the pointer
-/// drags down past the press-cancel slop, the subtree translates with the finger (paint-only);
-/// releasing beyond <see cref="ThresholdDp"/> fires <see cref="OnDismiss"/>, otherwise it snaps
-/// back. Layout-transparent. Native owns the gesture (the host's pointer pipeline); on web the
-/// wrapper is inert v1 — sheets dismiss via scrim/actions there (pointer-capture drag is the web
-/// gesture fence).
-/// </summary>
-public sealed class DragDismissible : VisualNode
-{
-    public override string NodeKind => "dragDismissible";
-
-    public DragDismissible(VisualNode child, Action? onDismiss, float thresholdDp = 96)
-    {
-        Child = child;
-        OnDismiss = onDismiss;
-        ThresholdDp = thresholdDp;
-    }
-
-    public VisualNode Child { get; }
-    public Action? OnDismiss { get; init; }
-
-    /// <summary>Drag distance (dp) past which release dismisses instead of snapping back.</summary>
-    public float ThresholdDp { get; init; }
-}
-
-/// <summary>
 /// Spec S7 — scroll-anchored chrome (section headers): the child renders in flow, but PINS to the
 /// start of the scroll viewport once scrolling would push it out, offset by <see cref="Offset"/>.
 /// v1 scope: vertical scrolling (CSS <c>position: sticky; top</c>); the Photon pinning joins the
@@ -789,6 +756,13 @@ public sealed class Sticky : VisualNode
     public float Offset { get; init; }
 }
 
+/// <summary>
+/// A scrolling viewport (spec A6) — BOUNDED content only (virtualized lists are the List component).
+/// The child lays out UNBOUNDED on the scroll axis and is clipped to the viewport. v1 fences: the
+/// platform physics (decay/fling/rubber-band), gesture capture and the fading scrollbar pill join
+/// with the native interaction system; today the scroll position is the programmatic
+/// <see cref="Offset"/> (web realizes as native browser scrolling, which owns its own physics).
+/// </summary>
 public sealed class ScrollView : VisualNode
 {
     public sealed override string NodeKind => "scrollView";

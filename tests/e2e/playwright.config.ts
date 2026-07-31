@@ -23,7 +23,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'dotnet run --project ../../samples/TodoListApp --launch-profile http',
+    command: 'dotnet run --project ../../samples/DefaultUIDashboard --urls http://localhost:5200',
     url: 'http://localhost:5200',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

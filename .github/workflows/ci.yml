@@ -44,6 +44,13 @@ jobs:
           "$BUN_PATH" install
           "$BUN_PATH" x tsc && "$BUN_PATH" x vite build
 
+      - name: Test Runtime (vitest)
+        shell: bash
+        run: |
+          BUN_PATH="$GITHUB_WORKSPACE/src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux"
+          cd src/eQuantic.UI.Runtime
+          "$BUN_PATH" x vitest run
+
       - name: Upload Runtime Build
         uses: actions/upload-artifact@v4
         with:
@@ -173,7 +180,13 @@ jobs:
           dotnet pack src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj -c Release -p:Version=$VERSION
 
       - name: Test
+        shell: bash
+        env:
+          # Conformance must FAIL (not skip) if no JS engine works on the runner.
+          EQ_REQUIRE_JS: "1"
         run: |
+          set -euo pipefail
+          shopt -s globstar
           for test_project in tests/**/*.csproj; do
             echo "Testing $test_project..."
             dotnet test "$test_project" --configuration Release --verbosity normal

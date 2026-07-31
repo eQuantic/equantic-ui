@@ -20,13 +20,13 @@ export interface HydrationResult {
  * Reconciler manages efficient DOM updates
  */
 export class Reconciler {
-  private eventListeners: WeakMap<HTMLElement, Map<string, EventHandler>> = new WeakMap();
+  private eventListeners: WeakMap<Element, Map<string, EventHandler>> = new WeakMap();
 
   /**
    * Elements that currently have attached listeners. WeakMap is not iterable,
    * so this companion set lets dispose() actually detach listeners from the DOM.
    */
-  private trackedElements: Set<HTMLElement> = new Set();
+  private trackedElements: Set<Element> = new Set();
 
   private static readonly SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -87,7 +87,7 @@ export class Reconciler {
    * Reconcile (diff and patch) old and new virtual DOM trees
    */
   reconcile(
-    parentElement: HTMLElement,
+    parentElement: Element,
     oldNode: HtmlNode | null,
     newNode: HtmlNode | null,
     index: number = 0,

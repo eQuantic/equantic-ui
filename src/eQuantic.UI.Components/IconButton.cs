@@ -80,7 +80,7 @@ public sealed class IconButton : StatelessComponent
         if (Disabled)
         {
             var opacity = theme.DisabledOpacity;
-            fill = fill?.WithOpacity(opacity);
+            if (fill is { } filled) fill = filled.WithOpacity(opacity);
             tint = tint.WithOpacity(opacity);
         }
 

@@ -123,7 +123,8 @@ rejected.)
    + C# flex layout (`eQuantic.UI.Native.Framework`) + native realizer; shared component model
    (`UiComponent`/`StatelessComponent`/`StatefulComponent`+`SetState`) with Button/Card in
    `eQuantic.UI.Components.Shared` and the `PhotonHost` frame loop (native Counter end-to-end).
-3. 🔄 **Web realizer** — slice 1 ✅ (2026-07-04): `eQuantic.UI.Web` lowers the SAME trees to
+3. ✅ **Web realizer — COMPLETE** (every sub-slice below is ✅; the log runs through 2026-07-30's
+   legacy excision). Slice 1 (2026-07-04): `eQuantic.UI.Web` lowers the SAME trees to
    `HtmlElement`/DOM server-side (SSR): Box→div (border-box = inside-border parity), Row/Column→flex
    (Flexible → `flex: n 1 0%` matching native leftover-by-weight; `min-width:0` preserves the
    truncation contract), Text→role-classed span, Pressable→neutralized button; colors lower as
@@ -607,5 +608,13 @@ rejected.)
    placeholder's clipping rrect; Reduce Motion = the plain SurfaceSubtle placeholder, exactly as
    speced. Goldens at t=700ms both modes; verified live in the browser (mirrored computed
    gradients, spec sweep velocity, rest-hidden class).
-4. Legacy web components migrate progressively as they're touched; mixing is safe throughout.
-5. Layout conformance harness lands with step 2 and gates every layout feature after it.
+4. ✅ **Done by EXCISION, not migration** (2026-07-30, Edgar's directive): the legacy web world was
+   deleted outright — `eQuantic.UI.Web.Components` (93 files), Core/Theme (~50 files), the Tailwind
+   theme layer. The write-once architecture is the only architecture; there is nothing left to
+   migrate. NOTE the capability holes this opened (no write-once equivalent yet): Select/DropdownMenu,
+   Tooltip, Popover, ContextMenu, side Drawer, Accordion, Table — the "wave 3" backlog, which also
+   needs an ANCHORED overlay primitive (today's `Overlay` is viewport-layer only).
+5. ⏳ **OPEN — layout conformance harness**: the native-vs-headless-browser numeric geometry
+   comparison promised above never landed; today's cross-target guarantee is the literal cross-pin
+   convention (C# realizer tests ↔ TS specs ↔ native goldens) plus 17 native flex geometry cases.
+   Still the right investment before layout features accumulate further.
