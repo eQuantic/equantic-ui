@@ -440,6 +440,16 @@ public class ComponentParser
         }
     }
     
+    /// <summary>
+    /// SERVER-ONLY (<c>[ServerOnly]</c>): the method never crosses to the client, so it is not
+    /// parsed, not transpiled and not validated against the client boundary — it may use the whole
+    /// server surface (an SSR prefetch's HttpClient, EF, the request's services). The counterpart of
+    /// <c>[ServerAction]</c>, which keeps the method callable FROM the browser through an RPC stub.
+    /// </summary>
+    private static bool IsServerOnly(MethodDeclarationSyntax method) =>
+        method.AttributeLists.SelectMany(list => list.Attributes)
+            .Any(attribute => attribute.Name.ToString() is "ServerOnly" or "ServerOnlyAttribute");
+
     private void ParseMethods(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
         // Extract properties
@@ -471,6 +481,8 @@ public class ComponentParser
         
         foreach (var method in methods)
         {
+            if (IsServerOnly(method)) continue;
+
             var methodName = method.Identifier.Text;
             if (methodName == "Render" || methodName == "Build" || methodName == "CreateState")
             {
@@ -671,6 +683,8 @@ public class ComponentParser
         
         foreach (var method in methods)
         {
+            if (IsServerOnly(method)) continue;
+
             var methodDef = new MethodDefinition
             {
                 Name = method.Identifier.Text,

@@ -246,7 +246,9 @@ public class SharedComponentTranspilationTests
 
         // The BoxStyle object initializer survives as a config object (was silently dropped before).
         button.Should().Contain("new BoxStyle({ height: height");
-        button.Should().Contain("minWidth: ButtonStyles.minWidth");
+        // A `const` INLINES at the use site — the same thing Roslyn does for a C# consumer, and what
+        // lets a component default to a constant from an assembly the bundle never ships.
+        button.Should().Contain("minWidth: 64");
 
         // The size-table tuple deconstructs as an array — the generated ButtonStyles.metrics shape.
         button.Should().Contain("let [height, padX, gap, labelSize, iconSize, , ] = ButtonStyles.metrics(this.size)");

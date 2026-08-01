@@ -24,6 +24,14 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
     return dec(incoming);
   }
 
+  // A NUMBER field fed a numeric string: EqJson writes Int64 as a string (so values beyond 2^53
+  // survive the wire), but a `long` the transpiler typed as `number` must not end up holding a
+  // string — later arithmetic would silently concatenate.
+  if (typeof current === 'number' && typeof incoming === 'string') {
+    const parsed = Number(incoming);
+    return Number.isFinite(parsed) ? parsed : current;
+  }
+
   // long/ulong field: restore the BigInt from its string (or number) representation.
   if (typeof current === 'bigint' && (typeof incoming === 'string' || typeof incoming === 'number')) {
     return long(incoming);

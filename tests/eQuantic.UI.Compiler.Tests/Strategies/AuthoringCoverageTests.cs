@@ -159,6 +159,42 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
+    public void ServerOnlyMethod_IsNotEmittedAtAll()
+    {
+        // [ServerOnly] = the method never crosses to the client: no stub, no endpoint, no bytes —
+        // which is what lets an SSR prefetch use the whole server surface (HttpClient, EF, the
+        // request's services) without tripping the client-boundary validation.
+        var ts = Ts("public class C : StatelessComponent { " +
+                    "  [ServerOnly] public async Task Prefetch(IServiceProvider services) { await Task.Delay(1); } " +
+                    "  public override IComponent Build(RenderContext c) => new Box(); }");
+        ts.Should().NotContain("prefetch");
+        ts.Should().NotContain("IServiceProvider");
+    }
+
+    [Fact]
+    public void ConstFromAnotherAssembly_InlinesAsALiteral()
+    {
+        // A const is a COMPILE-TIME value: inlining is faithful, and it is what lets a page default
+        // to a constant declared in an assembly the client bundle never sees (a server-side domain).
+        var src = "public static class Limits { public const long Downloads = 627000; public const string Label = \"it's live\"; } " +
+                  "public class C : StatelessComponent { private long _n = Limits.Downloads; " +
+                  "  public override IComponent Build(RenderContext c) => new Text(Limits.Label); }";
+        var ts = TsOf("C", src);
+        ts.Should().Contain("627000").And.NotContain("Limits.downloads");
+        ts.Should().Contain("'it\\'s live'", "string constants inline escaped");
+    }
+
+    [Fact]
+    public void EnumMemberAccess_IsNotInlinedAsItsOrdinal()
+    {
+        // Enum members are constant fields too, but their member-NAME string is the wire contract.
+        var ts = Ts("public enum Tone { Soft, Loud } " +
+                    "public class C : StatelessComponent { private Tone _t = Tone.Loud; " +
+                    "  public override IComponent Build(RenderContext c) => new Box(); }");
+        ts.Should().Contain("'loud'").And.NotContain("_t = 1");
+    }
+
+    [Fact]
     public void TypeConstructedOnlyInHelperOrPropertyBody_IsImported()
     {
         // A record constructed ONLY inside a helper-method body (Money) or a property-accessor body must

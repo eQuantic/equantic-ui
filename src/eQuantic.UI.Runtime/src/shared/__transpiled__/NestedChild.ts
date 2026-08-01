@@ -1,4 +1,4 @@
-import { BuildContext, Button, Column, SharedStatefulComponent, Space, Text, UiComponent } from "@equantic/runtime";
+import { BuildContext, Button, Column, SharedStatefulComponent, Text, UiComponent } from "@equantic/runtime";
 
 export class NestedChild extends SharedStatefulComponent {
     _count: number = 0;
@@ -9,7 +9,7 @@ export class NestedChild extends SharedStatefulComponent {
     }
 
     build(_context: BuildContext) {
-        let column = new Column(Space.s2);column.add(new Text(`${this._label}:${this._count}`, 'caption'));column.add(new Button('Add', 'primary', 'medium', () => this.setState(() => this._count++)));return column;
+        let column = new Column(8);column.add(new Text(`${this._label}:${this._count}`, 'caption'));column.add(new Button('Add', 'primary', 'medium', () => this.setState(() => this._count++)));return column;
     }
 
     adoptConfig(next: UiComponent) {

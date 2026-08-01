@@ -103,6 +103,14 @@ public class ServerRenderingService : IServerRenderingService
                 metadataHandler.ConfigureMetadata(new SeoBuilder(metadata));
             }
 
+            // SERVER DATA (IServerPrefetch): load before the tree is built, with the REQUEST's
+            // services, so the markup carries real values (crawlers see them) and the hydration
+            // payload below hands the client the same ones.
+            if (metadataSource is Primitives.IServerPrefetch prefetch)
+            {
+                await prefetch.PrefetchAsync(context.RequestServices, context.RequestAborted);
+            }
+
             // For stateful components, we need to initialize state
             if (component is StatefulComponent stateful)
             {
@@ -160,9 +168,15 @@ public class ServerRenderingService : IServerRenderingService
                     assets.Add(new InlineStyleAsset(styles.Css, "eq-atomic"));
                 }
 
-                // Serialize state for hydration (if component is stateful)
+                // Serialize state for hydration. A WRITE-ONCE page carries its state in its OWN
+                // fields (there is no separate state object), and the transpiled twin declares the
+                // same field names — so the payload crosses by name, exactly like the Core path.
                 string? serializedState = null;
-                if (component is StatefulComponent statefulComp)
+                if (component is Web.VisualNodeComponent writeOnce && writeOnce.Node is Primitives.IServerPrefetch)
+                {
+                    serializedState = SerializeState(writeOnce.Node);
+                }
+                else if (component is StatefulComponent statefulComp)
                 {
                     var state = statefulComp.GetType()
                         .GetProperty("State", BindingFlags.Instance | BindingFlags.NonPublic)?

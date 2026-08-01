@@ -19,10 +19,17 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 public class InlinedConstantStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context) =>
-        node is MemberAccessExpressionSyntax && TryResolveInlinable(node, context, out _, out _);
+        node is MemberAccessExpressionSyntax
+        && (TryResolveConstant(node, context, out _) || TryResolveInlinable(node, context, out _, out _));
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
+        // A `const` is a COMPILE-TIME value by definition — inlining it is always faithful, and it
+        // is what lets a page default to a constant from an assembly the client bundle never sees
+        // (a server-side domain's `PackageStats.LastVerifiedDownloads`, say: emitting the reference
+        // would be "PackageStats is not defined" the moment the page renders).
+        if (TryResolveConstant(node, context, out var constant)) return constant;
+
         if (!TryResolveInlinable(node, context, out var initializer, out var glyphTypeName))
             return context.Converter.ConvertExpression(((MemberAccessExpressionSyntax)node).Expression);
 
@@ -35,6 +42,59 @@ public class InlinedConstantStrategy : IConversionStrategy
         context.UsedHelpers.Add(glyphTypeName);
         return inlined;
     }
+
+    /// <summary>
+    /// The JS literal for a `const` field access. ENUM members are excluded: their member-name
+    /// string representation is the wire contract (EnumStrategy owns it), not their ordinal.
+    /// </summary>
+    private static bool TryResolveConstant(SyntaxNode node, ConversionContext context, out string literal)
+    {
+        literal = null!;
+        if (context.SemanticModel is null) return false;
+        if (context.SemanticHelper.GetSymbol(node) is not IFieldSymbol
+            {
+                IsConst: true, HasConstantValue: true, ContainingType: { } owner,
+            } field)
+        {
+            return false;
+        }
+        if (owner.TypeKind == TypeKind.Enum) return false;
+
+        switch (field.ConstantValue)
+        {
+            case null:
+                literal = "null";
+                return true;
+            case string text:
+                literal = $"'{Escape(text)}'";
+                return true;
+            case char character:
+                literal = $"'{Escape(character.ToString())}'";
+                return true;
+            case bool flag:
+                literal = flag ? "true" : "false";
+                return true;
+            // EXACTNESS FIRST: only values a JS number represents exactly are inlined. `long.MaxValue`
+            // as a literal becomes 9223372036854776000 — the dedicated long/decimal strategies keep
+            // those in their compat types, so leave them alone.
+            case decimal:
+                return false;
+            case long or ulong or int or uint or short or ushort or byte or sbyte:
+                var integral = System.Convert.ToDecimal(field.ConstantValue);
+                if (System.Math.Abs(integral) > 9007199254740991m) return false;
+                literal = integral.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                return true;
+            case double or float:
+                literal = ((IFormattable)field.ConstantValue).ToString(
+                    null, System.Globalization.CultureInfo.InvariantCulture);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static string Escape(string value) =>
+        value.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\n", "\\n").Replace("\r", "\\r");
 
     /// <summary>The inlinable initializer for the accessed field, when this is an external constant
     /// of the write-once icon-glyph type with a reachable, side-effect-free value.</summary>

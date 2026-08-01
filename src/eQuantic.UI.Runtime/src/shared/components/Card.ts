@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Color, ColorToken, CornerRadii, EdgeInsets, SizeValue, Space, StatelessComponent, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Color, ColorToken, CornerRadii, EdgeInsets, SizeValue, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class Card extends StatelessComponent {
     declare child: VisualNode;
@@ -10,7 +10,7 @@ export class Card extends StatelessComponent {
         if (child !== undefined) this.child = child;
         if (kind !== undefined) this.kind = kind;
         if (this.kind === undefined) this.kind = 'elevated';
-        if (this.padding === undefined) this.padding = EdgeInsets.all(Space.s4);
+        if (this.padding === undefined) this.padding = EdgeInsets.all(16);
         this.child = child;this.kind = kind;
     }
 

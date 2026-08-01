@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Flexible, Icon, IconSize, Pressable, Row, SharedStatefulComponent, SizeValue, Space, Spacer, StyleDiff, Text, UiComponent } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Flexible, Icon, Pressable, Row, SharedStatefulComponent, SizeValue, Spacer, StyleDiff, Text, UiComponent } from "../runtime-exports";
 
 export class Accordion extends SharedStatefulComponent {
     _openSingle: number = -1;
@@ -12,7 +12,7 @@ export class Accordion extends SharedStatefulComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let column = new Column(0, { width: SizeValue.fill });for (let i = 0; i < this.items.length; i++) {let item = this.items[i];let index = i;let open = this.isOpen(i);let header = new Row(Space.s2, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });header.add(new Text(item.title, 'label'));header.add(new Flexible(new Spacer()));header.add(new Icon(open ? 'chevronUp' : 'chevronDown', IconSize.sm, theme.textSecondary));column.add(new Pressable(new Box(new BoxStyle({ height: 48, width: SizeValue.fill, padding: EdgeInsets.symmetric(Space.s3, 0), hover: new StyleDiff({ background: theme.surfaceSubtle }) }), header), () => this.toggle(index)));let content; if (open && ((item.content != null) && (content = item.content, true))) {column.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(Space.s3, 0, Space.s3, Space.s3) }), content));}if (i < this.items.length - 1) column.add(new Divider());}return column;
+        let theme = context.theme;let column = new Column(0, { width: SizeValue.fill });for (let i = 0; i < this.items.length; i++) {let item = this.items[i];let index = i;let open = this.isOpen(i);let header = new Row(8, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });header.add(new Text(item.title, 'label'));header.add(new Flexible(new Spacer()));header.add(new Icon(open ? 'chevronUp' : 'chevronDown', 16, theme.textSecondary));column.add(new Pressable(new Box(new BoxStyle({ height: 48, width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), hover: new StyleDiff({ background: theme.surfaceSubtle }) }), header), () => this.toggle(index)));let content; if (open && ((item.content != null) && (content = item.content, true))) {column.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(12, 0, 12, 12) }), content));}if (i < this.items.length - 1) column.add(new Divider());}return column;
     }
 
     adoptConfig(next: UiComponent) {

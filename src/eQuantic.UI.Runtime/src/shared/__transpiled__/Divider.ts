@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, EdgeInsets, SizeValue, Space, StatelessComponent } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, EdgeInsets, SizeValue, StatelessComponent } from "@equantic/runtime";
 
 export class Divider extends StatelessComponent {
     declare inset: string;
@@ -13,7 +13,7 @@ export class Divider extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let line = new Box(new BoxStyle({ width: this.axis === 'vertical' ? SizeValue.fixed(1) : SizeValue.fill, height: this.axis === 'vertical' ? SizeValue.fill : SizeValue.fixed(1), background: context.theme.border }));if (this.inset === 'none') return line;let padding = this.inset === 'leading' ? new EdgeInsets(Space.s4, 0, 0, 0) : EdgeInsets.symmetric(Space.s4, 0);return new Box(new BoxStyle({ width: SizeValue.fill, padding: padding }), line);
+        let line = new Box(new BoxStyle({ width: this.axis === 'vertical' ? SizeValue.fixed(1) : SizeValue.fill, height: this.axis === 'vertical' ? SizeValue.fill : SizeValue.fixed(1), background: context.theme.border }));if (this.inset === 'none') return line;let padding = this.inset === 'leading' ? new EdgeInsets(16, 0, 0, 0) : EdgeInsets.symmetric(16, 0);return new Box(new BoxStyle({ width: SizeValue.fill, padding: padding }), line);
     }
 
 }

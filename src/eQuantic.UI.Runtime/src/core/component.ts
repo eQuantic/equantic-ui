@@ -15,6 +15,34 @@ import { scheduleRenderFlush } from './render-scheduler';
 /**
  * Base class for stateless components
  */
+/**
+ * SERVER DATA (the C# `IServerPrefetch` twin): the fields the server's prefetch filled arrive as
+ * `window.__INITIAL_STATE__`, keyed by the SAME field names the page declares, and land BEFORE its
+ * first render — so the client's first tree is the one the server already wrote as HTML and
+ * hydration matches instead of flashing the field defaults. Consumed once: the payload is a
+ * single-render handoff, not a store.
+ *
+ * Shared by both write-once page bases (stateless and stateful pages prefetch identically).
+ */
+export function adoptServerState(target: object): void {
+  if (typeof window === 'undefined') return;
+  const w = window as unknown as { __INITIAL_STATE__?: Record<string, unknown> };
+  const payload = w.__INITIAL_STATE__;
+  if (!payload) return;
+  const self = target as Record<string, unknown>;
+  let adopted = false;
+  for (const key of Object.keys(payload)) {
+    // Only fields the component actually declares: an unknown key is stale payload, never a new
+    // field (assigning it would silently create one no build ever reads).
+    if (!(key in self) || typeof payload[key] === 'function') continue;
+    self[key] = hydrateValue(self[key], payload[key]);
+    adopted = true;
+  }
+  // Leave the payload for its real owner when nothing here matched — a Core page reads it from its
+  // own state object, and a shared component rendering first must not swallow it.
+  if (adopted) delete w.__INITIAL_STATE__;
+}
+
 export abstract class StatelessComponent extends Component {
   private _renderManager: RenderManager = new RenderManager();
   private _instances = new ComponentInstanceStore();
@@ -38,6 +66,7 @@ export abstract class StatelessComponent extends Component {
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
     };
+    if (!this._mounted) adoptServerState(this);
     // Reconciler pass (W6): a stateless page IS re-renderable — build is pure and the instance
     // store retains nested shared stateful across passes — so those children invalidate by
     // re-rendering this page, exactly like a stateful host. (The old "no invalidator" fence made
@@ -354,6 +383,7 @@ export abstract class SharedStatefulComponent extends Component {
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
     };
+    if (!this._mounted) adoptServerState(this);
     // Reconciler pass (W6 slice 2): as a page root this component persists by itself; its store
     // retains the nested shared stateful its build creates. When hosted inside another page's
     // render this JOINS the outer pass instead (the host page owns retention).
