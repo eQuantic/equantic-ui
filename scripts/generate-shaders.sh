@@ -2,14 +2,16 @@
 # Regenerates the Photon shader outputs from the ONE normative Slang source (plan D3).
 # The generated files are COMMITTED (never hand-edited); this script is the only writer.
 #
-# Usage: EQ_SLANGC=/path/to/slangc ./scripts/generate-shaders.sh
-# slangc releases: https://github.com/shader-slang/slang/releases (macos-aarch64 zip → bin/slangc).
-# Packaging note: slangc will ship EMBEDDED in a NuGet package like the Bun binaries — framework
-# developers run this script; app developers never see it.
+# Usage: ./scripts/generate-shaders.sh
+# The toolchain resolves itself (W2): the pinned slangc is found in the cache or acquired on first
+# use, digest-verified. Set EQ_SLANGC to override with your own build.
 set -euo pipefail
 
-SLANGC="${EQ_SLANGC:?Set EQ_SLANGC to the slangc binary path}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=scripts/slang-toolchain.sh
+source "$ROOT/scripts/slang-toolchain.sh"
+eq_slang_resolve
+SLANGC="${EQ_SLANGC:?the Slang toolchain could not be resolved}"
 SRC="$ROOT/src/eQuantic.UI.Native.Engine/Shaders/Sdf.slang"
 OUT="$ROOT/src/eQuantic.UI.Native.Engine/Shaders/Generated"
 
