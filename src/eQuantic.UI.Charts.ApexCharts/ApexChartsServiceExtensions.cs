@@ -44,7 +44,7 @@ public static class ApexChartsServiceExtensions
     private static void ConfigureApexCharts(UIOptions options, string? version = null)
     {
         var ver = version ?? DefaultVersion;
-        var cdnTag = $"<script src=\"https://cdn.jsdelivr.net/npm/apexcharts@{ver}/dist/apexcharts.min.js\" defer></script>";
+        var cdnTag = HtmlTag.Script($"https://cdn.jsdelivr.net/npm/apexcharts@{ver}/dist/apexcharts.min.js").Render();
 
         // Only add if not already present
         if (!options.HtmlShell.HeadTags.Any(t => t.Contains("apexcharts")))
@@ -53,7 +53,8 @@ public static class ApexChartsServiceExtensions
         }
 
         // Add initialization script that discovers data-apex-init markers
-        var initTag = "<script defer>document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('script[data-apex-init]').forEach(function(el){var id=el.getAttribute('data-apex-init');var cfg=JSON.parse(el.getAttribute('data-apex-config'));var c=document.getElementById(id);if(c&&typeof ApexCharts!=='undefined')new ApexCharts(c,cfg).render()})});</script>";
+        var initTag = HtmlTag.InlineScript(
+            "document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('script[data-apex-init]').forEach(function(el){var id=el.getAttribute('data-apex-init');var cfg=JSON.parse(el.getAttribute('data-apex-config'));var c=document.getElementById(id);if(c&&typeof ApexCharts!=='undefined')new ApexCharts(c,cfg).render()})});").Render();
 
         if (!options.HtmlShell.HeadTags.Any(t => t.Contains("data-apex-init")))
         {

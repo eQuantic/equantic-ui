@@ -65,6 +65,12 @@ export interface StickyNode {
   key?: string | null;
   child: VisualNodeValue;
   offset: number;
+  /** Floating chrome: fixed at the viewport edge, above the page (content slides underneath). */
+  float?: boolean;
+  /** Scroll-linked diff — applies while <html> carries eq-scrolled (runtime listener). */
+  scrolledStyle?: StyleDiffValue | null;
+  /** Spec S6: animates the swap into/out of `scrolledStyle` (null = snap). */
+  transition?: TransitionSpecValue | null;
 }
 
 /** Wave 3 placements — the four anchor corners (flip/clamp is the positioning fence). */
@@ -90,6 +96,8 @@ export interface AnchoredNode extends VisualNodeValue {
   openOnHover?: boolean;
   /** Paints the outside-tap scrim (mega-menu page veil) — a BoxStyle, like the C# ScrimStyle. */
   scrimStyle?: BoxStyleValue | null;
+  /** Open/close motion: panel + scrim stay mounted in both states and glide between them. */
+  motion?: TransitionSpecValue | null;
 }
 
 /** Spec S6 — a subtree that adapts to the window size class (up to 3 variants). */
@@ -140,12 +148,18 @@ export interface BoxStyleValue {
   backdropBlur?: number;
   /** Custom shadow (glow/halo — full spec, composes with elevation). */
   shadow?: ShadowSpecValue | null;
+  /** Composed custom shadows in paint order (ring + projected glow pairs). */
+  shadows?: ShadowSpecValue[] | null;
   /** The 1px inner top highlight (glossy buttons) — an inset box-shadow entry. */
   insetHighlight?: ColorTokenValue | null;
+  /** Element blur (blur-3xl glow washes): this box's own pixels — CSS filter: blur(). */
+  blur?: number;
   /** Spec S1 static transform, center-anchored, paint-only (CSS transform twin). */
   transform?: TransformValue | null;
   /** Spec S1 width ÷ height constraint; one determined axis derives the other. 0/undefined = none. */
   aspectRatio?: number;
+  /** Spec S6: animates changes to the covered channels (CSS transition). null = snap. */
+  transition?: TransitionSpecValue | null;
   /** Spec S5: style diff while hovered (CSS :hover — never fires on touch). */
   hover?: StyleDiffValue | null;
   /** Spec S5: style diff while focused (CSS :focus-visible). */
@@ -161,6 +175,8 @@ export interface StyleDiffValue {
   opacity?: number | null;
   /** Swaps the gradient fill while active (gradient-button hover). */
   gradient?: LinearGradientValue | null;
+  /** Backdrop blur radius while active (the scrolled header's frosted veil). */
+  backdropBlur?: number | null;
 }
 
 /** Wire shape of the C# `ShadowSpec` (offsetY, blur, spread, color). */
@@ -180,11 +196,23 @@ export interface TransformValue {
   scaleY?: number;
 }
 
-/** Wire shape of the C# `LinearGradient`: two token stops on a straight axis. */
+/** Wire shape of the C# `LinearGradient`: two token stops on a straight axis, plus the optional
+ * `via` midpoint at `viaPosition` (0–1). */
 export interface LinearGradientValue {
   from: ColorTokenValue;
   to: ColorTokenValue;
   direction: string;
+  via?: ColorTokenValue | null;
+  viaPosition?: number;
+}
+
+/** Wire shape of the C# `TransitionSpec` (spec S6). `channels` carries the [Flags] StyleChannels
+ * bits (the transpiler emits flags enums numerically); `easing` is a cubic-bezier control tuple. */
+export interface TransitionSpecValue {
+  channels: number;
+  durationMs?: number;
+  delayMs?: number;
+  easing?: readonly number[];
 }
 
 /** Wire shape of the C# `RadialGradient`: two-stop elliptical spotlight, center as box fractions. */
@@ -258,6 +286,8 @@ export interface TextNode extends VisualNodeValue {
   mono?: boolean;
   /** Rich inline runs — rendered instead of `content` when present (wire of C# Text.Spans). */
   spans?: TextRunValue[] | null;
+  /** Spec S6: animates color changes (the design's transition-colors). null = snap. */
+  transition?: TransitionSpecValue | null;
 }
 
 /** Wire shape of the C# `TextRun` — one inline run of a rich Text. */

@@ -40,13 +40,14 @@ public static class TailwindExtensions
     /// </summary>
     public static HtmlShellOptions EnableTailwindDarkMode(this HtmlShellOptions shell)
     {
-        shell.AddHeadTag("<script>!function(){var t=localStorage.getItem('theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;d?document.documentElement.classList.add('dark'):document.documentElement.classList.remove('dark');document.addEventListener('DOMContentLoaded',function(){var s=document.getElementById('icon-sun');var m=document.getElementById('icon-moon');if(s&&m){var dk=document.documentElement.classList.contains('dark');s.classList.toggle('hidden',!dk);m.classList.toggle('hidden',dk)}})}();</script>");
+        shell.AddHeadTag(HtmlTag.InlineScript(
+            "!function(){var t=localStorage.getItem('theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;d?document.documentElement.classList.add('dark'):document.documentElement.classList.remove('dark');document.addEventListener('DOMContentLoaded',function(){var s=document.getElementById('icon-sun');var m=document.getElementById('icon-moon');if(s&&m){var dk=document.documentElement.classList.contains('dark');s.classList.toggle('hidden',!dk);m.classList.toggle('hidden',dk)}})}();", defer: false));
         return shell;
     }
 
     private static void AddStylesheetLink(UIOptions options, string cssPath)
     {
-        var linkTag = $"<link rel=\"stylesheet\" href=\"{cssPath}?v={UIExtensions.BuildId}\">";
+        var linkTag = HtmlTag.Link("stylesheet", $"{cssPath}?v={UIExtensions.BuildId}").Render();
         if (!options.HtmlShell.HeadTags.Any(t => t.StartsWith($"<link rel=\"stylesheet\" href=\"{cssPath}")))
         {
             options.HtmlShell.HeadTags.Add(linkTag);

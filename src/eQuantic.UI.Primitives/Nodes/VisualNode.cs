@@ -131,11 +131,27 @@ public readonly record struct BoxStyle
     public ShadowSpec? Shadow { get; init; }
 
     /// <summary>
+    /// COMPOSED custom shadows, in paint order (the design's ring + projected-glow pairs:
+    /// <c>0 0 0 1px ring, 0 8px 40px -8px glow</c>). Combines with <see cref="Elevation"/>,
+    /// <see cref="Shadow"/> and <see cref="InsetHighlight"/> into one list. <c>null</c> = none.
+    /// </summary>
+    public IReadOnlyList<ShadowSpec>? Shadows { get; init; }
+
+    /// <summary>
     /// The 1px INNER TOP highlight (the design's glossy <c>inset 0 1px 0 white/25</c> on primary
     /// buttons). Web = an inset box-shadow entry; Photon = a hairline fill clipped to the rrect's
     /// top edge. <c>null</c> = none.
     /// </summary>
     public ColorToken? InsetHighlight { get; init; }
+
+    /// <summary>
+    /// ELEMENT blur (the design's <c>blur-3xl</c> glow washes): blurs THIS box's own pixels —
+    /// distinct from <see cref="BackdropBlur"/>, which blurs what lies behind. Web =
+    /// <c>filter: blur()</c>; Photon fence: renders the subtree as an offscreen layer through the
+    /// engine's dual-Kawase pyramid when a native consumer arrives (the machinery is the same one
+    /// BackdropBlur uses). 0 = none.
+    /// </summary>
+    public float Blur { get; init; }
 
     /// <summary>
     /// Static 2D transform (spec S1), anchored at the box CENTER (the CSS default origin). PAINT
@@ -149,6 +165,10 @@ public readonly record struct BoxStyle
     /// 0 = none.
     /// </summary>
     public float AspectRatio { get; init; }
+
+    /// <summary>Spec S6: animates CHANGES to this box's style — hover diffs, the scrolled variant,
+    /// re-rendered values — per the spec's channels/duration/easing. <c>null</c> = snap.</summary>
+    public TransitionSpec? Transition { get; init; }
 
     /// <summary>Spec S5: style DIFF applied while the pointer hovers (never fires on touch) —
     /// CSS <c>:hover</c> on web, the pointer-over interaction on Photon. <c>null</c> = none.</summary>
@@ -179,9 +199,51 @@ public readonly record struct StyleDiff
     /// <c>null</c> = keep the base gradient.</summary>
     public LinearGradient? Gradient { get; init; }
 
+    /// <summary>Backdrop blur radius while active (the scrolled header's frosted veil).
+    /// <c>null</c> = keep the base.</summary>
+    public float? BackdropBlur { get; init; }
+
     public bool IsEmpty =>
         Background is null && BorderColor is null && BorderWidth is null
-        && Elevation is null && Opacity is null && Gradient is null;
+        && Elevation is null && Opacity is null && Gradient is null && BackdropBlur is null;
+}
+
+/// <summary>Style channels a <see cref="TransitionSpec"/> animates — combine freely
+/// (<c>Colors | Transform</c>). <see cref="All"/> is the whole style surface.</summary>
+[Flags]
+public enum StyleChannels : byte
+{
+    None = 0,
+    /// <summary>Background, border and content colors (the hover-tint channel).</summary>
+    Colors = 1,
+    Opacity = 2,
+    Transform = 4,
+    /// <summary>box-shadow — elevation swaps and glow hovers.</summary>
+    Shadow = 8,
+    /// <summary>Element blur and backdrop blur (the scrolled header's frosted veil).</summary>
+    Filters = 16,
+    /// <summary>Width/height/max bounds — the panel-morph channel.</summary>
+    Size = 32,
+    All = Colors | Opacity | Transform | Shadow | Filters | Size,
+}
+
+/// <summary>
+/// Animates CHANGES to a box's style (spec S6): whenever a covered channel's value swaps — a hover
+/// diff engaging, the scrolled variant kicking in, a re-render landing a different transform or
+/// max-width — the change GLIDES over <see cref="DurationMs"/> along <see cref="Easing"/> instead
+/// of snapping. Web is CSS transitions exactly; Photon fence: the style interpolator (until it
+/// lands, native SNAPS — honesty over smoothness, the same fence Flexible.AnimateChanges documents).
+/// </summary>
+public readonly record struct TransitionSpec(StyleChannels Channels, float DurationMs = Motion.BaseMs, float DelayMs = 0)
+{
+    /// <summary>The bezier the change follows; defaults to the spec §06 standard curve.</summary>
+    public Curve Easing { get; init; } = Curve.Standard;
+
+    /// <summary>Color-only glide — the ubiquitous hover-tint transition.</summary>
+    public static TransitionSpec Colors(float durationMs = 150) => new(StyleChannels.Colors, durationMs);
+
+    /// <summary>Everything glides — state swaps that recolor, move and re-shadow at once.</summary>
+    public static TransitionSpec All(float durationMs = Motion.BaseMs) => new(StyleChannels.All, durationMs);
 }
 
 /// <summary>
@@ -233,14 +295,26 @@ public enum GradientDirection : byte
 }
 
 /// <summary>
-/// The engine fence's gradient, exactly: TWO color stops on a straight axis. Stops are TOKENS
-/// (mode-free trees); realizers resolve per mode — web as <c>linear-gradient(to right|bottom, …)</c>,
-/// native as <c>Paint.Linear</c> across the box bounds.
+/// The engine fence's gradient, exactly: TWO color stops on a straight axis — plus an optional
+/// <see cref="Via"/> midpoint (the design system's from/via/to triple; brand text and glossy fills
+/// need the hue turn). Stops are TOKENS (mode-free trees); realizers resolve per mode — web as
+/// <c>linear-gradient(to right|bottom, from, via P%, to)</c>, native as <c>Paint.Linear</c> across
+/// the box bounds. Photon fence: the shader interpolates TWO stops — until the 3-stop paint lands,
+/// native paints <see cref="From"/>→<see cref="To"/> and the midpoint is web-only (annotated,
+/// honesty over silence).
 /// </summary>
 public readonly record struct LinearGradient(
     ColorToken From,
     ColorToken To,
-    GradientDirection Direction = GradientDirection.ToRight);
+    GradientDirection Direction = GradientDirection.ToRight)
+{
+    /// <summary>Optional middle stop at <see cref="ViaPosition"/>. <c>null</c> = plain 2-stop.</summary>
+    public ColorToken? Via { get; init; }
+
+    /// <summary>Fraction of the axis where <see cref="Via"/> sits (0–1); the design's triples
+    /// pivot at the middle.</summary>
+    public float ViaPosition { get; init; } = 0.5f;
+}
 
 /// <summary>
 /// A repeating hairline GRID — the "graph paper" backdrop marketing surfaces use behind a hero.
@@ -421,6 +495,22 @@ public sealed class Anchored : VisualNode
     /// hover-open panels (they have no scrim). <c>null</c> = the historical invisible scrim.
     /// </summary>
     public BoxStyle? ScrimStyle { get; init; }
+
+    /// <summary>The open/close lift distance (dp) when <see cref="Motion"/> is set — a nudge
+    /// toward the anchor, not a journey (spec §06's Presence rule, halved).</summary>
+    public const float MotionLiftDp = 8;
+
+    /// <summary>
+    /// OPEN/CLOSE motion (the mega-menu contract): when set, the panel and the scrim stay MOUNTED
+    /// across open/close — the tree keeps its shape, so both states share element identity — and
+    /// visibility glides per this spec: the panel fades while lifting <see cref="MotionLiftDp"/>
+    /// toward the anchor, the scrim cross-fades alongside. A closed panel ends
+    /// <c>visibility:hidden</c> — outside hit-testing and the focus order (pure CSS: opacity/
+    /// transform/visibility transitions; no JS). Photon fence: the overlay animator (panels keep
+    /// snapping until it lands). <c>null</c> = mount/unmount (the historical snap). Keep building
+    /// the LAST panel content while closed — an emptied panel would collapse mid-fade.
+    /// </summary>
+    public TransitionSpec? Motion { get; init; }
 }
 
 /// <summary>
@@ -690,6 +780,11 @@ public sealed class Text : VisualNode
     /// <see cref="Color"/> is ignored.
     /// </summary>
     public LinearGradient? Gradient { get; init; }
+
+    /// <summary>Spec S6: animates COLOR changes to this paragraph (the design's ubiquitous
+    /// <c>transition-colors</c> on nav labels and links — a state swap recolors the text and the
+    /// change should glide, not flip). <c>null</c> = snap.</summary>
+    public TransitionSpec? Transition { get; init; }
 }
 
 /// <summary>
@@ -991,6 +1086,26 @@ public sealed class Sticky : VisualNode
 
     /// <summary>Distance from the viewport's start edge while pinned (dp).</summary>
     public float Offset { get; init; }
+
+    /// <summary>
+    /// FLOATING chrome (the fixed header): the bar paints ABOVE the page at the viewport edge and
+    /// takes no layout space — content slides underneath (give the first section its own top
+    /// padding). CSS <c>position:fixed; inset-inline:0</c>; Photon fence: the native realizer
+    /// pins floating chrome with the overlay pass when the shell lands.
+    /// </summary>
+    public bool Float { get; init; }
+
+    /// <summary>
+    /// SCROLL-LINKED style (the handoff's transparent-until-scrolled header): this diff applies
+    /// while the window has scrolled past a small threshold. Web = a root-gated rule set
+    /// (<c>html.eq-scrolled …</c>) toggled by a tiny passive listener; Photon fence: joins the
+    /// host scroll compositor. <c>null</c> = none.
+    /// </summary>
+    public StyleDiff? ScrolledStyle { get; init; }
+
+    /// <summary>Spec S6: animates the swap INTO and out of <see cref="ScrolledStyle"/> — without it
+    /// the bar flips from transparent to veiled in one frame. <c>null</c> = snap.</summary>
+    public TransitionSpec? Transition { get; init; }
 }
 
 /// <summary>

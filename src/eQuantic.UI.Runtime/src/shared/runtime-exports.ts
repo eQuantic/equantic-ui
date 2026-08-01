@@ -49,6 +49,8 @@ export {
   StyleDiff,
   ShadowSpec,
   TextRun,
+  TransitionSpec,
+  StyleChannels,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';
 export {
@@ -67,6 +69,7 @@ export {
   IconSize,
   Touch,
   Motion,
+  Curve,
   ButtonStyles,
   photonTheme,
   PhotonTheme,

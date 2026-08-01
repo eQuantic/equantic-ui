@@ -52,6 +52,12 @@ export const Motion = {
   reducedCrossfadeMs: 120,
 } as const;
 
+export const Curve = {
+  standard: [0.2, 0, 0, 1],
+  decelerate: [0, 0, 0, 1],
+  accelerate: [0.3, 0, 1, 1],
+} as const;
+
 /** Height · PadX · Gap · Label · Icon · Radius · HitTarget — the spec A12 size table. */
 export const ButtonStyles = {
   minWidth: 64,

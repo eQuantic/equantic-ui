@@ -31,6 +31,22 @@ export const Color = {
   },
 };
 
+/**
+ * Mirror of the C# `[Flags] StyleChannels` (spec S6) — the transpiler emits flags enums
+ * NUMERICALLY, so these bits ARE the wire values app code arrives with. Lives here (not in
+ * vocabulary) so the lowering can read it without importing back into a module that imports it.
+ */
+export const StyleChannels = {
+  none: 0,
+  colors: 1,
+  opacity: 2,
+  transform: 4,
+  shadow: 8,
+  filters: 16,
+  size: 32,
+  all: 63,
+} as const;
+
 /** Paired light/dark color — mirrors `eQuantic.UI.Primitives.ColorToken` (channels are 0–255 bytes). */
 export class ColorToken {
   readonly light: ColorValue;

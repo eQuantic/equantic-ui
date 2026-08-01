@@ -160,10 +160,12 @@ public static class WebRealizer
         };
         if (LowerNode(anchored.Anchor, context, horizontalAxis: null) is { } anchor)
         {
-            // A painted scrim dims the PAGE, never its own anchor — the anchor lifts above it
-            // (only while the scrim exists: the class carries position+z the closed state
-            // shouldn't pay for).
-            if (anchored is { ScrimStyle: not null, Open: true, OnDismiss: not null })
+            // A painted scrim dims the PAGE, never its own anchor — the anchor lifts above it.
+            // Snap panels gate the class on Open (position+z the closed state shouldn't pay for);
+            // Motion panels keep it ALWAYS — the scrim is still fading out after close, and an
+            // anchor that dropped behind it would dim mid-exit.
+            if (anchored is { ScrimStyle: not null, OnDismiss: not null }
+                && (anchored.Open || anchored.Motion is not null))
                 anchor.ClassName = string.IsNullOrEmpty(anchor.ClassName)
                     ? "eq-anchor-above" : $"{anchor.ClassName} eq-anchor-above";
             host.Children.Add(anchor);
@@ -175,7 +177,10 @@ public static class WebRealizer
             return host;
         }
 
-        if (!anchored.Open) return host;
+        // Open/close MOTION keeps the panel and scrim MOUNTED in both states (same tree shape →
+        // element identity survives the swap → the CSS transitions glide); without it, closed
+        // renders nothing (the historical snap).
+        if (!anchored.Open && anchored.Motion is null) return host;
 
         // Mega-menu dimming: ScrimStyle PAINTS the outside-tap scrim (background/gradient/
         // backdrop-blur, a full Box) instead of the historical invisible one — one element serves
@@ -186,6 +191,20 @@ public static class WebRealizer
         {
             scrim.ClassName = string.IsNullOrEmpty(scrim.ClassName)
                 ? "eq-anchor-scrim" : $"{scrim.ClassName} eq-anchor-scrim";
+            if (anchored.Motion is { } scrimMotion)
+            {
+                // The scrim cross-fades with the panel; closed it is hidden — invisible, out of
+                // hit-testing AND the focus order (visibility rides the same transition, flipping
+                // at the fade's end on exit / start on enter, the CSS-native contract).
+                scrim.Style ??= new HtmlStyle();
+                scrim.Style.Transition = MotionTransition(scrimMotion, withTransform: false);
+                if (!anchored.Open)
+                {
+                    scrim.Style.Opacity = "0";
+                    scrim.Style.Visibility = "hidden";
+                    scrim.Style.PointerEvents = "none";
+                }
+            }
             host.Children.Add(scrim);
         }
 
@@ -214,9 +233,37 @@ public static class WebRealizer
                 PaddingBottom = top && bridge ? TokenCss.Px(anchored.Gap) : null,
             },
         };
+        if (anchored.Motion is { } motion && !anchored.OpenOnHover)
+        {
+            // Open/close glide: fade + a MotionLiftDp nudge toward the anchor (up for bottom
+            // placements, down for top). Closed ends visibility:hidden — gone from hit-testing
+            // and the Tab order once the exit completes.
+            panel.Style.Transition = MotionTransition(motion, withTransform: true);
+            if (!anchored.Open)
+            {
+                panel.Style.Opacity = "0";
+                panel.Style.Transform = $"translateY({TokenCss.Px(top ? Anchored.MotionLiftDp : -Anchored.MotionLiftDp)})";
+                panel.Style.Visibility = "hidden";
+                panel.Style.PointerEvents = "none";
+            }
+        }
         if (LowerNode(anchored.Panel, context, horizontalAxis: null) is { } content)
             panel.Children.Add(content);
         return panel;
+    }
+
+    /// <summary>
+    /// The Anchored open/close transition list: opacity (+ transform for the panel) riding the
+    /// spec's duration/easing, and ALWAYS visibility — it flips at the fade's end on exit and its
+    /// start on enter (the CSS discrete-interpolation rule), which is what parks a closed panel
+    /// outside hit-testing and the focus order without JS.
+    /// </summary>
+    private static string MotionTransition(TransitionSpec motion, bool withTransform)
+    {
+        var timing = $"{TokenCss.Number(motion.DurationMs)}ms {TokenCss.Bezier(motion.Easing)}";
+        return withTransform
+            ? $"opacity {timing}, transform {timing}, visibility {timing}"
+            : $"opacity {timing}, visibility {timing}";
     }
 
     private static string PlacementClass(AnchorPlacement placement) => placement switch
@@ -235,12 +282,36 @@ public static class WebRealizer
         {
             Style = new HtmlStyle
             {
-                Position = Core.Position.Sticky,
+                // FLOATING chrome (the fixed header) paints above the page and takes no layout
+                // space; plain sticky stays in flow and pins when scrolling reaches it.
+                Position = sticky.Float ? Core.Position.Fixed : Core.Position.Sticky,
                 Top = TokenCss.Px(sticky.Offset),
-                // Pinned chrome floats over the content it sticks above.
-                ZIndex = "1",
+                Left = sticky.Float ? "0" : null,
+                Right = sticky.Float ? "0" : null,
+                ZIndex = sticky.Float ? "100" : "1",
+                // Spec S6: the scrolled swap GLIDES (the design's transparent-until-scrolled bar
+                // fades its veil in) instead of flipping in one frame.
+                Transition = sticky.Transition is { } transition ? TokenCss.Transition(transition) : null,
             },
         };
+
+        // SCROLL-LINKED diff: each declaration lands under the root-gated scrolled variant; the
+        // runtime's scroll listener toggles `eq-scrolled` on <html>.
+        if (sticky.ScrolledStyle is { IsEmpty: false } scrolled)
+        {
+            if (scrolled.Background is { } bg)
+                element.ScrolledDeclarations.Add(("background-color", TokenCss.Value(bg)));
+            if (scrolled is { BorderWidth: { } bw, BorderColor: { } bc })
+                element.ScrolledDeclarations.Add(("border-bottom", $"{TokenCss.Px(bw)} solid {TokenCss.Value(bc)}"));
+            if (scrolled.Opacity is { } alpha)
+                element.ScrolledDeclarations.Add(("opacity", TokenCss.Number(alpha)));
+            if (scrolled.BackdropBlur is { } blur and > 0)
+            {
+                element.ScrolledDeclarations.Add(("backdrop-filter", $"blur({TokenCss.Px(blur)})"));
+                element.ScrolledDeclarations.Add(("-webkit-backdrop-filter", $"blur({TokenCss.Px(blur)})"));
+            }
+        }
+
         if (LowerNode(sticky.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;
@@ -476,6 +547,9 @@ public static class WebRealizer
                         ? TokenCss.Shadow(context.Theme.Elevation(style.Elevation))
                         : null,
                     style.Shadow is { } shadow ? TokenCss.Shadow(shadow) : null,
+                    style.Shadows is { Count: > 0 } shadows
+                        ? string.Join(", ", shadows.Select(TokenCss.Shadow))
+                        : null,
                     style.InsetHighlight is { } inset ? $"inset 0 1px 0 {TokenCss.Value(inset)}" : null),
                 Border = style.BorderWidth > 0
                     ? $"{TokenCss.Px(style.BorderWidth)} solid {TokenCss.Value(style.BorderColor)}"
@@ -487,8 +561,13 @@ public static class WebRealizer
                 Opacity = style.Opacity is { } alpha && alpha < 1f ? TokenCss.Number(alpha) : null,
                 // Spec S3 frosted glass (native BackdropBlur pass-split twin).
                 BackdropFilter = style.BackdropBlur > 0 ? $"blur({TokenCss.Px(style.BackdropBlur)})" : null,
+                // ELEMENT blur (blur-3xl glow washes) — this box's own pixels.
+                Filter = style.Blur > 0 ? $"blur({TokenCss.Px(style.Blur)})" : null,
                 Transform = style.Transform is { } transform ? TokenCss.Transform(transform) : null,
                 AspectRatio = style.AspectRatio > 0 ? TokenCss.Number(style.AspectRatio) : null,
+                // Spec S6 — changes to the covered channels GLIDE (hover diffs, the scrolled
+                // variant, re-rendered values). Native fence: the style interpolator (snap).
+                Transition = style.Transition is { } transition ? TokenCss.Transition(transition) : null,
             },
         };
 
@@ -715,6 +794,8 @@ public static class WebRealizer
                 // keeps normal wrapping between them.
                 WhiteSpace = text.Content.Contains('\n') ? "pre-line" : null,
                 FontFamily = text.Mono ? TokenCss.MonoStack : null,
+                // Spec S6: recolors glide (the design's transition-colors on nav labels/links).
+                Transition = text.Transition is { } transition ? TokenCss.Transition(transition) : null,
             },
         };
 
@@ -990,7 +1071,7 @@ public static class WebRealizer
 
 /// <summary>A lowered element: a generic <see cref="HtmlElement"/> with an explicit tag — the web
 /// realizer's only output shape (mirrors the web SDK's generic div container).</summary>
-internal sealed class RealizedElement : HtmlElement, IPseudoStyled, IAdaptiveGated
+internal sealed class RealizedElement : HtmlElement, IPseudoStyled, IAdaptiveGated, IScrolledStyled
 {
     /// <summary>Spec S6: the size-class gate this element carries (fixed class + media blob).</summary>
     public string? AdaptiveGate { get; set; }
@@ -1002,6 +1083,10 @@ internal sealed class RealizedElement : HtmlElement, IPseudoStyled, IAdaptiveGat
     /// <summary>Spec S5: hover/focus diff declarations, converted to pseudo-variant atomic rules by
     /// the atomizer pass (pseudo-classes need the ATOMIC pipeline — inline styles can't express them).</summary>
     public List<(string Pseudo, string Prop, string Value)> PseudoDeclarations { get; } = new();
+
+    /// <summary>Sticky.ScrolledStyle: declarations gated by the root's <c>eq-scrolled</c> class
+    /// (the runtime scroll listener) — converted by the atomizer like pseudo variants.</summary>
+    public List<(string Prop, string Value)> ScrolledDeclarations { get; } = new();
 
     /// <summary>Attributes emitted VERBATIM (no data- prefix) — SVG needs viewBox/fill/d as-is.</summary>
     public Dictionary<string, string>? RawAttributes { get; set; }

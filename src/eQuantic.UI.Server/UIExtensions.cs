@@ -682,11 +682,47 @@ public class HtmlShellOptions
         return this;
     }
 
-    public HtmlShellOptions AddHeadTag(string tag)
+    /// <summary>
+    /// Adds a head element as DATA — <see cref="HtmlTag"/> owns the quoting, encoding and closing.
+    /// This is the authoring API: app code never types markup.
+    /// </summary>
+    public HtmlShellOptions AddHeadTag(HtmlTag tag)
     {
-        HeadTags.Add(tag);
+        HeadTags.Add(tag.Render());
         return this;
     }
+
+    /// <summary>
+    /// ESCAPE HATCH: a head element as RAW markup, for anything the typed surface can't express
+    /// yet. Prefer the <see cref="AddHeadTag(HtmlTag)"/> overload — nothing here is escaped.
+    /// </summary>
+    public HtmlShellOptions AddHeadTag(string rawHtml)
+    {
+        HeadTags.Add(rawHtml);
+        return this;
+    }
+
+    /// <summary>The page's <c>&lt;meta name="description"&gt;</c>.</summary>
+    public HtmlShellOptions AddDescription(string description) =>
+        AddHeadTag(HtmlTag.Meta("description", description));
+
+    /// <summary>A <c>&lt;link rel="preconnect"&gt;</c> to an origin the page will fetch from.
+    /// <paramref name="crossOrigin"/> matters for font/CORS fetches (fonts.gstatic.com wants it).</summary>
+    public HtmlShellOptions AddPreconnect(Uri origin, bool crossOrigin = false)
+    {
+        var tag = HtmlTag.Link("preconnect", origin.ToString());
+        if (crossOrigin) tag.Attr("crossorigin");
+        return AddHeadTag(tag);
+    }
+
+    /// <summary>An external stylesheet <c>&lt;link&gt;</c>.</summary>
+    public HtmlShellOptions AddStylesheet(Uri href) =>
+        AddHeadTag(HtmlTag.Link("stylesheet", href.ToString()));
+
+    /// <summary>An external <c>&lt;script&gt;</c> (deferred by default — head scripts must not
+    /// block parsing).</summary>
+    public HtmlShellOptions AddScript(Uri src, bool defer = true) =>
+        AddHeadTag(HtmlTag.Script(src.ToString(), defer));
 
     public HtmlShellOptions SetBaseStyles(string styles)
     {
