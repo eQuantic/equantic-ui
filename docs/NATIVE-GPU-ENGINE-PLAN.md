@@ -136,6 +136,23 @@ Bring the eQuantic.UI authoring model — C# components, `Build(context)`, `SetS
   is 8–40px; atlas pressure is manageable); MSDF is a v2 upgrade if scale-independence pays for
   itself. Color emoji via COLR/bitmap strikes → color atlas page. Both libs statically linked,
   P/Invoked via thin C shims (HarfBuzzSharp exists and is usable; FreeType gets a slim binding).
+- **D6b — SAMPLING is a first-class RHI capability (nearest AND linear), decided 2026-08-01.**
+  The engine shipped its first year with no sampler at all — every texture read is a `Load`. That
+  was never a principle; it was the state that glyph and icon rasters justified, because those are
+  generated at DEVICE SCALE, so texels map 1:1 and nearest is *correct* rather than a compromise.
+  Two consumers now need real filtering: scaled images (already a named fence in the W4 log) and
+  the dual-Kawase blur, whose entire bandwidth argument rests on hardware bilinear averaging four
+  texels per tap. Emulating those taps with `Load` would preserve bit-exact parity at roughly 4×
+  the taps — a workaround that quietly makes the plan's own algorithm cost what it exists to avoid.
+  So samplers land properly: the RHI exposes a per-binding filter, blur and scaled images take
+  linear, glyphs and icons keep nearest.
+  Parity consequence, stated rather than discovered later: bilinear is mathematically specified (a
+  weighted average of four texels by fractional position), but hardware evaluates the weights in
+  bounded fixed point, so a filtered read differs slightly between the CPU reference and a GPU.
+  That difference is BOUNDED and non-structural — the same class the existing ±4 tolerance was
+  built for (sRGB decode, fast-math `pow`) — and a transliteration bug still moves whole edge runs
+  by dozens of values, so the gate keeps its discriminating power.
+
 - **D7 — Reference CPU backend behind the HAL** — renders the same display list scalar-slow on CPU.
   It exists **only** for golden tests and CI-without-GPU; it is test infrastructure, not a product
   tier, and it is not Skia. (This is how we keep "no Skia tier" honest while still being able to
