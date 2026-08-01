@@ -18,6 +18,8 @@ import { scheduleRenderFlush } from './render-scheduler';
 export abstract class StatelessComponent extends Component {
   private _renderManager: RenderManager = new RenderManager();
   private _instances = new ComponentInstanceStore();
+  private _mounted = false;
+  private _renderScheduled = false;
 
   protected get serviceProvider(): ServiceProvider {
     return getRootServiceProvider();
@@ -36,15 +38,28 @@ export abstract class StatelessComponent extends Component {
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
     };
-    // Reconciler pass fence (W6 slice 2): a stateless page cannot re-render, so nested shared
-    // stateful get no invalidator — their state persists but repaints only with the next render.
-    enterPass(this._instances, null);
+    // Reconciler pass (W6): a stateless page IS re-renderable — build is pure and the instance
+    // store retains nested shared stateful across passes — so those children invalidate by
+    // re-rendering this page, exactly like a stateful host. (The old "no invalidator" fence made
+    // every stateful child of a stateless page render-once: the site's mega menu opened its state
+    // and nothing on screen ever changed.)
+    enterPass(this._instances, () => this._scheduleRender());
     try {
       const component = this.build(context) as Component;
       return component.render();
     } finally {
       exitPass();
     }
+  }
+
+  _scheduleRender(): void {
+    if (this._renderScheduled) return;
+    this._renderScheduled = true;
+
+    scheduleRenderFlush(() => {
+      this._renderScheduled = false;
+      if (this._mounted) this._renderManager.update(this.render());
+    });
   }
 
   mount(container: HTMLElement): void {
@@ -56,6 +71,7 @@ export abstract class StatelessComponent extends Component {
       const node = this.render();
       this._renderManager.mount(node, container);
     }
+    this._mounted = true;
   }
 
   /**
@@ -67,6 +83,7 @@ export abstract class StatelessComponent extends Component {
   hydrate(container: HTMLElement): void {
     const node = this.render();
     this._renderManager.hydrate(node, container);
+    this._mounted = true;
   }
 
   /**
@@ -77,6 +94,7 @@ export abstract class StatelessComponent extends Component {
   mountReconcile(container: HTMLElement, previousNode: HtmlNode | null): HtmlNode {
     const node = this.render();
     this._renderManager.adopt(node, container, previousNode);
+    this._mounted = true;
     return node;
   }
 

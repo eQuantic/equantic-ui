@@ -58,6 +58,7 @@ public static class WebRealizer
         Spinner spinner => LowerSpinner(spinner, context),
         Primitives.Image image => LowerImage(image),
         Pressable pressable => LowerPressable(pressable, context),
+        Hoverable hoverable => LowerHoverable(hoverable, context),
         Link link => LowerLink(link, context),
         LoopMotion motion => LowerLoopMotion(motion, context),
         Presence presence => LowerPresence(presence, context, horizontalAxis),
@@ -158,7 +159,15 @@ public static class WebRealizer
             ClassName = anchored.OpenOnHover ? "eq-anchorhost eq-hoverreveal" : "eq-anchorhost",
         };
         if (LowerNode(anchored.Anchor, context, horizontalAxis: null) is { } anchor)
+        {
+            // A painted scrim dims the PAGE, never its own anchor — the anchor lifts above it
+            // (only while the scrim exists: the class carries position+z the closed state
+            // shouldn't pay for).
+            if (anchored is { ScrimStyle: not null, Open: true, OnDismiss: not null })
+                anchor.ClassName = string.IsNullOrEmpty(anchor.ClassName)
+                    ? "eq-anchor-above" : $"{anchor.ClassName} eq-anchor-above";
             host.Children.Add(anchor);
+        }
 
         if (anchored.OpenOnHover)
         {
@@ -168,8 +177,12 @@ public static class WebRealizer
 
         if (!anchored.Open) return host;
 
+        // Mega-menu dimming: ScrimStyle PAINTS the outside-tap scrim (background/gradient/
+        // backdrop-blur, a full Box) instead of the historical invisible one — one element serves
+        // both the dismissal and the page veil.
+        var scrimBox = new Box((anchored.ScrimStyle ?? default) with { Width = SizeValue.Fill, Height = SizeValue.Fill });
         if (anchored.OnDismiss is { } dismiss
-            && LowerNode(new Pressable(new Box(), dismiss) { Label = "Dismiss" }, context, horizontalAxis: null) is { } scrim)
+            && LowerNode(new Pressable(scrimBox, dismiss) { Label = "Dismiss" }, context, horizontalAxis: null) is { } scrim)
         {
             scrim.ClassName = string.IsNullOrEmpty(scrim.ClassName)
                 ? "eq-anchor-scrim" : $"{scrim.ClassName} eq-anchor-scrim";
@@ -184,14 +197,21 @@ public static class WebRealizer
     {
         var top = anchored.Placement is AnchorPlacement.TopStart or AnchorPlacement.TopEnd
             or AnchorPlacement.TopCenter;
+        // HOVER BRIDGE: for hover-open panels the gap must be PADDING (part of the hoverable
+        // area), not margin — crossing a margin gap leaves the host's :hover for a few pixels and
+        // the panel vanishes before the pointer reaches it. Click-open panels keep the margin
+        // (padding would catch the outside-tap on the gap strip).
+        var bridge = anchored.OpenOnHover;
         var panel = new RealizedElement("div")
         {
             ClassName = "eq-anchor-panel " + PlacementClass(anchored.Placement)
                 + (anchored.MatchAnchorWidth ? " eq-anchor-match" : ""),
             Style = new HtmlStyle
             {
-                MarginTop = top ? null : TokenCss.Px(anchored.Gap),
-                MarginBottom = top ? TokenCss.Px(anchored.Gap) : null,
+                MarginTop = !top && !bridge ? TokenCss.Px(anchored.Gap) : null,
+                MarginBottom = top && !bridge ? TokenCss.Px(anchored.Gap) : null,
+                PaddingTop = !top && bridge ? TokenCss.Px(anchored.Gap) : null,
+                PaddingBottom = top && bridge ? TokenCss.Px(anchored.Gap) : null,
             },
         };
         if (LowerNode(anchored.Panel, context, horizontalAxis: null) is { } content)
@@ -669,6 +689,14 @@ public static class WebRealizer
             Style = new HtmlStyle
             {
                 Color = TokenCss.Value(text.Color ?? context.Theme.TextPrimary),
+                // Line alignment inside the paragraph: wrapped lines of a centered headline must
+                // center too — container alignment only places the block.
+                TextAlign = text.Align switch
+                {
+                    TextAlignment.Center => Core.TextAlign.Center,
+                    TextAlignment.End => Core.TextAlign.End,
+                    _ => null,
+                },
             },
         };
 
@@ -736,6 +764,7 @@ public static class WebRealizer
         FlexNode flex => (flex.Width.Kind == SizeKind.Fill, flex.Height.Kind == SizeKind.Fill),
         Stack stack => (stack.Width.Kind == SizeKind.Fill, stack.Height.Kind == SizeKind.Fill),
         Pressable pressable => Fills(pressable.Child),
+        Hoverable hoverable => Fills(hoverable.Child),
         Flexible flexible => Fills(flexible.Child),
         LoopMotion motion => Fills(motion.Child),
         _ => (false, false),
@@ -780,6 +809,30 @@ public static class WebRealizer
         }
 
         if (LowerNode(pressable.Child, context, horizontalAxis: null) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
+    /// Pointer-presence callback (S5 programmable): a layout-transparent div carrying
+    /// mouseenter/mouseleave — the events the low-level element pipeline already hydrates. The
+    /// child owns all visuals; display:contents would break the events, so the div participates
+    /// as a plain wrapper passing Fill through like Pressable's button does.
+    /// </summary>
+    private static HtmlElement LowerHoverable(Hoverable hoverable, ComponentContext context)
+    {
+        var fills = Fills(hoverable.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : null,
+                Height = fills.Height ? "100%" : null,
+            },
+            OnMouseEnter = _ => hoverable.OnChanged(true),
+            OnMouseLeave = _ => hoverable.OnChanged(false),
+        };
+        if (LowerNode(hoverable.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;
     }

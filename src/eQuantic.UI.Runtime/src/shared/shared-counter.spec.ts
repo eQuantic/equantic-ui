@@ -42,12 +42,22 @@ describe('transpiled SharedCounter (real eqc output, direct-SetState shape)', ()
   it('renders the Medium Primary button from the named-argument reordering (defaults preserved)', () => {
     const node = new SharedCounter().render();
 
-    // Column → [Text, Button]; the button carries the Medium/Primary tokens because the C#
-    // defaults survived the named-argument transpilation.
-    const buttonNode = node.children[1];
-    expect(buttonNode.tag).toBe('button');
-    const box = buttonNode.children[0];
+    // Column → [Text, ...generator cells, Buttons]: the ITERATOR fixture cells ('a','b') land
+    // before the buttons — their presence is the runtime proof of the `*cells()` generator. The
+    // button carries the Medium/Primary tokens because the C# defaults survived the
+    // named-argument transpilation.
+    const buttons = node.children.filter((c) => c.tag === 'button');
+    expect(buttons.length).toBe(2);
+    const box = buttons[0].children[0];
     expect(effectiveStyle(box)).toContain('height: 40px');
     expect(effectiveStyle(box)).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
+  });
+
+  it('runs the transpiled generator: the yielded cells render', () => {
+    const node = new SharedCounter().render();
+    const texts = node.children.map((c) => c.children?.[0]).filter(Boolean);
+    const flat = JSON.stringify(node);
+    expect(flat).toContain('"a"');
+    expect(flat).toContain('"b"');
   });
 });

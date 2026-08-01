@@ -440,6 +440,12 @@ public static class PhotonRealizer
             case Pressable pressable:
                 hits.Add(new HitRegion(ExpandHitRect(node.Bounds), pressable));
                 break;
+
+            // S5 programmable hover: the region rides the SAME pointer pipeline Style.Hover uses;
+            // the host fires OnChanged on the transitions (PhotonHost.PointerMove).
+            case Hoverable hoverable:
+                hovers.Add(new HoverRegion(node.Bounds, hoverable));
+                break;
         }
 
         // A ScrollView clips its subtree to the viewport (spec A6) — the engine clip primitive.
@@ -492,7 +498,9 @@ public static class PhotonRealizer
             }
             if (!anchored.Open && !hoverOpen) return;
 
-            var filler = new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill });
+            // Mega-menu dimming: ScrimStyle paints the outside-tap scrim (a full Box — veil
+            // gradient, backdrop blur) instead of the invisible filler.
+            var filler = new Box((anchored.ScrimStyle ?? default) with { Width = SizeValue.Fill, Height = SizeValue.Fill });
             var layer = new Stack();
             // Hover-open panels take no scrim: leaving the anchor closes them.
             layer.Add(anchored.OnDismiss is { } dismiss && !hoverOpen

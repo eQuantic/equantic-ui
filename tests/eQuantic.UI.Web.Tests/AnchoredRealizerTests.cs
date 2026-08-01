@@ -102,6 +102,9 @@ public class AnchoredRealizerTests
         element.Children.Should().HaveCount(2, "anchor + panel; CSS owns visibility — no scrim ever");
         var panel = (Core.HtmlElement)element.Children[^1];
         panel.ClassName.Should().StartWith("eq-anchor-panel eq-anchor-t-center");
-        panel.Style!.MarginBottom.Should().Be("4px", "TopCenter rides the bottom margin");
+        // HOVER BRIDGE: hover-open panels carry the gap as PADDING (part of the hoverable area) —
+        // a margin gap drops the host's :hover for a few pixels and the panel vanishes en route.
+        panel.Style!.PaddingBottom.Should().Be("4px", "TopCenter rides the bottom of the placement axis");
+        panel.Style.MarginBottom.Should().BeNull();
     }
 }

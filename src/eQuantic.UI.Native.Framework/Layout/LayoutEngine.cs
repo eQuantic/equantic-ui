@@ -129,6 +129,8 @@ public static class LayoutEngine
         // The Spinner shares the icon em-box contract (spec B15: sizes = the §07 whitelist).
         Spinner spinner => new LayoutNode(spinner) { Bounds = new Rect(0, 0, spinner.Size, spinner.Size) },
         Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx, path),
+        // Pointer presence is layout-transparent (S5 programmable hover — the child owns visuals).
+        Hoverable hoverable => MeasureWrapper(hoverable, hoverable.Child, maxW, maxH, ctx, path),
         // A Link is layout-transparent (semantics + interaction only — the child owns visuals).
         Link link => MeasureWrapper(link, link.Child, maxW, maxH, ctx, path),
         Flexible flexible => MeasureWrapper(flexible, flexible.Child, maxW, maxH, ctx, path),
@@ -836,6 +838,7 @@ public static class LayoutEngine
         Box box => (horizontal ? box.Style.Height : box.Style.Width).Kind,
         FlexNode flex => (horizontal ? flex.Height : flex.Width).Kind,
         Pressable pressable => CrossSizeKind(pressable.Child, horizontal),
+        Hoverable hoverable => CrossSizeKind(hoverable.Child, horizontal),
         Flexible flexible => CrossSizeKind(flexible.Child, horizontal),
         // Always-explicit nodes: their constructors demand a size — stretch must never override.
         Image => SizeKind.Fixed,

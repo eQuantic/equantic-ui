@@ -63,6 +63,7 @@ public class TypeScriptEmitter
 
         // Clear UsedHelpers from previous compilations
         component.UsedHelpers.Clear();
+        _converter.UsedAppTypes.Clear();
 
         // Note: We'll emit imports AFTER generating component code
         // to ensure UsedHelpers is populated
@@ -434,6 +435,10 @@ public class TypeScriptEmitter
             }
         }
 
+        // Types the CONVERSION introduced into the output (extension calls reduced to
+        // `Class.method(...)`) — invisible to every syntax walk above by construction.
+        foreach (var t in _converter.UsedAppTypes) componentTypes.Add(t);
+
         // Scan helper-method and property-accessor BODIES too — a type constructed ONLY inside a helper
         // (e.g. `Money Make() => new Money(..)`) or inside a property body must still be imported, or the
         // emitted body throws "<Type> is not defined". Previously only a property's declared TYPE was added
@@ -723,7 +728,38 @@ public class TypeScriptEmitter
             if (typeName.Contains('.')) typeName = typeName[(typeName.LastIndexOf('.') + 1)..];
             types.Add(typeName);
         }
+
+        // DECLARED types carry the only name a TARGET-TYPED `new(...)` ever states
+        // (`static readonly MenuPanel Products = new(...)` — the creation itself is nameless), so
+        // field/property/local declaration types must import like constructed ones. Tuple and
+        // array declarations contribute their ELEMENT type names the same way.
+        foreach (var declaration in node.DescendantNodes().OfType<VariableDeclarationSyntax>())
+            CollectDeclaredTypeNames(declaration.Type, types);
+        foreach (var property in node.DescendantNodes().OfType<PropertyDeclarationSyntax>())
+            CollectDeclaredTypeNames(property.Type, types);
         return types;
+    }
+
+    /// <summary>Simple type names inside a declared type — through arrays, nullable, generics and
+    /// tuples (`(string Role, MenuEntry Entry)[]` contributes <c>MenuEntry</c>). Predefined
+    /// keywords (string/int/…) never surface; downstream filters drop anything unknown.</summary>
+    private static void CollectDeclaredTypeNames(TypeSyntax type, HashSet<string> types)
+    {
+        switch (type)
+        {
+            case ArrayTypeSyntax array: CollectDeclaredTypeNames(array.ElementType, types); break;
+            case NullableTypeSyntax nullable: CollectDeclaredTypeNames(nullable.ElementType, types); break;
+            case TupleTypeSyntax tuple:
+                foreach (var element in tuple.Elements) CollectDeclaredTypeNames(element.Type, types);
+                break;
+            case GenericNameSyntax generic:
+                foreach (var argument in generic.TypeArgumentList.Arguments) CollectDeclaredTypeNames(argument, types);
+                break;
+            case QualifiedNameSyntax qualified: CollectDeclaredTypeNames(qualified.Right, types); break;
+            case IdentifierNameSyntax identifier when char.IsUpper(identifier.Identifier.Text[0]):
+                types.Add(identifier.Identifier.Text);
+                break;
+        }
     }
     
     private void EmitStatefulComponent(ComponentDefinition component)
@@ -986,6 +1022,7 @@ public class TypeScriptEmitter
         if (semanticModel != null) _converter.SetSemanticModel(semanticModel);
         _converter.SetCurrentClass(cls.Identifier.Text);
         _converter.UsedHelpers.Clear();
+        _converter.UsedAppTypes.Clear();
         var name = cls.Identifier.Text;
 
         var builder = new TypeScriptCodeBuilder();
@@ -1023,12 +1060,22 @@ public class TypeScriptEmitter
             {
                 var mn = m.Identifier.Text.ToCamelCase();
                 var pars = string.Join(", ", m.ParameterList.Parameters.Select(pp => $"{pp.Identifier.Text}: {CSharpTypeToTypeScript(pp.Type?.ToString() ?? "object")}"));
-                var isAsync = m.ReturnType.ToString().StartsWith("Task");
+                var isAsync = m.ReturnType.ToString().StartsWith("Task")
+                    || m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
+                var isGenerator = m.Body?
+                    .DescendantNodes(n => n is not AnonymousFunctionExpressionSyntax
+                                          && n is not LocalFunctionStatementSyntax)
+                    .OfType<YieldStatementSyntax>().Any() == true;
+                // Generic helpers keep their type parameters in the TS signature (`also<T>(node: T)`)
+                // — constraints drop (TS needs none of them to bind), names pass through.
+                var generics = m.TypeParameterList is { Parameters.Count: > 0 }
+                    ? $"<{string.Join(", ", m.TypeParameterList.Parameters.Select(tp => tp.Identifier.Text))}>"
+                    : "";
                 string mbody;
                 if (m.Body != null) mbody = StripJsBraces(_converter.Convert(m.Body));
                 else if (m.ExpressionBody != null) mbody = $"return {_converter.ConvertExpression(m.ExpressionBody.Expression)};";
                 else continue;
-                c.Raw($"static {(isAsync ? "async " : "")}{mn}({pars}) {{ {mbody} }}", m);
+                c.Raw($"static {(isAsync ? "async " : "")}{(isGenerator ? "*" : "")}{mn}{generics}({pars}) {{ {mbody} }}", m);
             }
         });
 
@@ -1047,7 +1094,9 @@ public class TypeScriptEmitter
         var knownComp = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
         var knownRec = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
         var knownHelp = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
-        foreach (var t in CollectComponentTypesFromNode(cls, new HashSet<string> { name }).Distinct().OrderBy(x => x))
+        foreach (var t in CollectComponentTypesFromNode(cls, new HashSet<string> { name })
+                     .Concat(_converter.UsedAppTypes) // conversion-introduced names (reduced extension calls)
+                     .Distinct().OrderBy(x => x))
         {
             var ct = t.Trim().TrimEnd('?');
             if (ct.Contains('<')) ct = ct.Split('<')[0];
@@ -1080,7 +1129,17 @@ public class TypeScriptEmitter
         
         var returnType = CSharpTypeToTypeScript(method.ReturnType ?? "void");
         
-        var isAsync = method.ReturnType != null && method.ReturnType.StartsWith("Task");
+        // async is a MODIFIER, not a return type: `async void` handlers (the C# event-handler
+        // idiom — hover intent timers et al.) must emit `async` too, or their awaits are syntax
+        // errors in the bundle. Task-returning methods keep emitting async either way.
+        var isAsync = (method.ReturnType != null && method.ReturnType.StartsWith("Task"))
+            || method.SyntaxNode?.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword) == true;
+        // An iterator method (yield in its OWN body — nested lambdas/local functions don't count)
+        // is a JS generator; the YieldStatementStrategy already lowers the statements.
+        var isGenerator = method.SyntaxNode?.Body?
+            .DescendantNodes(n => n is not Microsoft.CodeAnalysis.CSharp.Syntax.AnonymousFunctionExpressionSyntax
+                                  && n is not Microsoft.CodeAnalysis.CSharp.Syntax.LocalFunctionStatementSyntax)
+            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.YieldStatementSyntax>().Any() == true;
         var asyncPrefix = isAsync ? "async " : "";
         var promiseReturnType = isAsync && returnType == "void" ? "Promise<void>" : 
                                  isAsync ? $"Promise<{returnType}>" : returnType;
@@ -1113,7 +1172,7 @@ public class TypeScriptEmitter
                     body = body.Substring(1, body.Length - 2).Trim();
                 }
                 c.Raw(body);
-            }, method.TypeParameters, sourceNode: method.SyntaxNode, isStatic: method.IsStatic);
+            }, method.TypeParameters, sourceNode: method.SyntaxNode, isStatic: method.IsStatic, isGenerator: isGenerator);
         }
         else
         {
@@ -1236,10 +1295,33 @@ public class TypeScriptEmitter
     private static string CSharpTypeToTypeScript(string? csharpType)
     {
         if (string.IsNullOrEmpty(csharpType)) return "any";
-        
+
         // Handle Nullable<T> or T?
         var isNullable = csharpType.EndsWith("?");
         var baseType = isNullable ? csharpType.Substring(0, csharpType.Length - 1) : csharpType;
+
+        // C# tuples ARE arrays at runtime (the deconstruction strategies bank on it), so a tuple
+        // TYPE — named or not, arrays included — lowers to a TS tuple type with the names erased:
+        // `(string Role, string Href)[]` → `[string, string][]`.
+        if (baseType.StartsWith("("))
+        {
+            var arrayDepth = 0;
+            var core = baseType.Trim();
+            while (core.EndsWith("[]")) { arrayDepth++; core = core[..^2].Trim(); }
+            if (core.StartsWith("(") && core.EndsWith(")"))
+            {
+                var elements = SplitTopLevel(core[1..^1]).Select(element =>
+                {
+                    var text = element.Trim();
+                    // Drop the element NAME (a trailing identifier after the type).
+                    var lastSpace = text.LastIndexOf(' ');
+                    if (lastSpace > 0 && text[(lastSpace + 1)..].All(ch => char.IsLetterOrDigit(ch) || ch == '_'))
+                        text = text[..lastSpace];
+                    return CSharpTypeToTypeScript(text.Trim());
+                });
+                return $"[{string.Join(", ", elements)}]" + string.Concat(Enumerable.Repeat("[]", arrayDepth));
+            }
+        }
         
         if (baseType.StartsWith("Nullable<") && baseType.EndsWith(">"))
         {
@@ -1298,6 +1380,28 @@ public class TypeScriptEmitter
         return tsType;
     }
     
+    /// <summary>Splits a type argument list on TOP-LEVEL commas (nested <c>&lt;&gt;</c>/<c>()</c> stay whole).</summary>
+    private static List<string> SplitTopLevel(string text)
+    {
+        var parts = new List<string>();
+        var depth = 0;
+        var start = 0;
+        for (var i = 0; i < text.Length; i++)
+        {
+            switch (text[i])
+            {
+                case '<' or '(': depth++; break;
+                case '>' or ')': depth--; break;
+                case ',' when depth == 0:
+                    parts.Add(text[start..i]);
+                    start = i + 1;
+                    break;
+            }
+        }
+        parts.Add(text[start..]);
+        return parts;
+    }
+
     private static string ConvertToTsValue(string value, string type)
     {
         if (value.Contains("new()") || value.Contains("new List"))

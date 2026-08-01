@@ -12,6 +12,7 @@ import type { AnchorPlacementValue, ComponentChild } from './nodes';
 import type { HtmlNode } from '../core/types';
 import { iconPaths } from './icons.generated';
 import type {
+  BoxStyleValue,
   ColorTokenValue,
   CrossAlignValue,
   EdgeInsetsValue,
@@ -198,6 +199,8 @@ export class Anchored extends VisualNode {
   onDismiss?: (() => void) | null;
   matchAnchorWidth = false;
   openOnHover = false;
+  /** Paints the outside-tap scrim (mega-menu page veil) — a BoxStyle, like the C# ScrimStyle. */
+  scrimStyle: BoxStyleValue | null = null;
 
   constructor(
     anchor: VisualChild,
@@ -209,6 +212,7 @@ export class Anchored extends VisualNode {
       onDismiss?: (() => void) | null;
       matchAnchorWidth?: boolean;
       openOnHover?: boolean;
+      scrimStyle?: BoxStyleValue | null;
       key?: string | null;
     },
   ) {
@@ -320,6 +324,8 @@ interface TextConfig {
   styleOverride?: TypeStyleValue | null;
   /** Fills the glyphs with a gradient instead of `color` (background-clip: text). */
   gradient?: LinearGradient | null;
+  /** Line alignment within the paragraph ('start' | 'center' | 'end'). */
+  align?: string;
   key?: string | null;
 }
 
@@ -331,6 +337,7 @@ export class Text extends VisualNode {
   maxLines: number;
   styleOverride: TypeStyleValue | null = null;
   gradient: LinearGradient | null = null;
+  align: string = 'start';
 
   constructor(
     content: string,
@@ -368,6 +375,19 @@ export class Pressable extends VisualNode {
     this.child = child;
     this.onPressed = onPressed;
     if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
+export class Hoverable extends VisualNode {
+  readonly nodeKind = 'hoverable';
+  child: VisualChild;
+  onChanged: (entered: boolean) => void;
+
+  constructor(child: VisualChild, onChanged: (entered: boolean) => void) {
+    super();
+    this.child = child;
+    this.onChanged = onChanged;
   }
 }
 

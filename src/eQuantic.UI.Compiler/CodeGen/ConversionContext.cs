@@ -15,6 +15,12 @@ public class ConversionContext
     public string? CurrentClassName { get; set; }
     public HashSet<string> UsedHelpers { get; } = new();
 
+    /// <summary>APP types the conversion itself introduced into the OUTPUT — names that never
+    /// appear in the source syntax (an extension call reduced to `NodeExtensions.also(...)`), so
+    /// the syntax-walking import collector cannot see them. The emitter unions these into the
+    /// per-module import set.</summary>
+    public HashSet<string> UsedAppTypes { get; } = new();
+
     /// <summary>Diagnostics raised during this conversion (unconverted or impossible constructs).</summary>
     public List<ConversionDiagnostic> Diagnostics { get; } = new();
 

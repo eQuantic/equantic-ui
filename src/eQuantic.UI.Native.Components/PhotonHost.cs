@@ -216,7 +216,11 @@ public sealed class PhotonHost
         }
         if (!ReferenceEquals(target, _hovered))
         {
+            // S5 programmable hover: Hoverable regions get their transition callbacks — leave
+            // BEFORE enter, the order every pointer model guarantees.
+            if (_hovered is Hoverable left) left.OnChanged(false);
             _hovered = target;
+            if (target is Hoverable entered) entered.OnChanged(true);
             NeedsRender = true;
         }
     }
@@ -245,6 +249,7 @@ public sealed class PhotonHost
     public void PointerLeave()
     {
         if (_hovered is null) return;
+        if (_hovered is Hoverable left) left.OnChanged(false); // S5 programmable hover
         _hovered = null;
         NeedsRender = true;
     }

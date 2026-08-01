@@ -26,6 +26,7 @@ export {
   Column,
   Text,
   Pressable,
+  Hoverable,
   Flexible,
   Spacer,
   Stack,

@@ -228,6 +228,9 @@ public static class PhotonCssGenerator
         css.AppendLine(".eq-anchorhost { position: relative; display: flex; flex-direction: column; }");
         css.AppendLine(".eq-anchor-scrim { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1040; background: transparent; border: none; padding: 0; margin: 0; appearance: none; }");
         css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; }");
+        // A PAINTED scrim (ScrimStyle) must dim the page, never its own anchor: the anchor lifts
+        // between the scrim (1040) and the panel (1050).
+        css.AppendLine(".eq-anchor-above { position: relative; z-index: 1045; }");
         css.AppendLine(".eq-anchor-b-start { top: 100%; inset-inline-start: 0; }");
         css.AppendLine(".eq-anchor-b-end { top: 100%; inset-inline-end: 0; }");
         css.AppendLine(".eq-anchor-t-start { bottom: 100%; inset-inline-start: 0; }");
