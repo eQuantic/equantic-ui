@@ -130,6 +130,7 @@ export interface BoxStyleValue {
   clip?: boolean;
   /** 2-stop linear gradient (engine fence) — draws OVER the solid background when both are set. */
   gradient?: LinearGradientValue | null;
+  pattern?: GridPatternValue | null;
   /** Spec S1 group opacity 0–1 (one composited layer — CSS opacity / native PushLayer). */
   opacity?: number | null;
   /** Spec S1 static transform, center-anchored, paint-only (CSS transform twin). */
@@ -165,6 +166,13 @@ export interface LinearGradientValue {
   from: ColorTokenValue;
   to: ColorTokenValue;
   direction: string;
+}
+
+/** Wire shape of the C# `GridPattern`: repeating hairline grid (square cell, token line color). */
+export interface GridPatternValue {
+  cell: number;
+  color: ColorTokenValue;
+  lineWidth: number;
 }
 
 /** Base shape every abstract node carries. */

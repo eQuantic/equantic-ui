@@ -26,6 +26,29 @@ describe('style atomizer: C# ↔ TS twin (fixture cross-pin)', () => {
     }
   });
 
+  // Mirrors C# TranslucentVariantOfATokenColor_IsNotCorruptedByPrefixRewriting.
+  it('does not rewrite a token color that merely PREFIXES a longer hex literal', () => {
+    // Any fixture entry that DID rewrite gives us a real token CSS string to build on.
+    const rewritten = (fixture as FixtureEntry[]).find((e) => e.rewritten.startsWith('var('));
+    expect(rewritten, 'the fixture must contain at least one rewritten token').toBeTruthy();
+    const tokenCss = rewritten!.value;
+
+    // A longer literal that merely STARTS with the token is a DIFFERENT color and must survive
+    // untouched: rewriting the prefix strands the trailing digits outside the var() — invalid CSS
+    // the browser drops, which is how a hero grid line of white-at-4% silently vanished in the
+    // site dogfood. The class is the hash of `prop:rewrittenValue`, so an intact value proves it.
+    const extended = `${tokenCss}0a`;
+    expect(atomizeEntries({ 'background-color': extended }).class).toBe(
+      `eq-${hashDeclaration(`background-color:${extended}`)}`,
+    );
+
+    // Same rule inside a composite value (the grid pattern's gradient layers).
+    const gradient = `linear-gradient(to right, ${extended} 1px, transparent 1px)`;
+    expect(atomizeEntries({ 'background-image': gradient }).class).toBe(
+      `eq-${hashDeclaration(`background-image:${gradient}`)}`,
+    );
+  });
+
   it('sorts classes and keeps only custom properties inline', () => {
     const atomized = atomizeEntries({
       padding: '16px',

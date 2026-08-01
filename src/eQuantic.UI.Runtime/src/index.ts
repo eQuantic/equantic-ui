@@ -121,6 +121,7 @@ export {
   Image,
   ScrollView,
   LoopMotion,
+  GridPattern,
   LinearGradient,
   TextEntry,
   Overlay,

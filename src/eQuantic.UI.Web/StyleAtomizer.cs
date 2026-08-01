@@ -242,9 +242,38 @@ public sealed class ThemeVarMap
         {
             if (value == tokenCss) return $"var({varName}, {tokenCss})";
             if (value.Contains(tokenCss))
-                value = value.Replace(tokenCss, $"var({varName}, {tokenCss})");
+                value = ReplaceAtTokenBoundary(value, tokenCss, $"var({varName}, {tokenCss})");
         }
         return value;
+    }
+
+    /// <summary>
+    /// Substring replacement is WRONG for hex colors: they are variable-length, so an opaque token
+    /// (<c>#ffffff</c>) is a PREFIX of its own translucent form (<c>#ffffff0a</c>). A naive Replace
+    /// rewrites the prefix and strands the alpha OUTSIDE the var — <c>var(--x, #ffffff)0a</c> —
+    /// which is invalid CSS, so the browser drops the whole declaration and the style silently
+    /// vanishes. Any palette holding "white at 10%" next to an opaque white token hits this.
+    /// A match therefore only counts when the following character cannot extend the color literal.
+    /// </summary>
+    private static string ReplaceAtTokenBoundary(string value, string token, string replacement)
+    {
+        var builder = new System.Text.StringBuilder(value.Length);
+        var index = 0;
+        while (true)
+        {
+            var found = value.IndexOf(token, index, StringComparison.Ordinal);
+            if (found < 0)
+            {
+                builder.Append(value, index, value.Length - index);
+                return builder.ToString();
+            }
+
+            var after = found + token.Length;
+            var extendsLiteral = after < value.Length && Uri.IsHexDigit(value[after]);
+            builder.Append(value, index, found - index);
+            builder.Append(extendsLiteral ? token : replacement);
+            index = after;
+        }
     }
 
     private static ThemeVarMap Build(IAppTheme theme)

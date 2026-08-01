@@ -77,6 +77,11 @@ public readonly record struct BoxStyle
     /// OVER <see cref="Background"/> when both are set (translucent stops show the solid through,
     /// the CSS background-image/background-color composition). <c>null</c> = no gradient.</summary>
     public LinearGradient? Gradient { get; init; }
+
+    /// <summary>Repeating hairline grid drawn BELOW <see cref="Gradient"/> and above
+    /// <see cref="Background"/> — the "engineering graph paper" backdrop. <c>null</c> = none.</summary>
+    public GridPattern? Pattern { get; init; }
+
     public CornerRadii CornerRadius { get; init; }
 
     /// <summary>Uniform border width, drawn INSIDE the bounds (spec fence). 0 = no border.</summary>
@@ -200,6 +205,18 @@ public readonly record struct LinearGradient(
     ColorToken From,
     ColorToken To,
     GradientDirection Direction = GradientDirection.ToRight);
+
+/// <summary>
+/// A repeating hairline GRID — the "graph paper" backdrop marketing surfaces use behind a hero.
+/// Deliberately a closed shape (square cell, 1dp lines, one color), not a general pattern/texture
+/// API: that keeps it realizable on BOTH targets with primitives that already exist. Web lowers to
+/// the two repeating <c>linear-gradient</c> layers with <c>background-size</c>; native emits the
+/// hairlines as ordinary fills bounded by the box — no engine primitive, no shader.
+/// </summary>
+/// <param name="Cell">Grid spacing in dp (the design's hero uses 56).</param>
+/// <param name="Color">Line color — a token, so the grid tracks light/dark like everything else.</param>
+/// <param name="LineWidth">Line thickness in dp. 1 is the only value the design uses.</param>
+public readonly record struct GridPattern(float Cell, ColorToken Color, float LineWidth = 1);
 
 /// <summary>Loop-motion effects (spec §06: animate transform &amp; opacity ONLY — these are all transform).</summary>
 public enum LoopEffect : byte

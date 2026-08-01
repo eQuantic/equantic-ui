@@ -443,7 +443,22 @@ public static class WebRealizer
                 MaxHeight = style.MaxHeight > 0 ? TokenCss.Px(style.MaxHeight) : null,
                 Padding = style.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(style.Padding),
                 BackgroundColor = style.Background is { } bg ? TokenCss.Value(bg) : null,
-                BackgroundImage = style.Gradient is { } gradient ? TokenCss.Gradient(gradient) : null,
+                // Layers compose like CSS: the FIRST entry paints on top, so a gradient sits over
+                // the grid, and both sit over background-color. background-size must carry one
+                // entry per layer, hence the `auto` placeholder for the gradient.
+                BackgroundImage = (style.Gradient, style.Pattern) switch
+                {
+                    ({ } g, { } p) => $"{TokenCss.Gradient(g)}, {TokenCss.GridPattern(p)}",
+                    ({ } g, null) => TokenCss.Gradient(g),
+                    (null, { } p) => TokenCss.GridPattern(p),
+                    _ => null,
+                },
+                BackgroundSize = (style.Gradient, style.Pattern) switch
+                {
+                    ({ }, { } p) => $"auto, {TokenCss.GridPatternSize(p)}",
+                    (null, { } p) => TokenCss.GridPatternSize(p),
+                    _ => null,
+                },
                 BorderRadius = style.CornerRadius.IsZero ? null : TokenCss.Radius(style.CornerRadius),
                 BoxShadow = style.Elevation > 0 && !context.Theme.Elevation(style.Elevation).IsNone
                     ? TokenCss.Shadow(context.Theme.Elevation(style.Elevation))

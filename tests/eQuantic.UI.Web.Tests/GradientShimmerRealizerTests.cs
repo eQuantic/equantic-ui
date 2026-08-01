@@ -69,6 +69,49 @@ public class GradientShimmerRealizerTests
         node.Attributes["style"].Should().Contain($"background-image: linear-gradient({keyword}, ");
     }
 
+    /// <summary>
+    /// The GRID pattern lowers to the two repeating hairline layers plus the matching
+    /// <c>background-size</c> — the "graph paper" backdrop, realizable on both targets with
+    /// primitives that already exist (native emits the same rules as ordinary fills).
+    /// </summary>
+    [Fact]
+    public void GridPattern_EmitsBothHairlineLayers_AndTheCellSize()
+    {
+        var node = Render(new Box(new BoxStyle
+        {
+            Width = 200,
+            Height = 200,
+            Pattern = new GridPattern(56, Theme.Border),
+        }));
+
+        var line = TokenCss.Value(Theme.Border);
+        node.Attributes["style"].Should().Contain(
+            $"background-image: linear-gradient(to right, {line} 1px, transparent 1px), " +
+            $"linear-gradient(to bottom, {line} 1px, transparent 1px)");
+        node.Attributes["style"].Should().Contain("background-size: 56px 56px, 56px 56px");
+    }
+
+    /// <summary>With BOTH set the gradient must paint ABOVE the grid — in CSS the first layer wins,
+    /// and background-size needs the `auto` placeholder so the entries stay aligned.</summary>
+    [Fact]
+    public void GridPattern_UnderAGradient_KeepsLayerOrderAndSizeAlignment()
+    {
+        var node = Render(new Box(new BoxStyle
+        {
+            Width = 200,
+            Height = 200,
+            Gradient = new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent)),
+            Pattern = new GridPattern(56, Theme.Border),
+        }));
+
+        var style = node.Attributes["style"];
+        style.Should().Contain("background-image: linear-gradient(to right, ");
+        style.Should().Contain("background-size: auto, 56px 56px, 56px 56px");
+        style.IndexOf(TokenCss.Gradient(new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent))), StringComparison.Ordinal)
+            .Should().BeLessThan(style.IndexOf("transparent 1px", StringComparison.Ordinal),
+                "the gradient layer is listed first, so it paints on top of the grid");
+    }
+
     [Fact]
     public void SkeletonShimmer_ClippedTrack_RestHiddenGlint_MirroredGradients()
     {

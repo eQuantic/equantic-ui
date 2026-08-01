@@ -365,7 +365,7 @@ public static class PhotonRealizer
                 }
                 EmitChrome(node.Bounds, fill, box.Style.CornerRadius,
                     borderColor, borderWidth, theme, mode, builder,
-                    box.Style.Gradient);
+                    box.Style.Gradient, box.Style.Pattern);
 
                 // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
                 // following the control's own radius — the first Box under the focused Pressable
@@ -595,7 +595,7 @@ public static class PhotonRealizer
 
     private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,
         ColorToken borderColor, float borderWidth, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder,
-        LinearGradient? gradient = null)
+        LinearGradient? gradient = null, GridPattern? pattern = null)
     {
         if (bounds.IsEmpty) return;
 
@@ -605,6 +605,12 @@ public static class PhotonRealizer
             if (color.A > 0)
                 builder.FillRRect(new RRect(bounds, radius), Paint.Solid(color));
         }
+
+        // The grid draws over the solid and UNDER the gradient — the same layer order the web
+        // realizer's background-image list produces. Hairlines are ordinary fills bounded by the
+        // box: no engine primitive and no shader, which is what keeps this write-once today.
+        if (pattern is { } grid && grid.Cell > 0 && grid.LineWidth > 0)
+            EmitGridPattern(bounds, grid, mode, builder);
 
         // The gradient draws OVER the solid (CSS background-image/background-color composition):
         // Paint.Linear across the box bounds on the declared axis, stops resolved per mode.
@@ -645,6 +651,28 @@ public static class PhotonRealizer
                     Paint.Solid(color));
             }
         }
+    }
+
+    /// <summary>
+    /// The <see cref="GridPattern"/> hairlines, matching the CSS layers exactly: rules START at the
+    /// box origin and repeat every <c>Cell</c> dp — the same phase as a <c>background-size</c> tile,
+    /// so a grid straddling both realizers lands on the same pixels. Lines are clipped to the box by
+    /// construction (each rule is sized to the bounds), and a degenerate cell emits nothing rather
+    /// than looping forever.
+    /// </summary>
+    private static void EmitGridPattern(Rect bounds, GridPattern pattern, ThemeMode mode, DisplayListBuilder builder)
+    {
+        var color = pattern.Color.Resolve(mode);
+        if (color.A == 0) return;
+
+        var paint = Paint.Solid(color);
+        var line = pattern.LineWidth;
+
+        for (var x = bounds.X; x < bounds.X + bounds.Width; x += pattern.Cell)
+            builder.FillRect(new Rect(x, bounds.Y, line, bounds.Height), paint);
+
+        for (var y = bounds.Y; y < bounds.Y + bounds.Height; y += pattern.Cell)
+            builder.FillRect(new Rect(bounds.X, y, bounds.Width, line), paint);
     }
 
     /// <summary>
