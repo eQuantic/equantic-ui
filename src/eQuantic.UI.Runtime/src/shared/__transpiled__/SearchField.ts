@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Flexible, Icon, IconSize, Pressable, Row, SizeValue, StatelessComponent, TextEntry } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Flexible, Icon, Pressable, Row, SizeValue, StatelessComponent, TextEntry } from "@equantic/runtime";
 
 export class SearchField extends StatelessComponent {
     declare query: string;
@@ -15,7 +15,7 @@ export class SearchField extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let row = new Row(10, { height: SizeValue.fill, cross: 'center' });row.add(new Icon('search', IconSize.dense, theme.textMuted));row.add(new Flexible(new TextEntry(this.query, this.onChanged, { placeholder: this.placeholder, onSubmit: this.onSubmit, role: 'bodyM' }), 1));if (this.query.length > 0) {row.add(new Pressable(new Icon('close', IconSize.dense, theme.textMuted), () => this.onChanged?.(''), { label: 'clear search' }));}return new Box(new BoxStyle({ width: SizeValue.fill, height: 40, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')), padding: EdgeInsets.symmetric(14, 0) }), row);
+        let theme = context.theme;let row = new Row(10, { height: SizeValue.fill, cross: 'center' });row.add(new Icon('search', 20, theme.textMuted));row.add(new Flexible(new TextEntry(this.query, this.onChanged, { placeholder: this.placeholder, onSubmit: this.onSubmit, role: 'bodyM' }), 1));if (this.query.length > 0) {row.add(new Pressable(new Icon('close', 20, theme.textMuted), () => this.onChanged?.(''), { label: 'clear search' }));}return new Box(new BoxStyle({ width: SizeValue.fill, height: 40, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')), padding: EdgeInsets.symmetric(14, 0) }), row);
     }
 
 }

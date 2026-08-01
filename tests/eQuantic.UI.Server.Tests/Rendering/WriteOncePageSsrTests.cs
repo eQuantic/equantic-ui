@@ -35,6 +35,31 @@ public class WriteOncePageSsrTests
         }
     }
 
+    /// <summary>The port a page's prefetch reads through — the shape every real loader has.</summary>
+    private interface ITestStats
+    {
+        Task<long> GetAsync(CancellationToken cancellationToken);
+    }
+
+    private sealed class TestStats : ITestStats
+    {
+        public Task<long> GetAsync(CancellationToken cancellationToken) => Task.FromResult(675_617L);
+    }
+
+    [Page("/prefetch-test", Title = "Prefetch test page")]
+    private sealed class PrefetchTestPage : Primitives.StatelessComponent, IServerPrefetch
+    {
+        // The field default is what the page states when the prefetch cannot run.
+        private long _downloads = 627_000;
+
+        [ServerOnly]
+        public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+            => _downloads = await services.GetRequiredService<ITestStats>().GetAsync(cancellationToken);
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Text($"Downloads: {_downloads}", TypeRole.Heading);
+    }
+
     private static ServerRenderingService CreateService(IAppTheme? theme = null)
     {
         var options = new UIOptions();
@@ -66,6 +91,53 @@ public class WriteOncePageSsrTests
         var css = AtomicCss(result);
         css.Should().Contain("background-color:var(--eq-color-surface, light-dark(#ffffff, #14181e))");
         css.Should().Contain("box-sizing:border-box");
+    }
+
+    [Fact]
+    public async Task RenderPageAsync_AwaitsTheServerPrefetch_BeforeBuildingTheTree()
+    {
+        var service = CreateService();
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().AddSingleton<ITestStats, TestStats>().BuildServiceProvider(),
+        };
+
+        var result = await service.RenderPageAsync(nameof(PrefetchTestPage), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("Downloads: 675617",
+            "the markup a crawler reads states the LOADED value, not the field default");
+    }
+
+    [Fact]
+    public async Task RenderPageAsync_CarriesThePrefetchedFields_IntoTheHydrationPayload()
+    {
+        var service = CreateService();
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().AddSingleton<ITestStats, TestStats>().BuildServiceProvider(),
+        };
+
+        var result = await service.RenderPageAsync(nameof(PrefetchTestPage), context);
+
+        // BY FIELD NAME: the transpiled twin declares the identical field, so the client's first
+        // render starts from the server's value instead of flashing the default.
+        result.SerializedState.Should().NotBeNull()
+            .And.Contain("_downloads").And.Contain("675617");
+    }
+
+    [Fact]
+    public async Task APageWithoutPrefetch_CarriesNoPayload()
+    {
+        var service = CreateService();
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().BuildServiceProvider(),
+        };
+
+        var result = await service.RenderPageAsync(nameof(WriteOnceTestPage), context);
+
+        result.SerializedState.Should().BeNull("nothing was loaded — there is nothing to hand over");
     }
 
     private static string AtomicCss(ServerRenderResult result) =>

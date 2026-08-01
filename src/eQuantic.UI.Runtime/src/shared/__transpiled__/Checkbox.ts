@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, Icon, IconSize, Pressable, Row, SizeValue, Space, StatelessComponent, Text } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, CornerRadii, Icon, Pressable, Row, SizeValue, StatelessComponent, Text } from "@equantic/runtime";
 
 export class Checkbox extends StatelessComponent {
     declare checked: boolean;
@@ -15,7 +15,7 @@ export class Checkbox extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let primary = theme.colors('primary');let borderColor = this.error ? theme.colors('destructive').base : theme.borderStrong;let boxContent = new Row(0, { main: 'center', height: SizeValue.fill });if (this.checked) boxContent.add(new Icon('check', IconSize.sm, primary.onBase));let box = new Box(new BoxStyle({ width: 22, height: 22, background: this.checked ? primary.base : null, cornerRadius: new CornerRadii(theme.shape('extraSmall')), borderWidth: this.checked ? 0 : 2, borderColor: borderColor }), boxContent);let row = new Row(Space.s3, { cross: 'center' });row.add(box);let label; if (((this.label != null) && (label = this.label, true))) row.add(new Text(label, 'bodyM', this.disabled ? theme.textMuted : theme.textPrimary, 2));return new Pressable(row, this.disabled ? null : this.onChanged, { disabled: this.disabled, label: this.label ?? (this.checked ? 'Checked' : 'Unchecked') });
+        let theme = context.theme;let primary = theme.colors('primary');let borderColor = this.error ? theme.colors('destructive').base : theme.borderStrong;let boxContent = new Row(0, { main: 'center', height: SizeValue.fill });if (this.checked) boxContent.add(new Icon('check', 16, primary.onBase));let box = new Box(new BoxStyle({ width: 22, height: 22, background: this.checked ? primary.base : null, cornerRadius: new CornerRadii(theme.shape('extraSmall')), borderWidth: this.checked ? 0 : 2, borderColor: borderColor }), boxContent);let row = new Row(12, { cross: 'center' });row.add(box);let label; if (((this.label != null) && (label = this.label, true))) row.add(new Text(label, 'bodyM', this.disabled ? theme.textMuted : theme.textPrimary, 2));return new Pressable(row, this.disabled ? null : this.onChanged, { disabled: this.disabled, label: this.label ?? (this.checked ? 'Checked' : 'Unchecked') });
     }
 
 }
