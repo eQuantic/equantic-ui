@@ -50,6 +50,16 @@ public sealed class ReferenceBackend : IRenderBackend
                     target.Dispose();
                     target = below;
                     break;
+                case DrawCommandKind.BackdropBlur:
+                    // FENCE (mirrors the GPU): inside a group-opacity layer the backdrop is
+                    // isolated — the command is skipped, the glass stays merely translucent.
+                    if (layers is { Count: > 0 } || command.Clip is not { } region) break;
+                    // Snapshot in the GPU storage format (premultiplied sRGB8): quantizing HERE is
+                    // what keeps this pyramid and the GPU pyramid within the parity gate.
+                    var snapshot = new BlurImage(target.Width, target.Height);
+                    target.ReadPixelsPremultipliedSrgb(snapshot.PremultipliedSrgb);
+                    target.CompositeBlurredBackdrop(Blur.Apply(snapshot, command.StrokeWidth), region);
+                    break;
             }
         }
     }

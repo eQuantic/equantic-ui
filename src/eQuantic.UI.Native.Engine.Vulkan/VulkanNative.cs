@@ -196,6 +196,12 @@ internal static unsafe partial class Vk
     internal static partial void vkDestroyPipeline(IntPtr device, ulong pipeline, IntPtr allocator);
 
     [LibraryImport(Lib)]
+    internal static partial int vkCreateSampler(IntPtr device, VkSamplerCreateInfo* createInfo, IntPtr allocator, ulong* sampler);
+
+    [LibraryImport(Lib)]
+    internal static partial void vkDestroySampler(IntPtr device, ulong sampler, IntPtr allocator);
+
+    [LibraryImport(Lib)]
     internal static partial int vkCreatePipelineCache(IntPtr device, VkPipelineCacheCreateInfo* createInfo, IntPtr allocator, ulong* pipelineCache);
 
     [LibraryImport(Lib)]
@@ -303,6 +309,7 @@ internal enum VkStructureType : uint
     ImageCreateInfo = 14,
     ImageViewCreateInfo = 15,
     ShaderModuleCreateInfo = 16,
+    SamplerCreateInfo = 31,
     PipelineCacheCreateInfo = 17,
     PipelineShaderStageCreateInfo = 18,
     PipelineVertexInputStateCreateInfo = 19,
@@ -640,6 +647,29 @@ internal unsafe struct VkShaderModuleCreateInfo
     public uint Flags;
     public nuint CodeSize;
     public uint* PCode;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct VkSamplerCreateInfo
+{
+    public VkStructureType SType;
+    public IntPtr PNext;
+    public uint Flags;
+    public uint MagFilter;   // NEAREST 0 · LINEAR 1
+    public uint MinFilter;
+    public uint MipmapMode;  // NEAREST 0
+    public uint AddressModeU; // CLAMP_TO_EDGE = 2
+    public uint AddressModeV;
+    public uint AddressModeW;
+    public float MipLodBias;
+    public uint AnisotropyEnable;
+    public float MaxAnisotropy;
+    public uint CompareEnable;
+    public uint CompareOp;
+    public float MinLod;
+    public float MaxLod;
+    public uint BorderColor;
+    public uint UnnormalizedCoordinates;
 }
 
 [StructLayout(LayoutKind.Sequential)]

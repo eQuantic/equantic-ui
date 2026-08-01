@@ -37,6 +37,22 @@ public enum RhiPipelineKind : byte
     /// image pipeline here would double-apply alpha.
     /// </summary>
     LayerComposite = 3,
+
+    /// <summary>Dual-Kawase pyramid, downsampling half — <c>blur_down</c> (plan W3). Blending is
+    /// OFF: each level REPLACES its target. Requires the LINEAR filter (D6b).</summary>
+    BlurDown = 4,
+
+    /// <summary>Dual-Kawase pyramid, upsampling half — <c>blur_up</c>. Blending OFF; LINEAR.</summary>
+    BlurUp = 5,
+}
+
+/// <summary>Texture filtering for a binding (D6b). Nearest is the DEFAULT and stays correct for
+/// device-scale rasters (glyphs, icons — texels map 1:1); Linear serves the paths that genuinely
+/// filter: the blur pyramid and, later, scaled images.</summary>
+public enum RhiFilter : byte
+{
+    Nearest = 0,
+    Linear = 1,
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -143,9 +159,10 @@ public interface IRhiCommandList
     /// <summary>
     /// Binds <paramref name="texture"/> to <paramref name="slot"/> —
     /// <see cref="RhiRenderer.CoverageSlot"/> (A8) or <see cref="RhiRenderer.ColorSlot"/> (RGBA),
-    /// the normative shader's binding order after the uniform block.
+    /// the normative shader's binding order after the uniform block. <paramref name="filter"/>
+    /// selects the sampler the FILTERED paths read through (binding 3); Load-based paths ignore it.
     /// </summary>
-    void BindTexture(int slot, IRhiTexture texture);
+    void BindTexture(int slot, IRhiTexture texture, RhiFilter filter = RhiFilter.Nearest);
 
     /// <summary>Pushes the 160-byte uniform block and draws the fullscreen triangle (3 vertices).</summary>
     void Draw(in DrawUniforms uniforms);
@@ -213,10 +230,110 @@ public sealed class RhiRenderer : IDisposable
     public void Render(DisplayList displayList, IRhiRenderTarget target)
     {
         var layers = RenderLayers(displayList, target.Width, target.Height);
-        var commands = _device.Begin(target, ClearColorOf(displayList));
-        Encode(displayList, commands, layers);
-        commands.Submit(waitUntilCompleted: true);
+        var splits = FindTopLevelBackdrops(displayList.Commands);
+        if (splits is null)
+        {
+            var commands = _device.Begin(target, ClearColorOf(displayList));
+            Encode(displayList, commands, layers);
+            commands.Submit(waitUntilCompleted: true);
+            layers?.Dispose();
+            return;
+        }
+        RenderWithBackdrops(displayList, target, layers, splits);
         layers?.Dispose();
+    }
+
+    /// <summary>Indices of BackdropBlur commands OUTSIDE layer scopes (the fence: inside a
+    /// group-opacity layer the backdrop is isolated and the command is skipped). Null when none —
+    /// the common frame takes the single-pass path untouched.</summary>
+    private static List<int>? FindTopLevelBackdrops(ReadOnlySpan<DrawCommand> cmds)
+    {
+        List<int>? splits = null;
+        var depth = 0;
+        for (var i = 0; i < cmds.Length; i++)
+        {
+            switch (cmds[i].Kind)
+            {
+                case DrawCommandKind.BeginLayer: depth++; break;
+                case DrawCommandKind.EndLayer: depth--; break;
+                case DrawCommandKind.BackdropBlur when depth == 0 && cmds[i].Clip is not null:
+                    (splits ??= new()).Add(i);
+                    break;
+            }
+        }
+        return splits;
+    }
+
+    /// <summary>
+    /// The frosted-glass frame (W3): each BackdropBlur SPLITS the frame into passes — the content
+    /// so far accumulates offscreen, runs the pyramid, and the next pass seeds itself by
+    /// compositing that content plus the blurred copy clipped to the region rrect, then keeps
+    /// drawing. The LAST segment draws straight into the caller's target. Metal and Vulkan allow
+    /// one open pass per encoder, so "read what you just drew" is necessarily a pass boundary.
+    /// </summary>
+    private void RenderWithBackdrops(DisplayList displayList, IRhiRenderTarget target,
+        object? layersHandle, List<int> splits)
+    {
+        var layers = layersHandle as LayerTargets;
+        var cmds = displayList.Commands;
+        var width = target.Width;
+        var height = target.Height;
+
+        IRhiRenderTarget? content = null;  // the accumulated frame BELOW the current split
+        IRhiRenderTarget? blurred = null;  // its pyramid output
+        var start = 0;
+        for (var s = 0; s <= splits.Count; s++)
+        {
+            var isLast = s == splits.Count;
+            var end = isLast ? cmds.Length : splits[s];
+            var destination = isLast ? target : _device.CreateRenderTarget(width, height);
+            var commands = _device.Begin(destination, s == 0 ? ClearColorOf(displayList) : Color.Transparent);
+            if (content is not null && blurred is not null)
+            {
+                // Seed: full content below, then the blurred backdrop inside the glass rrect.
+                commands.SetPipeline(RhiPipelineKind.Sdf);
+                commands.BindTexture(CoverageSlot, Dummy());
+                commands.BindTexture(ColorSlot, Dummy());
+                var active = RhiPipelineKind.Sdf;
+                CompositeLayer(commands, content, 1f, ref active);
+                CompositeBackdrop(commands, blurred, in cmds[splits[s - 1]], ref active);
+            }
+            EncodeRange(displayList, commands, layers, start, end);
+            commands.Submit(waitUntilCompleted: true);
+            content?.Dispose();
+            blurred?.Dispose();
+            if (isLast) return;
+
+            content = destination;
+            blurred = Blur(content, cmds[splits[s]].StrokeWidth);
+            start = splits[s] + 1;
+        }
+    }
+
+    /// <summary>Draws the blurred backdrop clipped to the glass region — layer_composite at alpha 1
+    /// with the command's device-space rrect riding the clip uniforms (AA edge for free).</summary>
+    private static void CompositeBackdrop(IRhiCommandList commands, IRhiRenderTarget blurred,
+        in DrawCommand command, ref RhiPipelineKind activeKind)
+    {
+        if (command.Clip is not { } region) return;
+        if (activeKind != RhiPipelineKind.LayerComposite)
+        {
+            commands.SetPipeline(RhiPipelineKind.LayerComposite);
+            activeKind = RhiPipelineKind.LayerComposite;
+        }
+        commands.BindTexture(ColorSlot, blurred);
+        var uniforms = new DrawUniforms
+        {
+            Inv0 = new Float4(1, 0, 0, 1),
+            Inv1 = new Float4(0, 1, 0, 0),
+            Rect = new Float4(blurred.Width / 2f, blurred.Height / 2f, blurred.Width / 2f, blurred.Height / 2f),
+            ColorA = new Float4(1, 1, 1, 1),
+            Gradient = new Float4(blurred.Width, blurred.Height, 0, 0),
+            Flags = new Float4(0, 0, 1, 0),
+            ClipRect = new Float4(region.Rect.Center.X, region.Rect.Center.Y, region.Rect.Width / 2, region.Rect.Height / 2),
+            ClipRadii = new Float4(region.Radii.TopLeft, region.Radii.TopRight, region.Radii.BottomRight, region.Radii.BottomLeft),
+        };
+        commands.Draw(in uniforms);
     }
 
     /// <summary>
@@ -330,6 +447,9 @@ public sealed class RhiRenderer : IDisposable
         {
             ref readonly var command = ref cmds[i];
             if (command.Kind == DrawCommandKind.Clear) continue; // leading clears only (spike fence)
+            // Top-level backdrops were consumed by the pass split; one appearing here is inside a
+            // layer scope — fenced (the layer is isolated from its backdrop), skipped like the CPU.
+            if (command.Kind == DrawCommandKind.BackdropBlur) continue;
             if (command.Kind == DrawCommandKind.Texture)
             {
                 if (command.TextureId < 0 || command.TextureId >= displayList.Textures.Count) continue;
@@ -399,6 +519,63 @@ public sealed class RhiRenderer : IDisposable
             }
             commands.Draw(in uniforms);
         }
+    }
+
+    /// <summary>
+    /// Runs the dual-Kawase pyramid over <paramref name="source"/> and returns a NEW full-size
+    /// target with the blurred result (caller disposes it; intermediates are disposed here). Each
+    /// level is one fullscreen draw through the LINEAR sampler (D6b); the tap pattern is Blur.cs's,
+    /// which is the normative math. v1 submits level-by-level with waits — correct first; folding
+    /// the pyramid into one command buffer is a known optimization for the frame path.
+    /// </summary>
+    public IRhiRenderTarget Blur(IRhiRenderTarget source, float radius)
+    {
+        var levels = Engine.Blur.Levels(radius);
+        var down = new IRhiRenderTarget[levels];
+        IRhiTexture current = source;
+        for (var i = 0; i < levels; i++)
+        {
+            var width = Math.Max(1, source.Width >> (i + 1));
+            var height = Math.Max(1, source.Height >> (i + 1));
+            down[i] = _device.CreateRenderTarget(width, height);
+            BlurPass(current, down[i], RhiPipelineKind.BlurDown);
+            current = down[i];
+        }
+
+        // Coming back up, each finished DOWN target above the current level is reused as the up
+        // destination — its contents were already consumed by the level below.
+        for (var i = levels - 2; i >= 0; i--)
+        {
+            BlurPass(current, down[i], RhiPipelineKind.BlurUp);
+            current = down[i];
+        }
+
+        var result = _device.CreateRenderTarget(source.Width, source.Height);
+        BlurPass(current, result, RhiPipelineKind.BlurUp);
+        foreach (var target in down) target.Dispose();
+        return result;
+    }
+
+    private void BlurPass(IRhiTexture source, IRhiRenderTarget destination, RhiPipelineKind kind)
+    {
+        var commands = _device.Begin(destination, Color.Transparent);
+        commands.SetPipeline(kind);
+        // The dummy binds FIRST: the sampler slot is global, so the filtered source must be the
+        // LAST bind or a later nearest bind would override the linear filter.
+        commands.BindTexture(CoverageSlot, Dummy());
+        commands.BindTexture(ColorSlot, source, RhiFilter.Linear);
+
+        var uniforms = new DrawUniforms
+        {
+            Inv0 = new Float4(1, 0, 0, 1),
+            Inv1 = new Float4(0, 1, 0, 0),
+            Rect = new Float4(destination.Width / 2f, destination.Height / 2f,
+                destination.Width / 2f, destination.Height / 2f),
+            // Half a DESTINATION texel, in UV — precomputed so the shader never divides.
+            Gradient = new Float4(0.5f / destination.Width, 0.5f / destination.Height, 0, 0),
+        };
+        commands.Draw(in uniforms);
+        commands.Submit(waitUntilCompleted: true);
     }
 
     /// <summary>Index of the EndLayer matching the BeginLayer at <paramref name="begin"/>.</summary>

@@ -109,6 +109,15 @@ public readonly record struct BoxStyle
     public float? Opacity { get; init; }
 
     /// <summary>
+    /// Frosted glass (spec S3): blurs the BACKDROP — everything already painted behind this box —
+    /// inside its rrect by this radius (logical px), underneath the box's own background/border.
+    /// CSS <c>backdrop-filter: blur()</c> on web; the engine's BackdropBlur pass split on Photon.
+    /// 0 = none. FENCE (both targets): inside a group-opacity subtree the backdrop is isolated —
+    /// CSS opacity creates a containing stacking context, Photon skips the command inside layers.
+    /// </summary>
+    public float BackdropBlur { get; init; }
+
+    /// <summary>
     /// Static 2D transform (spec S1), anchored at the box CENTER (the CSS default origin). PAINT
     /// ONLY — layout is untouched, exactly like CSS transforms. <c>null</c> = identity.
     /// </summary>

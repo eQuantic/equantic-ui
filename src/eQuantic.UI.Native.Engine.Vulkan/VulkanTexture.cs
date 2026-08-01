@@ -38,6 +38,7 @@ public sealed class VulkanTexture : IRhiTexture, IVulkanBindable
     {
         if (_disposed || _device.IsDisposed) return;
         _disposed = true;
+        _device.OnViewDestroyed(View); // BEFORE the destroy: stale cache entries outlive reused handles
         Vk.vkDestroyImageView(_device.Device, View, IntPtr.Zero);
         Vk.vkDestroyImage(_device.Device, _image, IntPtr.Zero);
         Vk.vkFreeMemory(_device.Device, _memory, IntPtr.Zero);
@@ -139,6 +140,7 @@ public sealed unsafe class VulkanRenderTarget : IRhiRenderTarget, IVulkanBindabl
     {
         if (_disposed || _device.IsDisposed) return;
         _disposed = true;
+        _device.OnViewDestroyed(_view); // BEFORE the destroy: stale cache entries outlive reused handles
         Vk.vkDestroyFramebuffer(_device.Device, Framebuffer, IntPtr.Zero);
         Vk.vkDestroyImageView(_device.Device, _view, IntPtr.Zero);
         Vk.vkDestroyImage(_device.Device, Image, IntPtr.Zero);

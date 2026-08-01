@@ -134,6 +134,8 @@ export interface BoxStyleValue {
   glow?: RadialGradientValue | null;
   /** Spec S1 group opacity 0–1 (one composited layer — CSS opacity / native PushLayer). */
   opacity?: number | null;
+  /** Spec S3 frosted glass: backdrop blur radius in logical px (CSS backdrop-filter / native pass split). */
+  backdropBlur?: number;
   /** Spec S1 static transform, center-anchored, paint-only (CSS transform twin). */
   transform?: TransformValue | null;
   /** Spec S1 width ÷ height constraint; one determined axis derives the other. 0/undefined = none. */

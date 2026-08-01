@@ -232,6 +232,29 @@ public static class GoldenScenes
             b.FillRRect(chip, Paint.Solid(Mint));
         },
 
+        // FROSTED GLASS (W3): colorful content, then a pill whose BackdropBlur splits the frame —
+        // the accumulated backdrop blurs and composites back inside the rrect, and the pill's own
+        // translucent fill + stroke sit on the glass. The second, smaller glass chip exercises a
+        // SECOND split against content that now contains blurred pixels.
+        ["backdrop-blur"] = b =>
+        {
+            b.FillRRect(new RRect(new Rect(0, 0, 160, 120)),
+                Paint.Linear(new Point(0, 0), new Point(160, 120), Color.FromRgb(30, 26, 60), Color.FromRgb(16, 42, 54)));
+            b.FillRRect(new RRect(new Rect(14, 10, 52, 52), new CornerRadii(26)), Paint.Solid(Accent));
+            b.FillRRect(new RRect(new Rect(70, 30, 60, 34), new CornerRadii(8)), Paint.Solid(Mint));
+            b.FillRRect(new RRect(new Rect(110, 8, 36, 36), new CornerRadii(18)),
+                Paint.Solid(Color.FromRgb(0xE8, 0x63, 0x9A)));
+
+            var pill = new RRect(new Rect(24, 38, 104, 30), new CornerRadii(15));
+            b.BackdropBlur(pill, radius: 8);
+            b.FillRRect(pill, Paint.Solid(new Color(0xFF, 0xFF, 0xFF, 46)));
+            b.StrokeRRect(pill, 1.5f, Paint.Solid(new Color(0xFF, 0xFF, 0xFF, 84)));
+
+            var chip = new RRect(new Rect(96, 78, 48, 26), new CornerRadii(13));
+            b.BackdropBlur(chip, radius: 4);
+            b.FillRRect(chip, Paint.Solid(new Color(0x10, 0x12, 0x1A, 120)));
+        },
+
         // A miniature "UI card": the primitives composing the way the component layer drives them.
         ["card-composition"] = b =>
         {
