@@ -62,11 +62,26 @@ public class InvocationStrategy : IConversionStrategy
         if (methodExpression is MemberAccessExpressionSyntax genAccess)
         {
             var caller = context.Converter.ConvertExpression(genAccess.Expression);
-            
+
             // Handle delegate/action Invoke() calls
             if (methodName == "Invoke")
             {
                 return $"{caller}({args})";
+            }
+
+            // EXTENSION METHOD in reduced form (`node.Also(x => …)`): JS has no extensions, so the
+            // call goes back to its static home with the receiver as the first argument —
+            // `NodeExtensions.also(node, x => …)`. The declaring static class is emitted as its own
+            // module by the app-type pipeline, and the qualified name here is what makes the
+            // import scanner pick it up. BCL extensions (LINQ et al.) never reach this branch —
+            // their dedicated strategies run at higher priority.
+            if (symbol is { IsExtensionMethod: true, ReducedFrom: not null, ContainingType: not null })
+            {
+                // The declaring class never appears in the SOURCE (the call is reduced), so the
+                // syntax-walking import collector can't see it — register the name we introduced.
+                context.UsedAppTypes.Add(symbol.ContainingType.Name);
+                var receiverFirst = string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
+                return $"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({receiverFirst})";
             }
 
             // Local method call (this.Method)
@@ -81,6 +96,19 @@ public class InvocationStrategy : IConversionStrategy
             }
 
             return $"{caller}.{methodName.ToCamelCase()}({args})";
+        }
+
+        // Invoking a DELEGATE VALUE by bare name (`configure(node)`, `OnSelect(i)`): the invocation
+        // symbol is the delegate's Invoke, so resolve what the NAME binds to. A parameter/local is
+        // a plain callable in scope — VERBATIM (it must match the binding, not our casing rules);
+        // a delegate-typed MEMBER is `this.<camel>(…)` like every other member access.
+        if (symbol is { MethodKind: MethodKind.DelegateInvoke }
+            && methodExpression is IdentifierNameSyntax delegateIdentifier)
+        {
+            var delegateTarget = context.SemanticModel?.GetSymbolInfo(delegateIdentifier).Symbol;
+            if (delegateTarget is IParameterSymbol or ILocalSymbol)
+                return $"{delegateIdentifier.Identifier.Text}({args})";
+            return $"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}({args})";
         }
 
         // Direct invocation (Function() -> function())

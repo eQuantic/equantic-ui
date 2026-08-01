@@ -83,6 +83,9 @@ public class CSharpToJsConverter
 
     public HashSet<string> UsedHelpers => _context.UsedHelpers;
 
+    /// <summary>See <see cref="ConversionContext.UsedAppTypes"/> — output-introduced app-type names.</summary>
+    public HashSet<string> UsedAppTypes => _context.UsedAppTypes;
+
     /// <summary>Diagnostics raised during the most recent conversion(s); call <see cref="ClearDiagnostics"/> between components.</summary>
     public IReadOnlyList<ConversionDiagnostic> Diagnostics => _context.Diagnostics;
 

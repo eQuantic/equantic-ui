@@ -44,11 +44,29 @@ public class SharedComponentTranspilationTests
         {
             private int _count;
 
+            // The C# event-handler idiom (hover intent timers): async is a MODIFIER — the emitted
+            // method must carry `async` or its awaits are bundle-time syntax errors.
+            private async void BumpSoon()
+            {
+                await Task.Delay(140);
+                SetState(() => _count++);
+            }
+
+            // Iterator methods are JS generators — `yield` must land inside a `*method`.
+            private IEnumerable<VisualNode> Cells()
+            {
+                yield return new Text("a", TypeRole.Caption);
+                if (_count > 3) yield break;
+                yield return new Text("b", TypeRole.Caption);
+            }
+
             public override VisualNode Build(ComponentContext context)
             {
                 var column = new Column(gap: Space.S3);
                 column.Add(new Text($"Count: {_count}", TypeRole.Title));
+                foreach (var cell in Cells()) column.Add(cell);
                 column.Add(new Button("Increment", onPressed: () => SetState(() => _count++)));
+                column.Add(new Button("Later", onPressed: BumpSoon));
                 return column;
             }
         }
@@ -350,6 +368,13 @@ public class SharedComponentTranspilationTests
         // The NAMED argument lands at the constructor's real position, with the skipped parameters
         // filled from their C# defaults — JS has no named arguments.
         counter.Should().Contain("new Button('Increment', 'primary', 'medium', () => this.setState(() => this._count++))");
+
+        // async void — the modifier drives the emission, not the return type (the site's
+        // hover-intent grace timer found this: awaits inside a non-async function don't parse).
+        counter.Should().Contain("async bumpSoon(");
+
+        // Iterator methods are generators: `*cells()` (yield parses only inside one).
+        counter.Should().Contain("*cells(");
     }
 
     [Fact]

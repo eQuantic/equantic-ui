@@ -28,6 +28,12 @@ public static class PatternConverter
         switch (pattern)
         {
             case ConstantPatternSyntax constant:
+                // `is null` must be LOOSE: the transpiled world produces undefined wherever C#
+                // produced null (Array.find for FirstOrDefault, absent properties, defaults), and
+                // `=== null` lets undefined sail past the guard — found when a closed mega menu
+                // crashed on `panel.Id` after `if (panel is null) return` didn't return.
+                if (constant.Expression is LiteralExpressionSyntax { RawKind: (int)SyntaxKind.NullLiteralExpression })
+                    return $"{access} == null";
                 return $"{access} === {context.Converter.ConvertExpression(constant.Expression)}";
 
             case RelationalPatternSyntax relational:

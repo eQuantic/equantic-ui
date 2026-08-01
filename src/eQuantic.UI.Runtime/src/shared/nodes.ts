@@ -88,6 +88,8 @@ export interface AnchoredNode extends VisualNodeValue {
   matchAnchorWidth?: boolean;
   /** Wave 3b (Tooltip): panel shows while the anchor is hovered — pure CSS on web. */
   openOnHover?: boolean;
+  /** Paints the outside-tap scrim (mega-menu page veil) — a BoxStyle, like the C# ScrimStyle. */
+  scrimStyle?: BoxStyleValue | null;
 }
 
 /** Spec S6 — a subtree that adapts to the window size class (up to 3 variants). */
@@ -236,6 +238,16 @@ export interface TextNode extends VisualNodeValue {
   styleOverride?: TypeStyleValue | null;
   /** Fills the glyphs with a gradient instead of `color` (background-clip: text). */
   gradient?: LinearGradientValue | null;
+  /** Line alignment within the paragraph ('start' | 'center' | 'end') — CSS text-align twin. */
+  align?: string;
+}
+
+/** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
+export interface HoverableNode extends VisualNodeValue {
+  nodeKind: 'hoverable';
+  child: VisualNodeValue;
+  /** true = pointer entered, false = pointer left. */
+  onChanged?: (entered: boolean) => void;
 }
 
 export interface PressableNode extends VisualNodeValue {

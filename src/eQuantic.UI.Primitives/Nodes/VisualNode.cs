@@ -390,6 +390,39 @@ public sealed class Anchored : VisualNode
     /// pipeline on native. No scrim (hover leaves = closed); never fires on touch. Composes with
     /// <see cref="Open"/> (either shows the panel).</summary>
     public bool OpenOnHover { get; init; }
+
+    /// <summary>
+    /// Visual style for the outside-tap scrim (mega-menu page dimming): when set (and
+    /// <see cref="OnDismiss"/> is wired), the viewport-covering scrim PAINTS instead of being
+    /// invisible — background/gradient/backdrop-blur compose exactly like a Box. Ignored for
+    /// hover-open panels (they have no scrim). <c>null</c> = the historical invisible scrim.
+    /// </summary>
+    public BoxStyle? ScrimStyle { get; init; }
+}
+
+/// <summary>
+/// POINTER-PRESENCE callback (spec S5's programmable side): fires <see cref="OnChanged"/> with
+/// <c>true</c> when the pointer enters the child's bounds and <c>false</c> when it leaves — the
+/// primitive under hover-intent menus (open on hover, grace-period close), hover prefetch and rich
+/// hover cards. Layout-transparent; never fires on touch (there is no hover to track). Distinct
+/// from <see cref="BoxStyle.Hover"/> (declarative style diff) and from <see cref="Pressable"/>
+/// (press semantics) — presence COMPOSES with both by nesting. Web attaches
+/// mouseenter/mouseleave; native rides the host's hover pipeline (the same one Style.Hover uses).
+/// </summary>
+public sealed class Hoverable : VisualNode
+{
+    public override string NodeKind => "hoverable";
+
+    public Hoverable(VisualNode child, Action<bool> onChanged)
+    {
+        Child = child;
+        OnChanged = onChanged;
+    }
+
+    public VisualNode Child { get; init; }
+
+    /// <summary><c>true</c> = pointer entered, <c>false</c> = pointer left.</summary>
+    public Action<bool> OnChanged { get; init; }
 }
 
 /// <summary>How a <see cref="Presence"/> subtree ENTERS when it first appears (spec §06).</summary>
@@ -548,6 +581,14 @@ public sealed class Pressable : VisualNode
     public string? Label { get; init; }
 }
 
+/// <summary>Line alignment within a <see cref="Text"/> paragraph (CSS <c>text-align</c> twin).</summary>
+public enum TextAlignment : byte
+{
+    Start = 0,
+    Center = 1,
+    End = 2,
+}
+
 /// <summary>
 /// A shaped paragraph (spec A8). Role-driven — free-form font sizes don't exist in the component API:
 /// a <see cref="TypeRole"/> resolves size/weight/line-height/tracking and the Dynamic Type cap (§02).
@@ -574,6 +615,14 @@ public sealed class Text : VisualNode
 
     /// <summary>0 = unlimited lines.</summary>
     public int MaxLines { get; init; }
+
+    /// <summary>
+    /// LINE alignment inside the paragraph's own box (CSS <c>text-align</c>): a centered display
+    /// headline must center its WRAPPED lines too — container alignment only places the block.
+    /// Photon fence: the native shaper positions lines start-aligned for now (single-line display
+    /// text is unaffected — the box hugs).
+    /// </summary>
+    public TextAlignment Align { get; init; } = TextAlignment.Start;
 
     /// <summary>
     /// SYSTEM COMPONENTS ONLY: overrides the role's <see cref="TypeStyle"/> with an exact style from a

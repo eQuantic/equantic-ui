@@ -37,6 +37,14 @@ public class ObjectCreationStrategy : IConversionStrategy
     private string ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var typeName = creation.Type.ToString();
+        // A qualified creation (`new eQuantic.UI.Primitives.Image(...)` — the disambiguation idiom
+        // when a section class shares a name) must construct the IMPORTED simple name: module
+        // bindings exist in JS, namespace chains do not. The List/Dictionary specials below keep
+        // matching (they see the simple generic name).
+        if (creation.Type is QualifiedNameSyntax qualifiedName)
+            typeName = qualifiedName.Right.ToString();
+        else if (creation.Type is AliasQualifiedNameSyntax aliasQualified)
+            typeName = aliasQualified.Name.ToString();
         var createdType = context.SemanticHelper.GetType(creation);
 
         // `new T()` where T is a generic type parameter cannot be transpiled: JS erases generic type

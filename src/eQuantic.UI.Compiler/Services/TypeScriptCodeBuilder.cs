@@ -123,9 +123,11 @@ public class TypeScriptCodeBuilder
             _builder.Line("");
         }
         
-        public void Method(string name, string parameters, bool isAsync, Action bodyAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool isStatic = false)
+        public void Method(string name, string parameters, bool isAsync, Action bodyAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool isStatic = false, bool isGenerator = false)
         {
-            var prefix = (isStatic ? "static " : "") + (isAsync ? "async " : "");
+            // Iterator methods (yield) are JS GENERATORS: the `*` marker is what lets the emitted
+            // `yield` statements parse. `async *` is the async-iterator form, also valid JS.
+            var prefix = (isStatic ? "static " : "") + (isAsync ? "async " : "") + (isGenerator ? "*" : "");
             var generics = typeParameters != null && typeParameters.Any() ? $"<{string.Join(", ", typeParameters)}>" : "";
             _builder.Line($"{prefix}{name}{generics}({parameters}) {{", sourceNode);
             _builder.Indent();

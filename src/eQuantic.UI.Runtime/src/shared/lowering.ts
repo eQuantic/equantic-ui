@@ -39,6 +39,7 @@ import type {
   SpinnerNode,
   PositionedNode,
   PressableNode,
+  HoverableNode,
   ScrollViewNode,
   SizeValueValue,
   StackNode,
@@ -202,6 +203,8 @@ function lowerNode(
       return lowerSticky(node as unknown as StickyNode, context, path);
     case 'anchored':
       return lowerAnchored(node as unknown as AnchoredNode, context, path);
+    case 'hoverable':
+      return lowerHoverable(node as unknown as HoverableNode, context, path);
     case 'positioned':
       // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
       return lowerNode((node as PositionedNode).child, context, horizontalAxis, path + '/0');
@@ -786,6 +789,10 @@ function backgroundLayerSizes(style: BoxStyleValue): string | undefined {
 function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   const style: StyleEntries = {
     color: tokenValue(text.color ?? context.textPrimary),
+    // Line alignment inside the paragraph (C# twin) — wrapped lines of a centered headline
+    // must center too.
+    'text-align':
+      text.align === 'center' ? 'center' : text.align === 'end' ? 'end' : undefined,
   };
 
   // Gradient text — mirrors the C# realizer, including keeping `color` as the readable fallback
@@ -838,6 +845,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
     }
     case 'pressable':
       return fills((node as PressableNode).child);
+    case 'hoverable':
+      return fills((node as HoverableNode).child);
     case 'flexible':
       return fills((node as FlexibleNode).child);
     case 'loopMotion':
@@ -926,7 +935,11 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
     children: [],
   };
   const anchor = lowerNode(node.anchor, context, null, path + '/0');
-  if (anchor) host.children.push(anchor);
+  if (anchor) {
+    // C# twin: a painted scrim dims the page, never its own anchor.
+    if (node.scrimStyle && node.open === true && node.onDismiss) prependClass(anchor, 'eq-anchor-above');
+    host.children.push(anchor);
+  }
   if (node.openOnHover === true) {
     host.children.push(buildAnchorPanel(node, context, path));
     return host;
@@ -934,10 +947,18 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
   if (node.open !== true) return host;
 
   if (node.onDismiss) {
+    // Mega-menu dimming (C# twin): scrimStyle paints the outside-tap scrim as a full Box.
     const scrim = lowerNode(
       {
         nodeKind: 'pressable',
-        child: { nodeKind: 'box' },
+        child: {
+          nodeKind: 'box',
+          style: {
+            ...(node.scrimStyle ?? {}),
+            width: { kind: 'fill', value: 0 },
+            height: { kind: 'fill', value: 0 },
+          },
+        },
         onPressed: node.onDismiss,
         label: 'Dismiss',
       } as unknown as VisualNodeValue,
@@ -956,12 +977,35 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
   return host;
 }
 
+/**
+ * S5 programmable hover (the C# LowerHoverable twin): a layout-transparent div whose
+ * mouseenter/mouseleave feed the boolean callback. Fill passes through like Pressable's button.
+ */
+function lowerHoverable(node: HoverableNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    height: fill.height ? '100%' : undefined,
+  });
+  if (node.onChanged) {
+    const changed = node.onChanged;
+    host.events['mouseenter'] = (() => changed(true)) as EventHandler;
+    host.events['mouseleave'] = (() => changed(false)) as EventHandler;
+  }
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
 /** The C# BuildAnchorPanel twin. */
 function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: string): HtmlNode {
   const top =
     node.placement === 'topStart' || node.placement === 'topEnd' || node.placement === 'topCenter';
   const gap = node.gap ?? 4;
-  const panel = element('div', top ? { 'margin-bottom': px(gap) } : { 'margin-top': px(gap) });
+  // HOVER BRIDGE (C# twin): hover-open panels carry the gap as PADDING — part of the hoverable
+  // area — so crossing it never drops the host's :hover. Click-open panels keep the margin.
+  const gapProp = node.openOnHover === true ? 'padding' : 'margin';
+  const panel = element('div', top ? { [`${gapProp}-bottom`]: px(gap) } : { [`${gapProp}-top`]: px(gap) });
   if (node.matchAnchorWidth === true) prependClass(panel, 'eq-anchor-match');
   prependClass(panel, anchorPlacementClass(node.placement));
   prependClass(panel, 'eq-anchor-panel');

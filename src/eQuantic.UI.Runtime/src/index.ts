@@ -112,6 +112,7 @@ export {
   Sticky,
   Text,
   Pressable,
+  Hoverable,
   Flexible,
   Spacer,
   Stack,
