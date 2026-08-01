@@ -2,10 +2,19 @@ using System.Runtime.InteropServices;
 
 namespace eQuantic.UI.Native.Engine.Metal;
 
+/// <summary>Anything the encoder can bind as a fragment texture. Render targets implement it too —
+/// the RHI says a render target IS a texture, and compositing a layer depends on that being literal
+/// rather than aspirational.</summary>
+internal interface IMetalBindable
+{
+    IntPtr Texture { get; }
+}
+
 /// <summary>An uploaded sampled texture (A8 → <c>R8Unorm</c>, Rgba8 → <c>RGBA8Unorm_sRGB</c>),
 /// shared storage. Lifetime is per-process (the documented ObjC fence).</summary>
-public sealed class MetalTexture : IRhiTexture
+public sealed class MetalTexture : IRhiTexture, IMetalBindable
 {
+    IntPtr IMetalBindable.Texture => Texture;
     internal IntPtr Texture { get; }
 
     internal MetalTexture(IntPtr texture, int width, int height)
@@ -31,8 +40,9 @@ public sealed class MetalTexture : IRhiTexture
 /// readback funnels through <see cref="RhiReadback.UnpremultiplySrgb"/> to produce the
 /// straight-alpha golden interchange format.
 /// </summary>
-public sealed class MetalRenderTarget : IRhiRenderTarget
+public sealed class MetalRenderTarget : IRhiRenderTarget, IMetalBindable
 {
+    IntPtr IMetalBindable.Texture => Texture;
     internal IntPtr Texture { get; }
 
     internal MetalRenderTarget(IntPtr texture, int width, int height)

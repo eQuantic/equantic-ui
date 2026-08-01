@@ -618,27 +618,27 @@ struct pixelOutput_2
 };
 
 
-
-[[fragment]] pixelOutput_2 textured_rgba_fragment(float4 position_2 [[position]], DrawUniforms_0 constant* u_4 [[buffer(0)]], texture2d<float, access::sample> coverageTexture_4 [[texture(0)]], texture2d<float, access::sample> colorTexture_4 [[texture(1)]])
+#line 178
+[[fragment]] pixelOutput_2 layer_composite(float4 position_2 [[position]], DrawUniforms_0 constant* u_4 [[buffer(0)]], texture2d<float, access::sample> coverageTexture_4 [[texture(0)]], texture2d<float, access::sample> colorTexture_4 [[texture(1)]])
 {
 
-#line 175
+#line 178
     thread KernelContext_0 kernelContext_3;
 
-#line 175
+#line 178
     (&kernelContext_3)->u_0 = u_4;
 
-#line 175
+#line 178
     (&kernelContext_3)->coverageTexture_0 = coverageTexture_4;
 
-#line 175
+#line 178
     (&kernelContext_3)->colorTexture_0 = colorTexture_4;
 
     float2 pixel_2 = position_2.xy;
 
     float _S17 = pixel_2.x;
 
-#line 179
+#line 182
     float _S18 = pixel_2.y;
 
 
@@ -646,114 +646,261 @@ struct pixelOutput_2
     float2 uv_1 = (float2(_S17 * u_4->inv0_0.x + _S18 * u_4->inv0_0.y + u_4->inv0_0.z, _S17 * u_4->inv1_0.x + _S18 * u_4->inv1_0.y + u_4->inv1_0.z) - (u_4->rect_0.xy - u_4->rect_0.zw)) / (u_4->rect_0.zw * float2(2.0f) );
     float _S19 = uv_1.x;
 
-#line 184
+#line 187
     bool _S20;
 
-#line 184
+#line 187
     if(_S19 < 0.0f)
     {
 
-#line 184
+#line 187
         _S20 = true;
 
-#line 184
+#line 187
     }
     else
     {
 
-#line 184
+#line 187
         _S20 = _S19 >= 1.0f;
 
-#line 184
+#line 187
     }
 
-#line 184
+#line 187
     if(_S20)
     {
 
-#line 184
+#line 187
         _S20 = true;
 
-#line 184
+#line 187
     }
     else
     {
 
-#line 184
+#line 187
         _S20 = (uv_1.y) < 0.0f;
 
-#line 184
+#line 187
     }
 
-#line 184
+#line 187
     if(_S20)
     {
 
-#line 184
+#line 187
         _S20 = true;
 
-#line 184
+#line 187
     }
     else
     {
 
-#line 184
+#line 187
         _S20 = (uv_1.y) >= 1.0f;
 
-#line 184
+#line 187
     }
 
-#line 184
+#line 187
     if(_S20)
     {
 
-#line 184
+#line 187
         discard_fragment();
 
-#line 184
+#line 187
     }
 
 
 
     int3 _S21 = int3(min(int((&kernelContext_3)->u_0->gradient_0.x) - int(1), int(_S19 * (&kernelContext_3)->u_0->gradient_0.x)), min(int((&kernelContext_3)->u_0->gradient_0.y) - int(1), int(uv_1.y * (&kernelContext_3)->u_0->gradient_0.y)), int(0));
 
-#line 188
+#line 191
     float4 texel_0 = (((&kernelContext_3)->colorTexture_0).read(vec<uint,2>(((_S21)).xy), uint(((_S21)).z)));
 
-#line 188
-    float coverage_5;
+    float alpha_0 = (&kernelContext_3)->u_0->colorA_0.w;
 
-
+#line 193
+    float alpha_1;
     if(((&kernelContext_3)->u_0->flags_0.z) > 0.5f)
     {
 
-#line 191
-        coverage_5 = clamp(0.5f - sdRoundedRect_0(pixel_2 - (&kernelContext_3)->u_0->clipRect_0.xy, (&kernelContext_3)->u_0->clipRect_0.zw, (&kernelContext_3)->u_0->clipRadii_0), 0.0f, 1.0f);
+#line 194
+        alpha_1 = alpha_0 * clamp(0.5f - sdRoundedRect_0(pixel_2 - (&kernelContext_3)->u_0->clipRect_0.xy, (&kernelContext_3)->u_0->clipRect_0.zw, (&kernelContext_3)->u_0->clipRadii_0), 0.0f, 1.0f);
 
-#line 191
+#line 194
     }
     else
     {
 
-#line 191
-        coverage_5 = 1.0f;
+#line 194
+        alpha_1 = alpha_0;
 
-#line 191
+#line 194
     }
 
-#line 197
-    float a_2 = texel_0.w * coverage_5;
+#line 199
+    if(alpha_1 <= 0.0f)
+    {
+
+#line 199
+        discard_fragment();
+
+#line 199
+    }
+
+#line 199
+    pixelOutput_2 _S22 = { texel_0 * float4(alpha_1)  };
+
+    return _S22;
+}
+
+
+#line 201
+struct pixelOutput_3
+{
+    float4 output_4 [[color(0)]];
+};
+
+
+
+[[fragment]] pixelOutput_3 textured_rgba_fragment(float4 position_3 [[position]], DrawUniforms_0 constant* u_5 [[buffer(0)]], texture2d<float, access::sample> coverageTexture_5 [[texture(0)]], texture2d<float, access::sample> colorTexture_5 [[texture(1)]])
+{
+
+#line 208
+    thread KernelContext_0 kernelContext_4;
+
+#line 208
+    (&kernelContext_4)->u_0 = u_5;
+
+#line 208
+    (&kernelContext_4)->coverageTexture_0 = coverageTexture_5;
+
+#line 208
+    (&kernelContext_4)->colorTexture_0 = colorTexture_5;
+
+    float2 pixel_3 = position_3.xy;
+
+    float _S23 = pixel_3.x;
+
+#line 212
+    float _S24 = pixel_3.y;
+
+
+
+    float2 uv_2 = (float2(_S23 * u_5->inv0_0.x + _S24 * u_5->inv0_0.y + u_5->inv0_0.z, _S23 * u_5->inv1_0.x + _S24 * u_5->inv1_0.y + u_5->inv1_0.z) - (u_5->rect_0.xy - u_5->rect_0.zw)) / (u_5->rect_0.zw * float2(2.0f) );
+    float _S25 = uv_2.x;
+
+#line 217
+    bool _S26;
+
+#line 217
+    if(_S25 < 0.0f)
+    {
+
+#line 217
+        _S26 = true;
+
+#line 217
+    }
+    else
+    {
+
+#line 217
+        _S26 = _S25 >= 1.0f;
+
+#line 217
+    }
+
+#line 217
+    if(_S26)
+    {
+
+#line 217
+        _S26 = true;
+
+#line 217
+    }
+    else
+    {
+
+#line 217
+        _S26 = (uv_2.y) < 0.0f;
+
+#line 217
+    }
+
+#line 217
+    if(_S26)
+    {
+
+#line 217
+        _S26 = true;
+
+#line 217
+    }
+    else
+    {
+
+#line 217
+        _S26 = (uv_2.y) >= 1.0f;
+
+#line 217
+    }
+
+#line 217
+    if(_S26)
+    {
+
+#line 217
+        discard_fragment();
+
+#line 217
+    }
+
+
+
+    int3 _S27 = int3(min(int((&kernelContext_4)->u_0->gradient_0.x) - int(1), int(_S25 * (&kernelContext_4)->u_0->gradient_0.x)), min(int((&kernelContext_4)->u_0->gradient_0.y) - int(1), int(uv_2.y * (&kernelContext_4)->u_0->gradient_0.y)), int(0));
+
+#line 221
+    float4 texel_1 = (((&kernelContext_4)->colorTexture_0).read(vec<uint,2>(((_S27)).xy), uint(((_S27)).z)));
+
+#line 221
+    float coverage_5;
+
+
+    if(((&kernelContext_4)->u_0->flags_0.z) > 0.5f)
+    {
+
+#line 224
+        coverage_5 = clamp(0.5f - sdRoundedRect_0(pixel_3 - (&kernelContext_4)->u_0->clipRect_0.xy, (&kernelContext_4)->u_0->clipRect_0.zw, (&kernelContext_4)->u_0->clipRadii_0), 0.0f, 1.0f);
+
+#line 224
+    }
+    else
+    {
+
+#line 224
+        coverage_5 = 1.0f;
+
+#line 224
+    }
+
+#line 230
+    float a_2 = texel_1.w * coverage_5;
     if(a_2 <= 0.0f)
     {
 
-#line 198
+#line 231
         discard_fragment();
 
-#line 198
+#line 231
     }
 
-#line 198
-    pixelOutput_2 _S22 = { float4(texel_0.xyz * float3(a_2) , a_2) };
-    return _S22;
+#line 231
+    pixelOutput_3 _S28 = { float4(texel_1.xyz * float3(a_2) , a_2) };
+    return _S28;
 }
 

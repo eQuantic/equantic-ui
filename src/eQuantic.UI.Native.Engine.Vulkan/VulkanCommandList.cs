@@ -27,7 +27,7 @@ internal sealed unsafe class VulkanCommandList : IRhiCommandList
 
     public void BindTexture(int slot, IRhiTexture texture)
     {
-        var view = ((VulkanTexture)texture).View;
+        var view = ((IVulkanBindable)texture).View;
         if (slot == RhiRenderer.CoverageSlot) _coverageView = view;
         else _colorView = view;
     }

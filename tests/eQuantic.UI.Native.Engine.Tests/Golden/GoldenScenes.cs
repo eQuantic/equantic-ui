@@ -127,6 +127,39 @@ public static class GoldenScenes
             b.PopClip();
         },
 
+        // GROUP-OPACITY LAYERS (spec S1) — the scene that DISCRIMINATES a real offscreen layer from
+        // the per-command-alpha approximation. Two opaque circles OVERLAP inside a 50% layer: with a
+        // real layer the union composites once and the overlap looks identical to the rest; with the
+        // approximation each circle blends separately and the overlap goes visibly darker. The
+        // nested layer on the right multiplies alpha through two levels.
+        ["layer-group-opacity"] = b =>
+        {
+            // NOTE: Build() already clears to Background. A second Clear here would diverge by
+            // design — the Reference applies mid-stream Clears, the GPU backends honor only the
+            // leading one (the documented spike fence) — and the parity gate catches it.
+            b.PushLayer(0.5f);
+            b.FillRRect(new RRect(new Rect(12, 20, 48, 48), new CornerRadii(24)),
+                Paint.Solid(Color.FromRgb(0x5B, 0x88, 0xFF)));
+            b.FillRRect(new RRect(new Rect(40, 20, 48, 48), new CornerRadii(24)),
+                Paint.Solid(Color.FromRgb(0x5B, 0x88, 0xFF)));
+            b.PopLayer();
+
+            b.PushLayer(0.8f);
+            b.FillRect(new Rect(96, 16, 52, 40), Paint.Solid(Color.FromRgb(0x80, 0xB8, 0x5C)));
+            b.PushLayer(0.5f);
+            b.FillRect(new Rect(104, 30, 52, 40), Paint.Solid(Color.FromRgb(0x9B, 0x8C, 0xFF)));
+            b.PopLayer();
+            b.PopLayer();
+
+            // A layer with a CLIP still composites through the clip.
+            b.PushClip(new RRect(new Rect(20, 80, 120, 30), new CornerRadii(15)));
+            b.PushLayer(0.6f);
+            b.FillRect(new Rect(16, 76, 60, 38), Paint.Solid(Color.FromRgb(0xF5, 0x9E, 0x0B)));
+            b.FillRect(new Rect(60, 76, 60, 38), Paint.Solid(Color.FromRgb(0xF5, 0x9E, 0x0B)));
+            b.PopLayer();
+            b.PopClip();
+        },
+
         // RADIAL gradients (the hero "spotlight"): a circular glow, an ELLIPTICAL one (the shape the
         // design actually uses — 800×500 at 20% 0%), and one fading to TRANSPARENT over a solid so
         // the alpha ramp is exercised, not just the hue ramp. Radii reuse the linear slots, so this

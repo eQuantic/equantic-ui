@@ -28,7 +28,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
     private const int UniformCapacity = UniformStride * 4096;
 
     private static readonly RhiPipelineKind[] RegistryKinds =
-        [RhiPipelineKind.Sdf, RhiPipelineKind.TexturedA8, RhiPipelineKind.TexturedRgba];
+        [RhiPipelineKind.Sdf, RhiPipelineKind.TexturedA8, RhiPipelineKind.TexturedRgba, RhiPipelineKind.LayerComposite];
 
     private readonly IntPtr _instance;
     private readonly IntPtr _physicalDevice;
@@ -131,7 +131,8 @@ public sealed unsafe class VulkanDevice : IRhiDevice
 
     public IRhiRenderTarget CreateRenderTarget(int width, int height)
     {
-        const uint usage = 0x10 | 0x1; // COLOR_ATTACHMENT | TRANSFER_SRC (readback)
+        // COLOR_ATTACHMENT (written) | TRANSFER_SRC (readback) | SAMPLED (composited as a layer).
+        const uint usage = 0x10 | 0x1 | 0x4;
         var (image, memory, view) = CreateImage(width, height, FormatR8G8B8A8Srgb, usage);
         var framebuffer = CreateFramebuffer(RenderPass(FormatR8G8B8A8Srgb), view, width, height);
         return new VulkanRenderTarget(this, image, memory, view, framebuffer, width, height);
@@ -324,6 +325,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         {
             RhiPipelineKind.TexturedA8 => "textured_fragment",
             RhiPipelineKind.TexturedRgba => "textured_rgba_fragment",
+            RhiPipelineKind.LayerComposite => "layer_composite",
             _ => "sdf_fragment",
         };
         var vertexName = Marshal.StringToCoTaskMemUTF8("fullscreen_vertex");
@@ -603,7 +605,9 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             StencilLoadOp = 2,   // DONT_CARE
             StencilStoreOp = 1,  // DONT_CARE
             InitialLayout = 0,   // UNDEFINED (re-renders discard — loadOp clears anyway)
-            FinalLayout = 6,     // TRANSFER_SRC_OPTIMAL
+            // SHADER_READ_ONLY: a layer target is sampled by the composite far more often than it
+            // is read back, and the readback path transitions explicitly when it needs to.
+            FinalLayout = 5,
         };
         var reference = new VkAttachmentReference { Attachment = 0, Layout = 2 /* COLOR_ATTACHMENT_OPTIMAL */ };
         var subpass = new VkSubpassDescription
@@ -621,8 +625,8 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         dependencies[1] = new VkSubpassDependency
         {
             SrcSubpass = 0, DstSubpass = ~0u,
-            SrcStageMask = 0x400, DstStageMask = 0x1000, // COLOR_ATTACHMENT_OUTPUT → TRANSFER (readback)
-            SrcAccessMask = 0x100, DstAccessMask = 0x800, // COLOR_ATTACHMENT_WRITE → TRANSFER_READ
+            SrcStageMask = 0x400, DstStageMask = 0x80,   // COLOR_ATTACHMENT_OUTPUT → FRAGMENT_SHADER
+            SrcAccessMask = 0x100, DstAccessMask = 0x20,  // COLOR_ATTACHMENT_WRITE → SHADER_READ
         };
         var createInfo = new VkRenderPassCreateInfo
         {
