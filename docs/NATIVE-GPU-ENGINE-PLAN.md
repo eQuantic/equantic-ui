@@ -502,7 +502,8 @@ Bun and the JS bundling chain, the TypeScript runtime.
   backend). Toolchain findings: entry-point names and the `[[buffer(0)]]` uniform binding are
   PRESERVED by slangc's Metal emission, so the backend needed zero interface changes; the
   **16-scene Metal parity suite HELD the fuzzy gate unchanged** with the generated shader. Regen via
-  `scripts/generate-shaders.sh` (EQ_SLANGC); packaging: slangc ships EMBEDDED in a NuGet package
+  `scripts/generate-shaders.sh` (self-resolving since W2 slice 1 — see the 2026-08-01 entry;
+  `EQ_SLANGC` remains the override); packaging: slangc ships EMBEDDED in a NuGet package
   like the Bun binaries (framework-dev tool — app developers never see it). Remaining D3 tail: the
   offline metallib step (xcrun metal) and pipeline caching land with the packaging milestone.
 
@@ -692,6 +693,24 @@ Bun and the JS bundling chain, the TypeScript runtime.
   machine (Spotlight + deep search came up empty; the D3/W4b regens ran from a since-cleaned
   location). Blocked until `EQ_SLANGC` points at a binary again — the W2 toolchain packaging
   (slangc embedded per-platform like Bun) is what makes this structural instead of environmental.
+
+- **2026-08-01 — W2 slice 1: the toolchain RESOLVES ITSELF; the shader blocker is retired.**
+  `scripts/slang-toolchain.sh` acquires the PINNED slangc (2026.14.1) on first use and verifies its
+  SHA-256 before extracting; `generate-shaders.sh` sources it and no longer demands `EQ_SLANGC`
+  (which still wins as an explicit override). Resolution order: override → a toolchain package
+  extracted in-repo → the local cache → pinned download. PROOF the provisioning is correct, not
+  merely present: regenerating from `Sdf.slang` reproduces `Sdf.metal`/`Sdf.spv`/`Sdf.metallib`
+  **byte-identically** to the committed artifacts (clean `git status`), from a cold cache and from
+  the persistent install alike — so the version, the toolchain wiring (including `xcrun metal`) and
+  the committed outputs are all confirmed at once.
+  DELIBERATE DEVIATION from this plan's letter, stated so it is a decision and not an oversight:
+  the per-platform NuGet packages are NOT created yet. Bun ships inside packages because EVERY app
+  build needs it; slangc is framework-dev-only — app developers consume the committed
+  `.metallib`/`.spv` and never compile a shader — so committing ~57 MB per platform (≈230 MB across
+  four) would weigh the repo down for a binary almost nobody fetches. The pin + digest give the
+  same reproducibility at zero repo cost, and the resolver already PREFERS a packaged toolchain the
+  moment one exists, so promoting it later is additive. Package the binaries when app-level shader
+  compilation becomes real — that is the milestone that actually needs them.
 
 ## Definition of done (v1 preview)
 

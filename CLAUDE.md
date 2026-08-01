@@ -65,6 +65,25 @@ npm run lint           # eslint
 npm run format         # prettier
 ```
 
+### Shader Toolchain (Photon / native track)
+
+The Photon shaders have ONE normative source, `src/eQuantic.UI.Native.Engine/Shaders/Sdf.slang`.
+The generated `Sdf.metal` / `Sdf.spv` / `Sdf.metallib` are **committed and never hand-edited** —
+this script is their only writer:
+
+```bash
+./scripts/generate-shaders.sh
+```
+
+The toolchain resolves itself: the pinned `slangc` (2026.14.1) is taken from the local cache or
+downloaded and SHA-256-verified on first use (`scripts/slang-toolchain.sh`). Set `EQ_SLANGC` to
+override with your own build. App developers never run this — they consume the committed
+`.metallib`/`.spv`; only framework developers changing a shader do.
+
+The `metallib` step additionally needs the Xcode Metal Toolchain
+(`xcodebuild -downloadComponent MetalToolchain`); without it the script warns and leaves the
+committed `metallib` untouched.
+
 ### Bootstrap Build (required before first build)
 
 The SDK depends on other packages. Run these in order before a full solution build:
