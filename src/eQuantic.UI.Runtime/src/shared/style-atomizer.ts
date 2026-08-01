@@ -87,11 +87,32 @@ function varMapFor(theme: AppTheme): VarEntry[] {
   return entries;
 }
 
+/**
+ * Substring replacement is WRONG for hex colors: they are variable-length, so an opaque token
+ * (`#ffffff`) is a PREFIX of its own translucent form (`#ffffff0a`). Replacing the prefix strands
+ * the alpha OUTSIDE the var — `var(--x, #ffffff)0a` — which is invalid CSS, so the browser drops
+ * the declaration and the style silently vanishes. A match only counts when the next character
+ * cannot extend the color literal. Mirrors C# ThemeVarMap.ReplaceAtTokenBoundary.
+ */
+function replaceAtTokenBoundary(value: string, token: string, replacement: string): string {
+  let out = '';
+  let index = 0;
+  for (;;) {
+    const found = value.indexOf(token, index);
+    if (found < 0) return out + value.slice(index);
+    const after = found + token.length;
+    const extendsLiteral = after < value.length && /[0-9a-fA-F]/.test(value[after]);
+    out += value.slice(index, found) + (extendsLiteral ? token : replacement);
+    index = after;
+  }
+}
+
 function rewrite(value: string, entries: VarEntry[]): string {
   if (!value.includes('light-dark(') && !value.startsWith('#')) return value;
   for (const [token, varName] of entries) {
     if (value === token) return `var(${varName}, ${token})`;
-    if (value.includes(token)) value = value.split(token).join(`var(${varName}, ${token})`);
+    if (value.includes(token))
+      value = replaceAtTokenBoundary(value, token, `var(${varName}, ${token})`);
   }
   return value;
 }

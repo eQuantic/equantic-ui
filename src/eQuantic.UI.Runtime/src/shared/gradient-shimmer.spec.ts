@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode, tokenValue } from './lowering';
 import { setPhotonTheme } from './photon-context';
-import { Box, BoxStyle, Color, ColorToken, LinearGradient } from '../index';
+import { Box, BoxStyle, Color, ColorToken, GridPattern, LinearGradient } from '../index';
 import { Skeleton } from './components/Skeleton';
 
 setPhotonTheme(photonTheme);
@@ -81,6 +81,47 @@ describe('gradient + shimmer lowering (C# GradientShimmerRealizerTests cross-pin
     );
 
     expect(effectiveStyle(node)).toContain(`background-image: linear-gradient(${keyword}, `);
+  });
+
+  // The GRID pattern — mirrors C# GridPattern_EmitsBothHairlineLayers_AndTheCellSize.
+  it('the grid pattern emits both hairline layers and the cell size', () => {
+    const node = lower(
+      new Box(
+        new BoxStyle({
+          width: 200,
+          height: 200,
+          pattern: new GridPattern(56, photonTheme.border),
+        }),
+      ),
+    );
+
+    const line = tokenValue(photonTheme.border);
+    expect(effectiveStyle(node)).toContain(
+      `background-image: linear-gradient(to right, ${line} 1px, transparent 1px), ` +
+        `linear-gradient(to bottom, ${line} 1px, transparent 1px)`,
+    );
+    expect(effectiveStyle(node)).toContain('background-size: 56px 56px, 56px 56px');
+  });
+
+  // Mirrors C# GridPattern_UnderAGradient_KeepsLayerOrderAndSizeAlignment.
+  it('a gradient over the grid keeps layer order and size alignment', () => {
+    const node = lower(
+      new Box(
+        new BoxStyle({
+          width: 200,
+          height: 200,
+          gradient: new LinearGradient(photonTheme.scrim, new ColorToken(Color.transparent)),
+          pattern: new GridPattern(56, photonTheme.border),
+        }),
+      ),
+    );
+
+    const style = effectiveStyle(node);
+    expect(style).toContain('background-image: linear-gradient(to right, ');
+    expect(style).toContain('background-size: auto, 56px 56px, 56px 56px');
+    expect(style.indexOf(tokenValue(photonTheme.scrim))).toBeLessThan(
+      style.indexOf('transparent 1px'),
+    );
   });
 
   it('the transpiled Skeleton sweeps the rest-hidden mirrored glint inside the clipped track', () => {

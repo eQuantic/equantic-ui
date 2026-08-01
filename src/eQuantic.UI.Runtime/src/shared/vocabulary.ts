@@ -80,6 +80,7 @@ interface BoxStyleConfig {
   elevation?: number;
   clip?: boolean;
   gradient?: LinearGradient | null;
+  pattern?: GridPattern | null;
   opacity?: number | null;
   transform?: unknown;
   aspectRatio?: number;
@@ -104,6 +105,8 @@ export class BoxStyle {
   elevation = 0;
   clip = false;
   gradient: LinearGradient | null = null;
+  /** The repeating hairline grid backdrop (null = none). */
+  pattern: GridPattern | null = null;
   /** Spec S1 group opacity (null = opaque). */
   opacity?: number | null;
   /** Spec S1 static transform (the Transform2D wire shape). */
@@ -463,6 +466,19 @@ export class LinearGradient {
     this.from = from;
     this.to = to;
     this.direction = direction;
+  }
+}
+
+/** Mirror of the C# `GridPattern`: repeating hairline grid (square cell, token line color). */
+export class GridPattern {
+  cell: number;
+  color: ColorTokenValue;
+  lineWidth: number;
+
+  constructor(cell: number, color: ColorTokenValue, lineWidth = 1) {
+    this.cell = cell;
+    this.color = color;
+    this.lineWidth = lineWidth;
   }
 }
 

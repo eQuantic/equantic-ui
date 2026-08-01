@@ -77,6 +77,51 @@ public class GradientShimmerTests
         End(GradientDirection.ToBottomLeft).Should().Be(new Point(0, 40));
     }
 
+    /// <summary>
+    /// The GRID pattern on native: hairlines as ordinary fills, in the SAME phase as the CSS
+    /// <c>background-size</c> tiling (rules start at the box origin and repeat every cell), drawn
+    /// above the solid background and below the gradient — the web layer order.
+    /// </summary>
+    [Fact]
+    public void GridPattern_EmitsHairlines_InTilePhase_AboveTheBackground()
+    {
+        var commands = Render(new Box(new BoxStyle
+        {
+            Width = 120,
+            Height = 100,
+            Background = Theme.Surface,
+            Pattern = new GridPattern(50, Theme.Border),
+        })).Where(c => c.Kind == DrawCommandKind.FillRRect).ToList();
+
+        // 1 background + 3 vertical rules (x = 0, 50, 100) + 2 horizontal rules (y = 0, 50).
+        commands.Should().HaveCount(6);
+        commands[0].Paint.Color.Should().Be(Theme.Surface.Resolve(ThemeMode.Light),
+            "the solid background paints first, with the grid over it");
+
+        var vertical = commands.Skip(1).Take(3).Select(c => c.Shape.Rect.X).ToList();
+        vertical.Should().Equal(0f, 50f, 100f);
+        commands[1].Shape.Rect.Width.Should().Be(1);
+        commands[1].Shape.Rect.Height.Should().Be(100, "a vertical rule spans the box height");
+
+        var horizontal = commands.Skip(4).Select(c => c.Shape.Rect.Y).ToList();
+        horizontal.Should().Equal(0f, 50f);
+        commands[4].Shape.Rect.Width.Should().Be(120, "a horizontal rule spans the box width");
+    }
+
+    /// <summary>A degenerate cell must emit nothing rather than loop forever.</summary>
+    [Fact]
+    public void GridPattern_ZeroCell_EmitsNoHairlines()
+    {
+        var commands = Render(new Box(new BoxStyle
+        {
+            Width = 120,
+            Height = 100,
+            Pattern = new GridPattern(0, Theme.Border),
+        })).Where(c => c.Kind == DrawCommandKind.FillRRect).ToList();
+
+        commands.Should().BeEmpty();
+    }
+
     private DrawCommand Fill(GradientDirection direction) => Render(new Box(new BoxStyle
     {
         Width = 120,

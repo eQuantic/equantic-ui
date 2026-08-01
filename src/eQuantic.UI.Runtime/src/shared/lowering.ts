@@ -28,6 +28,7 @@ import type {
   FlexibleNode,
   IconNode,
   ImageNode,
+  GridPatternValue,
   LinearGradientValue,
   DragDismissNode,
   LinkNode,
@@ -380,6 +381,22 @@ function gradientValue(gradient: LinearGradientValue): string {
   return `linear-gradient(${direction}, ${tokenValue(gradient.from)}, ${tokenValue(gradient.to)})`;
 }
 
+/** Mirror of C# TokenCss.GridPattern: the two repeating hairline layers. */
+function gridPatternValue(pattern: GridPatternValue): string {
+  const color = tokenValue(pattern.color);
+  const line = px(pattern.lineWidth);
+  return (
+    `linear-gradient(to right, ${color} ${line}, transparent ${line}), ` +
+    `linear-gradient(to bottom, ${color} ${line}, transparent ${line})`
+  );
+}
+
+/** Mirror of C# TokenCss.GridPatternSize: one size entry per grid layer. */
+function gridPatternSize(pattern: GridPatternValue): string {
+  const cell = px(pattern.cell);
+  return `${cell} ${cell}, ${cell} ${cell}`;
+}
+
 /** Fraction → CSS percentage, mirroring C# TokenCss.Percent ("0.##": -0.35 → "-35%"). */
 function pct(fraction: number): string {
   return `${parseFloat((fraction * 100).toFixed(2))}%`;
@@ -606,7 +623,22 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     padding:
       style.padding && !isZeroInsets(style.padding) ? paddingValue(style.padding) : undefined,
     'background-color': style.background ? tokenValue(style.background) : undefined,
-    'background-image': style.gradient ? gradientValue(style.gradient) : undefined,
+    // Mirror of the C# realizer: the FIRST layer paints on top, so a gradient sits over the grid,
+    // and background-size carries one entry per layer (`auto` stands in for the gradient).
+    'background-image':
+      style.gradient && style.pattern
+        ? `${gradientValue(style.gradient)}, ${gridPatternValue(style.pattern)}`
+        : style.gradient
+          ? gradientValue(style.gradient)
+          : style.pattern
+            ? gridPatternValue(style.pattern)
+            : undefined,
+    'background-size':
+      style.gradient && style.pattern
+        ? `auto, ${gridPatternSize(style.pattern)}`
+        : style.pattern
+          ? gridPatternSize(style.pattern)
+          : undefined,
     'border-radius':
       style.cornerRadius && !isZeroRadii(style.cornerRadius)
         ? radiusValue(style.cornerRadius)

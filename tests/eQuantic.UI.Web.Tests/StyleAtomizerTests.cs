@@ -77,6 +77,39 @@ public class StyleAtomizerTests
         vars.Rewrite("#123456").Should().Be("#123456");
     }
 
+    /// <summary>
+    /// A token color that is a PREFIX of a longer hex literal must NOT be rewritten inside it.
+    /// Hex colors are variable-length, so an opaque token (<c>#ffffff</c>) is a prefix of its own
+    /// translucent form (<c>#ffffff0a</c>); rewriting the prefix strands the alpha outside the var
+    /// (<c>var(--x, #ffffff)0a</c>) — invalid CSS the browser drops entirely, so the declaration
+    /// silently disappears. Found by the site dogfood: a hero grid line of white-at-4% vanished.
+    /// </summary>
+    [Fact]
+    public void TranslucentVariantOfATokenColor_IsNotCorruptedByPrefixRewriting()
+    {
+        var theme = PhotonTheme.Instance;
+        var vars = ThemeVarMap.For(theme);
+        var surface = TokenCss.Value(theme.Surface);
+
+        // Sanity: the token itself still rewrites.
+        vars.Rewrite(surface).Should().Be($"var(--eq-color-surface, {surface})");
+
+        // A LONGER hex literal that merely STARTS with the token must pass through untouched.
+        // The real-world trigger (found by the site dogfood) is a same-in-both-modes token that
+        // serializes as a bare hex — an opaque `#ffffff` next to a hero grid line of `#ffffff0a`.
+        var extended = surface + "0a";
+        vars.Rewrite(extended).Should().Be(extended,
+            "the trailing hex digits extend the literal into a DIFFERENT color; rewriting the "
+            + "prefix would strand them outside the var() and produce CSS the browser drops");
+
+        // Same rule inside a composite value (the grid pattern's gradient layers).
+        var gradient = $"linear-gradient(to right, {extended} 1px, transparent 1px)";
+        vars.Rewrite(gradient).Should().Be(gradient);
+
+        // And a genuine occurrence inside a composite still rewrites.
+        vars.Rewrite($"1px solid {surface}").Should().Be($"1px solid var(--eq-color-surface, {surface})");
+    }
+
     [Fact]
     public void Sink_Deduplicates_AndEmitsSortedRules()
     {
