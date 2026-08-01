@@ -195,6 +195,15 @@ internal static unsafe partial class Vk
     [LibraryImport(Lib)]
     internal static partial void vkDestroyPipeline(IntPtr device, ulong pipeline, IntPtr allocator);
 
+    [LibraryImport(Lib)]
+    internal static partial int vkCreatePipelineCache(IntPtr device, VkPipelineCacheCreateInfo* createInfo, IntPtr allocator, ulong* pipelineCache);
+
+    [LibraryImport(Lib)]
+    internal static partial void vkDestroyPipelineCache(IntPtr device, ulong pipelineCache, IntPtr allocator);
+
+    [LibraryImport(Lib)]
+    internal static partial int vkGetPipelineCacheData(IntPtr device, ulong pipelineCache, nuint* dataSize, void* data);
+
     // ── Descriptors ─────────────────────────────────────────────────────────────────────────────
 
     [LibraryImport(Lib)]
@@ -294,6 +303,7 @@ internal enum VkStructureType : uint
     ImageCreateInfo = 14,
     ImageViewCreateInfo = 15,
     ShaderModuleCreateInfo = 16,
+    PipelineCacheCreateInfo = 17,
     PipelineShaderStageCreateInfo = 18,
     PipelineVertexInputStateCreateInfo = 19,
     PipelineInputAssemblyStateCreateInfo = 20,
@@ -630,6 +640,16 @@ internal unsafe struct VkShaderModuleCreateInfo
     public uint Flags;
     public nuint CodeSize;
     public uint* PCode;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct VkPipelineCacheCreateInfo
+{
+    public VkStructureType SType;
+    public IntPtr PNext;
+    public uint Flags;
+    public nuint InitialDataSize;
+    public IntPtr PInitialData;
 }
 
 [StructLayout(LayoutKind.Sequential)]

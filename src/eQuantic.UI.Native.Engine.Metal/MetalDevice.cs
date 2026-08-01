@@ -21,12 +21,21 @@ public sealed class MetalDevice : IRhiDevice
     private const ulong TextureUsageRenderTarget = 0x04;
     private const ulong StorageModeShared = 0;
 
+    private static readonly RhiPipelineKind[] RegistryKinds =
+        [RhiPipelineKind.Sdf, RhiPipelineKind.TexturedA8, RhiPipelineKind.TexturedRgba];
+
+    /// <summary>The FIXED registry's target formats (D5): offscreen RGBA8 + the CAMetalLayer's BGRA8.</summary>
+    private static readonly ulong[] RegistryFormats = [PixelFormatRgba8UnormSrgb, PixelFormatBgra8UnormSrgb];
+
     private readonly IntPtr _device;
     private readonly IntPtr _queue;
     private readonly IntPtr _vertexFn;
     private readonly IntPtr _fragmentFn;
     private readonly IntPtr _texturedFn;
     private readonly IntPtr _texturedRgbaFn;
+    private readonly IntPtr _binaryArchive;
+    private readonly string _binaryArchivePath = string.Empty;
+    private readonly bool _binaryArchiveExisted;
     private readonly Dictionary<(ulong Format, RhiPipelineKind Kind), IntPtr> _pipelines = new();
 
     public MetalDevice()
@@ -41,22 +50,38 @@ public sealed class MetalDevice : IRhiDevice
         _queue = ObjC.Send(_device, Sel("newCommandQueue"));
 
         // D3: the PRECOMPILED metallib loads first — zero runtime shader compilation (the
-        // engine's founding thesis). The MSL source path stays as the dev fallback.
-        var library = TryLoadPrecompiledLibrary();
-        if (library == IntPtr.Zero)
+        // engine's founding thesis). The MSL source path stays as the dev fallback. The loaded
+        // bytes also FINGERPRINT the cross-launch binary archive: a new shader targets a new file.
+        var metallib = ReadResource("Photon.Sdf.metallib");
+        var library = metallib is null ? IntPtr.Zero : LoadLibraryFromData(metallib);
+        byte[] shaderBytes;
+        if (library != IntPtr.Zero)
+        {
+            shaderBytes = metallib!;
+        }
+        else
         {
             library = ObjC.Send(_device, Sel("newLibraryWithSource:options:error:"),
                 ObjC.NSString(MetalShaders.Source), IntPtr.Zero, out var libraryError);
             if (library == IntPtr.Zero)
                 throw new InvalidOperationException(
                     $"MSL compilation failed: {DescribeError(libraryError)}");
+            shaderBytes = System.Text.Encoding.UTF8.GetBytes(MetalShaders.Source);
         }
 
         _vertexFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("fullscreen_vertex"));
         _fragmentFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("sdf_fragment"));
         _texturedFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("textured_fragment"));
         _texturedRgbaFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("textured_rgba_fragment"));
-        _ = PipelineState(PixelFormatRgba8UnormSrgb, RhiPipelineKind.Sdf);
+
+        (_binaryArchive, _binaryArchivePath, _binaryArchiveExisted) = TryOpenBinaryArchive(shaderBytes);
+
+        // D5: the ENTIRE fixed registry is born with the device — first launch compiles and
+        // serializes the binary archive; every later launch builds all PSOs from it.
+        foreach (var format in RegistryFormats)
+            foreach (var kind in RegistryKinds)
+                CreatePipelineState(format, kind);
+        SerializeBinaryArchive();
     }
 
     /// <summary>The MTLDevice handle — the shell hands it to the window's CAMetalLayer.</summary>
@@ -123,11 +148,19 @@ public sealed class MetalDevice : IRhiDevice
         return new MetalCommandList(this, commandBuffer, encoder, pixelFormat, drawable);
     }
 
-    // Kind mapping: Sdf → sdf_fragment, TexturedA8 → textured_fragment, TexturedRgba → textured_rgba_fragment.
+    /// <summary>Registry lookup — plan D5's assert: every pipeline is created at device init, so
+    /// a miss here is a bug by definition, never a compile trigger.</summary>
     internal IntPtr PipelineState(ulong pixelFormat, RhiPipelineKind kind)
     {
-        if (_pipelines.TryGetValue((pixelFormat, kind), out var cached)) return cached;
+        if (_pipelines.TryGetValue((pixelFormat, kind), out var pipeline)) return pipeline;
+        throw new InvalidOperationException(
+            $"Pipeline (pixel format {pixelFormat}, {kind}) is outside the fixed registry (plan D5) — " +
+            "extend the registry created at device init; pipelines are never created at draw time.");
+    }
 
+    // Kind mapping: Sdf → sdf_fragment, TexturedA8 → textured_fragment, TexturedRgba → textured_rgba_fragment.
+    private void CreatePipelineState(ulong pixelFormat, RhiPipelineKind kind)
+    {
         var descriptor = ObjC.Send(ObjC.Send(ObjC.objc_getClass("MTLRenderPipelineDescriptor"), Sel("alloc")), Sel("init"));
         ObjC.SendVoid(descriptor, Sel("setVertexFunction:"), _vertexFn);
         ObjC.SendVoid(descriptor, Sel("setFragmentFunction:"), kind switch
@@ -148,23 +181,70 @@ public sealed class MetalDevice : IRhiDevice
         ObjC.SendVoid(attachment, Sel("setDestinationRGBBlendFactor:"), factorOneMinusSourceAlpha);
         ObjC.SendVoid(attachment, Sel("setDestinationAlphaBlendFactor:"), factorOneMinusSourceAlpha);
 
+        // The cross-launch cache (D3 tail): with the archive attached, creation is a lookup on
+        // every launch after the first; on the first, the compiled PSO is added for serialization.
+        if (_binaryArchive != IntPtr.Zero)
+            ObjC.SendVoid(descriptor, Sel("setBinaryArchives:"),
+                ObjC.Send(ObjC.objc_getClass("NSArray"), Sel("arrayWithObject:"), _binaryArchive));
+
         var pipeline = ObjC.Send(_device, Sel("newRenderPipelineStateWithDescriptor:error:"),
             descriptor, out var pipelineError);
         if (pipeline == IntPtr.Zero)
             throw new InvalidOperationException(
                 $"Pipeline creation failed: {DescribeError(pipelineError)}");
+        if (_binaryArchive != IntPtr.Zero && !_binaryArchiveExisted)
+            ObjC.SendBool(_binaryArchive, Sel("addRenderPipelineFunctionsWithDescriptor:error:"), descriptor, out _);
         _pipelines[(pixelFormat, kind)] = pipeline;
-        return pipeline;
     }
 
-    /// <summary>Loads the embedded offline-compiled metallib (dispatch_data with the DEFAULT
-    /// destructor — libdispatch copies the buffer). Zero = fall back to source compilation.</summary>
-    private IntPtr TryLoadPrecompiledLibrary()
+    /// <summary>Opens the on-disk binary archive for this shader fingerprint: loads it when
+    /// present, starts empty on first launch (or when the file is corrupt — deleted and rebuilt).
+    /// Zero on any failure — caching degrades, the device never does.</summary>
+    private (IntPtr Archive, string Path, bool Existed) TryOpenBinaryArchive(byte[] shaderBytes)
     {
-        using var stream = typeof(MetalDevice).Assembly.GetManifestResourceStream("Photon.Sdf.metallib");
-        if (stream is null) return IntPtr.Zero;
+        if (!PipelineCache.TryGetFile("Sdf", shaderBytes, ".metalarchive", out var path))
+            return (IntPtr.Zero, string.Empty, false);
+        var descriptorClass = ObjC.objc_getClass("MTLBinaryArchiveDescriptor");
+        if (descriptorClass == IntPtr.Zero) return (IntPtr.Zero, string.Empty, false);
+
+        var existed = File.Exists(path);
+        var descriptor = ObjC.Send(ObjC.Send(descriptorClass, Sel("alloc")), Sel("init"));
+        if (existed)
+            ObjC.SendVoid(descriptor, Sel("setUrl:"), FileUrl(path));
+        var archive = ObjC.Send(_device, Sel("newBinaryArchiveWithDescriptor:error:"), descriptor, out _);
+        if (archive == IntPtr.Zero && existed)
+        {
+            try { File.Delete(path); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+            ObjC.SendVoid(descriptor, Sel("setUrl:"), IntPtr.Zero);
+            archive = ObjC.Send(_device, Sel("newBinaryArchiveWithDescriptor:error:"), descriptor, out _);
+            existed = false;
+        }
+        return (archive, archive == IntPtr.Zero ? string.Empty : path, existed);
+    }
+
+    /// <summary>First launch only: persists the archive holding the whole fixed registry.</summary>
+    private void SerializeBinaryArchive()
+    {
+        if (_binaryArchive == IntPtr.Zero || _binaryArchiveExisted || _binaryArchivePath.Length == 0) return;
+        ObjC.SendBool(_binaryArchive, Sel("serializeToURL:error:"), FileUrl(_binaryArchivePath), out _);
+    }
+
+    private static IntPtr FileUrl(string path) =>
+        ObjC.Send(ObjC.objc_getClass("NSURL"), Sel("fileURLWithPath:"), ObjC.NSString(path));
+
+    private static byte[]? ReadResource(string name)
+    {
+        using var stream = typeof(MetalDevice).Assembly.GetManifestResourceStream(name);
+        if (stream is null) return null;
         var bytes = new byte[stream.Length];
         stream.ReadExactly(bytes);
+        return bytes;
+    }
+
+    /// <summary>Loads the offline-compiled metallib bytes (dispatch_data with the DEFAULT
+    /// destructor — libdispatch copies the buffer). Zero = fall back to source compilation.</summary>
+    private IntPtr LoadLibraryFromData(byte[] bytes)
+    {
         unsafe
         {
             fixed (byte* buffer = bytes)

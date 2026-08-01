@@ -666,6 +666,33 @@ Bun and the JS bundling chain, the TypeScript runtime.
   (real fences join the frame loop), 4096-draw uniform ring per pass, descriptor pool sized 1024
   pairs.
 
+- **2026-08-01 — D3 CLOSED: pipeline caching across launches on BOTH GPU backends — and D5's
+  assert is REAL.** The cross-launch cache the D3 entry left pending now exists through one
+  shared seam (`Engine/PipelineCache.cs`: cache directory — `EQ_PHOTON_CACHE_DIR` override for
+  tests/sandboxes/the future Android shell, else the platform user-cache location — file names
+  FINGERPRINTED by SHA-256 of the shader bytes, so a framework upgrade targets a fresh file and
+  stale siblings sweep; everything best-effort: an unwritable disk degrades to per-launch
+  compilation, never to a failed device). Metal: `MTLBinaryArchive` loaded from disk when
+  present (corrupt archives delete-and-rebuild), attached to every PSO descriptor via
+  `setBinaryArchives:` — creation is an archive LOOKUP on every launch after the first —
+  add+serialize on first boot; measured on this Mac: `Sdf-<hash>.metalarchive`, 92 KB, the whole
+  registry. Vulkan: `VkPipelineCache` seeded from the on-disk blob (the driver validates
+  vendor/device/UUID itself; a rejected blob retries empty), passed to every
+  `vkCreateGraphicsPipelines`, persisted on first boot. BOTH devices now build the ENTIRE fixed
+  registry AT INIT (Metal: RGBA8 + BGRA8 × 3 kinds; Vulkan: RGBA8 × 3 until the Android
+  swapchain adds its format) and `PipelineState`/`Pipeline` became pure lookups that THROW on a
+  miss — D5's "creating a pipeline at draw time is a bug by definition (asserted)" is now
+  literally asserted. `PipelineCacheTests` (per backend, skippable): the first device in a fresh
+  cache dir MUST persist the artifact; a second device consumes it and is judged against the
+  Reference on the busiest scene. Suites: native 329; window self-test 120/120 (the BGRA8
+  registry + archive live in the real window). NOTED/BLOCKED: the offscreen group-opacity
+  composite — the last rendering-correctness fence — needs a NEW Slang entry point
+  (`layer_composite`: premultiplied sample × layer alpha; the existing textured pipelines
+  premultiply straight-alpha texels and cannot express it), and slangc is NOT locatable on this
+  machine (Spotlight + deep search came up empty; the D3/W4b regens ran from a since-cleaned
+  location). Blocked until `EQ_SLANGC` points at a binary again — the W2 toolchain packaging
+  (slangc embedded per-platform like Bun) is what makes this structural instead of environmental.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
