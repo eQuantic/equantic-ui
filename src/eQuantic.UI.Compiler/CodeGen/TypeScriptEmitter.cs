@@ -492,6 +492,25 @@ public class TypeScriptEmitter
             componentTypes.Add(runtimeType);
         }
 
+        // APP-LEVEL types are a SOURCE for the same reason (the site dogfood found the hole): a
+        // static helper reached only through a member access (`Brand.Violet`, `Copy.Title`) never
+        // appears where the syntactic collectors look, so the module referenced it without importing
+        // it and the browser threw "<Type> is not defined" — with no build error. Only names the
+        // per-app scan KNOWS became modules are promoted, so this can never emit a dangling import.
+        if (_dependencyResolver != null)
+        {
+            foreach (var appType in component.AppTypes)
+            {
+                if (appType == component.Name) continue;
+                if (_dependencyResolver.GetAllStaticHelpers().Contains(appType)
+                    || _dependencyResolver.GetAllRecords().Contains(appType)
+                    || _dependencyResolver.GetAllComponents().Contains(appType))
+                {
+                    componentTypes.Add(appType);
+                }
+            }
+        }
+
         // AUTOMATIC DEPENDENCY RESOLUTION
         // Use dependency resolver to find transitive dependencies (e.g., Row → Flex). Runtime-provided
         // names must NOT seed it: the resolver is name-keyed over the per-app scan, so a vocabulary

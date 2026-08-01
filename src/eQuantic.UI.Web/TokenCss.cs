@@ -77,7 +77,13 @@ public static class TokenCss
     /// keep the DOM mode-free exactly like solid fills.</summary>
     public static string Gradient(LinearGradient gradient)
     {
-        var direction = gradient.Direction == GradientDirection.ToBottom ? "to bottom" : "to right";
+        var direction = gradient.Direction switch
+        {
+            GradientDirection.ToBottom => "to bottom",
+            GradientDirection.ToBottomRight => "to bottom right",
+            GradientDirection.ToBottomLeft => "to bottom left",
+            _ => "to right",
+        };
         return $"linear-gradient({direction}, {Value(gradient.From)}, {Value(gradient.To)})";
     }
 }

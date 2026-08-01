@@ -8,11 +8,26 @@
 
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 
-/** Companion of the C# `Color` struct — the statics transpiled code references. */
+/**
+ * Companion of the C# `Color` struct — the statics transpiled code references. The surface must
+ * MIRROR `Primitives/Color.cs` member for member: a missing member is not a type error anywhere
+ * (the transpiler routes `Color` to the runtime and trusts it), it is a module that fails to load
+ * in the browser. `fromRgba` was missing until the site dogfood defined a brand token with alpha
+ * and the page died with a misleading 404.
+ */
 export const Color = {
   transparent: { r: 0, g: 0, b: 0, a: 0 } as ColorValue,
+  black: { r: 0, g: 0, b: 0, a: 255 } as ColorValue,
+  white: { r: 255, g: 255, b: 255, a: 255 } as ColorValue,
   fromRgb(r: number, g: number, b: number): ColorValue {
     return { r, g, b, a: 255 };
+  },
+  fromRgba(r: number, g: number, b: number, a: number): ColorValue {
+    return { r, g, b, a };
+  },
+  /** Alpha scaled by `opacity` (0..1) — byte-rounded exactly like C# `Color.WithOpacity`. */
+  withOpacity(color: ColorValue, opacity: number): ColorValue {
+    return { ...color, a: Math.max(0, Math.min(255, Math.round(color.a * opacity))) };
   },
 };
 

@@ -177,8 +177,19 @@ async function loadPageModule(
   let module: Record<string, unknown>;
   try {
     module = await import(/* @vite-ignore */ modulePath);
-  } catch {
-    return null;
+  } catch (error) {
+    // A missing page module and a BROKEN one are different failures that used to look identical:
+    // swallowing the error rendered "404 — the resource does not exist" for a module that exists
+    // and threw while evaluating (a missing runtime companion member, say), sending the developer
+    // hunting for a routing bug. Only a genuine 404 is a missing page; anything else is re-thrown
+    // so renderError shows the real cause.
+    // Match the MESSAGE, never the type: a module that throws while evaluating usually throws a
+    // TypeError too ("X is not a function"), so `instanceof TypeError` would misfile exactly the
+    // case this distinction exists for. Only the fetch/resolve failures mean "no such page".
+    const missing = /failed to fetch dynamically imported module|error loading dynamically imported module|failed to resolve module/i
+      .test(String((error as Error)?.message ?? error));
+    if (missing) return null;
+    throw error;
   }
 
   const ComponentClass = module[pageName] as new () => MountableComponent;

@@ -152,6 +152,14 @@ public class ComponentDefinition
     /// emitter must not import them.
     /// </summary>
     public HashSet<string> EnumTypes { get; set; } = new();
+
+    /// <summary>
+    /// Simple names of referenced APP-LEVEL types — declared in this compilation's own source
+    /// (semantic-model discovered), as opposed to framework/BCL types that arrive as metadata.
+    /// Needed because a type reached only through a STATIC MEMBER (<c>Brand.Violet</c>) is invisible
+    /// to the syntactic collectors; the emitter imports the ones that actually became modules.
+    /// </summary>
+    public HashSet<string> AppTypes { get; set; } = new();
 }
 
 /// <summary>

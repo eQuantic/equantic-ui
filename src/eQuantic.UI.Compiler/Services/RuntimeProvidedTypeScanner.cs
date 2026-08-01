@@ -27,9 +27,19 @@ public static class RuntimeProvidedTypeScanner
         || ns.StartsWith("eQuantic.UI.Components.");
 
     /// <summary>Walks every identifier under <paramref name="root"/>, resolving symbols through
-    /// <paramref name="model"/>, and buckets runtime-provided type names and enum type names.</summary>
+    /// <paramref name="model"/>, and buckets runtime-provided type names, enum type names, and —
+    /// when <paramref name="appTypes"/> is supplied — APP-LEVEL types declared in this compilation's
+    /// own source.
+    ///
+    /// That third bucket exists for the same reason the runtime-provided one does (see
+    /// TypeScriptEmitter's "SOURCE, not just a filter" note): a type reached only through a STATIC
+    /// MEMBER (<c>Brand.Violet</c>, <c>Copy.Title</c>) is invisible to the syntactic collectors, so
+    /// without it the emitted module references a name it never imports and throws
+    /// "&lt;Type&gt; is not defined" in the browser — with NO build error. Instantiated types
+    /// (<c>new View()</c>) were already covered; static access was the hole.
+    /// </summary>
     public static void Collect(SyntaxNode root, SemanticModel model,
-        ISet<string> runtimeProvided, ISet<string> enumTypes)
+        ISet<string> runtimeProvided, ISet<string> enumTypes, ISet<string>? appTypes = null)
     {
         foreach (var identifier in root.DescendantNodes().OfType<IdentifierNameSyntax>())
         {
@@ -66,7 +76,16 @@ public static class RuntimeProvidedTypeScanner
             var isRuntimeProvided = IsRuntimeProvidedNamespace(ns)
                 || type.GetAttributes().Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute");
             if (isRuntimeProvided)
+            {
                 runtimeProvided.Add(type.Name);
+                continue;
+            }
+
+            // App-level types are the ones DECLARED IN SOURCE (framework and BCL types arrive as
+            // metadata from referenced assemblies) — a semantic distinction, never a name list.
+            // The emitter decides which of these actually became modules before importing them.
+            if (appTypes is not null && type.Locations.Any(l => l.IsInSource))
+                appTypes.Add(type.Name);
         }
     }
 }

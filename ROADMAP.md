@@ -167,6 +167,21 @@ on save) · **E2** inspection (click-to-select, highlight, component tree view, 
 · **E3** property panel with two-way C# editing · **E4** full visual editing (insert/move/delete
 from the component palette). Plan doc lands when the track starts.
 
+## Track L — Localization (multi-language, zero third-party)
+
+Added 2026-08-01 (Edgar's directive): multi-language must work with **only what .NET offers** — the
+developer localizes with `.resx` and the strongly-typed accessor exactly as in any .NET app, and
+never sees a JavaScript catalog or a framework DSL. The mechanical problem is that
+`ResourceManager` cannot run in the browser, so eqc bridges it at build time: resource accessors
+are REWRITTEN to a runtime lookup (never inlined — inlining would bake the build machine's culture
+into the bundle), used keys are emitted as per-culture catalogs, and the server ships the active
+culture through the same shell slot the theme already uses (`__EQ_THEME__` → `__EQ_CULTURE__`,
+applied before hydration so SSR identity holds). Native needs no bridge at all — Photon runs the
+same C# with satellite assemblies, which is the write-once payoff.
+
+Full design (decisions, workstreams, milestones, fences — including the honest hard parts: the
+culture-aware FORMATTING subset and 3+ form plurals) in `docs/I18N-PLAN.md`.
+
 ## Definition of "production-ready" (per pillar)
 - **0 JS**: any unsupported C# fails the build with a clear message; conformance suite green; C#
   debuggable in the browser.

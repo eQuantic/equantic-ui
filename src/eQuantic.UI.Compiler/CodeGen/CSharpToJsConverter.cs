@@ -241,6 +241,7 @@ public class CSharpToJsConverter
         _statementRegistry.Register<IfStatementStrategy>();
         _statementRegistry.Register<ForStatementStrategy>();
         _statementRegistry.Register<ForEachStatementStrategy>();
+        _statementRegistry.Register<ForEachVariableStatementStrategy>();
         _statementRegistry.Register<ReturnStatementStrategy>();
         _statementRegistry.Register<LocalDeclarationStrategy>();
         _statementRegistry.Register<ExpressionStatementStrategy>();

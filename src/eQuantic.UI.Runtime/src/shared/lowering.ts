@@ -369,7 +369,14 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
 
 /** Mirror of C# TokenCss.Gradient: 2-stop linear-gradient with light-dark() stops. */
 function gradientValue(gradient: LinearGradientValue): string {
-  const direction = gradient.direction === 'toBottom' ? 'to bottom' : 'to right';
+  const direction =
+    gradient.direction === 'toBottom'
+      ? 'to bottom'
+      : gradient.direction === 'toBottomRight'
+        ? 'to bottom right'
+        : gradient.direction === 'toBottomLeft'
+          ? 'to bottom left'
+          : 'to right';
   return `linear-gradient(${direction}, ${tokenValue(gradient.from)}, ${tokenValue(gradient.to)})`;
 }
 
