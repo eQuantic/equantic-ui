@@ -337,6 +337,11 @@ public static class PhotonRealizer
         {
             case Box box:
             {
+                // Spec S3 frosted glass: the backdrop blurs FIRST — under the shadow and the box's
+                // own translucent fill (the engine consumes this as a pass split).
+                if (box.Style.BackdropBlur > 0)
+                    builder.BackdropBlur(new RRect(node.Bounds, box.Style.CornerRadius), box.Style.BackdropBlur);
+
                 // §05: the analytic shadow draws under the fill (one per node, theme-resolved).
                 if (box.Style.Elevation > 0)
                 {

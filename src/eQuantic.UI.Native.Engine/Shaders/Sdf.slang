@@ -19,14 +19,20 @@ struct DrawUniforms
     float4 clipRadii; // tl, tr, br, bl
 };
 
-ConstantBuffer<DrawUniforms> u;
+[[vk::binding(0)]] ConstantBuffer<DrawUniforms> u;
 
 // W4b: the A8 coverage raster a Texture command samples (glyph blocks; images later). Bound only
 // by the textured pipeline; the SDF fragment never references it.
-Texture2D<float> coverageTexture;
+[[vk::binding(1)]] Texture2D<float> coverageTexture;
 
 // W4 images: straight-alpha color texture (sRGB view — samples arrive linear).
-Texture2D<float4> colorTexture;
+[[vk::binding(2)]] Texture2D<float4> colorTexture;
+
+// D6b: the engine's FIRST sampler — declared after the textures so its binding lands at 3 on the
+// SPIR-V side (declaration order assigns bindings). Only the FILTERED paths use it (the blur
+// chain here; scaled images later): glyph/icon/image rasters keep texel-exact Load, where nearest
+// is correct rather than a compromise. The backend binds nearest or linear per draw.
+[[vk::binding(3)]] SamplerState textureSampler;
 
 // ColorSpace.SrgbToLinear — the exact IEC 61966-2-1 piecewise curve.
 float srgbToLinear(float c)
@@ -166,6 +172,43 @@ float4 textured_fragment(float4 position: SV_Position) : SV_Target
     float a = srgb.a * coverage;
     float3 lin = float3(srgbToLinear(srgb.r), srgbToLinear(srgb.g), srgbToLinear(srgb.b)) * a;
     return float4(lin, a);
+}
+
+// DUAL-KAWASE BLUR (plan W3/D6b) — the two halves of the pyramid, each one fullscreen draw over
+// the DESTINATION with the source bound at binding 2 and the LINEAR sampler at binding 3. The tap
+// pattern transliterates Blur.cs (the normative math): 5 taps averaged /8 going down, 8 taps /12
+// coming up, offsets of half a destination texel carried in `gradient.xy` so the shader never
+// divides. Samples arrive LINEAR (the _sRGB view decodes before filtering — required by spec) and
+// premultiplied, exactly like the CPU twin.
+[shader("fragment")]
+float4 blur_down(float4 position: SV_Position) : SV_Target
+{
+    float2 uv = position.xy / (u.rect.zw * 2.0);
+    float2 half_ = u.gradient.xy;
+
+    float4 sum = colorTexture.Sample(textureSampler, uv) * 4.0;
+    sum += colorTexture.Sample(textureSampler, uv - half_);
+    sum += colorTexture.Sample(textureSampler, uv + half_);
+    sum += colorTexture.Sample(textureSampler, uv + float2(half_.x, -half_.y));
+    sum += colorTexture.Sample(textureSampler, uv - float2(half_.x, -half_.y));
+    return sum / 8.0;
+}
+
+[shader("fragment")]
+float4 blur_up(float4 position: SV_Position) : SV_Target
+{
+    float2 uv = position.xy / (u.rect.zw * 2.0);
+    float2 half_ = u.gradient.xy;
+
+    float4 sum = colorTexture.Sample(textureSampler, uv + float2(-half_.x * 2.0, 0.0));
+    sum += colorTexture.Sample(textureSampler, uv + float2(-half_.x, half_.y)) * 2.0;
+    sum += colorTexture.Sample(textureSampler, uv + float2(0.0, half_.y * 2.0));
+    sum += colorTexture.Sample(textureSampler, uv + float2(half_.x, half_.y)) * 2.0;
+    sum += colorTexture.Sample(textureSampler, uv + float2(half_.x * 2.0, 0.0));
+    sum += colorTexture.Sample(textureSampler, uv + float2(half_.x, -half_.y)) * 2.0;
+    sum += colorTexture.Sample(textureSampler, uv + float2(0.0, -half_.y * 2.0));
+    sum += colorTexture.Sample(textureSampler, uv + float2(-half_.x, -half_.y)) * 2.0;
+    return sum / 12.0;
 }
 
 // GROUP-OPACITY LAYER COMPOSITE (spec S1): draws an offscreen layer over the surface below at the

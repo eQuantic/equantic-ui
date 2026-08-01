@@ -655,6 +655,11 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     overflow: style.clip ? 'hidden' : undefined,
     // Spec S1 — group opacity, center-anchored static transform, one-axis-derives aspect ratio.
     opacity: style.opacity != null && style.opacity < 1 ? num(style.opacity) : undefined,
+    // Spec S3 frosted glass (native BackdropBlur pass-split twin); Safari still needs the prefix.
+    'backdrop-filter':
+      style.backdropBlur && style.backdropBlur > 0 ? `blur(${px(style.backdropBlur)})` : undefined,
+    '-webkit-backdrop-filter':
+      style.backdropBlur && style.backdropBlur > 0 ? `blur(${px(style.backdropBlur)})` : undefined,
     transform: style.transform ? transformValue(style.transform) : undefined,
     'aspect-ratio': style.aspectRatio && style.aspectRatio > 0 ? num(style.aspectRatio) : undefined,
   });

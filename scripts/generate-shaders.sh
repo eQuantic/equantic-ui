@@ -19,6 +19,19 @@ mkdir -p "$OUT"
 "$SLANGC" "$SRC" -target metal -o "$OUT/Sdf.metal"
 "$SLANGC" "$SRC" -target spirv -o "$OUT/Sdf.spv"
 
+# SINGLE-ENTRY SPIR-V per stage for the Vulkan backend. Multi-entry modules are the rarity that
+# breaks drivers — MoltenVK caches the SPIR-V→MSL conversion by the module BYTES plus state,
+# without the entry-point name, so same-state pipelines out of one module can silently run each
+# other's fragment. One entry per module is what the rest of the world ships; the explicit
+# [[vk::binding]] annotations keep binding numbers stable across the split files.
+mkdir -p "$OUT/spirv"
+for entry in fullscreen_vertex:vertex sdf_fragment:fragment textured_fragment:fragment \
+             textured_rgba_fragment:fragment layer_composite:fragment \
+             blur_down:fragment blur_up:fragment; do
+  name="${entry%%:*}"; stage="${entry##*:}"
+  "$SLANGC" "$SRC" -target spirv -entry "$name" -stage "$stage" -o "$OUT/spirv/$name.spv"
+done
+
 # Offline metallib (D3): zero runtime shader compilation on Metal. Requires the Xcode Metal
 # Toolchain (xcodebuild -downloadComponent MetalToolchain); skipped with a warning if absent.
 if xcrun metal --version >/dev/null 2>&1; then

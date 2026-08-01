@@ -13,6 +13,7 @@ internal sealed unsafe class VulkanCommandList : IRhiCommandList
     private readonly VulkanRenderTarget _target;
     private ulong _coverageView;
     private ulong _colorView;
+    private RhiFilter _filter = RhiFilter.Nearest;
 
     internal VulkanCommandList(VulkanDevice device, IntPtr commandBuffer, VulkanRenderTarget target)
     {
@@ -25,17 +26,18 @@ internal sealed unsafe class VulkanCommandList : IRhiCommandList
         Vk.vkCmdBindPipeline(_commandBuffer, 0 /* GRAPHICS */,
             _device.Pipeline(VulkanDevice.FormatR8G8B8A8Srgb, kind));
 
-    public void BindTexture(int slot, IRhiTexture texture)
+    public void BindTexture(int slot, IRhiTexture texture, RhiFilter filter = RhiFilter.Nearest)
     {
         var view = ((IVulkanBindable)texture).View;
         if (slot == RhiRenderer.CoverageSlot) _coverageView = view;
         else _colorView = view;
+        _filter = filter;
     }
 
     public void Draw(in DrawUniforms uniforms)
     {
         var dynamicOffset = _device.WriteUniforms(in uniforms);
-        var set = _device.DescriptorSetFor(_coverageView, _colorView);
+        var set = _device.DescriptorSetFor(_coverageView, _colorView, _device.Sampler(_filter));
         Vk.vkCmdBindDescriptorSets(_commandBuffer, 0 /* GRAPHICS */, _device.PipelineLayoutHandle,
             0, 1, &set, 1, &dynamicOffset);
         Vk.vkCmdDraw(_commandBuffer, 3, 1, 0, 0);

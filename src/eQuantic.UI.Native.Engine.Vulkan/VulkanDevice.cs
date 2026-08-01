@@ -28,7 +28,8 @@ public sealed unsafe class VulkanDevice : IRhiDevice
     private const int UniformCapacity = UniformStride * 4096;
 
     private static readonly RhiPipelineKind[] RegistryKinds =
-        [RhiPipelineKind.Sdf, RhiPipelineKind.TexturedA8, RhiPipelineKind.TexturedRgba, RhiPipelineKind.LayerComposite];
+        [RhiPipelineKind.Sdf, RhiPipelineKind.TexturedA8, RhiPipelineKind.TexturedRgba,
+         RhiPipelineKind.LayerComposite, RhiPipelineKind.BlurDown, RhiPipelineKind.BlurUp];
 
     private readonly IntPtr _instance;
     private readonly IntPtr _physicalDevice;
@@ -36,7 +37,8 @@ public sealed unsafe class VulkanDevice : IRhiDevice
     private readonly IntPtr _queue;
     private VkPhysicalDeviceMemoryProperties _memoryProperties;
     private readonly ulong _commandPool;
-    private readonly ulong _shaderModule;
+    private readonly ulong _vertexModule;
+    private readonly Dictionary<RhiPipelineKind, ulong> _fragmentModules = new();
     private readonly ulong _pipelineCache;
     private readonly string _pipelineCachePath = string.Empty;
     private readonly bool _pipelineCacheExisted;
@@ -50,7 +52,10 @@ public sealed unsafe class VulkanDevice : IRhiDevice
     private bool _encoding;
     private readonly Dictionary<uint, ulong> _renderPasses = new();
     private readonly Dictionary<(uint Format, RhiPipelineKind Kind), ulong> _pipelines = new();
-    private readonly Dictionary<(ulong Coverage, ulong Color), ulong> _descriptorSets = new();
+    private readonly ulong _nearestSampler;
+    private readonly ulong _linearSampler;
+    private readonly Dictionary<(ulong Coverage, ulong Color, ulong Sampler), ulong> _descriptorSets = new();
+    private readonly Stack<ulong> _freeDescriptorSets = new();
 
     public VulkanDevice()
     {
@@ -75,9 +80,22 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             Vk.Check(Vk.vkCreateCommandPool(_device, &poolInfo, IntPtr.Zero, &commandPool), "command pool creation");
             _commandPool = commandPool;
 
-            var shaderBytes = ReadShaderBytes();
-            _shaderModule = CreateShaderModule(shaderBytes);
+            // SINGLE-ENTRY SPIR-V per stage. A multi-entry module is the rarity that breaks
+            // drivers: MoltenVK caches the SPIR-V→MSL conversion by module BYTES + state, without
+            // the entry-point name, so same-state pipelines out of one module silently ran each
+            // other's fragment (a constant-red blur_down painted WHITE — sdf_fragment's colorA).
+            // Distinct handles over the same bytes did NOT fix it — the key is the bytes — so the
+            // build now emits one file per entry (explicit [[vk::binding]] keeps numbers stable),
+            // which is also simply what everyone ships.
+            var fingerprint = new List<byte>();
+            _vertexModule = CreateShaderModule(ReadStage("fullscreen_vertex", fingerprint));
+            foreach (var kind in RegistryKinds)
+                _fragmentModules[kind] = CreateShaderModule(ReadStage(FragmentStageName(kind), fingerprint));
+            var shaderBytes = fingerprint.ToArray();
             (_pipelineCache, _pipelineCachePath, _pipelineCacheExisted) = OpenPipelineCache(shaderBytes);
+            // D6b: the two fixed samplers precede the layout (its binding 3 references them).
+            _nearestSampler = CreateSampler(linear: false);
+            _linearSampler = CreateSampler(linear: true);
             _descriptorSetLayout = CreateDescriptorSetLayout();
             _pipelineLayout = CreatePipelineLayout();
             _descriptorPool = CreateDescriptorPool();
@@ -237,23 +255,53 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         return offset;
     }
 
-    /// <summary>The descriptor set for a (coverage, color) view pair — allocated and written once,
-    /// cached forever (sets are immutable; the ring buffer never moves). One of the pair is almost
-    /// always the encoder's 1×1 dummy, so the population is ≈ texture count + 1.</summary>
-    internal ulong DescriptorSetFor(ulong coverageView, ulong colorView)
+    /// <summary>
+    /// Drops (and recycles) every cached descriptor set that references the dying view — called by
+    /// a bindable's Dispose BEFORE <c>vkDestroyImageView</c>. Without this the cache outlives the
+    /// view, and because drivers REUSE handle values, a later lookup can hit a stale entry whose
+    /// set points at destroyed memory: an intermittent DEVICE_LOST, first seen when backdrop-blur
+    /// splits started churning render targets (and invisible under the validation layer, whose
+    /// wrapped handles never collide).
+    /// </summary>
+    internal void OnViewDestroyed(ulong view)
     {
-        if (_descriptorSets.TryGetValue((coverageView, colorView), out var cached)) return cached;
-
-        var layout = _descriptorSetLayout;
-        var allocateInfo = new VkDescriptorSetAllocateInfo
+        List<(ulong, ulong, ulong)>? dead = null;
+        foreach (var entry in _descriptorSets)
+            if (entry.Key.Coverage == view || entry.Key.Color == view)
+                (dead ??= new()).Add(entry.Key);
+        if (dead is null) return;
+        foreach (var key in dead)
         {
-            SType = VkStructureType.DescriptorSetAllocateInfo,
-            DescriptorPool = _descriptorPool,
-            DescriptorSetCount = 1,
-            PSetLayouts = &layout,
-        };
+            _freeDescriptorSets.Push(_descriptorSets[key]);
+            _descriptorSets.Remove(key);
+        }
+    }
+
+    /// <summary>The descriptor set for a (coverage, color) view pair — allocated and written once,
+    /// cached until a view it references is destroyed (see <see cref="OnViewDestroyed"/>; recycled
+    /// sets are rewritten here, which is safe because the offscreen path waits out every submit).
+    /// One of the pair is almost always the encoder's 1×1 dummy, so the population stays small.</summary>
+    internal ulong DescriptorSetFor(ulong coverageView, ulong colorView, ulong sampler)
+    {
+        if (_descriptorSets.TryGetValue((coverageView, colorView, sampler), out var cached)) return cached;
+
         ulong set;
-        Vk.Check(Vk.vkAllocateDescriptorSets(_device, &allocateInfo, &set), "descriptor set allocation");
+        if (_freeDescriptorSets.Count > 0)
+        {
+            set = _freeDescriptorSets.Pop();
+        }
+        else
+        {
+            var layout = _descriptorSetLayout;
+            var allocateInfo = new VkDescriptorSetAllocateInfo
+            {
+                SType = VkStructureType.DescriptorSetAllocateInfo,
+                DescriptorPool = _descriptorPool,
+                DescriptorSetCount = 1,
+                PSetLayouts = &layout,
+            };
+            Vk.Check(Vk.vkAllocateDescriptorSets(_device, &allocateInfo, &set), "descriptor set allocation");
+        }
 
         var bufferInfo = new VkDescriptorBufferInfo
         {
@@ -263,7 +311,8 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         };
         var coverageInfo = new VkDescriptorImageInfo { ImageView = coverageView, ImageLayout = 5 };
         var colorInfo = new VkDescriptorImageInfo { ImageView = colorView, ImageLayout = 5 };
-        var writes = stackalloc VkWriteDescriptorSet[3];
+        var samplerInfo = new VkDescriptorImageInfo { Sampler = sampler };
+        var writes = stackalloc VkWriteDescriptorSet[4];
         writes[0] = new VkWriteDescriptorSet
         {
             SType = VkStructureType.WriteDescriptorSet,
@@ -285,8 +334,15 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             DescriptorType = 2,
             PImageInfo = &colorInfo,
         };
-        Vk.vkUpdateDescriptorSets(_device, 3, writes, 0, IntPtr.Zero);
-        _descriptorSets[(coverageView, colorView)] = set;
+        writes[3] = new VkWriteDescriptorSet
+        {
+            SType = VkStructureType.WriteDescriptorSet,
+            DstSet = set, DstBinding = 3, DescriptorCount = 1,
+            DescriptorType = 0, // SAMPLER
+            PImageInfo = &samplerInfo,
+        };
+        Vk.vkUpdateDescriptorSets(_device, 4, writes, 0, IntPtr.Zero);
+        _descriptorSets[(coverageView, colorView, sampler)] = set;
         return set;
     }
 
@@ -321,27 +377,24 @@ public sealed unsafe class VulkanDevice : IRhiDevice
 
     private void CreatePipeline(uint format, RhiPipelineKind kind)
     {
-        var fragmentEntry = kind switch
-        {
-            RhiPipelineKind.TexturedA8 => "textured_fragment",
-            RhiPipelineKind.TexturedRgba => "textured_rgba_fragment",
-            RhiPipelineKind.LayerComposite => "layer_composite",
-            _ => "sdf_fragment",
-        };
-        var vertexName = Marshal.StringToCoTaskMemUTF8("fullscreen_vertex");
-        var fragmentName = Marshal.StringToCoTaskMemUTF8(fragmentEntry);
+        // Single-entry modules all expose "main" — WHICH code runs is chosen by the module
+        // (FragmentStageName), never by a name switch here. The old per-entry name switch is
+        // exactly what broke the blur kinds: they fell into its default and silently ran
+        // sdf_fragment.
+        var vertexName = Marshal.StringToCoTaskMemUTF8("main");
+        var fragmentName = Marshal.StringToCoTaskMemUTF8("main");
         try
         {
             var stages = stackalloc VkPipelineShaderStageCreateInfo[2];
             stages[0] = new VkPipelineShaderStageCreateInfo
             {
                 SType = VkStructureType.PipelineShaderStageCreateInfo,
-                Stage = 0x1, Module = _shaderModule, PName = vertexName,
+                Stage = 0x1, Module = _vertexModule, PName = vertexName,
             };
             stages[1] = new VkPipelineShaderStageCreateInfo
             {
                 SType = VkStructureType.PipelineShaderStageCreateInfo,
-                Stage = 0x10, Module = _shaderModule, PName = fragmentName,
+                Stage = 0x10, Module = _fragmentModules[kind], PName = fragmentName,
             };
             var vertexInput = new VkPipelineVertexInputStateCreateInfo
             {
@@ -367,10 +420,12 @@ public sealed unsafe class VulkanDevice : IRhiDevice
                 SType = VkStructureType.PipelineMultisampleStateCreateInfo,
                 RasterizationSamples = 0x1,
             };
-            // Premultiplied source-over: dst' = src + dst · (1 − src.A) — LinearColor.Over, in hardware.
+            // Premultiplied source-over — except the blur kinds, whose levels REPLACE their
+            // target (there is no destination to blend with inside the pyramid).
+            var blends = kind is not (RhiPipelineKind.BlurDown or RhiPipelineKind.BlurUp);
             var blendAttachment = new VkPipelineColorBlendAttachmentState
             {
-                BlendEnable = 1,
+                BlendEnable = blends ? 1u : 0u,
                 SrcColorBlendFactor = 1, DstColorBlendFactor = 7, ColorBlendOp = 0,
                 SrcAlphaBlendFactor = 1, DstAlphaBlendFactor = 7, AlphaBlendOp = 0,
                 ColorWriteMask = 0xF,
@@ -530,6 +585,12 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             MipLevels = 1,
             ArrayLayers = 1,
             Samples = 0x1,
+            // This assignment was MISSING from the backend's first day: every image was created
+            // with usage 0 — invalid per spec, so behavior was undefined — and MoltenVK happened
+            // to tolerate it for attachment/Load use, which is why 44 parity scenes were green.
+            // The blur was the first path that truly depended on SAMPLED, and the validation layer
+            // (first run today) called it out as "pCreateInfo->usage is zero".
+            Usage = usage,
         };
         ulong image;
         Vk.Check(Vk.vkCreateImage(_device, &imageInfo, IntPtr.Zero, &image), "image creation");
@@ -664,12 +725,43 @@ public sealed unsafe class VulkanDevice : IRhiDevice
 
     // ── Fixed init pieces ───────────────────────────────────────────────────────────────────────
 
-    private static byte[] ReadShaderBytes()
+    internal ulong Sampler(RhiFilter filter) => filter == RhiFilter.Linear ? _linearSampler : _nearestSampler;
+
+    private ulong CreateSampler(bool linear)
     {
-        using var stream = typeof(VulkanDevice).Assembly.GetManifestResourceStream("Photon.Sdf.spv")
-            ?? throw new InvalidOperationException("Embedded SPIR-V module 'Photon.Sdf.spv' missing.");
+        var filter = linear ? 1u : 0u;
+        var createInfo = new VkSamplerCreateInfo
+        {
+            SType = VkStructureType.SamplerCreateInfo,
+            MagFilter = filter,
+            MinFilter = filter,
+            AddressModeU = 2, // CLAMP_TO_EDGE — matches the CPU twin's uv clamp
+            AddressModeV = 2,
+            AddressModeW = 2,
+        };
+        ulong sampler;
+        Vk.Check(Vk.vkCreateSampler(_device, &createInfo, IntPtr.Zero, &sampler), "sampler creation");
+        return sampler;
+    }
+
+    private static string FragmentStageName(RhiPipelineKind kind) => kind switch
+    {
+        RhiPipelineKind.TexturedA8 => "textured_fragment",
+        RhiPipelineKind.TexturedRgba => "textured_rgba_fragment",
+        RhiPipelineKind.LayerComposite => "layer_composite",
+        RhiPipelineKind.BlurDown => "blur_down",
+        RhiPipelineKind.BlurUp => "blur_up",
+        _ => "sdf_fragment",
+    };
+
+    /// <summary>Reads one stage's SPIR-V and folds its bytes into the pipeline-cache fingerprint.</summary>
+    private static byte[] ReadStage(string name, List<byte> fingerprint)
+    {
+        using var stream = typeof(VulkanDevice).Assembly.GetManifestResourceStream($"Photon.spirv.{name}.spv")
+            ?? throw new InvalidOperationException($"Embedded SPIR-V stage 'Photon.spirv.{name}.spv' missing.");
         var bytes = new byte[stream.Length];
         stream.ReadExactly(bytes);
+        fingerprint.AddRange(bytes);
         return bytes;
     }
 
@@ -693,7 +785,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
     {
         // The ONE normative shader's interface (set 0): binding 0 = DrawUniforms (dynamic UBO),
         // binding 1 = coverageTexture, binding 2 = colorTexture — pinned by the committed SPIR-V.
-        var bindings = stackalloc VkDescriptorSetLayoutBinding[3];
+        var bindings = stackalloc VkDescriptorSetLayoutBinding[4];
         bindings[0] = new VkDescriptorSetLayoutBinding
         {
             Binding = 0, DescriptorType = 8 /* UNIFORM_BUFFER_DYNAMIC */, DescriptorCount = 1,
@@ -707,10 +799,14 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         {
             Binding = 2, DescriptorType = 2, DescriptorCount = 1, StageFlags = 0x10,
         };
+        bindings[3] = new VkDescriptorSetLayoutBinding
+        {
+            Binding = 3, DescriptorType = 0 /* SAMPLER (D6b) */, DescriptorCount = 1, StageFlags = 0x10,
+        };
         var createInfo = new VkDescriptorSetLayoutCreateInfo
         {
             SType = VkStructureType.DescriptorSetLayoutCreateInfo,
-            BindingCount = 3,
+            BindingCount = 4,
             PBindings = bindings,
         };
         ulong layout;
@@ -734,14 +830,15 @@ public sealed unsafe class VulkanDevice : IRhiDevice
 
     private ulong CreateDescriptorPool()
     {
-        var sizes = stackalloc VkDescriptorPoolSize[2];
+        var sizes = stackalloc VkDescriptorPoolSize[3];
         sizes[0] = new VkDescriptorPoolSize { Type = 8, DescriptorCount = 1024 };
         sizes[1] = new VkDescriptorPoolSize { Type = 2, DescriptorCount = 2048 };
+        sizes[2] = new VkDescriptorPoolSize { Type = 0, DescriptorCount = 1024 };
         var createInfo = new VkDescriptorPoolCreateInfo
         {
             SType = VkStructureType.DescriptorPoolCreateInfo,
             MaxSets = 1024, // (coverage, color) pairs ≈ live textures + 1 — orders above scene scale
-            PoolSizeCount = 2,
+            PoolSizeCount = 3,
             PPoolSizes = sizes,
         };
         ulong pool;
@@ -772,7 +869,19 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         var layers = new List<string>();
         if (Environment.GetEnvironmentVariable("EQ_VULKAN_VALIDATION") == "1" &&
             LayerPresent("VK_LAYER_KHRONOS_validation"))
+        {
+            // DEV-ONLY plumbing: the brew layer manifest carries a bare file name, which the
+            // loader dlopens against the process's DYLD paths — and a .NET host has no
+            // /opt/homebrew/lib there, so instance creation dies with LAYER_NOT_PRESENT even
+            // though enumeration (manifest-only) lists it. Pre-loading the dylib lets the
+            // loader's by-name dlopen resolve against the already-loaded image.
+            foreach (var candidate in (string[])
+                     ["/opt/homebrew/lib/libVkLayer_khronos_validation.dylib",
+                      "/usr/local/lib/libVkLayer_khronos_validation.dylib"])
+                if (System.Runtime.InteropServices.NativeLibrary.TryLoad(candidate, out _))
+                    break;
             layers.Add("VK_LAYER_KHRONOS_validation");
+        }
 
         using var extensionNames = new Utf8StringArray(extensions);
         using var layerNames = new Utf8StringArray(layers);
@@ -943,10 +1052,13 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             foreach (var pipeline in _pipelines.Values) Vk.vkDestroyPipeline(_device, pipeline, IntPtr.Zero);
             if (_pipelineCache != 0) Vk.vkDestroyPipelineCache(_device, _pipelineCache, IntPtr.Zero);
             foreach (var renderPass in _renderPasses.Values) Vk.vkDestroyRenderPass(_device, renderPass, IntPtr.Zero);
+            Vk.vkDestroySampler(_device, _nearestSampler, IntPtr.Zero);
+            Vk.vkDestroySampler(_device, _linearSampler, IntPtr.Zero);
             Vk.vkDestroyDescriptorPool(_device, _descriptorPool, IntPtr.Zero); // reclaims every set
             Vk.vkDestroyPipelineLayout(_device, _pipelineLayout, IntPtr.Zero);
             Vk.vkDestroyDescriptorSetLayout(_device, _descriptorSetLayout, IntPtr.Zero);
-            Vk.vkDestroyShaderModule(_device, _shaderModule, IntPtr.Zero);
+            Vk.vkDestroyShaderModule(_device, _vertexModule, IntPtr.Zero);
+            foreach (var module in _fragmentModules.Values) Vk.vkDestroyShaderModule(_device, module, IntPtr.Zero);
             Vk.vkDestroyCommandPool(_device, _commandPool, IntPtr.Zero);
             Vk.vkDestroyDevice(_device, IntPtr.Zero);
         }

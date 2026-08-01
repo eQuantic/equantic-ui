@@ -129,6 +129,11 @@ public class HtmlStyle
     #region Effects
 
     public string? BoxShadow { get; set; }
+
+    /// <summary>Emitted as BOTH <c>backdrop-filter</c> and <c>-webkit-backdrop-filter</c> — Safari
+    /// still requires the prefix, and the atomizer dedupes each declaration independently.</summary>
+    public string? BackdropFilter { get; set; }
+
     public string? Opacity { get; set; }
     public string? Cursor { get; set; }
     public string? Overflow { get; set; }
@@ -238,6 +243,8 @@ public class HtmlStyle
 
         AddProperty(properties, "box-shadow", BoxShadow);
         AddProperty(properties, "opacity", Opacity);
+        AddProperty(properties, "backdrop-filter", BackdropFilter);
+        AddProperty(properties, "-webkit-backdrop-filter", BackdropFilter);
         AddProperty(properties, "cursor", Cursor);
         AddProperty(properties, "overflow", Overflow);
         AddProperty(properties, "overflow-x", OverflowX);

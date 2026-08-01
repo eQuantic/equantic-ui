@@ -460,6 +460,8 @@ public static class WebRealizer
                 // Spec S1 — group opacity (native PushLayer twin), the center-anchored static
                 // transform (paint-only), and the one-axis-derives aspect ratio.
                 Opacity = style.Opacity is { } alpha && alpha < 1f ? TokenCss.Number(alpha) : null,
+                // Spec S3 frosted glass (native BackdropBlur pass-split twin).
+                BackdropFilter = style.BackdropBlur > 0 ? $"blur({TokenCss.Px(style.BackdropBlur)})" : null,
                 Transform = style.Transform is { } transform ? TokenCss.Transform(transform) : null,
                 AspectRatio = style.AspectRatio > 0 ? TokenCss.Number(style.AspectRatio) : null,
             },

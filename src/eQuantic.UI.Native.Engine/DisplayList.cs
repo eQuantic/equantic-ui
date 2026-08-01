@@ -28,6 +28,16 @@ public enum DrawCommandKind : byte
     /// (<see cref="DrawCommand.TextureId"/>) as coverage, tinted by the paint color — text
     /// blocks and (later) images. Nearest sampling: rasters are generated at device scale.</summary>
     Texture = 6,
+
+    /// <summary>
+    /// Frosted glass (W3): everything drawn SO FAR, blurred by the dual-Kawase pyramid at
+    /// <see cref="DrawCommand.StrokeWidth"/> (device px), composites back INSIDE
+    /// <see cref="DrawCommand.Clip"/> — the region rrect, baked to device space by the builder
+    /// exactly like a clip. Draw it BEFORE the translucent fill that sits on the glass. FENCE: only
+    /// honored at the top level — inside a group-opacity layer the command is skipped (the layer is
+    /// isolated from the backdrop; blurring through it needs the layer's own backdrop chain).
+    /// </summary>
+    BackdropBlur = 7,
 }
 
 /// <summary>
@@ -214,6 +224,36 @@ public sealed class DisplayListBuilder
             StrokeWidth = blur,
             Transform = _current,
             Clip = _clip,
+        });
+    }
+
+    /// <summary>
+    /// Records a frosted-glass region: everything drawn so far blurs by <paramref name="radius"/>
+    /// (local px — scaled to device here) inside <paramref name="shape"/>, whose rrect is baked to
+    /// device space with the same math as <see cref="PushClip"/> and intersected with the ambient
+    /// clip. Record it BEFORE the glass surface's own translucent fill.
+    /// </summary>
+    public void BackdropBlur(in RRect shape, float radius)
+    {
+        var scale = _current.AverageScale();
+        if (radius * scale <= 0) return;
+        var normalized = shape.Normalized();
+        var deviceRect = _current.TransformBounds(normalized.Rect);
+        var radii = new CornerRadii(
+            normalized.Radii.TopLeft * scale, normalized.Radii.TopRight * scale,
+            normalized.Radii.BottomRight * scale, normalized.Radii.BottomLeft * scale);
+        var device = new RRect(deviceRect, radii).Normalized();
+        var region = _clip is { } outer
+            ? new RRect(outer.Rect.Intersect(device.Rect), device.Radii).Normalized()
+            : device;
+        if (region.Rect.IsEmpty) return;
+        _commands.Add(new DrawCommand
+        {
+            Kind = DrawCommandKind.BackdropBlur,
+            Shape = normalized,
+            StrokeWidth = radius * scale,
+            Transform = _current,
+            Clip = region,
         });
     }
 

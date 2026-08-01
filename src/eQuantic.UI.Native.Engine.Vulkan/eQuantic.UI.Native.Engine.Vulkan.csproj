@@ -15,7 +15,7 @@
     <!-- The Slang-GENERATED SPIR-V (plan D3): one normative source (Engine/Shaders/Sdf.slang)
          compiled offline — all four entry points ship in one module (SPIR-V 1.5 → Vulkan 1.2),
          loaded once at device init. Zero runtime shader compilation. -->
-    <EmbeddedResource Include="..\eQuantic.UI.Native.Engine\Shaders\Generated\Sdf.spv" LogicalName="Photon.Sdf.spv" />
+    <EmbeddedResource Include="..\eQuantic.UI.Native.Engine\Shaders\Generated\spirv\*.spv" LogicalName="Photon.spirv.%(Filename).spv" />
   </ItemGroup>
 
   <ItemGroup>

@@ -28,8 +28,13 @@ internal sealed class MetalCommandList : IRhiCommandList
     public void SetPipeline(RhiPipelineKind kind) =>
         ObjC.SendVoid(_encoder, Sel("setRenderPipelineState:"), _device.PipelineState(_pixelFormat, kind));
 
-    public void BindTexture(int slot, IRhiTexture texture) =>
+    public void BindTexture(int slot, IRhiTexture texture, RhiFilter filter = RhiFilter.Nearest)
+    {
         ObjC.SendVoid(_encoder, Sel("setFragmentTexture:atIndex:"), ((IMetalBindable)texture).Texture, (ulong)slot);
+        // ONE sampler slot serves every entry point (the shader declares a single SamplerState);
+        // the filtered paths read through it, the Load paths never notice.
+        ObjC.SendVoid(_encoder, Sel("setFragmentSamplerState:atIndex:"), _device.Sampler(filter), 0ul);
+    }
 
     public void Draw(in DrawUniforms uniforms)
     {

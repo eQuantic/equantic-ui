@@ -750,6 +750,38 @@ Bun and the JS bundling chain, the TypeScript runtime.
   This is the machinery `backdrop-blur` needs — the blur chain renders into these same offscreen
   targets — so the next slice is the dual-Kawase (plan W3), not new plumbing.
 
+- **2026-08-01 — W3 lands end-to-end: dual-Kawase blur + BackdropBlur, CPU-normative on three
+  backends, and the Hero pill is real frosted glass.** The pyramid's normative math lives in
+  `Blur.cs` — 5-tap /8 downsample, 8-tap /12 upsample, half-DESTINATION-texel offsets,
+  `Levels(radius)` clamped at 4 — operating on premultiplied sRGB8 (`BlurImage`) and re-encoding
+  per level, because that is precisely where the GPU quantizes (its levels are stored render
+  targets); quantize anywhere else and the parity gate notices. The shader twins transliterate the
+  taps; `RhiRenderer.Blur` walks the same pyramid through the D6b LINEAR sampler. On top of it,
+  `DrawCommandKind.BackdropBlur` (radius in the StrokeWidth slot, region rrect baked device-space
+  into the Clip slot by the builder — the PushClip math) splits the frame: content-so-far renders
+  offscreen, blurs, and composites back through `layer_composite`'s clipped path, before drawing
+  continues. The Reference twin snapshots via `ReadPixelsPremultipliedSrgb`, runs `Blur.Apply`,
+  and source-overs under the rrect's AA coverage — same math, same order. Fence (both targets,
+  by decision not accident): a backdrop inside a group-opacity layer is skipped — CSS opacity
+  isolates the backdrop root the same way. Vocabulary: `BoxStyle.BackdropBlur` → CSS
+  `backdrop-filter` + `-webkit-` twin on web (pinned C#↔TS), one engine command on Photon
+  (pinned in `S3BackdropBlurNativeTests`). Golden `backdrop-blur` (two stacked glass splits) is
+  green on Reference + Metal + Vulkan.
+  TWO real bugs died en route, both mine, neither MoltenVK's:
+  (1) `CreatePipeline`'s fragment-entry `switch` never learned the blur kinds — they fell into
+  `_ => "sdf_fragment"` and the GPU faithfully ran the wrong shader (transparent with ColorA=0,
+  white with ColorA=1 — the "signature" that briefly looked like a driver cache collision). The
+  name switch is GONE: the build now emits ONE single-entry SPIR-V per stage (explicit
+  `[[vk::binding]]` keeps numbers stable across the split files), every module exposes `main`,
+  and WHICH code runs is chosen by the module — the shape everyone ships, immune to the whole
+  bug class.
+  (2) The Vulkan descriptor-set cache was keyed by VIEW HANDLE and never invalidated: destroy a
+  target, let the driver reuse the handle, and a later lookup returns a set pointing at freed
+  memory — intermittent DEVICE_LOST that the validation layer HIDES (wrapped handles never
+  collide). Disposal now funnels through `OnViewDestroyed`, which drops the entries and recycles
+  their sets. The backdrop splits churn targets hard enough that a 20-iteration soak now covers
+  what the old tests never exercised.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
