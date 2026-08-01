@@ -138,6 +138,10 @@ export interface BoxStyleValue {
   opacity?: number | null;
   /** Spec S3 frosted glass: backdrop blur radius in logical px (CSS backdrop-filter / native pass split). */
   backdropBlur?: number;
+  /** Custom shadow (glow/halo — full spec, composes with elevation). */
+  shadow?: ShadowSpecValue | null;
+  /** The 1px inner top highlight (glossy buttons) — an inset box-shadow entry. */
+  insetHighlight?: ColorTokenValue | null;
   /** Spec S1 static transform, center-anchored, paint-only (CSS transform twin). */
   transform?: TransformValue | null;
   /** Spec S1 width ÷ height constraint; one determined axis derives the other. 0/undefined = none. */
@@ -155,6 +159,16 @@ export interface StyleDiffValue {
   borderWidth?: number | null;
   elevation?: number | null;
   opacity?: number | null;
+  /** Swaps the gradient fill while active (gradient-button hover). */
+  gradient?: LinearGradientValue | null;
+}
+
+/** Wire shape of the C# `ShadowSpec` (offsetY, blur, spread, color). */
+export interface ShadowSpecValue {
+  offsetY: number;
+  blur: number;
+  spread: number;
+  color: ColorTokenValue;
 }
 
 /** Wire shape of the C# `Transform2D`: components applied translate → rotate → scale. */
@@ -240,6 +254,17 @@ export interface TextNode extends VisualNodeValue {
   gradient?: LinearGradientValue | null;
   /** Line alignment within the paragraph ('start' | 'center' | 'end') — CSS text-align twin. */
   align?: string;
+  /** Monospace face (code, versions) — the platform mono stack on web. */
+  mono?: boolean;
+  /** Rich inline runs — rendered instead of `content` when present (wire of C# Text.Spans). */
+  spans?: TextRunValue[] | null;
+}
+
+/** Wire shape of the C# `TextRun` — one inline run of a rich Text. */
+export interface TextRunValue {
+  content: string;
+  color?: ColorTokenValue | null;
+  mono?: boolean;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */

@@ -55,7 +55,6 @@ describe('transpiled SharedCounter (real eqc output, direct-SetState shape)', ()
 
   it('runs the transpiled generator: the yielded cells render', () => {
     const node = new SharedCounter().render();
-    const texts = node.children.map((c) => c.children?.[0]).filter(Boolean);
     const flat = JSON.stringify(node);
     expect(flat).toContain('"a"');
     expect(flat).toContain('"b"');

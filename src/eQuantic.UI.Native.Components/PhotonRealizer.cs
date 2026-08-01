@@ -353,6 +353,14 @@ public static class PhotonRealizer
                     }
                 }
 
+                // CUSTOM shadow (glows, halos): the same analytic rrect shadow with the caller's
+                // full spec — composes with the neutral elevation above.
+                if (box.Style.Shadow is { } custom)
+                {
+                    builder.ShadowRRect(new RRect(node.Bounds, box.Style.CornerRadius),
+                        custom.OffsetY, custom.Blur, custom.Spread, custom.Color.Resolve(mode));
+                }
+
                 var fill = press.PendingFill ?? box.Style.Background;
                 press.PendingFill = null;
                 var borderColor = box.Style.BorderColor;
@@ -717,7 +725,7 @@ public static class PhotonRealizer
         {
             var style = text.StyleOverride ?? theme.Type(text.Role);
             var raster = (motion.TextCache ?? TextRasterCache.Shared).Get(
-                rasterizer, text.Content, style, motion.TypeScale, node.Bounds.Width, text.MaxLines, motion.RenderScale);
+                rasterizer, text.PlainContent, style, motion.TypeScale, node.Bounds.Width, text.MaxLines, motion.RenderScale);
             if (raster is not null)
             {
                 var rect = new Rect(node.Bounds.X, node.Bounds.Y,

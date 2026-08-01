@@ -58,10 +58,38 @@ public class CastExpressionStrategy : IConversionStrategy
         var inner = context.Converter.ConvertExpression(cast.Expression);
         var type = cast.Type.ToString();
 
-        // Specific cases for numeric truncation
-        if (type == "int" || type == "long" || type == "short" || type == "byte")
+        // Integral casts carry C#'s RANGE WRAPPING, not just float truncation: `(byte)(rgb >> 8)`
+        // keeps only the low 8 bits. Emitting bare Math.trunc left the high bits in — found when
+        // every brand color built through `Color.FromRgb((byte)(v >> 16), …)` corrupted on the
+        // client (#9b8cff became #9b9b8c9b8cff) while the C# SSR was fine.
+        // A NULLABLE target keeps C#'s null propagation: `(int?)null` is null, never 0 — the
+        // wrap only applies to a non-null operand (IIFE avoids double evaluation).
+        var special = UnwrapNullable(targetType)?.SpecialType;
+        var nullableTarget = targetType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T };
+        string? wrapped = special switch
         {
-            return $"Math.trunc({inner})";
+            SpecialType.System_Byte => WrapIntegral(inner, "(Math.trunc({0}) & 0xFF)", nullableTarget),
+            SpecialType.System_SByte => WrapIntegral(inner, "((Math.trunc({0}) << 24) >> 24)", nullableTarget),
+            SpecialType.System_Int16 => WrapIntegral(inner, "((Math.trunc({0}) << 16) >> 16)", nullableTarget),
+            SpecialType.System_UInt16 => WrapIntegral(inner, "(Math.trunc({0}) & 0xFFFF)", nullableTarget),
+            SpecialType.System_Int32 => WrapIntegral(inner, "(Math.trunc({0}) | 0)", nullableTarget),
+            SpecialType.System_UInt32 => WrapIntegral(inner, "(Math.trunc({0}) >>> 0)", nullableTarget),
+            // 64-bit wrapping has no plain-number twin; truncation is the JS-representable part.
+            SpecialType.System_Int64 or SpecialType.System_UInt64 => WrapIntegral(inner, "Math.trunc({0})", nullableTarget),
+            _ => null,
+        };
+        if (wrapped != null) return wrapped;
+
+        // No semantic model — fall back on the spelled type (same table).
+        switch (type)
+        {
+            case "byte": return $"(Math.trunc({inner}) & 0xFF)";
+            case "sbyte": return $"((Math.trunc({inner}) << 24) >> 24)";
+            case "short": return $"((Math.trunc({inner}) << 16) >> 16)";
+            case "ushort": return $"(Math.trunc({inner}) & 0xFFFF)";
+            case "int": return $"(Math.trunc({inner}) | 0)";
+            case "uint": return $"(Math.trunc({inner}) >>> 0)";
+            case "long" or "ulong": return $"Math.trunc({inner})";
         }
 
         if (type == "string")
@@ -71,6 +99,15 @@ public class CastExpressionStrategy : IConversionStrategy
 
         // Default passthrough for other types (compile-time assertion)
         return inner;
+    }
+
+    /// <summary>The integral wrap, null-propagating when the TARGET is nullable — `(int?)x` is
+    /// null for a null x (an IIFE binds the operand once; `{0}` is the format slot).</summary>
+    private static string WrapIntegral(string inner, string format, bool nullableTarget)
+    {
+        if (!nullableTarget) return string.Format(CultureInfo.InvariantCulture, format, inner);
+        var body = string.Format(CultureInfo.InvariantCulture, format, "__v");
+        return $"((__v) => __v == null ? null : {body})({inner})";
     }
 
     private static ITypeSymbol? UnwrapNullable(ITypeSymbol? type)

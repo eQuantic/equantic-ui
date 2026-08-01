@@ -59,6 +59,10 @@ public sealed class Box : VisualNode
 /// </summary>
 public readonly record struct BoxStyle
 {
+    // Required by CS8983: a struct with property initializers (HaloBlur's default) must declare
+    // its parameterless constructor explicitly.
+    public BoxStyle() { }
+
     public SizeValue Width { get; init; }
     public SizeValue Height { get; init; }
     public float MinWidth { get; init; }
@@ -118,6 +122,22 @@ public readonly record struct BoxStyle
     public float BackdropBlur { get; init; }
 
     /// <summary>
+    /// CUSTOM shadow (the design's <c>shadow-glow</c>, colored button glows, halos) — a full
+    /// <see cref="ShadowSpec"/> (offset/blur/spread/color), distinct from <see cref="Elevation"/>'s
+    /// theme-laddered neutral depth (they compose into one shadow list). A centered halo is
+    /// <c>new ShadowSpec(0, blur, 0, color)</c>. Photon draws it with the same analytic rrect
+    /// shadow the elevation system uses. <c>null</c> = none.
+    /// </summary>
+    public ShadowSpec? Shadow { get; init; }
+
+    /// <summary>
+    /// The 1px INNER TOP highlight (the design's glossy <c>inset 0 1px 0 white/25</c> on primary
+    /// buttons). Web = an inset box-shadow entry; Photon = a hairline fill clipped to the rrect's
+    /// top edge. <c>null</c> = none.
+    /// </summary>
+    public ColorToken? InsetHighlight { get; init; }
+
+    /// <summary>
     /// Static 2D transform (spec S1), anchored at the box CENTER (the CSS default origin). PAINT
     /// ONLY — layout is untouched, exactly like CSS transforms. <c>null</c> = identity.
     /// </summary>
@@ -155,10 +175,13 @@ public readonly record struct StyleDiff
     public int? Elevation { get; init; }
     /// <summary><c>null</c> = keep the base opacity.</summary>
     public float? Opacity { get; init; }
+    /// <summary>Swaps the gradient fill while active (the design's gradient-button hover).
+    /// <c>null</c> = keep the base gradient.</summary>
+    public LinearGradient? Gradient { get; init; }
 
     public bool IsEmpty =>
         Background is null && BorderColor is null && BorderWidth is null
-        && Elevation is null && Opacity is null;
+        && Elevation is null && Opacity is null && Gradient is null;
 }
 
 /// <summary>
@@ -581,6 +604,10 @@ public sealed class Pressable : VisualNode
     public string? Label { get; init; }
 }
 
+/// <summary>One inline run of a rich <see cref="Text"/> (see <see cref="Text.Spans"/>): its own
+/// color and/or mono face, flowing inside the paragraph. Null color = the paragraph's color.</summary>
+public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono = false);
+
 /// <summary>Line alignment within a <see cref="Text"/> paragraph (CSS <c>text-align</c> twin).</summary>
 public enum TextAlignment : byte
 {
@@ -623,6 +650,31 @@ public sealed class Text : VisualNode
     /// text is unaffected — the box hugs).
     /// </summary>
     public TextAlignment Align { get; init; } = TextAlignment.Start;
+
+    /// <summary>
+    /// Monospace rendering (code snippets, versions, tabular figures — the design's
+    /// <c>font-mono</c>). Web = the platform mono stack; Photon fence: the native rasterizer keeps
+    /// the system face until <c>ITextRasterizer</c> grows a family parameter.
+    /// NOTE: <see cref="Content"/> may contain <c>\n</c> — both targets honor it as a hard line
+    /// break (web renders with <c>white-space: pre-line</c>; CoreText breaks paragraphs natively).
+    /// </summary>
+    public bool Mono { get; init; }
+
+    /// <summary>
+    /// RICH runs (spec A8's inline emphasis): when set, the paragraph renders these runs in order
+    /// instead of <see cref="Content"/> — a highlighted figure inside a sentence
+    /// (<c>"… ecosystem with **627k+** downloads …"</c>) without splitting the paragraph into
+    /// blocks. Wrapping stays paragraph-level. Photon fence: the native shaper draws the
+    /// concatenated text in the base style until multi-run shaping lands; keep Content as the
+    /// accessible/plain twin of the runs.
+    /// </summary>
+    public IReadOnlyList<TextRun>? Spans { get; init; }
+
+    /// <summary>The paragraph as PLAIN text: <see cref="Content"/>, or the runs joined — what the
+    /// native shaper draws (multi-run fence) and what accessibility reads.</summary>
+    public string PlainContent => Spans is { Count: > 0 } spans
+        ? string.Concat(spans.Select(run => run.Content))
+        : Content;
 
     /// <summary>
     /// SYSTEM COMPONENTS ONLY: overrides the role's <see cref="TypeStyle"/> with an exact style from a

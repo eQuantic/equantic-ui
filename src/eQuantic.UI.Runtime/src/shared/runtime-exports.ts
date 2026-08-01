@@ -47,6 +47,8 @@ export {
   Grid,
   GridTrack,
   StyleDiff,
+  ShadowSpec,
+  TextRun,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';
 export {

@@ -469,9 +469,14 @@ public static class WebRealizer
                 BackgroundImage = BackgroundLayers(style),
                 BackgroundSize = BackgroundLayerSizes(style),
                 BorderRadius = style.CornerRadius.IsZero ? null : TokenCss.Radius(style.CornerRadius),
-                BoxShadow = style.Elevation > 0 && !context.Theme.Elevation(style.Elevation).IsNone
-                    ? TokenCss.Shadow(context.Theme.Elevation(style.Elevation))
-                    : null,
+                // Depth (Elevation), the CUSTOM shadow and the inset highlight compose as one
+                // box-shadow list — the design stacks glows on elevated glossy cards.
+                BoxShadow = ComposeShadows(
+                    style.Elevation > 0 && !context.Theme.Elevation(style.Elevation).IsNone
+                        ? TokenCss.Shadow(context.Theme.Elevation(style.Elevation))
+                        : null,
+                    style.Shadow is { } shadow ? TokenCss.Shadow(shadow) : null,
+                    style.InsetHighlight is { } inset ? $"inset 0 1px 0 {TokenCss.Value(inset)}" : null),
                 Border = style.BorderWidth > 0
                     ? $"{TokenCss.Px(style.BorderWidth)} solid {TokenCss.Value(style.BorderColor)}"
                     : null,
@@ -497,6 +502,13 @@ public static class WebRealizer
         return element;
     }
 
+    /// <summary>One box-shadow list from the optional parts (null when none are set).</summary>
+    private static string? ComposeShadows(params string?[] parts)
+    {
+        var present = parts.Where(part => part != null).ToList();
+        return present.Count == 0 ? null : string.Join(", ", present);
+    }
+
     /// <summary>Spec S5: a StyleDiff's set members as pseudo-state declarations (base values keep).</summary>
     private static void AppendDiff(RealizedElement element, string pseudo, in StyleDiff diff, ComponentContext context)
     {
@@ -510,6 +522,8 @@ public static class WebRealizer
             element.PseudoDeclarations.Add((pseudo, "box-shadow", TokenCss.Shadow(context.Theme.Elevation(level))));
         if (diff.Opacity is { } alpha)
             element.PseudoDeclarations.Add((pseudo, "opacity", TokenCss.Number(alpha)));
+        if (diff.Gradient is { } gradient)
+            element.PseudoDeclarations.Add((pseudo, "background-image", TokenCss.Gradient(gradient)));
     }
 
     /// <summary>
@@ -685,7 +699,7 @@ public static class WebRealizer
         var element = new RealizedElement("span")
         {
             ClassName = $"eq-type-{text.Role.ToString().ToLowerInvariant()}",
-            InnerHtml = text.Content,
+            InnerHtml = text.Spans is null ? text.Content : null,
             Style = new HtmlStyle
             {
                 Color = TokenCss.Value(text.Color ?? context.Theme.TextPrimary),
@@ -697,8 +711,30 @@ public static class WebRealizer
                     TextAlignment.End => Core.TextAlign.End,
                     _ => null,
                 },
+                // Authored \n is a HARD break (the designed headline's line turns) — pre-line
+                // keeps normal wrapping between them.
+                WhiteSpace = text.Content.Contains('\n') ? "pre-line" : null,
+                FontFamily = text.Mono ? TokenCss.MonoStack : null,
             },
         };
+
+        // RICH runs: each run flows inline with its own color/mono face; wrapping stays
+        // paragraph-level because the children are inline spans.
+        if (text.Spans is { } spans)
+        {
+            foreach (var run in spans)
+            {
+                element.Children.Add(new RealizedElement("span")
+                {
+                    InnerHtml = run.Content,
+                    Style = new HtmlStyle
+                    {
+                        Color = run.Color is { } runColor ? TokenCss.Value(runColor) : null,
+                        FontFamily = run.Mono ? TokenCss.MonoStack : null,
+                    },
+                });
+            }
+        }
 
         // Gradient text: the background is painted through the glyphs. `color` stays as the
         // FALLBACK (a browser without background-clip:text renders readable solid text rather than

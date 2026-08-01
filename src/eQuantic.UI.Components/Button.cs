@@ -35,11 +35,15 @@ public sealed class Button : StatelessComponent
     /// <summary>Fills the parent row instead of hugging the label (checkout CTAs, spec A12).</summary>
     public bool Expand { get; init; }
 
+    /// <summary>Optional LEADING icon (spec A12's icon+label form) — sized from the size table,
+    /// tinted with the label.</summary>
+    public IconGlyph? Leading { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var colors = theme.Colors(Variant);
-        var (height, padX, gap, labelSize, _, _, _) = ButtonStyles.Metrics(Size);
+        var (height, padX, gap, labelSize, iconSize, _, _) = ButtonStyles.Metrics(Size);
         // Shape is theme-driven (Material overrides the ladder): XLarge rides Large, the rest Medium.
         var radius = theme.Shape(Size == SizeVariant.XLarge ? ShapeScale.Large : ShapeScale.Medium);
 
@@ -70,7 +74,9 @@ public sealed class Button : StatelessComponent
         {
             Height = SizeValue.Fill,
             Main = MainAlign.Center,
+            Cross = CrossAlign.Center,
         };
+        if (Leading is { } leading) content.Add(new Icon(leading, size: iconSize, color: textColor));
         content.Add(label);
 
         var container = new Box(new BoxStyle
