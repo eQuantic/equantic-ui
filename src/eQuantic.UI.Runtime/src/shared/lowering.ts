@@ -15,7 +15,16 @@ import type { EventHandler, HtmlNode } from '../core/types';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
-import { atomizeEntries, atomizePseudo, atomizeScrolled, ensureAdaptiveGate, mergeAtomicDeclaration } from './style-atomizer';
+import {
+  atomizeEntries,
+  atomizePseudo,
+  atomizeScrolled,
+  ensureAdaptiveGate,
+  gateCompactUntil,
+  gateExpandedFrom,
+  gateMediumFrom,
+  mergeAtomicDeclaration,
+} from './style-atomizer';
 import type {
   BoxNode,
   BoxStyleValue,
@@ -53,8 +62,11 @@ import type {
   TextNode,
   TransformValue,
   TransitionSpecValue,
+  ShortcutNode,
+  KeyChordValue,
   VisualNodeValue,
 } from './nodes';
+import { declareShortcut } from '../dom/shortcuts';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
 
@@ -205,6 +217,8 @@ function lowerNode(
       return lowerGrid(node as unknown as GridNode, context, path);
     case 'adaptive':
       return lowerAdaptive(node as unknown as AdaptiveNodeValue, context, path);
+    case 'shortcut':
+      return lowerShortcut(node as unknown as ShortcutNode, context, horizontalAxis, path);
     case 'sticky':
       return lowerSticky(node as unknown as StickyNode, context, path);
     case 'anchored':
@@ -334,6 +348,16 @@ function lowerOverlay(node: OverlayNode, context: LoweringContext, path: string)
     events: {},
     children: [],
   };
+  if (node.motion) {
+    // Keep-mounted open/close (C# twin): the layer fades both ways; closed is hidden, so it leaves
+    // hit-testing and the focus order.
+    appendDeclarations(layer, {
+      transition: motionTransition(node.motion, false),
+      ...(node.open === false
+        ? { opacity: '0', visibility: 'hidden', 'pointer-events': 'none' }
+        : {}),
+    });
+  }
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) layer.children.push(child);
   return layer;
@@ -354,6 +378,12 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
   input.attributes['type'] = node.obscure === true ? 'password' : 'text';
   input.attributes['value'] = node.value;
   if (node.placeholder != null) input.attributes['placeholder'] = node.placeholder;
+  // C# twin: the attribute marks intent; the client also FOCUSES on mount — a dialog opened later
+  // never gets the browser's parse-time autofocus.
+  if (node.autofocus === true) {
+    input.attributes['autofocus'] = '';
+    input.events['eq:mounted'] = ((element: HTMLElement) => element.focus()) as unknown as EventHandler;
+  }
   if (node.disabled === true) {
     input.attributes['disabled'] = '';
     return input;
@@ -622,8 +652,8 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
           'div',
           {
             position: 'absolute',
-            // Spec S7: explicit stacking — flow order otherwise (painter's parity).
-            'z-index': (positioned.zIndex ?? 0) !== 0 ? `${positioned.zIndex}` : undefined,
+            // Spec S7 (C# twin): explicit stacking WINS; otherwise the child's own depth.
+            'z-index': `${(positioned.zIndex ?? 0) !== 0 ? positioned.zIndex : i + 1}`,
             top: positioned.top != null ? px(positioned.top) : undefined,
             right: positioned.end != null ? px(positioned.end) : undefined,
             bottom: positioned.bottom != null ? px(positioned.bottom) : undefined,
@@ -647,6 +677,10 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
             'align-items': cellAlign,
             width: '100%',
             height: '100%',
+            // Spec A3 (C# twin): paint order IS child order — a child with backdrop-filter/filter/
+            // opacity creates a stacking context that CSS would otherwise paint above every plain
+            // sibling drawn after it (a blurred scrim covering its own dialog).
+            'z-index': `${i + 1}`,
           },
           [lowered],
         ),
@@ -1097,6 +1131,40 @@ function appendDeclarations(node: HtmlNode, entries: Record<string, string | und
 }
 
 /**
+ * Spec S8 (the C# LowerShortcut twin): the child lowers UNCHANGED and carries the binding marker;
+ * the live registration is what makes the chord fire. Mounting is the subscription — the pass's
+ * declarations replace the previous set when it commits, so an unmounted subtree stops matching.
+ */
+function lowerShortcut(
+  node: ShortcutNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  if (!child) return null;
+  const chord = chordId(node.chord);
+  // C# twin: nested shortcuts share one child root, so the marker LISTS them.
+  const existing = child.attributes['data-eq-shortcut'];
+  child.attributes['data-eq-shortcut'] = existing ? `${existing} ${chord}` : chord;
+  if (node.onPressed) declareShortcut({ chord, handler: node.onPressed });
+  return child;
+}
+
+/** The chord's wire form — the C# WebRealizer.ChordId twin (fixed modifier order). */
+function chordId(chord: KeyChordValue | undefined): string {
+  if (!chord) return '';
+  const modifiers = chord.modifiers ?? 0;
+  const parts: string[] = [];
+  if (modifiers & 4) parts.push('command');
+  if (modifiers & 8) parts.push('control');
+  if (modifiers & 2) parts.push('alt');
+  if (modifiers & 1) parts.push('shift');
+  parts.push((chord.key ?? '').toLowerCase());
+  return parts.join('+');
+}
+
+/**
  * S5 programmable hover (the C# LowerHoverable twin): a layout-transparent div whose
  * mouseenter/mouseleave feed the boolean callback. Fill passes through like Pressable's button.
  */
@@ -1235,9 +1303,14 @@ function lowerAdaptive(node: AdaptiveNodeValue, context: LoweringContext, path: 
       children: [lowered],
     });
   };
-  addVariant(node.compact, node.medium ? 'eq-vc6' : 'eq-vc8', 0);
-  if (node.medium) addVariant(node.medium, node.expanded ? 'eq-vm8' : 'eq-vm', 1);
-  if (node.expanded) addVariant(node.expanded, 'eq-vx', 2);
+  // Ranges chain off the DECLARED variants and this node's thresholds (C# twin) — a design that
+  // switches at 1024 gets 1024 gates, not the spec's 600/840.
+  const mediumFrom = node.mediumFrom ?? 600;
+  const expandedFrom = node.expandedFrom ?? 840;
+  addVariant(node.compact, gateCompactUntil(node.medium ? mediumFrom : expandedFrom), 0);
+  if (node.medium)
+    addVariant(node.medium, gateMediumFrom(mediumFrom, node.expanded ? expandedFrom : 0), 1);
+  if (node.expanded) addVariant(node.expanded, gateExpandedFrom(expandedFrom), 2);
   return wrapper;
 }
 

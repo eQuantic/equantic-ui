@@ -59,6 +59,7 @@ public static class WebRealizer
         Primitives.Image image => LowerImage(image),
         Pressable pressable => LowerPressable(pressable, context),
         Hoverable hoverable => LowerHoverable(hoverable, context),
+        Shortcut shortcut => LowerShortcut(shortcut, context, horizontalAxis),
         Link link => LowerLink(link, context),
         LoopMotion motion => LowerLoopMotion(motion, context),
         Presence presence => LowerPresence(presence, context, horizontalAxis),
@@ -88,8 +89,14 @@ public static class WebRealizer
             },
         };
 
+        // Spec A3: paint order IS child order. On web that needs an EXPLICIT z-index per cell —
+        // a child carrying backdrop-filter/filter/opacity creates a stacking context, which CSS
+        // paints as if positioned at z-index 0, i.e. ABOVE every plain sibling that follows it in
+        // the DOM. (A blurred scrim would otherwise cover the dialog it sits behind.)
+        var depth = 0;
         foreach (var child in stack.Children)
         {
+            depth++;
             if (child is Positioned positioned)
             {
                 var lowered = LowerNode(positioned.Child, context, horizontalAxis: null);
@@ -103,8 +110,8 @@ public static class WebRealizer
                         Right = positioned.End is { } end ? TokenCss.Px(end) : null,
                         Bottom = positioned.Bottom is { } bottom ? TokenCss.Px(bottom) : null,
                         Left = positioned.Start is { } start ? TokenCss.Px(start) : null,
-                        // Spec S7: explicit stacking — flow order otherwise (painter's parity).
-                        ZIndex = positioned.ZIndex != 0 ? positioned.ZIndex.ToString() : null,
+                        // Spec S7: explicit stacking WINS; otherwise the child's own depth.
+                        ZIndex = (positioned.ZIndex != 0 ? positioned.ZIndex : depth).ToString(),
                     },
                 };
                 anchor.Children.Add(lowered);
@@ -127,6 +134,9 @@ public static class WebRealizer
                         AlignItems = AlignmentAlign(stack.Align),
                         Width = "100%",
                         Height = "100%",
+                        // A grid item takes z-index without needing `position` — this is what keeps
+                        // a filtered child from jumping above the siblings drawn after it.
+                        ZIndex = depth.ToString(),
                     },
                 };
                 cell.Children.Add(lowered);
@@ -449,12 +459,59 @@ public static class WebRealizer
     /// escapes the page flow visually without a portal; keep Overlays out of transformed subtrees
     /// (LoopMotion) — CSS transforms re-anchor fixed descendants.
     /// </summary>
+    /// <summary>
+    /// Spec S8: the binding is MARKED on the child's root (<c>data-eq-shortcut</c>) and the runtime's
+    /// window controller dispatches to it — SSR has no key events, so the marker is the whole
+    /// server-side contract (and it keeps the SSR/hydration DOM identical to the TS lowering).
+    /// </summary>
+    private static HtmlElement? LowerShortcut(Shortcut shortcut, ComponentContext context, bool? horizontalAxis)
+    {
+        if (LowerNode(shortcut.Child, context, horizontalAxis) is not { } child) return null;
+        if (child is RealizedElement realized)
+        {
+            realized.RawAttributes ??= new Dictionary<string, string>();
+            // NESTED shortcuts share one child root (a dialog binds Esc, ↑, ↓ and ↵ around the same
+            // subtree) — the marker lists them all rather than the outermost overwriting the rest.
+            var chord = ChordId(shortcut.Chord);
+            realized.RawAttributes["data-eq-shortcut"] =
+                realized.RawAttributes.TryGetValue("data-eq-shortcut", out var existing) && existing.Length > 0
+                    ? $"{existing} {chord}"
+                    : chord;
+        }
+        return child;
+    }
+
+    /// <summary>The chord's wire form — <c>command+shift+k</c>, modifiers in a FIXED order so both
+    /// realizers and the runtime controller compare the same string.</summary>
+    internal static string ChordId(KeyChord chord)
+    {
+        var parts = new List<string>(4);
+        if (chord.Modifiers.HasFlag(KeyModifiers.Command)) parts.Add("command");
+        if (chord.Modifiers.HasFlag(KeyModifiers.Control)) parts.Add("control");
+        if (chord.Modifiers.HasFlag(KeyModifiers.Alt)) parts.Add("alt");
+        if (chord.Modifiers.HasFlag(KeyModifiers.Shift)) parts.Add("shift");
+        parts.Add(chord.Key.ToLowerInvariant());
+        return string.Join("+", parts);
+    }
+
     private static HtmlElement LowerOverlay(Overlay overlay, ComponentContext context)
     {
         var element = new RealizedElement("div")
         {
             ClassName = overlay.Modal ? "eq-overlay" : "eq-overlay eq-overlay-passthrough",
         };
+        if (overlay.Motion is { } motion)
+        {
+            // Keep-mounted open/close (the Anchored.Motion twin): the layer fades both ways, and a
+            // closed one is hidden — gone from hit-testing and the focus order.
+            element.Style = new HtmlStyle { Transition = MotionTransition(motion, withTransform: false) };
+            if (!overlay.Open)
+            {
+                element.Style.Opacity = "0";
+                element.Style.Visibility = "hidden";
+                element.Style.PointerEvents = "none";
+            }
+        }
         if (LowerNode(overlay.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;
@@ -489,6 +546,9 @@ public static class WebRealizer
         };
         if (entry.Placeholder is { } placeholder) element.RawAttributes["placeholder"] = placeholder;
         if (entry.Disabled) element.RawAttributes["disabled"] = "";
+        // The attribute alone only acts on the initial parse; the client lowering also focuses on
+        // mount, which is what a dialog opened later needs.
+        if (entry.Autofocus) element.RawAttributes["autofocus"] = "";
         return element;
     }
 
@@ -710,13 +770,15 @@ public static class WebRealizer
         if (adaptive.Medium is null && adaptive.Expanded is null)
             return LowerNode(adaptive.Compact, context, horizontalAxis: null) ?? wrapper;
 
-        AddVariant(adaptive.Compact, adaptive.Medium is not null
-            ? AdaptiveGates.CompactUntilMedium
-            : AdaptiveGates.CompactUntilExpanded);
+        // Ranges chain off the DECLARED variants and the node's own thresholds (a design that
+        // switches at 1024 gets 1024 gates, not the spec's 600/840).
+        AddVariant(adaptive.Compact, AdaptiveGates.CompactUntil(
+            adaptive.Medium is not null ? adaptive.MediumFrom : adaptive.ExpandedFrom));
         if (adaptive.Medium is { } medium)
-            AddVariant(medium, adaptive.Expanded is not null ? AdaptiveGates.MediumUntilExpanded : AdaptiveGates.MediumOpen);
+            AddVariant(medium, AdaptiveGates.MediumFrom(
+                adaptive.MediumFrom, adaptive.Expanded is not null ? adaptive.ExpandedFrom : 0));
         if (adaptive.Expanded is { } expanded)
-            AddVariant(expanded, AdaptiveGates.Expanded);
+            AddVariant(expanded, AdaptiveGates.ExpandedFrom(adaptive.ExpandedFrom));
         return wrapper;
     }
 

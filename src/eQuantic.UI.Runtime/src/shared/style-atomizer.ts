@@ -245,16 +245,54 @@ export function mergeAtomicDeclaration(
   node.attributes['class'] = [...semantic, ...atomic].join(' ');
 }
 
-/** Spec S6: the fixed size-class gate rules — byte-identical to the C# AdaptiveGates blobs. A gate
- * shows its variant only inside its range (display:contents/none); ranges encode the fallback
- * chain (a variant serves until the next DECLARED variant's threshold). */
-const ADAPTIVE_GATES: Record<string, string[]> = {
-  'eq-vc6': ['.eq-vc6{display:contents}', '@media (min-width: 600px){.eq-vc6{display:none}}'],
-  'eq-vc8': ['.eq-vc8{display:contents}', '@media (min-width: 840px){.eq-vc8{display:none}}'],
-  'eq-vm8': ['.eq-vm8{display:none}', '@media (min-width: 600px) and (max-width: 839.98px){.eq-vm8{display:contents}}'],
-  'eq-vm': ['.eq-vm{display:none}', '@media (min-width: 600px){.eq-vm{display:contents}}'],
-  'eq-vx': ['.eq-vx{display:none}', '@media (min-width: 840px){.eq-vx{display:contents}}'],
-};
+/**
+ * Spec S6 gate names — the range is IN the name (`eq-vc600` = compact until 600, `eq-vx1024` =
+ * expanded from 1024), which is what lets a design bring its own breakpoints with no shared
+ * registry: both twins derive the identical name and CSS from the same thresholds.
+ * Byte-identical to the C# `AdaptiveGates`.
+ */
+export function gateCompactUntil(until: number): string {
+  return `eq-vc${gateNum(until)}`;
+}
+
+export function gateMediumFrom(from: number, until: number): string {
+  return until > 0 ? `eq-vm${gateNum(from)}-${gateNum(until)}` : `eq-vm${gateNum(from)}`;
+}
+
+export function gateExpandedFrom(from: number): string {
+  return `eq-vx${gateNum(from)}`;
+}
+
+/** Invariant number formatting — the C# TokenCss.Number twin ("0.####"). */
+function gateNum(value: number): string {
+  return `${parseFloat(value.toFixed(4))}`;
+}
+
+/** The gate's rules, derived from its NAME (the C# AdaptiveGates.Css twin). */
+function adaptiveGateRules(gate: string): string[] {
+  if (!gate.startsWith('eq-v') || gate.length < 6) return [];
+  const kind = gate[4];
+  const range = gate.slice(5).split('-');
+  const first = parseFloat(range[0]);
+  const second = range.length > 1 ? parseFloat(range[1]) : 0;
+  const below = (dp: number) => `${parseFloat((dp - 0.02).toFixed(4))}px`;
+  if (kind === 'c')
+    return [
+      `.${gate}{display:contents}`,
+      `@media (min-width: ${gateNum(first)}px){.${gate}{display:none}}`,
+    ];
+  if (kind === 'm' && second > 0)
+    return [
+      `.${gate}{display:none}`,
+      `@media (min-width: ${gateNum(first)}px) and (max-width: ${below(second)}){.${gate}{display:contents}}`,
+    ];
+  if (kind === 'm' || kind === 'x')
+    return [
+      `.${gate}{display:none}`,
+      `@media (min-width: ${gateNum(first)}px){.${gate}{display:contents}}`,
+    ];
+  return [];
+}
 
 /** Ensure a size-class gate's rules exist in the registry (idempotent; adopted from SSR). */
 export function ensureAdaptiveGate(gate: string): void {
@@ -262,7 +300,7 @@ export function ensureAdaptiveGate(gate: string): void {
   known.add(gate);
   const target = registry();
   if (!target) return;
-  for (const rule of ADAPTIVE_GATES[gate] ?? []) {
+  for (const rule of adaptiveGateRules(gate)) {
     try {
       target.insertRule(rule, target.cssRules.length);
     } catch {

@@ -300,16 +300,27 @@ export class Sticky extends VisualNode {
   }
 }
 
+interface AdaptiveConfig {
+  /** Custom thresholds in dp (default 600/840 — the spec size classes). */
+  mediumFrom?: number;
+  expandedFrom?: number;
+  key?: string | null;
+}
+
 /** Mirror of the C# `AdaptiveNode` (spec S6): up to three size-class variants. */
 export class AdaptiveNode extends VisualNode {
   readonly nodeKind = 'adaptive';
+  mediumFrom = 600;
+  expandedFrom = 840;
 
   constructor(
     readonly compact: VisualNode,
     readonly medium: VisualNode | null = null,
     readonly expanded: VisualNode | null = null,
+    config?: AdaptiveConfig,
   ) {
     super();
+    if (config) Object.assign(this, config);
   }
 }
 
@@ -470,8 +481,15 @@ export class Overlay extends VisualNode {
   child: VisualChild;
   /** False = non-modal layer (toasts): pointer passes through except the layer's pressables. */
   modal = true;
+  /** Visibility while `motion` is set — a closed layer stays mounted and animates out. */
+  open = true;
+  /** Open/close motion: the layer stays mounted in both states and fades between them. */
+  motion: TransitionSpec | null = null;
 
-  constructor(child: VisualChild, config?: { modal?: boolean }) {
+  constructor(
+    child: VisualChild,
+    config?: { modal?: boolean; open?: boolean; motion?: TransitionSpec | null; key?: string | null },
+  ) {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
@@ -529,6 +547,8 @@ interface TextEntryConfig {
   disabled?: boolean;
   obscure?: boolean;
   role?: string;
+  /** Takes focus on mount (the command-palette contract). */
+  autofocus?: boolean;
 }
 
 /** Mirror of the C# `TextEntry` (spec B9/B10): single-line entry; the browser owns caret/IME. */
@@ -542,6 +562,7 @@ export class TextEntry extends VisualNode {
   disabled = false;
   obscure = false;
   role = 'bodyL';
+  autofocus = false;
 
   constructor(
     value: string,
@@ -558,6 +579,52 @@ export class TextEntry extends VisualNode {
 interface LinearGradientConfig {
   via?: ColorTokenValue | null;
   viaPosition?: number;
+}
+
+/** Mirror of the C# `KeyChord` record struct: a DOM key name + [Flags] KeyModifiers (numeric). */
+export class KeyChord {
+  key: string;
+  modifiers: number;
+
+  constructor(key: string, modifiers = 0) {
+    this.key = key;
+    this.modifiers = modifiers;
+  }
+
+  /** C# twin: `KeyChord.Command("k")` — ⌘K on Apple, Ctrl+K elsewhere. */
+  static command(key: string): KeyChord {
+    return new KeyChord(key, KeyModifiers.command);
+  }
+
+  static readonly escape = new KeyChord('Escape');
+  static readonly enter = new KeyChord('Enter');
+  static readonly arrowUp = new KeyChord('ArrowUp');
+  static readonly arrowDown = new KeyChord('ArrowDown');
+}
+
+/** Mirror of the C# `[Flags] KeyModifiers` (numeric, like every flags enum). */
+export const KeyModifiers = {
+  none: 0,
+  shift: 1,
+  alt: 2,
+  /** ⌘ on Apple, Ctrl elsewhere — the platform command key. */
+  command: 4,
+  control: 8,
+} as const;
+
+/** Mirror of the C# `Shortcut` (spec S8): a chord that is live while this subtree is mounted. */
+export class Shortcut extends VisualNode {
+  readonly nodeKind = 'shortcut';
+  child: VisualChild;
+  chord: KeyChord;
+  onPressed: (() => void) | null;
+
+  constructor(child: VisualChild, chord: KeyChord, onPressed: (() => void) | null = null) {
+    super();
+    this.child = child;
+    this.chord = chord;
+    this.onPressed = onPressed;
+  }
 }
 
 /** Mirror of the C# `LinearGradient` record: two token stops on a straight axis (engine fence),

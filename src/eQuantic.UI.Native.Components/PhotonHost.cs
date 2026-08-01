@@ -83,8 +83,21 @@ public sealed class PhotonHost
 
     /// <summary>The NAVIGATION seam (write-once Link): a tap no pressable claims, landing on a link
     /// region, reports the href here — the platform shell maps it to a page (the native router's
-    /// future home). Null = links are inert (visuals only).</summary>
-    public Action<string>? NavigationRequested { get; set; }
+    /// future home). Null = links are inert (visuals only).
+    /// <para>Setting it also installs <see cref="Navigator"/>'s handler, so a component that
+    /// navigates PROGRAMMATICALLY (a command palette's ↵) reaches the same shell. One surface owns
+    /// the seam — the last host to take it wins, which is the desktop/mobile shape.</para></summary>
+    public Action<string>? NavigationRequested
+    {
+        get => _navigationRequested;
+        set
+        {
+            _navigationRequested = value;
+            Navigator.Handler = value;
+        }
+    }
+
+    private Action<string>? _navigationRequested;
 
     /// <summary>
     /// Builds one frame: clears to the theme background, then lays out and lowers the root via
@@ -339,12 +352,12 @@ public sealed class PhotonHost
     private bool ResolveLink(float x, float y)
     {
         var regions = _lastFrame?.LinkRegions;
-        if (regions is null || NavigationRequested is null) return false;
+        if (regions is null || _navigationRequested is null) return false;
         var point = new Point(x, y);
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             if (!regions[i].Bounds.Contains(point)) continue;
-            NavigationRequested(regions[i].Node.Href);
+            _navigationRequested(regions[i].Node.Href);
             return true;
         }
         return false;
@@ -361,6 +374,33 @@ public sealed class PhotonHost
             var region = regions[i];
             if (!region.Bounds.Contains(point)) continue;
             if (!region.Node.Disabled) region.Node.OnPressed?.Invoke();
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Spec S8 — a key press from the shell (desktop windows have a real keyboard): fires the LAST
+    /// matching <see cref="Shortcut"/> of the current frame (the dialog on top wins the chord) and
+    /// returns whether it was handled, so the shell can stop propagating it. Being on screen IS the
+    /// subscription — an unmounted dialog's Esc simply is not in the frame any more.
+    /// <para>
+    /// <paramref name="modifiers"/> carries <see cref="KeyModifiers.Command"/> for the PLATFORM's
+    /// command key (⌘ on macOS, Ctrl elsewhere) — the shell resolves that, exactly like the browser
+    /// twin, so one authored chord is right everywhere.
+    /// </para>
+    /// </summary>
+    public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
+    {
+        var bindings = _lastFrame?.Shortcuts;
+        if (bindings is null) return false;
+        for (var i = bindings.Count - 1; i >= 0; i--)
+        {
+            var chord = bindings[i].Chord;
+            if (chord.Modifiers != modifiers) continue;
+            if (!string.Equals(chord.Key, key, StringComparison.OrdinalIgnoreCase)) continue;
+            bindings[i].OnPressed();
+            NeedsRender = true;
             return true;
         }
         return false;

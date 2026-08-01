@@ -418,6 +418,26 @@ public sealed class Overlay : VisualNode
     /// the layer's own pressables. Native is passthrough by construction (only registered regions
     /// hit); the web realizer lowers the pointer-events variant. Default TRUE (dialogs, sheets).</summary>
     public bool Modal { get; init; } = true;
+
+    /// <summary>Visibility while <see cref="Motion"/> is set — a CLOSED layer stays mounted and
+    /// animates out. Ignored without Motion (the caller renders the Overlay conditionally).</summary>
+    public bool Open { get; init; } = true;
+
+    /// <summary>
+    /// OPEN/CLOSE motion (the drawer and command-palette contract, the <see cref="Anchored.Motion"/>
+    /// twin): the layer stays MOUNTED across both states — so element identity survives and the
+    /// transition actually runs — and fades between them; closed ends <c>visibility:hidden</c>, out
+    /// of hit-testing and the focus order. <c>null</c> = mount/unmount (the historical snap). Keep
+    /// building the layer's content while closed: an emptied layer collapses mid-fade.
+    /// Photon fence: the overlay animator (native snaps until it lands).
+    /// </summary>
+    public TransitionSpec? Motion { get; init; }
+
+    // WEB FENCE (no portal, v1): the layer is `position: fixed` where it sits in the tree, so an
+    // ANCESTOR that creates a stacking context (a Stack cell's paint-order z-index, a transform, a
+    // filter) traps it — the layer then stacks inside that ancestor instead of over the page. Keep
+    // Overlays out of such subtrees (a Column is layout-neutral and safe) until they portal to the
+    // document root. Native has no such rule: overlay layers queue against the viewport.</summary>
 }
 
 /// <summary>Where an <see cref="Anchored"/> panel attaches relative to its anchor (wave 3 v1: the
@@ -663,6 +683,75 @@ public sealed class TextEntry : VisualNode
 
     /// <summary>Type role of the entry text (spec: TextInput rides BodyL, SearchField BodyM).</summary>
     public TypeRole Role { get; init; } = TypeRole.BodyL;
+
+    /// <summary>
+    /// Takes focus when it MOUNTS (the command-palette contract: the field is ready to type into
+    /// the instant the dialog appears). Web sets the attribute AND focuses on mount — the attribute
+    /// alone only fires on the initial document parse, never on a client-rendered dialog. Use once
+    /// per surface; native fence: the host focus system.
+    /// </summary>
+    public bool Autofocus { get; init; }
+}
+
+/// <summary>Modifier keys of a <see cref="KeyChord"/>. <see cref="Command"/> is the PLATFORM's
+/// command key — ⌘ on Apple, Ctrl elsewhere — so one authored chord is right everywhere.</summary>
+[Flags]
+public enum KeyModifiers : byte
+{
+    None = 0,
+    Shift = 1,
+    Alt = 2,
+    /// <summary>⌘ on Apple, Ctrl on Windows/Linux (the "⌘K/Ctrl+K" idiom, authored once).</summary>
+    Command = 4,
+    /// <summary>Literally Control, on every platform (rare — prefer <see cref="Command"/>).</summary>
+    Control = 8,
+}
+
+/// <summary>
+/// A key plus its modifiers. <see cref="Key"/> uses the DOM <c>KeyboardEvent.key</c> names
+/// (<c>"k"</c>, <c>"Escape"</c>, <c>"ArrowDown"</c>, <c>"Enter"</c>) — one vocabulary both targets
+/// map from, matched case-insensitively so Shift-typing never breaks a binding.
+/// </summary>
+public readonly record struct KeyChord(string Key, KeyModifiers Modifiers = KeyModifiers.None)
+{
+    /// <summary>⌘K / Ctrl+K — the platform command chord.</summary>
+    public static KeyChord Command(string key) => new(key, KeyModifiers.Command);
+
+    public static readonly KeyChord Escape = new("Escape");
+    public static readonly KeyChord Enter = new("Enter");
+    public static readonly KeyChord ArrowUp = new("ArrowUp");
+    public static readonly KeyChord ArrowDown = new("ArrowDown");
+}
+
+/// <summary>
+/// A KEYBOARD SHORTCUT that is live while this subtree is mounted (spec S8): the chord fires
+/// <see cref="OnPressed"/> from anywhere on the page — it is not a focus-scoped handler, which is
+/// exactly what a command palette (⌘K), an Esc-dismiss and a list's ↑/↓ navigation need. Mounting
+/// IS the subscription: render the Shortcut only while its binding should apply (inside the open
+/// dialog for Esc/arrows, at the page root for ⌘K) and unmounting removes it — no add/remove
+/// listener bookkeeping in app code.
+/// <para>
+/// Layout-transparent (the child lowers unchanged). Web installs ONE window keydown controller that
+/// dispatches to the active bindings and calls <c>preventDefault</c> when a chord matches, so ⌘K
+/// never reaches the browser's own search. SSR renders the child and marks the binding on it
+/// (<c>data-eq-shortcut</c>) — a keyboard shortcut needs JS by construction. Photon fence: the
+/// host's key pipeline (desktop shells) — bindings are inert on native until it lands.
+/// </para>
+/// </summary>
+public sealed class Shortcut : VisualNode
+{
+    public override string NodeKind => "shortcut";
+
+    public Shortcut(VisualNode child, KeyChord chord, Action onPressed)
+    {
+        Child = child;
+        Chord = chord;
+        OnPressed = onPressed;
+    }
+
+    public VisualNode Child { get; init; }
+    public KeyChord Chord { get; init; }
+    public Action OnPressed { get; init; }
 }
 
 /// <summary>
@@ -998,7 +1087,29 @@ public sealed class AdaptiveNode : VisualNode
     public VisualNode? Medium { get; }
     public VisualNode? Expanded { get; }
 
-    /// <summary>The variant for a class — missing variants fall back toward Compact.</summary>
+    /// <summary>
+    /// Where <see cref="Medium"/> takes over (dp). Defaults to the spec's
+    /// <see cref="WindowSizeClass"/> threshold; override when the DESIGN switches elsewhere — a bar
+    /// whose nav needs 1024dp of room has no business flipping at 600.
+    /// </summary>
+    public float MediumFrom { get; init; } = WindowSizeClasses.MediumMinDp;
+
+    /// <summary>Where <see cref="Expanded"/> takes over (dp). See <see cref="MediumFrom"/>.</summary>
+    public float ExpandedFrom { get; init; } = WindowSizeClasses.ExpandedMinDp;
+
+    /// <summary>The variant for a WIDTH (dp) — the general form, honoring custom thresholds.
+    /// Missing variants fall back toward Compact.</summary>
+    public VisualNode ResolveWidth(float widthDp)
+    {
+        if (Expanded is { } expanded && widthDp >= ExpandedFrom) return expanded;
+        if (Medium is { } medium && widthDp >= MediumFrom) return medium;
+        // A width past the Expanded threshold with no Expanded variant still wants Medium.
+        if (Medium is { } fallbackMedium && widthDp >= MediumFrom) return fallbackMedium;
+        return Compact;
+    }
+
+    /// <summary>The variant for a size CLASS — the spec-threshold shorthand (custom thresholds
+    /// resolve through <see cref="ResolveWidth"/>).</summary>
     public VisualNode Resolve(WindowSizeClass sizeClass) => sizeClass switch
     {
         WindowSizeClass.Expanded => Expanded ?? Medium ?? Compact,

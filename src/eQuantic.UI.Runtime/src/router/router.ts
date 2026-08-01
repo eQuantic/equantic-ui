@@ -1,3 +1,4 @@
+import { setNavigationHandler } from './navigator';
 import { type RouteEntry, type RouteMatch, matchRoute } from './route-table';
 import { setCurrentRouteFrom } from './current-route';
 
@@ -104,6 +105,9 @@ export class Router {
   start(): void {
     if (this.started) return;
     this.started = true;
+    // Programmatic navigation (the C# Navigator seam) routes through THIS router while it runs, so
+    // a component that navigates by logic gets the same SPA swap a link click does.
+    setNavigationHandler((href) => void this.navigate(href));
     // Own scroll restoration so it stays in sync with our async page swaps (default 'auto' restores
     // before the new page has rendered).
     if ('scrollRestoration' in this.win.history) {
@@ -123,6 +127,7 @@ export class Router {
   stop(): void {
     if (!this.started) return;
     this.started = false;
+    setNavigationHandler(null);
     this.win.document.removeEventListener('click', this.clickListener, true);
     this.win.removeEventListener('popstate', this.popListener);
     this.win.document.removeEventListener('pointerover', this.prefetchListener, true);
