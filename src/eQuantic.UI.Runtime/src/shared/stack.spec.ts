@@ -14,7 +14,12 @@ describe('Stack (spec A3) client lowering', () => {
     expect(effectiveStyle(node.children[0])).toContain(
       'align-items: center; display: flex; grid-area: 1 / 1; height: 100%; justify-content: center; width: 100%',
     );
+    // Spec A3: paint order IS child order — each cell carries its DEPTH, so a child with a filter
+    // (which creates a stacking context) can't jump above the siblings drawn after it.
+    expect(effectiveStyle(node.children[0])).toContain('z-index: 1');
     // The SAME literal StackRealizerTests pins on the C# side (hydration parity).
-    expect(effectiveStyle(node.children[1])).toBe('position: absolute; right: -4px; top: -4px');
+    expect(effectiveStyle(node.children[1])).toBe(
+      'position: absolute; right: -4px; top: -4px; z-index: 2',
+    );
   });
 });

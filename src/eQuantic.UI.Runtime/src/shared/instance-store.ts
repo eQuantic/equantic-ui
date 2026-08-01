@@ -15,6 +15,8 @@
  * page cannot collide on identity paths.
  */
 
+import { commitShortcuts } from '../dom/shortcuts';
+
 /** The duck-typed surface of a transpiled shared-stateful instance (marker set by the base class). */
 interface SharedStatefulLike {
   _sharedStateful?: boolean;
@@ -101,6 +103,9 @@ export function exitPass(): void {
   activePass.depth--;
   if (activePass.depth > 0) return;
   activePass.store.endPass();
+  // Spec S8: the pass's Shortcut declarations become the live set — bindings whose subtree was not
+  // re-lowered drop out, which is how unmounting unsubscribes.
+  commitShortcuts();
   activePass = null;
 }
 

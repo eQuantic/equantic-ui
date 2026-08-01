@@ -107,6 +107,24 @@ export interface AdaptiveNodeValue {
   compact: VisualNodeValue;
   medium?: VisualNodeValue | null;
   expanded?: VisualNodeValue | null;
+  /** Custom thresholds in dp (default 600/840) — a design that switches elsewhere brings its own. */
+  mediumFrom?: number;
+  expandedFrom?: number;
+}
+
+/** Wire shape of the C# `KeyChord`: a DOM `KeyboardEvent.key` name plus [Flags] KeyModifiers
+ * (Shift=1, Alt=2, Command=4, Control=8 — flags enums transpile numerically). */
+export interface KeyChordValue {
+  key: string;
+  modifiers?: number;
+}
+
+/** Spec S8 — a keyboard binding that is live while this subtree is mounted. */
+export interface ShortcutNode extends VisualNodeValue {
+  nodeKind: 'shortcut';
+  child: VisualNodeValue;
+  chord: KeyChordValue;
+  onPressed?: (() => void) | null;
 }
 
 /** Spec S4 — the 2D grid container (auto-flow, explicit column tracks). */
@@ -367,6 +385,10 @@ export interface OverlayNode extends VisualNodeValue {
   child: VisualNodeValue;
   /** false = non-modal layer (Toast): pointer events pass through outside the child. */
   modal?: boolean;
+  /** Visibility while `motion` is set — a closed layer stays mounted and animates out. */
+  open?: boolean;
+  /** Open/close motion: the layer stays mounted in both states and fades between them. */
+  motion?: TransitionSpecValue | null;
 }
 
 /** Spec §06 enter motion: the subtree animates IN when it first appears ('fade' | 'slideUp'). */
@@ -403,6 +425,9 @@ export interface TextEntryNode extends VisualNodeValue {
   disabled?: boolean;
   obscure?: boolean;
   role: string;
+  /** Takes focus on MOUNT (the command-palette contract) — the attribute alone only fires on the
+   * initial document parse, so the client lowering focuses it too. */
+  autofocus?: boolean;
 }
 
 export interface ScrollViewNode extends VisualNodeValue {

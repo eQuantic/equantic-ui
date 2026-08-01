@@ -113,6 +113,9 @@ export {
   TextRun,
   TransitionSpec,
   StyleChannels,
+  Shortcut,
+  KeyChord,
+  KeyModifiers,
   Sticky,
   Text,
   Pressable,
@@ -208,6 +211,7 @@ export {
   photonTheme,
   PhotonTheme,
 } from './shared/design-system.generated';
+export { Navigator } from './router/navigator';
 export { StyleBuilder } from './utils/style-builder';
 export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 

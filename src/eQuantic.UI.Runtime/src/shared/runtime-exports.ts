@@ -51,8 +51,12 @@ export {
   TextRun,
   TransitionSpec,
   StyleChannels,
+  Shortcut,
+  KeyChord,
+  KeyModifiers,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';
+export { Navigator } from '../router/navigator';
 export {
   Color,
   ColorToken,

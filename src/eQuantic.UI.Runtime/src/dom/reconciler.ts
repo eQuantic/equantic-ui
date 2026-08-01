@@ -8,6 +8,36 @@
 import { HtmlNode, EventHandler } from '../core/types';
 
 /**
+ * The MOUNT hook: a reserved `events` key that is not a DOM event — the reconciler calls it once,
+ * with the element, right after that element is in the document. It exists because some contracts
+ * (TextEntry.Autofocus) need the real node the moment it appears, and a lowering has no other way
+ * to reach it. Deferred by a microtask so the element is attached (creation and insertion are
+ * separate steps of the same synchronous render).
+ */
+export const MOUNTED_HOOK = 'eq:mounted';
+
+function runMountHook(element: Element, handler: EventHandler): void {
+  const run = () => (handler as unknown as (el: Element) => void)(element);
+  // After the next FRAME, not just the next microtask: an element that appears inside a layer which
+  // is itself transitioning from `visibility:hidden` is not focusable until the style lands, and
+  // `focus()` on a hidden element silently does nothing. A timer backstop covers hidden tabs, where
+  // no frame is ever coming.
+  if (typeof requestAnimationFrame === 'function') {
+    let done = false;
+    const once = () => {
+      if (done) return;
+      done = true;
+      run();
+    };
+    requestAnimationFrame(once);
+    setTimeout(once, 50);
+    return;
+  }
+  if (typeof queueMicrotask === 'function') queueMicrotask(run);
+  else Promise.resolve().then(run);
+}
+
+/**
  * Hydration result for debugging
  */
 export interface HydrationResult {
@@ -287,6 +317,10 @@ export class Reconciler {
     const elementListeners = new Map<string, EventHandler>();
     for (const [eventName, handler] of Object.entries(events)) {
       if (!handler) continue;
+      if (eventName === MOUNTED_HOOK) {
+        runMountHook(element, handler);
+        continue;
+      }
 
       const wrappedHandler = this.createEventHandler(eventName, handler);
       element.addEventListener(eventName, wrappedHandler as unknown as EventListener);
@@ -323,6 +357,12 @@ export class Reconciler {
     // Add new/updated event listeners
     for (const [eventName, handler] of Object.entries(newEvents)) {
       const oldHandler = oldEvents[eventName];
+      // The mount hook is not a DOM event: it fires once, when the element first carries it (a
+      // re-render that keeps the hook must NOT re-run it — autofocus would steal focus back).
+      if (eventName === MOUNTED_HOOK) {
+        if (!oldHandler && handler) runMountHook(element, handler);
+        continue;
+      }
 
       // If handler changed, remove old and add new
       if (handler !== oldHandler) {

@@ -218,35 +218,60 @@ public sealed class StyleSink
     }
 }
 
-/// <summary>Spec S6: the size-class gate vocabulary — class names and their media blobs, shared
-/// verbatim by the C# realizer and the TS lowering. Ranges encode the fallback chain: a variant is
-/// visible from its own threshold until the next DECLARED variant's threshold.</summary>
+/// <summary>
+/// Spec S6: the size-class gate vocabulary — a gate CLASS plus the media blob that makes it show
+/// its variant only inside one width range. Names encode the range in dp (<c>eq-vc600</c> = compact
+/// until 600, <c>eq-vx1024</c> = expanded from 1024), so a design with its own breakpoints gets its
+/// own gates with no registry to keep in sync; the TS twin derives the identical name and CSS from
+/// the same thresholds. Ranges encode the fallback chain: a variant is visible from its own
+/// threshold until the next DECLARED variant's threshold.
+/// </summary>
 public static class AdaptiveGates
 {
-    /// <summary>Compact hidden from 600dp (a Medium variant exists).</summary>
-    public const string CompactUntilMedium = "eq-vc6";
+    /// <summary>The upper bound of a range, as CSS max-width (exclusive of the next threshold).</summary>
+    private static string Below(float dp) => $"{TokenCss.Number(dp - 0.02f)}px";
 
-    /// <summary>Compact hidden from 840dp (no Medium — Compact serves until Expanded).</summary>
-    public const string CompactUntilExpanded = "eq-vc8";
+    private static string Dp(float dp) => TokenCss.Number(dp);
 
-    /// <summary>Medium from 600dp, hidden from 840dp (an Expanded variant exists).</summary>
-    public const string MediumUntilExpanded = "eq-vm8";
+    /// <summary>The variant that serves the SMALLEST widths, hidden from <paramref name="until"/>.</summary>
+    public static string CompactUntil(float until) => $"eq-vc{Dp(until)}";
 
-    /// <summary>Medium from 600dp, open-ended (no Expanded).</summary>
-    public const string MediumOpen = "eq-vm";
+    /// <summary>The MIDDLE variant: from <paramref name="from"/>, hidden from <paramref name="until"/>
+    /// (pass <c>0</c> for open-ended — no larger variant is declared).</summary>
+    public static string MediumFrom(float from, float until) =>
+        until > 0 ? $"eq-vm{Dp(from)}-{Dp(until)}" : $"eq-vm{Dp(from)}";
 
-    /// <summary>Expanded from 840dp.</summary>
-    public const string Expanded = "eq-vx";
+    /// <summary>The variant that serves the LARGEST widths, from <paramref name="from"/>.</summary>
+    public static string ExpandedFrom(float from) => $"eq-vx{Dp(from)}";
 
-    public static string Css(string gate) => gate switch
+    /// <summary>The gate's rules — the NORMATIVE blob (the TS twin emits the same string).</summary>
+    public static string Css(string gate)
     {
-        CompactUntilMedium => ".eq-vc6{display:contents}@media (min-width: 600px){.eq-vc6{display:none}}",
-        CompactUntilExpanded => ".eq-vc8{display:contents}@media (min-width: 840px){.eq-vc8{display:none}}",
-        MediumUntilExpanded => ".eq-vm8{display:none}@media (min-width: 600px) and (max-width: 839.98px){.eq-vm8{display:contents}}",
-        MediumOpen => ".eq-vm{display:none}@media (min-width: 600px){.eq-vm{display:contents}}",
-        Expanded => ".eq-vx{display:none}@media (min-width: 840px){.eq-vx{display:contents}}",
-        _ => throw new ArgumentOutOfRangeException(nameof(gate), gate, "Unknown adaptive gate."),
-    };
+        var (kind, from, until) = Parse(gate);
+        return kind switch
+        {
+            'c' => $".{gate}{{display:contents}}@media (min-width: {Dp(until)}px){{.{gate}{{display:none}}}}",
+            'm' when until > 0 =>
+                $".{gate}{{display:none}}@media (min-width: {Dp(from)}px) and (max-width: {Below(until)}){{.{gate}{{display:contents}}}}",
+            'm' => $".{gate}{{display:none}}@media (min-width: {Dp(from)}px){{.{gate}{{display:contents}}}}",
+            'x' => $".{gate}{{display:none}}@media (min-width: {Dp(from)}px){{.{gate}{{display:contents}}}}",
+            _ => throw new ArgumentOutOfRangeException(nameof(gate), gate, "Unknown adaptive gate."),
+        };
+    }
+
+    /// <summary>(kind, from, until) parsed back out of the gate name — the name IS the spec.</summary>
+    private static (char Kind, float From, float Until) Parse(string gate)
+    {
+        if (gate.Length < 6 || !gate.StartsWith("eq-v", StringComparison.Ordinal))
+            throw new ArgumentOutOfRangeException(nameof(gate), gate, "Unknown adaptive gate.");
+        var kind = gate[4];
+        var range = gate[5..].Split('-');
+        var first = float.Parse(range[0], System.Globalization.CultureInfo.InvariantCulture);
+        var second = range.Length > 1
+            ? float.Parse(range[1], System.Globalization.CultureInfo.InvariantCulture)
+            : 0f;
+        return kind == 'c' ? ('c', 0f, first) : (kind, first, second);
+    }
 }
 
 /// <summary>

@@ -131,6 +131,8 @@ public static class LayoutEngine
         Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx, path),
         // Pointer presence is layout-transparent (S5 programmable hover — the child owns visuals).
         Hoverable hoverable => MeasureWrapper(hoverable, hoverable.Child, maxW, maxH, ctx, path),
+        // Spec S8: a Shortcut is layout-transparent — the binding rides the realizer's walk.
+        Shortcut shortcut => MeasureWrapper(shortcut, shortcut.Child, maxW, maxH, ctx, path),
         // A Link is layout-transparent (semantics + interaction only — the child owns visuals).
         Link link => MeasureWrapper(link, link.Child, maxW, maxH, ctx, path),
         Flexible flexible => MeasureWrapper(flexible, flexible.Child, maxW, maxH, ctx, path),
@@ -839,6 +841,7 @@ public static class LayoutEngine
         FlexNode flex => (horizontal ? flex.Height : flex.Width).Kind,
         Pressable pressable => CrossSizeKind(pressable.Child, horizontal),
         Hoverable hoverable => CrossSizeKind(hoverable.Child, horizontal),
+        Shortcut shortcut => CrossSizeKind(shortcut.Child, horizontal),
         Flexible flexible => CrossSizeKind(flexible.Child, horizontal),
         // Always-explicit nodes: their constructors demand a size — stretch must never override.
         Image => SizeKind.Fixed,
