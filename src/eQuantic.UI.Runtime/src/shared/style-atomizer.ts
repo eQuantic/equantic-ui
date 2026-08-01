@@ -316,6 +316,39 @@ export function atomizePseudo(
   return classes.join(' ');
 }
 
+/**
+ * SCROLL-LINKED variant (Sticky.ScrolledStyle) — the C# ClassForScrolled twin: `scrolled|` in the
+ * hash, rules gated by the root's `eq-scrolled` class (the runtime scroll listener toggles it).
+ */
+export function atomizeScrolled(entries: Record<string, string | undefined>): string {
+  const vars = varMapFor(getPhotonTheme());
+  const classes: string[] = [];
+  for (const name of Object.keys(entries)) {
+    const value = entries[name];
+    if (value === undefined) continue;
+    const rewritten = rewrite(value, vars);
+    const className = `eq-${hashDeclaration(`scrolled|${name}:${rewritten}`)}`;
+    if (!known.has(className)) {
+      known.add(className);
+      ruleTexts.set(className, `${name}:${rewritten}`);
+      const target = registry();
+      try {
+        target?.insertRule(
+          `html.eq-scrolled .${className}{${name}:${rewritten}}`,
+          target.cssRules.length,
+        );
+      } catch {
+        /* unparsable rules must never take the app down */
+      }
+    } else {
+      ruleTexts.set(className, `${name}:${rewritten}`);
+    }
+    classes.push(className);
+  }
+  classes.sort();
+  return classes.join(' ');
+}
+
 export function atomizeEntries(entries: Record<string, string | undefined>): AtomizedStyle {
   const vars = varMapFor(getPhotonTheme());
   const classes: string[] = [];

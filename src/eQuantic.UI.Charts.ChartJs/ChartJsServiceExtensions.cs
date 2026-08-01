@@ -44,7 +44,7 @@ public static class ChartJsServiceExtensions
     private static void ConfigureChartJs(UIOptions options, string? version = null)
     {
         var ver = version ?? DefaultVersion;
-        var cdnTag = $"<script src=\"https://cdn.jsdelivr.net/npm/chart.js@{ver}/dist/chart.umd.min.js\" defer></script>";
+        var cdnTag = HtmlTag.Script($"https://cdn.jsdelivr.net/npm/chart.js@{ver}/dist/chart.umd.min.js").Render();
 
         // Only add if not already present
         if (!options.HtmlShell.HeadTags.Any(t => t.Contains("chart.js") || t.Contains("chart.umd")))
@@ -53,7 +53,8 @@ public static class ChartJsServiceExtensions
         }
 
         // Add initialization script that discovers data-chart-init markers
-        var initTag = "<script defer>document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('script[data-chart-init]').forEach(function(el){var id=el.getAttribute('data-chart-init');var cfg=JSON.parse(el.getAttribute('data-chart-config'));var c=document.getElementById(id);if(c&&typeof Chart!=='undefined')new Chart(c.getContext('2d'),cfg)})});</script>";
+        var initTag = HtmlTag.InlineScript(
+            "document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('script[data-chart-init]').forEach(function(el){var id=el.getAttribute('data-chart-init');var cfg=JSON.parse(el.getAttribute('data-chart-config'));var c=document.getElementById(id);if(c&&typeof Chart!=='undefined')new Chart(c.getContext('2d'),cfg)})});").Render();
 
         if (!options.HtmlShell.HeadTags.Any(t => t.Contains("data-chart-init")))
         {

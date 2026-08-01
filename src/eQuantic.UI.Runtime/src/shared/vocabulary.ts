@@ -21,7 +21,10 @@ import type {
 } from './nodes';
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
-import { CornerRadii, EdgeInsets, SizeValue } from './value-types';
+import { CornerRadii, EdgeInsets, SizeValue, StyleChannels } from './value-types';
+import { Curve, Motion } from './design-system.generated';
+
+export { StyleChannels } from './value-types';
 
 /** Base of every abstract node: the wire discriminator + self-lowering into the web pipeline. */
 export abstract class VisualNode {
@@ -55,6 +58,7 @@ export class StyleDiff {
   elevation?: number | null;
   opacity?: number | null;
   gradient?: LinearGradient | null;
+  backdropBlur?: number | null;
 
   constructor(config?: {
     background?: ColorTokenValue | null;
@@ -63,6 +67,7 @@ export class StyleDiff {
     elevation?: number | null;
     opacity?: number | null;
     gradient?: LinearGradient | null;
+    backdropBlur?: number | null;
   }) {
     if (config) Object.assign(this, config);
   }
@@ -118,7 +123,10 @@ interface BoxStyleConfig {
   aspectRatio?: number;
   backdropBlur?: number;
   shadow?: ShadowSpec | null;
+  shadows?: ShadowSpec[] | null;
   insetHighlight?: ColorTokenValue | null;
+  blur?: number;
+  transition?: TransitionSpec | null;
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
 }
@@ -152,9 +160,14 @@ export class BoxStyle {
   aspectRatio = 0;
   /** Spec S3 frosted glass (0 = none). */
   backdropBlur = 0;
-  /** Custom shadow (glow/halo — full spec; null = none) and the glossy inner highlight. */
+  /** Custom shadow (glow/halo — full spec; null = none), composed list, and the glossy inner highlight. */
   shadow?: ShadowSpec | null;
+  shadows: ShadowSpec[] | null = null;
   insetHighlight?: ColorTokenValue | null;
+  /** Element blur (this box's own pixels). */
+  blur = 0;
+  /** Spec S6: animates changes to the covered channels (null = snap). */
+  transition?: TransitionSpec | null;
   /** Spec S5 hover/focus diffs. */
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
@@ -239,6 +252,8 @@ export class Anchored extends VisualNode {
   openOnHover = false;
   /** Paints the outside-tap scrim (mega-menu page veil) — a BoxStyle, like the C# ScrimStyle. */
   scrimStyle: BoxStyleValue | null = null;
+  /** Open/close motion (C# twin): panel + scrim stay MOUNTED and glide between states. */
+  motion: TransitionSpec | null = null;
 
   constructor(
     anchor: VisualChild,
@@ -251,6 +266,7 @@ export class Anchored extends VisualNode {
       matchAnchorWidth?: boolean;
       openOnHover?: boolean;
       scrimStyle?: BoxStyleValue | null;
+      motion?: TransitionSpec | null;
       key?: string | null;
     },
   ) {
@@ -264,12 +280,23 @@ export class Anchored extends VisualNode {
 /** Mirror of the C# `Sticky` (spec S7): scroll-anchored chrome. */
 export class Sticky extends VisualNode {
   readonly nodeKind = 'sticky';
+  float = false;
+  scrolledStyle: StyleDiff | null = null;
+  /** Spec S6: animates the swap into/out of `scrolledStyle` (null = snap). */
+  transition: TransitionSpec | null = null;
 
   constructor(
     readonly child: VisualChild,
     readonly offset = 0,
+    config?: {
+      float?: boolean;
+      scrolledStyle?: StyleDiff | null;
+      transition?: TransitionSpec | null;
+      key?: string | null;
+    },
   ) {
     super();
+    if (config) Object.assign(this, config);
   }
 }
 
@@ -366,6 +393,8 @@ interface TextConfig {
   gradient?: LinearGradient | null;
   /** Line alignment within the paragraph ('start' | 'center' | 'end'). */
   align?: string;
+  /** Spec S6: animates color changes (the design's transition-colors). */
+  transition?: TransitionSpec | null;
   key?: string | null;
 }
 
@@ -380,6 +409,8 @@ export class Text extends VisualNode {
   align: string = 'start';
   mono = false;
   spans: import('./nodes').TextRunValue[] | null = null;
+  /** Spec S6: animates color changes (the design's transition-colors). */
+  transition: TransitionSpec | null = null;
 
   constructor(
     content: string,
@@ -524,16 +555,65 @@ export class TextEntry extends VisualNode {
   }
 }
 
-/** Mirror of the C# `LinearGradient` record: two token stops on a straight axis (engine fence). */
+interface LinearGradientConfig {
+  via?: ColorTokenValue | null;
+  viaPosition?: number;
+}
+
+/** Mirror of the C# `LinearGradient` record: two token stops on a straight axis (engine fence),
+ * plus the optional `via` midpoint (the design system's from/via/to triple). */
 export class LinearGradient {
   from: ColorTokenValue;
   to: ColorTokenValue;
   direction: string;
+  via: ColorTokenValue | null = null;
+  viaPosition = 0.5;
 
-  constructor(from: ColorTokenValue, to: ColorTokenValue, direction = 'toRight') {
+  constructor(
+    from: ColorTokenValue,
+    to: ColorTokenValue,
+    direction = 'toRight',
+    config?: LinearGradientConfig,
+  ) {
     this.from = from;
     this.to = to;
     this.direction = direction;
+    if (config) Object.assign(this, config);
+  }
+}
+
+interface TransitionSpecConfig {
+  easing?: readonly number[];
+}
+
+/** Mirror of the C# `TransitionSpec` record struct (spec S6): which channels glide, for how long,
+ * along which bezier. `easing` is the 4-number control-point tuple the generated `Curve` exports. */
+export class TransitionSpec {
+  channels: number;
+  durationMs: number;
+  delayMs: number;
+  easing: readonly number[] = Curve.standard;
+
+  constructor(
+    channels: number,
+    durationMs: number = Motion.baseMs,
+    delayMs = 0,
+    config?: TransitionSpecConfig,
+  ) {
+    this.channels = channels;
+    this.durationMs = durationMs;
+    this.delayMs = delayMs;
+    if (config) Object.assign(this, config);
+  }
+
+  /** C# twin: `TransitionSpec.Colors(150)` — the ubiquitous hover-tint glide. */
+  static colors(durationMs = 150): TransitionSpec {
+    return new TransitionSpec(StyleChannels.colors, durationMs);
+  }
+
+  /** C# twin: `TransitionSpec.All(200)`. */
+  static all(durationMs: number = Motion.baseMs): TransitionSpec {
+    return new TransitionSpec(StyleChannels.all, durationMs);
   }
 }
 

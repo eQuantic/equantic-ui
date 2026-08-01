@@ -77,8 +77,55 @@ public static class TokenCss
         return string.Join(" ", parts);
     }
 
-    /// <summary>The 2-stop token gradient as a CSS background-image value — `light-dark()` stops
-    /// keep the DOM mode-free exactly like solid fills.</summary>
+    /// <summary>A <see cref="Curve"/> as the CSS <c>cubic-bezier()</c> function.</summary>
+    public static string Bezier(Curve curve) =>
+        $"cubic-bezier({Number(curve.X1)}, {Number(curve.Y1)}, {Number(curve.X2)}, {Number(curve.Y2)})";
+
+    /// <summary>
+    /// Spec S6: a <see cref="TransitionSpec"/> as the CSS transition list — one entry per covered
+    /// property, all riding the same duration/easing/delay. The channel → property mapping below is
+    /// the NORMATIVE contract (the TS lowering mirrors it byte-for-byte; class identity across
+    /// SSR/hydration depends on it). background-image rides Colors: gradient swaps snap where the
+    /// browser can't interpolate them — same as the reference design.
+    /// </summary>
+    public static string Transition(TransitionSpec spec)
+    {
+        var timing = $"{Number(spec.DurationMs)}ms {Bezier(spec.Easing)}"
+            + (spec.DelayMs > 0 ? $" {Number(spec.DelayMs)}ms" : "");
+        return string.Join(", ", TransitionProperties(spec.Channels).Select(p => $"{p} {timing}"));
+    }
+
+    private static IEnumerable<string> TransitionProperties(StyleChannels channels)
+    {
+        if (channels.HasFlag(StyleChannels.Colors))
+        {
+            yield return "background-color";
+            yield return "background-image";
+            yield return "border-color";
+            yield return "color";
+            yield return "fill";
+            yield return "stroke";
+        }
+        if (channels.HasFlag(StyleChannels.Opacity)) yield return "opacity";
+        if (channels.HasFlag(StyleChannels.Transform)) yield return "transform";
+        if (channels.HasFlag(StyleChannels.Shadow)) yield return "box-shadow";
+        if (channels.HasFlag(StyleChannels.Filters))
+        {
+            yield return "filter";
+            yield return "backdrop-filter";
+        }
+        if (channels.HasFlag(StyleChannels.Size))
+        {
+            yield return "width";
+            yield return "height";
+            yield return "max-width";
+            yield return "max-height";
+        }
+    }
+
+    /// <summary>The token gradient as a CSS background-image value — `light-dark()` stops keep the
+    /// DOM mode-free exactly like solid fills. A <c>Via</c> midpoint lands as the third stop with
+    /// its percentage position (the design's from/via/to triple).</summary>
     public static string Gradient(LinearGradient gradient)
     {
         var direction = gradient.Direction switch
@@ -88,7 +135,10 @@ public static class TokenCss
             GradientDirection.ToBottomLeft => "to bottom left",
             _ => "to right",
         };
-        return $"linear-gradient({direction}, {Value(gradient.From)}, {Value(gradient.To)})";
+        var via = gradient.Via is { } mid
+            ? $" {Value(mid)} {Number(gradient.ViaPosition * 100)}%,"
+            : "";
+        return $"linear-gradient({direction}, {Value(gradient.From)},{via} {Value(gradient.To)})";
     }
 
     /// <summary>The elliptical spotlight as a CSS <c>radial-gradient()</c> — explicit ellipse extent

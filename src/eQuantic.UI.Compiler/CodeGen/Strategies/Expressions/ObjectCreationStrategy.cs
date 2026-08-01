@@ -196,7 +196,10 @@ public class ObjectCreationStrategy : IConversionStrategy
     }
 
     /// <summary>The TS literal for a parameter's C# default value — enum members lower to their
-    /// camelCase member-name string, matching the enum representation everywhere else.</summary>
+    /// camelCase member-name string, matching the enum representation everywhere else. Shared with
+    /// InvocationStrategy (named INVOCATION arguments reorder the same way creations do).</summary>
+    internal static string DefaultLiteralFor(IParameterSymbol parameter) => ParameterDefaultLiteral(parameter);
+
     private static string ParameterDefaultLiteral(IParameterSymbol parameter)
     {
         if (!parameter.HasExplicitDefaultValue || parameter.ExplicitDefaultValue is null) return "null";
@@ -328,7 +331,19 @@ public class ObjectCreationStrategy : IConversionStrategy
             if (creation.ArgumentList != null)
                 parts.AddRange(OrderedArguments(creation, context));
             if (creation.Initializer != null)
+            {
+                // The config object rides the TRAILING slot: a call that supplied fewer positional
+                // arguments than the constructor's arity must first fill the skipped parameters
+                // from their C# defaults — otherwise `new TransitionSpec(channels, 300) { Easing = … }`
+                // emits the config in the `delayMs` slot and the easing silently reverts to default.
+                if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
+                {
+                    var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
+                    for (var i = supplied; i < ctor.Parameters.Length; i++)
+                        parts.Add(ParameterDefaultLiteral(ctor.Parameters[i]));
+                }
                 parts.Add(context.Converter.ConvertExpression(creation.Initializer));
+            }
             return $"new {type.Name}({string.Join(", ", parts)})";
         }
 

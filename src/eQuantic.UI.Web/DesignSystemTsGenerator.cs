@@ -37,6 +37,7 @@ public static class DesignSystemTsGenerator
         AppendConstScale(ts, typeof(IconSize), "IconSize");
         AppendConstScale(ts, typeof(Touch), "Touch");
         AppendConstScale(ts, typeof(Motion), "Motion");
+        AppendCurves(ts);
 
         AppendButtonStyles(ts);
         AppendVariantColors(ts, theme);
@@ -46,6 +47,21 @@ public static class DesignSystemTsGenerator
         AppendTheme(ts, theme);
 
         return ts.ToString();
+    }
+
+    /// <summary>The spec §06 easing curves → the CSS-ready control-point tuples the TS twin feeds
+    /// <c>cubic-bezier()</c> (the C# TokenCss.Bezier mirror).</summary>
+    private static void AppendCurves(StringBuilder ts)
+    {
+        ts.AppendLine();
+        ts.AppendLine("export const Curve = {");
+        foreach (var field in typeof(Curve).GetFields(BindingFlags.Public | BindingFlags.Static)
+                     .Where(f => f.FieldType == typeof(Curve)))
+        {
+            var curve = (Curve)field.GetValue(null)!;
+            ts.AppendLine($"  {Camel(field.Name)}: [{Num(curve.X1)}, {Num(curve.Y1)}, {Num(curve.X2)}, {Num(curve.Y2)}],");
+        }
+        ts.AppendLine("} as const;");
     }
 
     /// <summary>A static token class of numeric consts (Space, Radius, …) → a const object of camelCase members.</summary>

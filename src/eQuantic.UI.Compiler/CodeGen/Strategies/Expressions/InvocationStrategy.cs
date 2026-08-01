@@ -33,6 +33,10 @@ public class InvocationStrategy : IConversionStrategy
             methodName = memberAccess.Name.Identifier.Text;
         }
 
+        // 2. Semantic Resolution (needed BEFORE argument conversion — named arguments reorder
+        // against the resolved signature).
+        var symbol = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+
         // 1. Resolve Arguments
         var argsList = new List<string>();
         foreach (var arg in invocation.ArgumentList.Arguments)
@@ -53,10 +57,30 @@ public class InvocationStrategy : IConversionStrategy
                 argsList.Add(context.Converter.ConvertExpression(arg.Expression));
             }
         }
-        var args = string.Join(", ", argsList);
 
-        // 2. Semantic Resolution
-        var symbol = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        // NAMED arguments bind by NAME in C# but JS only has positions: reorder into the
+        // signature's slots, filling skipped parameters from their defaults — otherwise
+        // `Primary(label, compact: true)` lands `true` in the `leading` slot (an 8px ghost
+        // icon and the wrong size, found on the header CTA).
+        if (symbol != null && invocation.ArgumentList.Arguments.Any(a => a.NameColon != null))
+        {
+            var slots = new string?[symbol.Parameters.Length];
+            var positional = 0;
+            var arguments = invocation.ArgumentList.Arguments;
+            for (var i = 0; i < arguments.Count && i < argsList.Count; i++)
+            {
+                var name = arguments[i].NameColon?.Name.Identifier.Text;
+                var ordinal = name == null
+                    ? positional++
+                    : symbol.Parameters.FirstOrDefault(p => p.Name == name)?.Ordinal ?? -1;
+                if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = argsList[i];
+            }
+            var lastSet = Array.FindLastIndex(slots, s => s != null);
+            argsList = new List<string>();
+            for (var i = 0; i <= lastSet; i++)
+                argsList.Add(slots[i] ?? ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i]));
+        }
+        var args = string.Join(", ", argsList);
 
         // 4. General Method Call (Fallback)
         if (methodExpression is MemberAccessExpressionSyntax genAccess)

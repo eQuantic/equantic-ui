@@ -15,7 +15,7 @@ import type { EventHandler, HtmlNode } from '../core/types';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
-import { atomizeEntries, atomizePseudo, ensureAdaptiveGate, mergeAtomicDeclaration } from './style-atomizer';
+import { atomizeEntries, atomizePseudo, atomizeScrolled, ensureAdaptiveGate, mergeAtomicDeclaration } from './style-atomizer';
 import type {
   BoxNode,
   BoxStyleValue,
@@ -52,8 +52,14 @@ import type {
   TextEntryNode,
   TextNode,
   TransformValue,
+  TransitionSpecValue,
   VisualNodeValue,
 } from './nodes';
+import { Curve, Motion } from './design-system.generated';
+import { StyleChannels } from './value-types';
+
+/** The C# `Anchored.MotionLiftDp` twin — the open/close nudge toward the anchor. */
+const ANCHOR_MOTION_LIFT = 8;
 
 export interface LoweringContext {
   /** The theme's TextPrimary token — the default Text color (mirrors `theme.TextPrimary`). */
@@ -372,7 +378,8 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
   return input;
 }
 
-/** Mirror of C# TokenCss.Gradient: 2-stop linear-gradient with light-dark() stops. */
+/** Mirror of C# TokenCss.Gradient: linear-gradient with light-dark() stops; a `via` midpoint
+ * lands as the third stop at its percentage position. */
 function gradientValue(gradient: LinearGradientValue): string {
   const direction =
     gradient.direction === 'toBottom'
@@ -382,7 +389,48 @@ function gradientValue(gradient: LinearGradientValue): string {
         : gradient.direction === 'toBottomLeft'
           ? 'to bottom left'
           : 'to right';
-  return `linear-gradient(${direction}, ${tokenValue(gradient.from)}, ${tokenValue(gradient.to)})`;
+  const via = gradient.via
+    ? ` ${tokenValue(gradient.via)} ${num((gradient.viaPosition ?? 0.5) * 100)}%,`
+    : '';
+  return `linear-gradient(${direction}, ${tokenValue(gradient.from)},${via} ${tokenValue(gradient.to)})`;
+}
+
+/** Mirror of C# TokenCss.Bezier. */
+function bezier(easing: readonly number[] | undefined): string {
+  const c = easing ?? Curve.standard;
+  return `cubic-bezier(${num(c[0])}, ${num(c[1])}, ${num(c[2])}, ${num(c[3])})`;
+}
+
+/**
+ * Mirror of C# TokenCss.Transition (spec S6) — one entry per covered channel, all sharing the
+ * duration/easing/delay. The channel → property mapping is NORMATIVE and must stay byte-identical
+ * to the C# side: SSR emits these declarations and hydration re-derives them, so class identity
+ * (and therefore a repaint-free handover) depends on the exact string.
+ */
+function transitionValue(spec: TransitionSpecValue): string {
+  const timing =
+    `${num(spec.durationMs ?? Motion.baseMs)}ms ${bezier(spec.easing)}` +
+    (spec.delayMs && spec.delayMs > 0 ? ` ${num(spec.delayMs)}ms` : '');
+  const properties: string[] = [];
+  const channels = spec.channels ?? 0;
+  if (channels & StyleChannels.colors)
+    properties.push('background-color', 'background-image', 'border-color', 'color', 'fill', 'stroke');
+  if (channels & StyleChannels.opacity) properties.push('opacity');
+  if (channels & StyleChannels.transform) properties.push('transform');
+  if (channels & StyleChannels.shadow) properties.push('box-shadow');
+  if (channels & StyleChannels.filters) properties.push('filter', 'backdrop-filter');
+  if (channels & StyleChannels.size) properties.push('width', 'height', 'max-width', 'max-height');
+  return properties.map((property) => `${property} ${timing}`).join(', ');
+}
+
+/** The C# MotionTransition twin: the Anchored open/close list. `visibility` always rides along —
+ * it flips at the fade's end on exit and its start on enter, which is what parks a closed panel
+ * outside hit-testing and the focus order without any JS. */
+function motionTransition(motion: TransitionSpecValue, withTransform: boolean): string {
+  const timing = `${num(motion.durationMs ?? Motion.baseMs)}ms ${bezier(motion.easing)}`;
+  return withTransform
+    ? `opacity ${timing}, transform ${timing}, visibility ${timing}`
+    : `opacity ${timing}, visibility ${timing}`;
 }
 
 /** Mirror of C# TokenCss.Glow: the elliptical spotlight as a CSS radial-gradient(). */
@@ -654,6 +702,11 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
             `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`,
           );
       }
+      if (style.shadows && style.shadows.length > 0)
+        for (const entry of style.shadows)
+          parts.push(
+            `0 ${px(entry.offsetY)} ${px(entry.blur)} ${px(entry.spread)} ${tokenValue(entry.color)}`.replace('0 0px', '0 0'),
+          );
       if (style.shadow)
         parts.push(
           `0 ${px(style.shadow.offsetY)} ${px(style.shadow.blur)} ${px(style.shadow.spread)} ${tokenValue(style.shadow.color)}`,
@@ -669,6 +722,8 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     overflow: style.clip ? 'hidden' : undefined,
     // Spec S1 — group opacity, center-anchored static transform, one-axis-derives aspect ratio.
     opacity: style.opacity != null && style.opacity < 1 ? num(style.opacity) : undefined,
+    // ELEMENT blur (blur-3xl glow washes) — this box's own pixels (C# twin).
+    filter: style.blur && style.blur > 0 ? `blur(${px(style.blur)})` : undefined,
     // Spec S3 frosted glass (native BackdropBlur pass-split twin); Safari still needs the prefix.
     'backdrop-filter':
       style.backdropBlur && style.backdropBlur > 0 ? `blur(${px(style.backdropBlur)})` : undefined,
@@ -676,6 +731,8 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
       style.backdropBlur && style.backdropBlur > 0 ? `blur(${px(style.backdropBlur)})` : undefined,
     transform: style.transform ? transformValue(style.transform) : undefined,
     'aspect-ratio': style.aspectRatio && style.aspectRatio > 0 ? num(style.aspectRatio) : undefined,
+    // Spec S6 — changes to the covered channels glide instead of snapping (C# twin).
+    transition: style.transition ? transitionValue(style.transition) : undefined,
   });
 
   if (style.hover) appendDiff(result, ':hover', style.hover);
@@ -810,6 +867,8 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // Authored \n is a HARD break (pre-line keeps normal wrapping between them) — C# twin.
     'white-space': text.content.includes('\n') ? 'pre-line' : undefined,
     'font-family': text.mono === true ? MONO_STACK : undefined,
+    // Spec S6 (C# twin): recolors glide instead of flipping.
+    transition: text.transition ? transitionValue(text.transition) : undefined,
   };
 
   // Gradient text — mirrors the C# realizer, including keeping `color` as the readable fallback
@@ -968,15 +1027,19 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
   };
   const anchor = lowerNode(node.anchor, context, null, path + '/0');
   if (anchor) {
-    // C# twin: a painted scrim dims the page, never its own anchor.
-    if (node.scrimStyle && node.open === true && node.onDismiss) prependClass(anchor, 'eq-anchor-above');
+    // C# twin: a painted scrim dims the page, never its own anchor. Motion panels keep the class
+    // in BOTH states — the scrim is still fading out after close.
+    if (node.scrimStyle && node.onDismiss && (node.open === true || node.motion))
+      prependClass(anchor, 'eq-anchor-above');
     host.children.push(anchor);
   }
   if (node.openOnHover === true) {
     host.children.push(buildAnchorPanel(node, context, path));
     return host;
   }
-  if (node.open !== true) return host;
+  // C# twin: open/close MOTION keeps panel + scrim mounted in both states (element identity is
+  // what lets the CSS transitions glide); without it, closed renders nothing.
+  if (node.open !== true && !node.motion) return host;
 
   if (node.onDismiss) {
     // Mega-menu dimming (C# twin): scrimStyle paints the outside-tap scrim as a full Box.
@@ -1001,12 +1064,36 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
     if (scrim) {
       const existing = scrim.attributes['class'];
       scrim.attributes['class'] = existing ? `${existing} eq-anchor-scrim` : 'eq-anchor-scrim';
+      if (node.motion) {
+        // C# twin: the scrim cross-fades with the panel and, closed, is hidden — out of
+        // hit-testing and the focus order.
+        appendDeclarations(scrim, {
+          transition: motionTransition(node.motion, false),
+          ...(node.open === true
+            ? {}
+            : { opacity: '0', visibility: 'hidden', 'pointer-events': 'none' }),
+        });
+      }
       host.children.push(scrim);
     }
   }
 
   host.children.push(buildAnchorPanel(node, context, path));
   return host;
+}
+
+/** Atomizes extra declarations onto an ALREADY-lowered node (the C# realizer's equivalent of
+ * assigning more members on `element.Style` before the atomizer runs). */
+function appendDeclarations(node: HtmlNode, entries: Record<string, string | undefined>): void {
+  const extra = atomicAttrs(entries);
+  if (extra['class']) {
+    const existing = node.attributes['class'];
+    node.attributes['class'] = existing ? `${existing} ${extra['class']}` : extra['class'];
+  }
+  if (extra['style']) {
+    const existing = node.attributes['style'];
+    node.attributes['style'] = existing ? `${existing}; ${extra['style']}` : extra['style'];
+  }
 }
 
 /**
@@ -1037,7 +1124,18 @@ function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: st
   // HOVER BRIDGE (C# twin): hover-open panels carry the gap as PADDING — part of the hoverable
   // area — so crossing it never drops the host's :hover. Click-open panels keep the margin.
   const gapProp = node.openOnHover === true ? 'padding' : 'margin';
-  const panel = element('div', top ? { [`${gapProp}-bottom`]: px(gap) } : { [`${gapProp}-top`]: px(gap) });
+  const motion = node.openOnHover === true ? null : node.motion;
+  const closed = motion && node.open !== true;
+  // C# twin: open/close glide — fade + a MotionLiftDp nudge toward the anchor; closed ends
+  // visibility:hidden (gone from hit-testing and the Tab order once the exit completes).
+  const panel = element('div', {
+    ...(top ? { [`${gapProp}-bottom`]: px(gap) } : { [`${gapProp}-top`]: px(gap) }),
+    transition: motion ? motionTransition(motion, true) : undefined,
+    opacity: closed ? '0' : undefined,
+    transform: closed ? `translateY(${px(top ? ANCHOR_MOTION_LIFT : -ANCHOR_MOTION_LIFT)})` : undefined,
+    visibility: closed ? 'hidden' : undefined,
+    'pointer-events': closed ? 'none' : undefined,
+  });
   if (node.matchAnchorWidth === true) prependClass(panel, 'eq-anchor-match');
   prependClass(panel, anchorPlacementClass(node.placement));
   prependClass(panel, 'eq-anchor-panel');
@@ -1065,14 +1163,57 @@ function anchorPlacementClass(placement: AnchoredNode['placement']): string {
 }
 
 function lowerSticky(node: StickyNode, context: LoweringContext, path: string): HtmlNode {
+  const float = node.float === true;
   const wrapper = element('div', {
-    position: 'sticky',
+    // Floating chrome (the fixed header) paints above the page; plain sticky stays in flow.
+    position: float ? 'fixed' : 'sticky',
     top: px(node.offset),
-    'z-index': '1',
+    left: float ? '0' : undefined,
+    right: float ? '0' : undefined,
+    'z-index': float ? '100' : '1',
+    // Spec S6 (C# twin): the scrolled swap GLIDES instead of flipping in one frame.
+    transition: node.transition ? transitionValue(node.transition) : undefined,
   });
+
+  // SCROLL-LINKED diff (C# twin): declarations land under the root-gated scrolled variant, and
+  // the tiny window listener that toggles `eq-scrolled` installs once per page.
+  if (node.scrolledStyle) {
+    const diff = node.scrolledStyle;
+    const entries: Record<string, string | undefined> = {};
+    if (diff.background) entries['background-color'] = tokenValue(diff.background);
+    if (diff.borderWidth != null && diff.borderColor)
+      entries['border-bottom'] = `${px(diff.borderWidth)} solid ${tokenValue(diff.borderColor)}`;
+    if (diff.opacity != null) entries['opacity'] = num(diff.opacity);
+    if (diff.backdropBlur != null && diff.backdropBlur > 0) {
+      entries['backdrop-filter'] = `blur(${px(diff.backdropBlur)})`;
+      entries['-webkit-backdrop-filter'] = `blur(${px(diff.backdropBlur)})`;
+    }
+    const classes = atomizeScrolled(entries);
+    if (classes) mergeScrolledClasses(wrapper, classes);
+    installScrolledController();
+  }
+
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) wrapper.children.push(child);
   return wrapper;
+}
+
+/** Append variant classes to an element's class attribute (sorted upstream). */
+function mergeScrolledClasses(node: HtmlNode, classes: string): void {
+  const existing = node.attributes['class'];
+  node.attributes['class'] = existing ? `${existing} ${classes}` : classes;
+}
+
+let scrolledControllerInstalled = false;
+
+/** The scroll listener behind Sticky.ScrolledStyle: `eq-scrolled` on <html> past 8px. */
+function installScrolledController(): void {
+  if (scrolledControllerInstalled || typeof window === 'undefined') return;
+  scrolledControllerInstalled = true;
+  const apply = () =>
+    document.documentElement.classList.toggle('eq-scrolled', window.scrollY > 8);
+  window.addEventListener('scroll', apply, { passive: true });
+  apply();
 }
 
 /** Spec S6 mirror of the C# LowerAdaptive: every declared variant gated by the fixed media rules. */

@@ -64,6 +64,19 @@ public static class StyleAtomizer
             element.ClassName = string.IsNullOrEmpty(element.ClassName) ? gate : $"{element.ClassName} {gate}";
         }
 
+        // Scroll-linked variant classes (Sticky.ScrolledStyle) — root-gated rules, appended like
+        // pseudo variants.
+        if (element is IScrolledStyled { ScrolledDeclarations: { Count: > 0 } scrolledDecls })
+        {
+            var scrolledClasses = new List<string>();
+            foreach (var (prop, value) in scrolledDecls)
+                scrolledClasses.Add(sink.ClassForScrolled(prop, vars.Rewrite(value)));
+            scrolledClasses.Sort(StringComparer.Ordinal);
+            var joinedScrolled = string.Join(" ", scrolledClasses);
+            element.ClassName = string.IsNullOrEmpty(element.ClassName)
+                ? joinedScrolled : $"{element.ClassName} {joinedScrolled}";
+        }
+
         // Spec S5 pseudo-variant classes come AFTER the base atomic set — the same order the TS
         // lowering appends them (hydration compares the class attribute as one string).
         if (element is IPseudoStyled { PseudoDeclarations: { Count: > 0 } pseudos })
@@ -110,6 +123,13 @@ public static class StyleAtomizer
 public interface IPseudoStyled
 {
     List<(string Pseudo, string Prop, string Value)> PseudoDeclarations { get; }
+}
+
+/// <summary>Scroll-linked channel (Sticky.ScrolledStyle): declarations gated by the root's
+/// <c>eq-scrolled</c> class.</summary>
+public interface IScrolledStyled
+{
+    List<(string Prop, string Value)> ScrolledDeclarations { get; }
 }
 
 /// <summary>Spec S6 channel: an adaptive-variant wrapper carrying its size-class GATE.</summary>
@@ -160,6 +180,17 @@ public sealed class StyleSink
     /// class, byte-identical to the TS twin.</summary>
     public void AddAdaptiveGate(string gate) => _rules.TryAdd(gate, "\u0002" + AdaptiveGates.Css(gate));
 
+    /// <summary>SCROLL-LINKED variant (Sticky.ScrolledStyle): the declaration only applies while
+    /// the root carries <c>eq-scrolled</c> (the runtime's scroll listener toggles it). Root-gated
+    /// selector, same hash family as pseudo variants ("scrolled|" prefix).</summary>
+    public string ClassForScrolled(string property, string value)
+    {
+        var declaration = $"{property}:{value}";
+        var className = $"eq-{StyleAtomizer.Hash($"scrolled|{declaration}")}";
+        _rules.TryAdd(className, "\u0003" + declaration);
+        return className;
+    }
+
     /// <summary>Every collected rule, sorted by class name (deterministic output for tests/caching).</summary>
     public string Css
     {
@@ -169,6 +200,12 @@ public sealed class StyleSink
             foreach (var rule in _rules.OrderBy(r => r.Key, StringComparer.Ordinal))
             {
                 if (rule.Value.StartsWith('\u0002')) { css.Append(rule.Value[1..]); continue; }
+                if (rule.Value.StartsWith('\u0003'))
+                {
+                    css.Append("html.eq-scrolled .").Append(rule.Key)
+                       .Append('{').Append(rule.Value[1..]).Append('}');
+                    continue;
+                }
                 var split = rule.Value.IndexOf('\u0001');
                 if (split >= 0)
                     css.Append('.').Append(rule.Key).Append(rule.Value[..split])

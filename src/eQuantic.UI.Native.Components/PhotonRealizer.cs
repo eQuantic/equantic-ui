@@ -342,6 +342,12 @@ public static class PhotonRealizer
                 if (box.Style.BackdropBlur > 0)
                     builder.BackdropBlur(new RRect(node.Bounds, box.Style.CornerRadius), box.Style.BackdropBlur);
 
+                // Spec S6 FENCE: `BoxStyle.Transition` (and its Anchored/Sticky/Text siblings) is a
+                // WEB-only glide today — native SNAPS to each new value until the style interpolator
+                // lands. Honesty over smoothness, the same fence Flexible.AnimateChanges documents.
+                // Spec S1 FENCE: a gradient's `Via` midpoint is ignored — the shader interpolates two
+                // stops, so native paints From→To until the 3-stop paint lands.
+
                 // §05: the analytic shadow draws under the fill (one per node, theme-resolved).
                 if (box.Style.Elevation > 0)
                 {
@@ -354,11 +360,17 @@ public static class PhotonRealizer
                 }
 
                 // CUSTOM shadow (glows, halos): the same analytic rrect shadow with the caller's
-                // full spec — composes with the neutral elevation above.
+                // full spec — composes with the neutral elevation above. Lists draw in order.
                 if (box.Style.Shadow is { } custom)
                 {
                     builder.ShadowRRect(new RRect(node.Bounds, box.Style.CornerRadius),
                         custom.OffsetY, custom.Blur, custom.Spread, custom.Color.Resolve(mode));
+                }
+                if (box.Style.Shadows is { Count: > 0 } customList)
+                {
+                    foreach (var entry in customList)
+                        builder.ShadowRRect(new RRect(node.Bounds, box.Style.CornerRadius),
+                            entry.OffsetY, entry.Blur, entry.Spread, entry.Color.Resolve(mode));
                 }
 
                 var fill = press.PendingFill ?? box.Style.Background;

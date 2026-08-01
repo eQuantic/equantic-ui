@@ -135,6 +135,8 @@ public class HtmlStyle
     public string? BackdropFilter { get; set; }
 
     public string? Opacity { get; set; }
+    public string? Visibility { get; set; }
+    public string? PointerEvents { get; set; }
     public string? Cursor { get; set; }
     public string? Overflow { get; set; }
     public string? OverflowX { get; set; }
@@ -243,6 +245,8 @@ public class HtmlStyle
 
         AddProperty(properties, "box-shadow", BoxShadow);
         AddProperty(properties, "opacity", Opacity);
+        AddProperty(properties, "visibility", Visibility);
+        AddProperty(properties, "pointer-events", PointerEvents);
         AddProperty(properties, "backdrop-filter", BackdropFilter);
         AddProperty(properties, "-webkit-backdrop-filter", BackdropFilter);
         AddProperty(properties, "cursor", Cursor);
