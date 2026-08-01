@@ -237,9 +237,23 @@ public sealed class RhiRenderer : IDisposable
                 if (command.TextureId < 0 || command.TextureId >= displayList.Textures.Count) continue;
                 var data = displayList.Textures[command.TextureId];
                 if (!DrawUniforms.TryBuild(in command, out var textured)) continue;
-                if (layerAlpha < 1f) textured.ColorA.W *= layerAlpha;
+                if (layerAlpha < 1f)
+                {
+                    textured.ColorA.W *= layerAlpha;
+                    textured.ColorB.W *= layerAlpha;
+                }
+                // The textured path reuses free slots rather than growing the block: the texture
+                // size rides `Gradient`, and a GRADIENT TINT (gradient text) rides `Radii` (axis)
+                // + `ColorB` (second stop) — neither is read by the textured entry points.
+                var gradientTint = command.Paint.Kind == PaintKind.LinearGradient;
+                if (gradientTint)
+                {
+                    textured.Radii = new Float4(
+                        command.Paint.GradientStart.X, command.Paint.GradientStart.Y,
+                        command.Paint.GradientEnd.X, command.Paint.GradientEnd.Y);
+                }
                 textured.Gradient = new Float4(data.Width, data.Height, 0, 0);
-                textured.Flags = new Float4(0, 0, command.Clip is null ? 0 : 1, 0);
+                textured.Flags = new Float4(0, gradientTint ? 1 : 0, command.Clip is null ? 0 : 1, 0);
 
                 var kind = data.Format == TextureFormat.Rgba8 ? RhiPipelineKind.TexturedRgba : RhiPipelineKind.TexturedA8;
                 if (activeKind != kind)

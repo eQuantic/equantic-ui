@@ -153,11 +153,19 @@ public sealed class DisplayListBuilder
 
     /// <summary>W4: draw <paramref name="texture"/> into <paramref name="rect"/> tinted by
     /// <paramref name="tint"/> (the A8 raster is pure coverage; color lives here).</summary>
-    public void Texture(in Rect rect, Color tint, TextureData texture) => _commands.Add(new DrawCommand
+    public void Texture(in Rect rect, Color tint, TextureData texture) =>
+        Texture(rect, Paint.Solid(tint), texture);
+
+    /// <summary>
+    /// W4 + gradient text: the tint may be a PAINT, so glyph coverage can be filled with a
+    /// gradient instead of a flat color. The gradient's axis is in LOCAL space (the same space the
+    /// SDF path uses), and both rasterizers evaluate it through <see cref="Paint.ColorAt"/>.
+    /// </summary>
+    public void Texture(in Rect rect, in Paint tint, TextureData texture) => _commands.Add(new DrawCommand
     {
         Kind = DrawCommandKind.Texture,
         Shape = new RRect(rect, default),
-        Paint = Paint.Solid(tint),
+        Paint = tint,
         TextureId = RegisterTexture(texture),
         Transform = _current,
         Clip = _clip,

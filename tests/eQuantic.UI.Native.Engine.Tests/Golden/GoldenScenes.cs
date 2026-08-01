@@ -127,6 +127,32 @@ public static class GoldenScenes
             b.PopClip();
         },
 
+        // GRADIENT TEXT: A8 coverage filled with a gradient TINT instead of a flat color. The axis
+        // is LOCAL space and evaluates through the normative Paint.ColorAt on both rasterizers, so
+        // this scene is what keeps the shader's lerp honest against the CPU reference. The second
+        // copy runs the axis vertically under a clip, mixing the two free-slot features.
+        ["texture-gradient-tint"] = b =>
+        {
+            const int tw = 24, th = 8;
+            var alpha = new byte[tw * th];
+            for (var y = 0; y < th; y++)
+                for (var x = 0; x < tw; x++)
+                    alpha[y * tw + x] = (byte)(y < 2 || y >= th - 2 ? 255 : (x * 255 / (tw - 1)));
+            var raster = new TextureData(tw, th, alpha);
+
+            b.Texture(new Rect(12, 16, 120, 32),
+                Paint.Linear(new Point(12, 16), new Point(132, 16),
+                    Color.FromRgb(0x8E, 0xB0, 0xFF), Color.FromRgb(0x7A, 0x64, 0xFF)),
+                raster);
+
+            b.PushClip(new RRect(new Rect(16, 60, 110, 40), new CornerRadii(12)));
+            b.Texture(new Rect(12, 56, 120, 48),
+                Paint.Linear(new Point(12, 56), new Point(12, 104),
+                    Color.FromRgb(0x80, 0xB8, 0x5C), new Color(0x28, 0x49, 0xF0, 160)),
+                raster);
+            b.PopClip();
+        },
+
         // W4 images: an Rgba8 texture (2×2 color quad) in the three fits' geometry — texel color
         // wins over the tint, alpha blends, the covered copy clips to an rrect.
         ["texture-rgba"] = b =>

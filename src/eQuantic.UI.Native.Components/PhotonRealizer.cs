@@ -696,9 +696,30 @@ public static class PhotonRealizer
                 rasterizer, text.Content, style, motion.TypeScale, node.Bounds.Width, text.MaxLines, motion.RenderScale);
             if (raster is not null)
             {
-                var color = (text.Color ?? theme.TextPrimary).Resolve(mode);
                 var rect = new Rect(node.Bounds.X, node.Bounds.Y,
                     raster.Texture.Width / motion.RenderScale, raster.Texture.Height / motion.RenderScale);
+                if (text.Gradient is { } g)
+                {
+                    // Gradient text: the glyph coverage is tinted by a PAINT. The axis spans the
+                    // text's own box on the declared direction, matching what `background-clip:text`
+                    // does on web (the gradient box is the element).
+                    var end = g.Direction switch
+                    {
+                        GradientDirection.ToBottom => new Point(rect.X, rect.Y + rect.Height),
+                        GradientDirection.ToBottomRight => new Point(rect.X + rect.Width, rect.Y + rect.Height),
+                        GradientDirection.ToBottomLeft => new Point(rect.X, rect.Y + rect.Height),
+                        _ => new Point(rect.X + rect.Width, rect.Y),
+                    };
+                    var start = g.Direction == GradientDirection.ToBottomLeft
+                        ? new Point(rect.X + rect.Width, rect.Y)
+                        : new Point(rect.X, rect.Y);
+                    builder.Texture(rect,
+                        Paint.Linear(start, end, g.From.Resolve(mode), g.To.Resolve(mode)),
+                        raster.Texture);
+                    return;
+                }
+
+                var color = (text.Color ?? theme.TextPrimary).Resolve(mode);
                 builder.Texture(rect, color, raster.Texture);
                 return;
             }

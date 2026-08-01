@@ -141,8 +141,21 @@ float4 textured_fragment(float4 position: SV_Position) : SV_Target
         if (coverage <= 0.0) discard;
     }
 
-    float a = u.colorA.a * coverage;
-    float3 lin = float3(srgbToLinear(u.colorA.r), srgbToLinear(u.colorA.g), srgbToLinear(u.colorA.b)) * a;
+    // GRADIENT TINT (gradient text): the axis rides `radii` and the second stop `colorB` — both
+    // slots the textured path never used, so this needed no uniform re-layout. The lerp is the
+    // SAME sRGB-space interpolation Paint.ColorAt performs, so a gradient over glyph coverage and
+    // a gradient over an rrect fill cannot disagree.
+    float4 srgb = u.colorA;
+    if (u.flags.y > 0.5)
+    {
+        float2 axis = u.radii.zw - u.radii.xy;
+        float len2 = dot(axis, axis);
+        float t = len2 <= 0.0 ? 0.0 : clamp(dot(local - u.radii.xy, axis) / len2, 0.0, 1.0);
+        srgb = lerp(u.colorA, u.colorB, t);
+    }
+
+    float a = srgb.a * coverage;
+    float3 lin = float3(srgbToLinear(srgb.r), srgbToLinear(srgb.g), srgbToLinear(srgb.b)) * a;
     return float4(lin, a);
 }
 

@@ -221,6 +221,8 @@ export interface TextNode extends VisualNodeValue {
   color?: ColorTokenValue | null;
   maxLines: number;
   styleOverride?: TypeStyleValue | null;
+  /** Fills the glyphs with a gradient instead of `color` (background-clip: text). */
+  gradient?: LinearGradientValue | null;
 }
 
 export interface PressableNode extends VisualNodeValue {

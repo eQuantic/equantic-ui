@@ -766,6 +766,15 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     color: tokenValue(text.color ?? context.textPrimary),
   };
 
+  // Gradient text — mirrors the C# realizer, including keeping `color` as the readable fallback
+  // for a browser without background-clip:text. Property ORDER follows HtmlStyle.ToCssString.
+  if (text.gradient) {
+    style['background-image'] = gradientValue(text.gradient);
+    style['-webkit-background-clip'] = 'text';
+    style['background-clip'] = 'text';
+    style['-webkit-text-fill-color'] = 'transparent';
+  }
+
   // Single line → shaping-style ellipsis (spec A8).
   if (text.maxLines === 1) {
     style['white-space'] = 'nowrap';

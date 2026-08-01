@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode, tokenValue } from './lowering';
 import { setPhotonTheme } from './photon-context';
-import { Box, BoxStyle, Color, ColorToken, GridPattern, LinearGradient } from '../index';
+import { Box, BoxStyle, Color, ColorToken, GridPattern, LinearGradient, Text } from '../index';
 import { Skeleton } from './components/Skeleton';
 
 setPhotonTheme(photonTheme);
@@ -81,6 +81,27 @@ describe('gradient + shimmer lowering (C# GradientShimmerRealizerTests cross-pin
     );
 
     expect(effectiveStyle(node)).toContain(`background-image: linear-gradient(${keyword}, `);
+  });
+
+  // GRADIENT TEXT — mirrors C# GradientText_ClipsTheBackgroundToTheGlyphs_KeepingAColorFallback.
+  it('gradient text clips the background to the glyphs, keeping a color fallback', () => {
+    const gradient = new LinearGradient(
+      photonTheme.textPrimary,
+      photonTheme.colors('primary').base,
+    );
+    const node = lower(new Text('Headline', 'display', null, 0, { gradient }));
+
+    // effectiveStyle presents the atomic rules SORTED, so assert each declaration on its own
+    // rather than assuming the emission adjacency the C# inline-style string has.
+    const style = effectiveStyle(node);
+    expect(style).toContain(`color: ${tokenValue(photonTheme.textPrimary)}`);
+    expect(style).toContain('-webkit-background-clip: text');
+    expect(style).toContain('background-clip: text');
+    expect(style).toContain('-webkit-text-fill-color: transparent');
+    expect(style).toContain(
+      `background-image: linear-gradient(to right, ${tokenValue(photonTheme.textPrimary)}, ` +
+        `${tokenValue(photonTheme.colors('primary').base)})`,
+    );
   });
 
   // The GRID pattern — mirrors C# GridPattern_EmitsBothHairlineLayers_AndTheCellSize.

@@ -315,6 +315,8 @@ export class Column extends FlexNode {
 
 interface TextConfig {
   styleOverride?: TypeStyleValue | null;
+  /** Fills the glyphs with a gradient instead of `color` (background-clip: text). */
+  gradient?: LinearGradient | null;
   key?: string | null;
 }
 
@@ -325,6 +327,7 @@ export class Text extends VisualNode {
   color: ColorTokenValue | null;
   maxLines: number;
   styleOverride: TypeStyleValue | null = null;
+  gradient: LinearGradient | null = null;
 
   constructor(
     content: string,
