@@ -547,6 +547,14 @@ public sealed class Text : VisualNode
     /// free-form font sizes remain outside the component API (spec A8).
     /// </summary>
     public TypeStyle? StyleOverride { get; init; }
+
+    /// <summary>
+    /// Fills the glyphs with a 2-stop gradient instead of <see cref="Color"/> (the display-headline
+    /// treatment). Native tints the glyph COVERAGE with the gradient paint — the same
+    /// <c>Paint.ColorAt</c> the SDF path uses; web lowers to <c>background-clip: text</c>. When set,
+    /// <see cref="Color"/> is ignored.
+    /// </summary>
+    public LinearGradient? Gradient { get; init; }
 }
 
 /// <summary>

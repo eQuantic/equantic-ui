@@ -70,6 +70,25 @@ public class GradientShimmerRealizerTests
     }
 
     /// <summary>
+    /// GRADIENT TEXT: the background paints through the glyphs. `color` survives as the readable
+    /// FALLBACK for browsers without background-clip:text — an invisible headline is a far worse
+    /// failure than a solid one — and the prefixed twins ship for Safari.
+    /// </summary>
+    [Fact]
+    public void GradientText_ClipsTheBackgroundToTheGlyphs_KeepingAColorFallback()
+    {
+        var gradient = new LinearGradient(Theme.TextPrimary, Theme.Colors(Variant.Primary).Base);
+        var node = Render(new Text("Headline", TypeRole.Display) { Gradient = gradient });
+
+        var style = node.Attributes["style"];
+        style.Should().Contain($"color: {TokenCss.Value(Theme.TextPrimary)}",
+            "the solid color remains the fallback when background-clip is unsupported");
+        style.Should().Contain($"background-image: {TokenCss.Gradient(gradient)}");
+        style.Should().Contain("-webkit-background-clip: text; background-clip: text");
+        style.Should().Contain("-webkit-text-fill-color: transparent");
+    }
+
+    /// <summary>
     /// The GRID pattern lowers to the two repeating hairline layers plus the matching
     /// <c>background-size</c> — the "graph paper" backdrop, realizable on both targets with
     /// primitives that already exist (native emits the same rules as ordinary fills).

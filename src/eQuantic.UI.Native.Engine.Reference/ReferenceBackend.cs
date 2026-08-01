@@ -78,6 +78,10 @@ public sealed class ReferenceBackend : IRenderBackend
         if (x1 <= x0 || y1 <= y0) return;
 
         var inv = inverse.Value;
+        // A GRADIENT tint (spec: gradient text) evaluates per pixel through the normative
+        // Paint.ColorAt — the same function the SDF path uses, so a gradient over glyph coverage
+        // and a gradient over a rrect fill can never disagree. A solid tint hoists out of the loop.
+        var gradientTint = command.Paint.Kind == PaintKind.LinearGradient;
         var tint = command.Paint.Color;
 
         for (var py = y0; py < y1; py++)
@@ -95,7 +99,7 @@ public sealed class ReferenceBackend : IRenderBackend
                 var ty = Math.Min(texture.Height - 1, (int)(v * texture.Height));
 
                 float coverage;
-                var texel = tint;
+                var texel = gradientTint ? command.Paint.ColorAt(local) : tint;
                 if (texture.Format == TextureFormat.Rgba8)
                 {
                     // W4 images: the texel IS the color (straight sRGB); coverage rides its alpha.

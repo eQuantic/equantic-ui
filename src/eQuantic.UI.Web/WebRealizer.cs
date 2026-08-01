@@ -681,6 +681,16 @@ public static class WebRealizer
             },
         };
 
+        // Gradient text: the background is painted through the glyphs. `color` stays as the
+        // FALLBACK (a browser without background-clip:text renders readable solid text rather than
+        // an invisible headline), and the fill-color override is what makes the clip visible.
+        if (text.Gradient is { } gradient)
+        {
+            element.Style!.BackgroundImage = TokenCss.Gradient(gradient);
+            element.Style.BackgroundClip = "text";
+            element.Style.WebkitTextFillColor = "transparent";
+        }
+
         // Single line → shaping-style ellipsis (spec A8). Multi-line clamp joins with the TS lowering.
         if (text.MaxLines == 1)
         {
