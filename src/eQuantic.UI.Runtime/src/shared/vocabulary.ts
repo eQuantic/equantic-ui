@@ -81,6 +81,7 @@ interface BoxStyleConfig {
   clip?: boolean;
   gradient?: LinearGradient | null;
   pattern?: GridPattern | null;
+  glow?: RadialGradient | null;
   opacity?: number | null;
   transform?: unknown;
   aspectRatio?: number;
@@ -107,6 +108,8 @@ export class BoxStyle {
   gradient: LinearGradient | null = null;
   /** The repeating hairline grid backdrop (null = none). */
   pattern: GridPattern | null = null;
+  /** The elliptical spotlight glow (null = none). */
+  glow: RadialGradient | null = null;
   /** Spec S1 group opacity (null = opaque). */
   opacity?: number | null;
   /** Spec S1 static transform (the Transform2D wire shape). */
@@ -470,6 +473,18 @@ export class LinearGradient {
     this.to = to;
     this.direction = direction;
   }
+}
+
+/** Mirror of the C# `RadialGradient`: two-stop elliptical spotlight; center in box fractions. */
+export class RadialGradient {
+  constructor(
+    readonly from: ColorTokenValue,
+    readonly to: ColorTokenValue,
+    readonly centerX: number,
+    readonly centerY: number,
+    readonly radiusX: number,
+    readonly radiusY: number,
+  ) {}
 }
 
 /** Mirror of the C# `GridPattern`: repeating hairline grid (square cell, token line color). */

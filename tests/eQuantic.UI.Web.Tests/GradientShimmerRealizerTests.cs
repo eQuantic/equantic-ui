@@ -110,6 +110,48 @@ public class GradientShimmerRealizerTests
         node.Attributes["style"].Should().Contain("background-size: 56px 56px, 56px 56px");
     }
 
+    /// <summary>
+    /// The elliptical spotlight lowers to a CSS <c>radial-gradient()</c> with an explicit ellipse
+    /// extent and a PERCENTAGE center — the exact shape the vocabulary models, so it survives a
+    /// resize without recomputation.
+    /// </summary>
+    [Fact]
+    public void Glow_LowersToAnEllipticalRadialGradient_WithAPercentageCenter()
+    {
+        var glow = new RadialGradient(Theme.Colors(Variant.Info).Base,
+            new ColorToken(Color.Transparent), CenterX: 0.2f, CenterY: 0f, RadiusX: 800, RadiusY: 500);
+        var node = Render(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 400, Glow = glow }));
+
+        node.Attributes["style"].Should().Contain(
+            $"background-image: radial-gradient(800px 500px at 20% 0%, "
+            + $"{TokenCss.Value(Theme.Colors(Variant.Info).Base)}, #00000000)");
+    }
+
+    /// <summary>All three background layers stack in CSS paint order (gradient on top, then the
+    /// glow, then the grid) — the same back-to-front order the native realizer draws them.</summary>
+    [Fact]
+    public void AllThreeBackgroundLayers_StackInPaintOrder_WithAlignedSizes()
+    {
+        var node = Render(new Box(new BoxStyle
+        {
+            Width = 300,
+            Height = 300,
+            Gradient = new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent)),
+            Glow = new RadialGradient(Theme.Colors(Variant.Info).Base, new ColorToken(Color.Transparent),
+                0.5f, 0.5f, 200, 120),
+            Pattern = new GridPattern(56, Theme.Border),
+        }));
+
+        var style = node.Attributes["style"];
+        var linear = style.IndexOf("linear-gradient(to right", StringComparison.Ordinal);
+        var radial = style.IndexOf("radial-gradient(", StringComparison.Ordinal);
+        var grid = style.IndexOf("transparent 1px", StringComparison.Ordinal);
+        linear.Should().BeLessThan(radial, "the linear gradient is the topmost layer");
+        radial.Should().BeLessThan(grid, "the glow sits above the grid");
+        style.Should().Contain("background-size: auto, auto, 56px 56px, 56px 56px",
+            "one size entry per layer — the grid contributes two");
+    }
+
     /// <summary>With BOTH set the gradient must paint ABOVE the grid — in CSS the first layer wins,
     /// and background-size needs the `auto` placeholder so the entries stay aligned.</summary>
     [Fact]

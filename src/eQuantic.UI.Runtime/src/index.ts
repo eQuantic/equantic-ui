@@ -123,6 +123,7 @@ export {
   LoopMotion,
   GridPattern,
   LinearGradient,
+  RadialGradient,
   TextEntry,
   Overlay,
   Presence,

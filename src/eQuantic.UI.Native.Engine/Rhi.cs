@@ -88,7 +88,9 @@ public struct DrawUniforms
         uniforms.Gradient = new Float4(paint.GradientStart.X, paint.GradientStart.Y, paint.GradientEnd.X, paint.GradientEnd.Y);
         uniforms.Flags = new Float4(
             command.Kind switch { DrawCommandKind.StrokeRRect => 1, DrawCommandKind.ShadowRRect => 2, _ => 0 },
-            paint.Kind == PaintKind.LinearGradient ? 1 : 0,
+            // 0 solid · 1 linear · 2 radial — the paint kinds share the `Gradient` slot, so a radial
+            // needed no new uniform: center rides .xy and the radii .zw.
+            paint.Kind switch { PaintKind.LinearGradient => 1, PaintKind.RadialGradient => 2, _ => 0 },
             command.Clip is null ? 0 : 1, 0);
         if (command.Clip is { } clip)
         {
