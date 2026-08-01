@@ -29,7 +29,7 @@ internal sealed class MetalCommandList : IRhiCommandList
         ObjC.SendVoid(_encoder, Sel("setRenderPipelineState:"), _device.PipelineState(_pixelFormat, kind));
 
     public void BindTexture(int slot, IRhiTexture texture) =>
-        ObjC.SendVoid(_encoder, Sel("setFragmentTexture:atIndex:"), ((MetalTexture)texture).Texture, (ulong)slot);
+        ObjC.SendVoid(_encoder, Sel("setFragmentTexture:atIndex:"), ((IMetalBindable)texture).Texture, (ulong)slot);
 
     public void Draw(in DrawUniforms uniforms)
     {

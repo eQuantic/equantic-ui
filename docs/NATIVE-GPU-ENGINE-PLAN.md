@@ -522,7 +522,7 @@ Bun and the JS bundling chain, the TypeScript runtime.
   The engine/native layer grew far past the last entry while this log slept; the systems, briefly,
   with their homes: **group-opacity layers** — `DisplayList` gained `BeginLayer`/`EndLayer`
   (`PushLayer(alpha)`/`PopLayer`, balance-checked); the Reference backend composites a real offscreen
-  layer, the Metal spike approximates per-command alpha (documented fence, D3 offscreen pass pending).
+  layer, the Metal spike approximated per-command alpha (fence RETIRED 2026-08-01 by the offscreen pass — see that entry).
   **Static transforms** — center-anchored `Matrix2D` from `Transform2D` (translate→rotate→scale).
   **Scroll compositor v1** — `ScrollStore` (path-keyed offsets), `ScrollRegion` routing in
   `PhotonRealizer`, `PhotonHost.ScrollBy`, real `PinSticky` (vertical; end-of-container release
@@ -711,6 +711,27 @@ Bun and the JS bundling chain, the TypeScript runtime.
   same reproducibility at zero repo cost, and the resolver already PREFERS a packaged toolchain the
   moment one exists, so promoting it later is additive. Package the binaries when app-level shader
   compilation becomes real — that is the milestone that actually needs them.
+
+- **2026-08-01 — The OFFSCREEN PASS lands: group-opacity layers are real on both GPUs.** The
+  approximation the Metal spike shipped with — per-command alpha, which double-blends every
+  overlap inside a layer — is RETIRED; `RhiRenderer` now renders each layer scope into its own
+  target and composites it once. The design is TWO-PHASE rather than nested passes: every scope
+  (innermost first) renders before the parent pass opens, because Metal and Vulkan each allow one
+  open pass per encoder and a nested design would have needed different scaffolding on each.
+  `layer_composite` joins the ONE Slang source — its own entry point rather than a reuse of the
+  image path, because a render target's texels are already PREMULTIPLIED, so compositing is a
+  scale where the image path premultiplies (sharing it would apply alpha twice). Both backends'
+  render targets became SAMPLEABLE, and `IRhiRenderTarget IS an IRhiTexture` stopped being
+  aspirational: the bind sites cast to a concrete texture type and would have thrown on a layer
+  target, so each backend gained an internal bindable accessor both kinds satisfy. New golden
+  `layer-group-opacity` (overlapping circles in one layer, a nested layer, a clipped layer) —
+  parity green on Metal AND Vulkan, 21 scenes × 2 backends.
+  En route, the parity gate caught an authoring bug in the new scene itself: a redundant `Clear`
+  on top of the catalog's own diverged by design, since the Reference applies mid-stream Clears
+  and the GPU backends honor only the leading one. That fence is real and now has a test that
+  would notice if anyone leaned on it.
+  This is the machinery `backdrop-blur` needs — the blur chain renders into these same offscreen
+  targets — so the next slice is the dual-Kawase (plan W3), not new plumbing.
 
 ## Definition of done (v1 preview)
 

@@ -168,6 +168,39 @@ float4 textured_fragment(float4 position: SV_Position) : SV_Target
     return float4(lin, a);
 }
 
+// GROUP-OPACITY LAYER COMPOSITE (spec S1): draws an offscreen layer over the surface below at the
+// layer's alpha. The source is a RENDER TARGET, so its texels are already PREMULTIPLIED (and the
+// _sRGB view hands them back linear) — compositing at alpha is therefore a plain scale of the
+// premultiplied value, NOT the straight-alpha math textured_rgba_fragment does. That difference is
+// exactly why this needs its own entry point instead of reusing the image path.
+// Uniform reuse: colorA.a carries the layer alpha; gradient.xy the texture size.
+[shader("fragment")]
+float4 layer_composite(float4 position: SV_Position) : SV_Target
+{
+    float2 pixel = position.xy;
+    float2 local = float2(
+        pixel.x * u.inv0.x + pixel.y * u.inv0.y + u.inv0.z,
+        pixel.x * u.inv1.x + pixel.y * u.inv1.y + u.inv1.z);
+
+    float2 rectMin = u.rect.xy - u.rect.zw;
+    float2 uv = (local - rectMin) / (u.rect.zw * 2.0);
+    if (uv.x < 0.0 || uv.x >= 1.0 || uv.y < 0.0 || uv.y >= 1.0) discard;
+
+    int tx = min(int(u.gradient.x) - 1, int(uv.x * u.gradient.x));
+    int ty = min(int(u.gradient.y) - 1, int(uv.y * u.gradient.y));
+    float4 texel = colorTexture.Load(int3(tx, ty, 0));
+
+    float alpha = u.colorA.a;
+    if (u.flags.z > 0.5)
+    {
+        float cd = sdRoundedRect(pixel - u.clipRect.xy, u.clipRect.zw, u.clipRadii);
+        alpha *= clamp(0.5 - cd, 0.0, 1.0);
+    }
+    if (alpha <= 0.0) discard;
+
+    return texel * alpha;
+}
+
 // W4 images — DrawCommandKind.Texture with an Rgba8 texture: the texel IS the color (the paint
 // tint is ignored); NEAREST via Load like the coverage path. The _sRGB texture view hands the
 // sample back LINEAR; we premultiply by its alpha (× clip coverage) for the src-over blend.

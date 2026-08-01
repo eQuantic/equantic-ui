@@ -29,6 +29,14 @@ public enum RhiPipelineKind : byte
 
     /// <summary>Straight-sRGB RGBA raster, texel color wins over tint (images) — <c>textured_rgba_fragment</c>.</summary>
     TexturedRgba = 2,
+
+    /// <summary>
+    /// Composites an offscreen GROUP-OPACITY layer at its alpha — <c>layer_composite</c>. Its
+    /// source is a render target, whose texels are already PREMULTIPLIED, so the math is a scale
+    /// rather than the straight-alpha premultiply <see cref="TexturedRgba"/> performs. Sharing the
+    /// image pipeline here would double-apply alpha.
+    /// </summary>
+    LayerComposite = 3,
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -204,16 +212,104 @@ public sealed class RhiRenderer : IDisposable
     /// <summary>Offscreen path: begin, encode, submit-and-wait (the caller reads pixels right after).</summary>
     public void Render(DisplayList displayList, IRhiRenderTarget target)
     {
+        var layers = RenderLayers(displayList, target.Width, target.Height);
         var commands = _device.Begin(target, ClearColorOf(displayList));
-        Encode(displayList, commands);
+        Encode(displayList, commands, layers);
         commands.Submit(waitUntilCompleted: true);
+        layers?.Dispose();
+    }
+
+    /// <summary>
+    /// PHASE ONE of the frame: every GROUP-OPACITY layer scope is rendered into its own offscreen
+    /// target BEFORE the parent pass opens, innermost first. Doing it up front — rather than
+    /// nesting passes — is what keeps both backends happy: Metal and Vulkan each allow only one
+    /// open render pass per encoder, and a nested-pass design would have needed different
+    /// scaffolding on each. Returns null when the list has no layers (the common case allocates
+    /// nothing).
+    /// </summary>
+    private LayerTargets? RenderLayers(DisplayList displayList, int width, int height)
+    {
+        var cmds = displayList.Commands;
+        var hasLayer = false;
+        for (var i = 0; i < cmds.Length && !hasLayer; i++)
+            hasLayer = cmds[i].Kind == DrawCommandKind.BeginLayer;
+        if (!hasLayer) return null;
+
+        var layers = new LayerTargets();
+        // Walk innermost-first by resolving each BeginLayer against its matching EndLayer and
+        // recursing into the enclosed range.
+        RenderLayerRange(displayList, 0, cmds.Length, width, height, layers);
+        return layers;
+    }
+
+    private void RenderLayerRange(DisplayList displayList, int start, int end, int width, int height, LayerTargets layers)
+    {
+        var cmds = displayList.Commands;
+        for (var i = start; i < end; i++)
+        {
+            if (cmds[i].Kind != DrawCommandKind.BeginLayer) continue;
+
+            var depth = 0;
+            var close = -1;
+            for (var j = i; j < end; j++)
+            {
+                if (cmds[j].Kind == DrawCommandKind.BeginLayer) depth++;
+                else if (cmds[j].Kind == DrawCommandKind.EndLayer && --depth == 0) { close = j; break; }
+            }
+            if (close < 0) return; // unbalanced (the builder rejects this; be defensive anyway)
+
+            // Nested layers inside this scope render FIRST, so this scope's own pass can composite
+            // them while it draws.
+            RenderLayerRange(displayList, i + 1, close, width, height, layers);
+
+            var target = _device.CreateRenderTarget(width, height);
+            var commands = _device.Begin(target, Color.Transparent);
+            EncodeRange(displayList, commands, layers, i + 1, close);
+            commands.Submit(waitUntilCompleted: true);
+            layers.Add(i, target);
+
+            i = close; // this scope is done; continue after it
+        }
+    }
+
+    /// <summary>The offscreen targets a frame's layer scopes rendered into, keyed by the index of
+    /// their BeginLayer command. Disposed with the frame.</summary>
+    private sealed class LayerTargets : IDisposable
+    {
+        private readonly Dictionary<int, IRhiRenderTarget> _targets = new();
+
+        public void Add(int beginIndex, IRhiRenderTarget target) => _targets[beginIndex] = target;
+
+        public IRhiRenderTarget? Get(int beginIndex) => _targets.GetValueOrDefault(beginIndex);
+
+        public void Dispose()
+        {
+            foreach (var target in _targets.Values) target.Dispose();
+            _targets.Clear();
+        }
     }
 
     /// <summary>
     /// Encodes <paramref name="displayList"/> into an open pass. Window paths call this directly
     /// with a backend-created command list (drawable target) and submit without waiting.
     /// </summary>
-    public void Encode(DisplayList displayList, IRhiCommandList commands)
+    public void Encode(DisplayList displayList, IRhiCommandList commands) =>
+        Encode(displayList, commands, layersHandle: null);
+
+    /// <summary>
+    /// Encodes <paramref name="displayList"/> into an open pass, compositing any layer scopes from
+    /// the offscreen targets phase one produced. A null <paramref name="layers"/> means the caller
+    /// never ran phase one — layers then fall back to the historical per-command alpha
+    /// approximation, which is what the WINDOW path used before offscreen layers existed.
+    /// </summary>
+    public void Encode(DisplayList displayList, IRhiCommandList commands, object? layersHandle)
+    {
+        var layers = layersHandle as LayerTargets;
+        EncodeRange(displayList, commands, layers, 0, displayList.Commands.Length);
+    }
+
+    private void EncodeRange(DisplayList displayList, IRhiCommandList commands, LayerTargets? layers,
+        int start, int end)
     {
         commands.SetPipeline(RhiPipelineKind.Sdf);
         // The generated entry points share the texture bindings — keep every slot valid for every
@@ -230,7 +326,7 @@ public sealed class RhiRenderer : IDisposable
         Stack<float>? layerStack = null;
 
         var cmds = displayList.Commands;
-        for (var i = 0; i < cmds.Length; i++)
+        for (var i = start; i < end; i++)
         {
             ref readonly var command = ref cmds[i];
             if (command.Kind == DrawCommandKind.Clear) continue; // leading clears only (spike fence)
@@ -274,13 +370,25 @@ public sealed class RhiRenderer : IDisposable
             }
             if (command.Kind == DrawCommandKind.BeginLayer)
             {
+                // REAL offscreen layer: phase one rendered this scope into its own target, so the
+                // whole group composites with ONE blend and overlapping children never
+                // double-blend. Skip to the matching EndLayer — its contents are already drawn.
+                if (layers?.Get(i) is { } layerTarget)
+                {
+                    CompositeLayer(commands, layerTarget, command.StrokeWidth * layerAlpha, ref activeKind);
+                    i = MatchingEnd(cmds, i, end);
+                    continue;
+                }
+                // Fallback (window path, pre-offscreen): approximate as per-command alpha —
+                // overlapping children double-blend. Documented, and now only reachable when the
+                // caller skipped phase one.
                 (layerStack ??= new()).Push(layerAlpha);
                 layerAlpha *= command.StrokeWidth;
                 continue;
             }
             if (command.Kind == DrawCommandKind.EndLayer)
             {
-                layerAlpha = layerStack!.Pop();
+                if (layerStack is { Count: > 0 }) layerAlpha = layerStack.Pop();
                 continue;
             }
             if (!DrawUniforms.TryBuild(in command, out var uniforms)) continue;
@@ -291,6 +399,46 @@ public sealed class RhiRenderer : IDisposable
             }
             commands.Draw(in uniforms);
         }
+    }
+
+    /// <summary>Index of the EndLayer matching the BeginLayer at <paramref name="begin"/>.</summary>
+    private static int MatchingEnd(ReadOnlySpan<DrawCommand> cmds, int begin, int end)
+    {
+        var depth = 0;
+        for (var j = begin; j < end; j++)
+        {
+            if (cmds[j].Kind == DrawCommandKind.BeginLayer) depth++;
+            else if (cmds[j].Kind == DrawCommandKind.EndLayer && --depth == 0) return j;
+        }
+        return end - 1;
+    }
+
+    /// <summary>
+    /// Draws a rendered layer target over the current pass at <paramref name="alpha"/>. The target
+    /// holds PREMULTIPLIED texels, so the composite pipeline scales rather than premultiplies —
+    /// reusing the image pipeline here would apply alpha twice.
+    /// </summary>
+    private static void CompositeLayer(IRhiCommandList commands, IRhiRenderTarget layer, float alpha,
+        ref RhiPipelineKind activeKind)
+    {
+        if (activeKind != RhiPipelineKind.LayerComposite)
+        {
+            commands.SetPipeline(RhiPipelineKind.LayerComposite);
+            activeKind = RhiPipelineKind.LayerComposite;
+        }
+        commands.BindTexture(ColorSlot, layer);
+
+        // The layer covers the whole surface in DEVICE space: identity transform, full-extent rect.
+        var uniforms = new DrawUniforms
+        {
+            Inv0 = new Float4(1, 0, 0, 1),
+            Inv1 = new Float4(0, 1, 0, 0),
+            Rect = new Float4(layer.Width / 2f, layer.Height / 2f, layer.Width / 2f, layer.Height / 2f),
+            ColorA = new Float4(1, 1, 1, alpha),
+            Gradient = new Float4(layer.Width, layer.Height, 0, 0),
+            Flags = new Float4(0, 0, 0, 0),
+        };
+        commands.Draw(in uniforms);
     }
 
     /// <summary>Uploads (and caches by IDENTITY) a display-list raster. Cache lifetime is the

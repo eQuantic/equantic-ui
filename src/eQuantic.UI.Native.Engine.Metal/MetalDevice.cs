@@ -18,11 +18,13 @@ public sealed class MetalDevice : IRhiDevice
     private const ulong PixelFormatR8Unorm = 10;
     private const ulong LoadActionClear = 2;
     private const ulong StoreActionStore = 1;
-    private const ulong TextureUsageRenderTarget = 0x04;
+    // A layer target is WRITTEN as an attachment and then READ as a texture when it composites,
+    // so it needs both usages — ShaderRead alone would fail the draw, RenderTarget alone the bind.
+    private const ulong TextureUsageRenderTarget = 0x04 | 0x01;
     private const ulong StorageModeShared = 0;
 
     private static readonly RhiPipelineKind[] RegistryKinds =
-        [RhiPipelineKind.Sdf, RhiPipelineKind.TexturedA8, RhiPipelineKind.TexturedRgba];
+        [RhiPipelineKind.Sdf, RhiPipelineKind.TexturedA8, RhiPipelineKind.TexturedRgba, RhiPipelineKind.LayerComposite];
 
     /// <summary>The FIXED registry's target formats (D5): offscreen RGBA8 + the CAMetalLayer's BGRA8.</summary>
     private static readonly ulong[] RegistryFormats = [PixelFormatRgba8UnormSrgb, PixelFormatBgra8UnormSrgb];
@@ -33,6 +35,7 @@ public sealed class MetalDevice : IRhiDevice
     private readonly IntPtr _fragmentFn;
     private readonly IntPtr _texturedFn;
     private readonly IntPtr _texturedRgbaFn;
+    private readonly IntPtr _layerCompositeFn;
     private readonly IntPtr _binaryArchive;
     private readonly string _binaryArchivePath = string.Empty;
     private readonly bool _binaryArchiveExisted;
@@ -73,6 +76,7 @@ public sealed class MetalDevice : IRhiDevice
         _fragmentFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("sdf_fragment"));
         _texturedFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("textured_fragment"));
         _texturedRgbaFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("textured_rgba_fragment"));
+        _layerCompositeFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("layer_composite"));
 
         (_binaryArchive, _binaryArchivePath, _binaryArchiveExisted) = TryOpenBinaryArchive(shaderBytes);
 
@@ -167,6 +171,7 @@ public sealed class MetalDevice : IRhiDevice
         {
             RhiPipelineKind.TexturedA8 => _texturedFn,
             RhiPipelineKind.TexturedRgba => _texturedRgbaFn,
+            RhiPipelineKind.LayerComposite => _layerCompositeFn,
             _ => _fragmentFn,
         });
 
