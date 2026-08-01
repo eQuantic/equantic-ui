@@ -30,6 +30,7 @@ import type {
   ImageNode,
   GridPatternValue,
   LinearGradientValue,
+  RadialGradientValue,
   DragDismissNode,
   LinkNode,
   LoopMotionNode,
@@ -381,6 +382,15 @@ function gradientValue(gradient: LinearGradientValue): string {
   return `linear-gradient(${direction}, ${tokenValue(gradient.from)}, ${tokenValue(gradient.to)})`;
 }
 
+/** Mirror of C# TokenCss.Glow: the elliptical spotlight as a CSS radial-gradient(). */
+function glowValue(glow: RadialGradientValue): string {
+  return (
+    `radial-gradient(${px(glow.radiusX)} ${px(glow.radiusY)} at ` +
+    `${num(glow.centerX * 100)}% ${num(glow.centerY * 100)}%, ` +
+    `${tokenValue(glow.from)}, ${tokenValue(glow.to)})`
+  );
+}
+
 /** Mirror of C# TokenCss.GridPattern: the two repeating hairline layers. */
 function gridPatternValue(pattern: GridPatternValue): string {
   const color = tokenValue(pattern.color);
@@ -625,20 +635,8 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     'background-color': style.background ? tokenValue(style.background) : undefined,
     // Mirror of the C# realizer: the FIRST layer paints on top, so a gradient sits over the grid,
     // and background-size carries one entry per layer (`auto` stands in for the gradient).
-    'background-image':
-      style.gradient && style.pattern
-        ? `${gradientValue(style.gradient)}, ${gridPatternValue(style.pattern)}`
-        : style.gradient
-          ? gradientValue(style.gradient)
-          : style.pattern
-            ? gridPatternValue(style.pattern)
-            : undefined,
-    'background-size':
-      style.gradient && style.pattern
-        ? `auto, ${gridPatternSize(style.pattern)}`
-        : style.pattern
-          ? gridPatternSize(style.pattern)
-          : undefined,
+    'background-image': backgroundLayers(style),
+    'background-size': backgroundLayerSizes(style),
     'border-radius':
       style.cornerRadius && !isZeroRadii(style.cornerRadius)
         ? radiusValue(style.cornerRadius)
@@ -759,6 +757,25 @@ function crossAlign(value: FlexNodeValue['cross']): string {
     default:
       return 'stretch';
   }
+}
+
+/** Mirror of C# WebRealizer.BackgroundLayers: CSS paint order — the FIRST entry sits on top. */
+function backgroundLayers(style: BoxStyleValue): string | undefined {
+  const layers: string[] = [];
+  if (style.gradient) layers.push(gradientValue(style.gradient));
+  if (style.glow) layers.push(glowValue(style.glow));
+  if (style.pattern) layers.push(gridPatternValue(style.pattern));
+  return layers.length === 0 ? undefined : layers.join(', ');
+}
+
+/** Mirror of C# WebRealizer.BackgroundLayerSizes: one entry per layer (the grid contributes two). */
+function backgroundLayerSizes(style: BoxStyleValue): string | undefined {
+  if (!style.pattern) return undefined;
+  const sizes: string[] = [];
+  if (style.gradient) sizes.push('auto');
+  if (style.glow) sizes.push('auto');
+  sizes.push(gridPatternSize(style.pattern));
+  return sizes.join(', ');
 }
 
 function lowerText(text: TextNode, context: LoweringContext): HtmlNode {

@@ -98,8 +98,17 @@ float4 sdf_fragment(float4 position: SV_Position) : SV_Target
     }
 
     // Paint.ColorAt — gradients interpolate per-channel in sRGB space (the CSS/Skia look).
+    // flags.y: 0 solid · 1 linear (axis in `gradient`) · 2 RADIAL (center.xy + radii.zw, same slots).
     float4 srgb = u.colorA;
-    if (u.flags.y > 0.5)
+    if (u.flags.y > 1.5)
+    {
+        // Elliptical radial: normalizing by each radius maps the ellipse to a unit circle.
+        float dx = u.gradient.z <= 0.0 ? 0.0 : (local.x - u.gradient.x) / u.gradient.z;
+        float dy = u.gradient.w <= 0.0 ? 0.0 : (local.y - u.gradient.y) / u.gradient.w;
+        float t = clamp(sqrt(dx * dx + dy * dy), 0.0, 1.0);
+        srgb = lerp(u.colorA, u.colorB, t);
+    }
+    else if (u.flags.y > 0.5)
     {
         float2 axis = u.gradient.zw - u.gradient.xy;
         float len2 = dot(axis, axis);

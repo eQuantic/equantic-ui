@@ -124,6 +124,14 @@ public sealed class ReferenceBackend : IRenderBackend
                     if (coverage <= 0) continue;
                 }
 
+                // Same unquantized-alpha rule as the fill path when the tint is a gradient; an RGBA
+                // texel carries its own alpha and is untouched.
+                if (gradientTint && texture.Format != TextureFormat.Rgba8)
+                {
+                    target.BlendOver(px, py, ColorSpace.ToPremultipliedLinear(
+                        texel with { A = 255 }, coverage * command.Paint.AlphaFactorAt(local)));
+                    continue;
+                }
                 target.BlendOver(px, py, ColorSpace.ToPremultipliedLinear(texel, coverage));
             }
         }
@@ -188,8 +196,14 @@ public sealed class ReferenceBackend : IRenderBackend
                     if (coverage <= 0) continue;
                 }
 
+                // The COLOR comes from the byte ramp (the sRGB→linear LUT is byte-indexed), but the
+                // ALPHA rides the coverage scale UNQUANTIZED — at a ramp tail the byte rounding is
+                // the entire signal, and dropping it is what made this rasterizer disagree with the
+                // shader (which works in float) by 5/255 over high contrast.
                 var srgb = command.Paint.ColorAt(local);
-                target.BlendOver(px, py, ColorSpace.ToPremultipliedLinear(srgb, coverage));
+                var alpha = command.Paint.AlphaFactorAt(local);
+                target.BlendOver(px, py,
+                    ColorSpace.ToPremultipliedLinear(srgb with { A = 255 }, coverage * alpha));
             }
         }
     }

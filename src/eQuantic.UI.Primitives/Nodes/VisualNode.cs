@@ -82,6 +82,10 @@ public readonly record struct BoxStyle
     /// <see cref="Background"/> — the "engineering graph paper" backdrop. <c>null</c> = none.</summary>
     public GridPattern? Pattern { get; init; }
 
+    /// <summary>Elliptical "spotlight" glow, painted ABOVE the grid and the solid background and
+    /// below <see cref="Gradient"/>. <c>null</c> = none.</summary>
+    public RadialGradient? Glow { get; init; }
+
     public CornerRadii CornerRadius { get; init; }
 
     /// <summary>Uniform border width, drawn INSIDE the bounds (spec fence). 0 = no border.</summary>
@@ -217,6 +221,27 @@ public readonly record struct LinearGradient(
 /// <param name="Color">Line color — a token, so the grid tracks light/dark like everything else.</param>
 /// <param name="LineWidth">Line thickness in dp. 1 is the only value the design uses.</param>
 public readonly record struct GridPattern(float Cell, ColorToken Color, float LineWidth = 1);
+
+/// <summary>
+/// A two-stop ELLIPTICAL radial fill — the "spotlight" glow marketing heroes wash behind their
+/// content. Closed shape like <see cref="GridPattern"/>: two token stops, an elliptical extent, a
+/// center expressed as FRACTIONS of the box (the CSS percentage form), which keeps it
+/// resolution-independent and realizable on both targets. Web lowers to <c>radial-gradient()</c>;
+/// native runs <c>Paint.Radial</c>, whose normalized-elliptical-distance math the shader mirrors.
+/// </summary>
+/// <param name="From">Color at the center.</param>
+/// <param name="To">Color reached at the ellipse boundary (usually the transparent twin of From).</param>
+/// <param name="CenterX">Center as a fraction of the box WIDTH (0 = left, 1 = right).</param>
+/// <param name="CenterY">Center as a fraction of the box HEIGHT (0 = top, 1 = bottom).</param>
+/// <param name="RadiusX">Horizontal extent in dp.</param>
+/// <param name="RadiusY">Vertical extent in dp.</param>
+public readonly record struct RadialGradient(
+    ColorToken From,
+    ColorToken To,
+    float CenterX,
+    float CenterY,
+    float RadiusX,
+    float RadiusY);
 
 /// <summary>Loop-motion effects (spec §06: animate transform &amp; opacity ONLY — these are all transform).</summary>
 public enum LoopEffect : byte

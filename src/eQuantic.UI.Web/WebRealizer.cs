@@ -446,19 +446,8 @@ public static class WebRealizer
                 // Layers compose like CSS: the FIRST entry paints on top, so a gradient sits over
                 // the grid, and both sit over background-color. background-size must carry one
                 // entry per layer, hence the `auto` placeholder for the gradient.
-                BackgroundImage = (style.Gradient, style.Pattern) switch
-                {
-                    ({ } g, { } p) => $"{TokenCss.Gradient(g)}, {TokenCss.GridPattern(p)}",
-                    ({ } g, null) => TokenCss.Gradient(g),
-                    (null, { } p) => TokenCss.GridPattern(p),
-                    _ => null,
-                },
-                BackgroundSize = (style.Gradient, style.Pattern) switch
-                {
-                    ({ }, { } p) => $"auto, {TokenCss.GridPatternSize(p)}",
-                    (null, { } p) => TokenCss.GridPatternSize(p),
-                    _ => null,
-                },
+                BackgroundImage = BackgroundLayers(style),
+                BackgroundSize = BackgroundLayerSizes(style),
                 BorderRadius = style.CornerRadius.IsZero ? null : TokenCss.Radius(style.CornerRadius),
                 BoxShadow = style.Elevation > 0 && !context.Theme.Elevation(style.Elevation).IsNone
                     ? TokenCss.Shadow(context.Theme.Elevation(style.Elevation))
@@ -713,6 +702,32 @@ public static class WebRealizer
 
     /// <summary>Whether a node requests Fill on each axis — wrappers (Pressable's button) must
     /// stretch for the 100% chain to reach it (the native MeasureWrapper sizes to the child).</summary>
+    /// <summary>
+    /// The <c>background-image</c> layer LIST, in CSS paint order — the FIRST entry sits on top.
+    /// The order (gradient → glow → grid) is the one the native realizer emits back-to-front, so a
+    /// box carrying all three stacks identically on both targets.
+    /// </summary>
+    private static string? BackgroundLayers(BoxStyle style)
+    {
+        var layers = new List<string>(3);
+        if (style.Gradient is { } gradient) layers.Add(TokenCss.Gradient(gradient));
+        if (style.Glow is { } glow) layers.Add(TokenCss.Glow(glow));
+        if (style.Pattern is { } pattern) layers.Add(TokenCss.GridPattern(pattern));
+        return layers.Count == 0 ? null : string.Join(", ", layers);
+    }
+
+    /// <summary>The matching <c>background-size</c> list: one entry per layer (the grid contributes
+    /// TWO), with `auto` standing in for the layers that size themselves.</summary>
+    private static string? BackgroundLayerSizes(BoxStyle style)
+    {
+        if (style.Pattern is not { } pattern) return null;
+        var sizes = new List<string>(3);
+        if (style.Gradient is not null) sizes.Add("auto");
+        if (style.Glow is not null) sizes.Add("auto");
+        sizes.Add(TokenCss.GridPatternSize(pattern));
+        return string.Join(", ", sizes);
+    }
+
     private static (bool Width, bool Height) Fills(VisualNode node) => node switch
     {
         Box box => (box.Style.Width.Kind == SizeKind.Fill, box.Style.Height.Kind == SizeKind.Fill),

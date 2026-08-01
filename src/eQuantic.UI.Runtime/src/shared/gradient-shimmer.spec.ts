@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode, tokenValue } from './lowering';
 import { setPhotonTheme } from './photon-context';
-import { Box, BoxStyle, Color, ColorToken, GridPattern, LinearGradient, Text } from '../index';
+import { Box, BoxStyle, Color, ColorToken, GridPattern, LinearGradient, RadialGradient, Text } from '../index';
 import { Skeleton } from './components/Skeleton';
 
 setPhotonTheme(photonTheme);
@@ -122,6 +122,58 @@ describe('gradient + shimmer lowering (C# GradientShimmerRealizerTests cross-pin
         `linear-gradient(to bottom, ${line} 1px, transparent 1px)`,
     );
     expect(effectiveStyle(node)).toContain('background-size: 56px 56px, 56px 56px');
+  });
+
+  // Mirrors C# Glow_LowersToAnEllipticalRadialGradient_WithAPercentageCenter.
+  it('the glow lowers to an elliptical radial-gradient with a percentage center', () => {
+    const node = lower(
+      new Box(
+        new BoxStyle({
+          width: 300,
+          height: 400,
+          glow: new RadialGradient(
+            photonTheme.colors('info').base,
+            new ColorToken(Color.transparent),
+            0.2,
+            0,
+            800,
+            500,
+          ),
+        }),
+      ),
+    );
+
+    expect(effectiveStyle(node)).toContain(
+      `background-image: radial-gradient(800px 500px at 20% 0%, ` +
+        `${tokenValue(photonTheme.colors('info').base)}, #00000000)`,
+    );
+  });
+
+  // Mirrors C# AllThreeBackgroundLayers_StackInPaintOrder_WithAlignedSizes.
+  it('all three background layers stack in paint order with aligned sizes', () => {
+    const node = lower(
+      new Box(
+        new BoxStyle({
+          width: 300,
+          height: 300,
+          gradient: new LinearGradient(photonTheme.scrim, new ColorToken(Color.transparent)),
+          glow: new RadialGradient(
+            photonTheme.colors('info').base,
+            new ColorToken(Color.transparent),
+            0.5,
+            0.5,
+            200,
+            120,
+          ),
+          pattern: new GridPattern(56, photonTheme.border),
+        }),
+      ),
+    );
+
+    const style = effectiveStyle(node);
+    expect(style.indexOf('linear-gradient(to right')).toBeLessThan(style.indexOf('radial-gradient('));
+    expect(style.indexOf('radial-gradient(')).toBeLessThan(style.indexOf('transparent 1px'));
+    expect(style).toContain('background-size: auto, auto, 56px 56px, 56px 56px');
   });
 
   // Mirrors C# GridPattern_UnderAGradient_KeepsLayerOrderAndSizeAlignment.

@@ -127,6 +127,27 @@ public static class GoldenScenes
             b.PopClip();
         },
 
+        // RADIAL gradients (the hero "spotlight"): a circular glow, an ELLIPTICAL one (the shape the
+        // design actually uses — 800×500 at 20% 0%), and one fading to TRANSPARENT over a solid so
+        // the alpha ramp is exercised, not just the hue ramp. Radii reuse the linear slots, so this
+        // scene is also what proves the reinterpretation is wired identically on all three backends.
+        ["gradient-radial"] = b =>
+        {
+            b.FillRect(new Rect(0, 0, 160, 120), Paint.Solid(new Color(0x0A, 0x0D, 0x1A, 255)));
+
+            b.FillRect(new Rect(8, 8, 64, 64),
+                Paint.Radial(new Point(40, 40), 32, 32,
+                    Color.FromRgb(0x5B, 0x88, 0xFF), new Color(0x5B, 0x88, 0xFF, 0)));
+
+            b.FillRect(new Rect(80, 8, 72, 48),
+                Paint.Radial(new Point(96, 8), 64, 40,
+                    Color.FromRgb(0x7A, 0x64, 0xFF), Color.FromRgb(0x80, 0xB8, 0x5C)));
+
+            b.FillRRect(new RRect(new Rect(16, 78, 128, 34), new CornerRadii(12)),
+                Paint.Radial(new Point(80, 95), 60, 18,
+                    new Color(0xFF, 0xFF, 0xFF, 200), new Color(0xFF, 0xFF, 0xFF, 0)));
+        },
+
         // GRADIENT TEXT: A8 coverage filled with a gradient TINT instead of a flat color. The axis
         // is LOCAL space and evaluates through the normative Paint.ColorAt on both rasterizers, so
         // this scene is what keeps the shader's lerp honest against the CPU reference. The second

@@ -365,7 +365,7 @@ public static class PhotonRealizer
                 }
                 EmitChrome(node.Bounds, fill, box.Style.CornerRadius,
                     borderColor, borderWidth, theme, mode, builder,
-                    box.Style.Gradient, box.Style.Pattern);
+                    box.Style.Gradient, box.Style.Pattern, box.Style.Glow);
 
                 // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
                 // following the control's own radius — the first Box under the focused Pressable
@@ -595,7 +595,7 @@ public static class PhotonRealizer
 
     private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,
         ColorToken borderColor, float borderWidth, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder,
-        LinearGradient? gradient = null, GridPattern? pattern = null)
+        LinearGradient? gradient = null, GridPattern? pattern = null, RadialGradient? glow = null)
     {
         if (bounds.IsEmpty) return;
 
@@ -611,6 +611,17 @@ public static class PhotonRealizer
         // box: no engine primitive and no shader, which is what keeps this write-once today.
         if (pattern is { } grid && grid.Cell > 0 && grid.LineWidth > 0)
             EmitGridPattern(bounds, grid, mode, builder);
+
+        // The spotlight sits above the grid and below the linear gradient — the same stacking the
+        // web realizer's layer list produces (there the FIRST entry is topmost; here the LAST drawn
+        // is). The center is a fraction of the box, so it tracks a resize without recomputation.
+        if (glow is { } g2)
+        {
+            builder.FillRRect(new RRect(bounds, radius), Paint.Radial(
+                new Point(bounds.X + bounds.Width * g2.CenterX, bounds.Y + bounds.Height * g2.CenterY),
+                g2.RadiusX, g2.RadiusY,
+                g2.From.Resolve(mode), g2.To.Resolve(mode)));
+        }
 
         // The gradient draws OVER the solid (CSS background-image/background-color composition):
         // Paint.Linear across the box bounds on the declared axis, stops resolved per mode.

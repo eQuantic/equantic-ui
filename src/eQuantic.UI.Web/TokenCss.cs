@@ -87,6 +87,13 @@ public static class TokenCss
         return $"linear-gradient({direction}, {Value(gradient.From)}, {Value(gradient.To)})";
     }
 
+    /// <summary>The elliptical spotlight as a CSS <c>radial-gradient()</c> — explicit ellipse extent
+    /// and a percentage center, the exact shape <see cref="RadialGradient"/> models.</summary>
+    public static string Glow(RadialGradient glow) =>
+        $"radial-gradient({Px(glow.RadiusX)} {Px(glow.RadiusY)} at "
+        + $"{Number(glow.CenterX * 100)}% {Number(glow.CenterY * 100)}%, "
+        + $"{Value(glow.From)}, {Value(glow.To)})";
+
     /// <summary>The grid as its TWO background-image layers (vertical rules, then horizontal) —
     /// each a hard-stop linear gradient that repeats at <c>background-size</c>.</summary>
     public static string GridPattern(GridPattern pattern)
