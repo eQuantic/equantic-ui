@@ -25,6 +25,10 @@ public static class TokenCss
         : $"light-dark({Hex(token.Light)}, {Hex(token.Dark)})";
 
     /// <summary>dp → px (1:1 on web; density is the platform's concern).</summary>
+    /// <summary>The platform monospace stack (Text.Mono / rich runs) — ui-monospace first, so
+    /// each OS uses its native mono face before the generic fallback.</summary>
+    public const string MonoStack = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace";
+
     public static string Px(float dp) => dp switch
     {
         0 => "0",

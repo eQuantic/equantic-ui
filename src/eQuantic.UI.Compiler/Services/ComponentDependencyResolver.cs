@@ -68,8 +68,11 @@ public class ComponentDependencyResolver
             {
                 var className = classDecl.Identifier.Text;
 
-                // Static utility classes are emitted as their own module — register so referencers import.
-                if (classDecl.Modifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
+                // Static utility classes are emitted as their own module — register so referencers
+                // import. NESTED static classes embed in their owner's module (private scope, every
+                // section has its own `Copy`) and must never register as importable.
+                if (classDecl.Parent is not Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax
+                    && classDecl.Modifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
                 {
                     _staticHelpers.Add(className);
                 }

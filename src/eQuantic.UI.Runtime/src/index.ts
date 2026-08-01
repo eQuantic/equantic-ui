@@ -109,6 +109,8 @@ export {
   AdaptiveNode,
   Anchored,
   StyleDiff,
+  ShadowSpec,
+  TextRun,
   Sticky,
   Text,
   Pressable,
@@ -142,7 +144,7 @@ export {
   TypeStyle,
   VariantColors,
 } from './shared/value-types';
-export type { AppTheme, ShadowSpec } from './shared/value-types';
+export type { AppTheme } from './shared/value-types';
 export {
   ComponentContext,
   setPhotonTheme,

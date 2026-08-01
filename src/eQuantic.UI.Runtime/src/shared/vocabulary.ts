@@ -54,6 +54,7 @@ export class StyleDiff {
   borderWidth?: number | null;
   elevation?: number | null;
   opacity?: number | null;
+  gradient?: LinearGradient | null;
 
   constructor(config?: {
     background?: ColorTokenValue | null;
@@ -61,8 +62,37 @@ export class StyleDiff {
     borderWidth?: number | null;
     elevation?: number | null;
     opacity?: number | null;
+    gradient?: LinearGradient | null;
   }) {
     if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `TextRun` record — one inline run of a rich Text (positional ctor). */
+export class TextRun {
+  content: string;
+  color: ColorTokenValue | null;
+  mono: boolean;
+
+  constructor(content: string, color: ColorTokenValue | null = null, mono = false) {
+    this.content = content;
+    this.color = color;
+    this.mono = mono;
+  }
+}
+
+/** Mirror of the C# `ShadowSpec` record struct — positional constructor, like the transpiler emits. */
+export class ShadowSpec {
+  offsetY: number;
+  blur: number;
+  spread: number;
+  color: ColorTokenValue;
+
+  constructor(offsetY = 0, blur = 0, spread = 0, color?: ColorTokenValue) {
+    this.offsetY = offsetY;
+    this.blur = blur;
+    this.spread = spread;
+    this.color = color as ColorTokenValue;
   }
 }
 
@@ -86,6 +116,9 @@ interface BoxStyleConfig {
   opacity?: number | null;
   transform?: unknown;
   aspectRatio?: number;
+  backdropBlur?: number;
+  shadow?: ShadowSpec | null;
+  insetHighlight?: ColorTokenValue | null;
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
 }
@@ -117,6 +150,11 @@ export class BoxStyle {
   transform?: unknown;
   /** Spec S1 aspect-ratio constraint (0 = none). */
   aspectRatio = 0;
+  /** Spec S3 frosted glass (0 = none). */
+  backdropBlur = 0;
+  /** Custom shadow (glow/halo — full spec; null = none) and the glossy inner highlight. */
+  shadow?: ShadowSpec | null;
+  insetHighlight?: ColorTokenValue | null;
   /** Spec S5 hover/focus diffs. */
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
@@ -322,6 +360,8 @@ export class Column extends FlexNode {
 
 interface TextConfig {
   styleOverride?: TypeStyleValue | null;
+  mono?: boolean;
+  spans?: import('./nodes').TextRunValue[] | null;
   /** Fills the glyphs with a gradient instead of `color` (background-clip: text). */
   gradient?: LinearGradient | null;
   /** Line alignment within the paragraph ('start' | 'center' | 'end'). */
@@ -338,6 +378,8 @@ export class Text extends VisualNode {
   styleOverride: TypeStyleValue | null = null;
   gradient: LinearGradient | null = null;
   align: string = 'start';
+  mono = false;
+  spans: import('./nodes').TextRunValue[] | null = null;
 
   constructor(
     content: string,

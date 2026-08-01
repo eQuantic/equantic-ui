@@ -31,12 +31,12 @@ public class TypeScriptCodeBuilder
         AppendLine($"import {{ {string.Join(", ", sortedItems)} }} from \"{from}\";");
     }
 
-    public void Class(string name, string? baseClass, Action<ClassBuilder> buildAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null)
+    public void Class(string name, string? baseClass, Action<ClassBuilder> buildAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool export = true)
     {
         if (sourceNode != null) RecordMapping(sourceNode);
         var generics = typeParameters != null && typeParameters.Any() ? $"<{string.Join(", ", typeParameters)}>" : "";
         var extendsClause = string.IsNullOrEmpty(baseClass) ? "" : $" extends {baseClass}";
-        AppendLine($"export class {name}{generics}{extendsClause} {{");
+        AppendLine($"{(export ? "export " : "")}class {name}{generics}{extendsClause} {{");
         Indent();
         buildAction(new ClassBuilder(this));
         Dedent();

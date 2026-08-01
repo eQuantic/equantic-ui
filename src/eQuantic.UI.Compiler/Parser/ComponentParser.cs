@@ -110,8 +110,12 @@ public class ComponentParser
 
         // Discover static utility classes (`static class Format { … }`) used from components — emitted as
         // their own module of static members so `Format.Foo()` resolves at runtime.
+        // NESTED static classes are excluded: they are their owner's private scope (every section
+        // having its own `Copy` is the pattern), so they embed INSIDE the owner's module — as their
+        // own module, two same-named nested classes would overwrite each other's file.
         foreach (var classDecl in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
         {
+            if (classDecl.Parent is ClassDeclarationSyntax) continue;
             if (classDecl.Modifiers.Any(SyntaxKind.StaticKeyword))
             {
                 results.Add(new ComponentDefinition

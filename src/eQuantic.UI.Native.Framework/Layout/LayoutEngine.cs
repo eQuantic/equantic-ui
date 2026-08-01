@@ -317,7 +317,7 @@ public static class LayoutEngine
     {
         var result = new LayoutNode(text);
         var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
-        var measurement = ctx.Measurer.Measure(text.Content, style, ctx.TypeScale, maxW, text.MaxLines);
+        var measurement = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, maxW, text.MaxLines);
         result.Text = measurement;
         result.Bounds = new Rect(0, 0, measurement.Width, measurement.Height);
         return result;
@@ -475,7 +475,7 @@ public static class LayoutEngine
                     if (children[i] is not Text text) continue;
                     var reduced = MathF.Max(0, mains[i] - deficit * (mains[i] / textTotal));
                     var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
-                    var remeasured = ctx.Measurer.Measure(text.Content, style, ctx.TypeScale, reduced,
+                    var remeasured = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, reduced,
                         Math.Max(1, text.MaxLines));
                     var node = new LayoutNode(text) { Text = remeasured };
                     node.Bounds = new Rect(0, 0, remeasured.Width, remeasured.Height);

@@ -645,10 +645,21 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
         ? radiusValue(style.cornerRadius)
         : undefined,
     'box-shadow': (() => {
-      if (!style.elevation || style.elevation <= 0) return undefined;
-      const spec = getPhotonTheme().elevation(style.elevation);
-      if (!spec || (spec.blur === 0 && spec.offsetY === 0 && spec.spread === 0)) return undefined;
-      return `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`;
+      // Depth (elevation) and the colored HALO compose as one list — the C# twin's rule.
+      const parts: string[] = [];
+      if (style.elevation && style.elevation > 0) {
+        const spec = getPhotonTheme().elevation(style.elevation);
+        if (spec && (spec.blur !== 0 || spec.offsetY !== 0 || spec.spread !== 0))
+          parts.push(
+            `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`,
+          );
+      }
+      if (style.shadow)
+        parts.push(
+          `0 ${px(style.shadow.offsetY)} ${px(style.shadow.blur)} ${px(style.shadow.spread)} ${tokenValue(style.shadow.color)}`,
+        );
+      if (style.insetHighlight) parts.push(`inset 0 1px 0 ${tokenValue(style.insetHighlight)}`);
+      return parts.length > 0 ? parts.join(', ') : undefined;
     })(),
     border:
       style.borderWidth && style.borderWidth > 0 && style.borderColor
@@ -693,6 +704,7 @@ function appendDiff(node: HtmlNode, pseudo: string, diff: StyleDiffValue): void 
     }
   }
   if (diff.opacity != null) entries['opacity'] = num(diff.opacity);
+  if (diff.gradient) entries['background-image'] = gradientValue(diff.gradient);
   const classes = atomizePseudo(pseudo, entries);
   if (classes) {
     const existing = node.attributes['class'];
@@ -786,6 +798,8 @@ function backgroundLayerSizes(style: BoxStyleValue): string | undefined {
   return sizes.join(', ');
 }
 
+const MONO_STACK = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace";
+
 function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   const style: StyleEntries = {
     color: tokenValue(text.color ?? context.textPrimary),
@@ -793,6 +807,9 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // must center too.
     'text-align':
       text.align === 'center' ? 'center' : text.align === 'end' ? 'end' : undefined,
+    // Authored \n is a HARD break (pre-line keeps normal wrapping between them) — C# twin.
+    'white-space': text.content.includes('\n') ? 'pre-line' : undefined,
+    'font-family': text.mono === true ? MONO_STACK : undefined,
   };
 
   // Gradient text — mirrors the C# realizer, including keeping `color` as the readable fallback
@@ -822,7 +839,22 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     style['letter-spacing'] = px(override.tracking);
   }
 
-  const node = element('span', style, [textLeaf(text.content)]);
+  // RICH runs (C# twin): inline spans with their own color/mono face; wrapping stays
+  // paragraph-level. When absent the plain content is the single leaf.
+  const children =
+    text.spans && text.spans.length > 0
+      ? text.spans.map((run) =>
+          element(
+            'span',
+            {
+              color: run.color ? tokenValue(run.color) : undefined,
+              'font-family': run.mono === true ? MONO_STACK : undefined,
+            },
+            [textLeaf(run.content)],
+          ),
+        )
+      : [textLeaf(text.content)];
+  const node = element('span', style, children);
   prependClass(node, `eq-type-${text.role.toLowerCase()}`);
   return node;
 }

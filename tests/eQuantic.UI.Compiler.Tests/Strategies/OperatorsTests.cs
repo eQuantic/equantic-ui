@@ -9,7 +9,24 @@ public class OperatorsTests : StrategyTestBase
     {
         var code = "(int)1.5";
         var js = Convert(code);
-        Assert.StartsWith("Math.trunc(1.5)", js);
+        // C# int cast truncates AND wraps to 32 bits — `| 0` is the JS twin of both.
+        Assert.StartsWith("(Math.trunc(1.5) | 0)", js);
+    }
+
+    [Fact]
+    public void CastExpression_Byte_WrapsToLowBits()
+    {
+        // (byte)(v >> 8) keeps only the low 8 bits in C# — the mask is the semantics, not polish:
+        // without it every Color.FromRgb((byte)(rgb >> 16), …) channel corrupts on the client.
+        var js = Convert("(byte)(v >> 8)");
+        Assert.Contains("& 0xFF", js);
+    }
+
+    [Fact]
+    public void CastExpression_Short_SignExtends()
+    {
+        var js = Convert("(short)70000");
+        Assert.Contains("<< 16) >> 16", js);
     }
 
     [Fact]

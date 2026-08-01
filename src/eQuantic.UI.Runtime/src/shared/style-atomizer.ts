@@ -155,9 +155,19 @@ function ensureRule(className: string, declaration: string): void {
   const target = registry();
   if (!target) return;
   try {
-    target.insertRule(`.${className}{${declaration}}`, target.cssRules.length);
-  } catch {
-    // An unparsable declaration must never take the app down; the element just misses that rule.
+    const index = target.insertRule(`.${className}{${declaration}}`, target.cssRules.length);
+    // A declaration the parser DROPS leaves an empty rule behind — the style silently vanishes.
+    // Say so: this is the only place that knows the raw declaration.
+    const inserted = target.cssRules[index] as CSSStyleRule | undefined;
+    // jsdom's CSS parser predates light-dark()/color-mix and drops them wholesale — warning
+    // there would drown every spec run in noise the browser never produces.
+    const isJsdom = typeof navigator !== 'undefined' && navigator.userAgent.includes('jsdom');
+    if (!isJsdom && inserted && inserted.style.length === 0 && declaration.length > 0) {
+      console.warn(`[eQuantic.UI] atomic rule dropped by the CSS parser: .${className}{${declaration}}`);
+    }
+  } catch (error) {
+    // An unparsable RULE must never take the app down; the element just misses that rule.
+    console.warn(`[eQuantic.UI] atomic rule rejected: .${className}{${declaration}}`, error);
   }
 }
 

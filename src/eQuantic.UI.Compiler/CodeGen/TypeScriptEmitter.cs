@@ -364,12 +364,28 @@ public class TypeScriptEmitter
         // Generate component code without imports
         var componentCode = _builder.ToString();
 
+        // NESTED static classes (each section's private `Copy` et al.) embed in THIS module as
+        // plain (non-exported) classes above the component — as their own modules, two same-named
+        // nested classes would overwrite each other's file, and the C# scoping is lexical anyway.
+        var nestedCode = string.Empty;
+        if (component.BuildMethodNode?.Parent is ClassDeclarationSyntax ownerClass)
+        {
+            var nb = new TypeScriptCodeBuilder();
+            foreach (var nested in ownerClass.Members.OfType<ClassDeclarationSyntax>()
+                         .Where(n => n.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
+            {
+                nb.Class(nested.Identifier.Text, null, c => EmitStaticMembers(nested, c),
+                    sourceNode: nested, export: false);
+            }
+            nestedCode = nb.ToString();
+        }
+
         // Generate imports based on populated UsedHelpers. The emitted body is the authority on what is
         // actually referenced, so it is passed in to drop imports the scan over-collected.
-        var importsCode = GenerateImports(component, componentCode);
+        var importsCode = GenerateImports(component, nestedCode + componentCode);
 
-        // Return imports + component code
-        return importsCode + "\n" + componentCode;
+        // Return imports + nested scope classes + component code
+        return importsCode + "\n" + nestedCode + componentCode;
     }
     
     /// <summary>Every identifier the emitted body mentions — the authority on which imports are live.</summary>
@@ -700,21 +716,19 @@ public class TypeScriptEmitter
              types.Add(typeName);
         }
 
-        var invocations = node.DescendantNodes().OfType<InvocationExpressionSyntax>();
-        foreach (var invocation in invocations)
+        // EVERY `Upper.member` access roots an import candidate — method calls AND plain static
+        // property/field reads (`EquanticBrand.BtnPrimaryFrom`): a static token class referenced
+        // only by properties must still import. Downstream filters drop enums, runtime-provided
+        // types and anything the resolver doesn't know.
+        foreach (var memberAccess in node.DescendantNodes().OfType<MemberAccessExpressionSyntax>())
         {
-            if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
+            if (memberAccess.Expression is IdentifierNameSyntax identifier)
             {
-                if (memberAccess.Expression is IdentifierNameSyntax identifier)
+                var name = identifier.Identifier.Text;
+                if (!string.IsNullOrEmpty(name) && char.IsUpper(name[0])
+                    && (localNames == null || !localNames.Contains(name)))
                 {
-                     var name = identifier.Identifier.Text;
-                     if (!string.IsNullOrEmpty(name) && char.IsUpper(name[0]))
-                     {
-                         if (localNames == null || !localNames.Contains(name))
-                         {
-                             types.Add(name);
-                         }
-                     }
+                    types.Add(name);
                 }
             }
         }
@@ -1017,17 +1031,11 @@ public class TypeScriptEmitter
     /// Emit a C# <c>static class</c> utility as its own TS module: <c>export class X { static foo() {…}
     /// static get bar() {…} static baz = … }</c>, plus imports for any record/component/helper it uses.
     /// </summary>
-    public string EmitStaticHelperModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel)
-    {
-        if (semanticModel != null) _converter.SetSemanticModel(semanticModel);
-        _converter.SetCurrentClass(cls.Identifier.Text);
-        _converter.UsedHelpers.Clear();
-        _converter.UsedAppTypes.Clear();
-        var name = cls.Identifier.Text;
 
-        var builder = new TypeScriptCodeBuilder();
-        builder.Class(name, null, c =>
-        {
+    /// <summary>The static-class member emission (fields/getters/methods) — shared by top-level
+    /// helper MODULES and by NESTED static classes embedded in their owner's module.</summary>
+    private void EmitStaticMembers(ClassDeclarationSyntax cls, TypeScriptCodeBuilder.ClassBuilder c)
+    {
             foreach (var f in cls.Members.OfType<FieldDeclarationSyntax>())
             {
                 foreach (var v in f.Declaration.Variables)
@@ -1077,7 +1085,18 @@ public class TypeScriptEmitter
                 else continue;
                 c.Raw($"static {(isAsync ? "async " : "")}{(isGenerator ? "*" : "")}{mn}{generics}({pars}) {{ {mbody} }}", m);
             }
-        });
+    }
+
+    public string EmitStaticHelperModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel)
+    {
+        if (semanticModel != null) _converter.SetSemanticModel(semanticModel);
+        _converter.SetCurrentClass(cls.Identifier.Text);
+        _converter.UsedHelpers.Clear();
+        _converter.UsedAppTypes.Clear();
+        var name = cls.Identifier.Text;
+
+        var builder = new TypeScriptCodeBuilder();
+        builder.Class(name, null, c => EmitStaticMembers(cls, c));
 
         // Imports: $eq (if used) + runtime-provided references (the same semantic routing components
         // get — a static helper composing the shared vocabulary/library imports it from the runtime)
