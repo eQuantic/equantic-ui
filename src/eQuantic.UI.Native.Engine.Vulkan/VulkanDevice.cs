@@ -27,6 +27,9 @@ public sealed unsafe class VulkanDevice : IRhiDevice
     /// exceeding it throws (v1 offscreen fence, revisited with the Android frame loop).</summary>
     private const int UniformCapacity = UniformStride * 4096;
 
+    private static readonly RhiPipelineKind[] RegistryKinds =
+        [RhiPipelineKind.Sdf, RhiPipelineKind.TexturedA8, RhiPipelineKind.TexturedRgba];
+
     private readonly IntPtr _instance;
     private readonly IntPtr _physicalDevice;
     private readonly IntPtr _device;
@@ -34,6 +37,9 @@ public sealed unsafe class VulkanDevice : IRhiDevice
     private VkPhysicalDeviceMemoryProperties _memoryProperties;
     private readonly ulong _commandPool;
     private readonly ulong _shaderModule;
+    private readonly ulong _pipelineCache;
+    private readonly string _pipelineCachePath = string.Empty;
+    private readonly bool _pipelineCacheExisted;
     private readonly ulong _descriptorSetLayout;
     private readonly ulong _pipelineLayout;
     private readonly ulong _descriptorPool;
@@ -69,14 +75,21 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             Vk.Check(Vk.vkCreateCommandPool(_device, &poolInfo, IntPtr.Zero, &commandPool), "command pool creation");
             _commandPool = commandPool;
 
-            _shaderModule = CreateShaderModule();
+            var shaderBytes = ReadShaderBytes();
+            _shaderModule = CreateShaderModule(shaderBytes);
+            (_pipelineCache, _pipelineCachePath, _pipelineCacheExisted) = OpenPipelineCache(shaderBytes);
             _descriptorSetLayout = CreateDescriptorSetLayout();
             _pipelineLayout = CreatePipelineLayout();
             _descriptorPool = CreateDescriptorPool();
             (_uniformBuffer, _uniformMemory, var uniformMapped) = CreateUniformRing();
             _uniformMapped = (byte*)uniformMapped;
 
-            _ = Pipeline(FormatR8G8B8A8Srgb, RhiPipelineKind.Sdf); // fail-fast: born with the device (D5)
+            // D5: the ENTIRE fixed registry is born with the device — offscreen RGBA8 today (the
+            // swapchain format joins the registry with the Android shell, plan W5). First launch
+            // compiles through the pipeline cache and persists it; later launches build from it.
+            foreach (var kind in RegistryKinds)
+                CreatePipeline(FormatR8G8B8A8Srgb, kind);
+            SavePipelineCache();
         }
         catch
         {
@@ -295,10 +308,18 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         _encoding = false;
     }
 
+    /// <summary>Registry lookup — plan D5's assert: every pipeline is created at device init, so
+    /// a miss here is a bug by definition, never a compile trigger.</summary>
     internal ulong Pipeline(uint format, RhiPipelineKind kind)
     {
-        if (_pipelines.TryGetValue((format, kind), out var cached)) return cached;
+        if (_pipelines.TryGetValue((format, kind), out var pipeline)) return pipeline;
+        throw new InvalidOperationException(
+            $"Pipeline (format {format}, {kind}) is outside the fixed registry (plan D5) — " +
+            "extend the registry created at device init; pipelines are never created at draw time.");
+    }
 
+    private void CreatePipeline(uint format, RhiPipelineKind kind)
+    {
         var fragmentEntry = kind switch
         {
             RhiPipelineKind.TexturedA8 => "textured_fragment",
@@ -381,15 +402,67 @@ public sealed unsafe class VulkanDevice : IRhiDevice
                 RenderPass = RenderPass(format),
             };
             ulong pipeline;
-            Vk.Check(Vk.vkCreateGraphicsPipelines(_device, 0, 1, &createInfo, IntPtr.Zero, &pipeline), "pipeline creation");
+            Vk.Check(Vk.vkCreateGraphicsPipelines(_device, _pipelineCache, 1, &createInfo, IntPtr.Zero, &pipeline), "pipeline creation");
             _pipelines[(format, kind)] = pipeline;
-            return pipeline;
         }
         finally
         {
             Marshal.FreeCoTaskMem(vertexName);
             Marshal.FreeCoTaskMem(fragmentName);
         }
+    }
+
+    /// <summary>Opens the cross-launch VkPipelineCache (D3 tail) seeded from disk when present.
+    /// The driver validates the blob's header (vendor/device/UUID) itself — a stale or foreign
+    /// blob degrades to an empty cache; a rejected one retries empty. Zero on failure: caching
+    /// degrades, the device never does.</summary>
+    private (ulong Cache, string Path, bool Existed) OpenPipelineCache(byte[] shaderBytes)
+    {
+        if (!PipelineCache.TryGetFile("Sdf", shaderBytes, ".vkpipelinecache", out var path))
+            return (0, string.Empty, false);
+
+        byte[]? initialData = null;
+        if (File.Exists(path))
+        {
+            try { initialData = File.ReadAllBytes(path); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+
+        fixed (byte* data = initialData)
+        {
+            var createInfo = new VkPipelineCacheCreateInfo
+            {
+                SType = VkStructureType.PipelineCacheCreateInfo,
+                InitialDataSize = (nuint)(initialData?.Length ?? 0),
+                PInitialData = (IntPtr)data,
+            };
+            ulong cache;
+            if (Vk.vkCreatePipelineCache(_device, &createInfo, IntPtr.Zero, &cache) == Vk.Success)
+                return (cache, path, initialData is not null);
+        }
+
+        var empty = new VkPipelineCacheCreateInfo { SType = VkStructureType.PipelineCacheCreateInfo };
+        ulong emptyCache;
+        return Vk.vkCreatePipelineCache(_device, &empty, IntPtr.Zero, &emptyCache) == Vk.Success
+            ? (emptyCache, path, false)
+            : (0, string.Empty, false);
+    }
+
+    /// <summary>First launch only: persists the cache holding the whole fixed registry.</summary>
+    private void SavePipelineCache()
+    {
+        if (_pipelineCache == 0 || _pipelineCacheExisted || _pipelineCachePath.Length == 0) return;
+        nuint size = 0;
+        if (Vk.vkGetPipelineCacheData(_device, _pipelineCache, &size, null) != Vk.Success || size == 0) return;
+        var data = new byte[size];
+        fixed (byte* dataPtr = data)
+        {
+            if (Vk.vkGetPipelineCacheData(_device, _pipelineCache, &size, dataPtr) != Vk.Success) return;
+        }
+        try { File.WriteAllBytes(_pipelineCachePath, data); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     // ── Shared building blocks (textures, targets, readback) ────────────────────────────────────
@@ -587,12 +660,17 @@ public sealed unsafe class VulkanDevice : IRhiDevice
 
     // ── Fixed init pieces ───────────────────────────────────────────────────────────────────────
 
-    private ulong CreateShaderModule()
+    private static byte[] ReadShaderBytes()
     {
         using var stream = typeof(VulkanDevice).Assembly.GetManifestResourceStream("Photon.Sdf.spv")
             ?? throw new InvalidOperationException("Embedded SPIR-V module 'Photon.Sdf.spv' missing.");
         var bytes = new byte[stream.Length];
         stream.ReadExactly(bytes);
+        return bytes;
+    }
+
+    private ulong CreateShaderModule(byte[] bytes)
+    {
         fixed (byte* code = bytes)
         {
             var createInfo = new VkShaderModuleCreateInfo
@@ -859,6 +937,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             Vk.vkDestroyBuffer(_device, _uniformBuffer, IntPtr.Zero);
             Vk.vkFreeMemory(_device, _uniformMemory, IntPtr.Zero);
             foreach (var pipeline in _pipelines.Values) Vk.vkDestroyPipeline(_device, pipeline, IntPtr.Zero);
+            if (_pipelineCache != 0) Vk.vkDestroyPipelineCache(_device, _pipelineCache, IntPtr.Zero);
             foreach (var renderPass in _renderPasses.Values) Vk.vkDestroyRenderPass(_device, renderPass, IntPtr.Zero);
             Vk.vkDestroyDescriptorPool(_device, _descriptorPool, IntPtr.Zero); // reclaims every set
             Vk.vkDestroyPipelineLayout(_device, _pipelineLayout, IntPtr.Zero);

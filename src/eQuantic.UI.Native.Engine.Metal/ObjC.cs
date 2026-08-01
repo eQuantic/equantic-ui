@@ -82,6 +82,12 @@ internal static partial class ObjC
     internal static partial void SendVoid(IntPtr receiver, IntPtr selector, IntPtr bytes, ulong bytesPerRow,
         MTLRegion region, ulong mipmapLevel);
 
+    /// <summary>addRenderPipelineFunctionsWithDescriptor:error: / serializeToURL:error: — BOOL
+    /// returns with an NSError out-param (binary archives, the D3 cross-launch cache).</summary>
+    [LibraryImport(LibObjC, EntryPoint = "objc_msgSend")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    internal static partial bool SendBool(IntPtr receiver, IntPtr selector, IntPtr arg1, out IntPtr error);
+
     [LibraryImport(MetalFramework)]
     internal static partial IntPtr MTLCreateSystemDefaultDevice();
 
