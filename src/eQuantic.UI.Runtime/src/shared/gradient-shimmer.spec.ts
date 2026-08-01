@@ -61,6 +61,28 @@ describe('gradient + shimmer lowering (C# GradientShimmerRealizerTests cross-pin
     expect(effectiveStyle(node)).toContain('background-image: linear-gradient(to bottom, ');
   });
 
+  // The DIAGONAL axes — mirrors C# GradientDirection_Diagonals_EmitTheKeyword.
+  it.each([
+    ['toBottomRight', 'to bottom right'],
+    ['toBottomLeft', 'to bottom left'],
+  ])('%s emits the CSS keyword', (direction, keyword) => {
+    const node = lower(
+      new Box(
+        new BoxStyle({
+          width: 32,
+          height: 32,
+          gradient: new LinearGradient(
+            photonTheme.colors('primary').base,
+            photonTheme.colors('tertiary').base,
+            direction,
+          ),
+        }),
+      ),
+    );
+
+    expect(effectiveStyle(node)).toContain(`background-image: linear-gradient(${keyword}, `);
+  });
+
   it('the transpiled Skeleton sweeps the rest-hidden mirrored glint inside the clipped track', () => {
     const track = lower(new Skeleton('line', 160));
 

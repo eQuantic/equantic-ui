@@ -609,7 +609,8 @@ public class ComponentParser
     {
         var model = TryGetSemanticModel(classDecl.SyntaxTree);
         if (model == null) return;
-        RuntimeProvidedTypeScanner.Collect(classDecl, model, definition.RuntimeProvidedTypes, definition.EnumTypes);
+        RuntimeProvidedTypeScanner.Collect(classDecl, model, definition.RuntimeProvidedTypes,
+            definition.EnumTypes, definition.AppTypes);
     }
 
     /// <summary>

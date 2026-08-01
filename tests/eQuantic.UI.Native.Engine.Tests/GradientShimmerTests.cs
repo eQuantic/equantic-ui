@@ -59,6 +59,31 @@ public class GradientShimmerTests
         fill.Paint.GradientEnd.Should().Be(new Point(0, 40));
     }
 
+    /// <summary>
+    /// The DIAGONAL axes run corner to corner — and <c>ToBottomLeft</c> starts at the TOP-RIGHT
+    /// corner, mirroring CSS's <c>to bottom left</c>. No engine change was needed: the axis was
+    /// always a pair of arbitrary points, so the diagonals are pure realizer work.
+    /// </summary>
+    [Fact]
+    public void GradientBox_Diagonals_RunCornerToCorner()
+    {
+        Point Start(GradientDirection direction) => Fill(direction).Paint.GradientStart;
+        Point End(GradientDirection direction) => Fill(direction).Paint.GradientEnd;
+
+        Start(GradientDirection.ToBottomRight).Should().Be(new Point(0, 0));
+        End(GradientDirection.ToBottomRight).Should().Be(new Point(120, 40));
+
+        Start(GradientDirection.ToBottomLeft).Should().Be(new Point(120, 0), "CSS runs it from the opposite corner");
+        End(GradientDirection.ToBottomLeft).Should().Be(new Point(0, 40));
+    }
+
+    private DrawCommand Fill(GradientDirection direction) => Render(new Box(new BoxStyle
+    {
+        Width = 120,
+        Height = 40,
+        Gradient = new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent), direction),
+    })).Single(c => c.Kind == DrawCommandKind.FillRRect);
+
     [Fact]
     public void GradientOverSolid_DrawsBothFills_SolidFirst()
     {

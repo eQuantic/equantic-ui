@@ -49,6 +49,26 @@ public class GradientShimmerRealizerTests
         node.Attributes["style"].Should().Contain("background-image: linear-gradient(to bottom, ");
     }
 
+    /// <summary>
+    /// The DIAGONAL axes (the "tinted tile" gradient every icon chip in the eQuantic site uses).
+    /// Native runs the same <c>Paint.Linear</c> primitive with corner endpoints — the axis was
+    /// always a pair of points, so the diagonals needed no engine or shader change.
+    /// </summary>
+    [Theory]
+    [InlineData(GradientDirection.ToBottomRight, "to bottom right")]
+    [InlineData(GradientDirection.ToBottomLeft, "to bottom left")]
+    public void GradientDirection_Diagonals_EmitTheKeyword(GradientDirection direction, string keyword)
+    {
+        var node = Render(new Box(new BoxStyle
+        {
+            Width = 32,
+            Height = 32,
+            Gradient = new LinearGradient(Theme.Colors(Variant.Primary).Base, Theme.Colors(Variant.Tertiary).Base, direction),
+        }));
+
+        node.Attributes["style"].Should().Contain($"background-image: linear-gradient({keyword}, ");
+    }
+
     [Fact]
     public void SkeletonShimmer_ClippedTrack_RestHiddenGlint_MirroredGradients()
     {

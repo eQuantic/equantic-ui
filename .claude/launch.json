@@ -6,6 +6,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "samples/DefaultUIDashboard/DefaultUIDashboard.csproj", "--no-build", "--launch-profile", "http"],
       "port": 5201
+    },
+    {
+      "name": "equantic-web",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "../equantic-web/EquanticWeb.csproj", "--no-launch-profile", "--urls", "http://localhost:5210"],
+      "port": 5210
     }
   ]
 }

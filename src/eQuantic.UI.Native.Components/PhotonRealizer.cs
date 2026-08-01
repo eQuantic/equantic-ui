@@ -610,11 +610,26 @@ public static class PhotonRealizer
         // Paint.Linear across the box bounds on the declared axis, stops resolved per mode.
         if (gradient is { } g)
         {
-            var end = g.Direction == GradientDirection.ToBottom
-                ? new Point(bounds.X, bounds.Y + bounds.Height)
-                : new Point(bounds.X + bounds.Width, bounds.Y);
+            // The axis is a pair of points, so the diagonals need no new engine primitive — only
+            // the right corners. ToBottomLeft starts at the TOP-RIGHT corner (CSS's `to bottom left`
+            // runs from the opposite corner), which is why the start point is not always the origin.
+            var (start, end) = g.Direction switch
+            {
+                GradientDirection.ToBottom => (
+                    new Point(bounds.X, bounds.Y),
+                    new Point(bounds.X, bounds.Y + bounds.Height)),
+                GradientDirection.ToBottomRight => (
+                    new Point(bounds.X, bounds.Y),
+                    new Point(bounds.X + bounds.Width, bounds.Y + bounds.Height)),
+                GradientDirection.ToBottomLeft => (
+                    new Point(bounds.X + bounds.Width, bounds.Y),
+                    new Point(bounds.X, bounds.Y + bounds.Height)),
+                _ => (
+                    new Point(bounds.X, bounds.Y),
+                    new Point(bounds.X + bounds.Width, bounds.Y)),
+            };
             builder.FillRRect(new RRect(bounds, radius),
-                Paint.Linear(new Point(bounds.X, bounds.Y), end, g.From.Resolve(mode), g.To.Resolve(mode)));
+                Paint.Linear(start, end, g.From.Resolve(mode), g.To.Resolve(mode)));
         }
 
         if (borderWidth > 0)

@@ -20,6 +20,13 @@ public class StatementConformanceTests
     [InlineData("int sum = 0; for (int i = 1; i <= 5; i++) { sum += i; } return sum;")]     // 15
     // foreach over an array
     [InlineData("var nums = new[] { 1, 2, 3, 4 }; int total = 0; foreach (var n in nums) { total += n; } return total;")] // 10
+    // DECONSTRUCTING foreach — C# tuples are JS arrays, so `var (a, b)` is array destructuring.
+    [InlineData("var pairs = new[] { (1, 2), (3, 4) }; int total = 0; foreach (var (a, b) in pairs) { total += a * b; } return total;")] // 14
+    [InlineData("var pairs = new[] { (\"a\", 1), (\"b\", 2) }; string r = \"\"; foreach (var (k, v) in pairs) { r += k + v; } return r;")] // "a1b2"
+    // the equivalent `(var a, var b)` spelling — a different Roslyn shape for the same thing
+    [InlineData("var pairs = new[] { (2, 5), (3, 7) }; int total = 0; foreach ((var a, var b) in pairs) { total += a + b; } return total;")] // 17
+    // nested deconstruction
+    [InlineData("var rows = new[] { (1, (2, 3)) }; int total = 0; foreach (var (a, (b, c)) in rows) { total += a + b + c; } return total;")] // 6
     // while
     [InlineData("int i = 0; int count = 0; while (i < 10) { i += 3; count++; } return count;")] // 4
     // do-while (body runs at least once)
