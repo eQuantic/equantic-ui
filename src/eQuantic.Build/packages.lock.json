@@ -167,11 +167,15 @@
           "System.Composition.Runtime": "9.0.0"
         }
       },
+      "equantic.ui.codegen": {
+        "type": "Project"
+      },
       "equantic.ui.compiler": {
         "type": "Project",
         "dependencies": {
           "Microsoft.CodeAnalysis.CSharp": "[5.0.0, )",
           "Microsoft.CodeAnalysis.Workspaces.MSBuild": "[5.0.0, )",
+          "eQuantic.UI.Codegen": "[0.1.6, )",
           "eQuantic.UI.Core": "[0.1.6, )"
         }
       },
@@ -191,8 +195,7 @@
         "type": "Project",
         "dependencies": {
           "eQuantic.UI.Core": "[0.1.6, )",
-          "eQuantic.UI.Web": "[0.1.6, )",
-          "eQuantic.UI.Web.Components": "[0.1.6, )"
+          "eQuantic.UI.Web": "[0.1.6, )"
         }
       },
       "equantic.ui.tailwind": {
@@ -208,12 +211,6 @@
           "eQuantic.UI.Components": "[0.1.6, )",
           "eQuantic.UI.Core": "[0.1.6, )",
           "eQuantic.UI.Primitives": "[0.1.6, )"
-        }
-      },
-      "equantic.ui.web.components": {
-        "type": "Project",
-        "dependencies": {
-          "eQuantic.UI.Core": "[0.1.6, )"
         }
       }
     }
