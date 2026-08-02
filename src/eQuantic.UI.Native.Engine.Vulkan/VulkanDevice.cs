@@ -17,6 +17,12 @@ namespace eQuantic.UI.Native.Engine.Vulkan;
 /// </summary>
 public sealed unsafe class VulkanDevice : IRhiDevice
 {
+    /// <summary>SHADER_READ_ONLY_OPTIMAL — where a layer target is left, to be sampled next.</summary>
+    internal const uint LayoutShaderReadOnly = 5;
+
+    /// <summary>PRESENT_SRC_KHR — where a swapchain image is left, to be shown next.</summary>
+    internal const uint LayoutPresentSrc = 1000001002;
+
     internal const uint FormatR8Unorm = 9;        // VK_FORMAT_R8_UNORM (A8 coverage — linear)
     internal const uint FormatR8G8B8A8Srgb = 43;  // VK_FORMAT_R8G8B8A8_SRGB (targets + images)
 
@@ -33,6 +39,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
 
     private readonly IntPtr _instance;
     private readonly IntPtr _physicalDevice;
+    private readonly uint _queueFamilyIndex;
     private readonly IntPtr _device;
     private readonly IntPtr _queue;
     private VkPhysicalDeviceMemoryProperties _memoryProperties;
@@ -50,7 +57,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
     private readonly byte* _uniformMapped;
     private int _uniformOffset;
     private bool _encoding;
-    private readonly Dictionary<uint, ulong> _renderPasses = new();
+    private readonly Dictionary<(uint Format, uint FinalLayout), ulong> _renderPasses = new();
     private readonly Dictionary<(uint Format, RhiPipelineKind Kind), ulong> _pipelines = new();
     private readonly ulong _nearestSampler;
     private readonly ulong _linearSampler;
@@ -63,6 +70,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         try
         {
             (_physicalDevice, var queueFamily) = PickPhysicalDevice(_instance);
+            _queueFamilyIndex = queueFamily;
             fixed (VkPhysicalDeviceMemoryProperties* memory = &_memoryProperties)
                 Vk.vkGetPhysicalDeviceMemoryProperties(_physicalDevice, memory);
 
@@ -119,6 +127,30 @@ public sealed unsafe class VulkanDevice : IRhiDevice
     }
 
     internal IntPtr Device => _device;
+    internal IntPtr Instance => _instance;
+    internal IntPtr PhysicalDevice => _physicalDevice;
+    internal IntPtr Queue => _queue;
+    internal uint QueueFamily => _queueFamilyIndex;
+
+    /// <summary>Wraps an image this device did NOT allocate — a swapchain's — as a render target.</summary>
+    internal VulkanRenderTarget AdoptImage(ulong image, uint format, int width, int height)
+    {
+        var view = CreateImageView(image, format);
+        var renderPass = RenderPass(format, LayoutPresentSrc);
+        var framebuffer = CreateFramebuffer(renderPass, view, width, height);
+        return new VulkanRenderTarget(this, image, 0, view, framebuffer, renderPass, format, width, height)
+        {
+            OwnsImage = false,
+        };
+    }
+
+    internal ulong CreateSemaphore()
+    {
+        var createInfo = new VkSemaphoreCreateInfo { SType = VkStructureType.SemaphoreCreateInfo };
+        ulong semaphore;
+        Vk.Check(Vk.vkCreateSemaphore(_device, &createInfo, IntPtr.Zero, &semaphore), "semaphore creation");
+        return semaphore;
+    }
     internal ulong PipelineLayoutHandle => _pipelineLayout;
     internal bool IsDisposed { get; private set; }
 
@@ -152,8 +184,10 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         // COLOR_ATTACHMENT (written) | TRANSFER_SRC (readback) | SAMPLED (composited as a layer).
         const uint usage = 0x10 | 0x1 | 0x4;
         var (image, memory, view) = CreateImage(width, height, FormatR8G8B8A8Srgb, usage);
-        var framebuffer = CreateFramebuffer(RenderPass(FormatR8G8B8A8Srgb), view, width, height);
-        return new VulkanRenderTarget(this, image, memory, view, framebuffer, width, height);
+        var renderPass = RenderPass(FormatR8G8B8A8Srgb);
+        var framebuffer = CreateFramebuffer(renderPass, view, width, height);
+        return new VulkanRenderTarget(this, image, memory, view, framebuffer, renderPass,
+            FormatR8G8B8A8Srgb, width, height);
     }
 
     public IRhiTexture CreateTexture(TextureData data)
@@ -224,7 +258,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         var passBegin = new VkRenderPassBeginInfo
         {
             SType = VkStructureType.RenderPassBeginInfo,
-            RenderPass = RenderPass(FormatR8G8B8A8Srgb),
+            RenderPass = renderTarget.RenderPass,
             Framebuffer = renderTarget.Framebuffer,
             RenderArea = new VkRect2D { ExtentWidth = (uint)target.Width, ExtentHeight = (uint)target.Height },
             ClearValueCount = 1,
@@ -348,17 +382,35 @@ public sealed unsafe class VulkanDevice : IRhiDevice
 
     /// <summary>Ends the pass and submits. v1 always waits (offscreen backend — goldens/parity
     /// read pixels right after; real fences arrive with the Android swapchain frame loop, W5).</summary>
-    internal void Submit(IntPtr command, VulkanRenderTarget target)
+    internal void Submit(IntPtr command, VulkanRenderTarget target) =>
+        Submit(command, target, waitSemaphore: 0, signalSemaphore: 0);
+
+    /// <summary>
+    /// Submits the frame. With semaphores it is a PRESENTED frame: the GPU waits for the image the
+    /// display engine handed over, and signals when it is done drawing, so nothing between them is
+    /// left to the queue happening to be idle. Without them the caller wants the pixels back, and
+    /// waiting for the queue is exactly what that means.
+    /// </summary>
+    internal void Submit(IntPtr command, VulkanRenderTarget target, ulong waitSemaphore, ulong signalSemaphore)
     {
         Vk.vkCmdEndRenderPass(command);
         Vk.Check(Vk.vkEndCommandBuffer(command), "command buffer end");
+        var waitStage = 0x400u; // COLOR_ATTACHMENT_OUTPUT — the first stage that touches the image
         var submitInfo = new VkSubmitInfo
         {
             SType = VkStructureType.SubmitInfo,
+            WaitSemaphoreCount = waitSemaphore != 0 ? 1u : 0u,
+            PWaitSemaphores = waitSemaphore != 0 ? (IntPtr)(&waitSemaphore) : IntPtr.Zero,
+            PWaitDstStageMask = waitSemaphore != 0 ? (IntPtr)(&waitStage) : IntPtr.Zero,
             CommandBufferCount = 1,
             PCommandBuffers = &command,
+            SignalSemaphoreCount = signalSemaphore != 0 ? 1u : 0u,
+            PSignalSemaphores = signalSemaphore != 0 ? (IntPtr)(&signalSemaphore) : IntPtr.Zero,
         };
         Vk.Check(Vk.vkQueueSubmit(_queue, 1, &submitInfo, 0), "queue submit");
+        // v1 waits either way: a frame in flight needs a fence per swapchain image to be safe, and
+        // that lands with the pacing work. What the semaphores buy today is CORRECTNESS against the
+        // display engine, which a queue wait alone cannot express.
         Vk.Check(Vk.vkQueueWaitIdle(_queue), "queue wait");
         Vk.vkFreeCommandBuffers(_device, _commandPool, 1, &command);
         target.MarkRendered();
@@ -599,6 +651,12 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         var memory = Allocate(requirements, 0x1); // DEVICE_LOCAL
         Vk.Check(Vk.vkBindImageMemory(_device, image, memory, 0), "image bind");
 
+        return (image, memory, CreateImageView(image, format));
+    }
+
+    /// <summary>A 2D colour view of an image — ours, or a swapchain's.</summary>
+    private ulong CreateImageView(ulong image, uint format)
+    {
         var viewInfo = new VkImageViewCreateInfo
         {
             SType = VkStructureType.ImageViewCreateInfo,
@@ -609,7 +667,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         };
         ulong view;
         Vk.Check(Vk.vkCreateImageView(_device, &viewInfo, IntPtr.Zero, &view), "image view creation");
-        return (image, memory, view);
+        return view;
     }
 
     private ulong Allocate(in VkMemoryRequirements requirements, uint requiredFlags)
@@ -651,9 +709,15 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         Vk.vkCmdPipelineBarrier(command, srcStage, dstStage, 0, 0, IntPtr.Zero, 0, IntPtr.Zero, 1, &barrier);
     }
 
-    internal ulong RenderPass(uint format)
+    /// <summary>
+    /// The pass a target is drawn through. <paramref name="finalLayout"/> is where the image is
+    /// LEFT: a layer target is sampled next, so it ends shader-readable; a swapchain image is shown
+    /// next, so it ends presentable. Everything else about the two passes is identical, which is
+    /// why they are one method and not two.
+    /// </summary>
+    internal ulong RenderPass(uint format, uint finalLayout = LayoutShaderReadOnly)
     {
-        if (_renderPasses.TryGetValue(format, out var cached)) return cached;
+        if (_renderPasses.TryGetValue((format, finalLayout), out var cached)) return cached;
 
         // One pass, one color attachment (D4): CLEAR on load (the display list's leading Clear),
         // STORE, finish in TRANSFER_SRC — readback-ready without an extra barrier.
@@ -666,9 +730,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             StencilLoadOp = 2,   // DONT_CARE
             StencilStoreOp = 1,  // DONT_CARE
             InitialLayout = 0,   // UNDEFINED (re-renders discard — loadOp clears anyway)
-            // SHADER_READ_ONLY: a layer target is sampled by the composite far more often than it
-            // is read back, and the readback path transitions explicitly when it needs to.
-            FinalLayout = 5,
+            FinalLayout = finalLayout,
         };
         var reference = new VkAttachmentReference { Attachment = 0, Layout = 2 /* COLOR_ATTACHMENT_OPTIMAL */ };
         var subpass = new VkSubpassDescription
@@ -689,6 +751,13 @@ public sealed unsafe class VulkanDevice : IRhiDevice
             SrcStageMask = 0x400, DstStageMask = 0x80,   // COLOR_ATTACHMENT_OUTPUT → FRAGMENT_SHADER
             SrcAccessMask = 0x100, DstAccessMask = 0x20,  // COLOR_ATTACHMENT_WRITE → SHADER_READ
         };
+        // A presented image is read by the display engine, not by a shader: nothing downstream in
+        // this device waits on it, and the semaphore the present waits on is the real ordering.
+        if (finalLayout == LayoutPresentSrc)
+        {
+            dependencies[1].DstStageMask = 0x2000;  // BOTTOM_OF_PIPE
+            dependencies[1].DstAccessMask = 0;
+        }
         var createInfo = new VkRenderPassCreateInfo
         {
             SType = VkStructureType.RenderPassCreateInfo,
@@ -701,7 +770,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         };
         ulong renderPass;
         Vk.Check(Vk.vkCreateRenderPass(_device, &createInfo, IntPtr.Zero, &renderPass), "render pass creation");
-        _renderPasses[format] = renderPass;
+        _renderPasses[(format, finalLayout)] = renderPass;
         return renderPass;
     }
 
@@ -860,6 +929,12 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         uint flags = 0;
         // Dev hosts running through MoltenVK need portability enumeration; Android/Windows/Linux
         // loaders don't expose the extension and take the plain path.
+        // Presentation: a surface to draw at, and the platform's way of naming one. Absent on a
+        // headless host, where the backend stays exactly what it was — offscreen.
+        foreach (var surfaceExtension in (string[])["VK_KHR_surface", "VK_KHR_android_surface"])
+            if (InstanceExtensionPresent(surfaceExtension))
+                extensions.Add(surfaceExtension);
+
         if (InstanceExtensionPresent("VK_KHR_portability_enumeration"))
         {
             extensions.Add("VK_KHR_portability_enumeration");
@@ -968,6 +1043,9 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         // Spec rule: a device advertising portability_subset MUST enable it (MoltenVK dev hosts).
         if (DeviceExtensionPresent(physicalDevice, "VK_KHR_portability_subset"))
             extensions.Add("VK_KHR_portability_subset");
+        // The swapchain itself: a device feature, not an instance one.
+        if (DeviceExtensionPresent(physicalDevice, "VK_KHR_swapchain"))
+            extensions.Add("VK_KHR_swapchain");
 
         using var extensionNames = new Utf8StringArray(extensions);
         var priority = 1f;

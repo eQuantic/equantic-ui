@@ -46,4 +46,8 @@ internal sealed unsafe class VulkanCommandList : IRhiCommandList
     /// <summary>v1 always waits — the backend is offscreen-only until the Android swapchain path
     /// (plan W5) brings real fences; the parameter is honored by construction.</summary>
     public void Submit(bool waitUntilCompleted) => _device.Submit(_commandBuffer, _target);
+
+    /// <summary>Submits a frame that will be SHOWN: it waits for the image and signals when done.</summary>
+    internal void SubmitPresenting(ulong acquired, ulong rendered) =>
+        _device.Submit(_commandBuffer, _target, acquired, rendered);
 }

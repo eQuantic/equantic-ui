@@ -170,6 +170,12 @@ internal static unsafe partial class Vk
     internal static partial void vkDestroyRenderPass(IntPtr device, ulong renderPass, IntPtr allocator);
 
     [LibraryImport(Lib)]
+    internal static partial int vkCreateSemaphore(IntPtr device, VkSemaphoreCreateInfo* createInfo, IntPtr allocator, ulong* semaphore);
+
+    [LibraryImport(Lib)]
+    internal static partial void vkDestroySemaphore(IntPtr device, ulong semaphore, IntPtr allocator);
+
+    [LibraryImport(Lib)]
     internal static partial int vkCreateFramebuffer(IntPtr device, VkFramebufferCreateInfo* createInfo, IntPtr allocator, ulong* framebuffer);
 
     [LibraryImport(Lib)]
@@ -328,6 +334,11 @@ internal enum VkStructureType : uint
     FramebufferCreateInfo = 37,
     RenderPassCreateInfo = 38,
     CommandPoolCreateInfo = 39,
+    SemaphoreCreateInfo = 9,
+    // The presentation extensions carry their own numbering, far out of the core range.
+    SwapchainCreateInfoKHR = 1000001000,
+    PresentInfoKHR = 1000001001,
+    AndroidSurfaceCreateInfoKHR = 1000008000,
     CommandBufferAllocateInfo = 40,
     CommandBufferBeginInfo = 42,
     RenderPassBeginInfo = 43,

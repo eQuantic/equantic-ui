@@ -5,6 +5,7 @@ using Android.Views;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Engine.Reference;
+using eQuantic.UI.Native.Engine.Vulkan;
 using eQuantic.UI.Native.Hosting;
 using eQuantic.UI.Primitives;
 using Choreographer = Android.Views.Choreographer;
@@ -25,9 +26,10 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// out of this.
 /// </para>
 /// <para>
-/// Presentation goes through the NORMATIVE Reference backend for now: pixel-correct by definition,
-/// and slower than the GPU path. The Vulkan swapchain replaces this method and nothing above it —
-/// the display list, the layout and the trees never learn which one drew them.
+/// Presentation goes through VULKAN, straight into the window's own surface — the same engine and
+/// the same renderer the Metal backend runs, so the two can only differ in API calls. Where Vulkan
+/// is unavailable the NORMATIVE Reference backend draws the same display list in software: correct
+/// by definition, slower, and invisible to everything above it.
 /// </para>
 /// <para>
 /// The LAUNCHER activity is generated into the app's own assembly, not this one. Android would
@@ -39,7 +41,10 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
 {
     private SurfaceView? _view;
     private PhotonHost? _host;
-    private ReferenceBackend? _backend;
+    private VulkanBackend? _vulkan;
+    private VulkanSwapchain? _swapchain;
+    private IntPtr _window;
+    private ReferenceBackend? _reference;
     private Bitmap? _bitmap;
     private long _startedAt;
 
@@ -68,7 +73,23 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         var scale = metrics.Density;
         var text = new AndroidTextService();
 
-        _backend = new ReferenceBackend();
+        // The window behind the Surface is what Vulkan draws at. Holding it keeps the surface
+        // alive for as long as the swapchain does.
+        _window = AndroidWindow.FromSurface(holder.Surface!);
+        if (_window != IntPtr.Zero && VulkanBackend.IsSupported)
+        {
+            _vulkan = new VulkanBackend();
+        }
+        else
+        {
+            _reference = new ReferenceBackend();
+        }
+
+        // Which one drew the frame is not a detail to guess at from a screenshot.
+        global::Android.Util.Log.Info("Photon", _vulkan is not null
+            ? "presenting through Vulkan"
+            : "presenting through the Reference backend (no Vulkan surface)");
+
         _host = new PhotonHost(app.Root(), app.Options.Theme, Mode(), metrics.WidthPixels / scale,
             metrics.HeightPixels / scale, text)
         {
@@ -88,6 +109,13 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         _host.Resize(width / scale, height / scale);
         ApplyInsets(scale);
 
+        if (_vulkan is not null)
+        {
+            if (_swapchain is null) _swapchain = _vulkan.CreateSwapchain(_window, width, height);
+            else _swapchain.Resize(width, height);
+            return;
+        }
+
         _bitmap?.Dispose();
         _bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888!);
     }
@@ -95,10 +123,16 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     public void SurfaceDestroyed(ISurfaceHolder holder)
     {
         Choreographer.Instance!.RemoveFrameCallback(this);
+        _swapchain?.Dispose();
+        _swapchain = null;
+        _vulkan?.Dispose();
+        _vulkan = null;
+        if (_window != IntPtr.Zero) AndroidWindow.Release(_window);
+        _window = IntPtr.Zero;
         _bitmap?.Dispose();
         _bitmap = null;
-        _backend?.Dispose();
-        _backend = null;
+        _reference?.Dispose();
+        _reference = null;
         _host = null;
     }
 
@@ -120,7 +154,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     public void DoFrame(long frameTimeNanos)
     {
         Choreographer.Instance!.PostFrameCallback(this);
-        if (_host is null || _backend is null || _bitmap is null || _view?.Holder is not { } holder) return;
+        if (_host is null || _view?.Holder is not { } holder) return;
 
         var forced = Application?.Options.MaxFrames > 0;
         if (!_host.NeedsRender && forced != true) return;   // a still screen presents nothing
@@ -131,26 +165,41 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         if (_startedAt == 0) _startedAt = frameTimeNanos;
         var builder = new DisplayListBuilder();
         _host.RenderFrame(builder, (frameTimeNanos - _startedAt) / 1_000_000f);
+        var displayList = builder.Build();
 
-        using var surface = _backend.CreateSurface(_bitmap.Width, _bitmap.Height);
-        _backend.Render(builder.Build(), surface);
-
-        // The engine speaks RGBA; an Android bitmap wants ARGB with the bytes the other way round.
-        var rgba = new byte[_bitmap.Width * _bitmap.Height * 4];
-        surface.ReadPixelsSrgb(rgba);
-        var argb = new int[rgba.Length / 4];
-        for (var i = 0; i < argb.Length; i++)
+        if (_vulkan is not null && _swapchain is not null)
         {
-            var p = i * 4;
-            argb[i] = (rgba[p + 3] << 24) | (rgba[p] << 16) | (rgba[p + 1] << 8) | rgba[p + 2];
+            // False means the window changed shape under us — a fact about the WINDOW, not a
+            // failure: rebuild against what it is now and draw the next frame into that.
+            if (!_vulkan.Present(displayList, _swapchain))
+            {
+                _swapchain.Resize(holder.SurfaceFrame!.Width(), holder.SurfaceFrame.Height());
+                return;
+            }
+            FramesPresented++;
         }
-        _bitmap.SetPixels(argb, 0, _bitmap.Width, 0, 0, _bitmap.Width, _bitmap.Height);
+        else if (_reference is not null && _bitmap is not null)
+        {
+            using var surface = _reference.CreateSurface(_bitmap.Width, _bitmap.Height);
+            _reference.Render(displayList, surface);
 
-        var canvas = holder.LockCanvas();
-        if (canvas is null) return;
-        canvas.DrawBitmap(_bitmap, 0, 0, null);
-        holder.UnlockCanvasAndPost(canvas);
-        FramesPresented++;
+            // The engine speaks RGBA; an Android bitmap wants ARGB with the bytes the other way round.
+            var rgba = new byte[_bitmap.Width * _bitmap.Height * 4];
+            surface.ReadPixelsSrgb(rgba);
+            var argb = new int[rgba.Length / 4];
+            for (var i = 0; i < argb.Length; i++)
+            {
+                var p = i * 4;
+                argb[i] = (rgba[p + 3] << 24) | (rgba[p] << 16) | (rgba[p + 1] << 8) | rgba[p + 2];
+            }
+            _bitmap.SetPixels(argb, 0, _bitmap.Width, 0, 0, _bitmap.Width, _bitmap.Height);
+
+            var canvas = holder.LockCanvas();
+            if (canvas is null) return;
+            canvas.DrawBitmap(_bitmap, 0, 0, null);
+            holder.UnlockCanvasAndPost(canvas);
+            FramesPresented++;
+        }
 
         if (forced == true && FramesPresented >= Application!.Options.MaxFrames)
         {
