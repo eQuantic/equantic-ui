@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Models;
 using eQuantic.UI.Compiler.Services;
 
@@ -1108,10 +1109,8 @@ public class TypeScriptEmitter
                 }));
                 var isAsync = m.ReturnType.ToString().StartsWith("Task")
                     || m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
-                var isIterator = m.Body?
-                    .DescendantNodes(n => n is not AnonymousFunctionExpressionSyntax
-                                          && n is not LocalFunctionStatementSyntax)
-                    .OfType<YieldStatementSyntax>().Any() == true;
+                var isIterator = m.Body.IsIteratorBody();
+                if (isIterator) ReportIfEndless(m.Body);
                 // Generic helpers keep their type parameters in the TS signature (`also<T>(node: T)`)
                 // — constraints drop (TS needs none of them to bind), names pass through.
                 var generics = m.TypeParameterList is { Parameters.Count: > 0 }
@@ -1179,6 +1178,19 @@ public class TypeScriptEmitter
     /// </summary>
     /// <summary>The array an iterator method fills — one name, so every emitter agrees.</summary>
     private const string IteratorBufferName = "_seq";
+
+    /// <summary>
+    /// An iterator that never ends is ordinary C# — the caller stops taking. Materialised into an
+    /// array it is a hang, and a hung tab says nothing about why. Named here instead.
+    /// </summary>
+    private void ReportIfEndless(BlockSyntax? body)
+    {
+        if (body.FindEndlessYieldLoop() is not { } loop) return;
+        _converter.Report(loop, ConversionSeverity.Error, "EQ2005",
+            "This iterator never finishes, and iterators are MATERIALISED into an array — the loop "
+            + "would run forever instead of yielding lazily. Give the loop an end (a bound, a "
+            + "`yield break`), or take what you need inside it and return a finished sequence.");
+    }
 
     /// <summary>
     /// Wraps a converted iterator body so it declares the buffer and returns it. The yields inside
@@ -1281,10 +1293,8 @@ public class TypeScriptEmitter
         // MATERIALISES: it fills an array and returns it. A JS generator would look right and then
         // read as undefined the moment a LINQ operator touched the result, because every sequence
         // in the emitted world is an array. See ConversionContext.IteratorBuffer.
-        var isIterator = method.SyntaxNode?.Body?
-            .DescendantNodes(n => n is not Microsoft.CodeAnalysis.CSharp.Syntax.AnonymousFunctionExpressionSyntax
-                                  && n is not Microsoft.CodeAnalysis.CSharp.Syntax.LocalFunctionStatementSyntax)
-            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.YieldStatementSyntax>().Any() == true;
+        var isIterator = method.SyntaxNode?.Body.IsIteratorBody() == true;
+        if (isIterator) ReportIfEndless(method.SyntaxNode!.Body);
         var asyncPrefix = isAsync ? "async " : "";
         var promiseReturnType = isAsync && returnType == "void" ? "Promise<void>" : 
                                  isAsync ? $"Promise<{returnType}>" : returnType;
