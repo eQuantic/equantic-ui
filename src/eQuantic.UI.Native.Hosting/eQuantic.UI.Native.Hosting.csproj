@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <Description>The host a Photon app is built and run through: PhotonApplication.CreateBuilder(args), Services / Configuration / Environment / Logging, and app.Run&lt;TRoot&gt;(). The same shape as WebApplicationBuilder, because a .NET developer already knows it.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+        <ProjectReference Include="..\eQuantic.UI.Native.Components\eQuantic.UI.Native.Components.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -28,14 +28,17 @@
         <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
     </PropertyGroup>
 
-    <!-- The vocabulary and the component library: the same two on every device. -->
+    <!-- The vocabulary, the component library, and the host an app is built and run through:
+         the same three on every device. -->
     <ItemGroup Condition="'$(IsEQuanticDevMode)' == 'true'">
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Hosting\eQuantic.UI.Native.Hosting.csproj" />
     </ItemGroup>
     <ItemGroup Condition="'$(IsEQuanticDevMode)' != 'true'">
         <PackageReference Include="eQuantic.UI.Primitives" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Native.Hosting" Version="$(EQuanticUIVersion)" />
     </ItemGroup>
 
     <!-- The shell for the device this TFM names. -->

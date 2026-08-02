@@ -886,3 +886,32 @@ user sees most. No `.ico`: every browser that matters has taken a PNG favicon fo
 an app that cares states it once, and absent that the assembly's name is what .NET would have called
 it anyway. And the up-to-date check watches EVERY output rather than one: a check that watches a
 single file calls a half-written set finished, which is how a deleted manifest stayed deleted.
+
+### Track W5 — the host: CreateBuilder, Services, Configuration, Run (2026-08-02)
+
+The sample's entry point was a `#if IOS` with two hand-rolled heads, which is the opposite of an
+SDK. It is now the shape every modern .NET program has:
+
+```csharp
+var builder = PhotonApplication.CreateBuilder(args);
+builder.Services.AddSingleton<IWalletLedger, WalletLedger>();
+builder.Configure(photon => photon.Title = "eQuantic Wallet");
+var app = builder.Build();
+app.Run<WalletApp>();
+```
+
+`eQuantic.UI.Native.Hosting` wraps `HostApplicationBuilder`, so `Services`, `Configuration`,
+`Environment` and `Logging` are the real ones — appsettings.json, appsettings.{Environment}.json,
+user secrets, environment variables and the command line, already merged, in that order. A .NET
+developer learning a second shape for the same idea is a cost the framework should not be charging.
+
+The component is resolved from the CONTAINER, which is the point: `WalletApp(IWalletLedger ledger,
+IConfiguration configuration)` takes its dependencies through its constructor like any other class,
+and `--screen cards` reaches it without a line of parsing. `PhotonOptions` binds from the `Photon`
+section, so `--Photon:MaxFrames 120` is the self-test and needs no bespoke flag; a value written in
+the program still wins, because a value in a file is a default and a value in code is a decision.
+
+WHICH device runs it is not a question the program answers. Each shell declares itself with
+`[assembly: PhotonRunner(...)]` and the host finds the one that shipped — by looking in the folder
+beside the program rather than at the entry assembly's reference list, because an app never names
+its shell in code and the compiler drops references nothing mentions.
