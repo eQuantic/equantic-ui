@@ -147,6 +147,98 @@ public class DraggableTests
             .Should().Contain(c => c.Transform == Matrix2D.Translation(-96, 0));
     }
 
+    [Fact]
+    public void ADragFromAnOpenRest_ReportsWhereItLANDS_NotHowFarItWent()
+    {
+        // A row already open at -96 dragged 40 back is at -56. Reporting the raw 40 would say the
+        // row is OPEN in the wrong direction, and the web twin (which adds rest) would disagree.
+        var page = new Surface { Rest = -96 };
+        var (host, _, frame) = Settled(page);
+        var centre = frame.DragRegions[0].Bounds.Center;
+
+        host.PressDown(centre.X, centre.Y);
+        host.PointerMove(centre.X + 40, centre.Y);
+        host.PressUp(centre.X + 40, centre.Y);
+
+        page.Released.Should().Be(-56f);
+    }
+
+    [Fact]
+    public void ANormalizedGesture_ReportsAFractionOfItsOwnWidth()
+    {
+        // The component cannot know a fluid track's pixel width; the host can, so it converts.
+        var page = new Fraction();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 360, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        var frame = host.RenderFrame(new DisplayListBuilder(), 1000);
+        var region = frame.DragRegions[0];
+        region.Bounds.Width.Should().Be(360, "the surface fills the host");
+
+        host.PressDown(region.Bounds.Center.X, region.Bounds.Center.Y);
+        host.PointerMove(region.Bounds.Center.X + 90, region.Bounds.Center.Y);
+
+        page.Moved.Should().BeApproximately(0.5f + 90f / 360f, 1e-4f, "rest plus a quarter of the width");
+    }
+
+    [Fact]
+    public void AGestureTheCallerPaints_DoesNotAlsoTranslate()
+    {
+        var page = new Fraction();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 360, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        var frame = host.RenderFrame(new DisplayListBuilder(), 1000);
+        var region = frame.DragRegions[0];
+
+        host.PressDown(region.Bounds.Center.X, region.Bounds.Center.Y);
+        host.PointerMove(region.Bounds.Center.X + 90, region.Bounds.Center.Y);
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 1100);
+        builder.Build().Commands.ToArray()
+            .Should().NotContain(c => c.Transform == Matrix2D.Translation(90, 0),
+                "the value already moved the subtree — a translate would move it twice");
+    }
+
+    [Fact]
+    public void ACancelledGesture_DecidesNothing_AndGivesTheSurfaceBack()
+    {
+        var page = new Surface { Rest = -96 };
+        var (host, _, frame) = Settled(page);
+        var centre = frame.DragRegions[0].Bounds.Center;
+
+        host.PressDown(centre.X, centre.Y);
+        host.PointerMove(centre.X + 40, centre.Y);
+        host.PointerCancel();
+
+        float.IsNaN(page.Released).Should().BeTrue("a cancel reports nothing — nothing was decided");
+
+        // It glides back to the caller's rest rather than staying where the finger abandoned it.
+        var landed = new DisplayListBuilder();
+        host.RenderFrame(landed, 2000);
+        landed.Build().Commands.ToArray()
+            .Should().Contain(c => c.Transform == Matrix2D.Translation(-96, 0));
+    }
+
+    private sealed class Fraction : Primitives.StatefulComponent
+    {
+        public float Moved = float.NaN;
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var child = new Box(new BoxStyle { Width = SizeValue.Fill, Height = 60 });
+            return new Draggable(child)
+            {
+                Axis = DragAxis.Horizontal,
+                Normalized = true,
+                Follows = false,
+                Min = 0,
+                Max = 1,
+                RestOffset = 0.5f,
+                OnMoved = offset => Moved = offset,
+            };
+        }
+    }
+
     // ---- The two components that ride it ----------------------------------------------------
 
     [Fact]
@@ -205,6 +297,57 @@ public class DraggableTests
 
         draggable.OnReleased!(PullToRefresh.Threshold);
         asked.Should().Be(1);
+    }
+
+    [Fact]
+    public void SwitchThumb_DragsTowardTheEndItIsNotResting_On()
+    {
+        var off = new Switch(false);
+        var thumb = (Draggable)((Positioned)((Stack)((Pressable)off.Build(Ctx)).Child).Children[1]).Child;
+        thumb.Min.Should().Be(0, "an off switch never drags further off");
+        thumb.Max.Should().Be(20, "52 track less the 26 thumb less both 3dp insets");
+
+        var on = new Switch(true);
+        var onThumb = (Draggable)((Positioned)((Stack)((Pressable)on.Build(Ctx)).Child).Children[1]).Child;
+        onThumb.Min.Should().Be(-20);
+        onThumb.Max.Should().Be(0);
+    }
+
+    [Fact]
+    public void SwitchThumb_TogglesPastHalf_AndSaysNothingWhenItReturns()
+    {
+        var toggles = 0;
+        var off = new Switch(false, () => toggles++);
+        var thumb = (Draggable)((Positioned)((Stack)((Pressable)off.Build(Ctx)).Child).Children[1]).Child;
+
+        thumb.OnReleased!(6);
+        toggles.Should().Be(0, "short of half the slack the thumb returns and nothing changed");
+
+        thumb.OnReleased!(14);
+        toggles.Should().Be(1);
+    }
+
+    [Fact]
+    public void SwitchThumb_WhenDisabled_IsNotDraggableAtAll()
+    {
+        var disabled = new Switch(true) { Disabled = true };
+        ((Positioned)((Stack)((Pressable)disabled.Build(Ctx)).Child).Children[1]).Child
+            .Should().BeOfType<Box>();
+    }
+
+    [Fact]
+    public void SliderTrack_ScrubsRelativeToTheValue_Quantized()
+    {
+        var value = float.NaN;
+        var slider = new Slider(20, v => value = v) { Min = 0, Max = 100, Step = 5 };
+        var drag = (Draggable)((Box)slider.Build(Ctx)).Child!;
+
+        drag.Normalized.Should().BeTrue("a fluid track has no pixel width the component can know");
+        drag.Follows.Should().BeFalse("the value places the thumb; a translate would move it twice");
+        drag.RestOffset.Should().BeApproximately(0.2f, 1e-4f, "the scrub starts where the value is");
+
+        drag.OnMoved!(0.42f);
+        value.Should().Be(40, "the scrub lands on the same values a press does");
     }
 
     [Fact]

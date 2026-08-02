@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Flexible, Motion, Pressable, Row, SizeValue, StatelessComponent, TransitionSpec } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, Row, SizeValue, StatelessComponent, TransitionSpec } from "@equantic/runtime";
 
 export class Slider extends StatelessComponent {
     static trackHeight: number = 4;
@@ -22,7 +22,11 @@ export class Slider extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let span = this.max - this.min;let fraction = span <= 0 ? 0 : Math.min(Math.max((this.value - this.min) / span, 0), 1);let step = this.step > 0 ? this.step : span / 10;let accent = theme.colors(this.variant).base;let fill = this.disabled ? theme.borderStrong : accent;let thumb = new Box(new BoxStyle({ width: Slider.thumbSize, height: Slider.thumbSize, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: 2, borderColor: fill, elevation: 2, transition: TransitionSpec.of(1, Motion.press) }));let row = new Row(0, { width: SizeValue.fill, cross: 'center' });row.add(new Flexible(Slider.trackHalf(fill, true, !this.disabled, () => this.onChanged?.(Math.max(this.min, this.value - step))), Slider.weight(fraction)));row.add(thumb);row.add(new Flexible(Slider.trackHalf(theme.borderStrong, false, !this.disabled, () => this.onChanged?.(Math.min(this.max, this.value + step))), Slider.weight(1 - fraction)));return new Box(new BoxStyle({ width: SizeValue.fill, height: 48, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
+        let theme = context.theme;let span = this.max - this.min;let fraction = span <= 0 ? 0 : Math.min(Math.max((this.value - this.min) / span, 0), 1);let step = this.step > 0 ? this.step : span / 10;let accent = theme.colors(this.variant).base;let fill = this.disabled ? theme.borderStrong : accent;let thumb = new Box(new BoxStyle({ width: Slider.thumbSize, height: Slider.thumbSize, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: 2, borderColor: fill, elevation: 2, transition: TransitionSpec.of(1, Motion.press) }));let row = new Row(0, { width: SizeValue.fill, cross: 'center' });row.add(new Flexible(Slider.trackHalf(fill, true, !this.disabled, () => this.onChanged?.(Math.max(this.min, this.value - step))), Slider.weight(fraction)));row.add(thumb);row.add(new Flexible(Slider.trackHalf(theme.borderStrong, false, !this.disabled, () => this.onChanged?.(Math.min(this.max, this.value + step))), Slider.weight(1 - fraction)));let surface = this.disabled ? row : new Draggable(row, null, { axis: 'horizontal', normalized: true, follows: false, min: 0, max: 1, restOffset: fraction, onMoved: (f) => this.onChanged?.(this.quantize(this.min + f * span, step)) });return new Box(new BoxStyle({ width: SizeValue.fill, height: 48, opacity: this.disabled ? theme.disabledOpacity : 1 }), surface);
+    }
+
+    quantize(value: number, step: number) {
+        return Math.min(Math.max(this.step > 0 ? this.min + $eq.math.round((value - this.min) / step) * step : value, this.min), this.max);
     }
 
     static weight(fraction: number) {

@@ -351,8 +351,11 @@ function lowerDraggable(
   child.attributes['data-eq-drag-min'] = String(node.min ?? 0);
   child.attributes['data-eq-drag-max'] = String(node.max ?? 0);
   child.attributes['data-eq-drag-rest'] = String(rest);
+  if (node.normalized) child.attributes['data-eq-drag-normalized'] = '1';
+  if (node.follows === false) child.attributes['data-eq-drag-follows'] = '0';
+  if (node.onMoved) child.attributes['data-eq-drag-moves'] = '1';
 
-  if (rest !== 0) {
+  if (rest !== 0 && node.follows !== false) {
     const shift = horizontal ? `translateX(${rest}px)` : `translateY(${rest}px)`;
     const existing = child.attributes.style ? `${child.attributes.style};` : '';
     child.attributes.style = `${existing}transform:${shift};transition:transform ${Motion.baseMs}ms`;
@@ -362,6 +365,13 @@ function lowerDraggable(
     const released = node.onReleased;
     child.events['eq-drag-released'] = ((ev: Event) => {
       released((ev as CustomEvent<number>).detail ?? 0);
+    }) as EventHandler;
+  }
+
+  if (node.onMoved) {
+    const moved = node.onMoved;
+    child.events['eq-drag-moved'] = ((ev: Event) => {
+      moved((ev as CustomEvent<number>).detail ?? 0);
     }) as EventHandler;
   }
 
