@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -81,12 +83,25 @@ public class RecordTypeEmitter
         sb.Append(string.Join(", ", members.Select(m => $"('{m.Js}' in patch ? patch.{m.Js} : this.{m.Js})")));
         sb.Append("); } ");
 
-        // User-declared instance methods.
+        // User-declared methods — a STATIC one keeps its modifier: a record's factory
+        // (`LegalBlock.P(…)`, `Money.Zero()`) is called on the CLASS, and emitting it as an
+        // instance method turns every call site into "X.p is not a function" at hydration.
         var userToString = false;
         foreach (var method in type.Members.OfType<MethodDeclarationSyntax>())
         {
             if (method.Identifier.Text == "ToString") userToString = true;
             sb.Append(EmitMethod(method, name)).Append(' ');
+        }
+
+        // Static PROPERTIES are the other half of the factory idiom (`static Foo Empty => …`).
+        foreach (var property in type.Members.OfType<PropertyDeclarationSyntax>())
+        {
+            if (!property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword))) continue;
+            if (property.ExpressionBody is not { } expression) continue;
+            _converter.SetCurrentClass(name);
+            sb.Append($"static get {property.Identifier.Text.ToCamelCase()}() {{ return ")
+              .Append(_converter.Convert(expression.Expression))
+              .Append("; } ");
         }
 
         // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it.
@@ -154,6 +169,7 @@ public class RecordTypeEmitter
             body = "";
         }
 
-        return $"{jsName}({pars}) {{ {body} }}";
+        var isStatic = method.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
+        return $"{isStatic}{jsName}({pars}) {{ {body} }}";
     }
 }
