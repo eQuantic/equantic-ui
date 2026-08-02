@@ -360,4 +360,46 @@ public class AuthoringCoverageTests
         ts.Should().Contain("Fmt.shout(");
         ts.Should().Contain("from \"./Fmt\"");
     }
+
+    [Fact]
+    public void UserDefinedOperator_BecomesAStaticCall()
+    {
+        // JavaScript cannot overload `+`. Dropping the operator made `a + b` on two objects
+        // concatenate their toString()s — wrong output, no error, nothing to see.
+        var src = "public readonly record struct Money(int Amount) { " +
+                  "  public static Money operator +(Money a, Money b) => new Money(a.Amount + b.Amount); } " +
+                  "public class C : StatelessComponent { " +
+                  "  public override IComponent Build(RenderContext c) => " +
+                  "    new Text((new Money(1) + new Money(2)).Amount.ToString()); }";
+
+        TsOfResolved("Money", src).Should().Contain("static opAdd(a, b)");
+        TsOfResolved("C", src).Should().Contain("Money.opAdd(");
+    }
+
+    [Fact]
+    public void SynthesisedRecordEquality_StaysStructural()
+    {
+        // A record's `==` is compiler-SYNTHESISED structural equality, not a user's operator —
+        // routing it to a static method the emitter never wrote broke every record comparison.
+        var src = "public record Point(int X, int Y); " +
+                  "public class C : StatelessComponent { " +
+                  "  public override IComponent Build(RenderContext c) => " +
+                  "    new Text((new Point(1, 2) == new Point(1, 2)).ToString()); }";
+        var ts = TsOfResolved("C", src);
+
+        ts.Should().NotContain("Point.opEquals");
+        ts.Should().Contain("$eq.equals(");
+    }
+
+    [Fact]
+    public void GenericConstruction_DropsTheTypeArguments()
+    {
+        // `new Bucket<string>()` is not valid JavaScript — `<` parses as a comparison.
+        var src = "public class Bucket<T> { public int Count => 0; } " +
+                  "public class C : StatelessComponent { " +
+                  "  public override IComponent Build(RenderContext c) => " +
+                  "    new Text(new Bucket<string>().Count.ToString()); }";
+
+        TsOfResolved("C", src).Should().Contain("new Bucket()").And.NotContain("Bucket<string>");
+    }
 }

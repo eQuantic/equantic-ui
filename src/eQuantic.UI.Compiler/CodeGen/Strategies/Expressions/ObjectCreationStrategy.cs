@@ -37,6 +37,12 @@ public class ObjectCreationStrategy : IConversionStrategy
     private string ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var typeName = creation.Type.ToString();
+        // TYPE ARGUMENTS are erased at runtime, and `new Bucket<string>()` is not even valid JS —
+        // `<` parses as a comparison. The generic COLLECTIONS below still match on their full text,
+        // so the erasure happens after they have had their say.
+        var genericTypeName = creation.Type is GenericNameSyntax generic
+            ? generic.Identifier.Text
+            : null;
         // A qualified creation (`new eQuantic.UI.Primitives.Image(...)` — the disambiguation idiom
         // when a section class shares a name) must construct the IMPORTED simple name: module
         // bindings exist in JS, namespace chains do not. The List/Dictionary specials below keep
@@ -135,7 +141,7 @@ public class ObjectCreationStrategy : IConversionStrategy
             return $"new Error({ExceptionMessageArgument(creation, context) ?? arguments})";
         }
 
-        return $"new {typeName}({arguments})";
+        return $"new {genericTypeName ?? typeName}({arguments})";
     }
 
     /// <summary>The converted argument bound to the exception constructor's <c>message</c> parameter

@@ -179,12 +179,36 @@ public class ComponentParser
         // duplicated `<State>.ts/.js` carrying only `build()` — referencing state fields/handlers that
         // module never declares. It is detected as a component here only because it has a `Build` method
         // (and ComponentState is itself a component base), so drop state classes from the standalone set.
+        var stateNames = new HashSet<string>();
         foreach (var c in classes)
         {
             bool isState = model?.GetDeclaredSymbol(c) is INamedTypeSymbol s
                 ? s.IsComponentState()
                 : BaseName(c) == "ComponentState";
-            if (isState) componentNames.Remove(c.Identifier.Text);
+            if (isState)
+            {
+                componentNames.Remove(c.Identifier.Text);
+                stateNames.Add(c.Identifier.Text);
+            }
+        }
+
+        foreach (var classDecl in classes)
+        {
+            if (classDecl.Parent is TypeDeclarationSyntax) continue;          // nested: its owner's scope
+            if (classDecl.Modifiers.Any(SyntaxKind.StaticKeyword)) continue;  // static-helper path
+            if (componentNames.Contains(classDecl.Identifier.Text)) continue; // component path
+            if (stateNames.Contains(classDecl.Identifier.Text)) continue;     // owned by its page
+            if (classDecl.Members.Count == 0) continue;
+
+            results.Add(new ComponentDefinition
+            {
+                Name = classDecl.Identifier.Text,
+                SourcePath = sourcePath,
+                SyntaxTree = tree,
+                Namespace = ns ?? "",
+                IsRecordType = true,
+                ValueTypeSyntax = classDecl,
+            });
         }
 
         foreach (var classDecl in classes)

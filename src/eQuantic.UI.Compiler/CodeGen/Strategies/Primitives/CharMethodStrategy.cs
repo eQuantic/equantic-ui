@@ -18,8 +18,12 @@ public class CharMethodStrategy : IConversionStrategy
         if (expr is not ("char" or "Char" or "System.Char")) return false;
 
         return memberAccess.Name.Identifier.Text is
-            "ToUpper" or "ToLower" or "IsDigit" or "IsLetter" or "IsLetterOrDigit"
-            or "IsWhiteSpace" or "IsUpper" or "IsLower" or "IsNumber" or "IsPunctuation";
+            // The INVARIANT pair is the one a UI reaches for — a sort key, a lookup key — and it
+            // was the only casing method missing. JS `toUpperCase` is already culture-independent.
+            "ToUpper" or "ToUpperInvariant" or "ToLower" or "ToLowerInvariant"
+            or "IsDigit" or "IsLetter" or "IsLetterOrDigit"
+            or "IsWhiteSpace" or "IsUpper" or "IsLower" or "IsNumber" or "IsPunctuation"
+            or "IsSeparator" or "IsSymbol" or "IsControl" or "IsAscii";
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
@@ -34,8 +38,8 @@ public class CharMethodStrategy : IConversionStrategy
 
         return name switch
         {
-            "ToUpper" => $"{c}.toUpperCase()",
-            "ToLower" => $"{c}.toLowerCase()",
+            "ToUpper" or "ToUpperInvariant" => $"{c}.toUpperCase()",
+            "ToLower" or "ToLowerInvariant" => $"{c}.toLowerCase()",
             "IsDigit" => $"(/^\\p{{Nd}}$/u.test({c}))",
             "IsNumber" => $"(/^\\p{{N}}$/u.test({c}))",
             "IsLetter" => $"(/^\\p{{L}}$/u.test({c}))",
@@ -44,6 +48,10 @@ public class CharMethodStrategy : IConversionStrategy
             "IsUpper" => $"(/^\\p{{Lu}}$/u.test({c}))",
             "IsLower" => $"(/^\\p{{Ll}}$/u.test({c}))",
             "IsPunctuation" => $"(/^\\p{{P}}$/u.test({c}))",
+            "IsSeparator" => $"(/^\\p{{Z}}$/u.test({c}))",
+            "IsSymbol" => $"(/^\\p{{S}}$/u.test({c}))",
+            "IsControl" => $"(/^\\p{{Cc}}$/u.test({c}))",
+            "IsAscii" => $"({c}.codePointAt(0) < 128)",
             _ => $"{c}"
         };
     }
