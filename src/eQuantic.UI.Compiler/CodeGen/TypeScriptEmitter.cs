@@ -1067,7 +1067,15 @@ public class TypeScriptEmitter
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
             {
                 var mn = m.Identifier.Text.ToCamelCase();
-                var pars = string.Join(", ", m.ParameterList.Parameters.Select(pp => $"{pp.Identifier.Text.ToJsIdentifier()}: {CSharpTypeToTypeScript(pp.Type?.ToString() ?? "object")}"));
+                // Optional parameters keep their default here too — a STATIC helper is exactly what
+                // other modules call with the trailing arguments omitted.
+                var pars = string.Join(", ", m.ParameterList.Parameters.Select(pp =>
+                {
+                    var declared = $"{pp.Identifier.Text.ToJsIdentifier()}: {CSharpTypeToTypeScript(pp.Type?.ToString() ?? "object")}";
+                    return pp.Default is null
+                        ? declared
+                        : $"{declared} = {_converter.ConvertExpression(pp.Default.Value)}";
+                }));
                 var isAsync = m.ReturnType.ToString().StartsWith("Task")
                     || m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
                 var isGenerator = m.Body?
@@ -1139,8 +1147,21 @@ public class TypeScriptEmitter
         // name the module cannot import (enums degrade to string — their runtime representation).
         // Params the body never mentions get the TS underscore convention (noUnusedParameters).
         var bodyText = method.SyntaxNode?.Body?.ToString() ?? method.SyntaxNode?.ExpressionBody?.ToString() ?? "";
-        var parameters = string.Join(", ", method.Parameters.Select(p =>
-            $"{(bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name)}: {DeclarationType(component, p.Type)}"));
+        // OPTIONAL parameters keep their default in the signature — C# lets a caller omit them, and
+        // a call site the compiler cannot see (another module, a callback) would otherwise pass
+        // `undefined` straight into the body. The syntax carries the default; the converter turns
+        // it into the same literal the rest of the emit uses (enums → their member string, consts
+        // inlined).
+        var syntaxParameters = method.SyntaxNode?.ParameterList.Parameters;
+        var parameters = string.Join(", ", method.Parameters.Select((p, index) =>
+        {
+            var name = bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name;
+            var declared = $"{name}: {DeclarationType(component, p.Type)}";
+            var defaultValue = syntaxParameters is { } list && index < list.Count
+                ? list[index].Default?.Value
+                : null;
+            return defaultValue is null ? declared : $"{declared} = {_converter.ConvertExpression(defaultValue)}";
+        }));
         var methodName = method.Name.ToCamelCase();
         
         // Lifecycle mapping

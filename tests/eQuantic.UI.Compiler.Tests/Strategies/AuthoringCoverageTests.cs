@@ -219,6 +219,29 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
+    public void OptionalParameters_KeepTheirDefaultsInTheSignature()
+    {
+        // C# lets a caller omit them; without the default in the signature a call the compiler
+        // cannot see (another module, a callback) passes `undefined` into the body — which is how a
+        // section helper ended up computing `undefined * 1.05`.
+        var ts = Ts("public class C : StatelessComponent { " +
+                    "  private string Fmt(string label, int size = 48, bool loud = false) => label + size + loud; " +
+                    "  public override IComponent Build(RenderContext c) => new Text(Fmt(\"x\")); }");
+        ts.Should().Contain("size: number = 48").And.Contain("loud: boolean = false");
+    }
+
+    [Fact]
+    public void AnEnumDefault_KeepsItsMemberString()
+    {
+        var ts = Ts("public enum Tone { Soft, Loud } " +
+                    "public class C : StatelessComponent { " +
+                    "  private string Say(string text, Tone tone = Tone.Loud) => text + tone; " +
+                    "  public override IComponent Build(RenderContext c) => new Text(Say(\"hi\")); }");
+        // Enums degrade to their member STRING — the representation the runtime compares.
+        ts.Should().Contain("tone: string = 'loud'");
+    }
+
+    [Fact]
     public void TypeConstructedOnlyInHelperOrPropertyBody_IsImported()
     {
         // A record constructed ONLY inside a helper-method body (Money) or a property-accessor body must
