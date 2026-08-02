@@ -33,6 +33,21 @@
         <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
     </PropertyGroup>
 
+    <!--
+        The generator that writes the other half of the app's Program: the entry point where the
+        platform has one, and the registration that lets a shell reach CreateApp without looking
+        anything up. A generator rather than a build step because it SEES the compilation — it can
+        emit a direct call, and say at compile time when there is no program or more than one.
+    -->
+    <ItemGroup Condition="'$(IsEQuanticDevMode)' == 'true'">
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Generators\eQuantic.UI.Native.Generators.csproj"
+                          OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(IsEQuanticDevMode)' != 'true'">
+        <PackageReference Include="eQuantic.UI.Native.Generators" Version="$(EQuanticUIVersion)"
+                          PrivateAssets="all" />
+    </ItemGroup>
+
     <!-- The vocabulary, the component library, and the host an app is built and run through:
          the same three on every device. -->
     <ItemGroup Condition="'$(IsEQuanticDevMode)' == 'true'">

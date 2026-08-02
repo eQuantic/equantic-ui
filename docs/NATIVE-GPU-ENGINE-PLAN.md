@@ -952,3 +952,21 @@ What the platform taught us:
 Verified on an emulator (API 36): the Wallet full-screen with insets honoured, real glyphs and real
 icons, and the tab bar navigating under a tap. Open: the launcher icon (mipmaps from the same
 `Assets/AppIcon.png`), and the Vulkan swapchain.
+
+### Track W7 — a generator writes the other half of Program (2026-08-02)
+
+`Program` is partial by nature, so the ceremony half is a SOURCE GENERATOR rather than a build step
+writing text into obj. A generator sees the compilation, which is the whole difference: it finds the
+app's `CreateApp` by symbol, emits a DIRECT call to it, and says at compile time when there is no
+program (EQ3001) or more than one (EQ3002). Nothing is looked up at run time on any platform — the
+reflection the host used to do is gone.
+
+Three files come out, each only where it belongs:
+
+- `PhotonProgram.g.cs` — a `[ModuleInitializer]` registering the factory. That is what a shell calls
+  on Android, where the system launches an Activity and no `Main` ever runs.
+- `PhotonEntryPoint.g.cs` — the `Main`, as the other half of `public partial class Program` when the
+  app named its program that (the convention), and on its own when it did not. Executables only.
+- `PhotonMainActivity.g.cs` — the launcher Activity, in the APP's assembly. It has to be there: an
+  Activity in the shell leaves the app assembly unreferenced and unloaded, so its module initializer
+  never runs and the program is never registered. That was a real crash, not a hypothetical.
