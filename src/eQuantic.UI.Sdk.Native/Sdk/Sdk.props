@@ -1,0 +1,59 @@
+<Project>
+    <!--
+        The native SDK. An app declares WHICH devices it wants and writes C#; every reference, every
+        platform minimum and every manifest key below is the framework's, exactly as the generated
+        HTML shell is on web. Nothing here is a decision an app author should have to make.
+    -->
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+    <!-- The framework's opinions, not the app's. An app that disagrees still says so. -->
+    <PropertyGroup>
+        <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
+        <Nullable Condition="'$(Nullable)' == ''">enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <_DevRootDir>$(MSBuildThisFileDirectory)../../</_DevRootDir>
+        <IsEQuanticDevMode
+            Condition="Exists('$(_DevRootDir)eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj')">true</IsEQuanticDevMode>
+        <_EqPlatform>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</_EqPlatform>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(EQuanticUIVersion)' == ''">
+        <EQuanticUIVersion>*</EQuanticUIVersion>
+    </PropertyGroup>
+
+    <!-- 15.0 is where CAMetalLayer, safe-area insets and MTLBinaryArchive are all present. -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(SupportedOSPlatformVersion)' == ''">
+        <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    </PropertyGroup>
+
+    <!-- The vocabulary and the component library: the same two on every device. -->
+    <ItemGroup Condition="'$(IsEQuanticDevMode)' == 'true'">
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(IsEQuanticDevMode)' != 'true'">
+        <PackageReference Include="eQuantic.UI.Primitives" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" />
+    </ItemGroup>
+
+    <!-- The shell for the device this TFM names. -->
+    <ItemGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(IsEQuanticDevMode)' == 'true'">
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Shell.iOS\eQuantic.UI.Native.Shell.iOS.csproj" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(IsEQuanticDevMode)' != 'true'">
+        <PackageReference Include="eQuantic.UI.Native.Shell.iOS" Version="$(EQuanticUIVersion)" />
+    </ItemGroup>
+
+    <!-- No target platform: the desktop head, which is where a phone app is iterated on. The
+         Reference backend rides along so an app can render a frame offscreen without a window. -->
+    <ItemGroup Condition="'$(_EqPlatform)' == '' AND '$(IsEQuanticDevMode)' == 'true'">
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Shell.MacOS\eQuantic.UI.Native.Shell.MacOS.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Engine.Reference\eQuantic.UI.Native.Engine.Reference.csproj" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(_EqPlatform)' == '' AND '$(IsEQuanticDevMode)' != 'true'">
+        <PackageReference Include="eQuantic.UI.Native.Shell.MacOS" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Native.Engine.Reference" Version="$(EQuanticUIVersion)" />
+    </ItemGroup>
+</Project>
