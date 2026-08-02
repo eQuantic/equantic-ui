@@ -39,6 +39,43 @@ public static class EqJson
         options.Converters.Add(new Int64StringConverter());
         options.Converters.Add(new UInt64StringConverter());
         options.Converters.Add(new DecimalStringConverter());
+        options.Converters.Add(new CamelCaseEnumConverter());
+    }
+
+    /// <summary>
+    /// Enums cross as their MEMBER NAME in camelCase — the representation transpiled code compares
+    /// against (`PackageCategory.Data` is the string `'data'` in the browser). A JSON number would
+    /// silently fail every comparison the client makes, ANYWHERE in the payload: SSR state, Server
+    /// Action arguments and results alike. Reads accept the name (either casing) or the ordinal, so
+    /// a client that still sends a number keeps working.
+    /// <para>Flags enums are the exception the transpiler already carves out — they are numeric on
+    /// both sides (a combination has no member name), so they stay numbers here too.</para>
+    /// </summary>
+    private sealed class CamelCaseEnumConverter : JsonConverterFactory
+    {
+        public override bool CanConvert(Type typeToConvert) =>
+            typeToConvert.IsEnum && !typeToConvert.IsDefined(typeof(FlagsAttribute), inherit: false);
+
+        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+            (JsonConverter)Activator.CreateInstance(
+                typeof(CamelCaseEnumConverter<>).MakeGenericType(typeToConvert))!;
+    }
+
+    private sealed class CamelCaseEnumConverter<TEnum> : JsonConverter<TEnum> where TEnum : struct, Enum
+    {
+        public override TEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.Number)
+                return (TEnum)Enum.ToObject(typeof(TEnum), reader.GetInt64());
+            var name = reader.GetString();
+            return Enum.TryParse<TEnum>(name, ignoreCase: true, out var value) ? value : default;
+        }
+
+        public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options)
+        {
+            var name = value.ToString();
+            writer.WriteStringValue(name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name[1..]);
+        }
     }
 
     private sealed class Int64StringConverter : JsonConverter<long>

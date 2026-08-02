@@ -919,6 +919,13 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     style['white-space'] = 'nowrap';
     style.overflow = 'hidden';
     style['text-overflow'] = 'ellipsis';
+  } else if (text.maxLines > 1) {
+    // MULTI-LINE clamp (C# twin): exactly N lines, then an ellipsis — what keeps a grid of cards
+    // on one baseline when the copy is not the site's to control.
+    style.display = '-webkit-box';
+    style['-webkit-box-orient'] = 'vertical';
+    style['-webkit-line-clamp'] = `${text.maxLines}`;
+    style.overflow = 'hidden';
   }
 
   // System table override (e.g. Button labels) — inline styles beat the role class.

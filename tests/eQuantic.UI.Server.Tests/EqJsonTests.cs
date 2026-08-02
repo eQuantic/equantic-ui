@@ -110,4 +110,41 @@ public class EqJsonTests
         back.When.Should().Be(payload.When);
         back.Duration.Should().Be(payload.Duration);
     }
+
+    private enum Shelf { Core, DataAccess }
+
+    [Flags]
+    private enum Channels { None = 0, Colors = 1, Shadow = 2 }
+
+    private sealed record Row(string Id, Shelf Shelf, Channels Channels);
+
+    [Fact]
+    public void Enums_CrossAsTheirCamelCaseMemberName_EvenNestedInAPayload()
+    {
+        // Transpiled code compares enums as camelCase member-name STRINGS; a JSON number would fail
+        // every client-side comparison silently — and nested values (a record inside an array in the
+        // SSR payload) are exactly where that bites.
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            new[] { new Row("eQuantic.Core.Data", Shelf.DataAccess, Channels.Colors | Channels.Shadow) },
+            EqJson.Options);
+
+        json.Should().Contain("\"shelf\":\"dataAccess\"");
+        // [Flags] stays NUMERIC on both sides — a combination has no member name.
+        json.Should().Contain("\"channels\":3");
+    }
+
+    [Fact]
+    public void EnumReads_AcceptTheNameInEitherCasing_OrTheOrdinal()
+    {
+        var fromCamel = System.Text.Json.JsonSerializer.Deserialize<Row>(
+            "{\"id\":\"a\",\"shelf\":\"dataAccess\",\"channels\":1}", EqJson.Options);
+        var fromPascal = System.Text.Json.JsonSerializer.Deserialize<Row>(
+            "{\"id\":\"a\",\"shelf\":\"DataAccess\",\"channels\":1}", EqJson.Options);
+        var fromOrdinal = System.Text.Json.JsonSerializer.Deserialize<Row>(
+            "{\"id\":\"a\",\"shelf\":1,\"channels\":1}", EqJson.Options);
+
+        fromCamel!.Shelf.Should().Be(Shelf.DataAccess);
+        fromPascal!.Shelf.Should().Be(Shelf.DataAccess);
+        fromOrdinal!.Shelf.Should().Be(Shelf.DataAccess);
+    }
 }

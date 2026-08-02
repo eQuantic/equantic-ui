@@ -20,7 +20,9 @@ public class LocalDeclarationStrategy : IStatementStrategy
         // We will assume standard single declaration for now or iterate
 
         var variable = decl.Declaration.Variables.First();
-        var name = variable.Identifier.Text;
+        // A reserved JS word takes a trailing underscore — declaration and references go through
+        // the same rule, so `var package = …` stays one identifier on both sides.
+        var name = variable.Identifier.Text.ToJsIdentifier();
         var patternVars = PatternVariableScanner.Declarations(variable.Initializer?.Value);
         var init = variable.Initializer != null
             ? context.Converter.ConvertExpression(variable.Initializer.Value)

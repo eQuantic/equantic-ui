@@ -1067,7 +1067,7 @@ public class TypeScriptEmitter
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
             {
                 var mn = m.Identifier.Text.ToCamelCase();
-                var pars = string.Join(", ", m.ParameterList.Parameters.Select(pp => $"{pp.Identifier.Text}: {CSharpTypeToTypeScript(pp.Type?.ToString() ?? "object")}"));
+                var pars = string.Join(", ", m.ParameterList.Parameters.Select(pp => $"{pp.Identifier.Text.ToJsIdentifier()}: {CSharpTypeToTypeScript(pp.Type?.ToString() ?? "object")}"));
                 var isAsync = m.ReturnType.ToString().StartsWith("Task")
                     || m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
                 var isGenerator = m.Body?
@@ -1140,7 +1140,7 @@ public class TypeScriptEmitter
         // Params the body never mentions get the TS underscore convention (noUnusedParameters).
         var bodyText = method.SyntaxNode?.Body?.ToString() ?? method.SyntaxNode?.ExpressionBody?.ToString() ?? "";
         var parameters = string.Join(", ", method.Parameters.Select(p =>
-            $"{(bodyText.Contains(p.Name) ? p.Name : "_" + p.Name)}: {DeclarationType(component, p.Type)}"));
+            $"{(bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name)}: {DeclarationType(component, p.Type)}"));
         var methodName = method.Name.ToCamelCase();
         
         // Lifecycle mapping

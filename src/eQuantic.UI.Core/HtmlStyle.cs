@@ -134,6 +134,12 @@ public class HtmlStyle
     /// still requires the prefix, and the atomizer dedupes each declaration independently.</summary>
     public string? BackdropFilter { get; set; }
 
+    /// <summary>Multi-line clamp: the axis the legacy flexbox lays out on (`vertical`).</summary>
+    public string? WebkitBoxOrient { get; set; }
+
+    /// <summary>Multi-line clamp: how many lines survive before the ellipsis.</summary>
+    public string? WebkitLineClamp { get; set; }
+
     public string? Opacity { get; set; }
     public string? Visibility { get; set; }
     public string? PointerEvents { get; set; }
@@ -244,6 +250,8 @@ public class HtmlStyle
         AddProperty(properties, "letter-spacing", LetterSpacing);
 
         AddProperty(properties, "box-shadow", BoxShadow);
+        AddProperty(properties, "-webkit-box-orient", WebkitBoxOrient);
+        AddProperty(properties, "-webkit-line-clamp", WebkitLineClamp);
         AddProperty(properties, "opacity", Opacity);
         AddProperty(properties, "visibility", Visibility);
         AddProperty(properties, "pointer-events", PointerEvents);
@@ -305,7 +313,8 @@ public class HtmlStyle
                 .Replace("columnreverse", "column-reverse")
                 .Replace("wrapreverse", "wrap-reverse")
                 .Replace("rowdense", "row dense")
-                .Replace("columndense", "column dense");
+                .Replace("columndense", "column dense")
+                .Replace("webkitbox", "-webkit-box");
         }
         else
         {

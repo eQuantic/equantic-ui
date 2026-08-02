@@ -116,7 +116,7 @@ public class IdentifierStrategy : IConversionStrategy
             return $"this.{name.ToCamelCase()}";
         }
         
-        return name;
+        return name.ToJsIdentifier();
     }
 
     public int Priority => 10;
