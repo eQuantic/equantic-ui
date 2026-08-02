@@ -33,8 +33,8 @@ public class GalleryComponentTests
     public void Stepper_ValueIsTabular_SoTheRowDoesNotJiggle()
     {
         var row = Frame(new Stepper(9) { Suffix = " GB" }.Build(Ctx)).Child.Should().BeOfType<Row>().Subject;
-        var value = row.Children[1].Should().BeOfType<Flexible>().Subject
-            .Child.Should().BeOfType<Text>().Subject;
+        var value = ((Row)row.Children[1].Should().BeOfType<Box>().Subject.Child!)
+            .Children[0].Should().BeOfType<Text>().Subject;
         value.Content.Should().Be("9 GB");
         value.Tabular.Should().BeTrue();
         value.MaxLines.Should().Be(1);
