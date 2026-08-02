@@ -26,6 +26,18 @@ public class BinaryExpressionStrategy : IConversionStrategy
         var right = context.Converter.ConvertExpression(binary.Right);
         var op = binary.OperatorToken.Text;
 
+        // A USER-DEFINED operator: JavaScript cannot overload `+`, so the emitted class carries the
+        // operator as a static method and the call site has to reach it. Left alone, `a + b` on two
+        // objects concatenated their toString()s — wrong output, nothing to see, no error.
+        if (context.SemanticHelper.GetSymbol(binary) is IMethodSymbol
+            { MethodKind: MethodKind.UserDefinedOperator, IsImplicitlyDeclared: false,
+              ContainingType: { } declaring }
+            && RecordTypeEmitter.OperatorMethodName(op) is { } operatorMethod
+            && declaring.Locations.Any(location => location.IsInSource))
+        {
+            return $"{declaring.Name}.{operatorMethod}({left}, {right})";
+        }
+
         // decimal is an exact base-10 type implemented by the runtime Decimal class; route its
         // operators to method calls. (Null comparisons fall through to the loose-equality logic.)
         if (left != "null" && right != "null"

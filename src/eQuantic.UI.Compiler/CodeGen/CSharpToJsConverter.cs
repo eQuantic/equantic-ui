@@ -223,6 +223,9 @@ public class CSharpToJsConverter
         // Inlines external IconGlyph constants (pack glyphs) at the use site — must beat the fallback
         // member access, which would emit a broken `LucideIcons.camera`.
         _strategyRegistry.Register<InlinedConstantStrategy>();
+        // Sequences that come from nothing, and .NET names for what the browser already has.
+        _strategyRegistry.Register<Strategies.Linq.EnumerableFactoryStrategy>();
+        _strategyRegistry.Register<Strategies.Types.WebPrimitiveStrategy>();
         _strategyRegistry.Register<MemberAccessStrategy>();
         _strategyRegistry.Register<ElementAccessStrategy>();
         _strategyRegistry.Register<ObjectCreationStrategy>();

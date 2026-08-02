@@ -112,9 +112,9 @@ public class FailOnUnsupportedTests
     }
 
     [Theory]
-    [InlineData("System.Linq.Enumerable.Range(1, 3)")]
     [InlineData("System.Guid.NewGuid().ToByteArray()")]
-    [InlineData("System.Text.Encoding.UTF8.GetBytes(\"x\")")]
+    [InlineData("System.Text.Encoding.Unicode.GetString(new byte[0])")]
+    [InlineData("System.Diagnostics.Stopwatch.StartNew()")]
     public void UntranslatedFrameworkCall_RaisesError(string expression)
     {
         // The fallback used to emit `Enumerable.range(1, 3)` and let the browser explain it with
@@ -124,6 +124,12 @@ public class FailOnUnsupportedTests
     }
 
     [Theory]
+    [InlineData("System.Linq.Enumerable.Range(1, 3)")]      // now materialises an array
+    [InlineData("System.Linq.Enumerable.Repeat(1, 3)")]
+    [InlineData("System.Linq.Enumerable.Empty<string>()")]
+    [InlineData("System.Text.Encoding.UTF8.GetBytes(\"x\")")]  // TextEncoder
+    [InlineData("System.Uri.EscapeDataString(\"a b\")")]       // encodeURIComponent
+    [InlineData("char.ToUpperInvariant('a')")]
     [InlineData("Id.Length")]                       // a property, not a call
     [InlineData("Id.ToUpperInvariant()")]           // string methods ARE mapped
     [InlineData("System.Math.Max(1, 2)")]           // as are the Math ones

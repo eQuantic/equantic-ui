@@ -25,6 +25,10 @@ public class RecordTypeEmitter
     public static bool CanEmit(TypeDeclarationSyntax type) =>
         type is RecordDeclarationSyntax or StructDeclarationSyntax && type.ValueMembers().Count > 0;
 
+    /// <summary>Whether the emitted class carries VALUE semantics (structural equals, `with`).</summary>
+    private static bool IsValueShape(TypeDeclarationSyntax type) =>
+        type is RecordDeclarationSyntax or StructDeclarationSyntax;
+
     /// <summary>
     /// Emits the type as a standalone TypeScript module — the structural <c>equals</c>/<c>with</c> use
     /// <c>$eq</c>, imported from the runtime, and the class is exported so components can import it.
@@ -71,17 +75,23 @@ public class RecordTypeEmitter
             if (!passedToBase.Contains(m.Display)) sb.Append($"this.{m.Js} = {m.Js}; ");
         sb.Append("} ");
 
-        // Structural equality — $eq.equals(a, b) delegates here when `a` is an instance.
-        // Param annotations are TS-only (the plain-JS conformance path must stay parseable as .mjs).
-        sb.Append(tsTypeDeclarations ? $"equals(o: unknown) {{ return o instanceof {name}"
-            : $"equals(o) {{ return o instanceof {name}");
-        foreach (var m in members) sb.Append($" && $eq.equals(this.{m.Js}, o.{m.Js})");
-        sb.Append("; } ");
+        // VALUE semantics belong to records and structs. A plain class is IDENTITY: giving it a
+        // structural `equals` would make two different buckets compare equal, and a `with` would
+        // hand back a copy where the caller expects the same object.
+        if (type is RecordDeclarationSyntax or StructDeclarationSyntax)
+        {
+            // Structural equality — $eq.equals(a, b) delegates here when `a` is an instance.
+            // Param annotations are TS-only (the plain-JS path must stay parseable as .mjs).
+            sb.Append(tsTypeDeclarations ? $"equals(o: unknown) {{ return o instanceof {name}"
+                : $"equals(o) {{ return o instanceof {name}");
+            foreach (var m in members) sb.Append($" && $eq.equals(this.{m.Js}, o.{m.Js})");
+            sb.Append("; } ");
 
-        // with(patch): copy preserving the prototype (a spread would drop the methods).
-        sb.Append(tsTypeDeclarations ? $"with(patch: any) {{ return new {name}(" : $"with(patch) {{ return new {name}(");
-        sb.Append(string.Join(", ", members.Select(m => $"('{m.Js}' in patch ? patch.{m.Js} : this.{m.Js})")));
-        sb.Append("); } ");
+            // with(patch): copy preserving the prototype (a spread would drop the methods).
+            sb.Append(tsTypeDeclarations ? $"with(patch: any) {{ return new {name}(" : $"with(patch) {{ return new {name}(");
+            sb.Append(string.Join(", ", members.Select(m => $"('{m.Js}' in patch ? patch.{m.Js} : this.{m.Js})")));
+            sb.Append("); } ");
+        }
 
         // User-declared methods — a STATIC one keeps its modifier: a record's factory
         // (`LegalBlock.P(…)`, `Money.Zero()`) is called on the CLASS, and emitting it as an
@@ -91,6 +101,20 @@ public class RecordTypeEmitter
         {
             if (method.Identifier.Text == "ToString") userToString = true;
             sb.Append(EmitMethod(method, name)).Append(' ');
+        }
+
+        // OPERATOR overloads. JavaScript cannot overload `+`, so the operator becomes a static
+        // method and the call site is rewritten to call it — dropping it silently made `a + b` on
+        // two objects concatenate their toString()s, which is wrong output with nothing to see.
+        foreach (var op in type.Members.OfType<OperatorDeclarationSyntax>())
+        {
+            var opName = OperatorMethodName(op.OperatorToken.Text);
+            if (opName is null) continue;
+            var pars = string.Join(", ", op.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()));
+            var body = op.ExpressionBody is { } expr
+                ? $"return {_converter.ConvertExpression(expr.Expression)};"
+                : op.Body is { } block ? Unwrap(_converter.Convert(block)) : "";
+            sb.Append($"static {opName}({pars}) {{ {body} }} ");
         }
 
         // Static PROPERTIES are the other half of the factory idiom (`static Foo Empty => …`).
@@ -146,6 +170,33 @@ public class RecordTypeEmitter
             }
         }
         return (baseName, string.Join(", ", superArgs), passed);
+    }
+
+    /// <summary>
+    /// The static-method name an operator becomes. Named for the operation, not for the CLR's
+    /// <c>op_Addition</c> mangling: the emitted class is read by people too.
+    /// </summary>
+    internal static string? OperatorMethodName(string token) => token switch
+    {
+        "+" => "opAdd",
+        "-" => "opSubtract",
+        "*" => "opMultiply",
+        "/" => "opDivide",
+        "%" => "opModulo",
+        "==" => "opEquals",
+        "!=" => "opNotEquals",
+        "<" => "opLessThan",
+        ">" => "opGreaterThan",
+        "<=" => "opLessOrEqual",
+        ">=" => "opGreaterOrEqual",
+        _ => null,
+    };
+
+    /// <summary>A converted block comes back braced; a method body wants its contents.</summary>
+    private static string Unwrap(string block)
+    {
+        var trimmed = block.Trim();
+        return trimmed.StartsWith('{') && trimmed.EndsWith('}') ? trimmed[1..^1].Trim() : trimmed;
     }
 
     private string EmitMethod(MethodDeclarationSyntax method, string className)
