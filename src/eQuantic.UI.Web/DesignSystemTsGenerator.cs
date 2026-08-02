@@ -36,9 +36,10 @@ public static class DesignSystemTsGenerator
         AppendConstScale(ts, typeof(Radius), "Radius");
         AppendConstScale(ts, typeof(IconSize), "IconSize");
         AppendConstScale(ts, typeof(Touch), "Touch");
-        AppendConstScale(ts, typeof(Motion), "Motion");
         AppendCurves(ts);
+        AppendConstScale(ts, typeof(Motion), "Motion");
 
+        AppendSizing(ts);
         AppendButtonStyles(ts);
         AppendVariantColors(ts, theme);
         AppendTypeScale(ts, theme);
@@ -75,7 +76,52 @@ public static class DesignSystemTsGenerator
             var value = System.Convert.ToSingle(field.GetRawConstantValue(), CultureInfo.InvariantCulture);
             ts.AppendLine($"  {Camel(field.Name)}: {Num(value)},");
         }
+
+        // NAMED roles (Motion.Press, Motion.Enter, …) are `static readonly MotionSpec`, not consts —
+        // they carry a duration AND the curve the spec pairs with it, so they emit as objects.
+        foreach (var field in scale.GetFields(BindingFlags.Public | BindingFlags.Static)
+                     .Where(f => f.FieldType == typeof(MotionSpec)))
+        {
+            var role = (MotionSpec)field.GetValue(null)!;
+            ts.AppendLine($"  {Camel(field.Name)}: {{ durationMs: {Num(role.DurationMs)}, curve: Curve.{Camel(CurveName(role.Curve))} }},");
+        }
+
         ts.AppendLine("} as const;");
+    }
+
+    /// <summary>The bezier's DECLARED name, so a role emits `Curve.standard` and not a raw tuple.</summary>
+    private static string CurveName(Curve curve) =>
+        typeof(Curve).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(f => f.FieldType == typeof(Curve))
+            .First(f => ((Curve)f.GetValue(null)!).Equals(curve)).Name;
+
+    /// <summary>
+    /// The CONTROL LADDER (spec A12) — one method per measurement, each a switch over
+    /// <see cref="SizeVariant"/>, reflected so a new rung never needs a generator edit.
+    /// </summary>
+    private static void AppendSizing(StringBuilder ts)
+    {
+        ts.AppendLine();
+        ts.AppendLine("/** The control ladder — every control of a given size measures the same (spec A12). */");
+        ts.AppendLine("export const Sizing = {");
+        foreach (var method in typeof(Sizing).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                     .Where(m => m.ReturnType == typeof(float)
+                                 && m.GetParameters() is [{ ParameterType: var p }] && p == typeof(SizeVariant))
+                     .OrderBy(m => m.Name, StringComparer.Ordinal))
+        {
+            ts.AppendLine($"  {Camel(method.Name)}(size: string): number {{");
+            ts.AppendLine("    switch (size) {");
+            foreach (var size in Enum.GetValues<SizeVariant>())
+            {
+                var value = Num((float)method.Invoke(null, [size])!);
+                ts.AppendLine(size == SizeVariant.XLarge
+                    ? $"      default: return {value};"
+                    : $"      case '{Camel(size.ToString())}': return {value};");
+            }
+            ts.AppendLine("    }");
+            ts.AppendLine("  },");
+        }
+        ts.AppendLine("};");
     }
 
     /// <summary>The spec A12 size table, one entry per <see cref="SizeVariant"/> — emitted as the ARRAY the

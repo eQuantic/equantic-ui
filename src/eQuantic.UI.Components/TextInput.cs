@@ -65,12 +65,7 @@ public sealed class TextInput : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var height = Size switch
-        {
-            SizeVariant.Medium => 40f,
-            SizeVariant.XLarge => 56f,
-            _ => 48f,
-        };
+        var height = Sizing.Height(Size);
 
         var hasError = !string.IsNullOrEmpty(Error);
         var borderColor = hasError
