@@ -81,6 +81,13 @@ public sealed class PhotonHost
     /// rasters at native resolution (retina).</summary>
     public float RenderScale { get; set; } = 1f;
 
+    /// <summary>
+    /// The margins the DISPLAY owns — notch, status bar, home indicator. A desktop window has none,
+    /// so the default of zero is the correct answer there; a phone shell fills these from the
+    /// platform and every <see cref="SafeArea"/> in the tree insets without the app knowing a number.
+    /// </summary>
+    public EdgeInsets SafeAreaInsets { get; set; }
+
     /// <summary>The NAVIGATION seam (write-once Link): a tap no pressable claims, landing on a link
     /// region, reports the href here — the platform shell maps it to a page (the native router's
     /// future home). Null = links are inert (visuals only).
@@ -110,7 +117,7 @@ public sealed class PhotonHost
         builder.Clear(_theme.Background.Resolve(Mode));
         if (RenderScale != 1f) builder.PushTransform(Engine.Matrix2D.Scale(RenderScale, RenderScale));
         _lastTimeMs = timeMs;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache);
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets);
         if (RenderScale != 1f) builder.Pop();
         NeedsRender = _lastFrame.HasActiveMotion;
         return _lastFrame;

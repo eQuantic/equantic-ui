@@ -44,21 +44,30 @@ public sealed class Stepper : StatelessComponent
         row.Add(Arm(theme, Icons.Minus, height, canDecrement,
             () => OnChanged?.Invoke(Value - Step), $"Decrease {Label}"));
 
-        row.Add(new Flexible(new Text($"{Value}{Suffix}", TypeRole.Label,
+        // The value HUGS between the arms with a floor, rather than flexing: a Flexible here makes
+        // the whole control greedy, and a Stepper next to a label ate the label's row.
+        var reading = new Row(gap: 0)
+        {
+            Height = SizeValue.Fill,
+            Main = MainAlign.Center,
+            Cross = CrossAlign.Center,
+        };
+        reading.Add(new Text($"{Value}{Suffix}", TypeRole.Label,
             Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 1)
         {
             Align = TextAlignment.Center,
             Tabular = true,
             StyleOverride = theme.Type(TypeRole.Label) with { Size = Sizing.LabelSize(Size) },
-        }, 1));
+        });
+        row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
 
         row.Add(Arm(theme, Icons.Plus, height, canIncrement,
             () => OnChanged?.Invoke(Value + Step), $"Increase {Label}"));
 
         return new Box(new BoxStyle
         {
+            Width = SizeValue.Hug,
             Height = height,
-            MinWidth = height * 3,
             Background = Disabled ? theme.SurfaceSubtle : theme.Surface,
             CornerRadius = new CornerRadii(Sizing.Radius(Size)),
             BorderWidth = 1,
