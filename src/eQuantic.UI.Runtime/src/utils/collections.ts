@@ -309,3 +309,50 @@ export class LinkedList<T> implements Iterable<T> {
 export function linkedList<T>(initial?: Iterable<T>): LinkedList<T> {
   return new LinkedList<T>(initial);
 }
+
+/**
+ * Membership, for a collection whose RUNTIME shape the transpiler could not know. A C# API that
+ * takes `IReadOnlyCollection<T>` is handed a `HashSet` as readily as a `List`, and those become a
+ * `Set` and an array here — one answers `has`, the other `includes`, and asking the wrong one
+ * returns `undefined` rather than failing. That is a selection that never highlights and a filter
+ * that never matches, with nothing in the console to say so.
+ */
+export function contains(collection: unknown, value: unknown): boolean {
+  if (collection == null) return false;
+  if (Array.isArray(collection)) return collection.includes(value);
+  if (collection instanceof Set || collection instanceof Map) return collection.has(value as never);
+  if (typeof collection === 'string') return collection.includes(value as string);
+  // Anything else iterable — a generated sequence, a Map's keys view.
+  if (typeof (collection as Iterable<unknown>)[Symbol.iterator] === 'function') {
+    for (const item of collection as Iterable<unknown>) if (item === value) return true;
+  }
+  return false;
+}
+
+/**
+ * `HashSet<T>.Add` — which answers whether the value was NEW, and is the whole reason
+ * `if (!set.Add(x)) set.Remove(x)` toggles. A JS `Set.add` returns the set itself, always truthy,
+ * so that idiom silently became "add, and never remove".
+ */
+export function setAdd<T>(set: Set<T>, value: T): boolean {
+  if (set.has(value)) return false;
+  set.add(value);
+  return true;
+}
+
+/**
+ * How many a collection holds — `length`, `size`, or a walk. Same reason as {@link contains}: a C#
+ * receiver typed as a collection may be an array or a Set here, and each keeps its count under a
+ * different name. Null counts as none, so a guarded `xs?.Count` needs no guard at all.
+ */
+export function count(collection: unknown): number {
+  if (collection == null) return 0;
+  if (Array.isArray(collection) || typeof collection === 'string') return collection.length;
+  const sized = collection as { size?: unknown; length?: unknown };
+  if (typeof sized.size === 'number') return sized.size;
+  if (typeof sized.length === 'number') return sized.length;
+  let total = 0;
+  if (typeof (collection as Iterable<unknown>)[Symbol.iterator] === 'function')
+    for (const _ of collection as Iterable<unknown>) total++;
+  return total;
+}

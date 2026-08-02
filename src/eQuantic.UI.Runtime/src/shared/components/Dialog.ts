@@ -7,13 +7,14 @@ export class Dialog extends StatelessComponent {
     declare dismissible: boolean;
     declare onDismiss: (() => void) | null;
     constructor(title?: any, body?: any, actions?: any, dismissible: any = false, onDismiss: any = null, props?: any) {
-        super(props);
+        super();
         if (title !== undefined) this.title = title;
         if (body !== undefined) this.body = body;
         if (actions !== undefined) this.actions = actions;
         if (dismissible !== undefined) this.dismissible = dismissible;
         if (onDismiss !== undefined) this.onDismiss = onDismiss;
         if ((actions.length === 0 || actions.length > 2)) throw new Error('A Dialog carries 1-2 actions — a third means an ActionSheet or a screen (spec C2).');this.title = title;this.body = body;this.actions = actions;this.dismissible = dismissible;this.onDismiss = onDismiss;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

@@ -10,7 +10,7 @@ export class SwipeableRow extends StatelessComponent {
     declare open: boolean;
     declare onOpenChanged: any;
     constructor(child?: any, actionLabel?: any, actionIcon?: any, onAction: any = null, props?: any) {
-        super(props);
+        super();
         if (child !== undefined) this.child = child;
         if (actionLabel !== undefined) this.actionLabel = actionLabel;
         if (actionIcon !== undefined) this.actionIcon = actionIcon;
@@ -18,6 +18,7 @@ export class SwipeableRow extends StatelessComponent {
         if (this.actionIcon === undefined) this.actionIcon = 'search';
         if (this.actionVariant === undefined) this.actionVariant = 'destructive';
         this.child = child;this.actionLabel = actionLabel;this.actionIcon = actionIcon;this.onAction = onAction;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

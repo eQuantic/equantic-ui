@@ -5,11 +5,12 @@ export class BottomSheet extends StatelessComponent {
     declare onDismiss: (() => void) | null;
     declare dismissible: boolean;
     constructor(content?: any, onDismiss: any = null, dismissible: any = true, props?: any) {
-        super(props);
+        super();
         if (content !== undefined) this.content = content;
         if (onDismiss !== undefined) this.onDismiss = onDismiss;
         if (dismissible !== undefined) this.dismissible = dismissible;
         this.content = content;this.onDismiss = onDismiss;this.dismissible = dismissible;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

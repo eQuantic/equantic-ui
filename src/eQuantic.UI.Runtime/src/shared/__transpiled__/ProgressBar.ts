@@ -9,11 +9,12 @@ export class ProgressBar extends SharedStatefulComponent {
     declare variant: string;
     declare prominent: boolean;
     constructor(value: any = null, variant: any = 'primary', props?: any) {
-        super(props);
+        super();
         if (value !== undefined) this.value = value;
         if (variant !== undefined) this.variant = variant;
         if (this.variant === undefined) this.variant = 'primary';
         this.value = value;this.variant = variant;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

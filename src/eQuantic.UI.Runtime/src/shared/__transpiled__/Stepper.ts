@@ -11,7 +11,7 @@ export class Stepper extends StatelessComponent {
     declare suffix: string;
     declare label: string;
     constructor(value?: any, onChanged: any = null, props?: any) {
-        super(props);
+        super();
         if (value !== undefined) this.value = value;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (this.min === undefined) this.min = -2147483648;
@@ -21,6 +21,7 @@ export class Stepper extends StatelessComponent {
         if (this.suffix === undefined) this.suffix = '';
         if (this.label === undefined) this.label = '';
         this.value = value;this.onChanged = onChanged;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

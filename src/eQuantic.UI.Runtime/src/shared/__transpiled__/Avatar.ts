@@ -8,13 +8,14 @@ export class Avatar extends StatelessComponent {
     declare name: any;
     declare status: string;
     constructor(initials?: any, size: any = 'medium', name: any = null, props?: any) {
-        super(props);
+        super();
         if (initials !== undefined) this.initials = initials;
         if (size !== undefined) this.size = size;
         if (name !== undefined) this.name = name;
         if (this.size === undefined) this.size = 'small';
         if (this.status === undefined) this.status = 'none';
         this.initials = initials;this.size = size;this.name = name;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

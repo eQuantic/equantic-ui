@@ -6,9 +6,10 @@ export class AppBar extends StatelessComponent {
     declare actions: any;
     declare scrolled: boolean;
     constructor(title?: any, props?: any) {
-        super(props);
+        super();
         if (title !== undefined) this.title = title;
         this.title = title;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

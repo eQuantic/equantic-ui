@@ -6,12 +6,13 @@ export class Skeleton extends StatelessComponent {
     declare width: number;
     declare height: number;
     constructor(shape?: any, width?: any, height: any = 0, props?: any) {
-        super(props);
+        super();
         if (shape !== undefined) this.shape = shape;
         if (width !== undefined) this.width = width;
         if (height !== undefined) this.height = height;
         if (this.shape === undefined) this.shape = 'line';
         this.shape = shape;this.width = width;this.height = height;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

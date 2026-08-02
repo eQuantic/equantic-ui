@@ -10,7 +10,7 @@ export class Button extends StatelessComponent {
     declare leading: any;
     declare loading: boolean;
     constructor(label?: any, variant: any = 'primary', size: any = 'medium', onPressed: any = null, props?: any) {
-        super(props);
+        super();
         if (label !== undefined) this.label = label;
         if (variant !== undefined) this.variant = variant;
         if (size !== undefined) this.size = size;
@@ -18,6 +18,7 @@ export class Button extends StatelessComponent {
         if (this.variant === undefined) this.variant = 'primary';
         if (this.size === undefined) this.size = 'small';
         this.label = label;this.variant = variant;this.size = size;this.onPressed = onPressed;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

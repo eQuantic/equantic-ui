@@ -7,12 +7,13 @@ export class RadioGroup extends StatelessComponent {
     declare label: any;
     declare disabled: boolean;
     constructor(options?: any, selected?: any, onChanged: any = null, label: any = null, props?: any) {
-        super(props);
+        super();
         if (options !== undefined) this.options = options;
         if (selected !== undefined) this.selected = selected;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (label !== undefined) this.label = label;
         this.options = options;this.selected = selected;this.onChanged = onChanged;this.label = label;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

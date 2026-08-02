@@ -4,10 +4,11 @@ export class Table extends StatelessComponent {
     declare columns: string[];
     declare rows: string[][];
     constructor(columns?: any, rows?: any, props?: any) {
-        super(props);
+        super();
         if (columns !== undefined) this.columns = columns;
         if (rows !== undefined) this.rows = rows;
         this.columns = columns;this.rows = rows;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

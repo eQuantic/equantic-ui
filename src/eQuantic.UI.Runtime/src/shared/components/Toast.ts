@@ -6,13 +6,14 @@ export class Toast extends StatelessComponent {
     declare actionLabel: any;
     declare onAction: (() => void) | null;
     constructor(message?: any, status: any = 'info', actionLabel: any = null, onAction: any = null, props?: any) {
-        super(props);
+        super();
         if (message !== undefined) this.message = message;
         if (status !== undefined) this.status = status;
         if (actionLabel !== undefined) this.actionLabel = actionLabel;
         if (onAction !== undefined) this.onAction = onAction;
         if (this.status === undefined) this.status = 'primary';
         this.message = message;this.status = status;this.actionLabel = actionLabel;this.onAction = onAction;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

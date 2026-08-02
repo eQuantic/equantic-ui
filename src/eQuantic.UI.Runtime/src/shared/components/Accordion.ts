@@ -1,4 +1,4 @@
-import { AccordionItem, Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Flexible, Icon, Pressable, Row, SharedStatefulComponent, SizeValue, Sizing, Spacer, StyleDiff, Text, UiComponent } from "../runtime-exports";
+import { $eq, AccordionItem, Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Flexible, Icon, Pressable, Row, SharedStatefulComponent, SizeValue, Sizing, Spacer, StyleDiff, Text, UiComponent } from "../runtime-exports";
 
 export class Accordion extends SharedStatefulComponent {
     _openSingle: number = -1;
@@ -6,9 +6,10 @@ export class Accordion extends SharedStatefulComponent {
     declare items: AccordionItem[];
     declare multiple: boolean;
     constructor(items?: any, openIndex: any = -1, props?: any) {
-        super(props);
+        super();
         if (items !== undefined) this.items = items;
         this.items = items;this._openSingle = openIndex;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
@@ -24,7 +25,7 @@ export class Accordion extends SharedStatefulComponent {
     }
 
     toggle(index: number) {
-        this.setState(() => {if (this.multiple) {if (!this._openMulti.add(index)) this._openMulti.delete(index);} else {this._openSingle = this._openSingle === index ? -1 : index;}});
+        this.setState(() => {if (this.multiple) {if (!$eq.collections.setAdd(this._openMulti, index)) this._openMulti.delete(index);} else {this._openSingle = this._openSingle === index ? -1 : index;}});
     }
 
 }

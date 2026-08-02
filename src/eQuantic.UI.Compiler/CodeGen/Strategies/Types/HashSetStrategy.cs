@@ -65,9 +65,17 @@ public class HashSetStrategy : IConversionStrategy
                 ? context.Converter.ConvertExpression(invocation.ArgumentList.Arguments[0].Expression) 
                 : "";
 
+            // `Add` ANSWERS something in C#: true when the value was new. A JS Set.add returns the
+            // set — always truthy — so `if (!set.Add(x)) set.Remove(x)` quietly became "add, and
+            // never remove", which is a checkbox that ticks once and then ignores you.
+            if (name == "Add")
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return $"{Eq.SetAdd}({expr}, {arg})";
+            }
+
             return name switch
             {
-                "Add" => $"{expr}.add({arg})",
                 "Contains" => $"{expr}.has({arg})",
                 "Remove" => $"{expr}.delete({arg})",
                 "Clear" => $"{expr}.clear()",

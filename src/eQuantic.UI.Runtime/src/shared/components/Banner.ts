@@ -8,12 +8,13 @@ export class Banner extends StatelessComponent {
     declare secondaryAction: any;
     declare onDismiss: (() => void) | null;
     constructor(status?: any, title?: any, body: any = null, props?: any) {
-        super(props);
+        super();
         if (status !== undefined) this.status = status;
         if (title !== undefined) this.title = title;
         if (body !== undefined) this.body = body;
         if (this.status === undefined) this.status = 'primary';
         this.status = status;this.title = title;this.body = body;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

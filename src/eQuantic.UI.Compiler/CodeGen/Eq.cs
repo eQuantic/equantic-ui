@@ -35,9 +35,22 @@ public static class Eq
     /// <summary>Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct.</summary>
     public const string Equals = "$eq.equals";
 
+    /// <summary>Membership over a collection whose runtime shape is not knowable statically —
+    /// an <c>IReadOnlyCollection&lt;T&gt;</c> is a Set as readily as an array.</summary>
+    public const string Contains = "$eq.collections.contains";
+
+    /// <summary><c>HashSet&lt;T&gt;.Add</c>, which answers whether the value was NEW — a JS
+    /// <c>Set.add</c> returns the set, so the toggle idiom silently stops removing.</summary>
+    public const string SetAdd = "$eq.collections.setAdd";
+
+    /// <summary>How many a collection holds, whichever shape it turned out to be.</summary>
+    public const string Count = "$eq.collections.count";
+
     /// <summary>Factory for a structurally-keyed dictionary (<c>Dictionary&lt;RecordKey, V&gt;</c>).</summary>
     public const string ValueMap = "$eq.collections.valueMap";
 
+    /// <summary>Factory for a value-sorted set (<c>SortedSet&lt;T&gt;</c>).</summary>
+    public const string SortedSet = "$eq.collections.sortedSet";
     /// <summary>Factory for a key-sorted dictionary (<c>SortedDictionary&lt;K, V&gt;</c>).</summary>
     public const string SortedDictionary = "$eq.collections.sortedDictionary";
     /// <summary>Factory for a key-sorted list (<c>SortedList&lt;K, V&gt;</c>).</summary>

@@ -8,12 +8,13 @@ export class Badge extends StatelessComponent {
     declare dot: boolean;
     declare ring: boolean;
     constructor(count: any = 0, max: any = 99, variant: any = 'destructive', props?: any) {
-        super(props);
+        super();
         if (count !== undefined) this.count = count;
         if (max !== undefined) this.max = max;
         if (variant !== undefined) this.variant = variant;
         if (this.variant === undefined) this.variant = 'primary';
         this.count = count;this.max = max;this.variant = variant;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

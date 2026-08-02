@@ -33,6 +33,10 @@ public static class TestHelper
 
             public record DistinctPoint(int X);
 
+            // Optional parameters a caller SKIPS by naming a later one — the shape every component
+            // constructor has.
+            public record Col(string Header, int Track, string Align = ""start"", bool Sortable = false);
+
             public class TestClass {{
                 public List<TestClass> list {{ get; set; }}
                 public List<TestClass> otherList {{ get; set; }}
@@ -48,6 +52,12 @@ public static class TestHelper
                 public string b {{ get; set; }}
                 public string c {{ get; set; }}
                 public TestClass item {{ get; set; }}
+
+                // Receivers whose SHAPE the static type leaves open: each of these is satisfied by a
+                // HashSet, which lowers to a JS Set — no `includes`, no `length`.
+                public IReadOnlyCollection<string> selection {{ get; set; }}
+                public HashSet<string> tags {{ get; set; }}
+                public IEnumerable<string> sequence {{ get; set; }}
 
                 public void Method() {{
                     {code};

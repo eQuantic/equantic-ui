@@ -3,9 +3,10 @@ import { BuildContext, Crumb, Icon, Link, Row, StatelessComponent, Text } from "
 export class Breadcrumb extends StatelessComponent {
     declare crumbs: Crumb[];
     constructor(crumbs?: any, props?: any) {
-        super(props);
+        super();
         if (crumbs !== undefined) this.crumbs = crumbs;
         this.crumbs = crumbs;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

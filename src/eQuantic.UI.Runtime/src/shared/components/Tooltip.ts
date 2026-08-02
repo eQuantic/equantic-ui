@@ -5,11 +5,12 @@ export class Tooltip extends StatelessComponent {
     declare text: string;
     declare placement: string;
     constructor(child?: any, text?: any, props?: any) {
-        super(props);
+        super();
         if (child !== undefined) this.child = child;
         if (text !== undefined) this.text = text;
         if (this.placement === undefined) this.placement = 'topCenter';
         this.child = child;this.text = text;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

@@ -8,12 +8,13 @@ export class Select extends SharedStatefulComponent {
     declare placeholder: any;
     declare disabled: boolean;
     constructor(options?: any, selectedIndex: any = -1, onChanged: any = null, placeholder: any = null, props?: any) {
-        super(props);
+        super();
         if (options !== undefined) this.options = options;
         if (selectedIndex !== undefined) this.selectedIndex = selectedIndex;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (placeholder !== undefined) this.placeholder = placeholder;
         this.options = options;this.selectedIndex = selectedIndex;this.onChanged = onChanged;this.placeholder = placeholder;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

@@ -19,9 +19,19 @@ public class ConditionalAccessStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var conditionalAccess = (ConditionalAccessExpressionSyntax)node;
-        var expression = context.Converter.ConvertExpression(conditionalAccess.Expression);
-        var whenNotNull = ConvertWhenNotNull(conditionalAccess.WhenNotNull, context);
 
+        // Saved and restored around the conversion: a nested `a?.b(c?.d())` must not read the inner
+        // chain's answer as its own.
+        var outer = context.NullGuardAnswered;
+        context.NullGuardAnswered = false;
+        var whenNotNull = ConvertWhenNotNull(conditionalAccess.WhenNotNull, context);
+        var answered = context.NullGuardAnswered;
+        context.NullGuardAnswered = outer;
+
+        // A translation that answers for null itself IS the whole chain — it named the receiver too.
+        if (answered) return whenNotNull;
+
+        var expression = context.Converter.ConvertExpression(conditionalAccess.Expression);
         return $"{expression}{whenNotNull}";
     }
 
@@ -75,6 +85,8 @@ public class ConditionalAccessStrategy : IConversionStrategy
     private static string? Translated(InvocationExpressionSyntax invocation, ConversionContext context)
     {
         var converted = context.Converter.ConvertExpression(invocation);
+        // Answered for null on its own: hand it back whole, receiver and all.
+        if (context.NullGuardAnswered) return converted;
         return converted.StartsWith('.') ? "?" + converted : null;
     }
 

@@ -8,11 +8,12 @@ export class Checkbox extends StatelessComponent {
     declare error: boolean;
     declare indeterminate: boolean;
     constructor(checked?: any, onChanged: any = null, label: any = null, props?: any) {
-        super(props);
+        super();
         if (checked !== undefined) this.checked = checked;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (label !== undefined) this.label = label;
         this.checked = checked;this.onChanged = onChanged;this.label = label;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

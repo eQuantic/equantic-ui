@@ -4,7 +4,7 @@ import { round } from './utils/dotnet-math';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
-import { queue, stack, valueMap, linkedList } from './utils/collections';
+import { queue, stack, valueMap, linkedList, contains, count, setAdd } from './utils/collections';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp } from './utils/nullable';
 import { equals } from './utils/equals';
@@ -47,7 +47,7 @@ export const $eq = {
    * Collections — Queue (FIFO), Stack (LIFO), ValueMap (structurally-keyed dictionary), LinkedList,
    * and the sorted family (SortedSet / SortedDictionary / SortedList).
    */
-  collections: { queue, stack, valueMap, linkedList, sortedSet, sortedDictionary, sortedList },
+  collections: { queue, stack, valueMap, linkedList, sortedSet, sortedDictionary, sortedList, contains, count, setAdd },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
   nullable: { arith: liftArith, cmp: liftCmp },
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */

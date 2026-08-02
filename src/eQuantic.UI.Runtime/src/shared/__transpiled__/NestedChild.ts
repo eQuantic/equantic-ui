@@ -4,8 +4,9 @@ export class NestedChild extends SharedStatefulComponent {
     _count: number = 0;
     _label: string;
     constructor(label: any = 'child', props?: any) {
-        super(props);
+        super();
         this._label = label;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(_context: BuildContext) {

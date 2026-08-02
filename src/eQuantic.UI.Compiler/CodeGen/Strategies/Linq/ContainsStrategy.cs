@@ -1,3 +1,4 @@
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -95,6 +96,21 @@ public class ContainsStrategy : IConversionStrategy
             {
                 context.UsedHelpers.Add(Eq.Import);
                 return $"{caller}.some(_x => {Eq.Equals}(_x, {item}))";
+            }
+
+            // Anything whose static type is a mere COLLECTION could be a HashSet at run time, and
+            // a Set has no `includes` — the call returns undefined and the selection silently never
+            // matches. The helper asks the value what it is, and answers false for a null one, so
+            // under a `?.` it replaces the guard rather than hanging off it.
+            if (context.SemanticHelper.GetType(receiverExpression).HasOpenCollectionShape())
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                if (guarded)
+                {
+                    context.NullGuardAnswered = true;
+                    caller = context.Converter.ConvertExpression(receiverExpression);
+                }
+                return $"{Eq.Contains}({caller}, {item})";
             }
 
             return $"{caller}.includes({item})";

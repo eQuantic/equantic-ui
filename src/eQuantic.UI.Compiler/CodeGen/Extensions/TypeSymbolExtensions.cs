@@ -232,6 +232,26 @@ public static class TypeSymbolExtensions
         : type.IsSortedDictionary() ? Eq.SortedDictionary
         : null;
 
+    /// <summary>
+    /// Whether a receiver's STATIC type leaves its runtime shape open. An array, a List or a string
+    /// is an array or a string, and JS members apply directly; but `ICollection`, `IEnumerable` and
+    /// the set interfaces are all satisfied by a <c>HashSet</c>, which lowers to a JS Set — and a Set
+    /// has neither <c>includes</c> nor <c>length</c>. A member written for the wrong shape returns
+    /// <c>undefined</c> rather than failing, which is how a checkbox stops responding in silence.
+    /// </summary>
+    public static bool HasOpenCollectionShape(this ITypeSymbol? type)
+    {
+        if (type is IArrayTypeSymbol or null) return false;
+        if (type.SpecialType == SpecialType.System_String) return false;
+        var def = type.OriginalDefinition?.ToString() ?? "";
+        return def.StartsWith("System.Collections.Generic.ICollection")
+            || def.StartsWith("System.Collections.Generic.IReadOnlyCollection")
+            || def.StartsWith("System.Collections.Generic.IEnumerable")
+            || def.StartsWith("System.Collections.Generic.ISet")
+            || def.StartsWith("System.Collections.Generic.IReadOnlySet")
+            || def.StartsWith("System.Collections.Generic.HashSet");
+    }
+
     /// <summary>The element type of an array or <c>IEnumerable&lt;T&gt;</c>, or <c>null</c>.</summary>
     public static ITypeSymbol? GetEnumerableElementType(this ITypeSymbol? collectionType)
     {
