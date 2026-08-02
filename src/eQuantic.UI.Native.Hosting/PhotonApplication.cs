@@ -32,49 +32,22 @@ public sealed class PhotonApplication
     public static PhotonApplicationBuilder CreateBuilder(string[]? args = null) => new(args ?? []);
 
     /// <summary>
-    /// The app, from the program that describes it. An Android app has no <c>Main</c> — the system
-    /// launches an Activity — so the thing every platform CAN call is a method, and this finds it:
-    /// a public <c>static PhotonApplication CreateApp(string[])</c>, the same shape MAUI's
-    /// <c>MauiProgram.CreateMauiApp</c> has and for the same reason.
+    /// This app's program, registered by a generated module initializer — which runs when the app's
+    /// assembly loads, and is therefore the only moment Android offers: the system launches an
+    /// Activity there and no <c>Main</c> ever runs.
     /// </summary>
-    public static PhotonApplication Create(string[]? args = null)
-    {
-        // On Android there is no entry assembly at all — nobody ran a Main — so the app's own
-        // assembly has to be found among the ones already loaded. Everywhere else the entry
-        // assembly IS the app, and looking there first keeps the common case a single lookup.
-        var candidates = Assembly.GetEntryAssembly() is { } entry
-            ? [entry]
-            : AppDomain.CurrentDomain.GetAssemblies().Where(IsAppAssembly);
+    public static Func<string[], PhotonApplication>? Program { get; set; }
 
-        var factories = candidates
-            .SelectMany(assembly => assembly.GetTypes())
-            .Select(type => type.GetMethod("CreateApp", BindingFlags.Public | BindingFlags.Static,
-                [typeof(string[])]))
-            .Where(method => method?.ReturnType == typeof(PhotonApplication))
-            .ToArray();
-
-        return factories.Length switch
-        {
-            1 => (PhotonApplication)factories[0]!.Invoke(null, [args ?? []])!,
-            0 => throw new InvalidOperationException(
-                "No program. A Photon app describes itself with a public static "
-                + "PhotonApplication CreateApp(string[] args) — see the samples."),
-            _ => throw new InvalidOperationException(
-                "More than one CreateApp(string[]) in this app. There can only be one program."),
-        };
-    }
-
-    /// <summary>Not the runtime's, not the framework's — the assemblies an app author wrote.</summary>
-    private static bool IsAppAssembly(Assembly assembly)
-    {
-        var name = assembly.GetName().Name;
-        return name is not null
-            && !name.StartsWith("System", StringComparison.Ordinal)
-            && !name.StartsWith("Microsoft", StringComparison.Ordinal)
-            && !name.StartsWith("Mono", StringComparison.Ordinal)
-            && !name.StartsWith("Java", StringComparison.Ordinal)
-            && !name.StartsWith("eQuantic.UI", StringComparison.Ordinal);
-    }
+    /// <summary>
+    /// The app, from the program that describes it. Nothing is looked up at run time: the generator
+    /// saw the compilation and wrote a direct call to this app's <c>CreateApp</c>.
+    /// </summary>
+    public static PhotonApplication Create(string[]? args = null) =>
+        Program?.Invoke(args ?? [])
+        ?? throw new InvalidOperationException(
+            "No program. A Photon app describes itself with a public static "
+            + "PhotonApplication CreateApp(string[] args) — by convention on a public partial class "
+            + "Program, whose other half the SDK generates.");
 
     public IServiceProvider Services => _host.Services;
 

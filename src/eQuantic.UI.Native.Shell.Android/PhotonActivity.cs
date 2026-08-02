@@ -29,18 +29,13 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// and slower than the GPU path. The Vulkan swapchain replaces this method and nothing above it —
 /// the display list, the layout and the trees never learn which one drew them.
 /// </para>
+/// <para>
+/// The LAUNCHER activity is generated into the app's own assembly, not this one. Android would
+/// otherwise never load the app: nothing would have referenced it, so the registration that names
+/// its program would never run. Subclassing is also what gives an app somewhere to override.
+/// </para>
 /// </summary>
-[Activity(
-    // No Label: the launcher shows the APPLICATION's name, which the SDK sets from ApplicationTitle
-    // — the same property the iOS head and the web manifest use, stated once by an app that cares.
-    // NoActionBar because the app draws its OWN chrome: a system title bar would sit on top of a
-    // header the design already accounts for, and no tree here would know it was there.
-    Theme = "@android:style/Theme.Material.Light.NoActionBar",
-    MainLauncher = true,
-    Exported = true,
-    ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize
-        | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.Density)]
-public sealed class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IFrameCallback
+public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IFrameCallback
 {
     private SurfaceView? _view;
     private PhotonHost? _host;
