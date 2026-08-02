@@ -4,7 +4,7 @@ export class Popover extends StatelessComponent {
     declare trigger: VisualNode;
     declare content: VisualNode;
     declare open: boolean;
-    declare onDismiss: () => void;
+    declare onDismiss: (() => void) | null;
     declare placement: string;
     constructor(trigger?: any, content?: any, open?: any, onDismiss: any = null, props?: any) {
         super(props);

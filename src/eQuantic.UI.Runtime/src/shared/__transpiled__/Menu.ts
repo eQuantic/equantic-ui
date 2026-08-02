@@ -1,9 +1,9 @@
-import { Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, Pressable, Row, SharedStatefulComponent, SizeValue, Sizing, StyleDiff, Text, UiComponent, VisualNode } from "@equantic/runtime";
+import { Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, MenuItem, Pressable, Row, SharedStatefulComponent, SizeValue, Sizing, StyleDiff, Text, UiComponent, VisualNode } from "@equantic/runtime";
 
 export class Menu extends SharedStatefulComponent {
     _open: boolean = false;
     declare trigger: VisualNode;
-    declare items: any;
+    declare items: MenuItem[];
     declare onSelect: any;
     declare placement: string;
     constructor(trigger?: any, items?: any, onSelect: any = null, props?: any) {

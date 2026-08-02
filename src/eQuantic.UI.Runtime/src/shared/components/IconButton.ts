@@ -5,10 +5,10 @@ export class IconButton extends StatelessComponent {
     declare label: string;
     declare kind: string;
     declare size: string;
-    declare onPressed: () => void;
+    declare onPressed: (() => void) | null;
     declare disabled: boolean;
     declare selected: boolean;
-    declare selectedGlyph: string;
+    declare selectedGlyph: any;
     constructor(glyph?: any, label?: any, kind: any = 'standard', size: any = 'medium', onPressed: any = null, props?: any) {
         super(props);
         if (glyph !== undefined) this.glyph = glyph;

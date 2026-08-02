@@ -3,9 +3,9 @@ import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Icon, Image, Positioned,
 export class Avatar extends StatelessComponent {
     static tintPalette: string[] = ['primary', 'success', 'info', 'warning', 'destructive'];
     declare initials: string;
-    declare imageSource: string;
+    declare imageSource: any;
     declare size: string;
-    declare name: string;
+    declare name: any;
     declare status: string;
     constructor(initials?: any, size: any = 'medium', name: any = null, props?: any) {
         super(props);

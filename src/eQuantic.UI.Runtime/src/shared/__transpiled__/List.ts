@@ -1,7 +1,7 @@
-import { BuildContext, Column, Divider, SizeValue, StatelessComponent } from "@equantic/runtime";
+import { BuildContext, Column, Divider, ListItem, SizeValue, StatelessComponent } from "@equantic/runtime";
 
 export class List extends StatelessComponent {
-    declare items: any;
+    declare items: ListItem[];
     declare dividers: boolean;
     constructor(items?: any, dividers: any = true, props?: any) {
         super(props);

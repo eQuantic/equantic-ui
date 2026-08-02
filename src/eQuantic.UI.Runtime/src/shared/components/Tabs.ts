@@ -1,7 +1,7 @@
 import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class Tabs extends StatelessComponent {
-    declare labels: any;
+    declare labels: string[];
     declare selected: number;
     declare onSelect: any;
     constructor(labels?: any, selected?: any, onSelect: any = null, props?: any) {

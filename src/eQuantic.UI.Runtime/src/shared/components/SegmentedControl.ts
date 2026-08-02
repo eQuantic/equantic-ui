@@ -1,7 +1,7 @@
 import { $eq, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Flexible, Motion, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, TransitionSpec } from "../runtime-exports";
 
 export class SegmentedControl extends StatelessComponent {
-    declare segments: any;
+    declare segments: string[];
     declare selectedIndex: number;
     declare onChanged: any;
     declare size: string;

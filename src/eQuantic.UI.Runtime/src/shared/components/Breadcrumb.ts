@@ -1,7 +1,7 @@
-import { BuildContext, Icon, Link, Row, StatelessComponent, Text } from "../runtime-exports";
+import { BuildContext, Crumb, Icon, Link, Row, StatelessComponent, Text } from "../runtime-exports";
 
 export class Breadcrumb extends StatelessComponent {
-    declare crumbs: any;
+    declare crumbs: Crumb[];
     constructor(crumbs?: any, props?: any) {
         super(props);
         if (crumbs !== undefined) this.crumbs = crumbs;

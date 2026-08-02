@@ -3,7 +3,7 @@ import { Box, BoxStyle, BuildContext, EdgeInsets, Overlay, Positioned, Presence,
 export class Drawer extends StatelessComponent {
     declare content: VisualNode;
     declare open: boolean;
-    declare onDismiss: () => void;
+    declare onDismiss: (() => void) | null;
     declare edge: string;
     declare width: number;
     constructor(content?: any, open?: any, onDismiss: any = null, props?: any) {

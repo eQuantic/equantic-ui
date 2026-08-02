@@ -1399,21 +1399,18 @@ public class TypeScriptEmitter
         };
 
         // Handle Generics (limited support)
-        if (tsType.StartsWith("List<") && tsType.EndsWith(">"))
+        // EVERY sequence is a JS array at runtime, so every name for one annotates as `T[]`. The
+        // read-only interfaces were the hole: `IReadOnlyList<int>` reached TypeScript verbatim, and
+        // a `foreach` over it typed its variable `unknown` — a type error in the runtime's own build
+        // and, worse, a lie in an app's editor.
+        if (SequenceOf(tsType) is { } sequenceItem)
         {
-            var itemType = tsType.Substring(5, tsType.Length - 6);
-            tsType = $"{CSharpTypeToTypeScript(itemType)}[]";
+            tsType = $"{CSharpTypeToTypeScript(sequenceItem)}[]";
         }
-        else if (tsType.StartsWith("IEnumerable<") && tsType.EndsWith(">"))
-        {
-            var itemType = tsType.Substring(12, tsType.Length - 13);
-            tsType = $"{CSharpTypeToTypeScript(itemType)}[]";
-        }
-        else if (tsType.StartsWith("HashSet<") && tsType.EndsWith(">"))
+        else if (SetOf(tsType) is { } setItem)
         {
             // The runtime representation IS a JS Set (HashSetStrategy constructs `new Set()`).
-            var itemType = tsType.Substring(8, tsType.Length - 9);
-            tsType = $"Set<{CSharpTypeToTypeScript(itemType)}>";
+            tsType = $"Set<{CSharpTypeToTypeScript(setItem)}>";
         }
         else if (tsType.StartsWith("Task<") && tsType.EndsWith(">"))
         {
@@ -1434,9 +1431,39 @@ public class TypeScriptEmitter
             tsType = "Record<string, any>";
         }
 
+        // A NULLABLE C# type is nullable in TypeScript too. The flag was computed and then dropped,
+        // so `Action?` annotated as `() => void` and passing the null its own signature invites was
+        // a type error. A function type needs the parentheses: `() => void | null` parses as a
+        // function RETURNING `void | null`.
+        if (isNullable && tsType is not ("any" or "void"))
+            tsType = tsType.Contains("=>") ? $"({tsType}) | null" : $"{tsType} | null";
+
         return tsType;
     }
-    
+
+    /// <summary>Every C# name for an ordered sequence — all of them are a JS array.</summary>
+    private static string? SequenceOf(string tsType)
+    {
+        string[] names = ["List<", "IList<", "ICollection<", "IEnumerable<", "IReadOnlyList<",
+            "IReadOnlyCollection<"];
+        return Unwrap(tsType, names);
+    }
+
+    /// <summary>The set family — a JS Set.</summary>
+    private static string? SetOf(string tsType) => Unwrap(tsType, ["HashSet<", "ISet<", "IReadOnlySet<"]);
+
+    private static string? Unwrap(string tsType, string[] prefixes)
+    {
+        if (!tsType.EndsWith(">")) return null;
+        foreach (var prefix in prefixes)
+        {
+            if (tsType.StartsWith(prefix))
+                return tsType.Substring(prefix.Length, tsType.Length - prefix.Length - 1);
+        }
+
+        return null;
+    }
+
     /// <summary>Splits a type argument list on TOP-LEVEL commas (nested <c>&lt;&gt;</c>/<c>()</c> stay whole).</summary>
     private static List<string> SplitTopLevel(string text)
     {

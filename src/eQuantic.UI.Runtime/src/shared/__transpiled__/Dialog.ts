@@ -5,7 +5,7 @@ export class Dialog extends StatelessComponent {
     declare body: string;
     declare actions: DialogAction[];
     declare dismissible: boolean;
-    declare onDismiss: () => void;
+    declare onDismiss: (() => void) | null;
     constructor(title?: any, body?: any, actions?: any, dismissible: any = false, onDismiss: any = null, props?: any) {
         super(props);
         if (title !== undefined) this.title = title;

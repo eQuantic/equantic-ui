@@ -1,12 +1,12 @@
-import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, EdgeInsets, Flexible, Icon, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "@equantic/runtime";
 
 export class Banner extends StatelessComponent {
     declare status: string;
     declare title: string;
-    declare body: string;
-    declare primaryAction: Button;
-    declare secondaryAction: Button;
-    declare onDismiss: () => void;
+    declare body: any;
+    declare primaryAction: any;
+    declare secondaryAction: any;
+    declare onDismiss: (() => void) | null;
     constructor(status?: any, title?: any, body: any = null, props?: any) {
         super(props);
         if (status !== undefined) this.status = status;
