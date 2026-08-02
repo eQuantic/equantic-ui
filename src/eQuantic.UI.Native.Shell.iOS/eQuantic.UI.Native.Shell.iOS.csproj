@@ -1,20 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>The macOS platform shell for the Photon engine: a real NSWindow + CAMetalLayer host driving PhotonHost with OS input — zero third-party dependencies (slim typed objc_msgSend bindings, the Metal-spike pattern).</Description>
+    <Description>The iOS platform shell for the Photon engine: a UIViewController whose view IS a CAMetalLayer, driven by a CADisplayLink, with touches routed into the same PhotonHost pipeline the macOS window uses. UIKit only owns the app lifecycle, the view and the touches; the drawable is driven by the very same messages the macOS shell sends.</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj" />
-    <ProjectReference Include="../eQuantic.UI.Native.Shell.Apple/eQuantic.UI.Native.Shell.Apple.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Engine/eQuantic.UI.Native.Engine.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Engine.Metal/eQuantic.UI.Native.Engine.Metal.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Components/eQuantic.UI.Native.Components.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Shell.Apple/eQuantic.UI.Native.Shell.Apple.csproj" />
   </ItemGroup>
 
 </Project>

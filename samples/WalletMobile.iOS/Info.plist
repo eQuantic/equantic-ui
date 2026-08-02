@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	    UILaunchScreen is what tells iOS this app was written for modern screens. WITHOUT it the
+	    system runs the app in a compatibility window — letterboxed, with black bars, at a size no
+	    device has — and every safe-area inset it reports is that fiction's, not the phone's.
+	    An empty dictionary is the whole declaration: the launch screen is a blank canvas, which is
+	    correct for an app whose first frame is drawn by the engine.
+	-->
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>metal</string>
+	</array>
+</dict>
+</plist>

@@ -54,7 +54,11 @@ public static class PipelineCache
     {
         var overridden = Environment.GetEnvironmentVariable("EQ_PHOTON_CACHE_DIR");
         if (!string.IsNullOrEmpty(overridden)) return overridden;
-        return OperatingSystem.IsMacOS()
+        // Every Apple platform keeps regenerable caches in Library/Caches — on iOS that is the app's
+        // own sandbox, which the system may purge, which is exactly what a rebuildable cache is for.
+        var apple = OperatingSystem.IsMacOS() || OperatingSystem.IsIOS()
+            || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsTvOS();
+        return apple
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Caches", "eQuantic.UI.Photon")
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "eQuantic.UI.Photon");
     }

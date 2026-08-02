@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using eQuantic.UI.Native.Framework;
 
-namespace eQuantic.UI.Native.Shell.MacOS;
+namespace eQuantic.UI.Native.Shell.Apple;
 
 /// <summary>
 /// The W4 image service on macOS — ImageIO + CoreGraphics, SYSTEM frameworks only (the zero

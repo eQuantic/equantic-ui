@@ -789,3 +789,37 @@ the device matrix; the Dashboard demo runs at 120 Hz with zero steady-state allo
 budgets met; VoiceOver/TalkBack navigate it; shaders are 100% precompiled (runtime pipeline creation
 asserts); an external dev ships a template app in minutes; and the supported v1 surface (primitives,
 components, styles) is documented with the same honesty as `docs/DOTNET-COVERAGE-PROGRAM.md`.
+
+### Track W — the iOS shell (2026-08-02)
+
+`eQuantic.UI.Native.Shell.iOS`: a `UIViewController` whose view IS the `CAMetalLayer`, driven by a
+`CADisplayLink` that presents only when the host says something changed. UIKit owns three things —
+the view, the touches, the clock — and the drawable is driven by the same ObjC messages the macOS
+window sends, so both platforms come off one engine rather than two that agree by inspection.
+`PhotonApp.Run(args, () => new App(), theme)` is the whole entry point: no storyboard, no
+AppDelegate, no Info.plist keys beyond the launch screen.
+
+What the platform taught us, each fixed in the ENGINE rather than the shell:
+
+- **Metal is Apple's, not the Mac's.** `MetalDevice` refused to start anywhere but macOS. The same
+  device, queue and pipelines back a phone; the guard now names Apple hardware.
+- **A metallib is built for ONE target.** The committed artifact is macOS's, and on the simulator it
+  loads happily and then fails at the first pipeline ("library was not compiled for the simulator").
+  Off macOS the MSL path takes over — the same source the metallib was compiled from — until
+  `generate-shaders.sh` emits an artifact per platform.
+- **The binary archive cannot be serialized on a simulator.** Not an error it reports: an assertion
+  that takes the process down. There is nothing to save there either, so the cross-launch archive
+  stays switched on where a real driver's compilation is what it skips.
+- **`UILaunchScreen` is not cosmetic.** Without it iOS runs the app in a compatibility window, and
+  every safe-area inset it reports is that fiction's rather than the phone's.
+
+`eQuantic.UI.Native.Shell.Apple` now holds what both shells share — the ObjC runtime bindings and the
+CoreText / CoreGraphics / ImageIO services. Text, icons and images are decoded by the same system
+frameworks on both platforms; only the window and the event loop ever differed.
+
+Verified on an iPhone 17 simulator: the Wallet launches full screen with the notch and home
+indicator respected, the tab bar navigates, the first transaction row swipes to reveal its action,
+and the list pulls to refresh. The desktop head builds and self-tests from the SAME two app files.
+
+Open: a per-platform metallib (a shader compile at first launch until then), a real device run
+(signing), and an SDK-generated Info.plist so an app author never has to know about `UILaunchScreen`.

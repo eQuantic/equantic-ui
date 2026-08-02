@@ -30,7 +30,11 @@ public sealed class WalletApp : StatefulComponent
     private bool _refreshing;
     private bool _rowOpen;
 
-    public WalletApp(WalletScreen screen = WalletScreen.Home) => _screen = screen;
+    public WalletApp(WalletScreen screen = WalletScreen.Home)
+    {
+        _screen = screen;
+        _tab = Math.Max(0, Array.FindIndex(WalletData.Tabs, t => t.Screen == screen));
+    }
 
     public override VisualNode Build(ComponentContext context)
     {
@@ -250,7 +254,13 @@ public sealed class WalletApp : StatefulComponent
         var bar = new BottomNavigation(
             WalletData.Tabs.Select(t => new NavItem(t.Icon, t.Label) { BadgeCount = t.Badge }).ToArray(),
             _tab,
-            i => SetState(() => _tab = i));
+            i => SetState(() =>
+            {
+                _tab = i;
+                // The bar NAVIGATES. Anything else is a control that lights up and lies — and on a
+                // phone the tab bar is the one thing a user trusts to take them somewhere.
+                _screen = WalletData.Tabs[i].Screen;
+            }));
 
         return new Box(new BoxStyle
         {

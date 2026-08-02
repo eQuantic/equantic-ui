@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>What every Apple platform shell shares: the ObjC runtime bindings and the CoreText / CoreGraphics / ImageIO services. Text, icons and images are decoded by the same system frameworks on macOS and on iOS, so they are written once — only the window and the event loop differ.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 
-namespace eQuantic.UI.Native.Shell.MacOS;
+namespace eQuantic.UI.Native.Shell.Apple;
 
 /// <summary>
 /// The W4 text service on macOS — CoreText/CoreGraphics, SYSTEM frameworks only (the zero
