@@ -915,3 +915,40 @@ WHICH device runs it is not a question the program answers. Each shell declares 
 `[assembly: PhotonRunner(...)]` and the host finds the one that shipped — by looking in the folder
 beside the program rather than at the entry assembly's reference list, because an app never names
 its shell in code and the compiler drops references nothing mentions.
+
+### Track W6 — the Android shell (2026-08-02)
+
+`eQuantic.UI.Native.Shell.Android`: an Activity whose `SurfaceView` the engine presents into, the
+`Choreographer` as the clock (the display's own vsync rather than a timer guessing at it), touches
+routed into the same `PhotonHost` pipeline, and the system's insets fed to `SafeAreaInsets` so a
+`SafeArea` node lays out against what the DEVICE reserves. The Wallet's trees needed no change to
+sit correctly on it.
+
+`AndroidTextService` is the platform's own shaper — `StaticLayout` decides where lines BREAK, and
+where they SIT is the design system's decision, so each is drawn on the style's line-height grid.
+The same split CoreText is held to. `AndroidIconRasterizer` lowers the SHARED `SvgPath` parse onto
+`android.graphics.Path`: same glyphs, same units, same A8 coverage, only the fill differs.
+
+Presentation goes through the NORMATIVE Reference backend for now — pixel-correct by definition and
+slower than the GPU. The Vulkan swapchain (`VK_KHR_android_surface`, acquire/present, real fences)
+replaces that one method and nothing above it. That is the next piece, and the backend still says
+so in its own doc comments.
+
+What the platform taught us:
+
+- **An Android app has no `Main`.** The SDK rewrites `Exe` to `Library` because the system launches
+  an Activity. So a Photon program is a METHOD — `public static PhotonApplication CreateApp(string[])`,
+  the shape MAUI's `MauiProgram.CreateMauiApp` has — and the SDK generates the `Main` for the heads
+  that need one. `Assembly.GetEntryAssembly()` is null there too, so the host finds the program
+  among the loaded assemblies.
+- **Android's implicit usings collide with the vocabulary** — Button, Dialog, ProgressBar,
+  ScrollView, Space, Switch. A Photon app draws with the vocabulary, so the SDK removes
+  `Android.App/Widget/Views/Content` from the implicit set; an app that wants a platform view still
+  writes one `using`.
+- **A raster measured at 1x and multiplied comes out short.** Glyph advance is not exactly linear in
+  size, and the last character of every line was being sliced off. The raster is measured with the
+  SCALED paint.
+
+Verified on an emulator (API 36): the Wallet full-screen with insets honoured, real glyphs and real
+icons, and the tab bar navigating under a tap. Open: the launcher icon (mipmaps from the same
+`Assets/AppIcon.png`), and the Vulkan swapchain.
