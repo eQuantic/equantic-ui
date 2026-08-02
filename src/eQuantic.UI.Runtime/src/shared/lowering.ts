@@ -914,6 +914,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // Mono text is CODE (indentation survives); plain text only keeps its newlines.
     'white-space': text.mono === true ? 'pre-wrap' : text.content.includes('\n') ? 'pre-line' : undefined,
     'font-family': text.mono === true ? MONO_STACK : undefined,
+    'font-variant-numeric': text.tabular === true ? 'tabular-nums' : undefined,
     // Spec S6 (C# twin): recolors glide instead of flipping.
     transition: text.transition ? transitionValue(text.transition) : undefined,
   };
@@ -1021,6 +1022,9 @@ function lowerPressable(
   });
 
   if (pressable.label) node.attributes['aria-label'] = pressable.label;
+  // Selection stated, not merely painted — a fill colour says nothing to a screen reader.
+  if (pressable.selected !== undefined && pressable.selected !== null)
+    node.attributes['aria-pressed'] = pressable.selected ? 'true' : 'false';
   if (disabled) node.attributes['disabled'] = '';
   if (!disabled && pressable.onPressed) node.events['click'] = pressable.onPressed as EventHandler;
 

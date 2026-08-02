@@ -798,6 +798,15 @@ public sealed class Pressable : VisualNode
 
     /// <summary>Accessible name (role: button). Required when the child carries no text.</summary>
     public string? Label { get; init; }
+
+    /// <summary>
+    /// SELECTION state for a button that toggles or picks one of a set — a segmented control's
+    /// segment, a filter chip, a page dot. Selection that lives only in a fill colour is invisible
+    /// to assistive tech, so this states it: web lowers to <c>aria-pressed</c>, native reports it as
+    /// the node's selected state. <c>null</c> = the button does not carry selection at all, which is
+    /// NOT the same as <c>false</c> ("selectable, currently not selected").
+    /// </summary>
+    public bool? Selected { get; init; }
 }
 
 /// <summary>One inline run of a rich <see cref="Text"/> (see <see cref="Text.Spans"/>): its own
@@ -855,6 +864,15 @@ public sealed class Text : VisualNode
     /// break (web renders with <c>white-space: pre-line</c>; CoreText breaks paragraphs natively).
     /// </summary>
     public bool Mono { get; init; }
+
+    /// <summary>
+    /// TABULAR figures: every digit takes the same advance, so a number that changes in place does
+    /// not make its row jiggle (a Stepper counting up, a table column, a live metric). The bundled
+    /// face ships the <c>tnum</c> feature — this is the design system's own figure style, NOT a
+    /// face swap like <see cref="Mono"/>. Photon fence: the native rasterizer keeps proportional
+    /// figures until <c>ITextRasterizer</c> grows a font-features parameter.
+    /// </summary>
+    public bool Tabular { get; init; }
 
     /// <summary>
     /// RICH runs (spec A8's inline emphasis): when set, the paragraph renders these runs in order

@@ -24,6 +24,10 @@ public enum Icons : byte
     Notifications = 13,
     Heart = 14,
     HeartFilled = 15,
+    /// <summary>Stepper increment; also "add" affordances.</summary>
+    Plus = 16,
+    /// <summary>Stepper decrement.</summary>
+    Minus = 17,
 }
 
 /// <summary>

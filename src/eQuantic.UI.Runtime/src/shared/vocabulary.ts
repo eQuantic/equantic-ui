@@ -417,6 +417,8 @@ export class Column extends FlexNode {
 interface TextConfig {
   styleOverride?: TypeStyleValue | null;
   mono?: boolean;
+  /** Tabular figures (tnum) — a changing number must not shift its row. */
+  tabular?: boolean;
   spans?: import('./nodes').TextRunValue[] | null;
   /** Fills the glyphs with a gradient instead of `color` (background-clip: text). */
   gradient?: LinearGradient | null;
@@ -437,6 +439,7 @@ export class Text extends VisualNode {
   gradient: LinearGradient | null = null;
   align: string = 'start';
   mono = false;
+  tabular = false;
   spans: import('./nodes').TextRunValue[] | null = null;
   /** Spec S6: animates color changes (the design's transition-colors). */
   transition: TransitionSpec | null = null;
@@ -462,6 +465,8 @@ interface PressableConfig {
   label?: string | null;
   key?: string | null;
   pressedBackground?: ColorTokenValue | null;
+  /** Selection for a toggling/picking button — lowers to aria-pressed. */
+  selected?: boolean | null;
 }
 
 export class Pressable extends VisualNode {
@@ -471,6 +476,7 @@ export class Pressable extends VisualNode {
   disabled = false;
   label: string | null = null;
   pressedBackground: ColorTokenValue | null = null;
+  selected: boolean | null = null;
 
   constructor(child: VisualChild, onPressed: (() => void) | null = null, config?: PressableConfig) {
     super();
