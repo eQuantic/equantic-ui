@@ -1,5 +1,6 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
+using Microsoft.Extensions.Configuration;
 
 namespace eQuantic.Studio;
 
@@ -16,8 +17,15 @@ public sealed class StudioShell : StatefulComponent
 {
     private GallerySection _section;
 
-    /// <summary>Which section opens first — <c>--section</c> aims a PNG render at one of them.</summary>
-    public StudioShell(GallerySection section = GallerySection.Buttons) => _section = section;
+    /// <summary>
+    /// Which section opens first. The configuration comes from the container — appsettings.json,
+    /// the environment and the command line, already merged — so `--section sliders` opens there
+    /// with nothing parsed here.
+    /// </summary>
+    public StudioShell(IConfiguration configuration) =>
+        _section = Enum.TryParse<GallerySection>(configuration["section"], ignoreCase: true, out var section)
+            ? section
+            : GallerySection.Buttons;
     private ThemeMode _mode = ThemeMode.Light;
 
     // The inspector drives the Buttons section's live specimen.

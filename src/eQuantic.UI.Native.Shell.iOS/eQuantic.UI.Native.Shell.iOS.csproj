@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj" />
+<ProjectReference Include="../eQuantic.UI.Native.Hosting/eQuantic.UI.Native.Hosting.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Engine/eQuantic.UI.Native.Engine.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Engine.Metal/eQuantic.UI.Native.Engine.Metal.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj" />

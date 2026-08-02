@@ -1,5 +1,6 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
+using Microsoft.Extensions.Configuration;
 
 namespace eQuantic.Wallet;
 
@@ -30,10 +31,20 @@ public sealed class WalletApp : StatefulComponent
     private bool _refreshing;
     private bool _rowOpen;
 
-    public WalletApp(WalletScreen screen = WalletScreen.Home)
+    private readonly IWalletLedger _ledger;
+
+    /// <summary>
+    /// Both arguments come from the container. The ledger is the app's own service; the
+    /// configuration is the one the host already assembled from appsettings.json, the environment
+    /// and the command line — so `--screen cards` opens on the cards screen with nothing parsed here.
+    /// </summary>
+    public WalletApp(IWalletLedger ledger, IConfiguration configuration)
     {
-        _screen = screen;
-        _tab = Math.Max(0, Array.FindIndex(WalletData.Tabs, t => t.Screen == screen));
+        _ledger = ledger;
+        _screen = Enum.TryParse<WalletScreen>(configuration["screen"], ignoreCase: true, out var screen)
+            ? screen
+            : WalletScreen.Home;
+        _tab = Math.Max(0, Array.FindIndex(WalletData.Tabs, tab => tab.Screen == _screen));
     }
 
     public override VisualNode Build(ComponentContext context)
@@ -64,7 +75,7 @@ public sealed class WalletApp : StatefulComponent
     {
         var greeting = new Column(gap: 0);
         greeting.Add(new Text("Good morning", TypeRole.BodyM, theme.TextMuted, maxLines: 1));
-        greeting.Add(new Text(WalletData.Owner, TypeRole.Heading, theme.TextPrimary, maxLines: 1));
+        greeting.Add(new Text(_ledger.HolderName, TypeRole.Heading, theme.TextPrimary, maxLines: 1));
 
         var head = new Row(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
         head.Add(new Flexible(greeting, 1));
@@ -96,7 +107,7 @@ public sealed class WalletApp : StatefulComponent
         content.Add(BalanceCard(theme));
         content.Add(filters);
         content.Add(recentHead);
-        content.Add(EntryCard(theme, WalletData.Recent));
+        content.Add(EntryCard(theme, _ledger.Recent));
         content.Add(new Banner(Variant.Warning, "Limit almost reached",
             "92% of April's transfer limit used."));
 
@@ -299,15 +310,15 @@ public sealed class WalletApp : StatefulComponent
         list.Add(SectionLabel(theme, "Today"));
 
         // The first row reveals its action on a swipe; the rest are plain.
-        list.Add(new SwipeableRow(EntryRow(theme, WalletData.Today[0]), "Dispute", Icons.Warning,
+        list.Add(new SwipeableRow(EntryRow(theme, _ledger.Today[0]), "Dispute", Icons.Warning,
             () => SetState(() => _rowOpen = false))
         {
             Open = _rowOpen,
             OnOpenChanged = open => SetState(() => _rowOpen = open),
         });
-        foreach (var entry in WalletData.Today.Skip(1)) list.Add(EntryRow(theme, entry));
+        foreach (var entry in _ledger.Today.Skip(1)) list.Add(EntryRow(theme, entry));
         list.Add(SectionLabel(theme, "Yesterday"));
-        foreach (var entry in WalletData.Yesterday) list.Add(EntryRow(theme, entry));
+        foreach (var entry in _ledger.Yesterday) list.Add(EntryRow(theme, entry));
         list.Add(PendingRow(theme));
 
         var page = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
