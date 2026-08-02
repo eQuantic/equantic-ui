@@ -212,7 +212,8 @@ public static class PatternConverter
         // model (`UiComponent`-derived: shared components and pages), which the reconciler's
         // `AdoptConfig(UiComponent next)` pattern-matches on. Everything else keeps the null-check:
         // enums lower to string literals, value types to plain config objects, exceptions to Error.
-        if (context.SemanticModel?.GetSymbolInfo(typeSyntax).Symbol is INamedTypeSymbol
+        if (context.SemanticHelper.Knows(typeSyntax)
+            && context.SemanticModel?.GetSymbolInfo(typeSyntax).Symbol is INamedTypeSymbol
             {
                 TypeKind: TypeKind.Class
             } named && DerivesFromUiComponent(named))

@@ -26,6 +26,7 @@ public class CompileTimeEvaluatedExpressionStrategy : IConversionStrategy
             return false;
 
         // Check if the expression's type is marked with [CompileTimeEvaluate]
+        if (!context.SemanticHelper.Knows(expression)) return false;
         var typeInfo = context.SemanticModel.GetTypeInfo(expression);
         if (typeInfo.Type == null)
             return false;
