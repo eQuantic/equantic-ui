@@ -41,6 +41,25 @@ public static class RuntimeProvidedTypeScanner
     public static void Collect(SyntaxNode root, SemanticModel model,
         ISet<string> runtimeProvided, ISet<string> enumTypes, ISet<string>? appTypes = null)
     {
+        // A `with` on a vocabulary record REBUILDS through the constructor —
+        // `theme.Type(role) with { Size = 15 }` emits `new TypeStyle({ … })` — and the name it
+        // constructs appears NOWHERE in the source, so no identifier sweep can find it. Same hole
+        // the target-typed `new(...)` had, and the same symptom: "TypeStyle is not defined", with
+        // no build error.
+        foreach (var with in root.DescendantNodes().OfType<WithExpressionSyntax>())
+        {
+            ITypeSymbol? rebuilt;
+            try { rebuilt = model.GetTypeInfo(with).Type; }
+            catch { continue; }
+            if (rebuilt is not INamedTypeSymbol { Name.Length: > 0 } named) continue;
+
+            var rebuiltNamespace = named.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+            if (IsRuntimeProvidedNamespace(rebuiltNamespace))
+                runtimeProvided.Add(named.Name);
+            else if (appTypes is not null && named.Locations.Any(l => l.IsInSource))
+                appTypes.Add(named.Name);
+        }
+
         foreach (var identifier in root.DescendantNodes().OfType<IdentifierNameSyntax>())
         {
             ISymbol? symbol;

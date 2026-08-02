@@ -391,4 +391,17 @@ public class SharedComponentTranspilationTests
         // The host composes the child positionally; the web store reconciles it by lowering path.
         modules["NestedHost"].Should().Contain("new NestedChild(");
     }
+
+    [Fact]
+    public void WithOverAPositionalVocabularyRecord_PatchesInsteadOfRebuilding()
+    {
+        // `theme.Type(TypeRole.Label) with { Size = … }` — TypeStyle's twin takes its arguments
+        // POSITIONALLY, so it cannot be built from one object, and a plain spread would drop the
+        // prototype. The name also appears nowhere in the source, which is how it used to reach the
+        // browser as "TypeStyle is not defined" with no build error.
+        var ts = TranspileSharedComponents()["SegmentedControl"];
+
+        ts.Should().Contain("$eq.withPatch(theme.type('label')");
+        ts.Should().NotContain("new TypeStyle(", "positional twins take arguments, not a config");
+    }
 }

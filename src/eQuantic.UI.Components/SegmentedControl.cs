@@ -33,14 +33,6 @@ public sealed class SegmentedControl : StatelessComponent
     /// <summary>Fills the available width; otherwise the control hugs its widest segment.</summary>
     public bool Stretch { get; init; } = true;
 
-    /// <summary>The Label role at the ladder's size for this control.</summary>
-    private static TypeStyle LabelStyle(IAppTheme theme, SizeVariant size)
-    {
-        var role = theme.Type(TypeRole.Label);
-        return new TypeStyle(Sizing.LabelSize(size), role.LineHeight, role.Weight, role.Tracking,
-            role.MaxScale);
-    }
-
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
@@ -73,7 +65,7 @@ public sealed class SegmentedControl : StatelessComponent
             label.Add(new Text(Segments[index], TypeRole.Label,
                 selected ? theme.TextPrimary : theme.TextSecondary, maxLines: 1)
             {
-                StyleOverride = LabelStyle(theme, Size),
+                StyleOverride = theme.Type(TypeRole.Label) with { Size = Sizing.LabelSize(Size) },
                 Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
             });
 

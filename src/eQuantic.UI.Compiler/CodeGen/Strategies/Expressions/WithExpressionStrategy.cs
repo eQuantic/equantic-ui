@@ -42,6 +42,18 @@ public class WithExpressionStrategy : IConversionStrategy
         // constructor instead: the config carries the copy plus the changes.
         if (type != null && IsRuntimeVocabulary(type))
         {
+            // Two shapes of hand-written twin, and the difference matters. A type built from an
+            // OBJECT INITIALIZER has a twin taking a trailing config, and it must be REBUILT through
+            // that constructor: the constructor is where a raw `44` becomes `SizeValue.fixed(44)`,
+            // and a copy that skips it silently loses the value. A POSITIONAL record's twin takes
+            // its arguments in order and cannot be built from one object, so it gets a
+            // prototype-preserving patch instead.
+            if (IsPositional(type))
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return $"{Eq.With}({receiver}, {{ {entries} }})";
+            }
+
             return $"new {type.Name}({{ ...{receiver}, {entries} }})";
         }
 
@@ -59,6 +71,14 @@ public class WithExpressionStrategy : IConversionStrategy
     /// Types the RUNTIME provides a hand-written twin for — the shared vocabulary. Same rule the
     /// object-creation path uses to choose a trailing config object over positional arguments.
     /// </summary>
+    /// <summary>
+    /// A POSITIONAL record — one whose members are its constructor's parameters, in order. The
+    /// compiler-generated <c>Deconstruct</c> is the giveaway, and unlike a syntax check it survives
+    /// the type arriving as metadata, which is how the framework reaches an app build.
+    /// </summary>
+    private static bool IsPositional(ITypeSymbol type) =>
+        type.GetMembers("Deconstruct").Any();
+
     private static bool IsRuntimeVocabulary(ITypeSymbol type)
     {
         var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;

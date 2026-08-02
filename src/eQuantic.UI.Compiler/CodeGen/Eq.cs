@@ -28,6 +28,10 @@ public static class Eq
     /// <summary>Lifted Nullable&lt;T&gt; relational — <c>false</c> if either operand is null.</summary>
     public const string LiftCmp = "$eq.nullable.cmp";
 
+    /// <summary>C# <c>with</c> over a runtime VALUE TYPE (TypeStyle, ColorToken) — a hand-written
+    /// twin has no generated <c>with</c>, and a spread would drop its prototype and its methods.</summary>
+    public const string With = "$eq.withPatch";
+
     /// <summary>Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct.</summary>
     public const string Equals = "$eq.equals";
 
