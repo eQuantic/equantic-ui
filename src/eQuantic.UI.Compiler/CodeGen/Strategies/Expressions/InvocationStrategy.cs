@@ -126,6 +126,7 @@ public class InvocationStrategy : IConversionStrategy
                 isLocal = true; // Heuristic
             }
 
+            ReportIfUntranslatable(symbol, invocation, context);
             return $"{caller}.{methodName.ToCamelCase()}({args})";
         }
 
@@ -180,7 +181,46 @@ public class InvocationStrategy : IConversionStrategy
             return $"this.{methodName.ToCamelCase()}({args})";
         }
 
+        ReportIfUntranslatable(symbol, invocation, context);
         return $"{methodName.ToCamelCase()}({args})";
+    }
+
+    /// <summary>
+    /// The fallback has reached a call the compiler has NO translation for. Emitting
+    /// <c>Enumerable.range(…)</c> and hoping is how a page dies in the browser with
+    /// "Enumerable is not defined" — long after the file and line that caused it stopped existing.
+    /// This puts that failure back at build time.
+    /// <para>
+    /// A call is translatable when the compiler can SEE its declaration: anything the app declares
+    /// becomes a module, so it stays silent. So does the framework, whose twins the runtime ships,
+    /// and a delegate invocation, which is just a call. What is left is a method that arrives as
+    /// metadata from somewhere the browser will never have — and that is the error.
+    /// </para>
+    /// </summary>
+    private static void ReportIfUntranslatable(IMethodSymbol? symbol, SyntaxNode node,
+        ConversionContext context)
+    {
+        if (symbol is null) return;
+        // Calling a delegate IS a call — `OnChanged(value)` needs no translation.
+        if (symbol.MethodKind is MethodKind.DelegateInvoke or MethodKind.LocalFunction) return;
+
+        var declaring = symbol.ContainingType;
+        if (declaring is null) return;
+        // Declared in this compilation → it becomes a module of its own.
+        if (declaring.Locations.Any(location => location.IsInSource)) return;
+        if (IsFrameworkProvided(declaring)) return;
+
+        context.Report(node, ConversionSeverity.Error, "EQ2004",
+            $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation. "
+            + "The transpiler only knows the constructs it maps explicitly; add a strategy for it, "
+            + "or move the call behind a [ServerAction].");
+    }
+
+    /// <summary>Namespaces whose twins the runtime ships — the framework itself, and its icon packs.</summary>
+    private static bool IsFrameworkProvided(ITypeSymbol type)
+    {
+        var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+        return ns == "eQuantic" || ns.StartsWith("eQuantic.");
     }
 
     /// <summary>

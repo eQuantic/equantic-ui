@@ -110,4 +110,26 @@ public class FailOnUnsupportedTests
 
         return (compilation.GetSemanticModel(tree), tree);
     }
+
+    [Theory]
+    [InlineData("System.Linq.Enumerable.Range(1, 3)")]
+    [InlineData("System.Guid.NewGuid().ToByteArray()")]
+    [InlineData("System.Text.Encoding.UTF8.GetBytes(\"x\")")]
+    public void UntranslatedFrameworkCall_RaisesError(string expression)
+    {
+        // The fallback used to emit `Enumerable.range(1, 3)` and let the browser explain it with
+        // "Enumerable is not defined". The file and line only exist at BUILD time — so does the fix.
+        TestHelper.DiagnosticsFor(expression)
+            .Should().Contain(d => d.Severity == ConversionSeverity.Error && d.Code == "EQ2004");
+    }
+
+    [Theory]
+    [InlineData("Id.Length")]                       // a property, not a call
+    [InlineData("Id.ToUpperInvariant()")]           // string methods ARE mapped
+    [InlineData("System.Math.Max(1, 2)")]           // as are the Math ones
+    public void TranslatedOrHarmlessCall_RaisesNothing(string expression)
+    {
+        TestHelper.DiagnosticsFor(expression)
+            .Should().NotContain(d => d.Code == "EQ2004");
+    }
 }
