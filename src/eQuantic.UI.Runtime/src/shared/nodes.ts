@@ -301,6 +301,8 @@ export interface TextNode extends VisualNodeValue {
   /** Line alignment within the paragraph ('start' | 'center' | 'end') — CSS text-align twin. */
   align?: string;
   /** Monospace face (code, versions) — the platform mono stack on web. */
+  /** Tabular figures (tnum) — a changing number must not shift its row. */
+  tabular?: boolean;
   mono?: boolean;
   /** Rich inline runs — rendered instead of `content` when present (wire of C# Text.Spans). */
   spans?: TextRunValue[] | null;
@@ -331,6 +333,8 @@ export interface PressableNode extends VisualNodeValue {
   label?: string | null;
   /** Pressed-state fill token — drives the generated `.eq-pressable:active` swap. */
   pressedBackground?: ColorTokenValue | null;
+  /** Selection for a toggling/picking button — lowers to aria-pressed. null = not selectable. */
+  selected?: boolean | null;
 }
 
 export interface FlexibleNode extends VisualNodeValue {

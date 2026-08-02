@@ -872,6 +872,7 @@ public static class WebRealizer
                 // Mono text is CODE (indentation survives); plain text only keeps its newlines.
                 WhiteSpace = text.Mono ? "pre-wrap" : text.Content.Contains('\n') ? "pre-line" : null,
                 FontFamily = text.Mono ? TokenCss.MonoStack : null,
+                FontVariantNumeric = text.Tabular ? "tabular-nums" : null,
                 // Spec S6: recolors glide (the design's transition-colors on nav labels/links).
                 Transition = text.Transition is { } transition ? TokenCss.Transition(transition) : null,
             },
@@ -996,6 +997,8 @@ public static class WebRealizer
             },
             Disabled = pressable.Disabled ? true : null,
             AriaLabel = pressable.Label,
+            // Selection stated, not merely painted — a fill colour says nothing to a screen reader.
+            AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
             OnClick = pressable.Disabled ? null : pressable.OnPressed,
         };
 

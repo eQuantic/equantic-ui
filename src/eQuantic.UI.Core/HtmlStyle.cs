@@ -115,6 +115,9 @@ public class HtmlStyle
 
     public string? Color { get; set; }
     public string? FontFamily { get; set; }
+
+    /// <summary>Figure style — <c>tabular-nums</c> keeps digits on a fixed advance.</summary>
+    public string? FontVariantNumeric { get; set; }
     public string? FontSize { get; set; }
     public string? FontWeight { get; set; }
     public string? FontStyle { get; set; }
@@ -243,6 +246,7 @@ public class HtmlStyle
 
         AddProperty(properties, "color", Color);
         AddProperty(properties, "font-family", FontFamily);
+        AddProperty(properties, "font-variant-numeric", FontVariantNumeric);
         AddProperty(properties, "font-size", FontSize);
         AddProperty(properties, "font-weight", FontWeight);
         AddProperty(properties, "font-style", FontStyle);
