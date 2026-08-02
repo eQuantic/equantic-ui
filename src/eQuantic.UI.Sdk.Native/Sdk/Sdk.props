@@ -112,21 +112,31 @@
     </PropertyGroup>
 
     <!--
-        The launcher icon, derived from Assets/AppIcon into Assets/.generated and picked up HERE, at
-        evaluation — because Android reads its resources before any target of ours can run.
-        That is also why these are CHECKED IN rather than ignored: a clean clone has to build with
-        the right icon on the first pass, and Android's own convention has always been that the
-        contents of a resources folder live in the repository. The SDK refreshes them whenever the
-        source icon changes; nobody edits them by hand.
+        The launcher icon, derived from Assets/AppIcon. Declared at EVALUATION, because that is when
+        Android collects its resources — but BY NAME rather than by wildcard, which is the whole
+        trick: an item with a literal path exists whether or not the file does, and the file only has
+        to be there when aapt reads it, which is after the target that writes it has run.
+        A wildcard is empty on a clean build, and forced everything else that was tried here — files
+        committed to the repository, and a generation pass at restore that silently broke the iOS
+        catalog. The set is fixed (five density buckets, one name), so naming them costs nothing.
+        Link is what makes a resource generated outside `Resources/` addressable at all, and it has
+        to carry the bucket — which an item transform cannot do, so the five are written out.
     -->
     <PropertyGroup>
         <EQuanticGeneratedAssetsDir Condition="'$(EQuanticGeneratedAssetsDir)' == ''">$(EQuanticAssetsDir)/.generated</EQuanticGeneratedAssetsDir>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_EqPlatform)' == 'android'">
-        <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/**/*.png">
-            <Link>Resources/%(RecursiveDir)%(Filename)%(Extension)</Link>
-        </AndroidResource>
+        <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/mipmap-mdpi/ic_launcher.png"
+                         Link="Resources/mipmap-mdpi/ic_launcher.png" />
+        <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/mipmap-hdpi/ic_launcher.png"
+                         Link="Resources/mipmap-hdpi/ic_launcher.png" />
+        <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/mipmap-xhdpi/ic_launcher.png"
+                         Link="Resources/mipmap-xhdpi/ic_launcher.png" />
+        <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/mipmap-xxhdpi/ic_launcher.png"
+                         Link="Resources/mipmap-xxhdpi/ic_launcher.png" />
+        <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/mipmap-xxxhdpi/ic_launcher.png"
+                         Link="Resources/mipmap-xxxhdpi/ic_launcher.png" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(_EqPlatform)' == 'android' AND '$(IsEQuanticDevMode)' == 'true'">

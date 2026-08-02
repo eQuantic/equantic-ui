@@ -1004,18 +1004,25 @@ edge to edge with insets honoured, and the tab bar navigating under a tap.
 ```
 Assets/
   AppIcon.png            the mark, stated ONCE. Or AppIcon.cs, an IAppIcon the engine draws.
-  .generated/
-    android/res/         mipmap-{m,h,x,xx,xxx}hdpi/ic_launcher.png — derived, and CHECKED IN.
+  .generated/            every platform's icon set, derived from it. Ignored, never committed.
 ```
 
-The iOS catalog and the web icon set are derived from the same `AppIcon` and land in `obj/` and
-`wwwroot/` respectively, because those are consumed by targets and by a server. Android's do NOT:
-its resources are collected during the build's EVALUATION, before any target of this SDK can run,
-so they have to be real files that already exist. That is also why they are committed rather than
-ignored — a clean clone has to build with the right icon on its first pass, and a resources folder
-living in the repository is Android's own convention. The SDK refreshes them whenever the source
-icon changes; nobody edits them by hand.
+Nothing is committed and no build is ever missing an icon. Two facts about MSBuild made that
+harder than it sounds, and both are now answered rather than worked around:
 
-The restore pass was tried first and rejected: generating there does make the files exist early
-enough for Android, and it silently breaks the iOS catalog, whose `ImageAsset` items are handed to
-Apple's packaging by a build target that must not have already run.
+- **Android validates that every declared resource EXISTS before any ordinary target runs** —
+  earlier than `BeforeBuild`, earlier than anything `BeforeTargets` can reach. The answer is
+  `InitialTargets`, which an imported project contributes to the one importing it and which runs
+  before the build's first target. Android only: running the shared icon target that early is
+  exactly what stops Apple's packaging from ever receiving its items.
+- **A wildcard is empty on a clean build.** Declaring the mipmaps by LITERAL path fixes that on its
+  own: an item with a literal path exists whether or not the file does, and the file only has to be
+  there when aapt reads it. The set is fixed — five density buckets, one name — so naming them costs
+  nothing. `Link` carries the bucket, which an item transform cannot.
+
+iOS's catalog stays in `obj/` and is handed to Apple's packaging by an ordinary target, which is
+what that packaging takes. The web set lands in `wwwroot/`, because a server serves it.
+
+Two designs were tried and rejected, both of which "worked" while hiding something: committing the
+generated mipmaps (a clean clone builds, but a deleted folder silently produces one bad build), and
+generating during RESTORE (Android is fixed, and the iOS catalog silently ships empty).
