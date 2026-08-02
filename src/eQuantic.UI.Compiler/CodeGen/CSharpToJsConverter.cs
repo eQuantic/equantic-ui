@@ -97,6 +97,10 @@ public class CSharpToJsConverter
 
     public void ClearDiagnostics() => _context.ClearDiagnostics();
 
+    /// <summary>Raises a diagnostic from OUTSIDE a strategy — the emitter's own whole-method checks.</summary>
+    public void Report(SyntaxNode node, ConversionSeverity severity, string code, string message) =>
+        _context.Report(node, severity, code, message);
+
     private void RegisterStrategies()
     {
         // Compile-Time Evaluation Strategy (Highest Priority - 100)
