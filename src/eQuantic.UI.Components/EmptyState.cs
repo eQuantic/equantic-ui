@@ -27,8 +27,7 @@ public sealed class EmptyState : StatelessComponent
     {
         var theme = context.Theme;
 
-        var wellContent = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
-        wellContent.Add(new Icon(Icon, IconSize.Lg, theme.TextMuted));
+        var wellContent = new Icon(Icon, IconSize.Lg, theme.TextMuted).Centered();
         var well = new Box(new BoxStyle
         {
             Width = 64,

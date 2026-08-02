@@ -6,8 +6,9 @@ namespace eQuantic.UI.Components;
 /// The design system's Checkbox (spec B11), CONTROLLED: the owner holds the value and passes
 /// <see cref="Checked"/> + <see cref="OnChanged"/>. Box 22×22 · Radius.Xs — unchecked: 2dp
 /// BorderStrong; checked: Primary fill + 16dp check glyph. The WHOLE row (box + 15/400 label,
-/// gap 12) is the target, hit ≥ 48 via the Pressable contract. v1 fences: the tristate dash glyph
-/// and the scale-pop motion join later; Error tints the border Destructive.
+/// gap 12) is the target, hit ≥ 48 via the Pressable contract. Tristate is real: a "select all"
+/// that is only partly true shows the DASH, never a tick. v1 fence: the scale-pop motion joins
+/// later; Error tints the border Destructive.
 /// </summary>
 public sealed class Checkbox : StatelessComponent
 {
@@ -26,22 +27,33 @@ public sealed class Checkbox : StatelessComponent
     /// <summary>Validation state (e.g. required terms) — Destructive border while unchecked.</summary>
     public bool Error { get; init; }
 
+    /// <summary>
+    /// PARTLY true — the "select all" box over a mixed set. It fills like a checked box but shows a
+    /// dash: a tick would claim every child is selected, which is exactly the thing that is not so.
+    /// Pressing it is the caller's call (usually: select all, then clear). Wins over
+    /// <see cref="Checked"/>, since indeterminate is a statement about the whole set.
+    /// </summary>
+    public bool Indeterminate { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
 
         var borderColor = Error ? theme.Colors(Variant.Destructive).Base : theme.BorderStrong;
-        var boxContent = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
-        if (Checked) boxContent.Add(new Icon(Icons.Check, IconSize.Sm, primary.OnBase));
+        var filled = Checked || Indeterminate;
+        VisualNode? glyph = Indeterminate ? new Icon(Icons.Minus, IconSize.Sm, primary.OnBase)
+            : Checked ? new Icon(Icons.Check, IconSize.Sm, primary.OnBase)
+            : null;
+        var boxContent = glyph?.Centered();
 
         var box = new Box(new BoxStyle
         {
             Width = 22,
             Height = 22,
-            Background = Checked ? primary.Base : null,
+            Background = filled ? primary.Base : null,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.ExtraSmall)),
-            BorderWidth = Checked ? 0f : 2f,
+            BorderWidth = filled ? 0f : 2f,
             BorderColor = borderColor,
         }, boxContent);
 
@@ -53,7 +65,7 @@ public sealed class Checkbox : StatelessComponent
         return new Pressable(row, Disabled ? null : OnChanged)
         {
             Disabled = Disabled,
-            Label = Label ?? (Checked ? "Checked" : "Unchecked"),
+            Label = Label ?? (Indeterminate ? "Partly selected" : Checked ? "Checked" : "Unchecked"),
         };
     }
 }

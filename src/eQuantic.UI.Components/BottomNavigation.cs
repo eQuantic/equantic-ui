@@ -50,8 +50,7 @@ public sealed class BottomNavigation : StatelessComponent
             var icon = new Icon(glyph, IconSize.Md, tint);
             var iconNode = item.BadgeCount > 0 ? BadgedIcon(icon, item.BadgeCount) : (VisualNode)icon;
 
-            var pillContent = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
-            pillContent.Add(iconNode);
+            var pillContent = iconNode.Centered();
             var pill = new Box(new BoxStyle
             {
                 Width = 56,

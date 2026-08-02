@@ -42,17 +42,15 @@ public sealed class RadioGroup : StatelessComponent
             var isSelected = i == Selected;
             var index = i;
 
-            var circleContent = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
-            if (isSelected)
-            {
-                circleContent.Add(new Box(new BoxStyle
+            var circleContent = isSelected
+                ? new Box(new BoxStyle
                 {
                     Width = 10,
                     Height = 10,
                     Background = primary.Base,
                     CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-                }));
-            }
+                }).Centered()
+                : null;
 
             var circle = new Box(new BoxStyle
             {

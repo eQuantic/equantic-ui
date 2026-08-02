@@ -59,8 +59,7 @@ public sealed class Badge : StatelessComponent
             StyleOverride = new TypeStyle(10, 12, FontWeight.Bold, 0, 1.3f),
         };
 
-        var content = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
-        content.Add(text);
+        var content = text.Centered();
 
         return new Box(new BoxStyle
         {

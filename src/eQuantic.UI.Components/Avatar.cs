@@ -92,8 +92,7 @@ public sealed class Avatar : StatelessComponent
                 StyleOverride = new TypeStyle(labelSize, labelSize, FontWeight.SemiBold, 0, 1.3f),
             }
             : new Icon(Icons.Person, glyphSize, theme.TextMuted);
-        var content = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
-        content.Add(face);
+        var content = face.Centered();
 
         var circle = new Box(new BoxStyle
         {
