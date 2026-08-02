@@ -7,11 +7,9 @@ namespace eQuantic.Wallet;
 /// eQUANTIC WALLET — the six-screen iOS sample from the handoff. No custom widgets: every screen is
 /// catalog components over the shared token core, which is the whole point of the exercise.
 /// <para>
-/// Written in the write-once vocabulary, so the same trees serve the browser. Two interactions are
-/// declared FENCES rather than faked: pull-to-refresh and the swipe-to-reveal row both need a
-/// continuous gesture with velocity, which the vocabulary does not have yet — the same fence the
-/// Switch's draggable thumb and the Slider's carry. A refresh spinner that never responds to a pull
-/// would be a lie told in pixels.
+/// Written in the write-once vocabulary, so the same trees serve the browser — including the two
+/// gestures: the transactions list pulls to refresh and its first row swipes to reveal, both on the
+/// same <see cref="Draggable"/> the vocabulary now carries.
 /// </para>
 /// </summary>
 public sealed class WalletApp : StatefulComponent
@@ -29,6 +27,8 @@ public sealed class WalletApp : StatefulComponent
     private int _cardsPerInvoice = 2;
     private int _theme;
     private string _pixKey = "marcos@ribeiro.dev";
+    private bool _refreshing;
+    private bool _rowOpen;
 
     public WalletApp(WalletScreen screen = WalletScreen.Home) => _screen = screen;
 
@@ -286,9 +286,16 @@ public sealed class WalletApp : StatefulComponent
         header.Add(tabs);
 
         var list = new Column(gap: 0) { Width = SizeValue.Fill };
-        list.Add(RefreshFence(theme));
         list.Add(SectionLabel(theme, "Today"));
-        foreach (var entry in WalletData.Today) list.Add(EntryRow(theme, entry));
+
+        // The first row reveals its action on a swipe; the rest are plain.
+        list.Add(new SwipeableRow(EntryRow(theme, WalletData.Today[0]), "Dispute", Icons.Warning,
+            () => SetState(() => _rowOpen = false))
+        {
+            Open = _rowOpen,
+            OnOpenChanged = open => SetState(() => _rowOpen = open),
+        });
+        foreach (var entry in WalletData.Today.Skip(1)) list.Add(EntryRow(theme, entry));
         list.Add(SectionLabel(theme, "Yesterday"));
         foreach (var entry in WalletData.Yesterday) list.Add(EntryRow(theme, entry));
         list.Add(PendingRow(theme));
@@ -300,26 +307,13 @@ public sealed class WalletApp : StatefulComponent
             Background = theme.Surface,
             Elevation = 2,
         }, header));
-        page.Add(new Flexible(new ScrollView(list), 1));
+        page.Add(new Flexible(new PullToRefresh(new ScrollView(list),
+            () => SetState(() => _refreshing = true))
+        {
+            Refreshing = _refreshing,
+        }, 1));
 
         return new SafeArea(page);
-    }
-
-    /// <summary>
-    /// The refresh indicator, SHOWN but not pullable: a continuous gesture with velocity is a
-    /// vocabulary fence, and a spinner that never responds to a pull would be a lie told in pixels.
-    /// </summary>
-    private static VisualNode RefreshFence(IAppTheme theme)
-    {
-        var row = new Row(gap: 0)
-        {
-            Width = SizeValue.Fill,
-            Height = 56,
-            Main = MainAlign.Center,
-            Cross = CrossAlign.Center,
-        };
-        row.Add(new Spinner(IconSize.Dense, theme.Colors(Variant.Primary).Base));
-        return row;
     }
 
     private static VisualNode SectionLabel(IAppTheme theme, string text) =>

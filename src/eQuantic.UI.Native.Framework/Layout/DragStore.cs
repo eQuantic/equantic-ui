@@ -15,6 +15,7 @@ public sealed class DragStore
     private sealed class Glide
     {
         public required float From;
+        public required float To;
         public required float StartMs;
     }
 
@@ -27,19 +28,27 @@ public sealed class DragStore
 
     public void BeginFrame() => AnyActive = false;
 
-    /// <summary>The pointer moved: the subtree follows raw (downward only — clamped at 0).</summary>
+    /// <summary>
+    /// The pointer moved: the subtree follows raw. SIGNED — a swipe-to-reveal travels negative and a
+    /// pull-to-refresh positive, and clamping to zero here would have made one of them impossible.
+    /// The CALLER's Min/Max clamp it; this store only remembers.
+    /// </summary>
     public void Drag(string path, float offset)
     {
         _glides.Remove(path);
-        _active[path] = Math.Max(0, offset);
+        _active[path] = offset;
     }
 
-    /// <summary>Released short of the threshold: glide from the current offset back to rest.</summary>
-    public void Release(string path, float timeMs)
+    /// <summary>
+    /// The finger lifted: glide from where it was left to where it should REST. That target is the
+    /// caller's answer, not zero — a row that stays open after a swipe rests at -96, and gliding it
+    /// back to zero would undo the gesture the moment it succeeded.
+    /// </summary>
+    public void Release(string path, float timeMs, float restOffset = 0f)
     {
-        if (_active.Remove(path, out var from) && from > 0)
+        if (_active.Remove(path, out var from) && Math.Abs(from - restOffset) > 0.01f)
         {
-            _glides[path] = new Glide { From = from, StartMs = timeMs };
+            _glides[path] = new Glide { From = from, To = restOffset, StartMs = timeMs };
         }
     }
 
@@ -50,8 +59,12 @@ public sealed class DragStore
         _glides.Remove(path);
     }
 
-    /// <summary>The offset to PAINT WITH this frame (0 = at rest).</summary>
-    public float Resolve(string path, float timeMs)
+    /// <summary>
+    /// The offset to PAINT WITH this frame. <paramref name="restOffset"/> is where the subtree sits
+    /// when nothing is happening — the caller's state, which is why it is asked for every frame
+    /// rather than remembered here.
+    /// </summary>
+    public float Resolve(string path, float timeMs, float restOffset = 0f)
     {
         if (_active.TryGetValue(path, out var offset)) return offset;
 
@@ -61,13 +74,13 @@ public sealed class DragStore
             if (t >= 1f)
             {
                 _glides.Remove(path);
-                return 0f;
+                return glide.To;
             }
             AnyActive = true;
             var eased = t * t * (3f - 2f * t); // smoothstep — the standard-curve stand-in
-            return glide.From * (1f - eased);
+            return glide.From + (glide.To - glide.From) * eased;
         }
 
-        return 0f;
+        return restOffset;
     }
 }

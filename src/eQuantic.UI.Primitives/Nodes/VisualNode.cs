@@ -602,6 +602,51 @@ public sealed class Presence : VisualNode
     public PresenceMotion Enter { get; init; }
 }
 
+/// <summary>The axis a <see cref="Draggable"/> follows. One at a time: a gesture that tracks both
+/// competes with the scroll it usually lives inside.</summary>
+public enum DragAxis : byte
+{
+    Vertical = 0,
+    Horizontal = 1,
+}
+
+/// <summary>
+/// A CONTINUOUS gesture (spec S9): the child follows the finger along one axis between
+/// <see cref="Min"/> and <see cref="Max"/>, and on release the caller is told where it ended so it
+/// can decide what that meant. Swipe-to-reveal, pull-to-refresh and a sheet's own detents are all
+/// this node plus a decision.
+/// <para>
+/// CONTROLLED like everything else: the node does not remember where it was left. The host tracks
+/// the LIVE finger, and <see cref="RestOffset"/> — which the caller owns — is where the child glides
+/// when the finger lifts. A row that stays open after a swipe is a caller that set RestOffset to
+/// -96 in <see cref="OnReleased"/>; one that springs back is a caller that left it at 0.
+/// </para>
+/// </summary>
+public sealed class Draggable : VisualNode
+{
+    public override string NodeKind => "draggable";
+
+    public Draggable(VisualNode child, Action<float>? onReleased = null)
+    {
+        Child = child;
+        OnReleased = onReleased;
+    }
+
+    public VisualNode Child { get; init; }
+
+    public DragAxis Axis { get; init; }
+
+    /// <summary>Travel limits along the axis. Negative is up / towards the start.</summary>
+    public float Min { get; init; }
+    public float Max { get; init; }
+
+    /// <summary>Where the child sits when no finger is on it — the CALLER's state, not the node's.</summary>
+    public float RestOffset { get; init; }
+
+    /// <summary>The offset at the moment of release. The caller decides what it meant.</summary>
+    public Action<float>? OnReleased { get; init; }
+}
+
 /// <summary>
 /// Gestures v2 — VERTICAL drag-to-dismiss (the sheet contract): the child follows a downward drag
 /// (paint-only translate — layout untouched); releasing past <see cref="ThresholdDp"/> fires

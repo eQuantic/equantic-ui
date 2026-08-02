@@ -130,6 +130,9 @@ public static class LayoutEngine
         Anchored anchored => MeasureWrapper(anchored, anchored.Anchor, maxW, maxH, ctx, path),
         ScrollView scroll => MeasureScrollView(scroll, maxW, maxH, ctx, path),
         // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
+        // A continuous gesture is layout-transparent: the offset is a PAINT translate, exactly like
+        // the sheet's. Re-laying out under a finger would fight the scroll it usually lives in.
+        Draggable draggable => MeasureDraggable(draggable, maxW, maxH, ctx, path),
         Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx, path),
         Text text => MeasureText(text, maxW, ctx),
         TextEntry entry => MeasureTextEntry(entry, maxW, ctx),
@@ -227,6 +230,18 @@ public static class LayoutEngine
     {
         var result = MeasureWrapper(drag, drag.Child, maxW, maxH, ctx, path);
         result.DragOffset = ctx.Drags?.Resolve(path, ctx.TimeMs) ?? 0f;
+        result.DragPath = path;
+        return result;
+    }
+
+    /// <summary>The live offset for this gesture — the finger while it is down, the glide after it
+    /// lifts, and the caller's RestOffset when neither is happening.</summary>
+    private static LayoutNode MeasureDraggable(Draggable draggable, float maxW, float maxH,
+        LayoutContext ctx, string path)
+    {
+        var result = MeasureWrapper(draggable, draggable.Child, maxW, maxH, ctx, path);
+        result.DragOffset = ctx.Drags?.Resolve(path, ctx.TimeMs, draggable.RestOffset)
+            ?? draggable.RestOffset;
         result.DragPath = path;
         return result;
     }
@@ -893,6 +908,7 @@ public static class LayoutEngine
         Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
         // Layout-transparent wrappers delegate to what they wrap.
         Sticky sticky => CrossSizeKind(sticky.Child, horizontal),
+        Draggable draggable => CrossSizeKind(draggable.Child, horizontal),
         SafeArea safeArea => CrossSizeKind(safeArea.Child, horizontal),
         Presence presence => CrossSizeKind(presence.Child, horizontal),
         LoopMotion loop => CrossSizeKind(loop.Child, horizontal),

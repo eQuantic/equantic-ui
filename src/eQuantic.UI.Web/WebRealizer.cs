@@ -66,6 +66,7 @@ public static class WebRealizer
         LoopMotion motion => LowerLoopMotion(motion, context),
         Presence presence => LowerPresence(presence, context, horizontalAxis),
         DragDismiss drag => LowerDragDismiss(drag, context, horizontalAxis),
+        Draggable draggable => LowerDraggable(draggable, context, horizontalAxis),
         Flexible flexible => LowerFlexible(flexible, context, horizontalAxis),
         Spacer spacer => LowerSpacer(spacer, horizontalAxis),
         UiComponent component => LowerNode(component.Build(context), context, horizontalAxis),
@@ -1128,6 +1129,42 @@ public static class WebRealizer
     /// pointer-capture controller drives the actual drag (the server only emits the marker; the
     /// dismiss callback attaches client-side through the lowering mirror's custom event).
     /// </summary>
+    /// <summary>
+    /// A continuous gesture: the child carries its RULES as data, and one document-level controller
+    /// in the runtime does the tracking. The rest offset is a plain transform, so a row that is
+    /// already open renders open on the server too, before any script has run.
+    /// </summary>
+    private static HtmlElement? LowerDraggable(Draggable draggable, ComponentContext context,
+        bool? horizontalAxis)
+    {
+        if (LowerNode(draggable.Child, context, horizontalAxis) is not RealizedElement child) return null;
+
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        child.RawAttributes ??= new Dictionary<string, string>();
+        child.RawAttributes["data-eq-drag"] = draggable.Axis == DragAxis.Horizontal ? "x" : "y";
+        child.RawAttributes["data-eq-drag-min"] = draggable.Min.ToString(culture);
+        child.RawAttributes["data-eq-drag-max"] = draggable.Max.ToString(culture);
+        child.RawAttributes["data-eq-drag-rest"] = draggable.RestOffset.ToString(culture);
+
+        if (draggable.RestOffset != 0)
+        {
+            child.Style ??= new HtmlStyle();
+            child.Style.Transform = draggable.Axis == DragAxis.Horizontal
+                ? $"translateX({TokenCss.Px(draggable.RestOffset)})"
+                : $"translateY({TokenCss.Px(draggable.RestOffset)})";
+            child.Style.Transition = $"transform {Motion.BaseMs}ms";
+        }
+
+        // The release callback rides the SSR bridge the same way every other handler does; the
+        // client half reads the offset off the event the controller dispatches.
+        if (draggable.OnReleased is { } released)
+        {
+            child.CustomEvents["eq-drag-released"] = released;
+        }
+
+        return child;
+    }
+
     private static HtmlElement? LowerDragDismiss(DragDismiss drag, ComponentContext context, bool? horizontalAxis)
     {
         if (LowerNode(drag.Child, context, horizontalAxis) is not { } child) return null;

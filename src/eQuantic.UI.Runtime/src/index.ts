@@ -140,6 +140,8 @@ export {
   Link,
   Spinner,
   CuratedIcons,
+  Draggable,
+  SafeArea,
 } from './shared/vocabulary';
 export {
   Color,
