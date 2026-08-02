@@ -58,6 +58,15 @@ public class MemberAccessStrategy : IConversionStrategy
                 def.StartsWith("System.Collections.Generic.IDictionary") ||
                 def.StartsWith("System.Collections.Generic.IReadOnlyDictionary"))
                 return $"Object.keys({expr}).length";
+
+            // A USER type with its own `Count` is not a collection — its property emits as
+            // `get count()`, and rewriting the read to `.length` returned undefined. `.length` stays
+            // the answer for every real sequence, and for an unresolved receiver (untyped code,
+            // where guessing array is the useful default).
+            var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
+            if (receiverType is not null && receiverType.Locations.Any(location => location.IsInSource))
+                return $"{expr}.{name.ToCamelCase()}";
+
             return $"{expr}.length";
         }
 

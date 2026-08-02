@@ -107,6 +107,16 @@ public class ComponentCompiler
                 return result;
             }
 
+            // Plain class — its own module of INSTANCE members.
+            if (component.IsPlainClass &&
+                component.ValueTypeSyntax is Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax plainClass)
+            {
+                var pm = component.SyntaxTree != null ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree) : null;
+                result.TypeScript = _tsEmitter.EmitPlainClassModule(plainClass, pm);
+                result.Success = true;
+                return result;
+            }
+
             // Static utility class — emit as its own module of static members.
             if (component.IsStaticHelper &&
                 component.ValueTypeSyntax is Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax staticClass)

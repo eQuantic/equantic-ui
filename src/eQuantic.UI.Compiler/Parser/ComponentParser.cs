@@ -192,6 +192,9 @@ public class ComponentParser
             }
         }
 
+        // A PLAIN class — not a component, not static, not a state class — is a model the developer
+        // wrote: a bucket, a builder, a small state machine. Nothing emitted one, so `new Bucket()`
+        // named something that did not exist. Identity, not value: no structural equals, no `with`.
         foreach (var classDecl in classes)
         {
             if (classDecl.Parent is TypeDeclarationSyntax) continue;          // nested: its owner's scope
@@ -206,7 +209,7 @@ public class ComponentParser
                 SourcePath = sourcePath,
                 SyntaxTree = tree,
                 Namespace = ns ?? "",
-                IsRecordType = true,
+                IsPlainClass = true,
                 ValueTypeSyntax = classDecl,
             });
         }

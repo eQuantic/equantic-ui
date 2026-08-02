@@ -402,4 +402,42 @@ public class AuthoringCoverageTests
 
         TsOfResolved("C", src).Should().Contain("new Bucket()").And.NotContain("Bucket<string>");
     }
+
+    [Fact]
+    public void PlainClass_EmitsAsItsOwnModuleOfInstanceMembers()
+    {
+        // A class that is not a record, not static and not a component used to emit NOTHING, so
+        // `new Bucket()` named something that did not exist. Identity, not value: no structural
+        // equals, no `with`.
+        var src = "public class Bucket { " +
+                  "  private readonly List<string> _items = new(); " +
+                  "  private int _adds; " +
+                  "  public Bucket(int seed = 0) => _adds = seed; " +
+                  "  public int Count => _items.Count; " +
+                  "  public void Add(string item) { _items.Add(item); _adds++; } } " +
+                  "public class C : StatelessComponent { " +
+                  "  public override IComponent Build(RenderContext c) => " +
+                  "    new Text(new Bucket().Count.ToString()); }";
+        var ts = TsOfResolved("Bucket", src);
+
+        ts.Should().Contain("constructor(seed = 0)");
+        ts.Should().Contain("this._items = []", "field initialisers run before the constructor body");
+        ts.Should().Contain("get count()");
+        ts.Should().Contain("add(item)");
+        ts.Should().NotContain("equals(o", "a class is identity, not value");
+        ts.Should().NotContain(" with(patch");
+    }
+
+    [Fact]
+    public void CountOnAUserType_ReadsItsOwnProperty()
+    {
+        // `.Count` is `.length` for a sequence — but a user type's Count emits as `get count()`,
+        // and rewriting the read to `.length` returned undefined.
+        var src = "public class Bucket { public int Count => 3; } " +
+                  "public class C : StatelessComponent { " +
+                  "  public override IComponent Build(RenderContext c) => " +
+                  "    new Text(new Bucket().Count.ToString()); }";
+
+        TsOfResolved("C", src).Should().Contain(".count").And.NotContain("Bucket().length");
+    }
 }
