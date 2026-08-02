@@ -1,0 +1,13 @@
+<Project>
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+    <!--
+        The app manifest an iOS app cannot do without. UILaunchScreen is the one that is not
+        cosmetic: without it iOS runs the app in a compatibility window and every safe-area inset it
+        reports belongs to that fiction rather than to the phone. An app that wants different
+        orientations states them in its own Info.plist — app keys win over these.
+    -->
+    <ItemGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(OutputType)' == 'Exe'">
+        <PartialAppManifest Include="$(MSBuildThisFileDirectory)PhotonApp.plist" />
+    </ItemGroup>
+</Project>

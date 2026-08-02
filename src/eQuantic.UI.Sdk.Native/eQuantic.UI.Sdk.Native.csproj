@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <IsPackable>true</IsPackable>
+        <PackageId>eQuantic.UI.Sdk.Native</PackageId>
+        <Description>MSBuild SDK for eQuantic UI apps on devices: an app names the platforms it runs on and writes C#. The shells, the platform minimums and the app manifest come from here.</Description>
+        <PackageType>MSBuildSdk</PackageType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="Sdk\**" PackagePath="Sdk" />
+    </ItemGroup>
+
+</Project>

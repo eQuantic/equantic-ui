@@ -823,3 +823,25 @@ and the list pulls to refresh. The desktop head builds and self-tests from the S
 
 Open: a per-platform metallib (a shader compile at first launch until then), a real device run
 (signing), and an SDK-generated Info.plist so an app author never has to know about `UILaunchScreen`.
+
+### Track W2 — the app writes C# and nothing else (2026-08-02)
+
+`eQuantic.UI.Sdk.Native`, the device sibling of the web SDK. An app names the platforms it runs on
+and writes C#; the SDK supplies the vocabulary, the component library, the shell for each target,
+the platform minimum, and the app manifest. The Wallet is now ONE project with two target
+frameworks and a `#if IOS` at the entry point — its only non-`.cs` file is a fifteen-line csproj
+that names two TFMs and a bundle id.
+
+What that removed, each of which was a thing an app author had to KNOW:
+
+- **The Info.plist.** `UILaunchScreen` is not cosmetic — without it iOS runs the app in a
+  compatibility window and every safe-area inset belongs to that fiction. The SDK merges it through
+  `PartialAppManifest`, and an app that wants different orientations still states its own.
+- **Which shell to reference.** It follows from the target framework, so it is not a choice.
+- **`SupportedOSPlatformVersion`.** 15.0 is where CAMetalLayer, safe-area insets and
+  MTLBinaryArchive are all present; picking it is the framework's job, not the app's.
+- **The second project.** A phone head and a desktop head were two csprojs and a set of linked
+  files; they are one project and one `#if`.
+
+Verified end to end: the app installs and runs full screen on an iPhone 17 simulator with the tab
+bar navigating, and the same source self-tests at 120 frames through the desktop head.

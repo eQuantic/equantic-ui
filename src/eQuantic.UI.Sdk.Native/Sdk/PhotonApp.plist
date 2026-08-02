@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	    Merged into every Photon app's Info.plist by the shell, so no app author ever has to learn
+	    this file exists.
+
+	    UILaunchScreen is the one that is NOT cosmetic: without it iOS runs the app in a
+	    compatibility window — letterboxed, at a size no device has — and every safe-area inset it
+	    reports belongs to that fiction rather than to the phone. An empty dictionary is the whole
+	    declaration, which is right for an app whose first frame is drawn by the engine.
+
+	    An app that wants different orientations, or its own launch appearance, states them in its
+	    own Info.plist: app keys win over these.
+	-->
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>metal</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+</dict>
+</plist>
