@@ -126,6 +126,8 @@ public static class LayoutEngine
         Image image => new LayoutNode(image) { Bounds = new Rect(0, 0, image.Width, image.Height) },
         // Icons are a fixed square em-box (§07 whitelist) and ignore Dynamic Type (spec A10).
         Icon icon => new LayoutNode(icon) { Bounds = new Rect(0, 0, icon.Size, icon.Size) },
+        // A vector is the same square em-box, at the size the author asked for.
+        Vector vector => new LayoutNode(vector) { Bounds = new Rect(0, 0, vector.Size, vector.Size) },
         // The Spinner shares the icon em-box contract (spec B15: sizes = the §07 whitelist).
         Spinner spinner => new LayoutNode(spinner) { Bounds = new Rect(0, 0, spinner.Size, spinner.Size) },
         Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx, path),
@@ -850,6 +852,7 @@ public static class LayoutEngine
         // Always-explicit nodes: their constructors demand a size — stretch must never override.
         Image => SizeKind.Fixed,
         Icon => SizeKind.Fixed,
+        Vector => SizeKind.Fixed,
         Spinner => SizeKind.Fixed,
         Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
         // Layout-transparent wrappers delegate to what they wrap.

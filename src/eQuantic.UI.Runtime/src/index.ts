@@ -125,6 +125,7 @@ export {
   Stack,
   Positioned,
   Icon,
+  Vector,
   IconGlyph,
   Image,
   ScrollView,

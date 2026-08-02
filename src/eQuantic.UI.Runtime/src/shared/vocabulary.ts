@@ -867,6 +867,30 @@ export class Icon extends VisualNode {
   }
 }
 
+/** Mirror of the C# `Vector`: the same glyph data an icon carries, at ANY size. */
+export class Vector extends VisualNode {
+  readonly nodeKind = 'vector';
+  glyph: IconGlyph;
+  size: number;
+  color: ColorTokenValue | null;
+  label: string | null;
+
+  constructor(
+    glyph: IconGlyph,
+    size: number,
+    color: ColorTokenValue | null = null,
+    label: string | null = null,
+    config?: EqConfig,
+  ) {
+    super();
+    this.glyph = glyph;
+    this.size = size;
+    this.color = color;
+    this.label = label;
+    if (config) Object.assign(this, config);
+  }
+}
+
 export class Stack extends VisualNode {
   readonly nodeKind = 'stack';
   align: string;

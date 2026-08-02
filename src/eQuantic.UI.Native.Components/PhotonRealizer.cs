@@ -463,6 +463,25 @@ public static class PhotonRealizer
                 break;
             }
 
+            case Vector vector:
+            {
+                // The vector rides the SAME rasterizer as an icon — one tinted A8 raster per
+                // (glyph, size, scale). No service → the icon placeholder disc, same contract.
+                if (motion.IconRasterizer is { } vectorIcons
+                    && (motion.IconCache ?? IconRasterCache.Shared)
+                        .Get(vectorIcons, vector.Glyph, vector.Size, motion.RenderScale) is { } vectorRaster)
+                {
+                    var vectorTint = (vector.Color ?? theme.TextPrimary).Resolve(mode);
+                    builder.Texture(node.Bounds, vectorTint, vectorRaster);
+                    break;
+                }
+                var vectorPlaceholder = (vector.Color ?? theme.TextPrimary).Resolve(mode).WithOpacity(0.30f);
+                builder.FillRRect(
+                    new RRect(node.Bounds, new CornerRadii(node.Bounds.Width / 2)),
+                    Paint.Solid(vectorPlaceholder));
+                break;
+            }
+
             case Spinner spinner:
                 EmitSpinner(node, spinner, theme, mode, builder, motion);
                 break;

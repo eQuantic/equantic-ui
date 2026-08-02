@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
-import { Icon, IconGlyph } from './vocabulary';
+import { Icon, IconGlyph, Vector } from './vocabulary';
 import { SharedStatefulComponent } from '../core/component';
 
 setPhotonTheme(photonTheme);
@@ -89,5 +89,15 @@ describe('inlined pack glyph in a client re-render', () => {
     expect(svgFill()).toBe('currentColor'); // heart is a fill glyph
 
     container.remove();
+  });
+
+  it('a vector lowers like an icon at an authored size (C# cross-pin)', () => {
+    const glyph = new IconGlyph('sunburst', 'M10 10 L90 10 L90 90 Z', 'fill', '0 0 100 100');
+    const node = lower(new Vector(glyph, 300, photonTheme.textPrimary));
+
+    expect(node.tag).toBe('svg');
+    expect(node.attributes['viewBox']).toBe('0 0 100 100');
+    expect(node.attributes['fill']).toBe('currentColor');
+    expect(node.children[0]?.attributes['d']).toBe('M10 10 L90 10 L90 90 Z');
   });
 });
