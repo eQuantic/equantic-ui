@@ -42,7 +42,14 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             .Where(static program => program is not null)
             .Collect();
 
-        context.RegisterSourceOutput(context.CompilationProvider.Combine(programs), Emit!);
+        // Whether this app declared an app icon — the SDK makes the property compiler-visible.
+        var icon = context.AnalyzerConfigOptionsProvider.Select(static (options, _) =>
+            options.GlobalOptions.TryGetValue("build_property.EQuanticAppIconSource", out var source)
+            && !string.IsNullOrWhiteSpace(source));
+
+        context.RegisterSourceOutput(
+            context.CompilationProvider.Combine(programs).Combine(icon),
+            static (context, input) => Emit(context, input.Left.Left, input.Left.Right, input.Right));
     }
 
     /// <summary>The shape that counts: public, static, one string[], returning a PhotonApplication.</summary>
@@ -59,10 +66,9 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
         return method.ContainingType;
     }
 
-    private static void Emit(SourceProductionContext context,
-        (Compilation Compilation, System.Collections.Immutable.ImmutableArray<INamedTypeSymbol> Programs) input)
+    private static void Emit(SourceProductionContext context, Compilation compilation,
+        System.Collections.Immutable.ImmutableArray<INamedTypeSymbol?> programs, bool hasIcon)
     {
-        var (compilation, programs) = input;
         // Nothing to write for a library that merely REFERENCES the hosting assembly.
         if (compilation.GetTypeByMetadataName(ApplicationType) is null) return;
 
@@ -121,6 +127,10 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             activity.AppendLine("#nullable enable");
             activity.AppendLine();
             activity.AppendLine("/// <summary>The launcher: this app's screen, hosted by the Photon activity.</summary>");
+            // The launcher icon is not named here yet: Android collects its resources in a nested
+            // build whose evaluation precedes anything this SDK writes, so generated mipmaps never
+            // reach aapt. Naming one that is not in the package fails the build outright.
+            _ = hasIcon;
             activity.AppendLine("[global::Android.App.Activity(");
             activity.AppendLine("    MainLauncher = true,");
             activity.AppendLine("    Exported = true,");
