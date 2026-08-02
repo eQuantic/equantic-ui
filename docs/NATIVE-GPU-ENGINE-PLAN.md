@@ -998,3 +998,24 @@ it to be guessed from a screenshot.
 
 Verified on an emulator (API 36, host GPU): `Photon: presenting through Vulkan`, the Wallet drawn
 edge to edge with insets honoured, and the tab bar navigating under a tap.
+
+### Assets — where an app's platform inputs live (2026-08-02)
+
+```
+Assets/
+  AppIcon.png            the mark, stated ONCE. Or AppIcon.cs, an IAppIcon the engine draws.
+  .generated/
+    android/res/         mipmap-{m,h,x,xx,xxx}hdpi/ic_launcher.png — derived, and CHECKED IN.
+```
+
+The iOS catalog and the web icon set are derived from the same `AppIcon` and land in `obj/` and
+`wwwroot/` respectively, because those are consumed by targets and by a server. Android's do NOT:
+its resources are collected during the build's EVALUATION, before any target of this SDK can run,
+so they have to be real files that already exist. That is also why they are committed rather than
+ignored — a clean clone has to build with the right icon on its first pass, and a resources folder
+living in the repository is Android's own convention. The SDK refreshes them whenever the source
+icon changes; nobody edits them by hand.
+
+The restore pass was tried first and rejected: generating there does make the files exist early
+enough for Android, and it silently breaks the iOS catalog, whose `ImageAsset` items are handed to
+Apple's packaging by a build target that must not have already run.
