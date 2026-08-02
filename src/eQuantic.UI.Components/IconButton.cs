@@ -85,8 +85,7 @@ public sealed class IconButton : StatelessComponent
         }
 
         var glyph = Selected && SelectedGlyph is { } filledGlyph ? filledGlyph : Glyph;
-        var content = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
-        content.Add(new Icon(glyph, iconSize, tint));
+        var content = new Icon(glyph, iconSize, tint).Centered();
 
         var box = new Box(new BoxStyle
         {

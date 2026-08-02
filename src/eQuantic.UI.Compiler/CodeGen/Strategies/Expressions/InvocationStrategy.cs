@@ -101,6 +101,13 @@ public class InvocationStrategy : IConversionStrategy
             // their dedicated strategies run at higher priority.
             if (symbol is { IsExtensionMethod: true, ReducedFrom: not null, ContainingType: not null })
             {
+                // An extension over the RUNTIME VOCABULARY has no module to go home to — the
+                // hand-written twin carries the behaviour as an instance method, so the reduced
+                // form survives as a reduced form. Importing the C#-side static class would ask
+                // for a file the runtime never emits.
+                if (IsRuntimeVocabulary(symbol.ContainingType))
+                    return $"{caller}.{methodName.ToCamelCase()}({args})";
+
                 // The declaring class never appears in the SOURCE (the call is reduced), so the
                 // syntax-walking import collector can't see it — register the name we introduced.
                 context.UsedAppTypes.Add(symbol.ContainingType.Name);
@@ -174,6 +181,16 @@ public class InvocationStrategy : IConversionStrategy
         }
 
         return $"{methodName.ToCamelCase()}({args})";
+    }
+
+    /// <summary>
+    /// Types the RUNTIME provides a hand-written twin for — the shared vocabulary. Same rule the
+    /// object-creation and <c>with</c> paths use.
+    /// </summary>
+    private static bool IsRuntimeVocabulary(ITypeSymbol type)
+    {
+        var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+        return ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives.");
     }
 
     public int Priority => 1; // Lowest priority (fallback)

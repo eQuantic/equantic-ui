@@ -52,6 +52,16 @@ export abstract class VisualNode {
   getVirtualNode(): HtmlNode {
     return this.render();
   }
+  /**
+   * C# twin of `VisualNodeExtensions.Centered()` — this node in the MIDDLE of whatever contains it.
+   * A Box has no alignment of its own, and centring needs slack, so the wrapper fills both axes.
+   */
+  centered(): VisualNode {
+    const row = new Row(0, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
+    row.add(this);
+    return row;
+  }
+
 }
 
 /**
