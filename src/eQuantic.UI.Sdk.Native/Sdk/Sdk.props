@@ -28,6 +28,11 @@
         <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
     </PropertyGroup>
 
+    <!-- 26 is where adaptive icons, the Choreographer's frame callback and Vulkan all arrived. -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == 'android' AND '$(SupportedOSPlatformVersion)' == ''">
+        <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    </PropertyGroup>
+
     <!-- The vocabulary, the component library, and the host an app is built and run through:
          the same three on every device. -->
     <ItemGroup Condition="'$(IsEQuanticDevMode)' == 'true'">
@@ -47,6 +52,26 @@
     </ItemGroup>
     <ItemGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(IsEQuanticDevMode)' != 'true'">
         <PackageReference Include="eQuantic.UI.Native.Shell.iOS" Version="$(EQuanticUIVersion)" />
+    </ItemGroup>
+
+    <!--
+        Android's SDK puts its widget toolkit into every file implicitly, and half of it shares names
+        with the vocabulary: Button, Dialog, ProgressBar, ScrollView, Space, Switch. A Photon app
+        draws with the VOCABULARY, so those go back to being types you ask for by name. An app that
+        genuinely wants an Android view still writes one `using` and gets it.
+    -->
+    <ItemGroup Condition="'$(_EqPlatform)' == 'android'">
+        <Using Remove="Android.App" />
+        <Using Remove="Android.Widget" />
+        <Using Remove="Android.Views" />
+        <Using Remove="Android.Content" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(_EqPlatform)' == 'android' AND '$(IsEQuanticDevMode)' == 'true'">
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Shell.Android\eQuantic.UI.Native.Shell.Android.csproj" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(_EqPlatform)' == 'android' AND '$(IsEQuanticDevMode)' != 'true'">
+        <PackageReference Include="eQuantic.UI.Native.Shell.Android" Version="$(EQuanticUIVersion)" />
     </ItemGroup>
 
     <!-- No target platform: the desktop head, which is where a phone app is iterated on. The
