@@ -46,10 +46,18 @@ public sealed class MetalDevice : IRhiDevice
     private readonly bool _binaryArchiveExisted;
     private readonly Dictionary<(ulong Format, RhiPipelineKind Kind), IntPtr> _pipelines = new();
 
+    /// <summary>Every platform whose system Metal library this process can talk to.</summary>
+    internal static bool IsApple =>
+        OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst()
+        || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS();
+
     public MetalDevice()
     {
-        if (!OperatingSystem.IsMacOS())
-            throw new PlatformNotSupportedException("The Metal backend requires macOS/Apple hardware.");
+        // Metal is Apple's, not the Mac's: the same device, queue and pipelines back a phone, an
+        // iPad and a Mac. Naming only macOS here is what kept the engine off the platform it was
+        // written for.
+        if (!IsApple)
+            throw new PlatformNotSupportedException("The Metal backend requires Apple hardware.");
 
         _device = ObjC.MTLCreateSystemDefaultDevice();
         if (_device == IntPtr.Zero)
@@ -60,7 +68,11 @@ public sealed class MetalDevice : IRhiDevice
         // D3: the PRECOMPILED metallib loads first — zero runtime shader compilation (the
         // engine's founding thesis). The MSL source path stays as the dev fallback. The loaded
         // bytes also FINGERPRINT the cross-launch binary archive: a new shader targets a new file.
-        var metallib = ReadResource("Photon.Sdf.metallib");
+        // A metallib is built for ONE target: the committed one is macOS's, and it loads on the
+        // simulator only to fail at the first pipeline, saying so. Until generate-shaders.sh emits
+        // an artifact per platform, everywhere else takes the MSL path — which iOS allows, and
+        // which is the same source the metallib was compiled from.
+        var metallib = OperatingSystem.IsMacOS() ? ReadResource("Photon.Sdf.metallib") : null;
         var library = metallib is null ? IntPtr.Zero : LoadLibraryFromData(metallib);
         byte[] shaderBytes;
         if (library != IntPtr.Zero)
@@ -69,8 +81,12 @@ public sealed class MetalDevice : IRhiDevice
         }
         else
         {
+            // Real MTLCompileOptions, not nil: the simulator's loader refuses to pick a target
+            // architecture without them ("Target device architecture is nil"), where macOS is
+            // happy to infer one.
+            var options = ObjC.Send(ObjC.Send(ObjC.objc_getClass("MTLCompileOptions"), Sel("alloc")), Sel("init"));
             library = ObjC.Send(_device, Sel("newLibraryWithSource:options:error:"),
-                ObjC.NSString(MetalShaders.Source), IntPtr.Zero, out var libraryError);
+                ObjC.NSString(MetalShaders.Source), options, out var libraryError);
             if (library == IntPtr.Zero)
                 throw new InvalidOperationException(
                     $"MSL compilation failed: {DescribeError(libraryError)}");
@@ -221,8 +237,18 @@ public sealed class MetalDevice : IRhiDevice
     /// <summary>Opens the on-disk binary archive for this shader fingerprint: loads it when
     /// present, starts empty on first launch (or when the file is corrupt — deleted and rebuilt).
     /// Zero on any failure — caching degrades, the device never does.</summary>
+    /// <summary>
+    /// The simulator has no GPU of its own to compile FOR, and asking it to serialize an archive is
+    /// not an error it reports — it is an assertion that takes the process with it. There is nothing
+    /// to save there anyway: the archive exists to skip a real driver's compilation on a real
+    /// device, which is where it stays switched on.
+    /// </summary>
+    private static bool OnSimulator =>
+        Environment.GetEnvironmentVariable("SIMULATOR_UDID") is not null;
+
     private (IntPtr Archive, string Path, bool Existed) TryOpenBinaryArchive(byte[] shaderBytes)
     {
+        if (OnSimulator) return (IntPtr.Zero, string.Empty, false);
         if (!PipelineCache.TryGetFile("Sdf", shaderBytes, ".metalarchive", out var path))
             return (IntPtr.Zero, string.Empty, false);
         var descriptorClass = ObjC.objc_getClass("MTLBinaryArchiveDescriptor");

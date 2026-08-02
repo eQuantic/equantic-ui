@@ -45,6 +45,13 @@ public sealed class PhotonHost
     /// when the last frame carried running loop motion — animated frames keep the loop hot.</summary>
     public bool NeedsRender { get; private set; } = true;
 
+    /// <summary>
+    /// Something OUTSIDE the tree changed and the next frame will differ — the system switched to
+    /// dark, reduce-motion came on, a font finished loading. The tree is the same; what it paints
+    /// is not, and nothing inside it would know to say so.
+    /// </summary>
+    public void Invalidate() => NeedsRender = true;
+
     /// <summary>The OS "Reduce Motion" accessibility setting (spec §06): loop movement renders at
     /// rest and stops requesting frames. Platform shells (W5) feed the real setting.</summary>
     public bool ReducedMotion { get; set; }

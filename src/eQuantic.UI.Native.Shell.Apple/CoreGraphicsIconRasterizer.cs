@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 
-namespace eQuantic.UI.Native.Shell.MacOS;
+namespace eQuantic.UI.Native.Shell.Apple;
 
 /// <summary>
 /// The W4 icon rasterizer on macOS — CoreGraphics only (the zero third-party rule): the shared

@@ -16,7 +16,7 @@ public sealed class MetalBackend : IRenderBackend
 
     /// <summary>True when a Metal device exists (Apple hardware; CI without GPU skips).</summary>
     public static bool IsSupported =>
-        OperatingSystem.IsMacOS() && ObjC.MTLCreateSystemDefaultDevice() != IntPtr.Zero;
+        MetalDevice.IsApple && ObjC.MTLCreateSystemDefaultDevice() != IntPtr.Zero;
 
     public MetalBackend()
     {

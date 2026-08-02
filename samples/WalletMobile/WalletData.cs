@@ -24,7 +24,8 @@ public sealed record Entry(
     string? Badge = null);
 
 /// <summary>One of the four tabs the bottom bar carries.</summary>
-public sealed record Destination(Icons Icon, string Label, int Badge = 0);
+public sealed record Destination(Icons Icon, string Label, int Badge = 0,
+    WalletScreen Screen = WalletScreen.Home);
 
 /// <summary>
 /// The wallet's sample data. A real app fetches this through <c>[ServerAction]</c>; keeping it here
@@ -37,10 +38,10 @@ public static class WalletData
 
     public static readonly Destination[] Tabs =
     [
-        new(Icons.CheckCircle, "Home"),
-        new(Icons.Mail, "Cards", 2),
-        new(Icons.ChevronRight, "Transfer"),
-        new(Icons.Person, "Profile"),
+        new(Icons.CheckCircle, "Home", Screen: WalletScreen.Home),
+        new(Icons.Mail, "Cards", 2, WalletScreen.Cards),
+        new(Icons.ChevronRight, "Transfer", Screen: WalletScreen.Transactions),
+        new(Icons.Person, "Profile", Screen: WalletScreen.Settings),
     ];
 
     public static readonly Entry[] Recent =

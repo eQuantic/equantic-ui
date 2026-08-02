@@ -2,7 +2,9 @@ using System.Diagnostics;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Engine.Metal;
+using eQuantic.UI.Native.Shell.Apple;
 using eQuantic.UI.Primitives;
+using static eQuantic.UI.Native.Shell.Apple.ObjC;
 using static eQuantic.UI.Native.Shell.MacOS.AppKit;
 
 namespace eQuantic.UI.Native.Shell.MacOS;

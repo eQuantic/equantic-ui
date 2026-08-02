@@ -1,4 +1,5 @@
 using eQuantic.Studio;
+using eQuantic.UI.Native.Shell.Apple;
 using eQuantic.UI.Native.Shell.MacOS;
 using eQuantic.UI.Primitives;
 
