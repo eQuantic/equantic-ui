@@ -19,6 +19,12 @@
         this is a BUILD input; appsettings.json is where an app configures what it does at RUN time,
         and splitting one concern across the two is how a project stops being obvious.
     -->
+    <!-- The generator asks whether this app declared an icon: on Android that decides whether it
+         writes the [Application(Icon)] the launcher reads. -->
+    <ItemGroup>
+        <CompilerVisibleProperty Include="EQuanticAppIconSource" />
+    </ItemGroup>
+
     <PropertyGroup>
         <EQuanticAssetsDir Condition="'$(EQuanticAssetsDir)' == ''">$(MSBuildProjectDirectory)/Assets</EQuanticAssetsDir>
 
@@ -56,8 +62,12 @@
     -->
     <Target Name="EQuanticAppIcon"
             Condition="'$(EQuanticAppIconSource)' != '' AND '$(TargetFramework)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')"
-            BeforeTargets="_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;CoreCompile">
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --out &quot;$(_EqIconSetDir)&quot;"
+            BeforeTargets="BeforeBuild;_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;CoreCompile">
+        <PropertyGroup>
+            <_EqIconArgs Condition="'$(_EqPlatform)' == 'ios'">--out "$(_EqIconSetDir)"</_EqIconArgs>
+        </PropertyGroup>
+        <Exec Condition="'$(_EqIconArgs)' != ''"
+              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; $(_EqIconArgs)"
               StandardOutputImportance="normal" />
         <ItemGroup Condition="'$(_EqPlatform)' == 'ios'">
             <!-- Items born inside a target carry no provenance, and Apple's packaging asks for it.
@@ -67,5 +77,8 @@
                 <LocalMSBuildProjectFullPath>$(MSBuildProjectFullPath)</LocalMSBuildProjectFullPath>
             </ImageAsset>
         </ItemGroup>
+
+
     </Target>
+
 </Project>
