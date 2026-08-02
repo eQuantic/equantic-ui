@@ -127,10 +127,13 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             activity.AppendLine("#nullable enable");
             activity.AppendLine();
             activity.AppendLine("/// <summary>The launcher: this app's screen, hosted by the Photon activity.</summary>");
-            // The launcher icon is not named here yet: Android collects its resources in a nested
-            // build whose evaluation precedes anything this SDK writes, so generated mipmaps never
-            // reach aapt. Naming one that is not in the package fails the build outright.
-            _ = hasIcon;
+            if (hasIcon)
+            {
+                // The launcher reads the icon from the APPLICATION, not from the activity: it is
+                // the app that has an icon, and every activity in it inherits the same one.
+                activity.AppendLine("[assembly: global::Android.App.Application(Icon = \"@mipmap/ic_launcher\")]");
+                activity.AppendLine();
+            }
             activity.AppendLine("[global::Android.App.Activity(");
             activity.AppendLine("    MainLauncher = true,");
             activity.AppendLine("    Exported = true,");

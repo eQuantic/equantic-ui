@@ -82,6 +82,53 @@
         <Using Remove="Android.Content" />
     </ItemGroup>
 
+    <!--
+        CONVENTION, the way .NET does it: things the build consumes live in a known folder, the way
+        a web app's static files live in wwwroot. `Assets/` is where a Photon app keeps what the
+        platform installs, and the root is accepted too for an app small enough not to want a folder.
+        `EQuanticAppIconSource` in the project file overrides both — an MSBuild property, because
+        this is a BUILD input; appsettings.json is where an app configures what it does at RUN time,
+        and splitting one concern across the two is how a project stops being obvious.
+    -->
+    <!-- The generator asks whether this app declared an icon: on Android that decides whether it
+         writes the [Application(Icon)] the launcher reads. -->
+    <ItemGroup>
+        <CompilerVisibleProperty Include="EQuanticAppIconSource" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <EQuanticAssetsDir Condition="'$(EQuanticAssetsDir)' == ''">$(MSBuildProjectDirectory)/Assets</EQuanticAssetsDir>
+
+        <!-- Artwork a designer made, or a tree the engine draws. Both end in the same generated
+             catalog, so nobody hand-writes a Contents.json either way. -->
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(EQuanticAssetsDir)/AppIcon.png')">$(EQuanticAssetsDir)/AppIcon.png</EQuanticAppIconSource>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(EQuanticAssetsDir)/AppIcon.cs')">$(EQuanticAssetsDir)/AppIcon.cs</EQuanticAppIconSource>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(MSBuildProjectDirectory)/AppIcon.png')">$(MSBuildProjectDirectory)/AppIcon.png</EQuanticAppIconSource>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(MSBuildProjectDirectory)/AppIcon.cs')">$(MSBuildProjectDirectory)/AppIcon.cs</EQuanticAppIconSource>
+    </PropertyGroup>
+
+    <!--
+        The launcher icon, derived from Assets/AppIcon into Assets/.generated and picked up HERE, at
+        evaluation — because Android reads its resources before any target of ours can run.
+        That is also why these are CHECKED IN rather than ignored: a clean clone has to build with
+        the right icon on the first pass, and Android's own convention has always been that the
+        contents of a resources folder live in the repository. The SDK refreshes them whenever the
+        source icon changes; nobody edits them by hand.
+    -->
+    <PropertyGroup>
+        <EQuanticGeneratedAssetsDir Condition="'$(EQuanticGeneratedAssetsDir)' == ''">$(EQuanticAssetsDir)/.generated</EQuanticGeneratedAssetsDir>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(_EqPlatform)' == 'android'">
+        <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/**/*.png">
+            <Link>Resources/%(RecursiveDir)%(Filename)%(Extension)</Link>
+        </AndroidResource>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(_EqPlatform)' == 'android' AND '$(IsEQuanticDevMode)' == 'true'">
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Shell.Android\eQuantic.UI.Native.Shell.Android.csproj" />
     </ItemGroup>
