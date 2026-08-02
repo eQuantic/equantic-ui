@@ -77,7 +77,13 @@ public sealed class PageIndicator : StatelessComponent
     /// <summary>A 6dp dot is not a target — the press area grows to the touch minimum around it.</summary>
     private static VisualNode HitPadded(VisualNode dot)
     {
-        var centered = new Row(gap: 0) { Main = MainAlign.Center, Cross = CrossAlign.Center };
+        var centered = new Row(gap: 0)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Main = MainAlign.Center,
+            Cross = CrossAlign.Center,
+        };
         centered.Add(dot);
         return new Box(new BoxStyle { Height = Touch.MinTarget, Padding = EdgeInsets.Symmetric(Space.S1, 0) }, centered);
     }
