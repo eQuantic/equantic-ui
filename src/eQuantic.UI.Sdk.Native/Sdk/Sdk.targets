@@ -1,4 +1,13 @@
-<Project>
+<!--
+    InitialTargets, because ANDROID validates that every declared resource EXISTS before any
+    ordinary target runs — earlier than BeforeBuild, earlier than anything BeforeTargets can reach.
+    An imported project contributes its InitialTargets to the one importing it, and they run before
+    the build's first target. That is the only hook early enough, and it removes the two workarounds
+    this cost before it was found: files committed to the repository, and generation at restore.
+    Android only: Apple's packaging takes the catalog from an item an ordinary target hands it, and
+    running that target this early is exactly what stops the item from ever arriving.
+-->
+<Project InitialTargets="EQuanticAndroidIcon">
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
     <!--
@@ -22,10 +31,9 @@
     <!--
         Apple reads the icon's LOCATION from the app manifest rather than from a build property, so
         the tool that writes the catalog writes that too.
-        Each platform is given what it verifiably takes, and the difference is not taste. ANDROID
-        reads its resources at EVALUATION, before any target of ours can run, so its mipmaps are
-        real files written during RESTORE and declared with a wildcard. APPLE takes the catalog from
-        an item a build target hands it, which is why iOS's stays in obj where derived things belong.
+        Both platforms collect their assets in a nested build whose evaluation precedes every target
+        of ours, so both are named at evaluation by LITERAL path and written by the InitialTarget
+        before anything reads them. One rule, two platforms, and nothing committed to a repository.
     -->
     <ItemGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(EQuanticAppIconSource)' != ''">
         <PartialAppManifest Include="$(_EqIconDir)/AppIcon.plist" />
@@ -44,16 +52,21 @@
         invocation that finishes first, and what it leaves on disk the build simply finds.
     -->
 
+    <Target Name="EQuanticAndroidIcon"
+            Condition="'$(_EqPlatform)' == 'android' AND '$(EQuanticAppIconSource)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --android &quot;$(_EqAssetsGenerated)/android/res&quot;"
+              StandardOutputImportance="normal" />
+    </Target>
+
     <Target Name="EQuanticAppIcon"
             Condition="'$(EQuanticAppIconSource)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')"
-            BeforeTargets="_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;CoreCompile">
+            BeforeTargets="_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;_UpdateAndroidResgen;CoreCompile">
         <PropertyGroup>
             <!-- No TargetFramework during restore: write EVERYTHING the app's platforms could ask
                  for. Deriving four small PNGs nobody reads costs less than a build that cannot see
                  the one it needs. -->
             <_EqIconArgs Condition="'$(TargetFramework)' == ''">--android "$(_EqAssetsGenerated)/android/res"</_EqIconArgs>
             <_EqIconArgs Condition="'$(_EqPlatform)' == 'ios'">--out "$(_EqIconSetDir)"</_EqIconArgs>
-            <_EqIconArgs Condition="'$(_EqPlatform)' == 'android'">--android "$(_EqAssetsGenerated)/android/res"</_EqIconArgs>
         </PropertyGroup>
         <ItemGroup Condition="'$(_EqPlatform)' == 'ios'">
             <!-- Items born inside a target carry no provenance, and Apple's packaging asks for it.
