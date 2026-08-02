@@ -32,6 +32,13 @@ public class InvocationStrategy : IConversionStrategy
         {
             methodName = memberAccess.Name.Identifier.Text;
         }
+        // `a?.M(x)` — the member is a BINDING, and `.M` (dot included) as the name is what used to
+        // leak a leading dot into the fallback's output. The conditional-access strategy owns the
+        // guard and the receiver; the fallback only names the call.
+        else if (methodExpression is MemberBindingExpressionSyntax methodBinding)
+        {
+            methodName = methodBinding.Name.Identifier.Text;
+        }
 
         // 2. Semantic Resolution (needed BEFORE argument conversion — named arguments reorder
         // against the resolved signature).
@@ -137,7 +144,9 @@ public class InvocationStrategy : IConversionStrategy
         if (symbol is { MethodKind: MethodKind.DelegateInvoke }
             && methodExpression is IdentifierNameSyntax delegateIdentifier)
         {
-            var delegateTarget = context.SemanticModel?.GetSymbolInfo(delegateIdentifier).Symbol;
+            var delegateTarget = context.SemanticHelper.Knows(delegateIdentifier)
+                ? context.SemanticModel?.GetSymbolInfo(delegateIdentifier).Symbol
+                : null;
             if (delegateTarget is IParameterSymbol or ILocalSymbol)
                 return $"{delegateIdentifier.Identifier.Text}({args})";
             return $"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}({args})";

@@ -13,16 +13,18 @@ public class ContainsStrategy : IConversionStrategy
         if (node is not InvocationExpressionSyntax invocation)
             return false;
 
-        if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
+        // Both shapes of the same call — `x.Contains(y)` and `x?.Contains(y)`. The second used to
+        // fall straight through to the fallback and emit a `.contains` no JS array has.
+        if (!invocation.TryGetInstanceCall(out var receiverExpression, out var memberName))
             return false;
 
-        if (memberAccess.Name.Identifier.Text != "Contains")
+        if (memberName.Identifier.Text != "Contains")
             return false;
 
         // Receiver-type check (most reliable): arrays and sequence types map Contains -> includes.
         // Arrays bind Contains via the Enumerable extension, which the method-symbol checks below
         // miss. HashSet/ISet are intentionally excluded here (they map to Set.has elsewhere).
-        var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
+        var receiverType = context.SemanticHelper.GetType(receiverExpression);
         if (receiverType is IArrayTypeSymbol)
             return true;
         if (receiverType != null)
@@ -74,9 +76,12 @@ public class ContainsStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
-        var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
+        invocation.TryGetInstanceCall(out var receiverExpression, out _);
 
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
+        // Under a `?.` the receiver is emitted by the conditional-access strategy, and repeating it
+        // here would name it twice; the guard it already wrote is what makes the call safe.
+        var guarded = invocation.IsNullConditional();
+        var caller = guarded ? "" : context.Converter.ConvertExpression(receiverExpression);
         var args = invocation.ArgumentList.Arguments;
 
         if (args.Count > 0)
@@ -85,7 +90,7 @@ public class ContainsStrategy : IConversionStrategy
 
             // Records / structs / tuples compare by VALUE — `includes` (SameValueZero) would miss
             // equal-but-distinct instances. Walk with the structural equality helper instead.
-            var elementType = context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType();
+            var elementType = context.SemanticHelper.GetType(receiverExpression).GetEnumerableElementType();
             if (elementType.IsStructuralValueType())
             {
                 context.UsedHelpers.Add(Eq.Import);

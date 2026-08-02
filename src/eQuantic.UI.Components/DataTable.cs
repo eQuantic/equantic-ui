@@ -172,7 +172,7 @@ public sealed class DataTable : StatelessComponent
 
     private VisualNode Body(IAppTheme theme, GridTrack[] tracks, DataRow row)
     {
-        var selected = Selection is { } selection && selection.Contains(row.Key);
+        var selected = Selection?.Contains(row.Key) == true;
         var grid = new Grid(tracks, gap: 0) { Width = SizeValue.Fill };
 
         if (Selectable)

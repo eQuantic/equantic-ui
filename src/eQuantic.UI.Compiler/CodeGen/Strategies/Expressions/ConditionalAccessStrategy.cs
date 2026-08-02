@@ -37,11 +37,15 @@ public class ConditionalAccessStrategy : IConversionStrategy
             ElementBindingExpressionSyntax elementBinding =>
                 $"?.[{ConvertArguments(elementBinding.ArgumentList, context)}]",
 
-            // ?.Method() -> ?.method()
+            // ?.Method() — offered to the real strategies first (see InvocationShapeExtensions):
+            // one that understands the guarded shape answers with a LEADING dot, because the
+            // receiver is already on the page and repeating it would name it twice. Anything else
+            // keeps the plain rename, which is right for a call with no translation of its own.
             InvocationExpressionSyntax invocation when invocation.Expression is MemberBindingExpressionSyntax mb =>
                 mb.Name.Identifier.Text == "Invoke"
                     ? $"?.({ConvertArguments(invocation.ArgumentList, context)})"
-                    : $"?.{mb.Name.Identifier.Text.ToCamelCase()}({ConvertArguments(invocation.ArgumentList, context)})",
+                    : Translated(invocation, context)
+                      ?? $"?.{mb.Name.Identifier.Text.ToCamelCase()}({ConvertArguments(invocation.ArgumentList, context)})",
 
             // ?.member.property -> ?.member.property (e.g., theme?.Alert.Title)
             MemberAccessExpressionSyntax memberAccess when memberAccess.Expression is MemberBindingExpressionSyntax binding =>
@@ -62,6 +66,16 @@ public class ConditionalAccessStrategy : IConversionStrategy
             // Fallback
             _ => $"?.{context.Converter.ConvertExpression(whenNotNull)}"
         };
+    }
+
+    /// <summary>
+    /// The pipeline's answer for a guarded call, or null when nothing claimed it. The leading dot is
+    /// the contract: it says "I left the receiver to you", which is exactly what <c>?.</c> needs.
+    /// </summary>
+    private static string? Translated(InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        var converted = context.Converter.ConvertExpression(invocation);
+        return converted.StartsWith('.') ? "?" + converted : null;
     }
 
     private string ConvertMemberChain(MemberAccessExpressionSyntax memberAccess, ConversionContext context)

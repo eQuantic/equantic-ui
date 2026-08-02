@@ -59,13 +59,23 @@ public class SemanticHelper
 
     public ISymbol? GetSymbol(SyntaxNode node)
     {
-        return _semanticModel?.GetSymbolInfo(node).Symbol;
+        return Knows(node) ? _semanticModel!.GetSymbolInfo(node).Symbol : null;
     }
 
     public ITypeSymbol? GetType(SyntaxNode node)
     {
-        return _semanticModel?.GetTypeInfo(node).Type;
+        return Knows(node) ? _semanticModel!.GetTypeInfo(node).Type : null;
     }
+
+    /// <summary>
+    /// Whether the model can be ASKED about this node. Roslyn throws for a node from another tree,
+    /// and a strategy handed a REWRITTEN expression (the null-conditional path rebuilds
+    /// <c>a?.B(x)</c> as <c>a.B(x)</c> so the normal pipeline can translate it) would otherwise take
+    /// the whole compiler down. "I don't know" is the honest answer, and every strategy already
+    /// handles it.
+    /// </summary>
+    public bool Knows(SyntaxNode node) =>
+        _semanticModel is not null && ReferenceEquals(node.SyntaxTree, _semanticModel.SyntaxTree);
 
     /// <summary>
     /// The compile-time constant value of an expression (an enum member, a literal, a <c>const</c>), or

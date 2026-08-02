@@ -132,4 +132,26 @@ public class FailOnUnsupportedTests
         TestHelper.DiagnosticsFor(expression)
             .Should().NotContain(d => d.Code == "EQ2004");
     }
+
+    [Theory]
+    [InlineData("Tags.Contains(\"a\")")]
+    [InlineData("Tags?.Contains(\"a\")")]
+    public void ContainsTranslates_WithOrWithoutTheQuestionMark(string expression)
+    {
+        // The `?.` shape used to be a dead end: the member sits in a MemberBindingExpression, no
+        // strategy destructured it, and `Tags?.contains("a")` — a method no JS array has — only
+        // failed once a browser ran it. Both shapes name the same call.
+        var js = TestHelper.ConvertExpression(expression, "System.Collections.Generic.IReadOnlyCollection<string>");
+
+        js.Should().Contain(".includes(");
+        js.Should().NotContain(".contains(");
+    }
+
+    [Fact]
+    public void NullConditionalContains_KeepsItsGuard()
+    {
+        TestHelper.ConvertExpression("Tags?.Contains(\"a\")",
+                "System.Collections.Generic.IReadOnlyCollection<string>")
+            .Should().Contain("?.", "the receiver may be null — that is the whole point of the operator");
+    }
 }
