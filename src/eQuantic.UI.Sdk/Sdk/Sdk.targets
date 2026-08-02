@@ -266,6 +266,40 @@
             Condition="'$(_CssSourcePath)' != '' And Exists('$(_CssSourcePath)')" />
     </Target>
 
+    <!--
+        The app icon, from the same source the device SDK uses: `Assets/AppIcon.png` (artwork a
+        designer made) or `Assets/AppIcon.cs` (an IAppIcon the engine draws). A browser asks for the
+        sizes up front and for a manifest describing them, so those are written into wwwroot and the
+        shell links them — an app states its icon ONCE and it appears wherever it belongs.
+        The property names are shared with eQuantic.UI.Sdk.Native on purpose.
+    -->
+    <PropertyGroup>
+        <EQuanticAssetsDir Condition="'$(EQuanticAssetsDir)' == ''">$(MSBuildProjectDirectory)/Assets</EQuanticAssetsDir>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(EQuanticAssetsDir)/AppIcon.png')">$(EQuanticAssetsDir)/AppIcon.png</EQuanticAppIconSource>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(EQuanticAssetsDir)/AppIcon.cs')">$(EQuanticAssetsDir)/AppIcon.cs</EQuanticAppIconSource>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(MSBuildProjectDirectory)/AppIcon.png')">$(MSBuildProjectDirectory)/AppIcon.png</EQuanticAppIconSource>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(MSBuildProjectDirectory)/AppIcon.cs')">$(MSBuildProjectDirectory)/AppIcon.cs</EQuanticAppIconSource>
+
+        <!-- The name a browser installs the app under. The SAME property the device head uses, so
+             an app that cares states it once; absent that, the assembly's name is what .NET would
+             have called it anyway. -->
+        <ApplicationTitle Condition="'$(ApplicationTitle)' == ''">$(AssemblyName)</ApplicationTitle>
+        <ApplicationTitle Condition="'$(ApplicationTitle)' == ''">$(MSBuildProjectName)</ApplicationTitle>
+
+        <_EqIconToolDir>$(_SdkToolsDir)</_EqIconToolDir>
+        <_EqIconToolDir Condition="!Exists('$(_EqIconToolDir)eqicon.dll')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
+    </PropertyGroup>
+
+    <Target Name="EQuanticWebAppIcon" BeforeTargets="Build"
+        Condition="'$(EQuanticAppIconSource)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --web &quot;$(MSBuildProjectDirectory)/wwwroot/_equantic/icons&quot; --app &quot;$(ApplicationTitle)&quot;"
+            StandardOutputImportance="normal" />
+    </Target>
+
     <Target Name="WarnNoCli" BeforeTargets="Build"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' == ''">
         <Warning

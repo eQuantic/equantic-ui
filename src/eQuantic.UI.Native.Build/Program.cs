@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
+using eQuantic.UI.Build;
 using eQuantic.UI.Codegen;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
@@ -20,25 +21,27 @@ using Microsoft.CodeAnalysis.CSharp;
 // app's own assembly may target a device this build machine cannot load, and an icon has no
 // business reaching into the app anyway.
 //
-//   eqicon --source <file[;file]> --out <dir> [--size 1024] [--name AppIcon]
+//   eqicon --source <file[;file]> [--out <catalog-dir>] [--web <dir> --app <name>]
+//          [--size 1024] [--name AppIcon]
+//
+// `--out` writes the platform's asset catalog; `--web` writes what a browser asks for — the
+// manifest's install icons, the one iOS Safari pins, the one in the tab. Same source, both ways:
+// an app states its icon ONCE and it appears everywhere it belongs.
 
 var options = ParseArgs(args);
 if (options is null)
 {
-    Console.Error.WriteLine("Usage: eqicon --source <file[;file]> --out <dir> [--size 1024] [--name AppIcon]");
+    Console.Error.WriteLine("Usage: eqicon --source <file[;file]> [--out <dir>] [--web <dir> --app <name>] "
+        + "[--size 1024] [--name AppIcon]");
     return 1;
 }
 
-var (sources, outDir, size, name) = options.Value;
+var (sources, outDir, webDir, appName, size, name) = options.Value;
 
-// Nothing to do when the icon has not changed since the catalog was written — the SDK calls this
-// on every build, and rasterizing a megapixel to produce identical bytes is a build nobody wants.
-var catalog = Path.Combine(outDir, $"{name}.appiconset", $"{name}.png");
-if (File.Exists(catalog) && sources.Where(File.Exists)
-        .All(source => File.GetLastWriteTimeUtc(source) <= File.GetLastWriteTimeUtc(catalog)))
-{
-    return 0;
-}
+// Nothing to do when every output is already newer than the icon — the SDK calls this on each
+// build, and rasterizing a megapixel to produce identical bytes is a build nobody wants. EVERY
+// output, not one of them: a check that watches a single file calls a half-written set finished.
+if (UpToDate(sources, Outputs(outDir, webDir, name))) return 0;
 
 // A PNG needs no rendering: the artwork already exists and the platform's ceremony is what we owe.
 if (sources.FirstOrDefault(s => s.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) is { } artwork)
@@ -73,12 +76,9 @@ if (sources.FirstOrDefault(s => s.EndsWith(".png", StringComparison.OrdinalIgnor
         pixels[i] = 255;
     }
 
-    WriteCatalog(outDir, name, () => File.WriteAllBytes(
-        Path.Combine(outDir, $"{name}.appiconset", $"{name}.png"),
-        PngCodec.Encode(width, height, pixels)));
-
-    Console.WriteLine($"eqicon: wrote {Path.Combine(outDir, $"{name}.appiconset")} from "
-        + Path.GetFileName(artwork) + (transparent ? " (flattened onto white — iOS icons cannot be transparent)" : ""));
+    Emit(outDir, webDir, appName, name, width, pixels);
+    Console.WriteLine($"eqicon: wrote {Where(outDir, webDir)} from " + Path.GetFileName(artwork)
+        + (transparent ? " (flattened onto white — iOS icons cannot be transparent)" : ""));
     return 0;
 }
 
@@ -168,12 +168,43 @@ surface.ReadPixelsSrgb(rgba);
 // A home screen composites the icon against whatever it is showing, so alpha is not ours to keep.
 for (var i = 3; i < rgba.Length; i += 4) rgba[i] = 255;
 
-var set = Path.Combine(outDir, $"{name}.appiconset");
-WriteCatalog(outDir, name, () =>
-    File.WriteAllBytes(Path.Combine(set, $"{name}.png"), PngCodec.Encode((int)size, (int)size, rgba)));
-
-Console.WriteLine($"eqicon: wrote {set} from {iconType.FullName}");
+Emit(outDir, webDir, appName, name, (int)size, rgba);
+Console.WriteLine($"eqicon: wrote {Where(outDir, webDir)} from {iconType.FullName}");
 return 0;
+
+/// <summary>Everything this invocation is responsible for producing.</summary>
+static IEnumerable<string> Outputs(string? outDir, string? webDir, string name)
+{
+    if (outDir is not null) yield return Path.Combine(outDir, $"{name}.appiconset", $"{name}.png");
+    if (outDir is not null) yield return Path.Combine(outDir, $"{name}.appiconset", "Contents.json");
+    if (outDir is not null) yield return Path.Combine(outDir, "..", $"{name}.plist");
+    if (webDir is null) yield break;
+    yield return Path.Combine(webDir, "icon-512.png");
+    yield return Path.Combine(webDir, "icon-192.png");
+    yield return Path.Combine(webDir, "apple-touch-icon.png");
+    yield return Path.Combine(webDir, "favicon-32.png");
+    yield return Path.Combine(webDir, "site.webmanifest");
+}
+
+static bool UpToDate(string[] sources, IEnumerable<string> outputs)
+{
+    var newest = sources.Where(File.Exists).Select(File.GetLastWriteTimeUtc).DefaultIfEmpty().Max();
+    return outputs.All(output => File.Exists(output) && File.GetLastWriteTimeUtc(output) >= newest);
+}
+
+/// <summary>Writes whichever outputs this invocation asked for — a catalog, a web set, or both.</summary>
+static void Emit(string? outDir, string? webDir, string appName, string name, int size, byte[] rgba)
+{
+    if (outDir is not null)
+        WriteCatalog(outDir, name, () =>
+            File.WriteAllBytes(Path.Combine(outDir, $"{name}.appiconset", $"{name}.png"),
+                PngCodec.Encode(size, size, rgba)));
+
+    if (webDir is not null) WebIcons.Write(webDir, appName, size, rgba);
+}
+
+static string Where(string? outDir, string? webDir) =>
+    string.Join(" and ", new[] { outDir, webDir }.Where(d => d is not null));
 
 /// <summary>The catalog around the artwork: the manifest key, the Contents.json, the file itself.</summary>
 static void WriteCatalog(string outDir, string name, Action writeArtwork)
@@ -208,7 +239,7 @@ static (int Width, int Height) PngSize(string path)
         BitConverter.ToInt32(header.AsSpan(20, 4).ToArray().Reverse().ToArray()));
 }
 
-static (string[] Sources, string Out, float Size, string Name)? ParseArgs(string[] args)
+static (string[] Sources, string? Out, string? Web, string App, float Size, string Name)? ParseArgs(string[] args)
 {
     string? Value(string flag)
     {
@@ -218,10 +249,11 @@ static (string[] Sources, string Out, float Size, string Name)? ParseArgs(string
 
     var source = Value("--source");
     var output = Value("--out");
-    if (source is null || output is null) return null;
+    var web = Value("--web");
+    if (source is null || (output is null && web is null)) return null;
 
     return (source.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
-        output,
+        output, web, Value("--app") ?? "App",
         float.TryParse(Value("--size"), out var size) ? size : 1024f,
         Value("--name") ?? "AppIcon");
 }
