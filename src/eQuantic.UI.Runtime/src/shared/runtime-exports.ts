@@ -54,6 +54,7 @@ export {
   Shortcut,
   KeyChord,
   KeyModifiers,
+  CuratedIcons,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';
 export { Navigator } from '../router/navigator';
@@ -109,3 +110,13 @@ export { SearchField } from './components/SearchField';
 export { AppBar } from './components/AppBar';
 export { BottomNavigation } from './components/BottomNavigation';
 export { NavItem } from './components/NavItem';
+export { Breadcrumb } from './components/Breadcrumb';
+export { Crumb } from './components/Crumb';
+export { DataColumn } from './components/DataColumn';
+export { DataRow } from './components/DataRow';
+export { DataTable } from './components/DataTable';
+export { PageIndicator } from './components/PageIndicator';
+export { Pagination } from './components/Pagination';
+export { SegmentedControl } from './components/SegmentedControl';
+export { Slider } from './components/Slider';
+export { Stepper } from './components/Stepper';

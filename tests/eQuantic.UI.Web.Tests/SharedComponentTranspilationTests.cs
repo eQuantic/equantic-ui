@@ -19,15 +19,17 @@ public class SharedComponentTranspilationTests
     private static string RepoRoot([CallerFilePath] string sourcePath = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", ".."));
 
-    private static readonly string[] SharedSources =
-    [
-        "Button.cs", "Card.cs", "Divider.cs", "Badge.cs", "Chip.cs", "ProgressBar.cs", "Avatar.cs",
-        "Banner.cs", "IconButton.cs", "Checkbox.cs", "Switch.cs", "RadioGroup.cs", "ListItem.cs",
-        "Tabs.cs", "EmptyState.cs", "AppBar.cs", "BottomNavigation.cs", "TextInput.cs", "SearchField.cs", "Dialog.cs",
-        "Toast.cs", "BottomSheet.cs",
-        "Menu.cs", "Select.cs", "Popover.cs",
-        "Tooltip.cs", "Drawer.cs", "Accordion.cs", "Table.cs",
-    ];
+    /// <summary>
+    /// The shared library IS its directory. A hand-kept roster here let a new component transpile,
+    /// never reach runtime.js, and fail only in the browser with "does not provide an export named
+    /// X" — so the set is discovered, and adding a component to the library is the whole ceremony.
+    /// </summary>
+    private static string[] SharedSources() =>
+        Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Components"), "*.cs")
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray()!;
+
 
     /// <summary>
     /// The stateful write-once proof — the SAME authoring shape as the native CounterAppTests
@@ -125,7 +127,7 @@ public class SharedComponentTranspilationTests
     private static Dictionary<string, string> TranspileSharedComponents()
     {
         var root = RepoRoot();
-        var sourcePaths = SharedSources
+        var sourcePaths = SharedSources()
             .Select(name => Path.Combine(root, "src", "eQuantic.UI.Components", name))
             .ToList();
 
@@ -191,15 +193,10 @@ public class SharedComponentTranspilationTests
         var embeddedDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "components");
         string Embedded(string typeScript) =>
             typeScript.Replace("from \"@equantic/runtime\"", "from \"../runtime-exports\"");
-        var embeddedNames = new[]
-        {
-            "Button", "Card", "Divider", "Badge", "Chip", "ProgressBar", "Avatar", "Banner",
-            "IconButton", "Checkbox", "Switch", "RadioGroup", "ListItem", "List", "Tabs",
-            "EmptyState", "Skeleton", "AppBar", "BottomNavigation", "NavItem", "TextInput", "SearchField", "Dialog", "DialogAction",
-            "Toast", "BottomSheet",
-            "Menu", "MenuItem", "Select", "Popover",
-            "Tooltip", "Drawer", "Accordion", "AccordionItem", "Table",
-        };
+        // EVERY module the shared library produces is runtime-provided — a hardcoded roster here
+        // meant a new component transpiled fine, never reached runtime.js, and only failed in the
+        // browser with "does not provide an export named X". What the library declares IS the set.
+        var embeddedNames = modules.Keys.ToHashSet();
 
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_TRANSPILED") == "1")
         {

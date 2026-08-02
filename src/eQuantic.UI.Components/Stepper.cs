@@ -33,6 +33,14 @@ public sealed class Stepper : StatelessComponent
     /// <summary>Announced by the control; the number alone says nothing about what it counts.</summary>
     public string Label { get; init; } = "";
 
+    /// <summary>The Label role at the ladder's size for this control.</summary>
+    private static TypeStyle LabelStyle(IAppTheme theme, SizeVariant size)
+    {
+        var role = theme.Type(TypeRole.Label);
+        return new TypeStyle(Sizing.LabelSize(size), role.LineHeight, role.Weight, role.Tracking,
+            role.MaxScale);
+    }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
@@ -42,18 +50,18 @@ public sealed class Stepper : StatelessComponent
 
         var row = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
         row.Add(Arm(theme, Icons.Minus, height, canDecrement,
-            canDecrement ? () => OnChanged?.Invoke(Value - Step) : null, $"Decrease {Label}"));
+            () => OnChanged?.Invoke(Value - Step), $"Decrease {Label}"));
 
         row.Add(new Flexible(new Text($"{Value}{Suffix}", TypeRole.Label,
             Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 1)
         {
             Align = TextAlignment.Center,
             Tabular = true,
-            StyleOverride = theme.Type(TypeRole.Label) with { Size = Sizing.LabelSize(Size) },
+            StyleOverride = LabelStyle(theme, Size),
         }, 1));
 
         row.Add(Arm(theme, Icons.Plus, height, canIncrement,
-            canIncrement ? () => OnChanged?.Invoke(Value + Step) : null, $"Increase {Label}"));
+            () => OnChanged?.Invoke(Value + Step), $"Increase {Label}"));
 
         return new Box(new BoxStyle
         {
@@ -69,7 +77,7 @@ public sealed class Stepper : StatelessComponent
 
     /// <summary>One end of the control: a square press target the full height of the frame.</summary>
     private static VisualNode Arm(IAppTheme theme, Icons glyph, float height, bool enabled,
-        Action? onPressed, string label)
+        Action onPressed, string label)
     {
         var centered = new Row(gap: 0)
         {
@@ -82,6 +90,6 @@ public sealed class Stepper : StatelessComponent
 
         var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);
 
-        return new Pressable(box, onPressed) { Disabled = !enabled, Label = label };
+        return new Pressable(box, enabled ? onPressed : null) { Disabled = !enabled, Label = label };
     }
 }

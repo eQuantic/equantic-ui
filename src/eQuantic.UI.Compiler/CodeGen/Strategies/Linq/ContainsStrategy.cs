@@ -34,6 +34,10 @@ public class ContainsStrategy : IConversionStrategy
                 def.StartsWith("System.Collections.Generic.IList") ||
                 def.StartsWith("System.Collections.Generic.ICollection") ||
                 def.StartsWith("System.Collections.Generic.IReadOnlyList") ||
+                // The read-only COLLECTION interface is what an API exposes when it takes a set of
+                // keys without promising order — missing it here shipped a `.contains` no JS array
+                // has, and the page died at hydration rather than at build.
+                def.StartsWith("System.Collections.Generic.IReadOnlyCollection") ||
                 def.StartsWith("System.Collections.Generic.IEnumerable"))
                 return true;
         }

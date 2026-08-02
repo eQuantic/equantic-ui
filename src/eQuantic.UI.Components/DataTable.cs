@@ -70,7 +70,7 @@ public sealed class DataTable : StatelessComponent
 
     /// <summary>Keys of the selected rows. Non-null turns the selection column on.</summary>
     public IReadOnlyCollection<string>? Selection { get; init; }
-    public Action<string>? OnToggleRow { get; init; }
+    public Action<DataRow>? OnToggleRow { get; init; }
 
     /// <summary>Header checkbox: select all, or clear when anything is already selected.</summary>
     public Action? OnToggleAll { get; init; }
@@ -123,11 +123,11 @@ public sealed class DataTable : StatelessComponent
         if (Selectable)
         {
             var anySelected = Selection!.Count > 0;
-            grid.Add(Cell(new Checkbox(anySelected, OnToggleAll)
+            // Some-but-not-all is INDETERMINATE — a full tick would claim more than is true.
+            grid.Add(Cell(new Box(new BoxStyle(), new Checkbox(anySelected, OnToggleAll)
             {
-                // Some-but-not-all is INDETERMINATE — a full tick would claim more than is true.
                 Indeterminate = anySelected && Selection.Count < Rows.Count,
-            }, TextAlignment.Center));
+            }), TextAlignment.Center));
         }
 
         for (var i = 0; i < Columns.Count; i++)
@@ -172,13 +172,17 @@ public sealed class DataTable : StatelessComponent
 
     private VisualNode Body(IAppTheme theme, GridTrack[] tracks, DataRow row)
     {
-        var selected = Selection?.Contains(row.Key) == true;
+        var selected = Selection is { } selection && selection.Contains(row.Key);
         var grid = new Grid(tracks, gap: 0) { Width = SizeValue.Fill };
 
         if (Selectable)
         {
-            grid.Add(Cell(new Checkbox(selected,
-                OnToggleRow is null ? null : () => OnToggleRow(row.Key)), TextAlignment.Center));
+            var toggle = OnToggleRow;
+            grid.Add(Cell(new Box(new BoxStyle(),
+                new Checkbox(selected, () => toggle?.Invoke(row))
+                {
+                    Disabled = toggle is null,
+                }), TextAlignment.Center));
         }
 
         for (var i = 0; i < Columns.Count && i < row.Cells.Count; i++)
@@ -201,7 +205,7 @@ public sealed class DataTable : StatelessComponent
 
         return OnRowPressed is null
             ? box
-            : new Pressable(box, () => OnRowPressed(row)) { Key = row.Key };
+            : new Pressable(box, () => OnRowPressed(row));
     }
 
     /// <summary>
@@ -212,10 +216,15 @@ public sealed class DataTable : StatelessComponent
     private VisualNode Pending(IAppTheme theme, GridTrack[] tracks, int index)
     {
         var grid = new Grid(tracks, gap: 0) { Width = SizeValue.Fill };
-        if (Selectable) grid.Add(Cell(new Skeleton(SkeletonShape.Block, 16, 16), TextAlignment.Center));
+        if (Selectable)
+            grid.Add(Cell(new Box(new BoxStyle(), new Skeleton(SkeletonShape.Block, 16, 16)),
+                TextAlignment.Center));
 
         for (var i = 0; i < Columns.Count; i++)
-            grid.Add(Cell(new Skeleton(SkeletonShape.Line, i % 2 == 0 ? 96 : 64), Columns[i].Align));
+        {
+            grid.Add(Cell(new Box(new BoxStyle(), new Skeleton(SkeletonShape.Line, i % 2 == 0 ? 96 : 64)),
+                Columns[i].Align));
+        }
 
         return new Box(new BoxStyle
         {
