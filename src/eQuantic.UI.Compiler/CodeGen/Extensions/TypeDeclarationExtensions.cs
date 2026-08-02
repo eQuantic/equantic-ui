@@ -27,7 +27,16 @@ public static class TypeDeclarationExtensions
         if (type.ParameterList != null)
         {
             foreach (var p in type.ParameterList.Parameters)
-                members.Add(new ValueMember(p.Identifier.Text, p.Identifier.Text.ToCamelCase(), DefaultFor(p.Type), TsTypeFor(p.Type)));
+            {
+                // An OPTIONAL parameter's own default wins over `default(T)` — `string Tag = ""`
+                // must construct as `''`, not null, or every call site that omits it reads null
+                // (and `Tag.Length` throws the moment the page hydrates).
+                var fallback = p.Default is { } declared
+                    ? DefaultLiteral(declared.Value)
+                    : DefaultFor(p.Type);
+                members.Add(new ValueMember(
+                    p.Identifier.Text, p.Identifier.Text.ToCamelCase(), fallback, TsTypeFor(p.Type)));
+            }
         }
 
         foreach (var member in type.Members)
@@ -39,7 +48,11 @@ public static class TypeDeclarationExtensions
                     when !prop.Modifiers.Any(SyntaxKind.StaticKeyword)
                          && prop.ExpressionBody == null
                          && prop.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)) == true:
-                    members.Add(new ValueMember(prop.Identifier.Text, prop.Identifier.Text.ToCamelCase(), DefaultFor(prop.Type), TsTypeFor(prop.Type)));
+                    members.Add(new ValueMember(
+                        prop.Identifier.Text,
+                        prop.Identifier.Text.ToCamelCase(),
+                        prop.Initializer is { } init ? DefaultLiteral(init.Value) : DefaultFor(prop.Type),
+                        TsTypeFor(prop.Type)));
                     break;
 
                 // Public instance fields (common in plain structs).
@@ -53,6 +66,25 @@ public static class TypeDeclarationExtensions
 
         return members;
     }
+
+    /// <summary>
+    /// The JS literal for a DECLARED default (`= ""`, `= 0`, `= true`, `= null`). Anything more
+    /// interesting than a literal (a const reference, an expression) falls back to the type's
+    /// `default(T)` — the emitter runs pre-symbol and must not guess.
+    /// </summary>
+    private static string DefaultLiteral(ExpressionSyntax expression) => expression switch
+    {
+        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.StringLiteralExpression) =>
+            "'" + literal.Token.ValueText.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
+        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.TrueLiteralExpression) => "true",
+        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.FalseLiteralExpression) => "false",
+        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.NumericLiteralExpression) =>
+            literal.Token.ValueText,
+        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.NullLiteralExpression) => "null",
+        // A collection expression default (`= []`) is an empty array on both sides.
+        CollectionExpressionSyntax { Elements.Count: 0 } => "[]",
+        _ => "null",
+    };
 
     /// <summary>
     /// TS type for a value member's TYPE-ONLY declaration, from the declared type syntax (name-based —
