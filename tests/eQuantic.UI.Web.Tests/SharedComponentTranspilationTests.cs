@@ -372,8 +372,13 @@ public class SharedComponentTranspilationTests
         // hover-intent grace timer found this: awaits inside a non-async function don't parse).
         counter.Should().Contain("async bumpSoon(");
 
-        // Iterator methods are generators: `*cells()` (yield parses only inside one).
-        counter.Should().Contain("*cells(");
+        // Iterator methods MATERIALISE: every sequence in the emitted world is an array, so an
+        // iterator fills one and returns it. As a JS generator it looked right and then read as
+        // undefined the moment any LINQ operator touched the result.
+        counter.Should().Contain("cells() {").And.NotContain("*cells(");
+        counter.Should().Contain("const _seq = []");
+        counter.Should().Contain("_seq.push(new Text('a', 'caption'))");
+        counter.Should().Contain("if (this._count > 3) return _seq;", "`yield break` returns what it built");
     }
 
     [Fact]

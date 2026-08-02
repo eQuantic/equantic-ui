@@ -13,6 +13,14 @@ public class ConversionContext
     public required SemanticHelper SemanticHelper { get; set; }
     public string? ExpectedType { get; set; }
     public string? CurrentClassName { get; set; }
+
+    /// <summary>
+    /// Set while converting an ITERATOR method's body. A C# iterator yields a sequence, and every
+    /// sequence in the emitted world is an ARRAY — so the method fills this buffer and returns it,
+    /// instead of becoming a JS generator whose result `.length` reads as undefined the moment any
+    /// LINQ operator touches it. Laziness is the trade, and it only matters for infinite sequences.
+    /// </summary>
+    public string? IteratorBuffer { get; set; }
     public HashSet<string> UsedHelpers { get; } = new();
 
     /// <summary>APP types the conversion itself introduced into the OUTPUT — names that never

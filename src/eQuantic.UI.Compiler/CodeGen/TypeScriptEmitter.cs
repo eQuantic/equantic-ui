@@ -533,6 +533,7 @@ public class TypeScriptEmitter
                 if (appType == component.Name) continue;
                 if (_dependencyResolver.GetAllStaticHelpers().Contains(appType)
                     || _dependencyResolver.GetAllRecords().Contains(appType)
+                    || _dependencyResolver.GetAllPlainClasses().Contains(appType)
                     || _dependencyResolver.GetAllComponents().Contains(appType))
                 {
                     componentTypes.Add(appType);
@@ -636,11 +637,12 @@ public class TypeScriptEmitter
         var knownComponents = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
         var knownRecords = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
         var knownStaticHelpers = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
+        var knownPlain = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
             if (userComp == component.Name) continue;
             var isEmittedType = knownComponents.Contains(userComp) || knownRecords.Contains(userComp)
-                                || knownStaticHelpers.Contains(userComp);
+                                || knownStaticHelpers.Contains(userComp) || knownPlain.Contains(userComp);
             // When a resolver is present it is authoritative: import ONLY types we actually emit
             // (records/components it discovered). This drops references that aren't modules — primitives,
             // static-field names read as ClassName.X, helper-class names, etc. — instead of inventing a
@@ -1106,7 +1108,7 @@ public class TypeScriptEmitter
                 }));
                 var isAsync = m.ReturnType.ToString().StartsWith("Task")
                     || m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
-                var isGenerator = m.Body?
+                var isIterator = m.Body?
                     .DescendantNodes(n => n is not AnonymousFunctionExpressionSyntax
                                           && n is not LocalFunctionStatementSyntax)
                     .OfType<YieldStatementSyntax>().Any() == true;
@@ -1116,11 +1118,17 @@ public class TypeScriptEmitter
                     ? $"<{string.Join(", ", m.TypeParameterList.Parameters.Select(tp => tp.Identifier.Text))}>"
                     : "";
                 string mbody;
-                if (m.Body != null) mbody = StripJsBraces(_converter.Convert(m.Body));
+                if (m.Body != null)
+                {
+                    _converter.SetIteratorBuffer(isIterator ? IteratorBufferName : null);
+                    mbody = StripJsBraces(_converter.Convert(m.Body));
+                    _converter.SetIteratorBuffer(null);
+                    if (isIterator) mbody = StripJsBraces(WrapIterator($"{{ {mbody} }}"));
+                }
                 else if (m.ExpressionBody != null) mbody = $"return {_converter.ConvertExpression(m.ExpressionBody.Expression)};";
                 else continue;
                 c.Raw($"{(m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")}"
-                    + $"{(isAsync ? "async " : "")}{(isGenerator ? "*" : "")}{mn}{generics}({pars}) {{ {mbody} }}", m);
+                    + $"{(isAsync ? "async " : "")}{mn}{generics}({pars}) {{ {mbody} }}", m);
             }
     }
 
@@ -1169,6 +1177,19 @@ public class TypeScriptEmitter
     /// builder, a small state machine. Nothing emitted one, so `new Bucket()` named something that
     /// did not exist. Identity, not value: no structural equals and no `with`.
     /// </summary>
+    /// <summary>The array an iterator method fills — one name, so every emitter agrees.</summary>
+    private const string IteratorBufferName = "_seq";
+
+    /// <summary>
+    /// Wraps a converted iterator body so it declares the buffer and returns it. The yields inside
+    /// were already lowered to <c>_seq.push(…)</c>.
+    /// </summary>
+    private static string WrapIterator(string jsBody)
+    {
+        var inner = StripJsBraces(jsBody);
+        return $"{{ const {IteratorBufferName} = []; {inner} return {IteratorBufferName}; }}";
+    }
+
     public string EmitPlainClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
         EmitClassModule(cls, semanticModel, asStatic: false);
 
@@ -1201,6 +1222,7 @@ public class TypeScriptEmitter
         var knownComp = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
         var knownRec = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
         var knownHelp = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
+        var knownPlainClasses = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
         foreach (var t in CollectComponentTypesFromNode(cls, new HashSet<string> { name })
                      .Concat(_converter.UsedAppTypes) // conversion-introduced names (reduced extension calls)
                      .Distinct().OrderBy(x => x))
@@ -1210,7 +1232,8 @@ public class TypeScriptEmitter
             if (ct.Contains('.')) ct = ct.Substring(ct.LastIndexOf('.') + 1);
             if (string.IsNullOrEmpty(ct) || ct == name || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
-            if (knownComp.Contains(ct) || knownRec.Contains(ct) || knownHelp.Contains(ct))
+            if (knownComp.Contains(ct) || knownRec.Contains(ct) || knownHelp.Contains(ct)
+                || knownPlainClasses.Contains(ct))
                 ib.Import(new[] { ct }, $"./{ct}");
         }
         return ib.ToString() + builder.ToString();
@@ -1255,8 +1278,10 @@ public class TypeScriptEmitter
         var isAsync = (method.ReturnType != null && method.ReturnType.StartsWith("Task"))
             || method.SyntaxNode?.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword) == true;
         // An iterator method (yield in its OWN body — nested lambdas/local functions don't count)
-        // is a JS generator; the YieldStatementStrategy already lowers the statements.
-        var isGenerator = method.SyntaxNode?.Body?
+        // MATERIALISES: it fills an array and returns it. A JS generator would look right and then
+        // read as undefined the moment a LINQ operator touched the result, because every sequence
+        // in the emitted world is an array. See ConversionContext.IteratorBuffer.
+        var isIterator = method.SyntaxNode?.Body?
             .DescendantNodes(n => n is not Microsoft.CodeAnalysis.CSharp.Syntax.AnonymousFunctionExpressionSyntax
                                   && n is not Microsoft.CodeAnalysis.CSharp.Syntax.LocalFunctionStatementSyntax)
             .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.YieldStatementSyntax>().Any() == true;
@@ -1272,7 +1297,10 @@ public class TypeScriptEmitter
             if (method.SyntaxNode.Body != null)
             {
                 _converter.SetCurrentClass(className);
+                _converter.SetIteratorBuffer(isIterator ? IteratorBufferName : null);
                 jsBody = _converter.Convert(method.SyntaxNode.Body);
+                _converter.SetIteratorBuffer(null);
+                if (isIterator) jsBody = WrapIterator(jsBody);
             }
             else if (method.SyntaxNode.ExpressionBody != null)
             {
@@ -1292,7 +1320,7 @@ public class TypeScriptEmitter
                     body = body.Substring(1, body.Length - 2).Trim();
                 }
                 c.Raw(body);
-            }, method.TypeParameters, sourceNode: method.SyntaxNode, isStatic: method.IsStatic, isGenerator: isGenerator);
+            }, method.TypeParameters, sourceNode: method.SyntaxNode, isStatic: method.IsStatic);
         }
         else
         {

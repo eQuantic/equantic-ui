@@ -426,6 +426,10 @@ public class AuthoringCoverageTests
         ts.Should().Contain("add(item)");
         ts.Should().NotContain("equals(o", "a class is identity, not value");
         ts.Should().NotContain(" with(patch");
+
+        // …and the module that USES it has to import it, or the page dies with
+        // "Bucket is not defined" — the same shape of hole static helpers once had.
+        TsOfResolved("C", src).Should().Contain("from \"./Bucket\"");
     }
 
     [Fact]
