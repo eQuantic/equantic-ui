@@ -428,6 +428,8 @@ export interface TextEntryNode extends VisualNodeValue {
   /** Takes focus on MOUNT (the command-palette contract) — the attribute alone only fires on the
    * initial document parse, so the client lowering focuses it too. */
   autofocus?: boolean;
+  /** Line count: 1 (default) is the single-line input, more makes it a textarea that tall. */
+  lines?: number;
 }
 
 export interface ScrollViewNode extends VisualNodeValue {

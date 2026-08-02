@@ -46,6 +46,10 @@ public class TypeScriptEmitter
         _dependencyResolver = resolver;
     }
 
+    /// <summary>The model backing the CURRENT emission — the import collector asks it for the type
+    /// of a target-typed <c>new(...)</c>, whose syntax states no name at all.</summary>
+    private SemanticModel? _semanticModel;
+
     public List<TypeScriptCodeBuilder.SourceMapping> GetLastMappings() => _builder.GetMappings();
 
     /// <summary>Transpilation diagnostics raised during the most recent <see cref="Emit"/> call.</summary>
@@ -57,6 +61,7 @@ public class TypeScriptEmitter
     public string Emit(ComponentDefinition component, SemanticModel? semanticModel = null)
     {
         _builder = new TypeScriptCodeBuilder();
+        _semanticModel = semanticModel;
         _converter.SetSemanticModel(semanticModel);
         _converter.ClearDiagnostics();
         _output.Clear();
@@ -439,10 +444,13 @@ public class TypeScriptEmitter
              foreach (var t in proceduralTypes) componentTypes.Add(t);
         }
 
-        // Scan component-field initializers too — a type referenced ONLY in a static/instance field
+        // Scan field initializers too — a type referenced ONLY in a static/instance field
         // initializer (e.g. `static People = new() { new Person(...) }`) still needs its import, or the
-        // emitted static initializer throws "Person is not defined" at module load.
-        foreach (var field in component.ComponentFields)
+        // emitted static initializer throws "Person is not defined" at module load. BOTH field
+        // collections: a data class of nested records parses into StateFields, and its initializer
+        // is exactly where the nested type is the ONLY mention (the catalogue shape every content
+        // file takes).
+        foreach (var field in component.ComponentFields.Concat(component.StateFields))
         {
             if (field.DefaultValueNode == null) continue;
             foreach (var t in CollectComponentTypesFromNode(field.DefaultValueNode, new HashSet<string> { component.Name }))
@@ -714,6 +722,15 @@ public class TypeScriptEmitter
              // Extract simple name from fully-qualified names (e.g., "System.Collections.Generic.List" → "List")
              if (typeName.Contains('.')) typeName = typeName.Substring(typeName.LastIndexOf('.') + 1);
              types.Add(typeName);
+        }
+
+        // A TARGET-TYPED `new(...)` states NO name — `ObjectCreationStrategy` recovers it from the
+        // model and emits `new CatalogueEntry(...)`, so the import must be recovered the same way
+        // (a declared type only covers the OUTERMOST creation; nested ones live inside arguments).
+        foreach (var implicitCreation in node.DescendantNodes().OfType<ImplicitObjectCreationExpressionSyntax>())
+        {
+            var created = _semanticModel?.GetTypeInfo(implicitCreation).Type;
+            if (created is { Name.Length: > 0 }) types.Add(created.Name);
         }
 
         // EVERY `Upper.member` access roots an import candidate — method calls AND plain static
@@ -1097,7 +1114,7 @@ public class TypeScriptEmitter
 
     public string EmitStaticHelperModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel)
     {
-        if (semanticModel != null) _converter.SetSemanticModel(semanticModel);
+        if (semanticModel != null) { _semanticModel = semanticModel; _converter.SetSemanticModel(semanticModel); }
         _converter.SetCurrentClass(cls.Identifier.Text);
         _converter.UsedHelpers.Clear();
         _converter.UsedAppTypes.Clear();

@@ -52,6 +52,25 @@ public class TextInputRealizerTests
     }
 
     [Fact]
+    public void TextEntry_WithSeveralLines_LowersToATextareaCarryingItsValueAsContent()
+    {
+        // A message box is the same primitive with a line count — and a textarea's value is its
+        // CONTENT (there is no value attribute), which is what SSR has to write for hydration.
+        var node = Render(new TextEntry("Tell us about the project")
+        {
+            Lines = 5,
+            Placeholder = "Describe your request…",
+        });
+
+        node.Tag.Should().Be("textarea");
+        node.Attributes["rows"].Should().Be("5");
+        node.Attributes.Should().NotContainKey("value");
+        node.Attributes["placeholder"].Should().Be("Describe your request…");
+        node.Children.Single(c => c.Tag == "#text").TextContent.Should().Be("Tell us about the project");
+        node.Attributes["style"].Should().Contain("resize: vertical");
+    }
+
+    [Fact]
     public void TextEntry_Obscure_And_Disabled_MapToInputSemantics()
     {
         var password = Render(new TextEntry("secret") { Obscure = true });

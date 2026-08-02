@@ -27,9 +27,21 @@ import { Curve, Motion } from './design-system.generated';
 export { StyleChannels } from './value-types';
 
 /** Base of every abstract node: the wire discriminator + self-lowering into the web pipeline. */
+/**
+ * The TRAILING CONFIG every vocabulary constructor accepts. eqc lowers a C# object initializer
+ * (`new T(a) { P = … }`) to `new T(a, …, { p: … })`, so a twin without this parameter silently
+ * DROPS whatever the initializer set — the member stays at its default after hydration while SSR
+ * rendered it. Cross-pinned by vocabulary-config.spec.ts.
+ */
+export type EqConfig = Record<string, unknown>;
+
 export abstract class VisualNode {
   abstract readonly nodeKind: string;
   key?: string | null;
+  /** Spec S1 `align-self` — overrides the parent flex container's cross alignment for this child. */
+  alignSelf?: CrossAlignValue | null;
+  /** Spec S4 — how many grid COLUMNS this child spans. */
+  gridSpan?: number;
 
   /** Lowers this subtree with the ambient Photon context — the web pipeline's `Component.render()` seam. */
   render(): HtmlNode {
@@ -79,11 +91,12 @@ export class TextRun {
   color: ColorTokenValue | null;
   mono: boolean;
 
-  constructor(content: string, color: ColorTokenValue | null = null, mono = false) {
+  constructor(content: string, color: ColorTokenValue | null = null, mono = false, config?: EqConfig) {
     this.content = content;
     this.color = color;
     this.mono = mono;
-  }
+      if (config) Object.assign(this, config);
+    }
 }
 
 /** Mirror of the C# `ShadowSpec` record struct — positional constructor, like the transpiler emits. */
@@ -93,12 +106,13 @@ export class ShadowSpec {
   spread: number;
   color: ColorTokenValue;
 
-  constructor(offsetY = 0, blur = 0, spread = 0, color?: ColorTokenValue) {
+  constructor(offsetY = 0, blur = 0, spread = 0, color?: ColorTokenValue, config?: EqConfig) {
     this.offsetY = offsetY;
     this.blur = blur;
     this.spread = spread;
     this.color = color as ColorTokenValue;
-  }
+      if (config) Object.assign(this, config);
+    }
 }
 
 interface BoxStyleConfig {
@@ -186,11 +200,12 @@ export class Box extends VisualNode {
   style: BoxStyle;
   child: VisualChild | null;
 
-  constructor(style: BoxStyle = new BoxStyle(), child: VisualChild | null = null) {
+  constructor(style: BoxStyle = new BoxStyle(), child: VisualChild | null = null, config?: EqConfig) {
     super();
     this.style = style;
     this.child = child;
-  }
+      if (config) Object.assign(this, config);
+    }
 }
 
 interface FlexConfig {
@@ -329,7 +344,10 @@ export class GridTrack {
   constructor(
     readonly kind: 'fixed' | 'fill' | 'hug',
     readonly value: number,
-  ) {}
+    config?: EqConfig,
+  ) {
+    if (config) Object.assign(this, config);
+  }
 
   static fixed(dp: number): GridTrack {
     return new GridTrack('fixed', dp);
@@ -468,11 +486,12 @@ export class Hoverable extends VisualNode {
   child: VisualChild;
   onChanged: (entered: boolean) => void;
 
-  constructor(child: VisualChild, onChanged: (entered: boolean) => void) {
+  constructor(child: VisualChild, onChanged: (entered: boolean) => void, config?: EqConfig) {
     super();
     this.child = child;
     this.onChanged = onChanged;
-  }
+      if (config) Object.assign(this, config);
+    }
 }
 
 /** Mirror of the C# `Overlay` (Phase C): the viewport layer above the page. */
@@ -503,11 +522,12 @@ export class Presence extends VisualNode {
   child: VisualChild;
   enter: string;
 
-  constructor(child: VisualChild, enter = 'fade') {
+  constructor(child: VisualChild, enter = 'fade', config?: EqConfig) {
     super();
     this.child = child;
     this.enter = enter;
-  }
+      if (config) Object.assign(this, config);
+    }
 }
 
 /** Navigation semantics: the child becomes a link to href — the child owns all visuals. */
@@ -533,11 +553,12 @@ export class DragDismiss extends VisualNode {
   child: VisualChild;
   onDismiss: (() => void) | null;
 
-  constructor(child: VisualChild, onDismiss: (() => void) | null = null) {
+  constructor(child: VisualChild, onDismiss: (() => void) | null = null, config?: EqConfig) {
     super();
     this.child = child;
     this.onDismiss = onDismiss;
-  }
+      if (config) Object.assign(this, config);
+    }
 }
 
 interface TextEntryConfig {
@@ -549,9 +570,11 @@ interface TextEntryConfig {
   role?: string;
   /** Takes focus on mount (the command-palette contract). */
   autofocus?: boolean;
+  /** Line count: 1 (default) is single-line; more makes it a textarea that tall. */
+  lines?: number;
 }
 
-/** Mirror of the C# `TextEntry` (spec B9/B10): single-line entry; the browser owns caret/IME. */
+/** Mirror of the C# `TextEntry` (spec B9/B10): the browser owns caret/IME; >1 line is a textarea. */
 export class TextEntry extends VisualNode {
   readonly nodeKind = 'textEntry';
   value: string;
@@ -563,6 +586,7 @@ export class TextEntry extends VisualNode {
   obscure = false;
   role = 'bodyL';
   autofocus = false;
+  lines = 1;
 
   constructor(
     value: string,
@@ -586,10 +610,11 @@ export class KeyChord {
   key: string;
   modifiers: number;
 
-  constructor(key: string, modifiers = 0) {
+  constructor(key: string, modifiers = 0, config?: EqConfig) {
     this.key = key;
     this.modifiers = modifiers;
-  }
+      if (config) Object.assign(this, config);
+    }
 
   /** C# twin: `KeyChord.Command("k")` — ⌘K on Apple, Ctrl+K elsewhere. */
   static command(key: string): KeyChord {
@@ -619,12 +644,13 @@ export class Shortcut extends VisualNode {
   chord: KeyChord;
   onPressed: (() => void) | null;
 
-  constructor(child: VisualChild, chord: KeyChord, onPressed: (() => void) | null = null) {
+  constructor(child: VisualChild, chord: KeyChord, onPressed: (() => void) | null = null, config?: EqConfig) {
     super();
     this.child = child;
     this.chord = chord;
     this.onPressed = onPressed;
-  }
+      if (config) Object.assign(this, config);
+    }
 }
 
 /** Mirror of the C# `LinearGradient` record: two token stops on a straight axis (engine fence),
@@ -693,7 +719,10 @@ export class RadialGradient {
     readonly centerY: number,
     readonly radiusX: number,
     readonly radiusY: number,
-  ) {}
+    config?: EqConfig,
+  ) {
+    if (config) Object.assign(this, config);
+  }
 }
 
 /** Mirror of the C# `GridPattern`: repeating hairline grid (square cell, token line color). */
@@ -702,11 +731,12 @@ export class GridPattern {
   color: ColorTokenValue;
   lineWidth: number;
 
-  constructor(cell: number, color: ColorTokenValue, lineWidth = 1) {
+  constructor(cell: number, color: ColorTokenValue, lineWidth = 1, config?: EqConfig) {
     this.cell = cell;
     this.color = color;
     this.lineWidth = lineWidth;
-  }
+      if (config) Object.assign(this, config);
+    }
 }
 
 interface LoopMotionConfig {
@@ -757,6 +787,7 @@ export class ScrollView extends VisualNode {
     super();
     this.child = child;
     this.axis = axis;
+    if (config) Object.assign(this, config);
     this.offset = config?.offset ?? 0;
     if (config?.width !== undefined) this.width = SizeValue.from(config.width);
     if (config?.height !== undefined) this.height = SizeValue.from(config.height);
@@ -798,13 +829,14 @@ export class IconGlyph {
   viewBox: string;
   strokeWidth: number;
 
-  constructor(name: string, path: string, style = 'fill', viewBox = '0 0 24 24', strokeWidth = 2) {
+  constructor(name: string, path: string, style = 'fill', viewBox = '0 0 24 24', strokeWidth = 2, config?: EqConfig) {
     this.name = name;
     this.path = path;
     this.style = style;
     this.viewBox = viewBox;
     this.strokeWidth = strokeWidth;
-  }
+      if (config) Object.assign(this, config);
+    }
 }
 
 export class Icon extends VisualNode {
@@ -819,6 +851,7 @@ export class Icon extends VisualNode {
     size = 24,
     color: ColorTokenValue | null = null,
     label: string | null = null,
+    config?: EqConfig,
   ) {
     super();
     if (size !== 16 && size !== 20 && size !== 24 && size !== 32) {
@@ -830,6 +863,7 @@ export class Icon extends VisualNode {
     this.size = size;
     this.color = color;
     this.label = label;
+    if (config) Object.assign(this, config);
   }
 }
 
@@ -846,6 +880,8 @@ export class Stack extends VisualNode {
   ) {
     super();
     this.align = align;
+    // Everything the initializer set lands first; the two sizes are then NORMALIZED over it.
+    if (config) Object.assign(this, config);
     if (config?.width !== undefined) this.width = SizeValue.from(config.width);
     if (config?.height !== undefined) this.height = SizeValue.from(config.height);
   }
@@ -862,6 +898,8 @@ export class Positioned extends VisualNode {
   end: number | null;
   bottom: number | null;
   start: number | null;
+  /** Spec S7: explicit stacking order inside the Stack (0 = the child's own depth). */
+  zIndex = 0;
 
   constructor(
     child: VisualChild,
@@ -869,6 +907,14 @@ export class Positioned extends VisualNode {
     end: number | null = null,
     bottom: number | null = null,
     start: number | null = null,
+    config?: {
+      top?: number | null;
+      end?: number | null;
+      bottom?: number | null;
+      start?: number | null;
+      zIndex?: number;
+      key?: string | null;
+    },
   ) {
     super();
     this.child = child;
@@ -876,6 +922,7 @@ export class Positioned extends VisualNode {
     this.end = end;
     this.bottom = bottom;
     this.start = start;
+    if (config) Object.assign(this, config);
   }
 }
 
@@ -903,11 +950,12 @@ export class Spinner extends VisualNode {
   size: number;
   color: ColorTokenValue | null;
 
-  constructor(size = 20, color: ColorTokenValue | null = null) {
+  constructor(size = 20, color: ColorTokenValue | null = null, config?: EqConfig) {
     super();
     this.size = size;
     this.color = color;
-  }
+      if (config) Object.assign(this, config);
+    }
 }
 
 export class Spacer extends VisualNode {

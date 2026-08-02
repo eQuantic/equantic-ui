@@ -366,17 +366,26 @@ function lowerOverlay(node: OverlayNode, context: LoweringContext, path: string)
 /** Spec B9/B10 mirror: the REAL chrome-less <input> — identical DOM to the C# SSR realizer, plus
  * the client-only handlers (input → onChanged, Enter → onSubmit, focus/blur → onFocusChanged). */
 function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode {
-  const input = element('input', {
+  // C# twin: >1 line IS a textarea — its value is CONTENT, not an attribute.
+  const lines = node.lines ?? 1;
+  const multiline = lines > 1;
+  const input = element(multiline ? 'textarea' : 'input', {
     width: '100%',
     padding: '0',
     background: 'none',
     border: 'none',
     color: tokenValue(context.textPrimary),
     'font-family': 'inherit',
+    ...(multiline ? { resize: 'vertical' } : {}),
   });
   prependClass(input, `eq-entry eq-type-${node.role.toLowerCase()}`);
-  input.attributes['type'] = node.obscure === true ? 'password' : 'text';
-  input.attributes['value'] = node.value;
+  if (multiline) {
+    input.attributes['rows'] = String(lines);
+    if (node.value.length > 0) input.children = [textLeaf(node.value)];
+  } else {
+    input.attributes['type'] = node.obscure === true ? 'password' : 'text';
+    input.attributes['value'] = node.value;
+  }
   if (node.placeholder != null) input.attributes['placeholder'] = node.placeholder;
   // C# twin: the attribute marks intent; the client also FOCUSES on mount — a dialog opened later
   // never gets the browser's parse-time autofocus.

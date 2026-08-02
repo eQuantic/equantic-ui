@@ -62,6 +62,56 @@ public class S1StyleTranspilationTests
             "the S1 value type rides the runtime import like the rest of the vocabulary");
     }
 
+    private const string CopySource = """
+        using eQuantic.UI.Primitives;
+
+        namespace Demo;
+
+        public sealed class TallCard : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context)
+            {
+                var style = new BoxStyle { Width = SizeValue.Fill };
+                style = style with { Height = 44 };
+                return new Box(style);
+            }
+        }
+        """;
+
+    /// <summary>
+    /// A `with` copy of a RUNTIME-provided value type must go through its CONSTRUCTOR: the twin
+    /// normalizes what it is handed (a bare number becomes a SizeValue). A raw object spread skips
+    /// that, so SSR would keep the height and the hydrated client would drop it.
+    /// </summary>
+    [Fact]
+    public void WithCopy_OfARuntimeValueType_RebuildsThroughItsConstructor()
+    {
+        var ts = Transpile(CopySource, "TallCard.cs");
+
+        ts.Should().Contain("new BoxStyle({ ...style, height: 44 })");
+        ts.Should().NotContain("{ ...style, height: 44 }," , "the spread must not stand alone");
+    }
+
+    /// <summary>Compiles one source against the REAL Primitives assembly, like the site build does.</summary>
+    private static string Transpile(string source, string path)
+    {
+        var tree = CSharpSyntaxTree.ParseText(source, path: path);
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
+            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+        var compilation = CSharpCompilation.Create("Copy", [tree], references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        var result = compiler.CompileSource(source, path).Single();
+        result.Success.Should().BeTrue(string.Join("; ", result.Errors.Select(e => e.Message)));
+        return result.TypeScript;
+    }
+
     private const string MotionSource = """
         using eQuantic.UI.Primitives;
 
