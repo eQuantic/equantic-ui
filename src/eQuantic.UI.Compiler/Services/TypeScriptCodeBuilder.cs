@@ -1,16 +1,16 @@
-using System.Text;
+using eQuantic.UI.Codegen;
 using Microsoft.CodeAnalysis;
 
 namespace eQuantic.UI.Compiler.Services;
 
+/// <summary>
+/// The writer for the file type this compiler emits: TypeScript. Indentation, lines and blocks come
+/// from the shared <see cref="CodeWriter"/> — what belongs HERE is what only a TypeScript file has:
+/// imports, classes, members, and the source mapping that lets a browser show C#.
+/// </summary>
 public class TypeScriptCodeBuilder
 {
-    private readonly StringBuilder _sb = new();
-    private int _indentLevel = 0;
-    private const string IndentString = "    ";
-
-    // Source mapping data
-    private int _currentLine = 1;
+    private readonly CodeWriter _writer = new();
     private readonly List<SourceMapping> _mappings = new();
 
     public struct SourceMapping
@@ -28,7 +28,7 @@ public class TypeScriptCodeBuilder
     {
         if (!items.Any()) return;
         var sortedItems = items.OrderBy(i => i);
-        AppendLine($"import {{ {string.Join(", ", sortedItems)} }} from \"{from}\";");
+        Write($"import {{ {string.Join(", ", sortedItems)} }} from \"{from}\";");
     }
 
     public void Class(string name, string? baseClass, Action<ClassBuilder> buildAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool export = true)
@@ -36,38 +36,32 @@ public class TypeScriptCodeBuilder
         if (sourceNode != null) RecordMapping(sourceNode);
         var generics = typeParameters != null && typeParameters.Any() ? $"<{string.Join(", ", typeParameters)}>" : "";
         var extendsClause = string.IsNullOrEmpty(baseClass) ? "" : $" extends {baseClass}";
-        AppendLine($"{(export ? "export " : "")}class {name}{generics}{extendsClause} {{");
-        Indent();
-        buildAction(new ClassBuilder(this));
-        Dedent();
-        AppendLine("}");
-        AppendLine();
+
+        // The closing brace travels with the scope: a class body that opens and never closes is the
+        // one bug generated code reliably ships, and a `using` makes it unrepresentable.
+        using (_writer.BeginBlock($"{(export ? "export " : "")}class {name}{generics}{extendsClause} {{"))
+        {
+            buildAction(new ClassBuilder(this));
+        }
+        Write("");
     }
 
-    private void AppendLine(string line = "")
-    {
-        string indent = new string(' ', _indentLevel * 4);
-        if (!string.IsNullOrEmpty(line))
-        {
-            _sb.Append(indent);
-            _sb.AppendLine(line);
-            _currentLine++;
-        }
-        else
-        {
-            _sb.AppendLine();
-            _currentLine++;
-        }
-    }
+    public void Indent() => _writer.IndentLevel++;
 
-    public void Indent() => _indentLevel++;
-    public void Dedent() => _indentLevel = Math.Max(0, _indentLevel - 1);
-    
-    // Internal helper exposed via builder context
-    public void Line(string line, SyntaxNode? sourceNode = null) 
+    public void Dedent() => _writer.IndentLevel = Math.Max(0, _writer.IndentLevel - 1);
+
+    /// <summary>A line, optionally carrying the C# it came from into the source map.</summary>
+    public void Line(string line, SyntaxNode? sourceNode = null)
     {
         if (sourceNode != null) RecordMapping(sourceNode);
-        AppendLine(line);
+        Write(line);
+    }
+
+    /// <summary>An EMPTY line carries no indentation — trailing whitespace is a diff nobody wants.</summary>
+    private void Write(string line)
+    {
+        if (string.IsNullOrEmpty(line)) _writer.AppendLine();
+        else _writer.AppendLine(line);
     }
 
     private void RecordMapping(SyntaxNode node)
@@ -75,9 +69,9 @@ public class TypeScriptCodeBuilder
         var pos = node.GetLocation().GetLineSpan();
         _mappings.Add(new SourceMapping
         {
-            GeneratedLine = _currentLine,
+            GeneratedLine = _writer.CurrentLine,
             // 0-based column where the emitted line's content begins (after indentation).
-            GeneratedColumn = _indentLevel * IndentString.Length,
+            GeneratedColumn = _writer.IndentLevel * 4,
             // Roslyn line/character positions are already 0-based, matching the source-map spec.
             SourceLine = pos.StartLinePosition.Line,
             SourceColumn = pos.StartLinePosition.Character,
@@ -85,16 +79,11 @@ public class TypeScriptCodeBuilder
         });
     }
 
-    public override string ToString() => _sb.ToString();
+    public override string ToString() => _writer.ToString();
 
-    public class ClassBuilder
+    public class ClassBuilder(TypeScriptCodeBuilder builder)
     {
-        private readonly TypeScriptCodeBuilder _builder;
-
-        public ClassBuilder(TypeScriptCodeBuilder builder)
-        {
-            _builder = builder;
-        }
+        private readonly TypeScriptCodeBuilder _builder = builder;
 
         /// <param name="isDeclare">Emit a TYPE-ONLY field (<c>declare x: T;</c>) — no runtime code at all.
         /// Required for properties populated from outside the class body (the base
@@ -116,30 +105,26 @@ public class TypeScriptCodeBuilder
             _builder.Line($"{access}{name}: {type};", sourceNode);
         }
 
-        public void Constructor(string parameters, Action bodyAction, SyntaxNode? sourceNode = null)
-        {
-            _builder.Line($"constructor({parameters}) {{", sourceNode);
-            _builder.Indent();
-            bodyAction();
-            _builder.Dedent();
-            _builder.Line("}");
-            _builder.Line("");
-        }
-        
+        public void Constructor(string parameters, Action bodyAction, SyntaxNode? sourceNode = null) =>
+            Member($"constructor({parameters}) {{", bodyAction, sourceNode);
+
         public void Method(string name, string parameters, bool isAsync, Action bodyAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool isStatic = false, bool isGenerator = false)
         {
             // Iterator methods (yield) are JS GENERATORS: the `*` marker is what lets the emitted
             // `yield` statements parse. `async *` is the async-iterator form, also valid JS.
             var prefix = (isStatic ? "static " : "") + (isAsync ? "async " : "") + (isGenerator ? "*" : "");
             var generics = typeParameters != null && typeParameters.Any() ? $"<{string.Join(", ", typeParameters)}>" : "";
-            _builder.Line($"{prefix}{name}{generics}({parameters}) {{", sourceNode);
-            _builder.Indent();
-            bodyAction();
-            _builder.Dedent();
-            _builder.Line("}");
-            _builder.Line("");
+            Member($"{prefix}{name}{generics}({parameters}) {{", bodyAction, sourceNode);
         }
 
         public void Raw(string content, SyntaxNode? sourceNode = null) => _builder.Line(content, sourceNode);
+
+        /// <summary>A member with a body, and the blank line every member is followed by.</summary>
+        private void Member(string signature, Action bodyAction, SyntaxNode? sourceNode)
+        {
+            if (sourceNode != null) _builder.RecordMapping(sourceNode);
+            using (_builder._writer.BeginBlock(signature)) bodyAction();
+            _builder.Line("");
+        }
     }
 }

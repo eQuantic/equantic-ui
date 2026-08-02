@@ -100,6 +100,19 @@ public class CodeWriter
         return BeginScope(opener, closer);
     }
 
+    /// <summary>
+    /// A block whose opener is already at the END of a line — <c>class Foo {</c>, the brace style
+    /// most languages are written in. The closer still travels with the scope, which is the only
+    /// part that ever goes wrong.
+    /// </summary>
+    public IDisposable BeginBlock(string lineEndingInOpener, string closer = "}")
+    {
+        AppendLine(lineEndingInOpener);
+        _closers.Push(closer);
+        IndentLevel++;
+        return _tracker;
+    }
+
     public void EndScope()
     {
         IndentLevel = Math.Max(0, IndentLevel - 1);

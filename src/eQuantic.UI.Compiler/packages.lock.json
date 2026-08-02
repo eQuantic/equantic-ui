@@ -169,6 +169,9 @@
           "System.Composition.Runtime": "9.0.0"
         }
       },
+      "equantic.ui.codegen": {
+        "type": "Project"
+      },
       "equantic.ui.core": {
         "type": "Project"
       }
