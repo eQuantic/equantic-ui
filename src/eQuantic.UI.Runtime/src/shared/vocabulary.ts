@@ -697,6 +697,16 @@ interface TransitionSpecConfig {
 
 /** Mirror of the C# `TransitionSpec` record struct (spec S6): which channels glide, for how long,
  * along which bezier. `easing` is the 4-number control-point tuple the generated `Curve` exports. */
+/**
+ * C# twin of `CuratedIcons` (Primitives): the curated glyph set behind the `Icons` enum. An enum
+ * member lowers to its camelCase name, so resolving one is a lookup in the generated catalogue.
+ */
+export const CuratedIcons = {
+  resolve(glyph: string): IconGlyph {
+    return new IconGlyph(glyph, iconPaths[glyph] ?? '');
+  },
+};
+
 export class TransitionSpec {
   channels: number;
   durationMs: number;

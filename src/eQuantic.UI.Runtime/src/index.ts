@@ -139,6 +139,7 @@ export {
   DragDismiss,
   Link,
   Spinner,
+  CuratedIcons,
 } from './shared/vocabulary';
 export {
   Color,
@@ -200,6 +201,16 @@ export { Drawer } from './shared/components/Drawer';
 export { Accordion } from './shared/components/Accordion';
 export { AccordionItem } from './shared/components/AccordionItem';
 export { Table } from './shared/components/Table';
+export { Breadcrumb } from './shared/components/Breadcrumb';
+export { Crumb } from './shared/components/Crumb';
+export { DataColumn } from './shared/components/DataColumn';
+export { DataRow } from './shared/components/DataRow';
+export { DataTable } from './shared/components/DataTable';
+export { PageIndicator } from './shared/components/PageIndicator';
+export { Pagination } from './shared/components/Pagination';
+export { SegmentedControl } from './shared/components/SegmentedControl';
+export { Slider } from './shared/components/Slider';
+export { Stepper } from './shared/components/Stepper';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).
 export {
   Space,

@@ -60,7 +60,8 @@ public class ConsoleComponentTests
         {
             var tree = (Column)table.Build(Ctx);
             var grid = (Grid)((Box)tree.Children[0]).Child!;
-            return (Checkbox)((Row)((Box)grid.Children[0]).Child!).Children[0];
+            var cell = (Row)((Box)grid.Children[0]).Child!;
+            return (Checkbox)((Box)cell.Children[0]).Child!;
         }
     }
 

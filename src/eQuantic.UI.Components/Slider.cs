@@ -66,11 +66,11 @@ public sealed class Slider : StatelessComponent
         // Proportional layout WITHOUT knowing the pixel width: the two track halves are flex weights.
         // A zero weight would collapse the side entirely, so each end keeps a hairline of presence.
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        row.Add(new Flexible(TrackHalf(theme, fill, filled: true, onPressed:
-            Disabled ? null : () => OnChanged?.Invoke(Math.Max(Min, Value - step))), Weight(fraction)));
+        row.Add(new Flexible(TrackHalf(fill, filled: true, enabled: !Disabled,
+            onPressed: () => OnChanged?.Invoke(Math.Max(Min, Value - step))), Weight(fraction)));
         row.Add(thumb);
-        row.Add(new Flexible(TrackHalf(theme, theme.BorderStrong, filled: false, onPressed:
-            Disabled ? null : () => OnChanged?.Invoke(Math.Min(Max, Value + step))), Weight(1 - fraction)));
+        row.Add(new Flexible(TrackHalf(theme.BorderStrong, filled: false, enabled: !Disabled,
+            onPressed: () => OnChanged?.Invoke(Math.Min(Max, Value + step))), Weight(1 - fraction)));
 
         return new Box(new BoxStyle
         {
@@ -90,7 +90,7 @@ public sealed class Slider : StatelessComponent
     /// One side of the track: a hairline bar inside a full-height press target, so the press area is
     /// <see cref="Touch.MinTarget"/> tall while the visible track stays 4dp.
     /// </summary>
-    private static VisualNode TrackHalf(IAppTheme theme, ColorToken color, bool filled, Action? onPressed)
+    private static VisualNode TrackHalf(ColorToken color, bool filled, bool enabled, Action onPressed)
     {
         var bar = new Box(new BoxStyle
         {
@@ -108,8 +108,8 @@ public sealed class Slider : StatelessComponent
         centered.Add(bar);
 
         var target = new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }, centered);
-        return onPressed is null
-            ? target
-            : new Pressable(target, onPressed) { Label = filled ? "Decrease" : "Increase" };
+        return enabled
+            ? new Pressable(target, onPressed) { Label = filled ? "Decrease" : "Increase" }
+            : target;
     }
 }

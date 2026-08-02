@@ -52,9 +52,9 @@ public sealed class Pagination : StatelessComponent
         }
 
         var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
-        row.Add(Step(theme, "Previous", current > 1 ? () => OnChanged?.Invoke(current - 1) : null));
+        row.Add(Step("Previous", current > 1, () => OnChanged?.Invoke(current - 1)));
         row.Add(numbers);
-        row.Add(Step(theme, "Next", current < PageCount ? () => OnChanged?.Invoke(current + 1) : null));
+        row.Add(Step("Next", current < PageCount, () => OnChanged?.Invoke(current + 1)));
         return row;
     }
 
@@ -63,17 +63,25 @@ public sealed class Pagination : StatelessComponent
     /// <see cref="Window"/> either side of the current one. Pure and static, so a test can pin the
     /// windowing without building a tree.
     /// </summary>
-    public static IReadOnlyList<int> Pages(int pageCount, int currentPage)
+    public static int[] Pages(int pageCount, int currentPage)
     {
         if (pageCount <= 0) return [];
-        if (pageCount <= AlwaysShow) return Enumerable.Range(1, pageCount).ToArray();
+        if (pageCount <= AlwaysShow)
+        {
+            var all = new int[pageCount];
+            for (var page = 1; page <= pageCount; page++) all[page - 1] = page;
+            return all;
+        }
 
         var current = Math.Clamp(currentPage, 1, pageCount);
-        var pages = new SortedSet<int> { 1, pageCount };
+        var pages = new List<int> { 1 };
         for (var page = current - Window; page <= current + Window; page++)
-            if (page >= 1 && page <= pageCount) pages.Add(page);
+            if (page > 1 && page < pageCount && !pages.Contains(page)) pages.Add(page);
+        if (pageCount > 1) pages.Add(pageCount);
 
-        return pages.ToArray();
+        var ordered = new int[pages.Count];
+        for (var i = 0; i < pages.Count; i++) ordered[i] = pages[i];
+        return ordered;
     }
 
     private VisualNode Number(IAppTheme theme, int page, bool current)
@@ -122,6 +130,11 @@ public sealed class Pagination : StatelessComponent
         return new Box(new BoxStyle { Width = Cell, Height = Cell }, centered);
     }
 
-    private static VisualNode Step(IAppTheme theme, string label, Action? onPressed) =>
-        new Button(label, Variant.Outline, SizeVariant.Small) { Disabled = onPressed is null, OnPressed = onPressed };
+    /// <summary>Previous / Next. Disabled at the ends — never removed, or the row reflows.</summary>
+    private static VisualNode Step(string label, bool enabled, Action onPressed) =>
+        new Button(label, Variant.Outline, SizeVariant.Small)
+        {
+            Disabled = !enabled,
+            OnPressed = onPressed,
+        };
 }
