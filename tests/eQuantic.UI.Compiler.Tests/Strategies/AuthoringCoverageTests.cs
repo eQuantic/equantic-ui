@@ -317,4 +317,18 @@ public class AuthoringCoverageTests
         ts.Should().Contain("static p(text)");
         ts.Should().Contain("static get empty()");
     }
+
+    [Fact]
+    public void RecordParameterDefault_IsCarriedIntoTheConstructor()
+    {
+        // `string Tag = ""` must construct as '' — falling back to `default(T)` gives null, and the
+        // first `entry.Tag.Length` at hydration takes the page down.
+        var src = "public record Entry(string Id, string Title, string Tag = \"\", bool Ready = true); " +
+                  "public class C : StatelessComponent { " +
+                  "  public override IComponent Build(RenderContext c) => new Text(new Entry(\"a\", \"b\").Tag); }";
+        var ts = TsOf("Entry", src);
+
+        ts.Should().Contain("tag: any = ''");
+        ts.Should().Contain("ready: any = true");
+    }
 }
