@@ -699,8 +699,13 @@ export class TransitionSpec {
     if (config) Object.assign(this, config);
   }
 
-  /** C# twin: `TransitionSpec.Colors(150)` — the ubiquitous hover-tint glide. */
-  static colors(durationMs = 150): TransitionSpec {
+  /** C# twin: `TransitionSpec.Of(channels, Motion.Press)` — a NAMED role, duration AND curve. */
+  static of(channels: number, motion: { durationMs: number; curve: readonly number[] }): TransitionSpec {
+    return new TransitionSpec(channels, motion.durationMs, 0, { easing: motion.curve });
+  }
+
+  /** C# twin: `TransitionSpec.Colors()` — the ubiquitous hover-tint glide (fast feedback). */
+  static colors(durationMs: number = Motion.fastMs): TransitionSpec {
     return new TransitionSpec(StyleChannels.colors, durationMs);
   }
 

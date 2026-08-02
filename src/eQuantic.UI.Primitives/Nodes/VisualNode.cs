@@ -239,8 +239,16 @@ public readonly record struct TransitionSpec(StyleChannels Channels, float Durat
     /// <summary>The bezier the change follows; defaults to the spec §06 standard curve.</summary>
     public Curve Easing { get; init; } = Curve.Standard;
 
-    /// <summary>Color-only glide — the ubiquitous hover-tint transition.</summary>
-    public static TransitionSpec Colors(float durationMs = 150) => new(StyleChannels.Colors, durationMs);
+    /// <summary>
+    /// A NAMED motion role applied to channels — <c>TransitionSpec.Of(StyleChannels.Colors,
+    /// Motion.Press)</c>. Prefer this to a hand-picked number: the role carries both the duration
+    /// AND the curve the spec pairs with it, so authors never land off the 100/200/300 scale.
+    /// </summary>
+    public static TransitionSpec Of(StyleChannels channels, MotionSpec motion) =>
+        new(channels, motion.DurationMs) { Easing = motion.Curve };
+
+    /// <summary>Color-only glide — the ubiquitous hover-tint transition (spec §06: fast feedback).</summary>
+    public static TransitionSpec Colors(float durationMs = Motion.FastMs) => new(StyleChannels.Colors, durationMs);
 
     /// <summary>Everything glides — state swaps that recolor, move and re-shadow at once.</summary>
     public static TransitionSpec All(float durationMs = Motion.BaseMs) => new(StyleChannels.All, durationMs);

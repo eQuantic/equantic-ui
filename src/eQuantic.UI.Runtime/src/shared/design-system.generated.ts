@@ -22,6 +22,7 @@ export const Space = {
   s10: 40,
   s12: 48,
   s16: 64,
+  gutter: 16,
 } as const;
 
 export const Radius = {
@@ -45,18 +46,82 @@ export const Touch = {
   pressCancelSlop: 12,
 } as const;
 
-export const Motion = {
-  fastMs: 100,
-  baseMs: 200,
-  slowMs: 300,
-  reducedCrossfadeMs: 120,
-} as const;
-
 export const Curve = {
   standard: [0.2, 0, 0, 1],
   decelerate: [0, 0, 0, 1],
   accelerate: [0.3, 0, 1, 1],
 } as const;
+
+export const Motion = {
+  fastMs: 100,
+  baseMs: 200,
+  slowMs: 300,
+  reducedCrossfadeMs: 120,
+  press: { durationMs: 100, curve: Curve.standard },
+  state: { durationMs: 200, curve: Curve.standard },
+  enter: { durationMs: 300, curve: Curve.decelerate },
+  exit: { durationMs: 200, curve: Curve.accelerate },
+} as const;
+
+/** The control ladder — every control of a given size measures the same (spec A12). */
+export const Sizing = {
+  gap(size: string): number {
+    switch (size) {
+      case 'small': return 6;
+      case 'medium': return 8;
+      case 'large': return 8;
+      default: return 10;
+    }
+  },
+  height(size: string): number {
+    switch (size) {
+      case 'small': return 32;
+      case 'medium': return 40;
+      case 'large': return 48;
+      default: return 56;
+    }
+  },
+  hitTarget(size: string): number {
+    switch (size) {
+      case 'small': return 48;
+      case 'medium': return 48;
+      case 'large': return 48;
+      default: return 56;
+    }
+  },
+  icon(size: string): number {
+    switch (size) {
+      case 'small': return 16;
+      case 'medium': return 20;
+      case 'large': return 20;
+      default: return 24;
+    }
+  },
+  labelSize(size: string): number {
+    switch (size) {
+      case 'small': return 13;
+      case 'medium': return 15;
+      case 'large': return 16;
+      default: return 17;
+    }
+  },
+  paddingX(size: string): number {
+    switch (size) {
+      case 'small': return 12;
+      case 'medium': return 16;
+      case 'large': return 20;
+      default: return 24;
+    }
+  },
+  radius(size: string): number {
+    switch (size) {
+      case 'small': return 10;
+      case 'medium': return 10;
+      case 'large': return 10;
+      default: return 14;
+    }
+  },
+};
 
 /** Height · PadX · Gap · Label · Icon · Radius · HitTarget — the spec A12 size table. */
 export const ButtonStyles = {

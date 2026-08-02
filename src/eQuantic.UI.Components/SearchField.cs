@@ -52,7 +52,7 @@ public sealed class SearchField : StatelessComponent
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Height = 40,
+            Height = Sizing.Height(SizeVariant.Medium),
             Background = theme.SurfaceSubtle,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             Padding = EdgeInsets.Symmetric(14, 0),

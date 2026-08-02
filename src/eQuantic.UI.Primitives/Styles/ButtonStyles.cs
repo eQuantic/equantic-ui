@@ -102,12 +102,12 @@ public static class ButtonStyles
         };
     }
 
-    /// <summary>The size table (spec A12): Height · PadX · Gap · Label · Icon · Radius · HitTarget.</summary>
-    public static (float Height, float PadX, float Gap, float LabelSize, float IconSize, float Radius, float Hit) Metrics(SizeVariant size) => size switch
-    {
-        SizeVariant.Small => (32, Space.S3, 6, 13, IconSize.Sm, Radius.Md, Touch.MinTarget),
-        SizeVariant.Medium => (40, Space.S4, Space.S2, 15, IconSize.Dense, Radius.Md, Touch.MinTarget),
-        SizeVariant.Large => (48, Space.S5, Space.S2, 16, IconSize.Dense, Radius.Md, Touch.MinTarget),
-        _ => (56, Space.S6, 10, 17, IconSize.Md, Radius.Lg, 56),
-    };
+    /// <summary>
+    /// The size table (spec A12), read from the shared <see cref="Sizing"/> ladder — a Button of a
+    /// given size must measure exactly like any other control of that size, so the numbers live in
+    /// the token layer and this is the tuple view of them.
+    /// </summary>
+    public static (float Height, float PadX, float Gap, float LabelSize, float IconSize, float Radius, float Hit) Metrics(SizeVariant size) =>
+        (Sizing.Height(size), Sizing.PaddingX(size), Sizing.Gap(size), Sizing.LabelSize(size),
+         Sizing.Icon(size), Sizing.Radius(size), Sizing.HitTarget(size));
 }

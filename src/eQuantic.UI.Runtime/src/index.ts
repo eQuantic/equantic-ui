@@ -209,6 +209,7 @@ export {
   Motion,
   Curve,
   ButtonStyles,
+  Sizing,
   photonTheme,
   PhotonTheme,
 } from './shared/design-system.generated';

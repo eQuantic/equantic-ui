@@ -70,7 +70,7 @@ public sealed class Accordion : StatefulComponent
 
             column.Add(new Pressable(new Box(new BoxStyle
             {
-                Height = 48,
+                Height = Sizing.Height(SizeVariant.Large),
                 Width = SizeValue.Fill,
                 Padding = EdgeInsets.Symmetric(Space.S3, 0),
                 Hover = new StyleDiff { Background = theme.SurfaceSubtle },

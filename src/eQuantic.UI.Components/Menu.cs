@@ -67,7 +67,7 @@ public sealed class Menu : StatefulComponent
 
             var surface = new Box(new BoxStyle
             {
-                Height = 40,
+                Height = Sizing.Height(SizeVariant.Medium),
                 Padding = EdgeInsets.Symmetric(Space.S3, 0),
                 Width = SizeValue.Fill,
                 Opacity = item.Disabled ? theme.DisabledOpacity : null,

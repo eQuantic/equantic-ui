@@ -51,7 +51,7 @@ public sealed class Select : StatefulComponent
 
         var field = new Box(new BoxStyle
         {
-            Height = 40,
+            Height = Sizing.Height(SizeVariant.Medium),
             Width = SizeValue.Fill,
             Padding = EdgeInsets.Symmetric(Space.S3, 0),
             Background = theme.Surface,
@@ -79,7 +79,7 @@ public sealed class Select : StatefulComponent
 
             list.Add(new Pressable(new Box(new BoxStyle
             {
-                Height = 40,
+                Height = Sizing.Height(SizeVariant.Medium),
                 Padding = EdgeInsets.Symmetric(Space.S3, 0),
                 Width = SizeValue.Fill,
                 Background = selected ? theme.Colors(Variant.Primary).Subtle : null,

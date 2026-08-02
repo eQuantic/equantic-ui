@@ -17,6 +17,11 @@ public static class Space
     public const float S10 = 40;  // hero padding
     public const float S12 = 48;  // empty-state breathing room
     public const float S16 = 64;  // large vertical rhythm
+
+    /// <summary>The screen gutter — the inset every full-width surface keeps from the edge. An
+    /// alias for <see cref="S4"/> that says WHY, so a screen reads `Space.Gutter` and a card's own
+    /// padding reads `Space.S4`.</summary>
+    public const float Gutter = S4;
 }
 
 /// <summary>
@@ -36,10 +41,74 @@ public static class Radius
 /// <summary>Canonical icon sizes (spec §07) — glyphs via the text atlas; icons do NOT scale with Dynamic Type.</summary>
 public static class IconSize
 {
-    public const float Sm = 16;   // inline
-    public const float Dense = 20; // dense UI
-    public const float Md = 24;   // default
-    public const float Lg = 32;   // feature
+    /// <summary>Step 1 of 4 — inline with text.</summary>
+    public const float Sm = 16;
+    /// <summary>Step 2 of 4 — dense UI. Sits BETWEEN <see cref="Sm"/> and <see cref="Md"/>: the
+    /// name states intent, not rank, so read the ladder as Sm &lt; Dense &lt; Md &lt; Lg.</summary>
+    public const float Dense = 20;
+    /// <summary>Step 3 of 4 — the default.</summary>
+    public const float Md = 24;
+    /// <summary>Step 4 of 4 — feature-sized.</summary>
+    public const float Lg = 32;
+}
+
+/// <summary>
+/// The CONTROL LADDER (spec A12) — height, horizontal padding, inner gap, label size, icon size,
+/// corner radius and hit target for a control of a given <see cref="SizeVariant"/>.
+/// <para>
+/// This is a TOKEN, not a Button detail: a TextInput, Chip, Select, Stepper or SegmentedControl of
+/// the same size must measure identically. Reach for it instead of re-typing 40.
+/// </para>
+/// </summary>
+public static class Sizing
+{
+    public static float Height(SizeVariant size) => size switch
+    {
+        SizeVariant.Small => 32,
+        SizeVariant.Medium => 40,
+        SizeVariant.Large => 48,
+        _ => 56,
+    };
+
+    public static float PaddingX(SizeVariant size) => size switch
+    {
+        SizeVariant.Small => Space.S3,
+        SizeVariant.Medium => Space.S4,
+        SizeVariant.Large => Space.S5,
+        _ => Space.S6,
+    };
+
+    /// <summary>Gap between a control's icon and its label.</summary>
+    public static float Gap(SizeVariant size) => size switch
+    {
+        SizeVariant.Small => 6,
+        SizeVariant.Medium => Space.S2,
+        SizeVariant.Large => Space.S2,
+        _ => 10,
+    };
+
+    public static float LabelSize(SizeVariant size) => size switch
+    {
+        SizeVariant.Small => 13,
+        SizeVariant.Medium => 15,
+        SizeVariant.Large => 16,
+        _ => 17,
+    };
+
+    public static float Icon(SizeVariant size) => size switch
+    {
+        SizeVariant.Small => IconSize.Sm,
+        SizeVariant.Medium => IconSize.Dense,
+        SizeVariant.Large => IconSize.Dense,
+        _ => IconSize.Md,
+    };
+
+    public static float Radius(SizeVariant size) =>
+        size == SizeVariant.XLarge ? Primitives.Radius.Lg : Primitives.Radius.Md;
+
+    /// <summary>The hit rect: the enforced minimum, except XLarge whose visual already exceeds it.</summary>
+    public static float HitTarget(SizeVariant size) =>
+        size == SizeVariant.XLarge ? 56 : Touch.MinTarget;
 }
 
 /// <summary>Touch-target rules (spec §08): the engine enforces the stricter 48dp on both platforms.</summary>
@@ -93,4 +162,27 @@ public static class Motion
 
     /// <summary>Exit duration rule: ⅔ of the paired enter duration (with <see cref="Curve.Accelerate"/>).</summary>
     public static int ExitFor(int enterMs) => enterMs * 2 / 3;
+
+    // ---- Named roles ---------------------------------------------------------------------------
+    // A duration alone still leaves the curve to guesswork, and every call site that has to decide
+    // invents a number off the scale. Reach for the ROLE and both come with it.
+
+    /// <summary>Pressed and hover-like feedback — the fastest thing a user can perceive as response.</summary>
+    public static readonly MotionSpec Press = new(FastMs, Curve.Standard);
+
+    /// <summary>A state change on something already on screen: selection, tint, enable/disable.</summary>
+    public static readonly MotionSpec State = new(BaseMs, Curve.Standard);
+
+    /// <summary>A surface arriving — sheet, toast, popover, page push.</summary>
+    public static readonly MotionSpec Enter = new(SlowMs, Curve.Decelerate);
+
+    /// <summary>The paired exit: ⅔ of the enter, accelerating out.</summary>
+    public static readonly MotionSpec Exit = new(ExitFor(SlowMs), Curve.Accelerate);
 }
+
+/// <summary>
+/// A motion ROLE — a duration and the curve that belongs with it, so a call site names what is
+/// happening instead of picking a number. The physical settle after a gesture is NOT here: releases
+/// run <see cref="SpringSpec"/> with the release velocity injected, never a keyframed duration.
+/// </summary>
+public readonly record struct MotionSpec(int DurationMs, Curve Curve);

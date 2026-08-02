@@ -75,6 +75,7 @@ export {
   Motion,
   Curve,
   ButtonStyles,
+  Sizing,
   photonTheme,
   PhotonTheme,
 } from './design-system.generated';
