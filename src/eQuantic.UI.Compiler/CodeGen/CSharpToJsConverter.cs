@@ -226,6 +226,7 @@ public class CSharpToJsConverter
         // Sequences that come from nothing, and .NET names for what the browser already has.
         _strategyRegistry.Register<Strategies.Linq.EnumerableFactoryStrategy>();
         _strategyRegistry.Register<Strategies.Types.WebPrimitiveStrategy>();
+        _strategyRegistry.Register<GenericNameStrategy>();
         _strategyRegistry.Register<MemberAccessStrategy>();
         _strategyRegistry.Register<ElementAccessStrategy>();
         _strategyRegistry.Register<ObjectCreationStrategy>();

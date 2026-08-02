@@ -139,6 +139,12 @@ public class ComponentDefinition
     public bool IsStaticHelper { get; set; }
 
     /// <summary>
+    /// A plain class the app declares — not a record, not static, not a component. It emits as its
+    /// own module of INSTANCE members: identity, not value, so no structural equals and no `with`.
+    /// </summary>
+    public bool IsPlainClass { get; set; }
+
+    /// <summary>
     /// Simple names of referenced types the RUNTIME provides (today: the shared vocabulary in
     /// <c>eQuantic.UI.Primitives</c> — Box/Row/Text/…, tokens, ButtonStyles). Discovered per file via the
     /// semantic model (namespace-based, no fixed list), excluding enums (they lower to string literals).

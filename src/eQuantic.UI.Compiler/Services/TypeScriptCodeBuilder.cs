@@ -100,11 +100,14 @@ public class TypeScriptCodeBuilder
         /// Required for properties populated from outside the class body (the base
         /// <c>Object.assign(props)</c>): under <c>useDefineForClassFields</c> a plain declaration would
         /// define the field as <c>undefined</c> after <c>super()</c> and wipe the assigned value.</param>
-        public void Field(string name, string type, string? defaultValue = null, SyntaxNode? sourceNode = null, bool isStatic = false, bool isDeclare = false)
+        /// <summary>A field. A null <paramref name="type"/> means NO annotation — a plain class is
+        /// JavaScript, and a C# type name (<c>Func&lt;T, bool&gt;</c>) would be neither.</summary>
+        public void Field(string name, string? type, string? defaultValue = null, SyntaxNode? sourceNode = null, bool isStatic = false, bool isDeclare = false)
         {
             var init = defaultValue != null ? $" = {defaultValue}" : "";
             var prefix = (isDeclare ? "declare " : "") + (isStatic ? "static " : "");
-            _builder.Line($"{prefix}{name}: {type}{init};", sourceNode);
+            var annotation = string.IsNullOrEmpty(type) ? "" : $": {type}";
+            _builder.Line($"{prefix}{name}{annotation}{init};", sourceNode);
         }
 
         public void Property(string name, string type, bool isPublic = true, SyntaxNode? sourceNode = null)

@@ -1049,10 +1049,16 @@ public class TypeScriptEmitter
     /// static get bar() {…} static baz = … }</c>, plus imports for any record/component/helper it uses.
     /// </summary>
 
-    /// <summary>The static-class member emission (fields/getters/methods) — shared by top-level
-    /// helper MODULES and by NESTED static classes embedded in their owner's module.</summary>
-    private void EmitStaticMembers(ClassDeclarationSyntax cls, TypeScriptCodeBuilder.ClassBuilder c)
+    /// <summary>The class member emission (fields/getters/methods) — shared by top-level helper
+    /// MODULES, by NESTED static classes embedded in their owner's module, and by a PLAIN class the
+    /// developer wrote. The only difference is whether the members are static, so that is the
+    /// parameter: a plain class is the same shapes without the keyword, plus its constructor.</summary>
+    private void EmitStaticMembers(ClassDeclarationSyntax cls, TypeScriptCodeBuilder.ClassBuilder c,
+        bool asStatic = true)
     {
+        var qualifier = asStatic ? "static " : "";
+        if (!asStatic) EmitInstanceConstructor(cls, c);
+
             foreach (var f in cls.Members.OfType<FieldDeclarationSyntax>())
             {
                 foreach (var v in f.Declaration.Variables)
@@ -1060,7 +1066,9 @@ public class TypeScriptEmitter
                     var def = v.Initializer != null
                         ? _converter.ConvertExpression(v.Initializer.Value, f.Declaration.Type.ToString())
                         : null;
-                    c.Field(v.Identifier.Text.ToCamelCase(), CSharpTypeToTypeScript(f.Declaration.Type.ToString()), def, v, isStatic: true);
+                    c.Field(v.Identifier.Text.ToCamelCase(),
+                        asStatic ? CSharpTypeToTypeScript(f.Declaration.Type.ToString()) : null,
+                        asStatic ? def : null, v, isStatic: asStatic);
                 }
             }
             foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
@@ -1068,17 +1076,18 @@ public class TypeScriptEmitter
                 var pn = p.Identifier.Text.ToCamelCase();
                 if (p.ExpressionBody != null)
                 {
-                    c.Raw($"static get {pn}() {{ return {_converter.ConvertExpression(p.ExpressionBody.Expression)}; }}", p);
+                    c.Raw($"{qualifier}get {pn}() {{ return {_converter.ConvertExpression(p.ExpressionBody.Expression)}; }}", p);
                 }
                 else if (p.AccessorList != null)
                 {
                     var g = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
                     if (g?.ExpressionBody != null)
-                        c.Raw($"static get {pn}() {{ return {_converter.ConvertExpression(g.ExpressionBody.Expression)}; }}", g);
+                        c.Raw($"{qualifier}get {pn}() {{ return {_converter.ConvertExpression(g.ExpressionBody.Expression)}; }}", g);
                     else if (g?.Body != null)
-                        c.Raw($"static get {pn}() {{ {StripJsBraces(_converter.Convert(g.Body))} }}", g);
+                        c.Raw($"{qualifier}get {pn}() {{ {StripJsBraces(_converter.Convert(g.Body))} }}", g);
                     else if (p.Initializer != null)
-                        c.Field(pn, CSharpTypeToTypeScript(p.Type.ToString()), _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()), p, isStatic: true);
+                        c.Field(pn, asStatic ? CSharpTypeToTypeScript(p.Type.ToString()) : null,
+                            _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()), p, isStatic: asStatic);
                 }
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
@@ -1088,7 +1097,9 @@ public class TypeScriptEmitter
                 // other modules call with the trailing arguments omitted.
                 var pars = string.Join(", ", m.ParameterList.Parameters.Select(pp =>
                 {
-                    var declared = $"{pp.Identifier.Text.ToJsIdentifier()}: {CSharpTypeToTypeScript(pp.Type?.ToString() ?? "object")}";
+                    var declared = asStatic
+                        ? $"{pp.Identifier.Text.ToJsIdentifier()}: {CSharpTypeToTypeScript(pp.Type?.ToString() ?? "object")}"
+                        : pp.Identifier.Text.ToJsIdentifier();
                     return pp.Default is null
                         ? declared
                         : $"{declared} = {_converter.ConvertExpression(pp.Default.Value)}";
@@ -1108,11 +1119,63 @@ public class TypeScriptEmitter
                 if (m.Body != null) mbody = StripJsBraces(_converter.Convert(m.Body));
                 else if (m.ExpressionBody != null) mbody = $"return {_converter.ConvertExpression(m.ExpressionBody.Expression)};";
                 else continue;
-                c.Raw($"static {(isAsync ? "async " : "")}{(isGenerator ? "*" : "")}{mn}{generics}({pars}) {{ {mbody} }}", m);
+                c.Raw($"{(m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")}"
+                    + $"{(isAsync ? "async " : "")}{(isGenerator ? "*" : "")}{mn}{generics}({pars}) {{ {mbody} }}", m);
             }
     }
 
-    public string EmitStaticHelperModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel)
+    /// <summary>
+    /// The user-declared constructors of a plain class, plus the field initialisers that C# runs
+    /// before them. JS has ONE constructor, so overloads collapse to the widest; a class that
+    /// declares none still needs one, or its initialised fields would never be assigned.
+    /// </summary>
+    private void EmitInstanceConstructor(ClassDeclarationSyntax cls, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        var initialisers = new StringBuilder();
+        foreach (var field in cls.Members.OfType<FieldDeclarationSyntax>())
+        {
+            if (field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)) continue;
+            foreach (var variable in field.Declaration.Variables)
+            {
+                if (variable.Initializer is not { } init) continue;
+                var value = _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString());
+                initialisers.Append($"this.{variable.Identifier.Text.ToJsIdentifier()} = {value}; ");
+            }
+        }
+
+        var ctor = cls.Members.OfType<ConstructorDeclarationSyntax>()
+            .Where(x => !x.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword))
+            .OrderByDescending(x => x.ParameterList.Parameters.Count)
+            .FirstOrDefault();
+
+        var parameters = ctor is null
+            ? ""
+            : string.Join(", ", ctor.ParameterList.Parameters.Select(p =>
+            {
+                var declared = p.Identifier.Text.ToJsIdentifier();
+                return p.Default is null ? declared : $"{declared} = {_converter.ConvertExpression(p.Default.Value)}";
+            }));
+
+        var body = ctor?.Body is { } block ? StripJsBraces(_converter.Convert(block))
+            : ctor?.ExpressionBody is { } expression ? $"{_converter.ConvertExpression(expression.Expression)};"
+            : "";
+
+        if (initialisers.Length == 0 && string.IsNullOrWhiteSpace(body) && parameters.Length == 0) return;
+        c.Raw($"constructor({parameters}) {{ {initialisers}{body} }}", ctor ?? (SyntaxNode)cls);
+    }
+
+    /// <summary>
+    /// A PLAIN class the developer wrote — not a record, not static, not a component: a bucket, a
+    /// builder, a small state machine. Nothing emitted one, so `new Bucket()` named something that
+    /// did not exist. Identity, not value: no structural equals and no `with`.
+    /// </summary>
+    public string EmitPlainClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
+        EmitClassModule(cls, semanticModel, asStatic: false);
+
+    public string EmitStaticHelperModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
+        EmitClassModule(cls, semanticModel, asStatic: true);
+
+    private string EmitClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel, bool asStatic)
     {
         if (semanticModel != null) { _semanticModel = semanticModel; _converter.SetSemanticModel(semanticModel); }
         _converter.SetCurrentClass(cls.Identifier.Text);
@@ -1121,7 +1184,7 @@ public class TypeScriptEmitter
         var name = cls.Identifier.Text;
 
         var builder = new TypeScriptCodeBuilder();
-        builder.Class(name, null, c => EmitStaticMembers(cls, c));
+        builder.Class(name, null, c => EmitStaticMembers(cls, c, asStatic));
 
         // Imports: $eq (if used) + runtime-provided references (the same semantic routing components
         // get — a static helper composing the shared vocabulary/library imports it from the runtime)
