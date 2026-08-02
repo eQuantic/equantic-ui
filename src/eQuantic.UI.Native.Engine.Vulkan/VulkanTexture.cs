@@ -62,19 +62,32 @@ public sealed unsafe class VulkanRenderTarget : IRhiRenderTarget, IVulkanBindabl
     private bool _rendered;
     private bool _disposed;
 
-    internal VulkanRenderTarget(VulkanDevice device, ulong image, ulong memory, ulong view, ulong framebuffer, int width, int height)
+    internal VulkanRenderTarget(VulkanDevice device, ulong image, ulong memory, ulong view,
+        ulong framebuffer, ulong renderPass, uint format, int width, int height)
     {
         _device = device;
         Image = image;
         _memory = memory;
         _view = view;
         Framebuffer = framebuffer;
+        RenderPass = renderPass;
+        Format = format;
         Width = width;
         Height = height;
     }
 
     internal ulong Image { get; }
     internal ulong Framebuffer { get; }
+
+    /// <summary>The pass this target's framebuffer was made for — which decides where it is LEFT.</summary>
+    internal ulong RenderPass { get; }
+
+    /// <summary>Its own format. A swapchain image is whatever the surface offered, not an assumption.</summary>
+    internal uint Format { get; }
+
+    /// <summary>Whether this target owns the image it draws into. A swapchain's belongs to the
+    /// swapchain, and destroying it here would take the presentation engine's own memory.</summary>
+    internal bool OwnsImage { get; init; } = true;
 
     public int Width { get; }
     public int Height { get; }
@@ -143,6 +156,9 @@ public sealed unsafe class VulkanRenderTarget : IRhiRenderTarget, IVulkanBindabl
         _device.OnViewDestroyed(_view); // BEFORE the destroy: stale cache entries outlive reused handles
         Vk.vkDestroyFramebuffer(_device.Device, Framebuffer, IntPtr.Zero);
         Vk.vkDestroyImageView(_device.Device, _view, IntPtr.Zero);
+        // A swapchain's image belongs to the swapchain: destroying it here would take memory the
+        // presentation engine still owns, and the view and framebuffer above are ours either way.
+        if (!OwnsImage) return;
         Vk.vkDestroyImage(_device.Device, Image, IntPtr.Zero);
         Vk.vkFreeMemory(_device.Device, _memory, IntPtr.Zero);
     }

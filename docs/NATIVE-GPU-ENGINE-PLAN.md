@@ -970,3 +970,31 @@ Three files come out, each only where it belongs:
 - `PhotonMainActivity.g.cs` — the launcher Activity, in the APP's assembly. It has to be there: an
   Activity in the shell leaves the app assembly unreferenced and unloaded, so its module initializer
   never runs and the program is never registered. That was a real crash, not a hypothetical.
+
+### Track W8 — the Vulkan swapchain: Android draws on the GPU (2026-08-02)
+
+The Android shell presents through VULKAN, straight into the window's own surface. Same engine, same
+`RhiRenderer` encode loop the Metal backend runs, so the two GPU backends can only differ in API
+calls — which was the point of extracting the RHI in the first place.
+
+What it took, and what it did NOT:
+
+- **The render pass gained a final layout.** A layer target ends shader-readable because it is
+  sampled next; a swapchain image ends presentable because it is shown next. Everything else about
+  the two passes is identical, which is why they are one method and not two.
+- **A render target can now ADOPT an image it does not own.** A swapchain's images belong to the
+  swapchain; destroying them here would take memory the presentation engine still holds.
+- **Submit learned semaphores.** A presented frame waits for the image the display engine handed
+  over and signals when it is done drawing. A queue wait cannot express that: the two sides run on
+  different clocks and neither can be told to stand still. (v1 still waits after submitting — real
+  frames-in-flight needs a fence per image, and that lands with the pacing work.)
+- **Nothing above the swapchain changed.** The display list, the layout and the trees never learn
+  which backend drew them, which is exactly why the Reference path could stand in until today.
+
+`ANativeWindow_fromSurface` is the whole bridge: libandroid is the platform's own, like Metal is on
+Apple, so no third party crosses this line either. Where Vulkan is unavailable the shell still falls
+back to the NORMATIVE Reference backend and says which one it used, in the log, rather than leaving
+it to be guessed from a screenshot.
+
+Verified on an emulator (API 36, host GPU): `Photon: presenting through Vulkan`, the Wallet drawn
+edge to edge with insets honoured, and the tab bar navigating under a tap.
