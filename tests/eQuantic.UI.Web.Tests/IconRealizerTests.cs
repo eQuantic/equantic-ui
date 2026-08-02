@@ -63,4 +63,19 @@ public class IconRealizerTests
         node.Attributes["fill"].Should().Be("currentColor");
         node.Attributes["style"].Should().Contain("width: 16px; height: 16px");
     }
+
+    [Fact]
+    public void Vector_LowersLikeAnIcon_AtAnAuthoredSize()
+    {
+        // A chart segment or a logo lockup is the same path data an icon carries — the only
+        // difference is that the §07 size whitelist does not apply.
+        var glyph = new IconGlyph("sunburst", "M10 10 L90 10 L90 90 Z", IconGlyphStyle.Fill, "0 0 100 100");
+        var node = WebRealizer.Lower(new Vector(glyph, 300, PhotonTheme.Instance.TextPrimary), PhotonTheme.Instance).Render();
+
+        node.Tag.Should().Be("svg");
+        node.Attributes["viewBox"].Should().Be("0 0 100 100");
+        node.Attributes["fill"].Should().Be("currentColor");
+        node.Attributes["style"].Should().Contain("width: 300px").And.Contain("height: 300px");
+        node.Children.Single(c => c.Tag == "path").Attributes["d"].Should().Be("M10 10 L90 10 L90 90 Z");
+    }
 }

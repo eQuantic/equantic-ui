@@ -470,6 +470,16 @@ export interface IconNode extends VisualNodeValue {
   label?: string | null;
 }
 
+/** A vector shape at ANY size — the same path data an icon carries. */
+export interface VectorNode extends VisualNodeValue {
+  nodeKind: 'vector';
+  /** The RESOLVED glyph — curated names resolve at construction, pack glyphs arrive whole. */
+  glyph: IconGlyphValue;
+  size: number;
+  color?: ColorTokenValue | null;
+  label?: string | null;
+}
+
 export interface StackNode extends VisualNodeValue {
   nodeKind: 'stack';
   align: AlignmentValue;

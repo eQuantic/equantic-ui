@@ -55,6 +55,7 @@ public static class WebRealizer
         TextEntry entry => LowerTextEntry(entry, context),
         Overlay overlay => LowerOverlay(overlay, context),
         Icon icon => LowerIcon(icon, context),
+        Vector vector => LowerVector(vector),
         Spinner spinner => LowerSpinner(spinner, context),
         Primitives.Image image => LowerImage(image),
         Pressable pressable => LowerPressable(pressable, context),
@@ -413,16 +414,23 @@ public static class WebRealizer
         return svg;
     }
 
+    /// <summary>A vector shape lowers exactly like an icon — the only difference is that its size
+    /// is the author's, not the §07 whitelist's.</summary>
+    private static HtmlElement LowerVector(Vector vector) =>
+        LowerGlyph(vector.Glyph, vector.Size, vector.Color, vector.Label);
+
     private static HtmlElement LowerIcon(Icon icon, ComponentContext context)
+        => LowerGlyph(icon.Glyph, icon.Size, icon.Color, icon.Label);
+
+    private static HtmlElement LowerGlyph(IconGlyph glyph, float size, ColorToken? color, string? label)
     {
-        var glyph = icon.Glyph;
         var svg = new RealizedElement("svg")
         {
             Style = new HtmlStyle
             {
-                Width = TokenCss.Px(icon.Size),
-                Height = TokenCss.Px(icon.Size),
-                Color = icon.Color is { } tint ? TokenCss.Value(tint) : null,
+                Width = TokenCss.Px(size),
+                Height = TokenCss.Px(size),
+                Color = color is { } tint ? TokenCss.Value(tint) : null,
             },
         };
         svg.RawAttributes = new Dictionary<string, string>
@@ -442,7 +450,7 @@ public static class WebRealizer
         {
             svg.RawAttributes["fill"] = "currentColor";
         }
-        if (icon.Label is { } label) svg.RawAttributes["aria-label"] = label;
+        if (label is { }) svg.RawAttributes["aria-label"] = label;
         else svg.RawAttributes["aria-hidden"] = "true";
 
         var glyphPath = new RealizedElement("path");

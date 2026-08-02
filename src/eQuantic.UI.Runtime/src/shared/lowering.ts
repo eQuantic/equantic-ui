@@ -209,6 +209,9 @@ function lowerNode(
       return lowerImage(node as ImageNode);
     case 'icon':
       return lowerIcon(node as IconNode);
+    // C# twin: a vector IS an icon free of the §07 size whitelist.
+    case 'vector':
+      return lowerIcon(node as unknown as IconNode);
     case 'spinner':
       return lowerSpinner(node as SpinnerNode);
     case 'stack':
