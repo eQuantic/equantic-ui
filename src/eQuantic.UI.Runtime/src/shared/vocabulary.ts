@@ -303,6 +303,32 @@ export class Anchored extends VisualNode {
 }
 
 /** Mirror of the C# `Sticky` (spec S7): scroll-anchored chrome. */
+/** Mirror of the C# `Draggable` — a continuous gesture whose rules travel with the node. */
+export class Draggable extends VisualNode {
+  readonly nodeKind = 'draggable';
+  axis = 'vertical';
+  min = 0;
+  max = 0;
+  restOffset = 0;
+  onReleased: ((offset: number) => void) | null;
+
+  constructor(
+    readonly child: VisualChild,
+    onReleased: ((offset: number) => void) | null = null,
+    config?: {
+      axis?: string;
+      min?: number;
+      max?: number;
+      restOffset?: number;
+      key?: string | null;
+    },
+  ) {
+    super();
+    this.onReleased = onReleased;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `SafeArea` — the system's own margins, which only the host knows. */
 export class SafeArea extends VisualNode {
   readonly nodeKind = 'safeArea';

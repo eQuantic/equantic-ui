@@ -12,6 +12,7 @@
  */
 
 import type { EventHandler, HtmlNode } from '../core/types';
+import { installDraggableController } from '../dom/draggable';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
@@ -41,6 +42,7 @@ import type {
   LinearGradientValue,
   RadialGradientValue,
   DragDismissNode,
+  DraggableNode,
   LinkNode,
   LoopMotionNode,
   OverlayNode,
@@ -204,6 +206,8 @@ function lowerNode(
       return lowerPresence(node as PresenceNode, context, horizontalAxis, path);
     case 'dragDismiss':
       return lowerDragDismiss(node as DragDismissNode, context, horizontalAxis, path);
+    case 'draggable':
+      return lowerDraggable(node as DraggableNode, context, horizontalAxis, path);
     case 'link':
       return lowerLink(node as LinkNode, context, path);
     case 'image':
@@ -328,6 +332,43 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
  * identical DOM to the C# SSR realizer). The pointer-capture controller installs lazily on the
  * first lowering: it drives the follow/glide and dispatches `eq-drag-dismiss` past the threshold,
  * which the reconciler-attached handler resolves into the component's onDismiss. */
+/**
+ * C# twin: the gesture's RULES travel as data and one controller does the tracking. The rest offset
+ * is a plain transform, so a row that is already open renders open before any script has run.
+ */
+function lowerDraggable(
+  node: DraggableNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  if (!child) return null;
+
+  const horizontal = node.axis === 'horizontal';
+  const rest = node.restOffset ?? 0;
+  child.attributes['data-eq-drag'] = horizontal ? 'x' : 'y';
+  child.attributes['data-eq-drag-min'] = String(node.min ?? 0);
+  child.attributes['data-eq-drag-max'] = String(node.max ?? 0);
+  child.attributes['data-eq-drag-rest'] = String(rest);
+
+  if (rest !== 0) {
+    const shift = horizontal ? `translateX(${rest}px)` : `translateY(${rest}px)`;
+    const existing = child.attributes.style ? `${child.attributes.style};` : '';
+    child.attributes.style = `${existing}transform:${shift};transition:transform ${Motion.baseMs}ms`;
+  }
+
+  if (node.onReleased) {
+    const released = node.onReleased;
+    child.events['eq-drag-released'] = ((ev: Event) => {
+      released((ev as CustomEvent<number>).detail ?? 0);
+    }) as EventHandler;
+  }
+
+  installDraggableController();
+  return child;
+}
+
 function lowerDragDismiss(
   node: DragDismissNode,
   context: LoweringContext,

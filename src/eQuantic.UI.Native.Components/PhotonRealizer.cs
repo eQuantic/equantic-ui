@@ -18,7 +18,12 @@ public readonly record struct ScrollRegion(Rect Bounds, string Path, float MaxOf
 
 /// <summary>Gestures v2: a drag-to-dismiss surface — the host tracks a press that travels past the
 /// slop as a vertical drag on the TOPMOST region under the start point (paint-order last-wins).</summary>
-public readonly record struct DragRegion(Rect Bounds, string Path, DragDismiss Node);
+/// <summary>
+/// A surface the host routes a drag to. <see cref="Node"/> is the gesture node itself — a
+/// <see cref="DragDismiss"/> or a <see cref="Draggable"/> — because the RULES (axis, limits, what a
+/// release means) belong to it, and duplicating them here would be a second place to get them wrong.
+/// </summary>
+public readonly record struct DragRegion(Rect Bounds, string Path, VisualNode Node);
 
 /// <summary>A navigation surface (the write-once Link): a tap no pressable claims resolves to the
 /// TOPMOST link region under the point, through the host's navigation seam.</summary>
@@ -609,15 +614,22 @@ public static class PhotonRealizer
             return;
         }
 
-        if (node.Source is DragDismiss dragDismiss && node.DragPath is { } dragPath)
+        if (node.Source is (DragDismiss or Draggable) && node.DragPath is { } dragPath)
         {
             // Gestures v2: the surface registers for the host's drag routing, and the current offset
             // (active follow or glide-back) paints as a translate — layout untouched, exactly like
             // loop motion. Hit regions inside register at their laid-out bounds; mid-drag taps are
             // cancelled by the slop rule, so the transient misalignment is unreachable.
-            drags.Add(new DragRegion(node.Bounds, dragPath, dragDismiss));
+            drags.Add(new DragRegion(node.Bounds, dragPath, node.Source));
+            // The axis is the node's: a swipe-to-reveal travels sideways, a sheet down.
             var dragOffset = node.DragOffset;
-            if (dragOffset != 0) builder.PushTransform(Matrix2D.Translation(0, dragOffset));
+            var horizontal = node.Source is Draggable { Axis: DragAxis.Horizontal };
+            if (dragOffset != 0)
+            {
+                builder.PushTransform(horizontal
+                    ? Matrix2D.Translation(dragOffset, 0)
+                    : Matrix2D.Translation(0, dragOffset));
+            }
             foreach (var child in node.Children)
                 Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
             if (dragOffset != 0) builder.Pop();

@@ -55,6 +55,8 @@ export {
   KeyChord,
   KeyModifiers,
   CuratedIcons,
+  Draggable,
+  SafeArea,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';
 export { Navigator } from '../router/navigator';

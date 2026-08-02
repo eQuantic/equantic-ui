@@ -61,6 +61,18 @@ export interface GridTrackValue {
 
 /** Spec S7 — scroll-anchored chrome: in flow until scrolling pins it at `offset`. */
 /** Wire shape of the C# `SafeArea`: which edges the system owns, plus the caller's own padding. */
+/** Wire shape of the C# `Draggable`: the gesture's RULES, which the controller reads off the DOM. */
+export interface DraggableNode extends VisualNodeValue {
+  nodeKind: 'draggable';
+  child: VisualNodeValue;
+  /** DragAxis, as the camelCase name every enum lowers to: 'vertical' | 'horizontal'. */
+  axis?: string;
+  min?: number;
+  max?: number;
+  restOffset?: number;
+  onReleased?: ((offset: number) => void) | null;
+}
+
 export interface SafeAreaNode {
   nodeKind: 'safeArea';
   child: VisualNodeValue;

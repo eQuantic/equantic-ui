@@ -45,11 +45,14 @@ public class DragDismissTests
     }
 
     [Fact]
-    public void Store_ClampsUpwardDrags_AtRest()
+    public void Store_RemembersSignedTravel_AndTheHostClamps()
     {
+        // The store used to clamp at zero, which made a sideways swipe-to-reveal impossible to
+        // express. Clamping is the GESTURE's rule — a sheet never drags up past rest, a swipeable
+        // row travels negative — so it lives with the node's limits, at the host.
         var store = new DragStore();
         store.Drag("s", -25);
-        store.Resolve("s", 0).Should().Be(0f, "a sheet never drags UP past its rest position");
+        store.Resolve("s", 0).Should().Be(-25f, "the store remembers; the caller decides what is legal");
     }
 
     // ---- The host state machine -----------------------------------------------------------------

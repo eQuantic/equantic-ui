@@ -142,7 +142,9 @@ public sealed class PhotonHost
 
     /// <summary>The in-flight drag candidate: armed on press inside a drag region, ACTIVATED once
     /// the pointer travels past the slop (which cancels the pressable press), resolved on release.</summary>
-    private (string Path, DragDismiss Node, float StartY, bool Active)? _drag;
+    // The armed gesture surface. `Node` is a DragDismiss or a Draggable — the rules live on it, so
+    // the host only tracks where the finger started and whether the slop has been passed.
+    private (string Path, VisualNode Node, float StartX, float StartY, bool Active)? _drag;
 
     /// <summary>The clock of the last rendered frame — glide-backs anchor to it on release.</summary>
     private float _lastTimeMs;
@@ -210,8 +212,15 @@ public sealed class PhotonHost
         // follows the pointer (downward only) until release.
         if (_drag is { } drag)
         {
-            var dy = y - drag.StartY;
-            if (!drag.Active && dy > Touch.PressCancelSlop)
+            // The travel that COUNTS is the one along the gesture's own axis: a sideways swipe must
+            // not arm on a vertical scroll, and a sheet must not arm on a sideways one.
+            var horizontal = drag.Node is Draggable { Axis: DragAxis.Horizontal };
+            var travel = horizontal ? x - drag.StartX : y - drag.StartY;
+            var armed = drag.Node is Draggable
+                ? Math.Abs(travel) > Touch.PressCancelSlop
+                : travel > Touch.PressCancelSlop;
+
+            if (!drag.Active && armed)
             {
                 _drag = drag with { Active = true };
                 _pressed = null;
@@ -219,7 +228,11 @@ public sealed class PhotonHost
             }
             if (drag.Active)
             {
-                _drags.Drag(drag.Path, dy);
+                // A DragDismiss only travels one way; a Draggable clamps to the caller's limits.
+                var offset = drag.Node is Draggable draggable
+                    ? Math.Clamp(travel, draggable.Min, draggable.Max)
+                    : Math.Max(0, travel);
+                _drags.Drag(drag.Path, offset);
                 NeedsRender = true;
                 return;
             }
@@ -291,7 +304,7 @@ public sealed class PhotonHost
         for (var i = dragRegions.Count - 1; i >= 0; i--)
         {
             if (!dragRegions[i].Bounds.Contains(point)) continue;
-            _drag = (dragRegions[i].Path, dragRegions[i].Node, y, false);
+            _drag = (dragRegions[i].Path, dragRegions[i].Node, x, y, false);
             break;
         }
 
@@ -320,11 +333,27 @@ public sealed class PhotonHost
         if (_drag is { Active: true } drag)
         {
             _drag = null;
+
+            // A Draggable REPORTS and lets the caller decide; the glide target is whatever RestOffset
+            // the next build carries, so a row that stays open and one that springs back are the same
+            // code with a different answer.
+            if (drag.Node is Draggable draggable)
+            {
+                var horizontal = draggable.Axis == DragAxis.Horizontal;
+                var travel = Math.Clamp(horizontal ? x - drag.StartX : y - drag.StartY,
+                    draggable.Min, draggable.Max);
+                _drags.Release(drag.Path, _lastTimeMs, draggable.RestOffset);
+                draggable.OnReleased?.Invoke(travel);
+                NeedsRender = true;
+                return true;
+            }
+
+            var dismiss = (DragDismiss)drag.Node;
             var dy = y - drag.StartY;
             if (dy >= DragDismiss.ThresholdDp)
             {
                 _drags.Drop(drag.Path);
-                drag.Node.OnDismiss?.Invoke();
+                dismiss.OnDismiss?.Invoke();
             }
             else
             {
