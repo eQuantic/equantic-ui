@@ -1009,10 +1009,26 @@ public static class WebRealizer
         _ => (false, false),
     };
 
+    /// <summary>
+    /// Whether a lowered subtree already carries an interactive ELEMENT. HTML forbids a button
+    /// inside a button (and an anchor inside an anchor): the parser closes the outer one and hands
+    /// back an empty shell, so the wrapper renders as nothing and the hydrated tree disagrees with
+    /// the served HTML about the whole subtree.
+    /// </summary>
+    private static bool WrapsAnInteractive(IComponent node) =>
+        node is RealizedElement element
+        && (element.Tag is "button" or "a" || element.Children.Any(WrapsAnInteractive));
+
     private static HtmlElement LowerPressable(Pressable pressable, ComponentContext context)
     {
         var fills = Fills(pressable.Child);
-        var element = new RealizedElement("button")
+        var child = LowerNode(pressable.Child, context, horizontalAxis: null);
+
+        // A Pressable AROUND a control — a Menu making its trigger open the panel — is ordinary
+        // composition, and the trigger is usually a Button. The OUTER one yields: it keeps the
+        // press, the child keeps being the real control, and the markup stays legal.
+        var wrapping = child is not null && WrapsAnInteractive(child);
+        var element = new RealizedElement(wrapping ? "span" : "button")
         {
             // Neutralize UA button chrome — the child carries ALL visuals (same as native).
             Style = new HtmlStyle
@@ -1027,7 +1043,7 @@ public static class WebRealizer
                 Width = fills.Width ? "100%" : null,
                 Height = fills.Height ? "100%" : null,
             },
-            Disabled = pressable.Disabled ? true : null,
+            Disabled = pressable.Disabled && !wrapping ? true : null,
             AriaLabel = pressable.Label,
             // Selection stated, not merely painted — a fill colour says nothing to a screen reader.
             AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
@@ -1049,8 +1065,15 @@ public static class WebRealizer
             }
         }
 
-        if (LowerNode(pressable.Child, context, horizontalAxis: null) is { } child)
-            element.Children.Add(child);
+        // A span that acts as a button says so, and takes the keyboard the same way.
+        if (wrapping)
+        {
+            element.Role = "button";
+            if (pressable.Disabled) element.AriaDisabled = true;
+            else element.TabIndex = 0;
+        }
+
+        if (child is not null) element.Children.Add(child);
         return element;
     }
 

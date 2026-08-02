@@ -151,7 +151,8 @@ public static class PhotonRealizer
         var dragRegions = new List<DragRegion>();
         var links = new List<LinkRegion>();
         var shortcuts = new List<ShortcutBinding>();
-        Emit(layout, theme, mode, builder, hits, hovers, scrolls, dragRegions, links, shortcuts, context.ScrollMeta!, new PressScope(pressed, focused, hovered), motion, overlays);
+        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts);
+        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered), motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -161,7 +162,9 @@ public static class PhotonRealizer
         {
             var overlayLayout = LayoutEngine.Layout(overlays[i].Child, viewportWidth, viewportHeight,
                 context, rootPath: $"ov{i}");
-            Emit(overlayLayout, theme, mode, builder, hits, hovers, scrolls, dragRegions, links, shortcuts, context.ScrollMeta!, new PressScope(pressed, focused, hovered), motion, overlays);
+            // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
+            // page happens to be scrolling.
+            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered), motion, overlays);
         }
 
         // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
@@ -246,7 +249,7 @@ public static class PhotonRealizer
         public bool PendingFocusRing { get; set; }
     }
 
-    private static void Emit(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits, List<HoverRegion> hovers, List<ScrollRegion> scrolls, List<DragRegion> drags, List<LinkRegion> links, List<ShortcutBinding> shortcuts, Dictionary<ScrollView, (string Path, float MaxOffset)> scrollMeta, PressScope press, MotionScope motion, List<Overlay> overlays)
+    private static void Emit(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, InputSink input, Dictionary<ScrollView, (string Path, float MaxOffset)> scrollMeta, PressScope press, MotionScope motion, List<Overlay> overlays)
     {
         // Spec S1 — group opacity + static transform wrap the WHOLE box (chrome and children):
         // opacity is one PushLayer composite (overlaps never double-blend); the transform is the
@@ -260,14 +263,14 @@ public static class PhotonRealizer
             if (transformed)
                 builder.PushTransform(CenterAnchored(styled.Style.Transform!.Value, node.Bounds.Center));
 
-            EmitNode(node, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
+            EmitNode(node, theme, mode, builder, input, scrollMeta, press, motion, overlays);
 
             if (transformed) builder.Pop();
             if (opacity is not null) builder.PopLayer();
             return;
         }
 
-        EmitNode(node, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
+        EmitNode(node, theme, mode, builder, input, scrollMeta, press, motion, overlays);
     }
 
     /// <summary>
@@ -345,7 +348,7 @@ public static class PhotonRealizer
         * Matrix2D.Rotation(t.RotationDegrees * MathF.PI / 180f)
         * Matrix2D.Translation(center.X + t.TranslateX, center.Y + t.TranslateY);
 
-    private static void EmitNode(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, List<HitRegion> hits, List<HoverRegion> hovers, List<ScrollRegion> scrolls, List<DragRegion> drags, List<LinkRegion> links, List<ShortcutBinding> shortcuts, Dictionary<ScrollView, (string Path, float MaxOffset)> scrollMeta, PressScope press, MotionScope motion, List<Overlay> overlays)
+    private static void EmitNode(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, InputSink input, Dictionary<ScrollView, (string Path, float MaxOffset)> scrollMeta, PressScope press, MotionScope motion, List<Overlay> overlays)
     {
         if (ReferenceEquals(node.Source, press.Pressed) && press.Pressed?.PressedBackground is { } pressedFill)
             press.PendingFill = pressedFill;
@@ -398,7 +401,7 @@ public static class PhotonRealizer
                 var borderWidth = box.Style.BorderWidth;
                 // Spec S5: hover-reactive boxes register for the host's pointer tracking.
                 if (box.Style.Hover is { IsEmpty: false })
-                    hovers.Add(new HoverRegion(node.Bounds, box));
+                    input.Add(new HoverRegion(node.Bounds, box));
 
                 // Spec S5: the hovered Box applies its Hover diff (pressed still wins on fill).
                 if (ReferenceEquals(node.Source, press.Hovered) && box.Style.Hover is { IsEmpty: false } hover)
@@ -496,19 +499,19 @@ public static class PhotonRealizer
                 break;
 
             case Pressable pressable:
-                hits.Add(new HitRegion(ExpandHitRect(node.Bounds), pressable));
+                input.Add(new HitRegion(ExpandHitRect(node.Bounds), pressable));
                 break;
 
             // S5 programmable hover: the region rides the SAME pointer pipeline Style.Hover uses;
             // the host fires OnChanged on the transitions (PhotonHost.PointerMove).
             case Hoverable hoverable:
-                hovers.Add(new HoverRegion(node.Bounds, hoverable));
+                input.Add(new HoverRegion(node.Bounds, hoverable));
                 break;
 
             // Spec S8: being on screen IS the subscription — the binding lives for exactly as long
             // as this frame, so an unmounted dialog's Esc stops firing with no bookkeeping.
             case Shortcut shortcut:
-                shortcuts.Add(new ShortcutBinding(shortcut.Chord, shortcut.OnPressed));
+                input.Add(new ShortcutBinding(shortcut.Chord, shortcut.OnPressed));
                 break;
         }
 
@@ -517,10 +520,15 @@ public static class PhotonRealizer
         {
             // Scroll compositor v1: the host routes wheel/drag to the topmost region (paint order).
             if (scrollMeta.TryGetValue(scrollView, out var meta))
-                scrolls.Add(new ScrollRegion(node.Bounds, meta.Path, meta.MaxOffset, scrollView.Axis, scrollView.Offset));
+                input.Add(new ScrollRegion(node.Bounds, meta.Path, meta.MaxOffset, scrollView.Axis, scrollView.Offset));
             builder.PushClip(new RRect(node.Bounds));
+            // …and the SUBTREE'S INPUT to the same rectangle. A row scrolled out of the viewport is
+            // drawn nowhere, so it takes no taps — otherwise it keeps taking the ones aimed at
+            // whatever the app shows there instead, and a fixed toolbar goes dead the moment the
+            // list under it moves.
+            var scrolled = input.Under(node.Bounds);
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
+                Emit(child, theme, mode, builder, scrolled, scrollMeta, press, motion, overlays);
             builder.PopClip();
             return;
         }
@@ -530,8 +538,9 @@ public static class PhotonRealizer
         if (node.Source is Box { Style.Clip: true } clipBox)
         {
             builder.PushClip(new RRect(node.Bounds, clipBox.Style.CornerRadius));
+            var confined = input.Under(node.Bounds);
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
+                Emit(child, theme, mode, builder, confined, scrollMeta, press, motion, overlays);
             builder.PopClip();
             return;
         }
@@ -550,14 +559,14 @@ public static class PhotonRealizer
         if (node.Source is Anchored anchored)
         {
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
+                Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
 
             // Wave 3b hover reveal (the Tooltip mechanism): the anchor registers for the host's
             // pointer tracking; the panel opens while hovered — no scrim (leave = closed).
             var hoverOpen = false;
             if (anchored.OpenOnHover)
             {
-                hovers.Add(new HoverRegion(node.Bounds, anchored));
+                input.Add(new HoverRegion(node.Bounds, anchored));
                 hoverOpen = ReferenceEquals(press.Hovered, anchored);
             }
             if (!anchored.Open && !hoverOpen) return;
@@ -599,7 +608,7 @@ public static class PhotonRealizer
             var offset = ResolveLoopOffset(loop, node.Bounds.Width, motion);
             if (offset != 0) builder.PushTransform(Matrix2D.Translation(offset, 0));
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
+                Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             if (offset != 0) builder.Pop();
             return;
         }
@@ -608,9 +617,9 @@ public static class PhotonRealizer
         {
             // Navigation surface: pure semantics — the child paints; a tap that no pressable claims
             // resolves to this region through the host's navigation seam.
-            links.Add(new LinkRegion(node.Bounds, link));
+            input.Add(new LinkRegion(node.Bounds, link));
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
+                Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             return;
         }
 
@@ -620,7 +629,7 @@ public static class PhotonRealizer
             // (active follow or glide-back) paints as a translate — layout untouched, exactly like
             // loop motion. Hit regions inside register at their laid-out bounds; mid-drag taps are
             // cancelled by the slop rule, so the transient misalignment is unreachable.
-            drags.Add(new DragRegion(node.Bounds, dragPath, node.Source));
+            input.Add(new DragRegion(node.Bounds, dragPath, node.Source));
             // The axis is the node's: a swipe-to-reveal travels sideways, a sheet down.
             var dragOffset = node.DragOffset;
             var horizontal = node.Source is Draggable { Axis: DragAxis.Horizontal };
@@ -631,7 +640,7 @@ public static class PhotonRealizer
                     : Matrix2D.Translation(0, dragOffset));
             }
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
+                Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             if (dragOffset != 0) builder.Pop();
             return;
         }
@@ -653,7 +662,7 @@ public static class PhotonRealizer
             if (rise != 0) builder.PushTransform(Matrix2D.Translation(0, rise));
             if (entering) builder.PushLayer(node.Presence);
             foreach (var child in node.Children)
-                Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
+                Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             if (entering) builder.PopLayer();
             if (rise != 0) builder.Pop();
             if (motion.Presences != null && node.PresencePath is { } presencePath)
@@ -662,7 +671,7 @@ public static class PhotonRealizer
         }
 
         foreach (var child in node.Children)
-            Emit(child, theme, mode, builder, hits, hovers, scrolls, drags, links, shortcuts, scrollMeta, press, motion, overlays);
+            Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
     }
 
     /// <summary>The loop offset at the scope's clock: linear phase over the period, lerped between

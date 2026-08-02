@@ -1063,7 +1063,15 @@ function lowerPressable(
 ): HtmlNode {
   const disabled = pressable.disabled === true;
   const fill = fills(pressable.child);
-  const node = element('button', {
+  const child = lowerNode(pressable.child, context, null, path + '/0');
+
+  // HTML forbids a button inside a button (and an anchor inside an anchor): the parser closes the
+  // outer one and hands back an empty shell. A Pressable AROUND a control — a Menu making its
+  // trigger open the panel — is ordinary composition, so the OUTER one yields: it keeps the press,
+  // the child keeps being the real control, and the markup stays legal. The C# realizer decides
+  // this the same way, from the same lowered subtree, or hydration disagrees about the whole thing.
+  const wrapping = child != null && wrapsAnInteractive(child);
+  const node = element(wrapping ? 'span' : 'button', {
     padding: '0',
     background: 'none',
     border: 'none',
@@ -1075,11 +1083,16 @@ function lowerPressable(
     height: fill.height ? '100%' : undefined,
   });
 
+  if (wrapping) {
+    node.attributes['role'] = 'button';
+    if (!disabled) node.attributes['tabindex'] = '0';
+  }
   if (pressable.label) node.attributes['aria-label'] = pressable.label;
   // Selection stated, not merely painted — a fill colour says nothing to a screen reader.
   if (pressable.selected !== undefined && pressable.selected !== null)
     node.attributes['aria-pressed'] = pressable.selected ? 'true' : 'false';
-  if (disabled) node.attributes['disabled'] = '';
+  if (disabled && !wrapping) node.attributes['disabled'] = '';
+  if (disabled && wrapping) node.attributes['aria-disabled'] = 'true';
   if (!disabled && pressable.onPressed) node.events['click'] = pressable.onPressed as EventHandler;
 
   // Interaction states (spec §01): mechanics live in the generated stylesheet — every enabled
@@ -1094,9 +1107,14 @@ function lowerPressable(
     }
   }
 
-  const child = lowerNode(pressable.child, context, null, path + '/0');
   if (child) node.children.push(child);
   return node;
+}
+
+/** Whether a lowered subtree already carries an interactive ELEMENT — see {@link lowerPressable}. */
+function wrapsAnInteractive(node: HtmlNode): boolean {
+  if (node.tag === 'button' || node.tag === 'a') return true;
+  return (node.children ?? []).some(wrapsAnInteractive);
 }
 
 function lowerFlexible(

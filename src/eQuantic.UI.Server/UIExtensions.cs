@@ -30,19 +30,30 @@ public static class UIExtensions
     // invalidating only when the code actually changes.
     public static readonly string BuildId = GetDeterministicBuildId();
 
+    /// <summary>
+    /// The id every served bundle carries in its URL, so a browser may cache it forever and still
+    /// pick up a new one the moment it exists.
+    /// <para>
+    /// It has to move when the APP moves. Reading only this assembly's timestamp meant the id
+    /// stayed frozen through every change a developer actually makes — their own pages — and the
+    /// browser went on serving the JavaScript from before the edit: the page renders, the handlers
+    /// are the old ones, and nothing says so. The app's assembly is written by the same build that
+    /// writes the bundles, so the LATER of the two is the honest answer.
+    /// </para>
+    /// </summary>
     private static string GetDeterministicBuildId()
     {
         try
         {
-            var location = typeof(UIExtensions).Assembly.Location;
-            if (!string.IsNullOrEmpty(location))
-            {
-                // Use hex timestamp for a short, unique, and ordered ID
-                return File.GetLastWriteTimeUtc(location).Ticks.ToString("x");
-            }
+            var stamps = new[] { Assembly.GetEntryAssembly(), typeof(UIExtensions).Assembly }
+                .Select(assembly => assembly?.Location)
+                .Where(location => !string.IsNullOrEmpty(location) && File.Exists(location))
+                .Select(location => File.GetLastWriteTimeUtc(location!).Ticks)
+                .ToArray();
+            if (stamps.Length > 0) return stamps.Max().ToString("x");
         }
         catch { /* Fallback to random if file access fails */ }
-        
+
         return Guid.NewGuid().ToString("N");
     }
 

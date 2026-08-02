@@ -7,6 +7,21 @@ namespace eQuantic.Console;
 public sealed record NavEntry(Icons Icon, string Label, string Href, int Badge = 0);
 
 /// <summary>
+/// What the frame's own affordances DO. The shell draws them; the page owns the state they change,
+/// so it hands the frame one object instead of a queue of parameters — the shape a .NET developer
+/// already reaches for.
+/// </summary>
+public sealed record ShellActions(
+    Action OnOpenPalette,
+    Action OnNewPayment,
+    Action<string> OnQueryChanged,
+    Action<int> OnAccountMenu,
+    Action<int> OnHelp,
+    string Query,
+    bool Sandbox,
+    Action OnToggleSandbox);
+
+/// <summary>
 /// The console's persistent frame: a sidebar of destinations on the left, a toolbar across the top,
 /// and the page in between. It is the WEB anatomy — a pointer-sized, dense, multi-column shell — but
 /// built from the same vocabulary and the same tokens the macOS Studio resolves from. Nothing here
@@ -36,10 +51,10 @@ public static class ConsoleShell
 
     /// <summary>Wraps a page in the frame. <paramref name="activeHref"/> lights one destination.</summary>
     public static VisualNode Wrap(IAppTheme theme, string activeHref, IReadOnlyList<Crumb> crumbs,
-        VisualNode page, bool sandbox, Action onToggleSandbox)
+        VisualNode page, ShellActions actions)
     {
         var body = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        body.Add(Toolbar(theme, crumbs));
+        body.Add(Toolbar(theme, crumbs, actions));
         body.Add(new Flexible(new ScrollView(new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
@@ -52,7 +67,7 @@ public static class ConsoleShell
             Height = SizeValue.Fill,
             Cross = CrossAlign.Stretch,
         };
-        frame.Add(Sidebar(theme, activeHref, sandbox, onToggleSandbox));
+        frame.Add(Sidebar(theme, activeHref, actions));
         frame.Add(new Flexible(body, 1));
 
         return new Box(new BoxStyle
@@ -65,20 +80,19 @@ public static class ConsoleShell
 
     // ---- Sidebar ---------------------------------------------------------------------------
 
-    private static VisualNode Sidebar(IAppTheme theme, string activeHref, bool sandbox,
-        Action onToggleSandbox)
+    private static VisualNode Sidebar(IAppTheme theme, string activeHref, ShellActions actions)
     {
         var column = new Column(gap: Space.S2) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         column.Add(Brand(theme));
-        column.Add(SearchAffordance(theme));
+        column.Add(SearchAffordance(theme, actions.OnOpenPalette));
         column.Add(GroupLabel(theme, "Operate"));
         foreach (var entry in Operate) column.Add(NavItem(theme, entry, activeHref));
         column.Add(GroupLabel(theme, "Configure"));
         foreach (var entry in Configure) column.Add(NavItem(theme, entry, activeHref));
         column.Add(new Spacer(1));
-        column.Add(SandboxCard(theme, sandbox, onToggleSandbox));
+        column.Add(SandboxCard(theme, actions.Sandbox, actions.OnToggleSandbox));
         column.Add(new Divider());
-        column.Add(Account(theme));
+        column.Add(Account(theme, actions.OnAccountMenu));
 
         return new Box(new BoxStyle
         {
@@ -118,7 +132,7 @@ public static class ConsoleShell
     /// The search ENTRY POINT, not a field: it opens the command palette, and it shows the shortcut
     /// that does the same thing — the fastest way in is the one that gets advertised.
     /// </summary>
-    private static VisualNode SearchAffordance(IAppTheme theme)
+    private static VisualNode SearchAffordance(IAppTheme theme, Action onOpen)
     {
         var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
         row.Add(new Icon(Icons.Search, IconSize.Sm, theme.TextMuted));
@@ -136,7 +150,7 @@ public static class ConsoleShell
             Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
         }, row);
 
-        return new Pressable(box, null) { Label = "Search — command K" };
+        return new Pressable(box, onOpen) { Label = "Search — command K" };
     }
 
     private static VisualNode GroupLabel(IAppTheme theme, string text) =>
@@ -202,7 +216,7 @@ public static class ConsoleShell
         }, column);
     }
 
-    private static VisualNode Account(IAppTheme theme)
+    private static VisualNode Account(IAppTheme theme, Action<int> onAccountMenu)
     {
         var text = new Column(gap: 0);
         text.Add(new Text("Ana Beatriz", TypeRole.Label, theme.TextPrimary, maxLines: 1));
@@ -211,24 +225,47 @@ public static class ConsoleShell
         var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
         row.Add(new Avatar("AB", SizeVariant.Small, "Ana Beatriz"));
         row.Add(new Flexible(text, 1));
-        row.Add(new IconButton(Icons.ChevronDown, "Account menu", IconButtonKind.Standard, SizeVariant.Small));
+        row.Add(new Menu(
+            new IconButton(Icons.ChevronDown, "Account menu", IconButtonKind.Standard, SizeVariant.Small),
+            [new MenuItem("Profile") { Icon = Icons.Person },
+             new MenuItem("Workspace settings") { Icon = Icons.ChevronRight },
+             new MenuItem("Sign out") { Destructive = true }],
+            onAccountMenu)
+        { Placement = AnchorPlacement.TopEnd });
         return row;
     }
 
     // ---- Toolbar ---------------------------------------------------------------------------
 
-    private static VisualNode Toolbar(IAppTheme theme, IReadOnlyList<Crumb> crumbs)
+    private static VisualNode Toolbar(IAppTheme theme, IReadOnlyList<Crumb> crumbs, ShellActions actions)
     {
         var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
         row.Add(new Breadcrumb(crumbs));
         row.Add(new Spacer(1));
         row.Add(new Box(new BoxStyle { Width = 240 },
-            new SearchField("", null, placeholder: "Search payments…")));
-        row.Add(new IconButton(Icons.Notifications, "Notifications", IconButtonKind.Standard, SizeVariant.Small));
-        row.Add(new IconButton(Icons.Info, "Help", IconButtonKind.Standard, SizeVariant.Small));
+            new SearchField(actions.Query, actions.OnQueryChanged, placeholder: "Search payments…")));
+
+        // A Menu owns its own open/close and dismisses on an outside tap, so the frame states WHAT
+        // the entries are and nothing about when the panel is up.
+        row.Add(new Menu(
+            new IconButton(Icons.Notifications, "Notifications", IconButtonKind.Standard, SizeVariant.Small),
+            [new MenuItem("Julia Lemos approved #3841"), new MenuItem("Risk engine flagged #3838"),
+             new MenuItem("Webhook retried payment.settled"), new MenuItem("Dispute opened by Loja Verde")],
+            index => actions.OnHelp(index))
+        { Placement = AnchorPlacement.BottomEnd });
+
+        row.Add(new Menu(
+            new IconButton(Icons.Info, "Help", IconButtonKind.Standard, SizeVariant.Small),
+            [new MenuItem("Documentation") { Icon = Icons.Info },
+             new MenuItem("Keyboard shortcuts") { Icon = Icons.Search },
+             new MenuItem("Contact support") { Icon = Icons.Mail }],
+            actions.OnHelp)
+        { Placement = AnchorPlacement.BottomEnd });
+
         row.Add(new Button("New payment", Variant.Primary, SizeVariant.Small)
         {
             Leading = CuratedIcons.Resolve(Icons.Plus),
+            OnPressed = actions.OnNewPayment,
         });
 
         return new Box(new BoxStyle

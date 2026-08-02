@@ -28,21 +28,93 @@ public sealed class PaymentsPage : StatefulComponent
     private bool _receipts = true;
     private int _account;
 
+    // What the payout card would SAVE, and what it last saved — Cancel is the difference between
+    // the two, which is the only definition of Cancel that is not a lie.
+    private (int Schedule, bool Receipts, int Account) _savedPayout = (0, true, 0);
+    private string? _payoutNotice;
+
+    private bool _pendingOnly = true;
+    private string _query = "";
+    private bool _palette;
+    private bool _newPayment;
+    private string? _notice;
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
 
         var content = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+        // Every affordance in this screen ANSWERS; the ones whose answer is a sentence say it here.
+        if (_notice is { } notice)
+            content.Add(new Banner(Variant.Info, notice) { OnDismiss = () => SetState(() => _notice = null) });
         content.Add(Header(theme));
         content.Add(Kpis(theme));
         content.Add(ChartAndActivity(theme));
         content.Add(TableCard(theme));
         content.Add(Footer(theme));
 
-        return ConsoleShell.Wrap(theme, "/payments",
+        var frame = ConsoleShell.Wrap(theme, "/payments",
             [new Crumb("Workspace", "/"), new Crumb("Payments")],
-            content, _sandbox, () => SetState(() => _sandbox = !_sandbox));
+            content,
+            new ShellActions(
+                OnOpenPalette: () => SetState(() => _palette = true),
+                OnNewPayment: () => SetState(() => _newPayment = true),
+                OnQueryChanged: query => SetState(() => { _query = query; _page = 1; }),
+                OnAccountMenu: index => SetState(() =>
+                    _notice = $"Account menu: {AccountEntries[index]}"),
+                OnHelp: index => SetState(() => _notice = $"Opened: {HelpEntries[index]}"),
+                Query: _query,
+                Sandbox: _sandbox,
+                OnToggleSandbox: () => SetState(() => _sandbox = !_sandbox)));
+
+        // A dialog is a LAYER: it lays out against the viewport above the frame, so the tree simply
+        // carries it when it is up.
+        var layer = _palette ? Palette(theme) : _newPayment ? NewPaymentDialog(theme) : null;
+        if (layer is null) return frame;
+
+        var stack = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        stack.Add(frame);
+        stack.Add(layer);
+        return stack;
     }
+
+    private static readonly string[] ExportFormats = ["CSV", "JSON", "PDF"];
+    private static readonly string[] ScheduleNames = ["Daily", "Weekly", "Manual"];
+    private static readonly string[] AccountNames = ["Checking ··· 4821", "Savings ··· 1190"];
+
+    /// <summary>The rows the toolbar's query leaves standing — id or customer, case-insensitive.</summary>
+    private IReadOnlyList<Payment> Visible()
+    {
+        IEnumerable<Payment> rows = ConsoleData.Payments;
+        if (!string.IsNullOrWhiteSpace(_query))
+        {
+            var needle = _query.Trim();
+            rows = rows.Where(payment =>
+                payment.Customer.Contains(needle, StringComparison.OrdinalIgnoreCase)
+                || payment.Id.Contains(needle, StringComparison.OrdinalIgnoreCase));
+        }
+        return rows.ToArray();
+    }
+
+    private static readonly string[] AccountEntries = ["Profile", "Workspace settings", "Sign out"];
+    private static readonly string[] HelpEntries = ["Documentation", "Keyboard shortcuts", "Contact support"];
+
+    private VisualNode Palette(IAppTheme theme) =>
+        new Dialog("Search the workspace",
+            "Type a payment id, a customer, or a command. ⌘K opens this from anywhere.",
+            [new DialogAction("Close", () => SetState(() => _palette = false), Variant.Secondary)],
+            dismissible: true, onDismiss: () => SetState(() => _palette = false));
+
+    private VisualNode NewPaymentDialog(IAppTheme theme) =>
+        new Dialog("New payment",
+            "A charge is created in SANDBOX while sandbox mode is on — no real money moves.",
+            [new DialogAction("Cancel", () => SetState(() => _newPayment = false), Variant.Secondary),
+             new DialogAction("Create", () => SetState(() =>
+             {
+                 _newPayment = false;
+                 _notice = "Sandbox payment created — it will appear in the next sync.";
+             }))],
+            dismissible: true, onDismiss: () => SetState(() => _newPayment = false));
 
     // ---- Header ----------------------------------------------------------------------------
 
@@ -50,7 +122,7 @@ public sealed class PaymentsPage : StatefulComponent
     {
         var title = new Column(gap: 2);
         title.Add(new Text("Payments", TypeRole.Heading, theme.TextPrimary, maxLines: 1));
-        title.Add(new Text($"3.482 transactions · {ConsoleData.LabelOf(_range)}", TypeRole.BodyM,
+        title.Add(new Text($"{Visible().Count} transactions · {ConsoleData.LabelOf(_range)}", TypeRole.BodyM,
             theme.TextMuted, maxLines: 1));
 
         var row = new Row(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
@@ -61,10 +133,15 @@ public sealed class PaymentsPage : StatefulComponent
             Size = SizeVariant.Small,
             Stretch = false,
         });
-        row.Add(new Button("Export", Variant.Outline, SizeVariant.Small)
-        {
-            Leading = CuratedIcons.Resolve(Icons.ChevronDown),
-        });
+        row.Add(new Menu(
+            new Button("Export", Variant.Outline, SizeVariant.Small)
+            {
+                Leading = CuratedIcons.Resolve(Icons.ChevronDown),
+            },
+            [new MenuItem("Export as CSV"), new MenuItem("Export as JSON"), new MenuItem("Export as PDF")],
+            index => SetState(() => _notice =
+                $"{ExportFormats[index]} export queued for {Visible().Count} rows."))
+        { Placement = AnchorPlacement.BottomEnd });
         return row;
     }
 
@@ -293,13 +370,18 @@ public sealed class PaymentsPage : StatefulComponent
     {
         var head = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
         head.Add(new Text("Recent payments", TypeRole.Label, theme.TextPrimary, maxLines: 1));
-        head.Add(Chip(theme, "3.482", Variant.Secondary));
+        head.Add(Chip(theme, $"{Visible().Count}", Variant.Secondary));
         head.Add(new Spacer(1));
-        head.Add(new Chip("Status: Pending", ChipKind.Filter, selected: true, onRemove: () => { }));
-        head.Add(new Chip("Jul 11 – 17", ChipKind.Filter));
-        head.Add(new Chip("More filters", ChipKind.Filter));
+        head.Add(new Chip("Status: Pending", ChipKind.Filter, _pendingOnly,
+            onPressed: () => SetState(() => { _pendingOnly = !_pendingOnly; _page = 1; }),
+            onRemove: _pendingOnly ? () => SetState(() => { _pendingOnly = false; _page = 1; }) : null));
+        head.Add(new Chip("Jul 11 – 17", ChipKind.Filter, _range == DateRange.Week,
+            onPressed: () => SetState(() => _range = _range == DateRange.Week ? DateRange.Month : DateRange.Week)));
+        head.Add(new Chip("More filters", ChipKind.Filter,
+            onPressed: () => SetState(() => _notice = "Advanced filters live in the full console.")));
 
-        var table = new DataTable(Columns, ConsoleData.Payments.Select(RowOf).ToArray())
+        var visible = Visible();
+        var table = new DataTable(Columns, visible.Select(RowOf).ToArray())
         {
             SortColumn = _sortColumn,
             SortDirection = _sortDirection,
@@ -312,13 +394,13 @@ public sealed class PaymentsPage : StatefulComponent
             OnToggleAll = () => SetState(() =>
             {
                 if (_selected.Count > 0) _selected.Clear();
-                else foreach (var payment in ConsoleData.Payments) _selected.Add(payment.Id);
+                else foreach (var payment in Visible()) _selected.Add(payment.Id);
             }),
             PendingRows = 1,
         };
 
         var foot = new Row(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        foot.Add(new Flexible(new Text($"{_selected.Count} of 3.482 selected", TypeRole.Caption,
+        foot.Add(new Flexible(new Text($"{_selected.Count} of {Visible().Count} selected", TypeRole.Caption,
             theme.TextMuted, maxLines: 1) { Tabular = true }, 1));
         foot.Add(new Pagination(70, _page, page => SetState(() => _page = page)));
 
@@ -451,8 +533,26 @@ public sealed class PaymentsPage : StatefulComponent
             theme.TextPrimary, maxLines: 1), 1));
 
         var actions = new Row(gap: Space.S2) { Width = SizeValue.Fill, Main = MainAlign.End };
-        actions.Add(new Button("Cancel", Variant.Ghost, SizeVariant.Small));
-        actions.Add(new Button("Save changes", Variant.Primary, SizeVariant.Small));
+        var dirty = (_schedule, _receipts, _account) != _savedPayout;
+        actions.Add(new Button("Cancel", Variant.Ghost, SizeVariant.Small)
+        {
+            Disabled = !dirty,
+            OnPressed = () => SetState(() =>
+            {
+                (_schedule, _receipts, _account) = _savedPayout;
+                _payoutNotice = null;
+            }),
+        });
+        actions.Add(new Button("Save changes", Variant.Primary, SizeVariant.Small)
+        {
+            Disabled = !dirty,
+            OnPressed = () => SetState(() =>
+            {
+                _savedPayout = (_schedule, _receipts, _account);
+                _payoutNotice = $"Payouts now run {ScheduleNames[_schedule].ToLowerInvariant()} "
+                    + $"to {AccountNames[_account]}.";
+            }),
+        });
 
         var column = new Column(gap: Space.S4) { Width = SizeValue.Fill };
         column.Add(new Text("Payout settings", TypeRole.Label, theme.TextPrimary, maxLines: 1));
@@ -460,6 +560,7 @@ public sealed class PaymentsPage : StatefulComponent
             i => SetState(() => _account = i), placeholder: "Destination account"));
         column.Add(scheduleAndMinimum);
         column.Add(receipts);
+        if (_payoutNotice is { } saved) column.Add(new Banner(Variant.Success, saved));
         column.Add(actions);
 
         return new Card(new Box(new BoxStyle
