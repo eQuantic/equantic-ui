@@ -339,8 +339,15 @@ bool CompileAndBundle()
                         }
                         
                         var relativePath = Path.GetRelativePath(dir, file);
-                        // Entry points are only from the primary source directory (the first one)
-                        if (dir == sourceDirs[0] && (relativePath.StartsWith("Pages") || !relativePath.Contains(Path.DirectorySeparatorChar)))
+                        // A PAGE is always an entry point, wherever its file sits: the server loads
+                        // it by name, so a page that is only transpiled is a 404 the build never
+                        // mentioned. The positional rule stays as well — a project laid out the
+                        // conventional way keeps every module it had before.
+                        var isEntryPoint = result.IsPage
+                            || (dir == sourceDirs[0]
+                                && (relativePath.StartsWith("Pages")
+                                    || !relativePath.Contains(Path.DirectorySeparatorChar)));
+                        if (isEntryPoint)
                         {
                             entryPoints.Add(tsPath);
                         }

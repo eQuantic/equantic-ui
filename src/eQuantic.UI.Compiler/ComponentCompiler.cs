@@ -90,7 +90,8 @@ public class ComponentCompiler
         var result = new CompilationResult
         {
             ComponentName = component.Name,
-            Namespace = component.Namespace
+            Namespace = component.Namespace,
+            IsPage = component.PageRoutes.Count > 0,
         };
         
         try
@@ -292,6 +293,13 @@ public class CompilationResult
     public bool Success { get; set; }
     public string ComponentName { get; set; } = string.Empty;
     public string Namespace { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Carries a <c>[Page]</c> route, so the bundler must give it an ENTRY POINT: the server loads a
+    /// page's module by name, and a module that was only transpiled is a 404 the build never
+    /// mentioned. Where the file sits in the project has nothing to do with it.
+    /// </summary>
+    public bool IsPage { get; set; }
     public string TypeScript { get; set; } = string.Empty;
     public string JavaScript { get; set; } = string.Empty;
     public string? SourceMap { get; set; }
