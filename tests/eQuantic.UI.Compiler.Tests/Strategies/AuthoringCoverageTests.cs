@@ -300,4 +300,21 @@ public class AuthoringCoverageTests
         ts.Should().Contain("from \"./Money\"");
         ts.Should().Contain("from \"./Tag\"");
     }
+
+    [Fact]
+    public void RecordStaticFactory_StaysStatic()
+    {
+        // `LegalBlock.P("…")` is the idiomatic way to build a record with a shape argument. Emitting
+        // the factory as an INSTANCE method compiles fine and dies at hydration with
+        // "X.p is not a function" — SSR renders (C# is happy), the client does not.
+        var src = "public record Block(int Kind, string Text) { " +
+                  "  public static Block P(string text) => new Block(0, text); " +
+                  "  public static Block Empty => new Block(0, \"\"); } " +
+                  "public class C : StatelessComponent { " +
+                  "  public override IComponent Build(RenderContext c) => new Text(Block.P(\"x\").Text); }";
+        var ts = TsOf("Block", src);
+
+        ts.Should().Contain("static p(text)");
+        ts.Should().Contain("static get empty()");
+    }
 }
