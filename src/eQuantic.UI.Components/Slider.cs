@@ -11,8 +11,8 @@ namespace eQuantic.UI.Components;
 /// The track is filled up to the value, so the proportion reads without decoding a thumb position,
 /// and the ends are labelled by the caller rather than by tick text nobody can hit. Pressing the
 /// track moves ONE step toward the press — the scrollbar's page-click, which is what a track press
-/// means everywhere else. Fence: continuous THUMB DRAG joins the gesture system alongside the
-/// draggable Switch thumb; until then the step press and the keyboard are the whole interaction.
+/// means everywhere else — and dragging anywhere on it SCRUBS continuously, relative to where the
+/// value already is, so grabbing the thumb never makes it jump out from under the finger.
 /// </para>
 /// </summary>
 public sealed class Slider : StatelessComponent
@@ -66,19 +66,40 @@ public sealed class Slider : StatelessComponent
         // Proportional layout WITHOUT knowing the pixel width: the two track halves are flex weights.
         // A zero weight would collapse the side entirely, so each end keeps a hairline of presence.
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+
         row.Add(new Flexible(TrackHalf(fill, filled: true, enabled: !Disabled,
             onPressed: () => OnChanged?.Invoke(Math.Max(Min, Value - step))), Weight(fraction)));
         row.Add(thumb);
         row.Add(new Flexible(TrackHalf(theme.BorderStrong, filled: false, enabled: !Disabled,
             onPressed: () => OnChanged?.Invoke(Math.Min(Max, Value + step))), Weight(1 - fraction)));
 
+        // The gesture is NORMALIZED because the track is fluid: the component cannot know its pixel
+        // width and the host can, so it reports a fraction. It does not FOLLOW, either — the value
+        // places the thumb through the flex weights above, and translating it as well would move it
+        // twice.
+        VisualNode surface = Disabled ? row : new Draggable(row)
+        {
+            Axis = DragAxis.Horizontal,
+            Normalized = true,
+            Follows = false,
+            Min = 0,
+            Max = 1,
+            RestOffset = fraction,
+            OnMoved = f => OnChanged?.Invoke(Quantize(Min + f * span, step)),
+        };
+
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = Touch.MinTarget,
             Opacity = Disabled ? theme.DisabledOpacity : 1f,
-        }, row);
+        }, surface);
     }
+
+    /// <summary>A scrub lands on the same values a press does — a stepped slider has no in-between
+    /// positions, however finely the finger moves.</summary>
+    private float Quantize(float value, float step) =>
+        Math.Clamp(Step > 0 ? Min + MathF.Round((value - Min) / step) * step : value, Min, Max);
 
     /// <summary>
     /// Flex weights are integers, so the fraction becomes per-mille — 0.1% granularity, finer than

@@ -618,3 +618,17 @@ rejected.)
    comparison promised above never landed; today's cross-target guarantee is the literal cross-pin
    convention (C# realizer tests ↔ TS specs ↔ native goldens) plus 17 native flex geometry cases.
    Still the right investment before layout features accumulate further.
+6. ✅ **Gesture fences closed** (2026-08-02): the vocabulary gained `Draggable` — the continuous
+   gesture as a MECHANISM, with the meaning left to the caller. One axis, the caller's limits, and a
+   report on release; `OnMoved` for the callers that need every frame, `Normalized` for the ones
+   whose surface is fluid (the host measures what the component cannot), `Follows` for the ones that
+   repaint the position themselves. Riders: **SwipeableRow** (one revealed action, a real button
+   behind the row so it stays reachable without the gesture), **PullToRefresh** (reveals rather than
+   stretches; holds while the work is in flight), the **Switch** thumb (limits signed by state, so a
+   drag that ends where it began changes nothing) and the **Slider** track (relative scrubbing,
+   quantized to the same values a press lands on). Clamping moved out of `DragStore` — the store
+   remembers, the caller decides what is legal — and arming happens on the gesture's OWN axis, or a
+   list containing a swipeable row could not be scrolled. Both targets: the native host routes the
+   pointer, and one document-level web controller reads the rules off the DOM. Cancellation is a
+   first-class outcome on both (`PhotonHost.PointerCancel` ↔ `pointercancel`): nothing was decided,
+   so nothing is reported and the surface returns to the caller's rest.

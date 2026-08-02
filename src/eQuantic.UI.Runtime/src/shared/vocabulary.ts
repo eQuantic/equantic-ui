@@ -310,7 +310,12 @@ export class Draggable extends VisualNode {
   min = 0;
   max = 0;
   restOffset = 0;
+  /** Report a FRACTION of the surface's own extent, which only the client can measure. */
+  normalized = false;
+  /** Whether the subtree follows the finger, or the caller repaints it from `onMoved`. */
+  follows = true;
   onReleased: ((offset: number) => void) | null;
+  onMoved: ((offset: number) => void) | null = null;
 
   constructor(
     readonly child: VisualChild,
@@ -320,6 +325,9 @@ export class Draggable extends VisualNode {
       min?: number;
       max?: number;
       restOffset?: number;
+      normalized?: boolean;
+      follows?: boolean;
+      onMoved?: ((offset: number) => void) | null;
       key?: string | null;
     },
   ) {

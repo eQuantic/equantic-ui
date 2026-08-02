@@ -15,6 +15,13 @@ public class GalleryComponentTests
 
     private static Box Frame(VisualNode tree) => tree.Should().BeOfType<Box>().Subject;
 
+    /// <summary>The slider's track, under the scrub gesture that wraps it when it is enabled.</summary>
+    private static Row Track(VisualNode tree)
+    {
+        var inner = Frame(tree).Child;
+        return (inner is Draggable scrub ? scrub.Child : inner!).Should().BeOfType<Row>().Subject;
+    }
+
     // ---- Stepper ---------------------------------------------------------------------------
 
     [Theory]
@@ -161,7 +168,7 @@ public class GalleryComponentTests
     [InlineData(1f, 1000, 1)]
     public void Slider_FillProportionIsTheValue(float value, int filled, int rest)
     {
-        var row = Frame(new Slider(value).Build(Ctx)).Child.Should().BeOfType<Row>().Subject;
+        var row = Track(new Slider(value).Build(Ctx));
         row.Children[0].Should().BeOfType<Flexible>().Which.Flex.Should().Be(filled);
         row.Children[2].Should().BeOfType<Flexible>().Which.Flex.Should().Be(rest);
     }
@@ -169,7 +176,7 @@ public class GalleryComponentTests
     [Fact]
     public void Slider_ClampsAValueOutsideItsRange()
     {
-        var row = Frame(new Slider(99) { Min = 0, Max = 10 }.Build(Ctx)).Child.Should().BeOfType<Row>().Subject;
+        var row = Track(new Slider(99) { Min = 0, Max = 10 }.Build(Ctx));
         row.Children[0].Should().BeOfType<Flexible>().Which.Flex.Should().Be(1000);
     }
 
@@ -177,8 +184,7 @@ public class GalleryComponentTests
     public void Slider_TrackPressMovesOneStepTowardThePress()
     {
         float? got = null;
-        var row = Frame(new Slider(50, v => got = v) { Min = 0, Max = 100, Step = 10 }.Build(Ctx))
-            .Child.Should().BeOfType<Row>().Subject;
+        var row = Track(new Slider(50, v => got = v) { Min = 0, Max = 100, Step = 10 }.Build(Ctx));
 
         Half(row, first: true).OnPressed!();
         got.Should().Be(40);
@@ -193,20 +199,20 @@ public class GalleryComponentTests
     public void Slider_StepPressNeverLeavesTheRange()
     {
         float? got = null;
-        var atMin = Frame(new Slider(0, v => got = v) { Min = 0, Max = 1, Step = 0.25f }.Build(Ctx));
-        ((Pressable)((Flexible)((Row)atMin.Child!).Children[0]).Child).OnPressed!();
+        var atMin = Track(new Slider(0, v => got = v) { Min = 0, Max = 1, Step = 0.25f }.Build(Ctx));
+        ((Pressable)((Flexible)atMin.Children[0]).Child).OnPressed!();
         got.Should().Be(0);
 
-        var atMax = Frame(new Slider(1, v => got = v) { Min = 0, Max = 1, Step = 0.25f }.Build(Ctx));
-        ((Pressable)((Flexible)((Row)atMax.Child!).Children[2]).Child).OnPressed!();
+        var atMax = Track(new Slider(1, v => got = v) { Min = 0, Max = 1, Step = 0.25f }.Build(Ctx));
+        ((Pressable)((Flexible)atMax.Children[2]).Child).OnPressed!();
         got.Should().Be(1);
     }
 
     [Fact]
     public void Slider_Disabled_TakesNoPresses()
     {
-        var row = Frame(new Slider(0.5f, _ => throw new InvalidOperationException()) { Disabled = true }
-            .Build(Ctx)).Child.Should().BeOfType<Row>().Subject;
+        var row = Track(new Slider(0.5f, _ => throw new InvalidOperationException()) { Disabled = true }
+            .Build(Ctx));
         ((Flexible)row.Children[0]).Child.Should().BeOfType<Box>("a disabled track is not a button");
         ((Flexible)row.Children[2]).Child.Should().BeOfType<Box>();
     }
@@ -214,7 +220,7 @@ public class GalleryComponentTests
     [Fact]
     public void Slider_TrackHalvesRoundOnlyTheirOuterEnds()
     {
-        var row = Frame(new Slider(0.5f).Build(Ctx)).Child.Should().BeOfType<Row>().Subject;
+        var row = Track(new Slider(0.5f).Build(Ctx));
         var filled = Bar(row, first: true);
         var rest = Bar(row, first: false);
 

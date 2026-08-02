@@ -70,7 +70,12 @@ export interface DraggableNode extends VisualNodeValue {
   min?: number;
   max?: number;
   restOffset?: number;
+  /** Report a FRACTION of the surface's own extent, which only the client can measure. */
+  normalized?: boolean;
+  /** Whether the subtree follows the finger, or the caller repaints it from `onMoved`. */
+  follows?: boolean;
   onReleased?: ((offset: number) => void) | null;
+  onMoved?: ((offset: number) => void) | null;
 }
 
 export interface SafeAreaNode {

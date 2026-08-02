@@ -144,7 +144,7 @@ public sealed class PhotonHost
     /// the pointer travels past the slop (which cancels the pressable press), resolved on release.</summary>
     // The armed gesture surface. `Node` is a DragDismiss or a Draggable — the rules live on it, so
     // the host only tracks where the finger started and whether the slop has been passed.
-    private (string Path, VisualNode Node, float StartX, float StartY, bool Active)? _drag;
+    private (string Path, VisualNode Node, float StartX, float StartY, float Extent, bool Active)? _drag;
 
     /// <summary>The clock of the last rendered frame — glide-backs anchor to it on release.</summary>
     private float _lastTimeMs;
@@ -229,10 +229,23 @@ public sealed class PhotonHost
             if (drag.Active)
             {
                 // A DragDismiss only travels one way; a Draggable clamps to the caller's limits.
-                var offset = drag.Node is Draggable draggable
-                    ? Math.Clamp(travel, draggable.Min, draggable.Max)
-                    : Math.Max(0, travel);
-                _drags.Drag(drag.Path, offset);
+                if (drag.Node is Draggable draggable)
+                {
+                    var reported = Math.Clamp(Report(draggable, travel, drag.Extent),
+                        draggable.Min, draggable.Max);
+                    // The PAINT offset is always dp; only what the caller HEARS is normalised.
+                    if (draggable.Follows)
+                    {
+                        _drags.Drag(drag.Path, draggable.Normalized
+                            ? reported * drag.Extent
+                            : reported);
+                    }
+                    draggable.OnMoved?.Invoke(reported);
+                }
+                else
+                {
+                    _drags.Drag(drag.Path, Math.Max(0, travel));
+                }
                 NeedsRender = true;
                 return;
             }
@@ -304,7 +317,10 @@ public sealed class PhotonHost
         for (var i = dragRegions.Count - 1; i >= 0; i--)
         {
             if (!dragRegions[i].Bounds.Contains(point)) continue;
-            _drag = (dragRegions[i].Path, dragRegions[i].Node, x, y, false);
+            // The surface's own extent along the axis — what a NORMALIZED gesture divides by.
+            var horizontalSurface = dragRegions[i].Node is Draggable { Axis: DragAxis.Horizontal };
+            var extent = horizontalSurface ? dragRegions[i].Bounds.Width : dragRegions[i].Bounds.Height;
+            _drag = (dragRegions[i].Path, dragRegions[i].Node, x, y, extent, false);
             break;
         }
 
@@ -320,6 +336,39 @@ public sealed class PhotonHost
         }
         return _drag is not null;
     }
+
+    /// <summary>
+    /// The system took the gesture away without ever lifting the finger — UIKit's
+    /// <c>touchesCancelled</c>, a window losing key, a call arriving. Nothing was decided, so
+    /// nothing is reported: the press drops and the surface glides back to where the caller last
+    /// put it. The web controller answers <c>pointercancel</c> the same way.
+    /// </summary>
+    public void PointerCancel()
+    {
+        if (_drag is { Active: true } drag)
+        {
+            var rest = drag.Node switch
+            {
+                Draggable { Follows: false } => 0f,
+                Draggable { Normalized: true } d => d.RestOffset * drag.Extent,
+                Draggable d => d.RestOffset,
+                _ => 0f,
+            };
+            _drags.Release(drag.Path, _lastTimeMs, rest);
+        }
+
+        _drag = null;
+        _pressed = null;
+        NeedsRender = true;
+    }
+
+    /// <summary>
+    /// Where the gesture now IS, as the caller wants to hear it: measured from the rest it started
+    /// at — a row already open reports where it ends up, not how far this one drag went — in dp, or
+    /// as a fraction of the surface's own extent.
+    /// </summary>
+    private static float Report(Draggable draggable, float travel, float extent) =>
+        draggable.RestOffset + (draggable.Normalized && extent > 0 ? travel / extent : travel);
 
     /// <summary>
     /// Ends a press: fires <c>OnPressed</c> when the release lands inside the pressed node's region
@@ -340,9 +389,11 @@ public sealed class PhotonHost
             if (drag.Node is Draggable draggable)
             {
                 var horizontal = draggable.Axis == DragAxis.Horizontal;
-                var travel = Math.Clamp(horizontal ? x - drag.StartX : y - drag.StartY,
+                var raw = horizontal ? x - drag.StartX : y - drag.StartY;
+                var travel = Math.Clamp(Report(draggable, raw, drag.Extent),
                     draggable.Min, draggable.Max);
-                _drags.Release(drag.Path, _lastTimeMs, draggable.RestOffset);
+                _drags.Release(drag.Path, _lastTimeMs,
+                    draggable.Normalized ? draggable.RestOffset * drag.Extent : draggable.RestOffset);
                 draggable.OnReleased?.Invoke(travel);
                 NeedsRender = true;
                 return true;

@@ -240,8 +240,11 @@ public static class LayoutEngine
         LayoutContext ctx, string path)
     {
         var result = MeasureWrapper(draggable, draggable.Child, maxW, maxH, ctx, path);
-        result.DragOffset = ctx.Drags?.Resolve(path, ctx.TimeMs, draggable.RestOffset)
-            ?? draggable.RestOffset;
+        // A gesture the caller paints itself never translates — its offset lives in the caller's
+        // state and has already moved the subtree by the time this frame is measured.
+        result.DragOffset = draggable.Follows
+            ? ctx.Drags?.Resolve(path, ctx.TimeMs, draggable.RestOffset) ?? draggable.RestOffset
+            : 0f;
         result.DragPath = path;
         return result;
     }

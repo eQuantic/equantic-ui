@@ -1145,8 +1145,13 @@ public static class WebRealizer
         child.RawAttributes["data-eq-drag-min"] = draggable.Min.ToString(culture);
         child.RawAttributes["data-eq-drag-max"] = draggable.Max.ToString(culture);
         child.RawAttributes["data-eq-drag-rest"] = draggable.RestOffset.ToString(culture);
+        if (draggable.Normalized) child.RawAttributes["data-eq-drag-normalized"] = "1";
+        if (!draggable.Follows) child.RawAttributes["data-eq-drag-follows"] = "0";
+        if (draggable.OnMoved is not null) child.RawAttributes["data-eq-drag-moves"] = "1";
 
-        if (draggable.RestOffset != 0)
+        // A gesture the caller paints itself is already where it belongs — translating the rest as
+        // well would move it twice.
+        if (draggable.RestOffset != 0 && draggable.Follows)
         {
             child.Style ??= new HtmlStyle();
             child.Style.Transform = draggable.Axis == DragAxis.Horizontal
@@ -1160,6 +1165,11 @@ public static class WebRealizer
         if (draggable.OnReleased is { } released)
         {
             child.CustomEvents["eq-drag-released"] = released;
+        }
+
+        if (draggable.OnMoved is { } moved)
+        {
+            child.CustomEvents["eq-drag-moved"] = moved;
         }
 
         return child;
