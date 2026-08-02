@@ -10,8 +10,8 @@ export class SharedCounter extends SharedStatefulComponent {
         await new Promise(resolve => setTimeout(resolve, 140));this.setState(() => this._count++);
     }
 
-    *cells() {
-        yield new Text('a', 'caption');if (this._count > 3) return;yield new Text('b', 'caption');
+    cells() {
+        const _seq = []; _seq.push(new Text('a', 'caption'));if (this._count > 3) return _seq;_seq.push(new Text('b', 'caption')); return _seq;
     }
 
 }

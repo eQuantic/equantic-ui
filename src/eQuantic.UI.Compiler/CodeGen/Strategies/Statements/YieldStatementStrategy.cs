@@ -5,10 +5,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary>
-/// Strategy for Yield statements.
-/// Handles: 
-/// - yield return x -> yield x
-/// - yield break -> return
+/// <c>yield return x</c> and <c>yield break</c>. Inside a method the emitter is MATERIALISING (the
+/// normal case — see <see cref="ConversionContext.IteratorBuffer"/>) they append to the buffer and
+/// return it; a real JS generator is only emitted where nothing collects.
 /// </summary>
 public class YieldStatementStrategy : IStatementStrategy
 {
@@ -21,15 +20,15 @@ public class YieldStatementStrategy : IStatementStrategy
     {
         var yieldStmt = (YieldStatementSyntax)node;
         
+        var buffer = context.IteratorBuffer;
+
         if (yieldStmt.Kind() == SyntaxKind.YieldBreakStatement)
         {
-            return "return;";
+            return buffer is null ? "return;" : $"return {buffer};";
         }
-        else
-        {
-            var expr = context.Converter.ConvertExpression(yieldStmt.Expression);
-            return $"yield {expr};";
-        }
+
+        var expr = context.Converter.ConvertExpression(yieldStmt.Expression);
+        return buffer is null ? $"yield {expr};" : $"{buffer}.push({expr});";
     }
 
     public int Priority => 10;

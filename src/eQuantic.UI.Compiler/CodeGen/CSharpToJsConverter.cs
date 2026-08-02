@@ -54,6 +54,12 @@ public class CSharpToJsConverter
         _context.CurrentClassName = className;
     }
 
+    /// <summary>Names the array an ITERATOR method is filling — null outside one.</summary>
+    public void SetIteratorBuffer(string? buffer)
+    {
+        _context.IteratorBuffer = buffer;
+    }
+
     /// <summary>
     /// Converts an expression that lives in a DIFFERENT syntax tree than the file being compiled —
     /// a referenced constant's initializer, inlined at the use site (e.g. an icon pack's

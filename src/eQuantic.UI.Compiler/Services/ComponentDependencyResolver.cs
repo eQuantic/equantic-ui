@@ -20,6 +20,7 @@ public class ComponentDependencyResolver
     /// <summary>Static utility classes (`static class X`) discovered during the scan — emitted as their
     /// own module, so a component referencing <c>X.Foo()</c> imports it.</summary>
     private readonly HashSet<string> _staticHelpers = new();
+    private readonly HashSet<string> _plainClasses = new();
 
     /// <summary>
     /// Scans source code directories to build dependency map
@@ -75,6 +76,16 @@ public class ComponentDependencyResolver
                     && classDecl.Modifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
                 {
                     _staticHelpers.Add(className);
+                }
+
+                // A PLAIN class is a module too — a referencing module has to import it, or the
+                // page dies with "Bucket is not defined". Components and state classes are resolved
+                // by their own paths; a nested class embeds in its owner.
+                else if (classDecl.Parent is not Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax
+                         && classDecl.Members.Count > 0
+                         && !IsComponentLike(classDecl))
+                {
+                    _plainClasses.Add(className);
                 }
 
                 // Get base type
@@ -180,6 +191,29 @@ public class ComponentDependencyResolver
 
     /// <summary>Names of static utility classes emitted as their own modules.</summary>
     public IReadOnlySet<string> GetAllStaticHelpers() => _staticHelpers;
+
+    /// <summary>Plain classes the app declares — each its own module, each importable.</summary>
+    public IReadOnlySet<string> GetAllPlainClasses() => _plainClasses;
+
+    /// <summary>
+    /// Whether the class is (or extends) something the COMPONENT path emits. Syntactic on purpose:
+    /// the resolver runs before semantics, and a component's own module is registered elsewhere.
+    /// </summary>
+    private static bool IsComponentLike(ClassDeclarationSyntax classDecl)
+    {
+        if (classDecl.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>()
+            .Any(m => m.Identifier.Text is "Build" or "Render" or "CreateState"))
+        {
+            return true;
+        }
+
+        var baseName = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ToString();
+        if (baseName is null) return false;
+        if (baseName.Contains('<')) baseName = baseName[..baseName.IndexOf('<')];
+        if (baseName.Contains('.')) baseName = baseName[(baseName.LastIndexOf('.') + 1)..];
+        return baseName is "StatefulComponent" or "StatelessComponent" or "ComponentState"
+            or "HtmlElement" or "UiComponent" or "Flex" or "Container" or "Stack";
+    }
 
     /// <summary>
     /// Debug: Print dependency tree
