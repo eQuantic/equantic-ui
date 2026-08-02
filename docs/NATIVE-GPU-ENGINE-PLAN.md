@@ -845,3 +845,27 @@ What that removed, each of which was a thing an app author had to KNOW:
 
 Verified end to end: the app installs and runs full screen on an iPhone 17 simulator with the tab
 bar navigating, and the same source self-tests at 120 frames through the desktop head.
+
+### Track W3 — the app icon, and the writers behind it (2026-08-02)
+
+An app's icon is now a build input the framework owns. `Assets/AppIcon.png` (artwork a designer
+made) or `Assets/AppIcon.cs` (an `IAppIcon` the engine draws) — CONVENTION, the way .NET does it,
+with `EQuanticAppIconSource` in the project file as the override. Both end in the same generated
+asset catalog, so nobody hand-writes a `Contents.json`, an `.xcassets` or a manifest key.
+
+`eqicon` is the tool. The C# path compiles the icon file ON ITS OWN against the vocabulary — the
+app's assembly may target a device this machine cannot load, and an icon has no business reaching
+into the app. The tree is designed on a 64dp canvas and rasterized at whatever density the platform
+installs from, which is the same relationship every other tree has with a screen's scale factor.
+
+Two platform traps absorbed rather than passed on: an iOS icon must be OPAQUE (one with an alpha
+channel installs as a blank tile, silently), and Apple reads the icon's location from the app
+MANIFEST rather than from a build property. eqicon flattens the first and writes the second.
+
+`eQuantic.UI.Codegen` is new, and answers a standing complaint: generated files were string blobs
+scattered through the code. One `CodeWriter` (append, indent, disposable scopes — the closer travels
+with the scope, so an opener without its closer is unrepresentable) and a writer per FILE TYPE on
+top: `PropertyListWriter` (tab-indented, like every plist on a Mac) and `JsonWriter` (whose one job
+is that the last member never gets a comma and every other one does). The compiler's
+`TypeScriptCodeBuilder` predates this and should be rebased on the same `CodeWriter` — it carries
+source-map state, so that is its own change.

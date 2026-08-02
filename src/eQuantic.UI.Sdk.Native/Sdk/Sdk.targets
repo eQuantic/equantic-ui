@@ -10,4 +10,62 @@
     <ItemGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(OutputType)' == 'Exe'">
         <PartialAppManifest Include="$(MSBuildThisFileDirectory)PhotonApp.plist" />
     </ItemGroup>
+
+    <!--
+        CONVENTION, the way .NET does it: things the build consumes live in a known folder, the way
+        a web app's static files live in wwwroot. `Assets/` is where a Photon app keeps what the
+        platform installs, and the root is accepted too for an app small enough not to want a folder.
+        `EQuanticAppIconSource` in the project file overrides both — an MSBuild property, because
+        this is a BUILD input; appsettings.json is where an app configures what it does at RUN time,
+        and splitting one concern across the two is how a project stops being obvious.
+    -->
+    <PropertyGroup>
+        <EQuanticAssetsDir Condition="'$(EQuanticAssetsDir)' == ''">$(MSBuildProjectDirectory)/Assets</EQuanticAssetsDir>
+
+        <!-- Artwork a designer made, or a tree the engine draws. Both end in the same generated
+             catalog, so nobody hand-writes a Contents.json either way. -->
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(EQuanticAssetsDir)/AppIcon.png')">$(EQuanticAssetsDir)/AppIcon.png</EQuanticAppIconSource>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(EQuanticAssetsDir)/AppIcon.cs')">$(EQuanticAssetsDir)/AppIcon.cs</EQuanticAppIconSource>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(MSBuildProjectDirectory)/AppIcon.png')">$(MSBuildProjectDirectory)/AppIcon.png</EQuanticAppIconSource>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(MSBuildProjectDirectory)/AppIcon.cs')">$(MSBuildProjectDirectory)/AppIcon.cs</EQuanticAppIconSource>
+
+        <_EqIconToolDir>$(MSBuildThisFileDirectory)../tools/net10.0/</_EqIconToolDir>
+        <_EqIconToolDir Condition="!Exists('$(_EqIconToolDir)eqicon.dll')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
+        <_EqIconDir>$(MSBuildProjectDirectory)/obj/eQuantic</_EqIconDir>
+        <_EqIconSetDir>$(_EqIconDir)/Assets.xcassets</_EqIconSetDir>
+    </PropertyGroup>
+
+    <!--
+        Apple reads the icon's LOCATION from the app manifest rather than from a build property, so
+        the tool that writes the catalog writes that too. The item is declared before the file
+        exists on purpose: a clean build renders it before anything reads it.
+    -->
+    <ItemGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(EQuanticAppIconSource)' != ''">
+        <PartialAppManifest Include="$(_EqIconDir)/AppIcon.plist" />
+    </ItemGroup>
+
+    <!--
+        ONE target: render the icon, then hand the catalog to Apple's packaging. The items are
+        created HERE rather than declared up front because a wildcard evaluated before the build
+        runs is empty on every clean build — and actool then compiles nothing while reporting
+        success. eqicon skips its own work when the icon has not changed, so this stays cheap.
+    -->
+    <Target Name="EQuanticAppIcon"
+            Condition="'$(EQuanticAppIconSource)' != '' AND '$(TargetFramework)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')"
+            BeforeTargets="_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;CoreCompile">
+        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --out &quot;$(_EqIconSetDir)&quot;"
+              StandardOutputImportance="normal" />
+        <ItemGroup Condition="'$(_EqPlatform)' == 'ios'">
+            <!-- Items born inside a target carry no provenance, and Apple's packaging asks for it.
+                 Only the LOCAL one: DefiningProjectFullPath is MSBuild's own reserved metadata. -->
+            <ImageAsset Include="$(_EqIconSetDir)/**/*">
+                <LocalDefiningProjectFullPath>$(MSBuildProjectFullPath)</LocalDefiningProjectFullPath>
+                <LocalMSBuildProjectFullPath>$(MSBuildProjectFullPath)</LocalMSBuildProjectFullPath>
+            </ImageAsset>
+        </ItemGroup>
+    </Target>
 </Project>

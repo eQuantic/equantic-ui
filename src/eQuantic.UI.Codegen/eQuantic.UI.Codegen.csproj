@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <Description>Writing generated files: one indentation engine, and a writer per file type. Nothing here knows what eQuantic.UI is — it knows what a line, a scope and an escape are.</Description>
+    </PropertyGroup>
+
+</Project>
