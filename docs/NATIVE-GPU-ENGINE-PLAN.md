@@ -869,3 +869,20 @@ top: `PropertyListWriter` (tab-indented, like every plist on a Mac) and `JsonWri
 is that the last member never gets a comma and every other one does). The compiler's
 `TypeScriptCodeBuilder` predates this and should be rebased on the same `CodeWriter` — it carries
 source-map state, so that is its own change.
+
+### Track W4 — the same icon, in a browser (2026-08-02)
+
+The icon an app states once now appears wherever it belongs. `eqicon --web` writes what a browser
+asks for — 512 and 192 for the install manifest, 180 for what iOS Safari pins to a home screen, 32
+for the tab — from the very same `Assets/AppIcon.png` or `Assets/AppIcon.cs` the device SDK reads.
+The web SDK runs it; the shell links the results; the app writes nothing. Asking an author to state
+the icon once and then also write four `<link>` tags would be handing back the work we just took.
+
+The downscale is a BOX FILTER: every destination pixel is the average of the source pixels it
+covers. Point sampling is one line shorter and shreds an icon's edges at 32px, which is the size a
+user sees most. No `.ico`: every browser that matters has taken a PNG favicon for a decade.
+
+`ApplicationTitle` is the name a browser installs under — the SAME property the device head uses, so
+an app that cares states it once, and absent that the assembly's name is what .NET would have called
+it anyway. And the up-to-date check watches EVERY output rather than one: a check that watches a
+single file calls a half-written set finished, which is how a deleted manifest stayed deleted.

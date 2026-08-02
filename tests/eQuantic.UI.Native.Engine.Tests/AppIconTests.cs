@@ -101,6 +101,40 @@ public class AppIconTests
     }
 
     [Fact]
+    public void TheWebManifestNamesTheAppAndItsInstallIcons()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "eq-icon-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            // A flat field is enough: what is under test is the SET that gets written, not the art.
+            const int source = 512;
+            var rgba = new byte[source * source * 4];
+            for (var i = 0; i < rgba.Length; i += 4)
+            {
+                rgba[i] = 10; rgba[i + 1] = 60; rgba[i + 2] = 140; rgba[i + 3] = 255;
+            }
+
+            eQuantic.UI.Build.WebIcons.Write(dir, "Wallet", source, rgba);
+
+            // Each answers a different question — the tab, the pinned home screen, the install.
+            new[] { "favicon-32.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "site.webmanifest" }
+                .Should().OnlyContain(file => File.Exists(Path.Combine(dir, file)));
+
+            var manifest = File.ReadAllText(Path.Combine(dir, "site.webmanifest"));
+            manifest.Should().Contain("\"name\" : \"Wallet\"").And.Contain("\"192x192\"").And.Contain("\"512x512\"");
+
+            // The downscale AVERAGES rather than point-samples, so a flat field stays exactly flat.
+            var small = PngCodec.Decode(File.ReadAllBytes(Path.Combine(dir, "favicon-32.png")));
+            small.Width.Should().Be(32);
+            small.Rgba.Take(4).Should().Equal([(byte)10, (byte)60, (byte)140, (byte)255]);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ThePropertyListIsTabIndentedLikeEveryOtherPlistOnTheMachine()
     {
         var plist = PropertyListWriter.Document(dict => dict

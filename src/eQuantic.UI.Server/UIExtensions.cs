@@ -300,6 +300,33 @@ public static class UIExtensions
         return endpoints;
     }
 
+    /// <summary>The head links for the generated icon set — empty when an app declared no icon.</summary>
+    private static IReadOnlyList<string> GeneratedIconTags(HttpContext context)
+    {
+        if (_iconTags is not null) return _iconTags;
+
+        var environment = context.RequestServices.GetService<IWebHostEnvironment>();
+        var root = environment?.WebRootPath;
+        var icons = root is null ? null : Path.Combine(root, "_equantic", "icons");
+        if (icons is null || !Directory.Exists(icons)) return _iconTags = [];
+
+        var tags = new List<string>();
+        void Link(string file, HtmlTag tag)
+        {
+            if (File.Exists(Path.Combine(icons, file))) tags.Add(tag.Render());
+        }
+
+        // 32 is the tab, 180 is what iOS Safari pins to a home screen, and the manifest carries the
+        // install icons — each answers a different question, so each gets its own link.
+        Link("favicon-32.png", HtmlTag.Link("icon", "/_equantic/icons/favicon-32.png").Attr("type", "image/png"));
+        Link("apple-touch-icon.png", HtmlTag.Link("apple-touch-icon", "/_equantic/icons/apple-touch-icon.png"));
+        Link("site.webmanifest", HtmlTag.Link("manifest", "/_equantic/icons/site.webmanifest"));
+        return _iconTags = tags;
+    }
+
+    /// <summary>Computed once: the icon set is a build output and cannot change under a running app.</summary>
+    private static IReadOnlyList<string>? _iconTags;
+
     private static async Task ServeAppShell(HttpContext context, string? pageName)
     {
         var options = context.RequestServices.GetRequiredService<UIOptions>();
@@ -319,6 +346,12 @@ public static class UIExtensions
             headTags.Add($"<style>{eQuantic.UI.Web.PhotonCssGenerator.Generate(appTheme)}</style>");
             themeDataJson = eQuantic.UI.Web.ThemeBridge.SerializeJson(appTheme);
         }
+
+        // The app icon the SDK generated, linked without the app saying so. Stating it once — in
+        // Assets/ — and having it appear in the tab, on a pinned home screen and in the install
+        // manifest is the whole point; asking an author to also write four <link> tags would be
+        // handing back the work we just took.
+        headTags.AddRange(GeneratedIconTags(context));
 
         // Initialize Metadata
         var metadata = new MetadataCollection { Title = shell.Title };

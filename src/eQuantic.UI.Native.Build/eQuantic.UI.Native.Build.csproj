@@ -27,8 +27,12 @@
         <ItemGroup>
             <_IconToolFiles Include="$(OutputPath)**/*" Exclude="$(OutputPath)*.pdb" />
         </ItemGroup>
+        <!-- Both SDKs run this tool: a phone installs an icon and so does a browser. -->
         <Copy SourceFiles="@(_IconToolFiles)"
             DestinationFiles="@(_IconToolFiles->'..\eQuantic.UI.Sdk.Native\tools\net10.0\%(RecursiveDir)%(Filename)%(Extension)')"
+            SkipUnchangedFiles="true" />
+        <Copy SourceFiles="@(_IconToolFiles)"
+            DestinationFiles="@(_IconToolFiles->'..\eQuantic.UI.Sdk\tools\net10.0\%(RecursiveDir)%(Filename)%(Extension)')"
             SkipUnchangedFiles="true" />
     </Target>
 
