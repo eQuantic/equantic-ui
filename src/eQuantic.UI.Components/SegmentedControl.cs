@@ -40,13 +40,28 @@ public sealed class SegmentedControl : StatelessComponent
         var inset = 3f;                                   // the track's lip around the thumb
         var trackRadius = Sizing.Radius(Size);
 
-        var row = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Stretch };
+        // A Hug track cannot distribute flex, so the inner row and the segments hug with it —
+        // Fill inside Hug collapses to nothing, taking the whole control with it.
+        var row = new Row(gap: 0)
+        {
+            Width = Stretch ? SizeValue.Fill : SizeValue.Hug,
+            Height = SizeValue.Fill,
+            Cross = CrossAlign.Stretch,
+        };
         for (var i = 0; i < Segments.Count; i++)
         {
             var index = i;
             var selected = index == SelectedIndex;
 
-            var label = new Row(gap: 0) { Main = MainAlign.Center, Cross = CrossAlign.Center };
+            // Centring needs slack, and only a filling segment has any — a hugging segment centres
+            // its label by construction, through its own symmetric padding.
+            var label = new Row(gap: 0)
+            {
+                Width = Stretch ? SizeValue.Fill : SizeValue.Hug,
+                Height = SizeValue.Fill,
+                Main = MainAlign.Center,
+                Cross = CrossAlign.Center,
+            };
             label.Add(new Text(Segments[index], TypeRole.Label,
                 selected ? theme.TextPrimary : theme.TextSecondary, maxLines: 1)
             {
@@ -56,8 +71,9 @@ public sealed class SegmentedControl : StatelessComponent
 
             var segment = new Box(new BoxStyle
             {
-                Width = SizeValue.Fill,
+                Width = Stretch ? SizeValue.Fill : SizeValue.Hug,
                 Height = SizeValue.Fill,
+                Padding = Stretch ? default : EdgeInsets.Symmetric(Sizing.PaddingX(Size), 0),
                 Background = selected ? theme.Surface : null,
                 CornerRadius = new CornerRadii(trackRadius - inset),
                 Elevation = selected ? 1 : 0,

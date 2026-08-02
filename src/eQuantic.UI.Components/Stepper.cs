@@ -71,7 +71,13 @@ public sealed class Stepper : StatelessComponent
     private static VisualNode Arm(IAppTheme theme, Icons glyph, float height, bool enabled,
         Action? onPressed, string label)
     {
-        var centered = new Row(gap: 0) { Main = MainAlign.Center, Cross = CrossAlign.Center };
+        var centered = new Row(gap: 0)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Main = MainAlign.Center,
+            Cross = CrossAlign.Center,
+        };
         centered.Add(new Icon(glyph, IconSize.Dense, enabled ? theme.TextPrimary : theme.TextMuted));
 
         var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);

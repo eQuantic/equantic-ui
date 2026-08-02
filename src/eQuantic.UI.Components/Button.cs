@@ -39,6 +39,15 @@ public sealed class Button : StatelessComponent
     /// tinted with the label.</summary>
     public IconGlyph? Leading { get; init; }
 
+    /// <summary>
+    /// WORK IN FLIGHT: a spinner takes the leading slot and presses are swallowed, while the LABEL
+    /// stays put — a button that swaps its text for "Loading…" changes width mid-click and moves the
+    /// thing the user is aiming at. The button reads disabled to assistive tech for the duration,
+    /// which is the truth: it cannot be actioned. The 400ms spinner appear delay (spec B15) keeps a
+    /// fast round-trip from flashing.
+    /// </summary>
+    public bool Loading { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
@@ -55,7 +64,8 @@ public sealed class Button : StatelessComponent
         var borderWidth = Variant == Variant.Outline ? 1f : 0f;
         var borderColor = theme.BorderStrong;
 
-        if (Disabled)
+        var inert = Disabled || Loading;
+        if (inert)
         {
             var opacity = theme.DisabledOpacity;
             if (fill is { } filled) fill = filled.WithOpacity(opacity);
@@ -76,7 +86,8 @@ public sealed class Button : StatelessComponent
             Main = MainAlign.Center,
             Cross = CrossAlign.Center,
         };
-        if (Leading is { } leading) content.Add(new Icon(leading, size: iconSize, color: textColor));
+        if (Loading) content.Add(new Spinner(iconSize, textColor));
+        else if (Leading is { } leading) content.Add(new Icon(leading, size: iconSize, color: textColor));
         content.Add(label);
 
         var container = new Box(new BoxStyle
@@ -100,11 +111,11 @@ public sealed class Button : StatelessComponent
             _ => colors.Pressed,
         };
 
-        return new Pressable(container, Disabled ? null : OnPressed)
+        return new Pressable(container, inert ? null : OnPressed)
         {
-            Disabled = Disabled,
+            Disabled = inert,
             Label = Label,
-            PressedBackground = Disabled ? null : pressedFill,
+            PressedBackground = inert ? null : pressedFill,
         };
     }
 }
