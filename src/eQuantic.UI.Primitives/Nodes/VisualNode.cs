@@ -691,6 +691,15 @@ public sealed class TextEntry : VisualNode
     /// per surface; native fence: the host focus system.
     /// </summary>
     public bool Autofocus { get; init; }
+
+    /// <summary>
+    /// How many lines of text the field holds. <c>1</c> (the default) is the single-line entry;
+    /// anything greater makes it a MULTI-LINE field of exactly that many lines tall — the message
+    /// box of a contact form, a note, a description. The count is the field's HEIGHT, not a limit:
+    /// content beyond it scrolls (web <c>textarea rows</c>). Native measures the same line count,
+    /// so a form's geometry matches before the caret/IME stack lands.
+    /// </summary>
+    public int Lines { get; init; } = 1;
 }
 
 /// <summary>Modifier keys of a <see cref="KeyChord"/>. <see cref="Command"/> is the PLATFORM's

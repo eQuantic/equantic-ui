@@ -526,7 +526,10 @@ public static class WebRealizer
     /// </summary>
     private static HtmlElement LowerTextEntry(TextEntry entry, ComponentContext context)
     {
-        var element = new RealizedElement("input")
+        // A multi-line entry IS a textarea — its value is CONTENT, not an attribute, so SSR carries
+        // it the way the parser expects; `rows` is the authored line count.
+        var multiline = entry.Lines > 1;
+        var element = new RealizedElement(multiline ? "textarea" : "input")
         {
             ClassName = $"eq-entry eq-type-{entry.Role.ToString().ToLowerInvariant()}",
             Style = new HtmlStyle
@@ -537,13 +540,17 @@ public static class WebRealizer
                 Border = "none",
                 Color = TokenCss.Value(context.Theme.TextPrimary),
                 FontFamily = "inherit",
+                Resize = multiline ? "vertical" : null,
             },
-            RawAttributes = new Dictionary<string, string>
-            {
-                ["type"] = entry.Obscure ? "password" : "text",
-                ["value"] = entry.Value,
-            },
+            RawAttributes = multiline
+                ? new Dictionary<string, string> { ["rows"] = entry.Lines.ToString(System.Globalization.CultureInfo.InvariantCulture) }
+                : new Dictionary<string, string>
+                {
+                    ["type"] = entry.Obscure ? "password" : "text",
+                    ["value"] = entry.Value,
+                },
         };
+        if (multiline) element.InnerHtml = entry.Value;
         if (entry.Placeholder is { } placeholder) element.RawAttributes["placeholder"] = placeholder;
         if (entry.Disabled) element.RawAttributes["disabled"] = "";
         // The attribute alone only acts on the initial parse; the client lowering also focuses on

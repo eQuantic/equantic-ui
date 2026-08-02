@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using System.Linq;
 using eQuantic.UI.Compiler;
 using FluentAssertions;
@@ -20,6 +22,30 @@ public class AuthoringCoverageTests
 
     private static string TsOf(string name, string body) =>
         new ComponentCompiler().CompileSource(Header + body).Single(r => r.ComponentName == name).TypeScript;
+
+    /// <summary>
+    /// Same, but with the dependency resolver the real build wires — it is what tells a module which
+    /// names are app modules it may import. Static-helper modules emit NO per-app import without it.
+    /// </summary>
+    private static string TsOfResolved(string name, string body)
+    {
+        var source = Header + body;
+        var dir = Path.Combine(Path.GetTempPath(), "eq-authoring-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "Source.cs"), source);
+            var resolver = new eQuantic.UI.Compiler.Services.ComponentDependencyResolver();
+            resolver.ScanSourceDirectories(new[] { dir });
+            var compiler = new ComponentCompiler();
+            compiler.SetDependencyResolver(resolver);
+            return compiler.CompileSource(source).Single(r => r.ComponentName == name).TypeScript;
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
 
     [Fact]
     public void ComputedGetOnlyProperty_EmitsGetter()
@@ -239,6 +265,24 @@ public class AuthoringCoverageTests
                     "  public override IComponent Build(RenderContext c) => new Text(Say(\"hi\")); }");
         // Enums degrade to their member STRING — the representation the runtime compares.
         ts.Should().Contain("tone: string = 'loud'");
+    }
+
+    [Fact]
+    public void ATargetTypedNewInsideAStaticDataClassInitializer_IsImported()
+    {
+        // A data class of nested records — the shape every content catalogue takes. The ELEMENTS are
+        // written target-typed (`new(...)`), which states no type name at all: the emitter recovers
+        // it from the model (`new Item(...)`), so the IMPORT has to be recovered the same way, or the
+        // module loads to "Item is not defined".
+        var src = "public record Item(string Label); public record Group(string Title, Item[] Items); " +
+                  "public static class Catalogue { public static readonly Group[] Groups = " +
+                  "  [new(\"g\", [new(\"a\")])]; } " +
+                  "public class C : StatelessComponent { " +
+                  "  public override IComponent Build(RenderContext c) => new Text(Catalogue.Groups[0].Title); }";
+        var ts = TsOfResolved("Catalogue", src);
+        ts.Should().Contain("new Item(", "the emitter recovers the target type");
+        ts.Should().Contain("from \"./Group\"");
+        ts.Should().Contain("from \"./Item\"", "the nested record is constructed here too");
     }
 
     [Fact]

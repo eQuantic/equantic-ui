@@ -325,18 +325,22 @@ public static class LayoutEngine
         return result;
     }
 
-    /// <summary>A text entry is ONE line of its role, filling the available width (the field's
-    /// editable area) — height from the type scale so forms lay out identically before and after
-    /// the real caret/IME land (spec B9's fixed contract).</summary>
+    /// <summary>A text entry is <see cref="TextEntry.Lines"/> lines of its role (1 by default),
+    /// filling the available width (the field's editable area) — height from the type scale so forms
+    /// lay out identically before and after the real caret/IME land (spec B9's fixed contract). A
+    /// multi-line field is exactly that many lines TALL whatever it currently holds: its box must not
+    /// grow and shrink as the user types.</summary>
     private static LayoutNode MeasureTextEntry(TextEntry entry, float maxW, LayoutContext ctx)
     {
         var result = new LayoutNode(entry);
         var style = ctx.Theme.Type(entry.Role);
         var shown = entry.Value.Length > 0 ? entry.Value : entry.Placeholder ?? string.Empty;
-        var measurement = ctx.Measurer.Measure(shown, style, ctx.TypeScale, maxW, maxLines: 1);
+        var lines = Math.Max(1, entry.Lines);
+        var measurement = ctx.Measurer.Measure(shown, style, ctx.TypeScale, maxW, maxLines: lines);
         result.Text = measurement;
         var width = float.IsFinite(maxW) ? maxW : measurement.Width;
-        result.Bounds = new Rect(0, 0, width, measurement.Height);
+        var height = lines == 1 ? measurement.Height : measurement.LineHeight * lines;
+        result.Bounds = new Rect(0, 0, width, height);
         return result;
     }
 

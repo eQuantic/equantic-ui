@@ -44,6 +44,21 @@ describe('text entry primitive (C# cross-pin)', () => {
     );
   });
 
+  it('several lines lower to a textarea carrying the value as content', () => {
+    const node = lower(
+      new TextEntry('Tell us about the project', null, {
+        lines: 5,
+        placeholder: 'Describe your request\u2026',
+      }),
+    );
+
+    expect(node.tag).toBe('textarea');
+    expect(node.attributes['rows']).toBe('5');
+    expect(node.attributes['value']).toBeUndefined();
+    expect(node.children[0]?.textContent).toBe('Tell us about the project');
+    expect(effectiveStyle(node)).toContain('resize: vertical');
+  });
+
   it('obscure maps to type=password; disabled drops the handlers', () => {
     const password = lower(new TextEntry('secret', null, { obscure: true }));
     expect(password.attributes['type']).toBe('password');
