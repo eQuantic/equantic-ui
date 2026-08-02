@@ -1,19 +1,19 @@
-import { Box, BoxStyle, BuildContext, Checkbox, Column, DataRow, EdgeInsets, Grid, GridTrack, Icon, Motion, Pressable, Row, SizeValue, Skeleton, StatelessComponent, StyleDiff, Text, TransitionSpec, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Checkbox, Column, DataColumn, DataRow, EdgeInsets, Grid, GridTrack, Icon, Motion, Pressable, Row, SizeValue, Skeleton, StatelessComponent, StyleDiff, Text, TransitionSpec, VisualNode } from "../runtime-exports";
 
 export class DataTable extends StatelessComponent {
     static rowHeight: number = 52;
     static checkboxTrack: number = 44;
-    declare columns: any;
-    declare rows: any;
+    declare columns: DataColumn[];
+    declare rows: DataRow[];
     declare sortColumn: number;
     declare sortDirection: string;
     declare onSort: any;
     declare selection: any;
     declare onToggleRow: any;
-    declare onToggleAll: () => void;
+    declare onToggleAll: (() => void) | null;
     declare onRowPressed: any;
     declare pendingRows: number;
-    declare empty: VisualNode;
+    declare empty: any;
     get selectable() { return !(this.selection == null); }
     constructor(columns?: any, rows?: any, props?: any) {
         super(props);

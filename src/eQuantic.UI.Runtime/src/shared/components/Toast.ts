@@ -3,8 +3,8 @@ import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Overlay, 
 export class Toast extends StatelessComponent {
     declare message: string;
     declare status: string;
-    declare actionLabel: string;
-    declare onAction: () => void;
+    declare actionLabel: any;
+    declare onAction: (() => void) | null;
     constructor(message?: any, status: any = 'info', actionLabel: any = null, onAction: any = null, props?: any) {
         super(props);
         if (message !== undefined) this.message = message;

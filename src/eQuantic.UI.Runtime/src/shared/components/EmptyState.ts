@@ -1,11 +1,11 @@
-import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, EdgeInsets, Icon, Row, SizeValue, Spacer, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, Row, SizeValue, Spacer, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class EmptyState extends StatelessComponent {
     declare icon: string;
     declare title: string;
-    declare body: string;
-    declare action: Button;
-    declare secondaryAction: Button;
+    declare body: any;
+    declare action: any;
+    declare secondaryAction: any;
     constructor(icon?: any, title?: any, body: any = null, props?: any) {
         super(props);
         if (icon !== undefined) this.icon = icon;

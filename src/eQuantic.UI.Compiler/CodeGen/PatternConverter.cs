@@ -237,6 +237,15 @@ public static class PatternConverter
         return false;
     }
 
-    private static string Camel(string name) =>
-        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);
+    /// <summary>
+    /// A property pattern names a MEMBER, and a member's JS name is not always its camelCase: a
+    /// collection's <c>Count</c> is <c>length</c>, a string's <c>Length</c> likewise. Lower-casing
+    /// blindly emitted <c>actions.count</c> on a JS array — <c>undefined</c>, so
+    /// <c>Actions is { Count: > 3 }</c> was quietly always false, with nothing to see at build time.
+    /// </summary>
+    private static string Camel(string name) => name switch
+    {
+        "Count" or "Length" => "length",
+        _ => string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name.Substring(1),
+    };
 }

@@ -1,12 +1,12 @@
-import { Box, BoxStyle, BuildContext, Column, EdgeInsets, Flexible, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Column, EdgeInsets, Flexible, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "@equantic/runtime";
 
 export class ListItem extends StatelessComponent {
     declare title: string;
-    declare subtitle: string;
-    declare onPressed: () => void;
+    declare subtitle: any;
+    declare onPressed: (() => void) | null;
     declare disabled: boolean;
-    declare leading: VisualNode;
-    declare trailing: VisualNode;
+    declare leading: any;
+    declare trailing: any;
     constructor(title?: any, subtitle: any = null, onPressed: any = null, props?: any) {
         super(props);
         if (title !== undefined) this.title = title;

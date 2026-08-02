@@ -1,9 +1,9 @@
-import { Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Flexible, Icon, Pressable, Row, SharedStatefulComponent, SizeValue, Sizing, Spacer, StyleDiff, Text, UiComponent } from "@equantic/runtime";
+import { AccordionItem, Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Flexible, Icon, Pressable, Row, SharedStatefulComponent, SizeValue, Sizing, Spacer, StyleDiff, Text, UiComponent } from "@equantic/runtime";
 
 export class Accordion extends SharedStatefulComponent {
     _openSingle: number = -1;
     _openMulti: any = new Set();
-    declare items: any;
+    declare items: AccordionItem[];
     declare multiple: boolean;
     constructor(items?: any, openIndex: any = -1, props?: any) {
         super(props);

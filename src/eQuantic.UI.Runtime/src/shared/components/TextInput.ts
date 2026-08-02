@@ -3,12 +3,12 @@ import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible,
 export class TextInput extends SharedStatefulComponent {
     _focused: boolean = false;
     declare value: string;
-    declare onChanged: (string: string) => void;
+    declare onChanged: ((string: string) => void) | null;
     declare label: string;
-    declare placeholder: string;
-    declare helper: string;
-    declare error: string;
-    declare leading: string;
+    declare placeholder: any;
+    declare helper: any;
+    declare error: any;
+    declare leading: any;
     declare size: string;
     declare disabled: boolean;
     declare obscure: boolean;

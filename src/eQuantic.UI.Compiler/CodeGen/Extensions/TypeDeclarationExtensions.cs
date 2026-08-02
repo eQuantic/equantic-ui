@@ -109,7 +109,11 @@ public static class TypeDeclarationExtensions
             _ => "any",
         };
 
-        return ts != "any" && DefaultFor(type) == "null" ? $"{ts} | null" : ts;
+        // Nullable iff the DECLARED TYPE says so. Keying off the default made every `string` member
+        // nullable — a C# string's default IS null — so `string Header` was declared `string | null`
+        // and every read of it looked unsafe to TypeScript. The declaration is type-only; the
+        // constructor is what assigns, and the C# signature is the truth about what it assigns.
+        return ts != "any" && raw.EndsWith("?") ? $"{ts} | null" : ts;
     }
 
     /// <summary>JS literal for <c>default(T)</c> from the declared type syntax (name-based — the emitter

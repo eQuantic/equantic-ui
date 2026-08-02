@@ -1,10 +1,10 @@
 import { Box, BoxStyle, BuildContext, Column, CornerRadii, Pressable, Row, SizeValue, StatelessComponent, Text } from "../runtime-exports";
 
 export class RadioGroup extends StatelessComponent {
-    declare options: any;
+    declare options: string[];
     declare selected: number;
     declare onChanged: any;
-    declare label: string;
+    declare label: any;
     declare disabled: boolean;
     constructor(options?: any, selected?: any, onChanged: any = null, label: any = null, props?: any) {
         super(props);

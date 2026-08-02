@@ -2,10 +2,10 @@ import { Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets,
 
 export class Select extends SharedStatefulComponent {
     _open: boolean = false;
-    declare options: any;
+    declare options: string[];
     declare selectedIndex: number;
     declare onChanged: any;
-    declare placeholder: string;
+    declare placeholder: any;
     declare disabled: boolean;
     constructor(options?: any, selectedIndex: any = -1, onChanged: any = null, placeholder: any = null, props?: any) {
         super(props);

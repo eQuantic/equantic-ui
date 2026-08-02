@@ -2,7 +2,7 @@ import { Box, BoxStyle, BuildContext, CornerRadii, Positioned, Pressable, Stack,
 
 export class Switch extends StatelessComponent {
     declare on: boolean;
-    declare onChanged: () => void;
+    declare onChanged: (() => void) | null;
     declare disabled: boolean;
     constructor(on?: any, onChanged: any = null, props?: any) {
         super(props);

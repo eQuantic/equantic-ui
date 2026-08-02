@@ -120,3 +120,5 @@ export { Pagination } from './components/Pagination';
 export { SegmentedControl } from './components/SegmentedControl';
 export { Slider } from './components/Slider';
 export { Stepper } from './components/Stepper';
+export { AccordionItem } from './components/AccordionItem';
+export { MenuItem } from './components/MenuItem';

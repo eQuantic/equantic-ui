@@ -2,8 +2,8 @@ import { Box, BoxStyle, BuildContext, CornerRadii, Icon, Pressable, Row, Statele
 
 export class Checkbox extends StatelessComponent {
     declare checked: boolean;
-    declare onChanged: () => void;
-    declare label: string;
+    declare onChanged: (() => void) | null;
+    declare label: any;
     declare disabled: boolean;
     declare error: boolean;
     declare indeterminate: boolean;

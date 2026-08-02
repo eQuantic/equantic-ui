@@ -1,8 +1,8 @@
 import { Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Grid, GridTrack, SizeValue, StatelessComponent, StyleDiff, Text } from "../runtime-exports";
 
 export class Table extends StatelessComponent {
-    declare columns: any;
-    declare rows: any;
+    declare columns: string[];
+    declare rows: string[][];
     constructor(columns?: any, rows?: any, props?: any) {
         super(props);
         if (columns !== undefined) this.columns = columns;

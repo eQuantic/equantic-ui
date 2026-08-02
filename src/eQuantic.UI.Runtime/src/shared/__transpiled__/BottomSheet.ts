@@ -2,7 +2,7 @@ import { Box, BoxStyle, BuildContext, Column, CornerRadii, DragDismiss, EdgeInse
 
 export class BottomSheet extends StatelessComponent {
     declare content: VisualNode;
-    declare onDismiss: () => void;
+    declare onDismiss: (() => void) | null;
     declare dismissible: boolean;
     constructor(content?: any, onDismiss: any = null, dismissible: any = true, props?: any) {
         super(props);

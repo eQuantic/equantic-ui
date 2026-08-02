@@ -4,8 +4,8 @@ export class Chip extends StatelessComponent {
     declare label: string;
     declare kind: string;
     declare selected: boolean;
-    declare onPressed: () => void;
-    declare onRemove: () => void;
+    declare onPressed: (() => void) | null;
+    declare onRemove: (() => void) | null;
     declare variant: string;
     constructor(label?: any, kind: any = 'filter', selected: any = false, onPressed: any = null, onRemove: any = null, props?: any) {
         super(props);

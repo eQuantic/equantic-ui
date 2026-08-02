@@ -87,7 +87,9 @@ export abstract class Component implements IComponent {
   onKeyPress?: Action<any>;
   onChange?: Action<any>;
   onInput?: Action<any>;
-  onSubmit?: Action<any>;
+  // A transpiled component may DECLARE one of these with the null its C# signature carries — the
+  // transpiled world produces null wherever C# produced null — so the base accepts null too.
+  onSubmit?: Action<any> | null;
 
   abstract render(): HtmlNode;
 

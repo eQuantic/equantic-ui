@@ -2,9 +2,9 @@ import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Flexible, Icon, P
 
 export class SearchField extends StatelessComponent {
     declare query: string;
-    declare onChanged: (string: string) => void;
+    declare onChanged: ((string: string) => void) | null;
     declare placeholder: string;
-    declare onSubmit: () => void;
+    declare onSubmit: (() => void) | null;
     constructor(query?: any, onChanged: any = null, placeholder: any = 'Search…', onSubmit: any = null, props?: any) {
         super(props);
         if (query !== undefined) this.query = query;

@@ -1,7 +1,7 @@
-import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, Positioned, Pressable, Row, SizeValue, Stack, StatelessComponent, Text, TypeStyle } from "@equantic/runtime";
+import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, NavItem, Positioned, Pressable, Row, SizeValue, Stack, StatelessComponent, Text, TypeStyle } from "@equantic/runtime";
 
 export class BottomNavigation extends StatelessComponent {
-    declare items: any;
+    declare items: NavItem[];
     declare selected: number;
     declare onSelect: any;
     constructor(items?: any, selected?: any, onSelect: any = null, props?: any) {

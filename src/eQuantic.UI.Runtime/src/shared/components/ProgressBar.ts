@@ -5,7 +5,7 @@ export class ProgressBar extends SharedStatefulComponent {
     static sweepToX: number = 1.05;
     static sweepDurationMs: number = 1200;
     _snapNext: boolean = false;
-    declare value: number;
+    declare value: any;
     declare variant: string;
     declare prominent: boolean;
     constructor(value: any = null, variant: any = 'primary', props?: any) {

@@ -1,13 +1,13 @@
-import { Box, BoxStyle, BuildContext, ButtonStyles, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SizeValue, Spinner, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, ButtonStyles, CornerRadii, EdgeInsets, Icon, Pressable, Row, SizeValue, Spinner, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class Button extends StatelessComponent {
     declare label: string;
     declare variant: string;
     declare size: string;
-    declare onPressed: () => void;
+    declare onPressed: (() => void) | null;
     declare disabled: boolean;
     declare expand: boolean;
-    declare leading: IconGlyph;
+    declare leading: any;
     declare loading: boolean;
     constructor(label?: any, variant: any = 'primary', size: any = 'medium', onPressed: any = null, props?: any) {
         super(props);
