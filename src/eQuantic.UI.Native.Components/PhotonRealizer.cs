@@ -102,10 +102,14 @@ public static class PhotonRealizer
         Framework.IIconRasterizer? iconRasterizer = null,
         IconRasterCache? iconCache = null,
         Framework.IImageLoader? imageLoader = null,
-        Dictionary<string, TextureData?>? imageCache = null)
+        Dictionary<string, TextureData?>? imageCache = null,
+        EdgeInsets safeAreaInsets = default)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
         {
+            // The HOST's cutouts. Zero on a desktop window, and the shell's real numbers on a phone
+            // — the tree is the same either way, which is the point of the node.
+            SafeAreaInsets = safeAreaInsets,
             Instances = instances,
             SizeClass = WindowSizeClasses.FromWidth(viewportWidth),
             Transitions = transitions,

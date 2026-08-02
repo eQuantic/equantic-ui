@@ -56,6 +56,7 @@ import type {
   AdaptiveNodeValue,
   GridNode,
   AnchoredNode,
+  SafeAreaNode,
   StickyNode,
   StyleDiffValue,
   TextEntryNode,
@@ -224,6 +225,8 @@ function lowerNode(
       return lowerShortcut(node as unknown as ShortcutNode, context, horizontalAxis, path);
     case 'sticky':
       return lowerSticky(node as unknown as StickyNode, context, path);
+    case 'safeArea':
+      return lowerSafeArea(node as unknown as SafeAreaNode, context, path);
     case 'anchored':
       return lowerAnchored(node as unknown as AnchoredNode, context, path);
     case 'hoverable':
@@ -1252,6 +1255,30 @@ function anchorPlacementClass(placement: AnchoredNode['placement']): string {
     default:
       return 'eq-anchor-b-start';
   }
+}
+
+/**
+ * C# twin of the SafeArea lowering: the browser fills `env(safe-area-inset-*)` — zero where there is
+ * no cutout, the real number where there is. An edge the caller left out keeps only its own padding.
+ */
+function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: string): HtmlNode {
+  const extra = node.extra;
+  const inset = (flag: number, name: string, own: number): string => {
+    const env = `env(safe-area-inset-${name}, 0px)`;
+    if ((node.edges & flag) === 0) return px(own);
+    return own === 0 ? env : `calc(${env} + ${px(own)})`;
+  };
+
+  const wrapper = element('div', {
+    'padding-top': inset(1, 'top', extra?.top ?? 0),
+    'padding-bottom': inset(2, 'bottom', extra?.bottom ?? 0),
+    'padding-left': inset(4, 'left', extra?.start ?? 0),
+    'padding-right': inset(8, 'right', extra?.end ?? 0),
+  });
+
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) wrapper.children.push(child);
+  return wrapper;
 }
 
 function lowerSticky(node: StickyNode, context: LoweringContext, path: string): HtmlNode {

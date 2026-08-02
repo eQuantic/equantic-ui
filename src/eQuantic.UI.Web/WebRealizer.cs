@@ -47,6 +47,7 @@ public static class WebRealizer
         Grid grid => LowerGrid(grid, context),
         AdaptiveNode adaptive => LowerAdaptive(adaptive, context),
         Sticky sticky => LowerSticky(sticky, context),
+        SafeArea safeArea => LowerSafeArea(safeArea, context),
         Anchored anchored => LowerAnchored(anchored, context),
         ScrollView scroll => LowerScrollView(scroll, context),
         // A Positioned outside a Stack has no anchor frame — degrade to its child (parity with native).
@@ -286,6 +287,36 @@ public static class WebRealizer
         AnchorPlacement.TopCenter => "eq-anchor-t-center",
         _ => "eq-anchor-b-start",
     };
+
+    /// <summary>
+    /// The system's own margins, which only the HOST knows — so the browser fills them:
+    /// <c>env(safe-area-inset-*)</c> is zero on a display with no cutouts and the real number on one
+    /// that has them. An edge the caller left out gets its own padding, or none.
+    /// </summary>
+    private static HtmlElement LowerSafeArea(SafeArea safeArea, ComponentContext context)
+    {
+        string Inset(SafeEdges edge, string name, float extra)
+        {
+            var env = $"env(safe-area-inset-{name}, 0px)";
+            if (!safeArea.Edges.HasFlag(edge)) return TokenCss.Px(extra);
+            return extra == 0 ? env : $"calc({env} + {TokenCss.Px(extra)})";
+        }
+
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                PaddingTop = Inset(SafeEdges.Top, "top", safeArea.Extra.Top),
+                PaddingBottom = Inset(SafeEdges.Bottom, "bottom", safeArea.Extra.Bottom),
+                PaddingLeft = Inset(SafeEdges.Start, "left", safeArea.Extra.Start),
+                PaddingRight = Inset(SafeEdges.End, "right", safeArea.Extra.End),
+            },
+        };
+
+        if (LowerNode(safeArea.Child, context, horizontalAxis: null) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
 
     private static HtmlElement LowerSticky(Sticky sticky, ComponentContext context)
     {

@@ -60,6 +60,15 @@ export interface GridTrackValue {
 }
 
 /** Spec S7 — scroll-anchored chrome: in flow until scrolling pins it at `offset`. */
+/** Wire shape of the C# `SafeArea`: which edges the system owns, plus the caller's own padding. */
+export interface SafeAreaNode {
+  nodeKind: 'safeArea';
+  child: VisualNodeValue;
+  /** SafeEdges flags — Top 1, Bottom 2, Start 4, End 8. */
+  edges: number;
+  extra?: EdgeInsetsValue | null;
+}
+
 export interface StickyNode {
   nodeKind: 'sticky';
   key?: string | null;

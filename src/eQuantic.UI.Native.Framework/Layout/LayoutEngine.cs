@@ -21,6 +21,13 @@ public sealed class LayoutContext
     /// threshold, because the class is a pure function of the width).</summary>
     public WindowSizeClass SizeClass { get; init; }
 
+    /// <summary>
+    /// The margins the SYSTEM owns — notch, status bar, home indicator. The HOST reports them; a
+    /// desktop window has no cutouts, so the default of zero is the correct answer there, and the
+    /// same tree insets properly the moment a phone shell fills them in.
+    /// </summary>
+    public EdgeInsets SafeAreaInsets { get; init; }
+
     /// <summary>Spec B14: the host's value-transition animator (null = values snap).</summary>
     public TransitionStore? Transitions { get; init; }
 
@@ -115,6 +122,10 @@ public static class LayoutEngine
         // Spec S7: Sticky renders IN FLOW on native until engine scrolling lands (correct at scroll
         // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
         Sticky sticky => MeasureWrapper(sticky, sticky.Child, maxW, maxH, ctx, path),
+        // The system's own margins. A desktop window has no cutouts, so the host reports zero and
+        // the node measures as its child plus whatever padding the caller asked for on top — the
+        // SAME tree an iPhone insets, with the numbers coming from the host rather than the app.
+        SafeArea safeArea => MeasureSafeArea(safeArea, maxW, maxH, ctx, path),
         // Wave 3: the anchor owns layout; the panel realizes in the realizer's overlay pass.
         Anchored anchored => MeasureWrapper(anchored, anchored.Anchor, maxW, maxH, ctx, path),
         ScrollView scroll => MeasureScrollView(scroll, maxW, maxH, ctx, path),
@@ -157,6 +168,31 @@ public static class LayoutEngine
         Spacer => new LayoutNode(node), // zero outside a flex container (layout-only)
         _ => new LayoutNode(node),
     };
+
+    /// <summary>
+    /// Insets from the HOST (notch, status bar, home indicator) plus the caller's own padding. The
+    /// host reports them; on a desktop window they are zero, which is the correct answer there.
+    /// </summary>
+    private static LayoutNode MeasureSafeArea(SafeArea safeArea, float maxW, float maxH,
+        LayoutContext ctx, string path)
+    {
+        var host = ctx.SafeAreaInsets;
+        var top = (safeArea.Edges.HasFlag(SafeEdges.Top) ? host.Top : 0) + safeArea.Extra.Top;
+        var bottom = (safeArea.Edges.HasFlag(SafeEdges.Bottom) ? host.Bottom : 0) + safeArea.Extra.Bottom;
+        var start = (safeArea.Edges.HasFlag(SafeEdges.Start) ? host.Start : 0) + safeArea.Extra.Start;
+        var end = (safeArea.Edges.HasFlag(SafeEdges.End) ? host.End : 0) + safeArea.Extra.End;
+
+        var child = Measure(safeArea.Child, MathF.Max(0, maxW - start - end),
+            MathF.Max(0, maxH - top - bottom), ctx, path + "/0");
+        child.Bounds = child.Bounds with { X = start, Y = top };
+
+        var node = new LayoutNode(safeArea)
+        {
+            Bounds = new Rect(0, 0, child.Bounds.Width + start + end, child.Bounds.Height + top + bottom),
+        };
+        node.Children.Add(child);
+        return node;
+    }
 
     private static LayoutNode MeasureWrapper(VisualNode node, VisualNode child, float maxW, float maxH, LayoutContext ctx, string path)
     {
@@ -857,6 +893,7 @@ public static class LayoutEngine
         Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
         // Layout-transparent wrappers delegate to what they wrap.
         Sticky sticky => CrossSizeKind(sticky.Child, horizontal),
+        SafeArea safeArea => CrossSizeKind(safeArea.Child, horizontal),
         Presence presence => CrossSizeKind(presence.Child, horizontal),
         LoopMotion loop => CrossSizeKind(loop.Child, horizontal),
         DragDismiss drag => CrossSizeKind(drag.Child, horizontal),

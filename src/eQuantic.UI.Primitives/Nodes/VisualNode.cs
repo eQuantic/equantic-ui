@@ -1211,6 +1211,48 @@ public enum ScrollAxis : byte
     Both = 2,
 }
 
+/// <summary>Which edges a <see cref="SafeArea"/> keeps clear. Flags, because a screen usually keeps
+/// the top and bottom clear while letting content run edge to edge horizontally.</summary>
+[Flags]
+public enum SafeEdges : byte
+{
+    None = 0,
+    Top = 1,
+    Bottom = 2,
+    Start = 4,
+    End = 8,
+    Horizontal = Start | End,
+    Vertical = Top | Bottom,
+    All = Top | Bottom | Start | End,
+}
+
+/// <summary>
+/// Keeps its child clear of the parts of the display the SYSTEM owns — the notch, the status bar,
+/// the home indicator, a desktop title bar. The insets are the HOST's to report, never the app's to
+/// guess: web reads <c>env(safe-area-inset-*)</c>, which the browser fills, and Photon reads them
+/// from the window (zero on a desktop with no cutouts, which is the correct answer there).
+/// <para>
+/// It pads rather than positions, so it composes: a scroll view inside one scrolls under nothing,
+/// and a bottom bar inside one sits above the home indicator instead of under it.
+/// </para>
+/// </summary>
+public sealed class SafeArea : VisualNode
+{
+    public override string NodeKind => "safeArea";
+
+    public SafeArea(VisualNode child, SafeEdges edges = SafeEdges.All)
+    {
+        Child = child;
+        Edges = edges;
+    }
+
+    public VisualNode Child { get; init; }
+    public SafeEdges Edges { get; init; }
+
+    /// <summary>Added to whatever the host reports — a bar's own padding on top of the inset.</summary>
+    public EdgeInsets Extra { get; init; }
+}
+
 /// <summary>
 /// Spec S7 — scroll-anchored chrome (section headers): the child renders in flow, but PINS to the
 /// start of the scroll viewport once scrolling would push it out, offset by <see cref="Offset"/>.

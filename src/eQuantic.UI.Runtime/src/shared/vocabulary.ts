@@ -303,6 +303,21 @@ export class Anchored extends VisualNode {
 }
 
 /** Mirror of the C# `Sticky` (spec S7): scroll-anchored chrome. */
+/** Mirror of the C# `SafeArea` — the system's own margins, which only the host knows. */
+export class SafeArea extends VisualNode {
+  readonly nodeKind = 'safeArea';
+  extra: EdgeInsets | null = null;
+
+  constructor(
+    readonly child: VisualChild,
+    readonly edges = 15,
+    config?: { extra?: EdgeInsets | null; key?: string | null },
+  ) {
+    super();
+    if (config) Object.assign(this, config);
+  }
+}
+
 export class Sticky extends VisualNode {
   readonly nodeKind = 'sticky';
   float = false;
