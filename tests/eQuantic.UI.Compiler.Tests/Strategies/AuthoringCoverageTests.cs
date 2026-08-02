@@ -195,6 +195,30 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
+    public void IdentifiersThatAreJsReservedWords_AreRenamed()
+    {
+        // A module is always strict, so `package`, `interface`, `let`… are illegal identifiers —
+        // and they are perfectly ordinary C# names. Declaration AND references must move together.
+        var ts = Ts("public class C : StatelessComponent { " +
+                    "  public override IComponent Build(RenderContext c) { " +
+                    "    var package = \"eQuantic.Core\"; var yield = 2; " +
+                    "    return new Text(package + yield); } }");
+        ts.Should().Contain("let package_ = 'eQuantic.Core'");
+        ts.Should().Contain("package_ + yield_");
+        ts.Should().NotContain("let package =").And.NotContain("let yield =");
+    }
+
+    [Fact]
+    public void AReservedWordAsAParameterOrLambdaArg_IsRenamedToo()
+    {
+        var ts = Ts("public class C : StatelessComponent { " +
+                    "  private string Label(string package) => package.Trim(); " +
+                    "  public override IComponent Build(RenderContext c) => " +
+                    "    new Text(string.Join(\",\", new[] { \"a\" }.Select(interfaceName => interfaceName))); }");
+        ts.Should().Contain("package_: string").And.Contain("package_.trim()");
+    }
+
+    [Fact]
     public void TypeConstructedOnlyInHelperOrPropertyBody_IsImported()
     {
         // A record constructed ONLY inside a helper-method body (Money) or a property-accessor body must

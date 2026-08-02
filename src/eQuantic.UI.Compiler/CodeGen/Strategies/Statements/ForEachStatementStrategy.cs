@@ -14,7 +14,7 @@ public class ForEachStatementStrategy : IStatementStrategy
     public string Convert(StatementSyntax node, ConversionContext context)
     {
         var foreachStmt = (ForEachStatementSyntax)node;
-        var item = foreachStmt.Identifier.Text;
+        var item = foreachStmt.Identifier.Text.ToJsIdentifier();
         var collection = context.Converter.ConvertExpression(foreachStmt.Expression);
         var body = context.Converter.Convert(foreachStmt.Statement);
         

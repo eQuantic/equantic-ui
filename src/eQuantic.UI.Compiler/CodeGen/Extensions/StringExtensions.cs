@@ -12,4 +12,25 @@ public static class StringExtensions
     /// </summary>
     public static string ToCamelCase(this string name) =>
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
+
+    /// <summary>
+    /// Identifiers JS refuses in a module (modules are always strict): the strict-mode reserved
+    /// words and the FUTURE reserved words. Only the ones a C# author can actually reach are here —
+    /// `class`, `new`, `if` and friends are C# keywords too, so they never arrive.
+    /// </summary>
+    private static readonly HashSet<string> JsReserved = new(StringComparer.Ordinal)
+    {
+        "package", "interface", "implements", "let", "yield", "enum", "await", "arguments",
+        "eval", "function", "var", "typeof", "instanceof", "delete", "debugger", "with",
+        "export", "import", "extends", "super", "of",
+    };
+
+    /// <summary>
+    /// A C# LOCAL/PARAMETER name as a legal JS identifier: a reserved word takes a trailing
+    /// underscore (`package` → `package_`). Renaming must be applied at BOTH the declaration and
+    /// every reference — which is why it lives here, on the one path both go through. Anything else
+    /// passes back unchanged, so ordinary names read exactly as authored.
+    /// </summary>
+    public static string ToJsIdentifier(this string name) =>
+        JsReserved.Contains(name) ? name + "_" : name;
 }

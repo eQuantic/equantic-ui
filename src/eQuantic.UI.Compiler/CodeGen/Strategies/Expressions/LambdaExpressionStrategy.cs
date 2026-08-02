@@ -21,7 +21,7 @@ public class LambdaExpressionStrategy : IConversionStrategy
     {
         if (node is ParenthesizedLambdaExpressionSyntax parenthesized)
         {
-            var parameters = string.Join(", ", parenthesized.ParameterList.Parameters.Select(p => p.Identifier.Text));
+            var parameters = string.Join(", ", parenthesized.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()));
             var body = parenthesized.Block != null 
                 ? context.Converter.ConvertBlock(parenthesized.Block) 
                 : context.Converter.ConvertExpression(parenthesized.ExpressionBody!);
@@ -30,7 +30,7 @@ public class LambdaExpressionStrategy : IConversionStrategy
         
         if (node is SimpleLambdaExpressionSyntax simple)
         {
-            var param = simple.Parameter.Identifier.Text;
+            var param = simple.Parameter.Identifier.Text.ToJsIdentifier();
             var body = simple.Block != null 
                 ? context.Converter.ConvertBlock(simple.Block) 
                 : context.Converter.ConvertExpression(simple.ExpressionBody!);

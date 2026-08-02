@@ -98,6 +98,21 @@ public class S6TransitionRealizerTests
     }
 
     [Fact]
+    public void MaxLines_TwoOrMore_ClampsInsteadOfEllipsingOneLine()
+    {
+        // A grid of cards stays on one baseline only if the copy it does not control is clamped —
+        // a registry description, a user's bio. (One line keeps the nowrap+ellipsis form.)
+        var css = WebRealizer.Lower(new Primitives.Text("long", TypeRole.BodyM) { MaxLines = 2 }, Theme)
+            .Style!.ToCssString();
+
+        css.Should().Contain("display: -webkit-box")
+            .And.Contain("-webkit-box-orient: vertical")
+            .And.Contain("-webkit-line-clamp: 2")
+            .And.Contain("overflow: hidden");
+        css.Should().NotContain("white-space: nowrap");
+    }
+
+    [Fact]
     public void Gradient_WithoutVia_StaysTwoStop()
     {
         var element = WebRealizer.Lower(new Primitives.Box(new BoxStyle

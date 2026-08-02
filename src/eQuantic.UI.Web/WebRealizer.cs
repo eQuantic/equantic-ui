@@ -889,12 +889,23 @@ public static class WebRealizer
             element.Style.WebkitTextFillColor = "transparent";
         }
 
-        // Single line → shaping-style ellipsis (spec A8). Multi-line clamp joins with the TS lowering.
+        // Single line → shaping-style ellipsis (spec A8).
         if (text.MaxLines == 1)
         {
             element.Style!.WhiteSpace = "nowrap";
             element.Style.Overflow = "hidden";
             element.Style.TextOverflow = "ellipsis";
+        }
+        // MULTI-LINE clamp: the paragraph occupies exactly N lines and ends in an ellipsis — what
+        // keeps a grid of cards on one baseline when the copy is not the site's to control (a
+        // registry description, a user's bio). CSS line-clamp; Photon fence: the shaper truncates
+        // at the line the box allows.
+        else if (text.MaxLines > 1)
+        {
+            element.Style!.Display = Core.Display.WebkitBox;
+            element.Style.WebkitBoxOrient = "vertical";
+            element.Style.WebkitLineClamp = text.MaxLines.ToString();
+            element.Style.Overflow = "hidden";
         }
 
         // System table override (e.g. Button labels) — inline styles beat the role class.

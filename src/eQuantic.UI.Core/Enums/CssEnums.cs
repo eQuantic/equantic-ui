@@ -10,6 +10,9 @@ public enum Display
     Grid,
     InlineGrid,
     Contents,
+    /// <summary>The legacy flexbox display the multi-line clamp requires (`-webkit-line-clamp`
+    /// only applies inside it) — the one place a prefixed value is still the ONLY way.</summary>
+    WebkitBox,
     None
 }
 
