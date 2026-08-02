@@ -10,6 +10,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// Handles:
 /// - [1, 2, 3] -> [1, 2, 3]
 /// - [..items, 4] -> [...items, 4]
+/// - a SET target -> new Set([…]), because the elements are only half of what `[…]` means: the
+///   TARGET TYPE says what is being built. `HashSet&lt;string&gt; _selected = ["#3841"]` lowered to a
+///   plain array, and every `Add`/`Remove`/`Count` on it then threw at the first click.
 /// </summary>
 public class CollectionExpressionStrategy : IConversionStrategy
 {
@@ -22,7 +25,26 @@ public class CollectionExpressionStrategy : IConversionStrategy
     {
         var collection = (CollectionExpressionSyntax)node;
         var elements = collection.Elements.Select(e => ConvertElement(e, context));
-        return $"[{string.Join(", ", elements)}]";
+        var array = $"[{string.Join(", ", elements)}]";
+
+        // What the expression is CONVERTED to, not what it looks like: a collection expression takes
+        // its shape from the target, exactly as it does in C#.
+        var target = context.SemanticHelper.Knows(collection)
+            ? context.SemanticModel!.GetTypeInfo(collection).ConvertedType
+            : null;
+        var definition = target?.OriginalDefinition?.ToString() ?? "";
+
+        if (definition.StartsWith("System.Collections.Generic.SortedSet"))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.SortedSet}({array})";
+        }
+        if (definition.StartsWith("System.Collections.Generic.HashSet")
+            || definition.StartsWith("System.Collections.Generic.ISet")
+            || definition.StartsWith("System.Collections.Generic.IReadOnlySet"))
+            return $"new Set({array})";
+
+        return array;
     }
 
     private string ConvertElement(CollectionElementSyntax element, ConversionContext context)

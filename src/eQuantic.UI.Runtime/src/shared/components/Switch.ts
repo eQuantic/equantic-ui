@@ -6,10 +6,11 @@ export class Switch extends StatelessComponent {
     declare onChanged: (() => void) | null;
     declare disabled: boolean;
     constructor(on?: any, onChanged: any = null, props?: any) {
-        super(props);
+        super();
         if (on !== undefined) this.on = on;
         if (onChanged !== undefined) this.onChanged = onChanged;
         this.on = on;this.onChanged = onChanged;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

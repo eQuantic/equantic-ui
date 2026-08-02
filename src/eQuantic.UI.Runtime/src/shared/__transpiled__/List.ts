@@ -4,10 +4,11 @@ export class List extends StatelessComponent {
     declare items: ListItem[];
     declare dividers: boolean;
     constructor(items?: any, dividers: any = true, props?: any) {
-        super(props);
+        super();
         if (items !== undefined) this.items = items;
         if (dividers !== undefined) this.dividers = dividers;
         this.items = items;this.dividers = dividers;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(_context: BuildContext) {

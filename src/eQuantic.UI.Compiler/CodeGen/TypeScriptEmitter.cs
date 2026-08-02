@@ -260,7 +260,12 @@ public class TypeScriptEmitter
                         var signature = paramList.Length > 0 ? $"{paramList}, props?: any" : "props?: any";
                         c.Constructor(signature, () =>
                         {
-                            c.Raw("super(props);");
+                            // The config object carries what a C# OBJECT INITIALIZER assigned, and in C#
+                            // that runs AFTER the constructor. Handing it to super() first put it there
+                            // first, so every positional parameter's own default overwrote it —
+                            // `new Button(label, ...) { OnPressed = f }` emitted `onPressed = null`
+                            // over the handler and the button did nothing at all.
+                            c.Raw("super();");
                             foreach (var param in ctorParams)
                             {
                                 var camelName = param.Name.ToCamelCase();
@@ -286,6 +291,8 @@ public class TypeScriptEmitter
                                 var body = StripJsBraces(_converter.Convert(ctorDef!.BodyNode!));
                                 if (!string.IsNullOrWhiteSpace(body)) c.Raw(body, ctorDef.BodyNode);
                             }
+                            // …and the initializer last, which is where C# runs it.
+                            c.Raw("if (props && typeof props === 'object') Object.assign(this, props);");
                         });
                     }
 

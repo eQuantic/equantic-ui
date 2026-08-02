@@ -382,6 +382,25 @@ public class SharedComponentTranspilationTests
     }
 
     [Fact]
+    public void ATranspiledConstructor_AppliesTheConfigObjectLAST()
+    {
+        var button = TranspileSharedComponents()["Button"];
+
+        // A C# object initializer runs AFTER the constructor, so the config object must be applied
+        // after every positional assignment and after the C# body. Handing it to `super()` first put
+        // it first, and each positional parameter's own default then overwrote it — which is how
+        // `new Button(label, Variant.Outline, SizeVariant.Small) { OnPressed = f }` shipped with
+        // `onPressed = null`: a button that renders perfectly and answers nothing.
+        button.Should().Contain("super();").And.NotContain("super(props);");
+        button.Should().Contain("if (props && typeof props === 'object') Object.assign(this, props);");
+
+        var assign = button.IndexOf("Object.assign(this, props)", StringComparison.Ordinal);
+        var positional = button.IndexOf("if (onPressed !== undefined) this.onPressed = onPressed;",
+            StringComparison.Ordinal);
+        assign.Should().BeGreaterThan(positional, "the initializer is what the author wrote last");
+    }
+
+    [Fact]
     public void TranspiledNestedChild_CarriesTheAdoptConfigContract()
     {
         var modules = TranspileSharedComponents();

@@ -5,11 +5,12 @@ export class BottomNavigation extends StatelessComponent {
     declare selected: number;
     declare onSelect: any;
     constructor(items?: any, selected?: any, onSelect: any = null, props?: any) {
-        super(props);
+        super();
         if (items !== undefined) this.items = items;
         if (selected !== undefined) this.selected = selected;
         if (onSelect !== undefined) this.onSelect = onSelect;
         this.items = items;this.selected = selected;this.onSelect = onSelect;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

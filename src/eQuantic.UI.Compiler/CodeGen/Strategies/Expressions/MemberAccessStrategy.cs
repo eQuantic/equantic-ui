@@ -1,3 +1,4 @@
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
@@ -58,6 +59,15 @@ public class MemberAccessStrategy : IConversionStrategy
                 def.StartsWith("System.Collections.Generic.IDictionary") ||
                 def.StartsWith("System.Collections.Generic.IReadOnlyDictionary"))
                 return $"Object.keys({expr}).length";
+
+            // Same coin toss as `Contains`: a receiver typed only as a collection may be a Set at
+            // run time, whose count is `size`. `.length` on one is undefined — and `undefined > 0`
+            // is false, so the header checkbox simply never noticed a selection.
+            if (context.SemanticHelper.GetType(memberAccess.Expression).HasOpenCollectionShape())
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return $"{Eq.Count}({expr})";
+            }
 
             // A USER type with its own `Count` is not a collection — its property emits as
             // `get count()`, and rewriting the read to `.length` returned undefined. `.length` stays

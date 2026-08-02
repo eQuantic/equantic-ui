@@ -19,7 +19,13 @@ public readonly record struct ValueMember(string Display, string Js, string Defa
 /// </summary>
 public static class TypeDeclarationExtensions
 {
-    public static IReadOnlyList<ValueMember> ValueMembers(this TypeDeclarationSyntax type)
+    /// <param name="model">The semantic model, when the caller has one. A default that is not a
+    /// literal — <c>TextAlignment.Start</c>, a named constant — can only be lowered by ASKING what it
+    /// is, and getting it wrong is silent: the C# side used Start while the emitted class defaulted to
+    /// null, so the same column aligned one way on the server and the other on the client. Without a
+    /// model the literal rules still apply and everything else stays <c>default(T)</c>.</param>
+    public static IReadOnlyList<ValueMember> ValueMembers(this TypeDeclarationSyntax type,
+        SemanticModel? model = null)
     {
         var members = new List<ValueMember>();
 
@@ -32,7 +38,7 @@ public static class TypeDeclarationExtensions
                 // must construct as `''`, not null, or every call site that omits it reads null
                 // (and `Tag.Length` throws the moment the page hydrates).
                 var fallback = p.Default is { } declared
-                    ? DefaultLiteral(declared.Value)
+                    ? DefaultLiteral(declared.Value, model)
                     : DefaultFor(p.Type);
                 members.Add(new ValueMember(
                     p.Identifier.Text, p.Identifier.Text.ToCamelCase(), fallback, TsTypeFor(p.Type)));
@@ -51,7 +57,7 @@ public static class TypeDeclarationExtensions
                     members.Add(new ValueMember(
                         prop.Identifier.Text,
                         prop.Identifier.Text.ToCamelCase(),
-                        prop.Initializer is { } init ? DefaultLiteral(init.Value) : DefaultFor(prop.Type),
+                        prop.Initializer is { } init ? DefaultLiteral(init.Value, model) : DefaultFor(prop.Type),
                         TsTypeFor(prop.Type)));
                     break;
 
@@ -72,7 +78,32 @@ public static class TypeDeclarationExtensions
     /// interesting than a literal (a const reference, an expression) falls back to the type's
     /// `default(T)` — the emitter runs pre-symbol and must not guess.
     /// </summary>
-    private static string DefaultLiteral(ExpressionSyntax expression) => expression switch
+    private static string DefaultLiteral(ExpressionSyntax expression, SemanticModel? model = null)
+    {
+        // An enum member is a camelCase STRING everywhere in the emitted world, and a named constant
+        // is its value. Both need the model to be recognised; neither can be guessed from the syntax,
+        // since `Space.S2` and `TextAlignment.Start` are written identically.
+        if (expression is MemberAccessExpressionSyntax or IdentifierNameSyntax
+            && model is not null
+            && ReferenceEquals(expression.SyntaxTree, model.SyntaxTree))
+        {
+            var symbol = model.GetSymbolInfo(expression).Symbol;
+            if (symbol is IFieldSymbol { ContainingType.TypeKind: TypeKind.Enum } member)
+                return "'" + member.Name.ToCamelCase() + "'";
+            if (symbol is IFieldSymbol { HasConstantValue: true, ConstantValue: { } constant })
+                return constant switch
+                {
+                    string text => "'" + text.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
+                    bool flag => flag ? "true" : "false",
+                    null => "null",
+                    _ => System.Convert.ToString(constant, System.Globalization.CultureInfo.InvariantCulture) ?? "null",
+                };
+        }
+
+        return LiteralOf(expression);
+    }
+
+    private static string LiteralOf(ExpressionSyntax expression) => expression switch
     {
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.StringLiteralExpression) =>
             "'" + literal.Token.ValueText.Replace("\\", "\\\\").Replace("'", "\\'") + "'",

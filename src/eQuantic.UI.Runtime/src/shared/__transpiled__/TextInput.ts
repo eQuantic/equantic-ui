@@ -13,7 +13,7 @@ export class TextInput extends SharedStatefulComponent {
     declare disabled: boolean;
     declare obscure: boolean;
     constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', props?: any) {
-        super(props);
+        super();
         if (value !== undefined) this.value = value;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (label !== undefined) this.label = label;
@@ -24,6 +24,7 @@ export class TextInput extends SharedStatefulComponent {
         if (size !== undefined) this.size = size;
         if (this.size === undefined) this.size = 'small';
         if (size === 'small') throw new Error('TextInput has no Small size — text + padding can\'t fit 32dp (spec B9).');this.value = value;this.onChanged = onChanged;this.label = label;this.placeholder = placeholder;this.helper = helper;this.error = error;this.leading = leading;this.size = size;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

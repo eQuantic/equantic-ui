@@ -7,12 +7,13 @@ export class PageIndicator extends StatelessComponent {
     declare onSelected: any;
     declare variant: string;
     constructor(count?: any, currentIndex?: any, onSelected: any = null, props?: any) {
-        super(props);
+        super();
         if (count !== undefined) this.count = count;
         if (currentIndex !== undefined) this.currentIndex = currentIndex;
         if (onSelected !== undefined) this.onSelected = onSelected;
         if (this.variant === undefined) this.variant = 'primary';
         this.count = count;this.currentIndex = currentIndex;this.onSelected = onSelected;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

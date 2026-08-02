@@ -5,11 +5,12 @@ export class Tabs extends StatelessComponent {
     declare selected: number;
     declare onSelect: any;
     constructor(labels?: any, selected?: any, onSelect: any = null, props?: any) {
-        super(props);
+        super();
         if (labels !== undefined) this.labels = labels;
         if (selected !== undefined) this.selected = selected;
         if (onSelect !== undefined) this.onSelect = onSelect;
         this.labels = labels;this.selected = selected;this.onSelect = onSelect;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

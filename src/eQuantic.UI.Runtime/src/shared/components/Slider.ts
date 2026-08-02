@@ -12,13 +12,14 @@ export class Slider extends StatelessComponent {
     declare variant: string;
     declare label: string;
     constructor(value?: any, onChanged: any = null, props?: any) {
-        super(props);
+        super();
         if (value !== undefined) this.value = value;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (this.max === undefined) this.max = 1;
         if (this.variant === undefined) this.variant = 'primary';
         if (this.label === undefined) this.label = '';
         this.value = value;this.onChanged = onChanged;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

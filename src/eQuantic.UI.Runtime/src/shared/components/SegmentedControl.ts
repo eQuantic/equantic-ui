@@ -8,13 +8,14 @@ export class SegmentedControl extends StatelessComponent {
     declare disabled: boolean;
     declare stretch: boolean;
     constructor(segments?: any, selectedIndex?: any, onChanged: any = null, props?: any) {
-        super(props);
+        super();
         if (segments !== undefined) this.segments = segments;
         if (selectedIndex !== undefined) this.selectedIndex = selectedIndex;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (this.size === undefined) this.size = 'medium';
         if (this.stretch === undefined) this.stretch = true;
         this.segments = segments;this.selectedIndex = selectedIndex;this.onChanged = onChanged;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

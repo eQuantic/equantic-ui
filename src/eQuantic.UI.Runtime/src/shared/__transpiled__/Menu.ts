@@ -7,12 +7,13 @@ export class Menu extends SharedStatefulComponent {
     declare onSelect: any;
     declare placement: string;
     constructor(trigger?: any, items?: any, onSelect: any = null, props?: any) {
-        super(props);
+        super();
         if (trigger !== undefined) this.trigger = trigger;
         if (items !== undefined) this.items = items;
         if (onSelect !== undefined) this.onSelect = onSelect;
         if (this.placement === undefined) this.placement = 'bottomStart';
         this.trigger = trigger;this.items = items;this.onSelect = onSelect;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

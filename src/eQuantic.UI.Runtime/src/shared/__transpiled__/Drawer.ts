@@ -7,13 +7,14 @@ export class Drawer extends StatelessComponent {
     declare edge: string;
     declare width: number;
     constructor(content?: any, open?: any, onDismiss: any = null, props?: any) {
-        super(props);
+        super();
         if (content !== undefined) this.content = content;
         if (open !== undefined) this.open = open;
         if (onDismiss !== undefined) this.onDismiss = onDismiss;
         if (this.edge === undefined) this.edge = 'start';
         if (this.width === undefined) this.width = 320;
         this.content = content;this.open = open;this.onDismiss = onDismiss;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

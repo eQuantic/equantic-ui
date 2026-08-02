@@ -6,12 +6,13 @@ export class Card extends StatelessComponent {
     declare padding: EdgeInsets;
     declare width: SizeValue;
     constructor(child?: any, kind: any = 'elevated', props?: any) {
-        super(props);
+        super();
         if (child !== undefined) this.child = child;
         if (kind !== undefined) this.kind = kind;
         if (this.kind === undefined) this.kind = 'elevated';
         if (this.padding === undefined) this.padding = EdgeInsets.all(16);
         this.child = child;this.kind = kind;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

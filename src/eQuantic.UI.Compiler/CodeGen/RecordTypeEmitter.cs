@@ -25,6 +25,18 @@ public class RecordTypeEmitter
     public static bool CanEmit(TypeDeclarationSyntax type) =>
         type is RecordDeclarationSyntax or StructDeclarationSyntax && type.ValueMembers().Count > 0;
 
+    /// <summary>A model that can answer about THIS declaration. Roslyn throws for a node from
+    /// another tree, so the COMPILATION is asked for that tree's own model; when even it does not
+    /// know the tree, the literal rules still apply.</summary>
+    private SemanticModel? ModelFor(SyntaxNode node)
+    {
+        if (_converter.Model is not { } model) return null;
+        if (ReferenceEquals(node.SyntaxTree, model.SyntaxTree)) return model;
+        return model.Compilation.ContainsSyntaxTree(node.SyntaxTree)
+            ? model.Compilation.GetSemanticModel(node.SyntaxTree)
+            : null;
+    }
+
     /// <summary>Whether the emitted class carries VALUE semantics (structural equals, `with`).</summary>
     private static bool IsValueShape(TypeDeclarationSyntax type) =>
         type is RecordDeclarationSyntax or StructDeclarationSyntax;
@@ -50,7 +62,7 @@ public class RecordTypeEmitter
     public string Emit(TypeDeclarationSyntax type, bool tsTypeDeclarations = false)
     {
         var name = type.Identifier.Text;
-        var members = type.ValueMembers();
+        var members = type.ValueMembers(ModelFor(type));
         var (baseName, superArgs, passedToBase) = BaseInfo(type);
 
         var sb = new StringBuilder();

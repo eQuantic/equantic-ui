@@ -6,12 +6,13 @@ export class SearchField extends StatelessComponent {
     declare placeholder: string;
     declare onSubmit: (() => void) | null;
     constructor(query?: any, onChanged: any = null, placeholder: any = 'Search…', onSubmit: any = null, props?: any) {
-        super(props);
+        super();
         if (query !== undefined) this.query = query;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (placeholder !== undefined) this.placeholder = placeholder;
         if (onSubmit !== undefined) this.onSubmit = onSubmit;
         this.query = query;this.onChanged = onChanged;this.placeholder = placeholder;this.onSubmit = onSubmit;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

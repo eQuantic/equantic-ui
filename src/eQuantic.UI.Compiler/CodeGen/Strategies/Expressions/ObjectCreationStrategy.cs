@@ -264,7 +264,12 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (primary != null)
             foreach (var p in primary.Parameters)
                 if (seen.Add(p.Name))
-                    members.Add(new ValueMember(p.Name, p.Name.ToCamelCase(), SymbolDefault(p.Type), "any"));
+                    // The parameter's OWN default first — `TextAlignment Align = Start` means an
+                    // omitted argument is Start, not `default(T)`. Reading the type's default here
+                    // filled the slot with null, and a column aligned one way on the server and the
+                    // other on the client for want of asking the parameter.
+                    members.Add(new ValueMember(p.Name, p.Name.ToCamelCase(),
+                        p.HasExplicitDefaultValue ? ParameterDefaultLiteral(p) : SymbolDefault(p.Type), "any"));
 
         foreach (var member in type.GetMembers())
         {
@@ -313,6 +318,30 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// type's declaration order). Members left unset before the last supplied one get their default
     /// literal; trailing unset members are omitted (the constructor's parameter defaults cover them).
     /// </summary>
+    /// <summary>
+    /// A model that can answer about THIS node. Roslyn throws when asked about a node from another
+    /// tree, and a record is usually declared in another file — the component library's, not the
+    /// page's — so the COMPILATION is asked for that tree's own model rather than giving up. Giving
+    /// up is what left `TextAlignment.Start` as a null the client aligned by and the server did not.
+    /// </summary>
+    private static SemanticModel? ModelOf(SyntaxNode node, ConversionContext context)
+    {
+        if (context.SemanticModel is not { } model) return null;
+        if (ReferenceEquals(node.SyntaxTree, model.SyntaxTree)) return model;
+        return model.Compilation.ContainsSyntaxTree(node.SyntaxTree)
+            ? model.Compilation.GetSemanticModel(node.SyntaxTree)
+            : null;
+    }
+
+    /// <summary>The slot a member name occupies, or -1. One lookup for both ways a caller can name
+    /// a member: a constructor argument's <c>NameColon</c> and an object initializer's left side.</summary>
+    private static int IndexOfMember(IReadOnlyList<ValueMember> members, string js)
+    {
+        for (var i = 0; i < members.Count; i++)
+            if (members[i].Js == js) return i;
+        return -1;
+    }
+
     private static string BuildValueTypeConstruction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type, ConversionContext context)
     {
         var declSyntax = type.DeclaringSyntaxReferences
@@ -327,7 +356,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         // (`new NavItem(icon, label, { badgeCount: 3 })` sets selectedIcon and leaves badgeCount 0 —
         // SSR renders the badge, the hydrated client does not).
         var members = declSyntax != null
-            ? declSyntax.ValueMembers()
+            ? declSyntax.ValueMembers(ModelOf(declSyntax, context))
             : SymbolValueMembers(type as INamedTypeSymbol);
 
         // Neither syntax nor a usable symbol: fall back to a trailing CONFIG OBJECT — the shape
@@ -356,12 +385,24 @@ public class ObjectCreationStrategy : IConversionStrategy
 
         var values = new string?[members.Count];
 
-        // Positional constructor arguments fill the leading members.
+        // Constructor arguments fill the members — a NAMED one by its name, and only the unnamed
+        // ones by position. C# lets a caller skip optionals by naming a later parameter
+        // (`new DataColumn("Customer", track, Sortable: true)`), and filling by WRITTEN order put
+        // that `true` in the align slot: the column stopped being sortable on the client only, so
+        // SSR rendered a header button the hydrated page did not, hydration failed on the tag
+        // mismatch, and the whole page fell back to a full re-render.
         if (creation.ArgumentList != null)
         {
             var args = creation.ArgumentList.Arguments;
-            for (var i = 0; i < args.Count && i < members.Count; i++)
-                values[i] = context.Converter.ConvertExpression(args[i].Expression);
+            var position = 0;
+            foreach (var argument in args)
+            {
+                var index = argument.NameColon is { } named
+                    ? IndexOfMember(members, named.Name.Identifier.Text.ToCamelCase())
+                    : position++;
+                if (index >= 0 && index < members.Count)
+                    values[index] = context.Converter.ConvertExpression(argument.Expression);
+            }
         }
 
         // Object initializer `{ Name = …, Age = … }` fills the named members by position.
@@ -371,9 +412,7 @@ public class ObjectCreationStrategy : IConversionStrategy
             {
                 if (expr is AssignmentExpressionSyntax assignment)
                 {
-                    var key = assignment.Left.ToString().ToCamelCase();
-                    var idx = -1;
-                    for (var i = 0; i < members.Count; i++) if (members[i].Js == key) { idx = i; break; }
+                    var idx = IndexOfMember(members, assignment.Left.ToString().ToCamelCase());
                     if (idx >= 0) values[idx] = context.Converter.ConvertExpression(assignment.Right);
                 }
             }
@@ -447,10 +486,19 @@ public class ObjectCreationStrategy : IConversionStrategy
             return "new Set()";
         }
 
-        // Target-typed `new(args)` on a named type (record/class): `Item _x = new(9, "z")` → `new Item(9, 'z')`.
+        // Records and user structs go the SAME way they do with an initializer, and the same way the
+        // explicit `new T(...)` does. Converting the arguments here in written order was the third
+        // copy of that rule and the one that was wrong.
+        if (ms?.ContainingType is { IsRecord: true } record)
+            return BuildValueTypeConstruction(creation, record, context);
+        if (ms?.ContainingType is { TypeKind: TypeKind.Struct } value && value.IsStructuralValueType())
+            return BuildValueTypeConstruction(creation, value, context);
+
+        // Target-typed `new(args)` on a named type: `Item _x = new(9, "z")` → `new Item(9, 'z')`.
         var args = string.Join(", ",
-            creation.ArgumentList?.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression))
-            ?? System.Linq.Enumerable.Empty<string>());
+            creation.ArgumentList is { Arguments.Count: > 0 }
+                ? OrderedArguments(creation, context)
+                : System.Linq.Enumerable.Empty<string>());
         var typeName = ms?.ContainingType.Name;
         if (string.IsNullOrEmpty(typeName) || typeName == "Object")
         {

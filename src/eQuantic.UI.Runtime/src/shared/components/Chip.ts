@@ -8,7 +8,7 @@ export class Chip extends StatelessComponent {
     declare onRemove: (() => void) | null;
     declare variant: string;
     constructor(label?: any, kind: any = 'filter', selected: any = false, onPressed: any = null, onRemove: any = null, props?: any) {
-        super(props);
+        super();
         if (label !== undefined) this.label = label;
         if (kind !== undefined) this.kind = kind;
         if (selected !== undefined) this.selected = selected;
@@ -17,6 +17,7 @@ export class Chip extends StatelessComponent {
         if (this.kind === undefined) this.kind = 'filter';
         if (this.variant === undefined) this.variant = 'secondary';
         this.label = label;this.kind = kind;this.selected = selected;this.onPressed = onPressed;this.onRemove = onRemove;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

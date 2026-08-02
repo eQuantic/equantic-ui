@@ -8,11 +8,12 @@ export class ListItem extends StatelessComponent {
     declare leading: any;
     declare trailing: any;
     constructor(title?: any, subtitle: any = null, onPressed: any = null, props?: any) {
-        super(props);
+        super();
         if (title !== undefined) this.title = title;
         if (subtitle !== undefined) this.subtitle = subtitle;
         if (onPressed !== undefined) this.onPressed = onPressed;
         this.title = title;this.subtitle = subtitle;this.onPressed = onPressed;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

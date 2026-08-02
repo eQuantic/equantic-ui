@@ -10,7 +10,7 @@ export class IconButton extends StatelessComponent {
     declare selected: boolean;
     declare selectedGlyph: any;
     constructor(glyph?: any, label?: any, kind: any = 'standard', size: any = 'medium', onPressed: any = null, props?: any) {
-        super(props);
+        super();
         if (glyph !== undefined) this.glyph = glyph;
         if (label !== undefined) this.label = label;
         if (kind !== undefined) this.kind = kind;
@@ -20,6 +20,7 @@ export class IconButton extends StatelessComponent {
         if (this.kind === undefined) this.kind = 'standard';
         if (this.size === undefined) this.size = 'small';
         this.glyph = glyph;this.label = label;this.kind = kind;this.size = size;this.onPressed = onPressed;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

@@ -4,12 +4,13 @@ export class Divider extends StatelessComponent {
     declare inset: string;
     declare axis: string;
     constructor(inset: any = 'none', axis: any = 'horizontal', props?: any) {
-        super(props);
+        super();
         if (inset !== undefined) this.inset = inset;
         if (axis !== undefined) this.axis = axis;
         if (this.inset === undefined) this.inset = 'none';
         if (this.axis === undefined) this.axis = 'horizontal';
         this.inset = inset;this.axis = axis;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {

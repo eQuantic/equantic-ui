@@ -42,6 +42,9 @@ public class CSharpToJsConverter
         RegisterStrategies();
     }
     
+    /// <summary>The model in force, for an emitter that must ASK what a default refers to.</summary>
+    internal SemanticModel? Model => _semanticModel;
+
     public void SetSemanticModel(SemanticModel? semanticModel)
     {
         _semanticModel = semanticModel;

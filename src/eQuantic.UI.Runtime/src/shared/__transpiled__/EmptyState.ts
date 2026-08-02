@@ -7,12 +7,13 @@ export class EmptyState extends StatelessComponent {
     declare action: any;
     declare secondaryAction: any;
     constructor(icon?: any, title?: any, body: any = null, props?: any) {
-        super(props);
+        super();
         if (icon !== undefined) this.icon = icon;
         if (title !== undefined) this.title = title;
         if (body !== undefined) this.body = body;
         if (this.icon === undefined) this.icon = 'search';
         this.icon = icon;this.title = title;this.body = body;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
