@@ -21,7 +21,18 @@ import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
  * Members are the same function references as the individual exports, so the factories keep their
  * attached statics (`$eq.time.dateTime.now()`, `$eq.time.timeSpan.fromSeconds(1)`).
  */
+/**
+ * C#'s `with` over a VALUE the runtime hands out as a class instance (a TypeStyle, a ColorToken).
+ * A record the compiler emits carries its own `with`, but a hand-written twin does not — and a
+ * plain object spread would drop the prototype, taking every method on it. This copies the
+ * prototype, then the fields, then the patch.
+ */
+export const withPatch = <T extends object>(value: T, patch: Partial<T>): T =>
+  Object.assign(Object.create(Object.getPrototypeOf(value)), value, patch);
+
 export const $eq = {
+  /** C# `with` over a runtime value type — prototype preserved. */
+  withPatch,
   /** Numeric compat: exact decimal and 64-bit integer. */
   num: { dec, long },
   /** Math with .NET semantics (banker's rounding). */

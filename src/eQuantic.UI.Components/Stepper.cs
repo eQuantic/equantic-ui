@@ -33,14 +33,6 @@ public sealed class Stepper : StatelessComponent
     /// <summary>Announced by the control; the number alone says nothing about what it counts.</summary>
     public string Label { get; init; } = "";
 
-    /// <summary>The Label role at the ladder's size for this control.</summary>
-    private static TypeStyle LabelStyle(IAppTheme theme, SizeVariant size)
-    {
-        var role = theme.Type(TypeRole.Label);
-        return new TypeStyle(Sizing.LabelSize(size), role.LineHeight, role.Weight, role.Tracking,
-            role.MaxScale);
-    }
-
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
@@ -57,7 +49,7 @@ public sealed class Stepper : StatelessComponent
         {
             Align = TextAlignment.Center,
             Tabular = true,
-            StyleOverride = LabelStyle(theme, Size),
+            StyleOverride = theme.Type(TypeRole.Label) with { Size = Sizing.LabelSize(Size) },
         }, 1));
 
         row.Add(Arm(theme, Icons.Plus, height, canIncrement,

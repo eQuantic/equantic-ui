@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, Flexible, Icon, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, TypeStyle } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, Icon, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text } from "@equantic/runtime";
 
 export class Stepper extends StatelessComponent {
     declare value: number;
@@ -24,11 +24,7 @@ export class Stepper extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let height = Sizing.height(this.size);let canDecrement = !this.disabled && this.value - this.step >= this.min;let canIncrement = !this.disabled && this.value + this.step <= this.max;let row = new Row(0, { height: SizeValue.fill, cross: 'center' });row.add(Stepper.arm(theme, 'minus', height, canDecrement, () => this.onChanged?.(this.value - this.step), `Decrease ${this.label}`));row.add(new Flexible(new Text(`${this.value}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, { align: 'center', tabular: true, styleOverride: Stepper.labelStyle(theme, this.size) }), 1));row.add(Stepper.arm(theme, 'plus', height, canIncrement, () => this.onChanged?.(this.value + this.step), `Increase ${this.label}`));return new Box(new BoxStyle({ height: height, minWidth: height * 3, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(Sizing.radius(this.size)), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
-    }
-
-    static labelStyle(theme: any, size: string) {
-        let role = theme.type('label');return new TypeStyle(Sizing.labelSize(size), role.lineHeight, role.weight, role.tracking, role.maxScale);
+        let theme = context.theme;let height = Sizing.height(this.size);let canDecrement = !this.disabled && this.value - this.step >= this.min;let canIncrement = !this.disabled && this.value + this.step <= this.max;let row = new Row(0, { height: SizeValue.fill, cross: 'center' });row.add(Stepper.arm(theme, 'minus', height, canDecrement, () => this.onChanged?.(this.value - this.step), `Decrease ${this.label}`));row.add(new Flexible(new Text(`${this.value}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, { align: 'center', tabular: true, styleOverride: $eq.withPatch(theme.type('label'), { size: Sizing.labelSize(this.size) }) }), 1));row.add(Stepper.arm(theme, 'plus', height, canIncrement, () => this.onChanged?.(this.value + this.step), `Increase ${this.label}`));return new Box(new BoxStyle({ height: height, minWidth: height * 3, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(Sizing.radius(this.size)), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
     }
 
     static arm(theme: any, glyph: string, height: number, enabled: boolean, onPressed: () => void, label: string) {
