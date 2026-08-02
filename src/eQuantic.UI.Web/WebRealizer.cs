@@ -869,7 +869,8 @@ public static class WebRealizer
                 },
                 // Authored \n is a HARD break (the designed headline's line turns) — pre-line
                 // keeps normal wrapping between them.
-                WhiteSpace = text.Content.Contains('\n') ? "pre-line" : null,
+                // Mono text is CODE (indentation survives); plain text only keeps its newlines.
+                WhiteSpace = text.Mono ? "pre-wrap" : text.Content.Contains('\n') ? "pre-line" : null,
                 FontFamily = text.Mono ? TokenCss.MonoStack : null,
                 // Spec S6: recolors glide (the design's transition-colors on nav labels/links).
                 Transition = text.Transition is { } transition ? TokenCss.Transition(transition) : null,

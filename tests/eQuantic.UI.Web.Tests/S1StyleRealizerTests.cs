@@ -78,4 +78,15 @@ public class S1StyleRealizerTests
             .And.Contain("{transform:rotate(8deg)}")
             .And.Contain("{aspect-ratio:1}");
     }
+
+    [Fact]
+    public void MonoText_KeepsItsIndentation()
+    {
+        // Mono text is CODE: leading spaces are meaning, not formatting. HTML collapses them by
+        // default, which turned every snippet on the site into a flat left-aligned block.
+        var node = WebRealizer.Lower(
+            new Text("    row.Add(child);", TypeRole.BodyM) { Mono = true }, PhotonTheme.Instance).Render();
+
+        node.Attributes["style"].Should().Contain("white-space: pre-wrap");
+    }
 }

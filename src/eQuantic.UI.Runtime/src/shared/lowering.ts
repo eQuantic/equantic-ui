@@ -911,7 +911,8 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     'text-align':
       text.align === 'center' ? 'center' : text.align === 'end' ? 'end' : undefined,
     // Authored \n is a HARD break (pre-line keeps normal wrapping between them) — C# twin.
-    'white-space': text.content.includes('\n') ? 'pre-line' : undefined,
+    // Mono text is CODE (indentation survives); plain text only keeps its newlines.
+    'white-space': text.mono === true ? 'pre-wrap' : text.content.includes('\n') ? 'pre-line' : undefined,
     'font-family': text.mono === true ? MONO_STACK : undefined,
     // Spec S6 (C# twin): recolors glide instead of flipping.
     transition: text.transition ? transitionValue(text.transition) : undefined,
