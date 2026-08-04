@@ -51,6 +51,11 @@ public sealed class PhotonCapabilitiesBuilder
     /// <summary>The fingerprint or face reader.</summary>
     public PhotonCapabilitiesBuilder UseBiometrics(string reason) => Use(DeviceCapability.Biometrics, reason);
 
+    /// <summary>No reason parameter, deliberately: nothing anywhere shows one. Apple has no
+    /// manifest entry at all, Android's is granted at install without a prompt, and a signature
+    /// that demanded a sentence nobody will read teaches people to write filler.</summary>
+    public PhotonCapabilitiesBuilder UseNetworkStatus() => Use(DeviceCapability.NetworkStatus, "");
+
     /// <summary>Reading the contact list.</summary>
     public PhotonCapabilitiesBuilder UseContacts(string reason) => Use(DeviceCapability.Contacts, reason);
 

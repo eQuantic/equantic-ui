@@ -92,7 +92,7 @@ public static class Gallery
         GallerySection.Navigation => 4,
         GallerySection.Feedback => 4,
         GallerySection.Overlays => 4,
-        _ => 2,
+        _ => 3,
     };
 
     public static VisualNode Render(GallerySection section, IAppTheme theme, SectionState state,
@@ -418,6 +418,36 @@ public static class Gallery
         column.Add(Card(theme, "Biometrics",
             "Four ways not to succeed, and they are not the same — a wrong finger, nothing enrolled, "
             + "someone who backed out, a device with no reader at all.", identity));
+
+        var connectivity = Column(Space.S3);
+        if (state.Network is { } network)
+        {
+            var (dot, label) = network switch
+            {
+                { Online: true, Kind: NetworkKind.Wifi } => (theme.Colors(Variant.Success).Base, "Online — wifi"),
+                { Online: true, Kind: NetworkKind.Wired } => (theme.Colors(Variant.Success).Base, "Online — wired"),
+                { Online: true, Kind: NetworkKind.Cellular } => (theme.Colors(Variant.Warning).Base, "Online — cellular (metered)"),
+                { Online: true } => (theme.Colors(Variant.Success).Base, "Online"),
+                _ => (theme.Colors(Variant.Destructive).Base, "Offline"),
+            };
+            var readout = Row(Space.S2);
+            readout.Add(new Box(new BoxStyle
+            {
+                Width = 10, Height = 10,
+                Background = dot,
+                CornerRadius = new CornerRadii(5),
+            }));
+            readout.Add(new Text(label, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
+            connectivity.Add(readout);
+            connectivity.Add(Label(theme, "Turn wifi off and watch it flip — no refresh anywhere."));
+        }
+        else
+        {
+            connectivity.Add(Label(theme, "No network monitor on this head."));
+        }
+        column.Add(Card(theme, "Network",
+            "The first capability whose answer does not hold still: the state seeds the page and "
+            + "every change streams into SetState.", connectivity));
         return column;
     }
 

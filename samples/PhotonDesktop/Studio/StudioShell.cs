@@ -28,7 +28,7 @@ public sealed class StudioShell : StatefulComponent
     /// none simply shows the capability as absent instead of failing to construct.
     /// </param>
     public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null,
-        IBiometrics? biometrics = null)
+        IBiometrics? biometrics = null, INetworkStatus? network = null)
     {
         _section = Enum.TryParse<GallerySection>(configuration["section"], ignoreCase: true, out var section)
             ? section
@@ -39,6 +39,17 @@ public sealed class StudioShell : StatefulComponent
         // ABSENT is a first-class answer: a device with no reader (or nothing enrolled) leaves this
         // null, and the section says so rather than offering a button that cannot work.
         if (biometrics?.IsAvailable == true) _demo.OnAuthenticate = () => AuthenticateAsync(biometrics);
+
+        // D4 — the first capability whose answer does not hold still. `Current` seeds the page and
+        // every CHANGE flows into SetState: turn wifi off and the chip flips, with this page never
+        // having learned which platform's monitor said so. The subscription is never disposed here
+        // because this component IS the app's lifetime; a page with an end would keep the
+        // IDisposable and dispose it there.
+        if (network is not null)
+        {
+            _demo.Network = network.Current;
+            network.Subscribe(state => SetState(() => _demo.Network = state));
+        }
     }
 
     /// <summary>
@@ -471,6 +482,9 @@ public sealed class SectionState
     /// <summary>How the last attempt at the reader ended, in words the user can act on.</summary>
     public string? Authentication;
     public Action? OnAuthenticate;
+
+    /// <summary>The network as of the last change — null when this head offers no monitor.</summary>
+    public NetworkState? Network;
 
     public string Name = "Ana Beatriz Nogueira";
     public string Email = "";

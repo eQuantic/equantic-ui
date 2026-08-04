@@ -106,6 +106,7 @@ internal static class CapabilityDeclarations
         "Location" => new[] { "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION" },
         "Motion" => new[] { "android.permission.HIGH_SAMPLING_RATE_SENSORS" },
         "Biometrics" => new[] { "android.permission.USE_BIOMETRIC" },
+        "NetworkStatus" => new[] { "android.permission.ACCESS_NETWORK_STATE" },
         "Contacts" => new[] { "android.permission.READ_CONTACTS" },
         "Notifications" => new[] { "android.permission.POST_NOTIFICATIONS" },
         _ => Enumerable.Empty<string>(),

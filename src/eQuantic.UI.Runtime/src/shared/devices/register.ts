@@ -1,5 +1,6 @@
 import { getRootServiceProvider } from '../../core/service-provider';
 import { WebBiometrics } from './biometrics';
+import { WebNetworkStatus } from './network-status';
 import { WebPhotoLibrary } from './photo-library';
 
 /**
@@ -17,4 +18,5 @@ export function registerDeviceCapabilities(): void {
   // Registered even though it reports itself unavailable: a page that takes one must RECEIVE one,
   // or it fails to construct instead of showing the fallback it already knows how to show.
   services.registerSingleton('IBiometrics', () => new WebBiometrics());
+  services.registerSingleton('INetworkStatus', () => new WebNetworkStatus());
 }
