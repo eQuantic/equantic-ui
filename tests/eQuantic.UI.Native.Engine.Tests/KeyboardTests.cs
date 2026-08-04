@@ -521,3 +521,144 @@ public class SelectionTests
         host.CaretIndex.Should().Be(0, "left of a selection is its start, not one before the caret");
     }
 }
+
+/// <summary>⌘C/⌘X/⌘V against a fake pasteboard — the field's half of the contract.</summary>
+public class ClipboardTests
+{
+    private sealed class FakeClipboard : Framework.ITextClipboard
+    {
+        public string? Content;
+        public string? Read() => Content;
+        public void Write(string text) => Content = text;
+    }
+
+    private sealed class Field(bool obscure) : Primitives.StatefulComponent
+    {
+        public string Value = "hello world";
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: 0) { Width = SizeValue.Fill };
+            column.Add(new TextEntry(Value, v => SetState(() => Value = v)) { Obscure = obscure });
+            return column;
+        }
+    }
+
+    private static (PhotonHost Host, Field Field, FakeClipboard Clipboard) Open(bool obscure = false)
+    {
+        var field = new Field(obscure);
+        var clipboard = new FakeClipboard();
+        var host = new PhotonHost(field, PhotonTheme.Instance, ThemeMode.Light, 400, 100)
+        {
+            Clipboard = clipboard,
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        return (host, field, clipboard);
+    }
+
+    private static void Press(PhotonHost host, string key, KeyModifiers modifiers = KeyModifiers.None)
+    {
+        host.KeyDown(key, modifiers);
+        host.RenderFrame(new DisplayListBuilder());
+    }
+
+    [Fact]
+    public void CopyCutAndPaste_RoundTrip()
+    {
+        var (host, field, clipboard) = Open();
+        Press(host, "Tab");
+        Press(host, "a", KeyModifiers.Command);
+
+        Press(host, "c", KeyModifiers.Command);
+        clipboard.Content.Should().Be("hello world");
+        field.Value.Should().Be("hello world", "copy leaves the text alone");
+
+        Press(host, "x", KeyModifiers.Command);
+        field.Value.Should().BeEmpty("cut removes what it copied");
+
+        Press(host, "v", KeyModifiers.Command);
+        field.Value.Should().Be("hello world");
+
+        Press(host, "v", KeyModifiers.Command);
+        field.Value.Should().Be("hello worldhello world", "paste inserts at the caret");
+    }
+
+    [Fact]
+    public void APastedNewlineBecomesASpace()
+    {
+        var (host, field, clipboard) = Open();
+        Press(host, "Tab");
+        Press(host, "a", KeyModifiers.Command);
+        clipboard.Content = "two\nlines";
+
+        Press(host, "v", KeyModifiers.Command);
+        field.Value.Should().Be("two lines", "a single-line field cannot show the newline it was handed");
+    }
+
+    [Fact]
+    public void CommandVWithoutAClipboard_DoesNotTypeAV()
+    {
+        var (host, field, _) = Open();
+        host.Clipboard = null;
+        Press(host, "Tab");
+        Press(host, "a", KeyModifiers.Command);
+
+        Press(host, "v", KeyModifiers.Command);
+        field.Value.Should().Be("hello world",
+            "an unclaimed ⌘V would fall through as the letter v over the selection");
+    }
+
+    [Fact]
+    public void APasswordNeverReachesTheClipboard()
+    {
+        var (host, field, clipboard) = Open(obscure: true);
+        clipboard.Content = "mine";
+        Press(host, "Tab");
+        Press(host, "a", KeyModifiers.Command);
+
+        Press(host, "c", KeyModifiers.Command);
+        clipboard.Content.Should().Be("mine", "the secret is not the field's to hand out — nor to clear over");
+
+        Press(host, "x", KeyModifiers.Command);
+        clipboard.Content.Should().Be("mine");
+        field.Value.Should().BeEmpty("cut still deletes; it just does not export");
+    }
+}
+
+/// <summary>Double-click picks the word, triple the line — how nearly everyone actually selects.</summary>
+public class WordSelectionTests
+{
+    private static (PhotonHost Host, Rect Bounds) Open(string value = "hello brave world")
+    {
+        var column = new Column(gap: 0) { Width = SizeValue.Fill };
+        column.Add(new TextEntry(value, _ => { }));
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 400, 100);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        return (host, frame.TextRegions.Single().Bounds);
+    }
+
+    [Fact]
+    public void DoubleClickSelectsTheWordUnderThePoint()
+    {
+        var (host, bounds) = Open();
+        // Aim inside "brave": the width of "hello br", measured by the same measurer the host
+        // uses. A fraction of the FIELD would miss — the field fills 400dp, the text does not.
+        var style = PhotonTheme.Instance.Type(TypeRole.BodyL);
+        var x = bounds.X + Framework.ApproximateTextMeasurer.Instance
+            .Measure("hello br", style, 1f, float.PositiveInfinity, 1).Lines[0].Width;
+        host.PressDown(x, bounds.Center.Y, clickCount: 2);
+        host.PressUp(x, bounds.Center.Y);
+
+        host.Selection.Should().Be((6, 11), "the word under the pointer, not the characters around it");
+    }
+
+    [Fact]
+    public void TripleClickSelectsEverything()
+    {
+        var (host, bounds) = Open();
+        host.PressDown(bounds.Center.X, bounds.Center.Y, clickCount: 3);
+        host.PressUp(bounds.Center.X, bounds.Center.Y);
+
+        host.Selection.Should().Be((0, "hello brave world".Length));
+    }
+}

@@ -78,6 +78,9 @@ public static partial class ObjC
     public static partial IntPtr Send(IntPtr receiver, IntPtr selector, IntPtr arg1);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial IntPtr Send(IntPtr receiver, IntPtr selector, IntPtr arg1, IntPtr arg2);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial IntPtr Send(IntPtr receiver, IntPtr selector, long arg1);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]

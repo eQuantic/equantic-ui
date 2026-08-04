@@ -77,6 +77,10 @@ public sealed class PhotonHost
 
     private readonly TextRasterCache _textCache = new();
 
+    /// <summary>The platform clipboard (null = the copy keys do nothing, which is the honest
+    /// answer on a host that has none).</summary>
+    public Framework.ITextClipboard? Clipboard { get; set; }
+
     /// <summary>W4: the platform image service (null = SurfaceSubtle placeholder boxes).</summary>
     public Framework.IImageLoader? ImageLoader { get; set; }
 
@@ -392,6 +396,33 @@ public sealed class PhotonHost
         return localX - before > after - localX && low < value.Length ? low + 1 : low;
     }
 
+    /// <summary>Selects the word the caret is in — both edges found by the same rule, so a click
+    /// between two words picks the one the nearest boundary belongs to.</summary>
+    private void SelectWordAt(TextEntry entry)
+    {
+        var value = entry.Value;
+        if (value.Length == 0) return;
+        var at = Math.Clamp(CaretIndex, 0, value.Length);
+        // On a boundary, prefer the word BEHIND the caret — the one the click was visually inside.
+        if (at > 0 && (at == value.Length || !IsWord(value[at]))) at--;
+        if (!IsWord(value[at])) { _anchor = at; _caret = at + 1; return; }   // a run of spaces
+        var start = at;
+        while (start > 0 && IsWord(value[start - 1])) start--;
+        var end = at;
+        while (end < value.Length && IsWord(value[end])) end++;
+        _anchor = start;
+        _caret = end;
+    }
+
+    private static bool IsWord(char c) => char.IsLetterOrDigit(c) || c == '_';
+
+    /// <summary>
+    /// What ⌘C puts on the clipboard. A password field copies NOTHING — the dots are what is drawn,
+    /// and the secret behind them is not the field's to hand out.
+    /// </summary>
+    private static string Copyable(TextEntry entry, int start, int end) =>
+        entry.Obscure ? "" : entry.Value[start..end];
+
     /// <summary>What is actually DRAWN for a value — a password shows dots, and a click has to land
     /// where the dots are.</summary>
     private static string Shown(TextEntry entry, string value) =>
@@ -515,6 +546,34 @@ public sealed class PhotonHost
             _caret = value.Length;
             NeedsRender = true;
             return true;
+        }
+
+        // Copy, cut, paste. Claimed even with no clipboard behind them: letting ⌘V fall through
+        // would type a "v" into the field, which is worse than nothing happening.
+        if (command && key.Length == 1)
+        {
+            switch (char.ToLowerInvariant(key[0]))
+            {
+                case 'c':
+                    if (start != end && Copyable(entry, start, end) is { Length: > 0 } copied)
+                        Clipboard?.Write(copied);
+                    return true;
+
+                case 'x':
+                    if (start == end) return true;
+                    // An obscured field cuts by DELETING only: writing its dots' secret out is not
+                    // its call, and writing "" would clear what the user already had there.
+                    if (Copyable(entry, start, end) is { Length: > 0 } cut) Clipboard?.Write(cut);
+                    Commit(entry, value.Remove(start, end - start), start, clearAnchor: true);
+                    return true;
+
+                case 'v':
+                    if (Clipboard?.Read() is not { Length: > 0 } pasted) return true;
+                    // A pasted newline would end the line rather than extend it: this is a
+                    // single-line field, and the paste is flattened to match what it can show.
+                    TextInput(pasted.ReplaceLineEndings(" "));
+                    return true;
+            }
         }
 
         switch (key)
@@ -819,7 +878,7 @@ public sealed class PhotonHost
     /// the next frame renders its pressed token swap. Returns whether a region captured the press.
     /// (v1 fence: drag-slop/cancel and fling join the gesture system.)
     /// </summary>
-    public bool PressDown(float x, float y)
+    public bool PressDown(float x, float y, int clickCount = 1)
     {
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
@@ -880,7 +939,12 @@ public sealed class PhotonHost
         {
             if (!fields[i].Bounds.Contains(point)) continue;
             BeginEditing(fields[i], x);
-            _dragSelecting = true;
+            // Double-click: the word under the point. Triple: everything. The platform counts the
+            // clicks (its double-click interval is a system setting, not ours to guess).
+            if (clickCount >= 3) { _anchor = 0; _caret = fields[i].Entry.Value.Length; }
+            else if (clickCount == 2) SelectWordAt(fields[i].Entry);
+            _dragSelecting = clickCount < 2;   // a drag right after a double-click keeps the word
+            NeedsRender = true;
             return true;
         }
 
