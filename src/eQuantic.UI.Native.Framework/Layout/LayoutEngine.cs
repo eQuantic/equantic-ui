@@ -171,22 +171,22 @@ public static class LayoutEngine
         Grid grid => MeasureGrid(grid, maxW, maxH, ctx, path),
         // Spec S6: an AdaptiveNode IS its resolved variant on native — the other variants never
         // measure, never paint (the web keeps them, CSS-gated).
-        AdaptiveNode adaptive => Measure(adaptive.Resolve(ctx.SizeClass), maxW, maxH, ctx, path + "/0"),
+        AdaptiveNode adaptive => MeasureRearmed(adaptive.Resolve(ctx.SizeClass), maxW, maxH, ctx, path + "/0", stretchW, stretchH),
         // Spec S7: Sticky renders IN FLOW on native until engine scrolling lands (correct at scroll
         // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
-        Sticky sticky => MeasureWrapper(sticky, sticky.Child, maxW, maxH, ctx, path),
+        Sticky sticky => MeasureWrapper(sticky, sticky.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // The system's own margins. A desktop window has no cutouts, so the host reports zero and
         // the node measures as its child plus whatever padding the caller asked for on top — the
         // SAME tree an iPhone insets, with the numbers coming from the host rather than the app.
-        SafeArea safeArea => MeasureSafeArea(safeArea, maxW, maxH, ctx, path),
+        SafeArea safeArea => MeasureSafeArea(safeArea, maxW, maxH, ctx, path, stretchW, stretchH),
         // Wave 3: the anchor owns layout; the panel realizes in the realizer's overlay pass.
-        Anchored anchored => MeasureWrapper(anchored, anchored.Anchor, maxW, maxH, ctx, path),
+        Anchored anchored => MeasureWrapper(anchored, anchored.Anchor, maxW, maxH, ctx, path, stretchW, stretchH),
         ScrollView scroll => MeasureScrollView(scroll, maxW, maxH, ctx, path),
         // A Positioned outside a Stack has no anchor frame — degrade to a transparent wrapper.
         // A continuous gesture is layout-transparent: the offset is a PAINT translate, exactly like
         // the sheet's. Re-laying out under a finger would fight the scroll it usually lives in.
-        Draggable draggable => MeasureDraggable(draggable, maxW, maxH, ctx, path),
-        Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx, path),
+        Draggable draggable => MeasureDraggable(draggable, maxW, maxH, ctx, path, stretchW, stretchH),
+        Positioned positioned => MeasureWrapper(positioned, positioned.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         Text text => MeasureText(text, maxW, ctx),
         TextEntry entry => MeasureTextEntry(entry, maxW, ctx),
         // Images are an explicitly sized slot - layout can't infer extent from undecoded sources (A11).
@@ -198,23 +198,23 @@ public static class LayoutEngine
         Vector vector => new LayoutNode(vector) { Bounds = new Rect(0, 0, vector.Size, vector.Size) },
         // The Spinner shares the icon em-box contract (spec B15: sizes = the §07 whitelist).
         Spinner spinner => new LayoutNode(spinner) { Bounds = new Rect(0, 0, spinner.Size, spinner.Size) },
-        Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx, path),
+        Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // Pointer presence is layout-transparent (S5 programmable hover — the child owns visuals).
-        Hoverable hoverable => MeasureWrapper(hoverable, hoverable.Child, maxW, maxH, ctx, path),
+        Hoverable hoverable => MeasureWrapper(hoverable, hoverable.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // Spec S8: a Shortcut is layout-transparent — the binding rides the realizer's walk.
-        Shortcut shortcut => MeasureWrapper(shortcut, shortcut.Child, maxW, maxH, ctx, path),
-        Adjustable adjustable => MeasureWrapper(adjustable, adjustable.Child, maxW, maxH, ctx, path),
+        Shortcut shortcut => MeasureWrapper(shortcut, shortcut.Child, maxW, maxH, ctx, path, stretchW, stretchH),
+        Adjustable adjustable => MeasureWrapper(adjustable, adjustable.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // A Link is layout-transparent (semantics + interaction only — the child owns visuals).
-        Link link => MeasureWrapper(link, link.Child, maxW, maxH, ctx, path),
-        Flexible flexible => MeasureWrapper(flexible, flexible.Child, maxW, maxH, ctx, path),
+        Link link => MeasureWrapper(link, link.Child, maxW, maxH, ctx, path, stretchW, stretchH),
+        Flexible flexible => MeasureWrapper(flexible, flexible.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // Loop motion is layout-transparent: the offset is a REALIZE-time transform (spec §06 —
         // transform-only frames never re-lay-out).
-        LoopMotion motion => MeasureWrapper(motion, motion.Child, maxW, maxH, ctx, path),
+        LoopMotion motion => MeasureWrapper(motion, motion.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // Enter motion is layout-transparent too (opacity layer + paint-only translate) — but the
         // progress is resolved HERE, where the stable path exists, and stamped on the node.
-        Presence presence => MeasurePresence(presence, maxW, maxH, ctx, path),
+        Presence presence => MeasurePresence(presence, maxW, maxH, ctx, path, stretchW, stretchH),
         // Drag-to-dismiss follows the same pattern: transparent for layout, offset stamped by path.
-        DragDismiss drag => MeasureDragDismiss(drag, maxW, maxH, ctx, path),
+        DragDismiss drag => MeasureDragDismiss(drag, maxW, maxH, ctx, path, stretchW, stretchH),
         // An Overlay is ZERO in the page flow — the realizer lays its child out against the
         // VIEWPORT in the overlay pass (path "ov<i>", stable for the reconciler).
         Overlay => new LayoutNode(node),
@@ -222,7 +222,7 @@ public static class LayoutEngine
         // in place — the component wraps it in the layout tree, drawing nothing itself.
         // Components RECONCILE by position first: the retained instance (state alive) replaces the
         // fresh one the parent just built, adopting its config; then it expands inline via Build.
-        UiComponent component => MeasureComponent(component, maxW, maxH, ctx, path),
+        UiComponent component => MeasureComponent(component, maxW, maxH, ctx, path, stretchW, stretchH),
         Spacer => new LayoutNode(node), // zero outside a flex container (layout-only)
         _ => new LayoutNode(node),
     };
@@ -232,7 +232,7 @@ public static class LayoutEngine
     /// host reports them; on a desktop window they are zero, which is the correct answer there.
     /// </summary>
     private static LayoutNode MeasureSafeArea(SafeArea safeArea, float maxW, float maxH,
-        LayoutContext ctx, string path)
+        LayoutContext ctx, string path, bool stretchW = false, bool stretchH = false)
     {
         var host = ctx.SafeAreaInsets;
         var top = (safeArea.Edges.HasFlag(SafeEdges.Top) ? host.Top : 0) + safeArea.Extra.Top;
@@ -240,6 +240,10 @@ public static class LayoutEngine
         var start = (safeArea.Edges.HasFlag(SafeEdges.Start) ? host.Start : 0) + safeArea.Extra.Start;
         var end = (safeArea.Edges.HasFlag(SafeEdges.End) ? host.End : 0) + safeArea.Extra.End;
 
+        // Transparent to stretch, like every wrapper: the system's margins shrink the box, they
+        // do not change who decides the size.
+        ctx.StretchWidth = stretchW;
+        ctx.StretchHeight = stretchH;
         var child = Measure(safeArea.Child, MathF.Max(0, maxW - start - end),
             MathF.Max(0, maxH - top - bottom), ctx, path + "/0");
         child.Bounds = child.Bounds with { X = start, Y = top };
@@ -252,27 +256,45 @@ public static class LayoutEngine
         return node;
     }
 
-    private static LayoutNode MeasureWrapper(VisualNode node, VisualNode child, float maxW, float maxH, LayoutContext ctx, string path)
+    /// <summary>Re-arms the one-shot stretch flags and measures — for nodes that RESOLVE to a
+    /// substitute (Adaptive) rather than wrapping a child.</summary>
+    private static LayoutNode MeasureRearmed(VisualNode node, float maxW, float maxH, LayoutContext ctx, string path,
+        bool stretchW, bool stretchH)
+    {
+        ctx.StretchWidth = stretchW;
+        ctx.StretchHeight = stretchH;
+        return Measure(node, maxW, maxH, ctx, path);
+    }
+
+    private static LayoutNode MeasureWrapper(VisualNode node, VisualNode child, float maxW, float maxH, LayoutContext ctx, string path,
+        bool stretchW = false, bool stretchH = false)
     {
         var result = new LayoutNode(node);
+        // Layout-transparent means transparent to STRETCH too: whatever the parent would stretch,
+        // it stretches through the wrapper — a Pressable around a tab cell (or the component node
+        // around a page) must not eat the size the parent granted.
+        ctx.StretchWidth = stretchW;
+        ctx.StretchHeight = stretchH;
         var inner = Measure(child, maxW, maxH, ctx, path + "/0");
         result.Children.Add(inner);
         result.Bounds = new Rect(0, 0, inner.Bounds.Width, inner.Bounds.Height);
         return result;
     }
 
-    private static LayoutNode MeasureComponent(UiComponent component, float maxW, float maxH, LayoutContext ctx, string path)
+    private static LayoutNode MeasureComponent(UiComponent component, float maxW, float maxH, LayoutContext ctx, string path,
+        bool stretchW = false, bool stretchH = false)
     {
         var resolved = ctx.Instances?.Reconcile(path, component) ?? component;
-        return MeasureWrapper(resolved, resolved.Build(ctx.Components), maxW, maxH, ctx, path);
+        return MeasureWrapper(resolved, resolved.Build(ctx.Components), maxW, maxH, ctx, path, stretchW, stretchH);
     }
 
     /// <summary>A transparent wrapper that also resolves the ENTRANCE progress against the host's
     /// presence clock, keyed by this stable path — the emit pass applies the paint-only effect and
     /// snapshots the subtree's commands by the same path (the exit replay source).</summary>
-    private static LayoutNode MeasurePresence(Presence presence, float maxW, float maxH, LayoutContext ctx, string path)
+    private static LayoutNode MeasurePresence(Presence presence, float maxW, float maxH, LayoutContext ctx, string path,
+        bool stretchW = false, bool stretchH = false)
     {
-        var result = MeasureWrapper(presence, presence.Child, maxW, maxH, ctx, path);
+        var result = MeasureWrapper(presence, presence.Child, maxW, maxH, ctx, path, stretchW, stretchH);
         result.Presence = ctx.Presences?.Progress(path, ctx.TimeMs, ctx.ReducedMotion) ?? 1f;
         result.PresencePath = path;
         return result;
@@ -281,9 +303,10 @@ public static class LayoutEngine
     /// <summary>A transparent wrapper that resolves the current DRAG offset against the host's drag
     /// clock (active follow or glide-back), keyed by this stable path — the emit pass paints the
     /// translate and registers the drag region the host routes input by.</summary>
-    private static LayoutNode MeasureDragDismiss(DragDismiss drag, float maxW, float maxH, LayoutContext ctx, string path)
+    private static LayoutNode MeasureDragDismiss(DragDismiss drag, float maxW, float maxH, LayoutContext ctx, string path,
+        bool stretchW = false, bool stretchH = false)
     {
-        var result = MeasureWrapper(drag, drag.Child, maxW, maxH, ctx, path);
+        var result = MeasureWrapper(drag, drag.Child, maxW, maxH, ctx, path, stretchW, stretchH);
         result.DragOffset = ctx.Drags?.Resolve(path, ctx.TimeMs) ?? 0f;
         result.DragPath = path;
         return result;
@@ -292,9 +315,9 @@ public static class LayoutEngine
     /// <summary>The live offset for this gesture — the finger while it is down, the glide after it
     /// lifts, and the caller's RestOffset when neither is happening.</summary>
     private static LayoutNode MeasureDraggable(Draggable draggable, float maxW, float maxH,
-        LayoutContext ctx, string path)
+        LayoutContext ctx, string path, bool stretchW = false, bool stretchH = false)
     {
-        var result = MeasureWrapper(draggable, draggable.Child, maxW, maxH, ctx, path);
+        var result = MeasureWrapper(draggable, draggable.Child, maxW, maxH, ctx, path, stretchW, stretchH);
         // A gesture the caller paints itself never translates — its offset lives in the caller's
         // state and has already moved the subtree by the time this frame is measured.
         result.DragOffset = draggable.Follows
@@ -461,6 +484,14 @@ public static class LayoutEngine
         var result = new LayoutNode(box);
         var style = box.Style;
 
+        // The indeterminate flags AS INHERITED — what the PARENT said about this axis, before this
+        // box restates them for its own child below. A Fill on an axis the parent is sizing from
+        // content has nothing to fill; the flex container has honoured that from the start, but a
+        // BOX child read its available maximum anyway — which is how every option row of a hugging
+        // Select panel came out the full width of the window.
+        var inheritedIndeterminateW = ctx.IndeterminateWidth;
+        var inheritedIndeterminateH = ctx.IndeterminateHeight;
+
         var selfMaxW = CapMax(maxW, style.MaxWidth);
         var selfMaxH = CapMax(maxH, style.MaxHeight);
 
@@ -475,8 +506,28 @@ public static class LayoutEngine
             // axis this box HUGS there is nothing to fill: say so, and a Fill child measures itself.
             var outerW = ctx.IndeterminateWidth;
             var outerH = ctx.IndeterminateHeight;
-            ctx.IndeterminateWidth = style.Width.Kind == SizeKind.Hug;
-            ctx.IndeterminateHeight = style.Height.Kind == SizeKind.Hug;
+            // What the CHILD may fill against: Fixed decides the axis, Hug decides nothing — and
+            // FILL passes the question through, because a Fill in a context that hands out no
+            // width hands out none either. Treating Fill as determinate was the leak: an option
+            // row's Fill box told ITS Fill row the width was known, the row took the viewport's
+            // maximum, and every hugging ancestor up to the Select's panel followed it — one
+            // dropdown as wide as the window.
+            // A STRETCHED auto axis is determined after all: the parent already decided the size
+            // this box will take (ResolveSelf below returns the available maximum), so the child
+            // may fill it — this is what lets a page whose root box hugs still hand the window's
+            // width to a Fill child, the way a CSS body does.
+            ctx.IndeterminateWidth = style.Width.Kind switch
+            {
+                SizeKind.Fixed => false,
+                SizeKind.Hug => !(stretchW && !inheritedIndeterminateW && !float.IsPositiveInfinity(selfMaxW)),
+                _ => inheritedIndeterminateW,
+            };
+            ctx.IndeterminateHeight = style.Height.Kind switch
+            {
+                SizeKind.Fixed => false,
+                SizeKind.Hug => !(stretchH && !inheritedIndeterminateH && !float.IsPositiveInfinity(selfMaxH)),
+                _ => inheritedIndeterminateH,
+            };
             child = Measure(box.Child, MathF.Max(0, childMaxW), MathF.Max(0, childMaxH), ctx, path + "/0");
             ctx.IndeterminateWidth = outerW;
             ctx.IndeterminateHeight = outerH;
@@ -485,11 +536,37 @@ public static class LayoutEngine
         }
 
         var width = ResolveSelf(style.Width, selfMaxW, (child?.Bounds.Width ?? 0) + style.Padding.Horizontal,
-            stretched: stretchW);
+            indeterminate: inheritedIndeterminateW, stretched: stretchW);
         var height = ResolveSelf(style.Height, selfMaxH, (child?.Bounds.Height ?? 0) + style.Padding.Vertical,
-            stretched: stretchH);
+            indeterminate: inheritedIndeterminateH, stretched: stretchH);
         width = Clamp(width, style.MinWidth, style.MaxWidth);
         height = Clamp(height, style.MinHeight, style.MaxHeight);
+
+        // Min/Max REFLOW (the CSS twin): when the clamp changed the box's extent after the child
+        // was already measured, the child measured against a lie. Re-measure it against the final
+        // size, which is now DETERMINATE on that axis — this is what lets a MatchAnchorWidth panel
+        // hand its MinWidth down to the option rows instead of keeping them at their intrinsic
+        // width inside a wider frame. Runs only when a Min/Max actually bit, so the common path
+        // stays single-pass.
+        if (child is not null
+            && ((style.MinWidth > 0 || style.MaxWidth > 0)
+                && MathF.Abs(width - style.Padding.Horizontal - child.Bounds.Width) > 0.5f
+                || (style.MinHeight > 0 || style.MaxHeight > 0)
+                && MathF.Abs(height - style.Padding.Vertical - child.Bounds.Height) > 0.5f))
+        {
+            var outerW2 = ctx.IndeterminateWidth;
+            var outerH2 = ctx.IndeterminateHeight;
+            ctx.IndeterminateWidth = false;
+            ctx.IndeterminateHeight = style.Height.Kind == SizeKind.Hug
+                && style.MinHeight <= 0 && style.MaxHeight <= 0 && outerH2;
+            result.Children.Clear();
+            child = Measure(box.Child!, MathF.Max(0, width - style.Padding.Horizontal),
+                MathF.Max(0, height - style.Padding.Vertical), ctx, path + "/0");
+            ctx.IndeterminateWidth = outerW2;
+            ctx.IndeterminateHeight = outerH2;
+            child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
+            result.Children.Add(child);
+        }
 
         // Spec S1 aspect-ratio (CSS twin): when exactly one axis is author-determined, the other
         // derives from it; two explicit axes win over the ratio (no constraint fight).
@@ -543,14 +620,42 @@ public static class LayoutEngine
         var hasFlexibles = false;
         foreach (var c in flex.Children)
             if (c is Flexible or Spacer { Flex: > 0 }) { hasFlexibles = true; break; }
+        // On an INDETERMINATE main axis the available maximum is not a size anyone granted — it is
+        // the measuring parent's upper bound. Distributing leftover against it made a Flexible
+        // spacer swallow the viewport: an option row's Fill (inherited-indeterminate) inside a
+        // hugging Select panel measured its spacer against 1180dp of "available" and dragged every
+        // hugging ancestor to the width of the window.
+        var mainIndeterminateNow = horizontal ? ctx.IndeterminateWidth : ctx.IndeterminateHeight;
         var mainBounded = mainSize.Kind == SizeKind.Fixed
                           || (!float.IsPositiveInfinity(mainAvail)
+                              && !mainIndeterminateNow
                               && (mainSize.Kind == SizeKind.Fill || hasFlexibles));
 
         var crossAvail = crossSize.Kind == SizeKind.Fixed ? crossSize.Value - padCross
             : !float.IsPositiveInfinity(crossMax) ? crossMax - padCross
             : float.PositiveInfinity;
 
+        // The flags this container hands its CHILDREN — the same restatement MeasureBox makes, on
+        // flex axes: Fixed decides the axis, Hug decides nothing (unless the parent stretched this
+        // container, which makes the auto size a real one), and Fill passes the question through.
+        // Without this a row with a FIXED width told its children nothing (they inherited whatever
+        // the context said), and a hugging row told them the viewport was theirs to fill.
+        var crossIndeterminateNow = horizontal ? ctx.IndeterminateHeight : ctx.IndeterminateWidth;
+        var mainStretchedIn = horizontal ? stretchW : stretchH;
+        var crossStretchedIn = horizontal ? stretchH : stretchW;
+        var childIndetMain = mainSize.Kind switch
+        {
+            SizeKind.Fixed => false,
+            SizeKind.Hug => !(mainStretchedIn && !mainIndeterminateNow && !float.IsPositiveInfinity(mainMax)),
+            _ => mainIndeterminateNow,
+        };
+        var childIndetCross = crossSize.Kind switch
+        {
+            SizeKind.Fixed => false,
+            SizeKind.Hug => !(crossStretchedIn && !crossIndeterminateNow && !float.IsPositiveInfinity(crossMax)),
+            _ => crossIndeterminateNow,
+        };
+        var (childIndetW, childIndetH) = horizontal ? (childIndetMain, childIndetCross) : (childIndetCross, childIndetMain);
 
         // Whether THIS container decides the child's cross size for it. Only when the container's
         // own cross extent is known: a hugging container has nothing to hand out, and CSS agrees —
@@ -560,7 +665,7 @@ public static class LayoutEngine
             if (child is Text) return false;                       // text sizes itself
             if ((child.AlignSelf ?? flex.Cross) != CrossAlign.Stretch) return false;
             if (float.IsPositiveInfinity(crossAvail)) return false;
-            return !(horizontal ? ctx.IndeterminateHeight : ctx.IndeterminateWidth);
+            return !childIndetCross;
         }
 
         void MarkStretch(VisualNode child)
@@ -568,6 +673,21 @@ public static class LayoutEngine
             if (!StretchesCross(child)) return;
             if (horizontal) ctx.StretchHeight = true;
             else ctx.StretchWidth = true;
+        }
+
+        // Every child measures under the flags THIS container restated. A flexible's share is a
+        // size the container genuinely granted, so the main axis is determinate inside the slot
+        // regardless of how the container itself is sized.
+        LayoutNode MeasureChild(VisualNode child, float w, float h, string childPath, bool mainGranted = false)
+        {
+            var outerW = ctx.IndeterminateWidth;
+            var outerH = ctx.IndeterminateHeight;
+            ctx.IndeterminateWidth = childIndetW && !(mainGranted && horizontal);
+            ctx.IndeterminateHeight = childIndetH && !(mainGranted && !horizontal);
+            var node = Measure(child, w, h, ctx, childPath);
+            ctx.IndeterminateWidth = outerW;
+            ctx.IndeterminateHeight = outerH;
+            return node;
         }
 
         var children = flex.Children;
@@ -601,7 +721,7 @@ public static class LayoutEngine
             var childMaxW = horizontal ? mainAvail : crossAvail;
             var childMaxH = horizontal ? crossAvail : mainAvail;
             MarkStretch(children[i]);
-            var child = Measure(children[i], childMaxW, childMaxH, ctx, path + "/" + i);
+            var child = MeasureChild(children[i], childMaxW, childMaxH, path + "/" + i);
             laid[i] = child;
             mains[i] = horizontal ? child.Bounds.Width : child.Bounds.Height;
             rigidSum += mains[i];
@@ -643,6 +763,25 @@ public static class LayoutEngine
         for (var i = 0; i < children.Count; i++)
         {
             if (flexWeights[i] == 0) continue;
+
+            // Max-content sizing (the CSS twin): when there is no leftover to distribute — the
+            // main axis is indeterminate or unbounded — a Flexible with CONTENT contributes its
+            // own intrinsic size, exactly what a flex-grow item contributes to a max-content
+            // container. A share of 0 here erased real content: a drawer's list rows measured
+            // 0x0 because their row was hugging. (A flexible SPACER stays 0 — pure space.)
+            if (!mainBounded && children[i] is Flexible unbounded)
+            {
+                MarkStretch(unbounded);
+                var intrinsic = MeasureChild(unbounded.Child, horizontal ? mainAvail : crossAvail,
+                    horizontal ? crossAvail : mainAvail, path + "/" + i + "/0");
+                mains[i] = horizontal ? intrinsic.Bounds.Width : intrinsic.Bounds.Height;
+                rigidSum += mains[i];
+                var grown = new LayoutNode(unbounded) { Bounds = intrinsic.Bounds };
+                grown.Children.Add(intrinsic);
+                laid[i] = grown;
+                continue;
+            }
+
             var share = flexTotal > 0 ? leftover * flexWeights[i] / flexTotal : 0f;
             mains[i] = share;
 
@@ -654,7 +793,13 @@ public static class LayoutEngine
                 // stretches THROUGH it. Without this the wrapper grew to the cell and the content
                 // inside it stayed at its own width, which is exactly what the tab labels did.
                 MarkStretch(flexible);
-                var child = Measure(flexible.Child, childMaxW, childMaxH, ctx, path + "/" + i + "/0");
+                // The share IS the slot's main size (the bounds are pinned to it below), so the
+                // child is stretched on the main axis too: an auto-sized cell takes the share and
+                // lays out inside it — a flex-grow item's autos fill the cell, per CSS.
+                if (horizontal) ctx.StretchWidth = true;
+                else ctx.StretchHeight = true;
+                var child = MeasureChild(flexible.Child, childMaxW, childMaxH, path + "/" + i + "/0",
+                    mainGranted: true);
                 // The flexible slot IS the share on the main axis (the child fills it).
                 child.Bounds = horizontal
                     ? child.Bounds with { Width = share }

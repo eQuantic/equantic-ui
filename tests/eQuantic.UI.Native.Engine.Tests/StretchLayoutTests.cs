@@ -101,15 +101,19 @@ public class StretchLayoutTests
     {
         // The guard on the other side: stretch hands out a size the parent HAS. A parent measuring
         // itself from its content has none, and a child that took the maximum there would decide
-        // the size of the thing that was supposed to measure it.
+        // the size of the thing that was supposed to measure it. (The hugger sits INSIDE a
+        // Start-aligned page: the page root itself is the body and stretches to the window.)
         var outer = new Row(gap: 0);              // hugs
         var inner = new Row(gap: 0) { Main = MainAlign.Center };
         inner.Add(new Text("tight", TypeRole.BodyM));
         outer.Add(inner);
+        var page = new Column(gap: 0) { Cross = CrossAlign.Start };
+        page.Add(outer);
 
-        var root = Layout(outer);
+        var root = Layout(page);
         var text = TextNode(root, "tight");
-        root.Bounds.Width.Should().BeLessThan(200, "the row still measures itself from its content");
+        var hugger = Find(root, n => ReferenceEquals(n.Source, outer));
+        hugger.Bounds.Width.Should().BeLessThan(200, "the row still measures itself from its content");
         text.Bounds.X.Should().BeApproximately(0, 1, "with no slack there is nothing to centre in");
     }
 }
