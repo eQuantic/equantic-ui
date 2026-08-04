@@ -340,7 +340,7 @@ public class DraggableTests
     {
         var value = float.NaN;
         var slider = new Slider(20, v => value = v) { Min = 0, Max = 100, Step = 5 };
-        var drag = (Draggable)((Box)slider.Build(Ctx)).Child!;
+        var drag = (Draggable)((Box)((Adjustable)slider.Build(Ctx)).Child).Child!;
 
         drag.Normalized.Should().BeTrue("a fluid track has no pixel width the component can know");
         drag.Follows.Should().BeFalse("the value places the thumb; a translate would move it twice");

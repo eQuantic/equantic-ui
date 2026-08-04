@@ -471,6 +471,14 @@ export interface ScrollViewNode extends VisualNodeValue {
   height?: SizeValueValue;
 }
 
+/** Arrow-key adjustment semantics — one Tab stop wrapping a slider-like control. */
+export interface AdjustableNode extends VisualNodeValue {
+  nodeKind: 'adjustable';
+  child: VisualNodeValue;
+  onAdjust?: (direction: number) => void;
+  label?: string;
+}
+
 /** A live camera surface — the session id names the MediaStream the runtime attaches. */
 export interface CameraPreviewNode extends VisualNodeValue {
   nodeKind: 'cameraPreview';

@@ -15,9 +15,11 @@ public class GalleryComponentTests
 
     private static Box Frame(VisualNode tree) => tree.Should().BeOfType<Box>().Subject;
 
-    /// <summary>The slider's track, under the scrub gesture that wraps it when it is enabled.</summary>
+    /// <summary>The slider's track, under the layers an enabled one wears: the Adjustable that
+    /// answers the arrows, the frame Box, the Draggable scrub.</summary>
     private static Row Track(VisualNode tree)
     {
+        if (tree is Adjustable keyboard) tree = keyboard.Child;
         var inner = Frame(tree).Child;
         return (inner is Draggable scrub ? scrub.Child : inner!).Should().BeOfType<Row>().Subject;
     }

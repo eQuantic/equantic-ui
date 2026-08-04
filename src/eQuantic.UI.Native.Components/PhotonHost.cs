@@ -255,6 +255,16 @@ public sealed class PhotonHost
         }
 
         EndEditing();
+        if (stop.Adjustable is not null)
+        {
+            // A slider under focus: the ring shows, Enter does nothing, and the ARROWS are the
+            // whole point — dispatched from KeyDown against the current frame's stop.
+            _focused = null;
+            _focusedPath = stop.Path;
+            _focusVisible = true;
+            NeedsRender = true;
+            return true;
+        }
         _focused = stop.Pressable;
         _focusedPath = stop.Path;
         _focusVisible = true;   // arrived by Tab: this is exactly who the ring is for
@@ -1187,6 +1197,21 @@ public sealed class PhotonHost
         // without a mouse and running it from the keyboard is not a nicety — for some people it is
         // the only way in, and it is also how anyone fills a form quickly.
         if (TextTarget is { } editing && EditKey(editing, key, modifiers)) return true;
+
+        // An Adjustable under focus answers the arrows — the reason it exists. Resolved out of
+        // THIS frame's stops by path: the node from the frame it was focused in is long gone.
+        if (modifiers == KeyModifiers.None && _focusedPath is { Length: > 0 } focusedPath
+            && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+            && _lastFrame?.FocusStops is { } stops)
+        {
+            for (var i = 0; i < stops.Count; i++)
+            {
+                if (stops[i].Path != focusedPath || stops[i].Adjustable is not { } adjustable) continue;
+                adjustable.OnAdjust(key is "ArrowRight" or "ArrowUp" ? 1 : -1);
+                NeedsRender = true;
+                return true;
+            }
+        }
 
         switch (key)
         {

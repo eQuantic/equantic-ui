@@ -27,7 +27,8 @@ internal sealed class InputSink(
     List<ShortcutBinding> shortcuts,
     List<TextRegion> texts,
     List<FocusStop> stops,
-    Rect? clip = null)
+    Rect? clip = null,
+    bool suppressFocusStops = false)
 {
     /// <summary>The visible rectangle, or null at the top level where nothing is clipped.</summary>
     public Rect? Clip { get; } = clip;
@@ -36,14 +37,22 @@ internal sealed class InputSink(
     /// scroll view shows only what both agree on, and so does its input.</summary>
     public InputSink Under(Rect rect) =>
         new(hits, hovers, scrolls, drags, links, shortcuts, texts, stops,
-            Clip is { } outer ? Intersect(outer, rect) : rect);
+            Clip is { } outer ? Intersect(outer, rect) : rect, suppressFocusStops);
+
+    /// <summary>The same sink, with Tab stops suppressed — an Adjustable IS the stop for its whole
+    /// subtree, and the pressables inside it stay pointer-only.</summary>
+    public InputSink WithoutFocusStops() =>
+        new(hits, hovers, scrolls, drags, links, shortcuts, texts, stops, Clip, suppressFocusStops: true);
+
+    /// <summary>The Adjustable's own stop — never suppressed: it is the replacement, not the noise.</summary>
+    public void AddAdjustable(FocusStop stop) => stops.Add(stop);
 
     public void Add(HitRegion region)
     {
         // A control with nothing to DO is not somewhere Tab should ever land — disabled, or a
         // handler-less pressable that only exists as another control's visual. Scrolled out of
         // sight is NOT the same thing: see FocusStop.
-        if (!region.Node.Disabled && region.Node.OnPressed is not null)
+        if (!suppressFocusStops && !region.Node.Disabled && region.Node.OnPressed is not null)
             stops.Add(new FocusStop(region.Path, region.Node, null, region.Bounds));
         if (!Visible(region.Bounds)) return;
         hits.Add(Clipped(region));
@@ -59,7 +68,8 @@ internal sealed class InputSink(
 
     public void Add(TextRegion region)
     {
-        if (!region.Entry.Disabled) stops.Add(new FocusStop(region.Path, null, region.Entry, region.Bounds));
+        if (!suppressFocusStops && !region.Entry.Disabled)
+            stops.Add(new FocusStop(region.Path, null, region.Entry, region.Bounds));
         if (!Visible(region.Bounds)) return;
         texts.Add(region);
     }
