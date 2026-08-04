@@ -49,6 +49,28 @@ public static partial class ObjC
     [LibraryImport(ObjCLib, StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr sel_registerName(string name);
 
+    // ---- Defining a class at runtime -----------------------------------------------------------
+    // Some things AppKit only tells a SUBCLASS. A window shell with no classes of its own can poll
+    // for most of them, but not for the ones that happen inside a loop it never gets back from —
+    // a live resize being the one that matters. Three calls make a subclass with one method
+    // overridden, which is all that is ever needed here.
+
+    [LibraryImport(ObjCLib, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr objc_allocateClassPair(IntPtr superclass, string name, nuint extraBytes);
+
+    [LibraryImport(ObjCLib)]
+    public static partial void objc_registerClassPair(IntPtr cls);
+
+    [LibraryImport(ObjCLib, StringMarshalling = StringMarshalling.Utf8)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool class_addMethod(IntPtr cls, IntPtr name, IntPtr implementation, string types);
+
+    [LibraryImport(ObjCLib)]
+    public static partial IntPtr class_getInstanceMethod(IntPtr cls, IntPtr name);
+
+    [LibraryImport(ObjCLib)]
+    public static partial IntPtr method_getImplementation(IntPtr method);
+
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial IntPtr Send(IntPtr receiver, IntPtr selector);
 
