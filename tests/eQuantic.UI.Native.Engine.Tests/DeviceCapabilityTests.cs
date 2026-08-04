@@ -97,3 +97,55 @@ public class DeviceCapabilityTests
         declared.Reason.Should().NotBeNullOrWhiteSpace();
     }
 }
+
+/// <summary>
+/// The declaration an app writes fluently, beside everything else it configures. The generator
+/// reads these calls at COMPILE time — a permission is written into a manifest the OS reads at
+/// install time, long before any of this runs — and that is the whole reason the reason has to be
+/// a constant.
+/// </summary>
+public class CapabilityDeclarationTests
+{
+    [Fact]
+    public void ItReadsLikeEverythingElseOnTheBuilder()
+    {
+        var capabilities = new eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder();
+
+        capabilities
+            .UsePhotoLibrary("Attach a receipt to a payment.")
+            .UseBiometrics("Confirm a transfer with Face ID.");
+
+        capabilities.Declared.Should().HaveCount(2);
+        capabilities.Declared[DeviceCapability.PhotoLibrary].Should().Be("Attach a receipt to a payment.");
+    }
+
+    [Fact]
+    public void DeclaringTheSameThingTwice_KeepsTheLastWord()
+    {
+        var capabilities = new eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder();
+        capabilities.UseCamera("first").UseCamera("second");
+
+        capabilities.Declared.Should().HaveCount(1);
+        capabilities.Declared[DeviceCapability.Camera].Should().Be("second");
+    }
+
+    [Fact]
+    public void AnEmptyReason_IsRefusedWhereItIsWritten()
+    {
+        // Not pedantry: a platform that receives an empty usage string rejects the app, and finding
+        // that out at submission is a bad afternoon.
+        var capabilities = new eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder();
+
+        var refuse = () => capabilities.UseCamera("   ");
+        refuse.Should().Throw<ArgumentException>().WithMessage("*shown to the user*");
+    }
+
+    [Fact]
+    public void TheGeneralFormReachesWhatTheNamedOnesDoNot()
+    {
+        var capabilities = new eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder();
+        capabilities.Use(DeviceCapability.Contacts, "Find the people you already pay.");
+
+        capabilities.Declared.Should().ContainKey(DeviceCapability.Contacts);
+    }
+}

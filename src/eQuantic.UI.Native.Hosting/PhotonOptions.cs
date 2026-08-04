@@ -55,6 +55,14 @@ public sealed class PhotonOptions
     /// </summary>
     public bool SmoothScroll { get; set; } = true;
 
+    /// <summary>
+    /// What this app declared it needs of the device, and why — the same sentences the system shows.
+    /// Useful for the screen an app puts up BEFORE asking, which is the difference between a prompt
+    /// that gets granted and one that gets dismissed.
+    /// </summary>
+    public IReadOnlyDictionary<DeviceCapability, string> Declared { get; set; } =
+        new Dictionary<DeviceCapability, string>();
+
     /// <summary>Stops after this many presented frames. Zero runs until the app is closed.</summary>
     public int MaxFrames { get; set; }
 }
