@@ -8,6 +8,7 @@ import { queue, stack, valueMap, linkedList, contains, count, setAdd } from './u
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp } from './utils/nullable';
 import { equals } from './utils/equals';
+import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 
@@ -47,6 +48,8 @@ export const $eq = {
    * Collections — Queue (FIFO), Stack (LIFO), ValueMap (structurally-keyed dictionary), LinkedList,
    * and the sorted family (SortedSet / SortedDictionary / SortedList).
    */
+  /** What a transpiled constructor resolves its dependencies through — see utils/services. */
+  services: { resolve: resolveService },
   collections: { queue, stack, valueMap, linkedList, sortedSet, sortedDictionary, sortedList, contains, count, setAdd },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
   nullable: { arith: liftArith, cmp: liftCmp },

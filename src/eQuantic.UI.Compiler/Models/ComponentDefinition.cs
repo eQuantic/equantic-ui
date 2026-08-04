@@ -258,6 +258,19 @@ public class ParameterDefinition
     /// <summary>The C# default value expression (<c>Variant variant = Variant.Primary</c>) — emitted as a
     /// JS default parameter so optional constructor arguments keep their C# semantics.</summary>
     public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? DefaultValueNode { get; set; }
+
+    /// <summary>
+    /// Whether this is a DEPENDENCY rather than data. A component's constructor takes what it draws
+    /// — a label, a variant, a callback — and a page's takes what it needs to work: a photo
+    /// library, a ledger, a configuration. Those are interfaces, always, and that is the rule: an
+    /// interface parameter is resolved from the container instead of being passed by the caller,
+    /// which is exactly what ActivatorUtilities does natively.
+    /// </summary>
+    public bool IsService { get; set; }
+
+    /// <summary>The interface's own name — the key both sides agree on, since a C# type does not
+    /// exist at run time in the browser but its name does.</summary>
+    public string? ServiceKey { get; set; }
 }
 
 /// <summary>

@@ -254,7 +254,13 @@ public class TypeScriptEmitter
                         // C# optional parameters keep their defaults as JS default parameters
                         // (`variant: any = 'primary'`) — without them `new Button("x")` would run the
                         // body with `undefined` where C# guarantees `Variant.Primary`.
-                        var paramList = string.Join(", ", ctorParams.Select(p => p.DefaultValueNode != null
+                        // A DEPENDENCY is not something the caller passes: it comes from the
+                        // container, exactly as ActivatorUtilities gives it natively. So it leaves
+                        // the signature entirely and is resolved in the body.
+                        var services = ctorParams.Where(p => p.IsService).ToList();
+                        var passed = ctorParams.Where(p => !p.IsService).ToList();
+
+                        var paramList = string.Join(", ", passed.Select(p => p.DefaultValueNode != null
                             ? $"{p.Name.ToCamelCase()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
                             : $"{p.Name.ToCamelCase()}?: any"));
                         var signature = paramList.Length > 0 ? $"{paramList}, props?: any" : "props?: any";
@@ -266,7 +272,15 @@ public class TypeScriptEmitter
                             // `new Button(label, ...) { OnPressed = f }` emitted `onPressed = null`
                             // over the handler and the button did nothing at all.
                             c.Raw("super();");
-                            foreach (var param in ctorParams)
+
+                            // FIRST, so the C# constructor body below can use them — which is the
+                            // whole point of taking a dependency through a constructor.
+                            foreach (var service in services)
+                            {
+                                c.Raw($"const {service.Name.ToCamelCase()} = "
+                                    + $"{Eq.ResolveService}('{service.ServiceKey}');");
+                            }
+                            foreach (var param in passed)
                             {
                                 var camelName = param.Name.ToCamelCase();
                                 // PRIMARY-constructor params are implicit fields — always assign. With an

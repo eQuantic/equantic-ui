@@ -428,4 +428,5 @@ public class SharedComponentTranspilationTests
         ts.Should().Contain("$eq.withPatch(theme.type('label')");
         ts.Should().NotContain("new TypeStyle(", "positional twins take arguments, not a config");
     }
+
 }
