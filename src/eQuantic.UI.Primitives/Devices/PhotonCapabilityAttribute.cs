@@ -13,10 +13,16 @@ namespace eQuantic.UI.Primitives;
 /// rejects apps whose sentence says nothing. Write what the feature does for them.
 /// </para>
 /// </summary>
+/// <para>
+/// The capability crosses as its NAME, deliberately. It used to cross as the enum's ordinal, and
+/// the day a member was inserted mid-enum every declaration after it silently became a different
+/// one — an app that asked for Location got a Motion key in its manifest, because the writer and
+/// the reader are different assemblies built at different times. A name cannot be renumbered.
+/// </para>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
-public sealed class PhotonCapabilityAttribute(DeviceCapability capability, string reason) : Attribute
+public sealed class PhotonCapabilityAttribute(string capability, string reason) : Attribute
 {
-    public DeviceCapability Capability { get; } = capability;
+    public string Capability { get; } = capability;
 
     /// <summary>What the user is told, in their words, at the moment they are asked.</summary>
     public string Reason { get; } = reason;

@@ -85,3 +85,32 @@ public class MotionSensorTests
         subscription.Dispose();
     }
 }
+
+/// <summary>
+/// The REAL CoreLocation on this Mac — the coherence a test runner can check without a prompt.
+/// (The full ask → prompt → fix chain was proven in the Studio window: a live fix with ±35 m.)
+/// </summary>
+public class LocationTests
+{
+    [Fact]
+    public void CoreLocationIsThere_AndAnswersWithoutPrompting()
+    {
+        var location = new AppleLocation();
+        location.IsAvailable.Should().BeTrue("every Mac has CoreLocation");
+
+        // Reading the property must never put a dialog on screen — that is its contract. Any of
+        // the three states is a fine answer for whatever machine this runs on.
+        var permission = location.Permission;
+        permission.Should().BeOneOf(PermissionState.NotDetermined, PermissionState.Granted,
+            PermissionState.Denied);
+    }
+
+    [Fact]
+    public void SubscribeAndDispose_AreSafeWhateverThePermission()
+    {
+        var location = new AppleLocation();
+        var subscription = location.Subscribe(_ => { });
+        subscription.Dispose();
+        subscription.Dispose();
+    }
+}

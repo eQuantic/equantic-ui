@@ -160,8 +160,7 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             foreach (var declaration in declared.Values)
             {
                 caps.AppendLine($"[assembly: global::eQuantic.UI.Primitives.PhotonCapability("
-                    + $"global::eQuantic.UI.Primitives.DeviceCapability.{declaration.Capability}, "
-                    + $"{Quote(declaration.Reason)})]");
+                    + $"{Quote(declaration.Capability)}, {Quote(declaration.Reason)})]");
             }
 
             // Android reads its permissions from the manifest, and the manifest is merged from

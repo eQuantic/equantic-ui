@@ -87,6 +87,42 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         return completion.Task;
     }
 
+    private readonly Dictionary<int, TaskCompletionSource<bool>> _pendingPermissions = new();
+
+    /// <summary>
+    /// The permission twin of <see cref="PickAsync"/>: Android answers permission requests through
+    /// a callback on the activity, and this bridges it once so a capability can simply await.
+    /// True = every requested permission was granted.
+    /// </summary>
+    internal Task<bool> RequestPermissionsAsync(string[] permissions,
+        CancellationToken cancellationToken = default)
+    {
+        var completion = new TaskCompletionSource<bool>();
+        int request;
+        lock (_pendingPermissions)
+        {
+            request = _nextRequest++;
+            _pendingPermissions[request] = completion;
+        }
+        cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
+        RequestPermissions(permissions, request);
+        return completion.Task;
+    }
+
+    public override void OnRequestPermissionsResult(int requestCode, string[] permissions,
+        global::Android.Content.PM.Permission[] grantResults)
+    {
+        base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+        TaskCompletionSource<bool>? completion;
+        lock (_pendingPermissions)
+        {
+            if (!_pendingPermissions.Remove(requestCode, out completion)) return;
+        }
+        var granted = grantResults.Length > 0
+            && grantResults.All(g => g == global::Android.Content.PM.Permission.Granted);
+        completion.TrySetResult(granted);
+    }
+
     protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
     {
         base.OnActivityResult(requestCode, resultCode, data);

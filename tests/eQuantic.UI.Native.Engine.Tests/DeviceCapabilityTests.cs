@@ -91,9 +91,11 @@ public class DeviceCapabilityTests
     [Fact]
     public void ADeclarationCarriesItsREASON()
     {
-        // Not boilerplate: this sentence is what the user reads at the moment they decide.
-        var declared = new PhotonCapabilityAttribute(DeviceCapability.Camera, "Reads the code on your card.");
-        declared.Capability.Should().Be(DeviceCapability.Camera);
+        // Not boilerplate: this sentence is what the user reads at the moment they decide. The
+        // capability crosses as its NAME — an ordinal here once turned Location into Motion the
+        // day the enum grew a member mid-list, because writer and reader are different assemblies.
+        var declared = new PhotonCapabilityAttribute(nameof(DeviceCapability.Camera), "Reads the code on your card.");
+        declared.Capability.Should().Be("Camera");
         declared.Reason.Should().NotBeNullOrWhiteSpace();
     }
 }

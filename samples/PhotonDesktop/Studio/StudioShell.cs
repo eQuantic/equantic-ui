@@ -28,8 +28,12 @@ public sealed class StudioShell : StatefulComponent
     /// none simply shows the capability as absent instead of failing to construct.
     /// </param>
     public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null,
-        IBiometrics? biometrics = null, INetworkStatus? network = null, IMotionSensor? motion = null)
+        IBiometrics? biometrics = null, INetworkStatus? network = null, IMotionSensor? motion = null,
+        ILocation? location = null)
     {
+        if (location?.IsAvailable == true)
+            _demo.OnLocate = () => LocateAsync(location);
+
         // D5 on a desk: IsAvailable false IS the feature. The section states it instead of
         // pretending, and the same page on a phone streams readings with no new line here.
         _demo.MotionAvailable = motion?.IsAvailable == true;
@@ -75,6 +79,26 @@ public sealed class StudioShell : StatefulComponent
             BiometricResult.Unavailable => "This device has no reader.",
             _ => "Not recognised. Try again.",
         });
+    }
+
+    /// <summary>
+    /// D6: asking IS the permission flow — the system prompt appears on the first call, and what
+    /// the user decides shows up as the PermissionState the FOLLOW-UP explains. Denied gets "how
+    /// to change it", never a second prompt.
+    /// </summary>
+    private async void LocateAsync(ILocation location)
+    {
+        SetState(() => _demo.Position = "Asking…");
+        var fix = await location.GetCurrentAsync();
+        SetState(() => _demo.Position = fix is { } position
+            ? $"{position.Latitude:0.0000}, {position.Longitude:0.0000} · ±{position.AccuracyMeters:0} m"
+            : location.Permission switch
+            {
+                PermissionState.Denied =>
+                    "Denied — allow it in System Settings › Privacy › Location Services.",
+                PermissionState.NotDetermined => "No answer — the prompt was dismissed.",
+                _ => "Granted, but no fix arrived. Is Location Services on?",
+            });
     }
 
     /// <summary>
@@ -495,6 +519,10 @@ public sealed class SectionState
     /// <summary>D5: whether this device can feel itself move, and the latest sample if it can.</summary>
     public bool MotionAvailable;
     public MotionReading? Motion;
+
+    /// <summary>D6: what asking for the position came to, in words the user can act on.</summary>
+    public string? Position;
+    public Action? OnLocate;
 
     public string Name = "Ana Beatriz Nogueira";
     public string Email = "";

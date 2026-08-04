@@ -20,5 +20,6 @@ public sealed class MacOSCapabilities : IPhotonCapabilities
         // CoreMotion exists on the Mac and answers "no device motion" itself — the shared
         // realization IS the absence report here, with no platform check written by hand.
         services.TryAddSingleton<IMotionSensor, AppleMotionSensor>();
+        services.TryAddSingleton<ILocation, AppleLocation>();
     }
 }

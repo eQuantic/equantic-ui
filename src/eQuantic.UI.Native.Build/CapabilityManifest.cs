@@ -59,9 +59,11 @@ public static class CapabilityManifest
             // attribute's own type, which lives in an assembly this tool does not load.
             var blob = metadata.GetBlobReader(attribute.Value);
             if (blob.ReadUInt16() != 1) continue;              // prolog
-            var capability = blob.ReadInt32();
+            // Two strings: the capability BY NAME (an ordinal here once turned Location into
+            // Motion the day the enum grew a member mid-list) and the user-facing reason.
+            var capability = blob.ReadSerializedString();
             var reason = blob.ReadSerializedString();
-            if (reason is not null) declared.Add((CapabilityName(capability), reason));
+            if (capability is not null && reason is not null) declared.Add((capability, reason));
         }
 
         return declared;
@@ -81,24 +83,9 @@ public static class CapabilityManifest
             _ => null,
         };
 
-    /// <summary>The enum's members, in their declared order — the value in the blob is the ordinal.</summary>
-    private static string CapabilityName(int value) => value switch
-    {
-        0 => "Camera",
-        1 => "Microphone",
-        2 => "PhotoLibrary",
-        3 => "PhotoLibraryAdd",
-        4 => "Location",
-        5 => "Motion",
-        6 => "Biometrics",
-        7 => "Contacts",
-        8 => "Notifications",
-        _ => value.ToString(),
-    };
-
     /// <summary>Apple's spellings. Historical, not derivable — a photo library and adding to one
     /// are different keys, and Face ID has its own.</summary>
-    private static string? AppleKey(string capability) => capability switch
+    public static string? AppleKey(string capability) => capability switch
     {
         "Camera" => "NSCameraUsageDescription",
         "Microphone" => "NSMicrophoneUsageDescription",
