@@ -286,25 +286,33 @@ public sealed class DisplayListBuilder
     }
 
     /// <summary>
-    /// Re-records an ALREADY-BAKED command (a presence-exit replay): its transform composes with the
-    /// CURRENT one (cached-first — the same order nested emits produce), and a pure-translation
-    /// current also offsets the baked device-space clip so clipped content moves with its pixels.
+    /// Re-records an ALREADY-BAKED command (a presence-exit replay), shifted by
+    /// <paramref name="offset"/> — a pure translation in DEVICE space, which also moves the baked
+    /// clip so clipped content travels with its own pixels.
+    /// <para>
+    /// The offset is passed rather than taken from the current transform, and that distinction is
+    /// the whole bug this signature exists to prevent. A baked command already carries every
+    /// transform that was in effect when it was recorded — including the root scale on a retina
+    /// display — so composing with the current transform applied that scale a SECOND time and threw
+    /// the departing layer down and to the right for the one frame before it faded. Invisible at
+    /// scale 1, which is every headless test.
+    /// </para>
     /// </summary>
-    public void Replay(in DrawCommand command)
+    public void Replay(in DrawCommand command, in Matrix2D offset)
     {
-        if (_current.IsIdentity)
+        if (offset.IsIdentity)
         {
             _commands.Add(command);
             return;
         }
 
         var clip = command.Clip;
-        if (clip is { } baked && _current is { M11: 1, M12: 0, M21: 0, M22: 1 })
+        if (clip is { } baked)
         {
             var r = baked.Rect;
-            clip = baked with { Rect = new Rect(r.X + _current.M31, r.Y + _current.M32, r.Width, r.Height) };
+            clip = baked with { Rect = new Rect(r.X + offset.M31, r.Y + offset.M32, r.Width, r.Height) };
         }
-        _commands.Add(command with { Transform = command.Transform * _current, Clip = clip });
+        _commands.Add(command with { Transform = command.Transform * offset, Clip = clip });
     }
 
     public void PushLayer(float alpha)

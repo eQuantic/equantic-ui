@@ -91,9 +91,10 @@ internal static class PhotonContentView
     /// claimed here. Everything else is left alone, because this pass is also how ⌘Q, ⌘W and the
     /// whole menu bar work: claiming a key here takes it away from them.
     /// <para>
-    /// Not observed on this machine — a synthesised Escape never reached the process at all, so the
-    /// route could not be exercised from the outside. It is here because it costs one selector and
-    /// the alternative is a dialog that a real keyboard cannot close.
+    /// A real keyboard closes a dialog with Escape — confirmed in the window. WHICH of the two
+    /// routes carried it is not known and does not matter: a synthesised Escape never reaches this
+    /// process at all (raw event instrumentation showed a letter arriving and Escape never), so the
+    /// two are indistinguishable from the outside, and both are cheap.
     /// </para>
     /// </summary>
     private static bool OnPerformKeyEquivalent(IntPtr self, IntPtr selector, IntPtr @event)
