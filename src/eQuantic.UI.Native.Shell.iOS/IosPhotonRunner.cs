@@ -12,5 +12,6 @@ namespace eQuantic.UI.Native.Shell.iOS;
 public sealed class IosPhotonRunner : IPhotonRunner
 {
     public void Run(PhotonApplication app) =>
-        PhotonApp.Run(app.Args, app.Root, app.Options.Theme, app.Options.Mode, app.Options.MaxFrames);
+        PhotonApp.Run(app.Args, app.Root, app.Options.Theme, app.Options.Mode, app.Options.MaxFrames,
+            app.Options.SmoothScroll);
 }

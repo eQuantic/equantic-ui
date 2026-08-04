@@ -156,6 +156,14 @@ public sealed class PhotonHost
     private readonly ScrollStore _scrolls = new();
 
     /// <summary>
+    /// A finger on a scrollable surface. Armed on press and only ACTIVE once it has travelled past
+    /// the slop along the view's own axis — so a tap inside a list is still a tap, and a sideways
+    /// swipe never scrolls a vertical list.
+    /// </summary>
+    private (string Path, ScrollAxis Axis, float MaxOffset, float Start, float FromOffset,
+        float LastAt, float LastTimeMs, float Velocity, bool Active)? _pan;
+
+    /// <summary>
     /// Whether a wheel or drag GLIDES to where it was sent instead of jumping there. On by default
     /// — a jump reads as a redraw rather than as movement, and the eye loses its place. Reduce
     /// Motion turns it off whatever the app said: it is movement, and that setting means it.
@@ -276,6 +284,39 @@ public sealed class PhotonHost
             }
         }
 
+        // A finger on a list. The content is UNDER it and follows it exactly — no smoothing, which
+        // is what makes a surface feel attached to the hand rather than chased by it.
+        if (_pan is { } pan)
+        {
+            var along = pan.Axis == ScrollAxis.Horizontal ? x : y;
+            var travelled = along - pan.Start;
+
+            if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+            {
+                _pressed = null;
+                _pressedPath = null;
+                pan.Active = true;
+            }
+
+            if (pan.Active)
+            {
+                // Velocity from the LAST step only: a flick is what the hand was doing when it let
+                // go, not the average of a long, wandering drag.
+                var elapsed = _lastTimeMs - pan.LastTimeMs;
+                if (elapsed > 0) pan.Velocity = (along - pan.LastAt) / elapsed;
+                pan.LastAt = along;
+                pan.LastTimeMs = _lastTimeMs;
+
+                // The content moves OPPOSITE the finger: dragging up reveals what is below.
+                if (_scrolls.ScrollTo(pan.Path, pan.FromOffset - travelled, pan.MaxOffset))
+                    NeedsRender = true;
+                _pan = pan;
+                return;
+            }
+
+            _pan = pan;
+        }
+
         var regions = _lastFrame?.HoverRegions;
         VisualNode? target = null;
         if (regions is not null)
@@ -349,6 +390,23 @@ public sealed class PhotonHost
             break;
         }
 
+        // …and the topmost SCROLLABLE surface, the same way. A drag surface is the more specific
+        // gesture and keeps priority; where there is none, a finger scrolls.
+        _pan = null;
+        if (_drag is null)
+        {
+            var scrollRegions = _lastFrame.ScrollRegions;
+            for (var i = scrollRegions.Count - 1; i >= 0; i--)
+            {
+                var region = scrollRegions[i];
+                if (!region.Bounds.Contains(point) || region.MaxOffset <= 0) continue;
+                var along = region.Axis == ScrollAxis.Horizontal ? x : y;
+                _pan = (region.Path, region.Axis, region.MaxOffset, along,
+                    _scrolls.Get(region.Path) ?? region.Fallback, along, _lastTimeMs, 0, false);
+                break;
+            }
+        }
+
         var regions = _lastFrame.HitRegions;
         for (var i = regions.Count - 1; i >= 0; i--)
         {
@@ -360,7 +418,7 @@ public sealed class PhotonHost
             NeedsRender = true;
             return true;
         }
-        return _drag is not null;
+        return _drag is not null || _pan is not null;
     }
 
     /// <summary>
@@ -371,6 +429,8 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerCancel()
     {
+        _pan = null;
+
         if (_drag is { Active: true } drag)
         {
             var rest = drag.Node switch
@@ -440,6 +500,16 @@ public sealed class PhotonHost
             return true;
         }
         _drag = null;
+
+        // A flick carries on. The glide's own decay does the slowing, so the release only says how
+        // much runway the speed bought.
+        if (_pan is { Active: true } flick)
+        {
+            _pan = null;
+            if (_scrolls.Fling(flick.Path, -flick.Velocity, flick.MaxOffset)) NeedsRender = true;
+            return true;
+        }
+        _pan = null;
 
         var pressed = _pressed;
         var pressedPath = _pressedPath;

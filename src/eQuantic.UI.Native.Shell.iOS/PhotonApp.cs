@@ -17,6 +17,7 @@ public static class PhotonApp
     private static IAppTheme? _theme;
     private static ThemeMode? _mode;
     private static int _maxFrames;
+    private static bool _smoothScroll = true;
 
     /// <param name="root">
     /// Built AFTER UIKit is up, not before: a tree constructed at process start would measure text
@@ -24,13 +25,15 @@ public static class PhotonApp
     /// </param>
     /// <param name="forcedMode">Null follows the system's light/dark setting.</param>
     /// <param name="maxFrames">Stops after this many presents — the self-test's exit condition.</param>
+    /// <param name="smoothScroll">Whether a scroll glides to where it was sent (see the host).</param>
     public static void Run(string[] args, Func<VisualNode> root, IAppTheme theme,
-        ThemeMode? forcedMode = null, int maxFrames = 0)
+        ThemeMode? forcedMode = null, int maxFrames = 0, bool smoothScroll = true)
     {
         _root = root;
         _theme = theme;
         _mode = forcedMode;
         _maxFrames = maxFrames;
+        _smoothScroll = smoothScroll;
         UIApplication.Main(args, null, typeof(PhotonAppDelegate));
     }
 
@@ -46,6 +49,7 @@ public static class PhotonApp
                 RootViewController = new PhotonViewController(_root!(), _theme!, _mode)
                 {
                     MaxFrames = _maxFrames,
+                    SmoothScroll = _smoothScroll,
                 },
             };
             Window.MakeKeyAndVisible();
