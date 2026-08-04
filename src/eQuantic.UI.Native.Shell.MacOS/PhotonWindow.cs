@@ -145,6 +145,7 @@ public sealed class PhotonWindow
         {
             RenderScale = scale,
             SmoothScroll = _smoothScroll,
+            Clipboard = new MacClipboard(),
             // Whatever the system kept for itself is a safe area, exactly as a phone's notch is.
             SafeAreaInsets = _chrome == WindowChrome.Unified
                 ? new EdgeInsets(0, TitleBarHeight, 0, 0)
@@ -302,7 +303,7 @@ public sealed class PhotonWindow
         switch (type)
         {
             case EventTypeLeftMouseDown:
-                host.PressDown(x, y);
+                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")));
                 break;
             case EventTypeLeftMouseUp:
                 host.PressUp(x, y);
