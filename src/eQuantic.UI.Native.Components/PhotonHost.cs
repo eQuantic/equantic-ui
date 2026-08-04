@@ -124,9 +124,15 @@ public sealed class PhotonHost
         builder.Clear(_theme.Background.Resolve(Mode));
         if (RenderScale != 1f) builder.PushTransform(Engine.Matrix2D.Scale(RenderScale, RenderScale));
         _lastTimeMs = timeMs;
+        // A gliding scroll advances BEFORE the frame is realized, so this frame paints where it
+        // moved to; while anything is still gliding the host keeps asking for frames.
+        // Resolved HERE, not when it was set: ReducedMotion can arrive from the system at any
+        // point, and it always wins.
+        _scrolls.Smooth = SmoothScroll && !ReducedMotion;
+        var gliding = _scrolls.Advance(timeMs);
         _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets);
         if (RenderScale != 1f) builder.Pop();
-        NeedsRender = _lastFrame.HasActiveMotion;
+        NeedsRender = _lastFrame.HasActiveMotion || gliding;
         return _lastFrame;
     }
 
@@ -148,6 +154,13 @@ public sealed class PhotonHost
     private VisualNode? _hovered;
     private readonly TransitionStore _transitions = new();
     private readonly ScrollStore _scrolls = new();
+
+    /// <summary>
+    /// Whether a wheel or drag GLIDES to where it was sent instead of jumping there. On by default
+    /// — a jump reads as a redraw rather than as movement, and the eye loses its place. Reduce
+    /// Motion turns it off whatever the app said: it is movement, and that setting means it.
+    /// </summary>
+    public bool SmoothScroll { get; set; } = true;
     private readonly PresenceStore _presences = new();
     private readonly DragStore _drags = new();
 

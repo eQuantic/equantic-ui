@@ -47,7 +47,10 @@ public sealed class StudioShell : StatefulComponent
         body.Add(Inspector(theme));
 
         var page = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        page.Add(Toolbar(theme));
+        // The window has no title bar (WindowChrome.Unified), so the strip its controls sit in
+        // arrives as a TOP safe-area inset — the very same node an iPhone's notch drives. The
+        // toolbar keeps clear of it and the gallery's own top row becomes the window's.
+        page.Add(new SafeArea(Toolbar(theme), SafeEdges.Top));
         page.Add(new Flexible(body, 1));
         page.Add(StatusBar(theme));
 

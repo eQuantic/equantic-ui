@@ -15,7 +15,9 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
     public void Run(PhotonApplication app)
     {
         var options = app.Options;
-        var window = new PhotonWindow(options.Title, options.Width, options.Height);
+        var window = new PhotonWindow(options.Title, options.Width, options.Height,
+            options.Chrome, options.Resizable, options.MinWidth, options.MinHeight,
+            options.SmoothScroll);
         window.Run(app.Root(), options.Theme, options.Mode ?? ThemeMode.Light, options.MaxFrames);
         Console.WriteLine($"[photon] frames presented: {window.FramesPresented}");
     }

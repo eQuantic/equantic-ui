@@ -19,6 +19,12 @@ public partial class Program
             photon.Title = "eQuantic Studio";
             photon.Width = 1180;
             photon.Height = 820;
+            // The handoff drew this screen with no native title bar: the gallery's own top row IS
+            // the window's. The strip the traffic lights sit in comes back as a safe-area inset,
+            // and the shell insets its header by it — the same node an iPhone's notch drives.
+            photon.Chrome = WindowChrome.Unified;
+            photon.MinWidth = 900;
+            photon.MinHeight = 600;
         });
 
         return builder.Build().UseRoot<StudioShell>();
