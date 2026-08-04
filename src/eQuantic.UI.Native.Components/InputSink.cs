@@ -40,10 +40,11 @@ internal sealed class InputSink(
 
     public void Add(HitRegion region)
     {
-        // A disabled control is still drawn and still swallows taps, but it is not somewhere Tab
-        // should ever land — nothing there to do once you arrive. Scrolled out of sight is NOT the
-        // same thing: see FocusStop.
-        if (!region.Node.Disabled) stops.Add(new FocusStop(region.Path, region.Node, null, region.Bounds));
+        // A control with nothing to DO is not somewhere Tab should ever land — disabled, or a
+        // handler-less pressable that only exists as another control's visual. Scrolled out of
+        // sight is NOT the same thing: see FocusStop.
+        if (!region.Node.Disabled && region.Node.OnPressed is not null)
+            stops.Add(new FocusStop(region.Path, region.Node, null, region.Bounds));
         if (!Visible(region.Bounds)) return;
         hits.Add(Clipped(region));
     }

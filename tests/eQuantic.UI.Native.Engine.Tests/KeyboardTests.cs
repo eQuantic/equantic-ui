@@ -662,3 +662,106 @@ public class WordSelectionTests
         host.Selection.Should().Be((0, "hello brave world".Length));
     }
 }
+
+/// <summary>
+/// Choosing from a Select or a Menu without a mouse: open, arrow to the option, Enter. The chords
+/// are declared as Shortcut nodes around the OPEN panel, so a closed control owns no keys at all —
+/// and every arrow press rebuilds the tree, which is exactly what these walk through.
+/// </summary>
+public class DropdownKeyboardTests
+{
+    private static (PhotonHost Host, List<int> Chosen) OpenSelect(int selected = 0)
+    {
+        var chosen = new List<int>();
+        var column = new Column(gap: 0) { Width = 300 };
+        column.Add(new Select(["Checking", "Savings", "Card"], selected, chosen.Add));
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 300, 400);
+        host.RenderFrame(new DisplayListBuilder());
+
+        // Open with the pointer on the trigger — the first hit region.
+        var trigger = host.RenderFrame(new DisplayListBuilder()).HitRegions[0].Bounds;
+        host.PressDown(trigger.Center.X, trigger.Center.Y);
+        host.PressUp(trigger.Center.X, trigger.Center.Y);
+        host.RenderFrame(new DisplayListBuilder());
+        return (host, chosen);
+    }
+
+    private static void Press(PhotonHost host, string key)
+    {
+        host.KeyDown(key);
+        host.RenderFrame(new DisplayListBuilder());
+    }
+
+    [Fact]
+    public void ArrowsMoveAndEnterChooses_AcrossTheRebuildEachArrowCauses()
+    {
+        var (host, chosen) = OpenSelect(selected: 0);
+
+        Press(host, "ArrowDown");
+        Press(host, "ArrowDown");
+        Press(host, "Enter");
+
+        chosen.Should().Equal([2], "two steps down from the selected option is the third");
+    }
+
+    [Fact]
+    public void TheHighlightStartsOnTheValue_SoEnterAloneRecommits()
+    {
+        var (host, chosen) = OpenSelect(selected: 1);
+
+        Press(host, "Enter");
+
+        chosen.Should().Equal([1], "opening and confirming must not move the value");
+    }
+
+    [Fact]
+    public void AClosedSelectOwnsNoKeys()
+    {
+        var chosen = new List<int>();
+        var column = new Column(gap: 0) { Width = 300 };
+        column.Add(new Select(["A", "B"], 0, chosen.Add));
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 300, 400);
+        host.RenderFrame(new DisplayListBuilder());
+
+        host.KeyDown("ArrowDown").Should().BeFalse("nothing is open to hear it");
+        host.KeyDown("Enter").Should().BeFalse();
+        chosen.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void EscapeClosesInsteadOfChoosing()
+    {
+        var (host, chosen) = OpenSelect();
+
+        Press(host, "ArrowDown");
+        Press(host, "Escape");
+        chosen.Should().BeEmpty("Escape is leave-without-committing");
+
+        host.KeyDown("ArrowDown").Should().BeFalse("closed again, no keys owned");
+    }
+
+    [Fact]
+    public void AMenuSkipsItsDisabledItems()
+    {
+        var picked = new List<int>();
+        var column = new Column(gap: 0) { Width = 300 };
+        column.Add(new Menu(new Button("Actions"),
+        [
+            new MenuItem("Rename"),
+            new MenuItem("Locked") { Disabled = true },
+            new MenuItem("Delete") { Destructive = true },
+        ], picked.Add));
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 300, 400);
+        host.RenderFrame(new DisplayListBuilder());
+
+        var trigger = host.RenderFrame(new DisplayListBuilder()).HitRegions[0].Bounds;
+        host.PressDown(trigger.Center.X, trigger.Center.Y);
+        host.PressUp(trigger.Center.X, trigger.Center.Y);
+        host.RenderFrame(new DisplayListBuilder());
+
+        Press(host, "ArrowDown");   // over Locked, onto Delete
+        Press(host, "Enter");
+
+        picked.Should().Equal([2], "the highlight never lands where Enter would refuse to run");
+    }
+}

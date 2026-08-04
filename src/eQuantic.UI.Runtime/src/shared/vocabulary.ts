@@ -901,6 +901,32 @@ export class Image extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `CameraPreview` node: the LIVE surface. The session is whatever ICamera's
+ * realization handed back — here that carries the id the lowered <video> finds its stream by.
+ */
+export class CameraPreview extends VisualNode {
+  readonly nodeKind = 'cameraPreview';
+  session: { id: string } | null;
+  width: number;
+  height: number;
+  cornerRadius?: CornerRadii;
+  alt = '';
+
+  constructor(
+    session: { id: string } | null,
+    width: number,
+    height: number,
+    config?: { cornerRadius?: CornerRadii; alt?: string },
+  ) {
+    super();
+    this.session = session;
+    this.width = width;
+    this.height = height;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `IconGlyph` record: target-neutral glyph data (write-once icon packs). */
 export class IconGlyph {
   name: string;

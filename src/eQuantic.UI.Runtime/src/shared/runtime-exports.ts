@@ -33,6 +33,7 @@ export {
   Positioned,
   Icon,
   IconGlyph,
+  CameraPreview,
   Image,
   ScrollView,
   LoopMotion,
