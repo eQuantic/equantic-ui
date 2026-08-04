@@ -8,6 +8,7 @@ import {
   Router,
   matchRoute,
   setCurrentRouteFrom,
+  registerDeviceCapabilities,
   setPhotonTheme,
   materializeTheme,
   type EqConfig,
@@ -75,6 +76,10 @@ export async function boot(): Promise<void> {
   }
 
   initHotReload();
+
+  // What a BROWSER can do, under the same names the C# interfaces have — the web's answer to the
+  // native shells' IPhotonCapabilities.
+  registerDeviceCapabilities();
 
   if (isDev()) {
     console.log('eQuantic.UI Runtime initializing...');

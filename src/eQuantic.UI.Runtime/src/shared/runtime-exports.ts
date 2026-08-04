@@ -124,3 +124,10 @@ export { Slider } from './components/Slider';
 export { Stepper } from './components/Stepper';
 export { AccordionItem } from './components/AccordionItem';
 export { MenuItem } from './components/MenuItem';
+
+// ---- Device capabilities ---------------------------------------------------------------------
+// A capability is a service on both sides: C# takes it through a constructor, and here it is
+// registered under the interface's own name so a transpiled page resolves the same thing.
+export { WebPhotoLibrary } from './devices/photo-library';
+export { registerDeviceCapabilities } from './devices/register';
+export type { PickedImage } from './devices/photo-library';
