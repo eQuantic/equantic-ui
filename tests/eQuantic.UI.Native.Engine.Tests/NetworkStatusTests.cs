@@ -50,3 +50,38 @@ public class NetworkStatusTests
         heard.Should().Be(after, "a disposed subscription hears nothing more");
     }
 }
+
+/// <summary>
+/// The REAL CMMotionManager on the machine the tests run on — which is a desk, and that is the
+/// point: D5's desktop story IS the absence, and the absence must come from the framework's own
+/// answer rather than a hand-written platform check.
+/// </summary>
+public class MotionSensorTests
+{
+    [Fact]
+    public void ADeskHonestlySaysItCannotFeelItselfMove()
+    {
+        var sensor = new AppleMotionSensor();
+        sensor.IsAvailable.Should().BeFalse("a Mac has no gyroscope, and pretending otherwise "
+            + "would hand tilt UIs a stream that never speaks");
+    }
+
+    [Fact]
+    public void SubscribingAnywayIsSafe_AndDisposingTwiceToo()
+    {
+        var sensor = new AppleMotionSensor();
+        var subscription = sensor.Subscribe(_ => { });
+        subscription.Dispose();
+        subscription.Dispose();
+    }
+
+    [Fact]
+    public void TheAbsentSensorIsTheSameContract()
+    {
+        var sensor = new AbsentMotionSensor();
+        sensor.IsAvailable.Should().BeFalse();
+        var subscription = sensor.Subscribe(_ => { });
+        subscription.Dispose();
+        subscription.Dispose();
+    }
+}

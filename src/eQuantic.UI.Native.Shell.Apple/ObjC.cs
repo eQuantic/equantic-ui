@@ -104,6 +104,9 @@ public static partial class ObjC
     public static partial void SendVoid(IntPtr receiver, IntPtr selector, IntPtr arg1);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial void SendVoid(IntPtr receiver, IntPtr selector, IntPtr arg1, IntPtr arg2);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial void SendVoid(IntPtr receiver, IntPtr selector, ulong arg1);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]

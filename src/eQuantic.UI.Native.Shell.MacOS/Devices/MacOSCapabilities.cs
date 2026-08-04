@@ -17,5 +17,8 @@ public sealed class MacOSCapabilities : IPhotonCapabilities
         services.TryAddSingleton<IPhotoLibrary, MacOSPhotoLibrary>();
         services.TryAddSingleton<INetworkStatus, AppleNetworkStatus>();
         services.TryAddSingleton<IBiometrics, AppleBiometrics>();
+        // CoreMotion exists on the Mac and answers "no device motion" itself — the shared
+        // realization IS the absence report here, with no platform check written by hand.
+        services.TryAddSingleton<IMotionSensor, AppleMotionSensor>();
     }
 }

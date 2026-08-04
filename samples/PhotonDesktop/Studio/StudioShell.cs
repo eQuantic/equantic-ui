@@ -28,8 +28,14 @@ public sealed class StudioShell : StatefulComponent
     /// none simply shows the capability as absent instead of failing to construct.
     /// </param>
     public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null,
-        IBiometrics? biometrics = null, INetworkStatus? network = null)
+        IBiometrics? biometrics = null, INetworkStatus? network = null, IMotionSensor? motion = null)
     {
+        // D5 on a desk: IsAvailable false IS the feature. The section states it instead of
+        // pretending, and the same page on a phone streams readings with no new line here.
+        _demo.MotionAvailable = motion?.IsAvailable == true;
+        if (motion?.IsAvailable == true)
+            motion.Subscribe(reading => SetState(() => _demo.Motion = reading));
+
         _section = Enum.TryParse<GallerySection>(configuration["section"], ignoreCase: true, out var section)
             ? section
             : GallerySection.Buttons;
@@ -485,6 +491,10 @@ public sealed class SectionState
 
     /// <summary>The network as of the last change — null when this head offers no monitor.</summary>
     public NetworkState? Network;
+
+    /// <summary>D5: whether this device can feel itself move, and the latest sample if it can.</summary>
+    public bool MotionAvailable;
+    public MotionReading? Motion;
 
     public string Name = "Ana Beatriz Nogueira";
     public string Email = "";

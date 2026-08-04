@@ -1,5 +1,6 @@
 import { getRootServiceProvider } from '../../core/service-provider';
 import { WebBiometrics } from './biometrics';
+import { WebMotionSensor } from './motion-sensor';
 import { WebNetworkStatus } from './network-status';
 import { WebPhotoLibrary } from './photo-library';
 
@@ -19,4 +20,5 @@ export function registerDeviceCapabilities(): void {
   // or it fails to construct instead of showing the fallback it already knows how to show.
   services.registerSingleton('IBiometrics', () => new WebBiometrics());
   services.registerSingleton('INetworkStatus', () => new WebNetworkStatus());
+  services.registerSingleton('IMotionSensor', () => new WebMotionSensor());
 }
