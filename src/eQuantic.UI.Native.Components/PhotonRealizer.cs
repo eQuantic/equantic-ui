@@ -178,6 +178,13 @@ public static class PhotonRealizer
         transitions?.BeginFrame();
         presences?.BeginFrame();
         drags?.BeginFrame();
+        // The BASE layer is the page's body: an auto-sized root stretches to the real containing
+        // block — the window — the way a CSS block does, and ONLY in width: block height hugs
+        // (pages grow downward; a full-height page asks for Height = Fill). Overlay layers below
+        // keep shrink-to-fit on both axes (position:fixed semantics), which is what lets a
+        // dropdown panel hug its options while the page behind it still fills the viewport.
+        // One-shot flag: the root consumes it.
+        context.StretchWidth = true;
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context);
 
         var hits = new List<HitRegion>();
@@ -687,9 +694,18 @@ public static class PhotonRealizer
             if (anchored.OnDismiss is { } escapable && !hoverOpen)
                 input.Add(new ShortcutBinding(KeyChord.Escape, escapable));
 
-            var panel = anchored.MatchAnchorWidth
-                ? new Box(new BoxStyle { MinWidth = node.Bounds.Width }, anchored.Panel)
-                : anchored.Panel;
+            // The MinWidth goes ON the panel's own box when there is one, not on a wrapper around
+            // it: a hugging wrapper clamps its own frame and its hugging child re-measures at
+            // intrinsic width inside it — a 550dp panel whose option rows stayed 178dp wide. On
+            // the panel itself, the Min/Max reflow hands the final width down to the rows, which
+            // is also exactly what the web's min-width:100% does.
+            var panel = !anchored.MatchAnchorWidth ? anchored.Panel
+                : anchored.Panel is Box panelBox
+                    ? new Box(panelBox.Style with
+                    {
+                        MinWidth = MathF.Max(panelBox.Style.MinWidth, node.Bounds.Width),
+                    }, panelBox.Child)
+                    : new Box(new BoxStyle { MinWidth = node.Bounds.Width }, anchored.Panel);
             var b = node.Bounds;
             var gap = anchored.Gap;
             layer.Add(anchored.Placement switch
