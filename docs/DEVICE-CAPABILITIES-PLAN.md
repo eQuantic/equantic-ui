@@ -180,3 +180,15 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
 
   The SDK now copies only what runs, and signs ad hoc under the bundle's own identifier
   (`--deep`, because the managed assemblies beside the apphost each need one of their own).
+
+- **2026-08-04 (interaction)** — the native window had no KEYBOARD, and finding out cost a form
+  nobody could fill in. Written up in full in the commit; the two lessons that generalise:
+
+  A golden can bless a bug. `pressed-button.png` and `focus-ring.png` were recorded without the
+  press token and without the focus ring — a button that never darkens is still a perfectly good
+  button, so every pixel matched. Anything a test claims to prove about STATE deserves an assertion
+  next to the image.
+
+  And the identity rule earned another scar: a `Button` is a component, so the `Pressable` inside it
+  is rebuilt on every layout. Reference identity fails on the very next frame even with no state
+  change at all — not just across a `SetState`, which is how it kept looking almost-right.

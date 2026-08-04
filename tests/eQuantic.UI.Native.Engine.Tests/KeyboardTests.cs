@@ -219,3 +219,40 @@ public class KeyboardTests
         form.Email.Should().BeEmpty("the space must not fall through into the field Tab just left");
     }
 }
+
+/// <summary>
+/// What the pointer looks like where it is. The web has answered this since it had a mouse, and the
+/// native window answered "arrow" everywhere — over buttons, over fields, over disabled controls.
+/// </summary>
+public class CursorTests
+{
+    private static PhotonHost Open()
+    {
+        var column = new Column(gap: Space.S4) { Padding = EdgeInsets.All(Space.S4), Width = SizeValue.Fill };
+        column.Add(new Button("Save", onPressed: () => { }));
+        column.Add(new TextEntry("", _ => { }) { Placeholder = "Email" });
+        column.Add(new Button("Nope") { Disabled = true });
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 300, 300);
+        host.RenderFrame(new DisplayListBuilder());
+        return host;
+    }
+
+    [Fact]
+    public void EachKindOfSurfaceAnswersWithItsOwnShape()
+    {
+        var host = Open();
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        var button = frame.HitRegions.First(r => !r.Node.Disabled).Bounds;
+        host.CursorAt(button.Center.X, button.Center.Y).Should().Be(CursorShape.Pointer);
+
+        var field = frame.TextRegions.Single().Bounds;
+        host.CursorAt(field.Center.X, field.Center.Y).Should().Be(CursorShape.Text);
+
+        var disabled = frame.HitRegions.First(r => r.Node.Disabled).Bounds;
+        host.CursorAt(disabled.Center.X, disabled.Center.Y).Should().Be(CursorShape.NotAllowed,
+            "the pointer is the only warning before a click that does nothing");
+
+        host.CursorAt(2, 2).Should().Be(CursorShape.Default, "empty space is not a control");
+    }
+}

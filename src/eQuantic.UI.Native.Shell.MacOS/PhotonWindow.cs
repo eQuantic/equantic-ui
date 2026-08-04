@@ -310,6 +310,7 @@ public sealed class PhotonWindow
             case EventTypeMouseMoved:
             case EventTypeLeftMouseDragged:
                 host.PointerMove(x, y);
+                Cursors.Apply(host.CursorAt(x, y));
                 break;
             case EventTypeScrollWheel:
                 host.ScrollBy(x, y, WheelTravel(e));
