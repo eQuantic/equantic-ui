@@ -48,8 +48,15 @@ public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Pa
 /// differently, but they are ONE sequence to the person pressing Tab — a form whose traversal skips
 /// its own text fields is not a form. Stops are appended as they are registered, so the order is
 /// paint order, which is tree order.
+/// <para>
+/// Registered whether or not the control is on screen, which is the one place the clip rule is
+/// deliberately NOT applied. Clipping exists so nobody can click what they cannot see; the keyboard
+/// wants the opposite — Tab reaches the field below the fold and the view scrolls to it. Applying
+/// the pointer's rule here made the seven fields under a 200dp viewport unreachable without a
+/// mouse, with the tab order quietly looping over the five that showed.
+/// </para>
 /// </summary>
-public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry);
+public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry, Rect Bounds);
 
 /// <summary>The realized frame: the laid-out tree (absolute bounds) and the interactive hit regions.</summary>
 public sealed class RealizeResult
@@ -644,6 +651,11 @@ public static class PhotonRealizer
             layer.Add(anchored.OnDismiss is { } dismiss && !hoverOpen
                 ? new Pressable(filler, dismiss) { Label = "Dismiss" }
                 : filler);
+            // Same rule for an anchored panel — a menu you opened with the keyboard has to be
+            // closable with it. Hover-open panels are excluded: leaving closes them, and there is
+            // nothing for Escape to do.
+            if (anchored.OnDismiss is { } escapable && !hoverOpen)
+                input.Add(new ShortcutBinding(KeyChord.Escape, escapable));
 
             var panel = anchored.MatchAnchorWidth
                 ? new Box(new BoxStyle { MinWidth = node.Bounds.Width }, anchored.Panel)

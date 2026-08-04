@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { lowerVisualNode } from './lowering';
+import { activeShortcuts, commitShortcuts, resetShortcuts } from '../dom/shortcuts';
 import type { LoweringContext } from './lowering';
 import { photonTheme } from './design-system.generated';
 import type { AnchoredNode } from './nodes';
@@ -73,5 +74,38 @@ describe('anchored lowering (C# cross-pin)', () => {
     expect(host.children).toHaveLength(2);
     const panel = host.children[1] as { attributes: Record<string, string> };
     expect(panel.attributes['class']).toMatch(/^eq-anchor-panel eq-anchor-t-center /);
+  });
+});
+
+
+/**
+ * Escape closes an open panel — the native twin registers the identical binding while it is open.
+ * A menu opened with the keyboard has to be closable with it, and the outside-tap scrim is no help
+ * to someone who never touched the mouse.
+ */
+describe('anchored dismissal by keyboard', () => {
+  beforeEach(() => resetShortcuts());
+
+  it('an open dismissible panel declares Escape', () => {
+    let closed = 0;
+    lowerVisualNode(anchored({ open: true, onDismiss: () => closed++ }), ctx);
+    commitShortcuts();
+
+    const escape = activeShortcuts().filter((b) => b.chord === 'escape');
+    expect(escape).toHaveLength(1);
+    escape[0].handler();
+    expect(closed).toBe(1);
+  });
+
+  it('a closed one declares nothing', () => {
+    lowerVisualNode(anchored({ open: false, onDismiss: () => {} }), ctx);
+    commitShortcuts();
+    expect(activeShortcuts().filter((b) => b.chord === 'escape')).toHaveLength(0);
+  });
+
+  it('and neither does one with nothing to dismiss to', () => {
+    lowerVisualNode(anchored({ open: true }), ctx);
+    commitShortcuts();
+    expect(activeShortcuts().filter((b) => b.chord === 'escape')).toHaveLength(0);
   });
 });

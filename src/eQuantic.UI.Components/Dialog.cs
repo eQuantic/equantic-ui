@@ -97,6 +97,11 @@ public sealed class Dialog : StatelessComponent
         layers.Add(scrim);
         layers.Add(centering);
         // Enter motion (spec §06): the whole layer fades in as one — scrim and card together.
-        return new Overlay(new Presence(layers));
+        // Escape closes it, the way every dialog on every platform does. Declared as an ordinary
+        // Shortcut rather than taught to each realizer: the node already exists on web and native,
+        // and its "last registered wins" dispatch IS the stacking rule — a sheet opened over a
+        // dialog takes the key, and closes first.
+        var layer = new Overlay(new Presence(layers));
+        return Dismissible && OnDismiss is { } escape ? new Shortcut(layer, KeyChord.Escape, escape) : layer;
     }
 }

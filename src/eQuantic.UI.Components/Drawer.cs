@@ -61,6 +61,11 @@ public sealed class Drawer : StatelessComponent
             ? new Positioned(new Presence(panel), top: 0, bottom: 0, start: 0)
             : new Positioned(new Presence(panel), top: 0, bottom: 0, end: 0));
 
-        return new Overlay(layer);
+        // Escape closes it, the way every dialog on every platform does. Declared as an ordinary
+        // Shortcut rather than taught to each realizer: the node already exists on web and native,
+        // and its "last registered wins" dispatch IS the stacking rule — a sheet opened over a
+        // dialog takes the key, and closes first.
+        var overlay = new Overlay(layer);
+        return OnDismiss is { } escape ? new Shortcut(overlay, KeyChord.Escape, escape) : overlay;
     }
 }

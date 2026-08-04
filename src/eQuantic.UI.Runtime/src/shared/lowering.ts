@@ -1172,6 +1172,12 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
   if (node.open !== true && !node.motion) return host;
 
   if (node.onDismiss) {
+    // Escape closes an open panel — a menu you opened with the keyboard has to be closable with it.
+    // Declared through the same channel a Shortcut node uses, so the stacking comes for free: the
+    // dispatcher runs the LAST declared match, which is the panel on top. C# twin: the Photon
+    // realizer registers the identical binding while the panel is open.
+    declareShortcut({ chord: chordId({ key: 'Escape' }), handler: node.onDismiss });
+
     // Mega-menu dimming (C# twin): scrimStyle paints the outside-tap scrim as a full Box.
     const scrim = lowerNode(
       {

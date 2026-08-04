@@ -75,6 +75,11 @@ public sealed class BottomSheet : StatelessComponent
         var layers = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
         layers.Add(new Presence(scrim));
         layers.Add(anchor);
-        return new Overlay(layers);
+        // Escape closes it, the way every dialog on every platform does. Declared as an ordinary
+        // Shortcut rather than taught to each realizer: the node already exists on web and native,
+        // and its "last registered wins" dispatch IS the stacking rule — a sheet opened over a
+        // dialog takes the key, and closes first.
+        var layer = new Overlay(layers);
+        return Dismissible && OnDismiss is { } escape ? new Shortcut(layer, KeyChord.Escape, escape) : layer;
     }
 }
