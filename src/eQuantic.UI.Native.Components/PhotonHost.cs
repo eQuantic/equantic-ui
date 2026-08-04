@@ -133,6 +133,7 @@ public sealed class PhotonHost
         _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets, _pressedPath,
             _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible);
         if (RenderScale != 1f) builder.Pop();
+        AdoptAutofocus();
         // A blinking caret is running motion like any other: while a field is being edited the loop
         // has to keep turning, or the caret freezes in whichever half of the blink it stopped on.
         NeedsRender = _lastFrame.HasActiveMotion || gliding || _textPath is not null;
@@ -232,19 +233,17 @@ public sealed class PhotonHost
         var index = ((start % stops.Count) + stops.Count) % stops.Count;
         var stop = stops[index];
 
+        // Bring it into view BEFORE it takes focus: a caret blinking somewhere off screen is the
+        // same as no caret at all.
+        ScrollIntoView(stop);
+
         if (stop.Entry is not null)
         {
             // Landing on a field starts editing it — Tab into a field and type is the whole point.
-            var fields = _lastFrame!.TextRegions;
-            for (var i = 0; i < fields.Count; i++)
-            {
-                if (fields[i].Path != stop.Path) continue;
-                _focused = null;
-                _focusedPath = null;
-                BeginEditing(fields[i]);
-                return true;
-            }
-            return false;
+            _focused = null;
+            _focusedPath = null;
+            BeginEditing(stop.Entry, stop.Path);
+            return true;
         }
 
         EndEditing();
@@ -254,6 +253,56 @@ public sealed class PhotonHost
         NeedsRender = true;
         return true;
     }
+
+    /// <summary>
+    /// Scrolls whatever contains this stop until the stop is inside it.
+    /// <para>
+    /// The container is found by PATH: a scroll region whose path is a prefix of the stop's is an
+    /// ancestor of it, and the longest such prefix is the innermost one. The tree already says who
+    /// contains whom — asking it is cheaper and truer than keeping a second map that can disagree.
+    /// </para>
+    /// </summary>
+    private void ScrollIntoView(FocusStop stop)
+    {
+        if (_lastFrame is null || stop.Bounds.Height <= 0) return;
+
+        var regions = _lastFrame.ScrollRegions;
+        var best = -1;
+        for (var i = 0; i < regions.Count; i++)
+        {
+            if (regions[i].MaxOffset <= 0) continue;
+            if (!IsAncestorPath(regions[i].Path, stop.Path)) continue;
+            if (best < 0 || regions[i].Path.Length > regions[best].Path.Length) best = i;
+        }
+        if (best < 0) return;
+
+        var viewport = regions[best].Bounds;
+        var horizontal = regions[best].Axis == ScrollAxis.Horizontal;
+        var (start, end, viewStart, viewEnd) = horizontal
+            ? (stop.Bounds.X, stop.Bounds.X + stop.Bounds.Width, viewport.X, viewport.X + viewport.Width)
+            : (stop.Bounds.Y, stop.Bounds.Y + stop.Bounds.Height, viewport.Y, viewport.Y + viewport.Height);
+
+        // Scrolled to just inside the near edge, with a control's worth of margin, rather than to
+        // the exact edge: a field flush against the top of a viewport looks like the first one, and
+        // there is no way to tell there is more above it.
+        var margin = MathF.Min(ScrollIntoViewMargin, (viewEnd - viewStart) / 4);
+        var delta = 0f;
+        if (start < viewStart + margin) delta = start - viewStart - margin;
+        else if (end > viewEnd - margin) delta = end - viewEnd + margin;
+        if (delta == 0) return;
+
+        _scrolls.ScrollBy(regions[best].Path, delta, regions[best].MaxOffset, regions[best].Fallback);
+        NeedsRender = true;
+    }
+
+    private const float ScrollIntoViewMargin = 24f;
+
+    /// <summary>Whether <paramref name="ancestor"/> names a node this path sits under. Compared on
+    /// SEGMENT boundaries: "r/1" must not be read as an ancestor of "r/10".</summary>
+    private static bool IsAncestorPath(string ancestor, string path) =>
+        path.Length > ancestor.Length
+        && path.StartsWith(ancestor, StringComparison.Ordinal)
+        && path[ancestor.Length] == '/';
 
     private bool IsFocused(HitRegion region) =>
         _focusedPath is { Length: > 0 }
@@ -306,8 +355,38 @@ public sealed class PhotonHost
 
     private const float CaretBlinkMs = 500f;
 
-    private void BeginEditing(TextRegion field)
+    /// <summary>
+    /// A field that asked for the caret gets it — the search box in a palette that just opened, the
+    /// first field of a form. The web realization of the same tree has honoured `Autofocus` all
+    /// along; native ignored it, so the ⌘K panel opened ready to type in a browser and dead in a
+    /// window.
+    /// <para>
+    /// Honoured ONCE per field. Without remembering, leaving the field with Escape would hand it
+    /// straight back on the very next frame, and the field could never be left at all.
+    /// </para>
+    /// </summary>
+    private void AdoptAutofocus()
     {
+        if (_lastFrame is null) return;
+        var fields = _lastFrame.TextRegions;
+        for (var i = 0; i < fields.Count; i++)
+        {
+            var field = fields[i];
+            if (!field.Entry.Autofocus || field.Entry.Disabled) continue;
+            if (!_autofocused.Add(field.Path)) continue;
+            if (_textPath is not null) continue;   // the user is already typing somewhere: leave them alone
+            BeginEditing(field);
+            return;
+        }
+    }
+
+    private readonly HashSet<string> _autofocused = [];
+
+    private void BeginEditing(TextRegion field) => BeginEditing(field.Entry, field.Path);
+
+    private void BeginEditing(TextEntry entry, string path)
+    {
+        var field = new TextRegion(default, entry, path);
         if (field.Entry.Disabled) return;
         var changed = _textPath != field.Path;
         // Tell the field being LEFT that it lost focus before telling the next one it gained it.

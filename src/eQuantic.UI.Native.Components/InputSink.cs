@@ -40,11 +40,12 @@ internal sealed class InputSink(
 
     public void Add(HitRegion region)
     {
+        // A disabled control is still drawn and still swallows taps, but it is not somewhere Tab
+        // should ever land — nothing there to do once you arrive. Scrolled out of sight is NOT the
+        // same thing: see FocusStop.
+        if (!region.Node.Disabled) stops.Add(new FocusStop(region.Path, region.Node, null, region.Bounds));
         if (!Visible(region.Bounds)) return;
         hits.Add(Clipped(region));
-        // A disabled control is still drawn and still swallows taps, but it is not somewhere Tab
-        // should ever land — nothing there to do once you arrive.
-        if (!region.Node.Disabled) stops.Add(new FocusStop(region.Path, region.Node, null));
     }
 
     public void Add(HoverRegion region) { if (Visible(region.Bounds)) hovers.Add(region); }
@@ -57,9 +58,9 @@ internal sealed class InputSink(
 
     public void Add(TextRegion region)
     {
+        if (!region.Entry.Disabled) stops.Add(new FocusStop(region.Path, null, region.Entry, region.Bounds));
         if (!Visible(region.Bounds)) return;
         texts.Add(region);
-        if (!region.Entry.Disabled) stops.Add(new FocusStop(region.Path, null, region.Entry));
     }
 
     /// <summary>A chord is not a place — being on screen is the whole subscription (spec S8), and a

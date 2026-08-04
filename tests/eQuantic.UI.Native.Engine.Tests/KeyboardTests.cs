@@ -256,3 +256,163 @@ public class CursorTests
         host.CursorAt(2, 2).Should().Be(CursorShape.Default, "empty space is not a control");
     }
 }
+
+/// <summary>
+/// Tab through a form that is taller than its window.
+/// <para>
+/// The clip rule that keeps a pointer from clicking what it cannot see does NOT apply to the
+/// keyboard: with it applied, seven of these twelve fields had no tab stop at all and the order
+/// looped over the five that happened to be showing — half a form unreachable without a mouse, and
+/// nothing on screen to suggest it.
+/// </para>
+/// </summary>
+public class ScrolledFocusTests
+{
+    private const int Fields = 12;
+
+    private static (PhotonHost Host, List<string> Values) Open()
+    {
+        var values = new List<string>();
+        var column = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+        for (var i = 0; i < Fields; i++)
+        {
+            var index = i;
+            column.Add(new TextEntry("", value => values.Add($"{index}:{value}")) { Placeholder = $"field {index}" });
+        }
+        var host = new PhotonHost(new ScrollView(column), PhotonTheme.Instance, ThemeMode.Light, 300, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        return (host, values);
+    }
+
+    [Fact]
+    public void EveryFieldHasATabStop_IncludingTheOnesBelowTheFold()
+    {
+        var (host, _) = Open();
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        frame.FocusStops.Should().HaveCount(Fields, "Tab has to reach the whole form, not the visible part of it");
+    }
+
+    [Fact]
+    public void TabbingPastTheFold_ScrollsTheFieldIntoView()
+    {
+        var (host, values) = Open();
+
+        // Far enough down that it started off screen. The clock advances because the scroll GLIDES:
+        // frames all stamped with the same instant would leave it forever mid-flight.
+        var now = 0f;
+        for (var i = 0; i <= 8; i++)
+        {
+            host.KeyDown("Tab");
+            host.RenderFrame(new DisplayListBuilder(), now += 16);
+        }
+
+        host.TextTarget?.Placeholder.Should().Be("field 8");
+
+        for (var i = 0; i < 60; i++) host.RenderFrame(new DisplayListBuilder(), now += 16);
+        var frame = host.RenderFrame(new DisplayListBuilder(), now += 16);
+        var visible = frame.TextRegions.Select(r => r.Entry.Placeholder).ToArray();
+        visible.Should().Contain("field 8", "the view has to follow the caret, or it blinks off screen");
+
+        // And it is genuinely editable once there.
+        host.TextInput("x");
+        values.Should().Contain("8:x");
+    }
+}
+
+/// <summary>A field that asked for the caret — the search box of a panel that just opened.</summary>
+public class AutofocusTests
+{
+    private static PhotonHost Open(bool autofocus)
+    {
+        var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        column.Add(new TextEntry("", _ => { }) { Placeholder = "Search", Autofocus = autofocus });
+        column.Add(new TextEntry("", _ => { }) { Placeholder = "Other" });
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 300, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        return host;
+    }
+
+    [Fact]
+    public void AFieldThatAsksForTheCaret_GetsIt()
+    {
+        Open(autofocus: true).TextTarget?.Placeholder.Should().Be("Search");
+        Open(autofocus: false).TextTarget.Should().BeNull("nothing asked");
+    }
+
+    [Fact]
+    public void AndCanStillBeLeft()
+    {
+        var host = Open(autofocus: true);
+
+        host.KeyDown("Escape");
+        host.RenderFrame(new DisplayListBuilder());
+
+        host.TextTarget.Should().BeNull("honouring it every frame would make the field impossible to leave");
+    }
+}
+
+/// <summary>
+/// Escape closes what is on top. Universal enough that its absence reads as the app being stuck:
+/// a dialog you can only leave with the mouse, in a window you opened with the keyboard.
+/// </summary>
+public class EscapeDismissTests
+{
+    private static PhotonHost Open(VisualNode root) 
+    {
+        var host = new PhotonHost(root, PhotonTheme.Instance, ThemeMode.Light, 400, 300);
+        host.RenderFrame(new DisplayListBuilder());
+        return host;
+    }
+
+    [Fact]
+    public void EscapeClosesADismissibleDialog()
+    {
+        var closed = 0;
+        var host = Open(new Dialog("Delete this?", "It cannot be undone.", [new DialogAction("Delete", () => { })], dismissible: true, onDismiss: () => closed++));
+
+        host.KeyDown("Escape").Should().BeTrue();
+        closed.Should().Be(1);
+    }
+
+    [Fact]
+    public void ButNotOneThatRefusesToBeDismissed()
+    {
+        var closed = 0;
+        var host = Open(new Dialog("Confirm payment", "€40 will be charged.", [new DialogAction("Pay", () => { })], dismissible: false, onDismiss: () => closed++));
+
+        host.KeyDown("Escape");
+        closed.Should().Be(0, "a dialog that says it cannot be dismissed means it");
+    }
+
+    [Fact]
+    public void TheTOPMOSTLayerTakesTheKey()
+    {
+        var dialogClosed = 0;
+        var sheetClosed = 0;
+        var stack = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        stack.Add(new Dialog("Under", "Body", [new DialogAction("Ok", () => { })], dismissible: true, onDismiss: () => dialogClosed++));
+        stack.Add(new BottomSheet(new Text("Over"), onDismiss: () => sheetClosed++));
+
+        var host = Open(stack);
+        host.KeyDown("Escape");
+
+        sheetClosed.Should().Be(1);
+        dialogClosed.Should().Be(0, "the one on top is the one the user is looking at");
+    }
+
+    [Fact]
+    public void AnAnchoredPanelClosesToo()
+    {
+        var closed = 0;
+        var anchored = new Anchored(new Button("Menu"), new Text("Item"))
+        {
+            Open = true,
+            OnDismiss = () => closed++,
+        };
+        var host = Open(anchored);
+
+        host.KeyDown("Escape").Should().BeTrue();
+        closed.Should().Be(1, "a menu opened with the keyboard has to close with it");
+    }
+}
