@@ -157,6 +157,9 @@ public sealed class PhotonHost
 
     private Pressable? _pressed;
 
+    /// <summary>An inert control consumed the press — the release must not fall through to links.</summary>
+    private bool _pressSwallowed;
+
     /// <summary>Where the pressed node was, so the release finds it in whatever frame is current by
     /// then. The object itself does not survive a Build; the path does.</summary>
     private string? _pressedPath;
@@ -915,11 +918,27 @@ public sealed class PhotonHost
         }
 
         var regions = _lastFrame.HitRegions;
+        _pressSwallowed = false;
+        string? swallowedBy = null;
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             var region = regions[i];
             if (!region.Bounds.Contains(point)) continue;
-            if (region.Node.Disabled) return true; // swallowed, no visual
+            if (region.Node.Disabled || region.Node.OnPressed is null)
+            {
+                // INERT — disabled, or enabled with nothing to run (a Button used as a Menu's
+                // trigger visual has no handler of its own). Inert swallows against what is BEHIND
+                // it, but not against the pressable that WRAPS it: the Menu's own press was being
+                // eaten by its topmost inert trigger. An ancestor (its path is a prefix of the
+                // inert one's) is the owner of the gesture; a stranger underneath stays protected.
+                swallowedBy ??= region.Path;
+                continue;
+            }
+            if (swallowedBy is not null && !IsAncestorPath(region.Path, swallowedBy))
+            {
+                _pressSwallowed = true;
+                return true;
+            }
             _pressed = region.Node;
             _pressedPath = region.Path;
             // Pressing a control takes focus off whatever had it — including a field being edited,
@@ -929,6 +948,15 @@ public sealed class PhotonHost
             // and the click leaves no ring behind it.
             Focus(region.Node, region.Path, visible: false);
             NeedsRender = true;
+            return true;
+        }
+
+        if (swallowedBy is not null)
+        {
+            // An inert control was topmost and no wrapping pressable claimed the gesture: the
+            // press dies here, and so does the LINK underneath — <a><button disabled> does not
+            // navigate, and neither does this.
+            _pressSwallowed = true;
             return true;
         }
 
@@ -997,6 +1025,11 @@ public sealed class PhotonHost
     public bool PressUp(float x, float y)
     {
         _dragSelecting = false;
+        if (_pressSwallowed)
+        {
+            _pressSwallowed = false;
+            return true;
+        }
 
         // Gestures v2: an ACTIVE drag resolves here — past the threshold it dismisses (state then
         // removes the subtree and the presence EXIT completes from the dragged position); short of

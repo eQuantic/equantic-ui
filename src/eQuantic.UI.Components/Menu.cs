@@ -17,11 +17,20 @@ public sealed record MenuItem(string Label)
 /// Open/close is INTERNAL state: tap toggles, outside tap dismisses (the Anchored scrim), selecting
 /// fires <see cref="OnSelect"/> with the item index and closes. Item rows are 40dp, hover
 /// SurfaceSubtle (S5 diff — zero JS on web), Destructive items speak the Destructive text color.
-/// v1 fences: keyboard navigation/typeahead (a11y system), submenus, dividers/sections.
+/// <para>
+/// KEYBOARD: while open, arrows move a highlight over the ENABLED items, Enter runs the one under
+/// it, Escape closes — the same Shortcut-while-open pattern the Select uses, working on both
+/// targets because each host's chord pipeline already does.
+/// </para>
+/// v1 fences: typeahead, submenus, dividers/sections.
 /// </summary>
 public sealed class Menu : StatefulComponent
 {
     private bool _open;
+
+    /// <summary>Where the keyboard is. Arrows SKIP disabled items — a highlight that lands on a
+    /// row Enter refuses to run is a lie about what Enter does.</summary>
+    private int _highlight;
 
     public Menu(VisualNode trigger, IReadOnlyList<MenuItem> items, Action<int>? onSelect = null)
     {
@@ -71,16 +80,13 @@ public sealed class Menu : StatefulComponent
                 Padding = EdgeInsets.Symmetric(Space.S3, 0),
                 Width = SizeValue.Fill,
                 Opacity = item.Disabled ? theme.DisabledOpacity : null,
+                Background = _open && index == _highlight && !item.Disabled ? theme.SurfaceSubtle : null,
                 Hover = item.Disabled ? null : new StyleDiff { Background = theme.SurfaceSubtle },
             }, row);
 
             list.Add(item.Disabled
                 ? surface
-                : new Pressable(surface, () =>
-                {
-                    OnSelect?.Invoke(index);
-                    SetState(() => _open = false);
-                }));
+                : new Pressable(surface, () => Choose(index)));
         }
 
         var panel = new Box(new BoxStyle
@@ -95,11 +101,48 @@ public sealed class Menu : StatefulComponent
             Clip = true,
         }, list);
 
-        return new Anchored(new Pressable(Trigger, () => SetState(() => _open = !_open)), panel)
+        VisualNode menu = new Anchored(new Pressable(Trigger, Toggle), panel)
         {
             Placement = Placement,
             Open = _open,
             OnDismiss = () => SetState(() => _open = false),
         };
+
+        if (_open && Items.Count > 0)
+        {
+            menu = new Shortcut(menu, KeyChord.ArrowDown, () => SetState(() => _highlight = Step(+1)));
+            menu = new Shortcut(menu, KeyChord.ArrowUp, () => SetState(() => _highlight = Step(-1)));
+            menu = new Shortcut(menu, KeyChord.Enter, () => Choose(_highlight));
+        }
+        return menu;
+    }
+
+    private void Toggle() => SetState(() =>
+    {
+        _open = !_open;
+        if (_open) _highlight = FirstEnabled();
+    });
+
+    private void Choose(int index)
+    {
+        if (index < 0 || index >= Items.Count || Items[index].Disabled) return;
+        OnSelect?.Invoke(index);
+        SetState(() => _open = false);
+    }
+
+    private int FirstEnabled()
+    {
+        for (var i = 0; i < Items.Count; i++)
+            if (!Items[i].Disabled) return i;
+        return 0;
+    }
+
+    /// <summary>The next enabled item in <paramref name="direction"/>, stopping at the edge — a
+    /// menu that wraps turns a held arrow key into a roulette.</summary>
+    private int Step(int direction)
+    {
+        for (var i = _highlight + direction; i >= 0 && i < Items.Count; i += direction)
+            if (!Items[i].Disabled) return i;
+        return _highlight;
     }
 }

@@ -7,12 +7,22 @@ namespace eQuantic.UI.Components;
 /// chevron trailing) whose anchored option panel MATCHES THE FIELD WIDTH (the Anchored
 /// MatchAnchorWidth contract). Value/options are CONTROLLED (<see cref="OnChanged"/> fires the
 /// index); open/close is internal state like TextInput's focus. The selected option row speaks
-/// Primary.Subtle with a trailing check. v1 fences: keyboard navigation/typeahead (a11y system),
-/// option groups, multi-select, disabled options.
+/// Primary.Subtle with a trailing check.
+/// <para>
+/// KEYBOARD: while open, arrows move a highlight, Enter chooses it, Escape closes (the Anchored's
+/// own binding) — declared as ordinary <see cref="Shortcut"/> nodes around the open panel, which
+/// is what makes the same lines work on both targets: each host's key pipeline already dispatches
+/// chords, and "on screen is the subscription" scopes them to exactly while the panel is up.
+/// </para>
+/// v1 fences: typeahead, option groups, multi-select, disabled options.
 /// </summary>
 public sealed class Select : StatefulComponent
 {
     private bool _open;
+
+    /// <summary>The option the KEYBOARD is on — where Enter lands. Separate from SelectedIndex,
+    /// which is the app's committed value: arrowing around commits nothing until Enter.</summary>
+    private int _highlight;
 
     public Select(IReadOnlyList<string> options, int selectedIndex = -1,
         Action<int>? onChanged = null, string? placeholder = null)
@@ -77,18 +87,18 @@ public sealed class Select : StatefulComponent
                 row.Add(new Icon(Icons.Check, IconSize.Sm, theme.Colors(Variant.Primary).OnSubtle));
             }
 
+            var highlighted = _open && i == _highlight;
             list.Add(new Pressable(new Box(new BoxStyle
             {
                 Height = Sizing.Height(SizeVariant.Medium),
                 Padding = EdgeInsets.Symmetric(Space.S3, 0),
                 Width = SizeValue.Fill,
-                Background = selected ? theme.Colors(Variant.Primary).Subtle : null,
+                // The keyboard's row wears the hover coat: one visual language for "you are here",
+                // whichever hand is steering.
+                Background = selected ? theme.Colors(Variant.Primary).Subtle
+                    : highlighted ? theme.SurfaceSubtle : null,
                 Hover = selected ? null : new StyleDiff { Background = theme.SurfaceSubtle },
-            }, row), () =>
-            {
-                OnChanged?.Invoke(index);
-                SetState(() => _open = false);
-            }));
+            }, row), () => Choose(index)));
         }
 
         var panel = new Box(new BoxStyle
@@ -104,13 +114,41 @@ public sealed class Select : StatefulComponent
 
         var trigger = Disabled
             ? field
-            : (VisualNode)new Pressable(field, () => SetState(() => _open = !_open));
+            : (VisualNode)new Pressable(field, Toggle);
 
-        return new Anchored(trigger, panel)
+        VisualNode select = new Anchored(trigger, panel)
         {
             Open = _open && !Disabled,
             OnDismiss = () => SetState(() => _open = false),
             MatchAnchorWidth = true,
         };
+
+        // The keyboard, exactly while the panel is up. Nested Shortcuts share one child root — the
+        // realizers LIST the chords on it — and unmounting unsubscribes, so a closed Select owns no
+        // keys at all.
+        if (_open && !Disabled && Options.Count > 0)
+        {
+            select = new Shortcut(select, KeyChord.ArrowDown,
+                () => SetState(() => _highlight = Math.Min(Options.Count - 1, _highlight + 1)));
+            select = new Shortcut(select, KeyChord.ArrowUp,
+                () => SetState(() => _highlight = Math.Max(0, _highlight - 1)));
+            select = new Shortcut(select, KeyChord.Enter, () => Choose(_highlight));
+        }
+        return select;
+    }
+
+    private void Toggle() => SetState(() =>
+    {
+        _open = !_open;
+        // The keyboard starts where the VALUE is — Enter straight away re-commits the current
+        // choice, which is the no-surprise default the platforms share.
+        if (_open) _highlight = SelectedIndex >= 0 && SelectedIndex < Options.Count ? SelectedIndex : 0;
+    });
+
+    private void Choose(int index)
+    {
+        if (index < 0 || index >= Options.Count) return;
+        OnChanged?.Invoke(index);
+        SetState(() => _open = false);
     }
 }
