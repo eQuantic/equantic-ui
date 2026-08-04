@@ -130,9 +130,12 @@ public sealed class PhotonHost
         // point, and it always wins.
         _scrolls.Smooth = SmoothScroll && !ReducedMotion;
         var gliding = _scrolls.Advance(timeMs);
-        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focused, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets);
+        _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets, _pressedPath,
+            _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible);
         if (RenderScale != 1f) builder.Pop();
-        NeedsRender = _lastFrame.HasActiveMotion || gliding;
+        // A blinking caret is running motion like any other: while a field is being edited the loop
+        // has to keep turning, or the caret freezes in whichever half of the blink it stopped on.
+        NeedsRender = _lastFrame.HasActiveMotion || gliding || _textPath is not null;
         return _lastFrame;
     }
 
@@ -181,6 +184,15 @@ public sealed class PhotonHost
     /// <summary>The clock of the last rendered frame — glide-backs anchor to it on release.</summary>
     private float _lastTimeMs;
     private Pressable? _focused;
+    private string? _focusedPath;
+
+    /// <summary>
+    /// Whether the focus should be SEEN. Focus and the ring around it are not the same thing: a
+    /// mouse user who clicks a button knows perfectly well what they clicked, and a ring left behind
+    /// on every click reads as a rendering bug. A keyboard user has nothing else to go on. So the
+    /// ring follows the keyboard, exactly as `:focus-visible` does on web — same rule, same reason.
+    /// </summary>
+    private bool _focusVisible;
 
     /// <summary>The Pressable holding keyboard focus (the §01 double ring renders while set).</summary>
     public Pressable? Focused => _focused;
@@ -188,38 +200,244 @@ public sealed class PhotonHost
     /// <summary>
     /// Moves focus to the next ENABLED pressable in paint order (wrapping; spec: traversal = child
     /// order, depth-first — hit regions register in exactly that order). Returns false when the
-    /// frame has no focusable region. (v1: forward-only; Shift+Tab reversal joins the key system.)
+    /// frame has no focusable region.
     /// </summary>
-    public bool FocusNext()
-    {
-        var regions = _lastFrame?.HitRegions;
-        if (regions is null || regions.Count == 0) return false;
+    public bool FocusNext() => MoveFocus(1);
 
-        var start = 0;
-        if (_focused is not null)
+    /// <summary>The same walk backwards — Shift+Tab. Going back matters more than it sounds: it is
+    /// how someone who overshot a field returns to it without cycling through the whole form.</summary>
+    public bool FocusPrevious() => MoveFocus(-1);
+
+    private bool MoveFocus(int step)
+    {
+        var stops = _lastFrame?.FocusStops;
+        if (stops is null || stops.Count == 0) return false;
+
+        // Where the focus is NOW, found by path: the tree has been rebuilt on every keystroke since
+        // it was set, so the node it once pointed at is long gone. Reference identity here meant Tab
+        // silently restarting from the first control every time the app called SetState.
+        var here = _textPath ?? _focusedPath;
+        var current = -1;
+        if (here is { Length: > 0 })
         {
-            for (var i = 0; i < regions.Count; i++)
+            for (var i = 0; i < stops.Count; i++)
             {
-                if (ReferenceEquals(regions[i].Node, _focused)) { start = i + 1; break; }
+                if (stops[i].Path != here) continue;
+                current = i;
+                break;
             }
         }
-        for (var offset = 0; offset < regions.Count; offset++)
+
+        var start = current < 0 ? (step > 0 ? 0 : stops.Count - 1) : current + step;
+        var index = ((start % stops.Count) + stops.Count) % stops.Count;
+        var stop = stops[index];
+
+        if (stop.Entry is not null)
         {
-            var region = regions[(start + offset) % regions.Count];
-            if (region.Node.Disabled) continue;
-            _focused = region.Node;
-            NeedsRender = true;
-            return true;
+            // Landing on a field starts editing it — Tab into a field and type is the whole point.
+            var fields = _lastFrame!.TextRegions;
+            for (var i = 0; i < fields.Count; i++)
+            {
+                if (fields[i].Path != stop.Path) continue;
+                _focused = null;
+                _focusedPath = null;
+                BeginEditing(fields[i]);
+                return true;
+            }
+            return false;
         }
-        return false;
+
+        EndEditing();
+        _focused = stop.Pressable;
+        _focusedPath = stop.Path;
+        _focusVisible = true;   // arrived by Tab: this is exactly who the ring is for
+        NeedsRender = true;
+        return true;
+    }
+
+    private bool IsFocused(HitRegion region) =>
+        _focusedPath is { Length: > 0 }
+            ? region.Path == _focusedPath
+            : _focused is not null && ReferenceEquals(region.Node, _focused);
+
+    /// <summary>Gives focus to a specific region — what a pointer press does, so that releasing over
+    /// a control and then pressing Enter goes on working on the control the user just touched.</summary>
+    public void Focus(Pressable node, string? path = null, bool visible = true)
+    {
+        _focused = node;
+        _focusedPath = path;
+        _focusVisible = visible;
+        NeedsRender = true;
+    }
+
+    /// <summary>True when the focus arrived by keyboard, and the ring is therefore drawn.</summary>
+    public bool FocusVisible => _focusVisible;
+
+    // ── Text editing ──────────────────────────────────────────────────────────────────────────
+    //
+    // The app owns the string: it hands the field a Value and gets an OnChanged back, exactly as on
+    // web. What lives HERE is the part the app does not have — which field is being edited and where
+    // the caret sits — because both must survive the rebuild that each keystroke causes.
+
+    private string? _textPath;
+    private int _caret;
+
+    /// <summary>The field being edited in the CURRENT frame, or null. Resolved by path every time
+    /// rather than remembered: the node handed out last frame is already stale.</summary>
+    public TextEntry? TextTarget
+    {
+        get
+        {
+            if (_textPath is null || _lastFrame is null) return null;
+            var fields = _lastFrame.TextRegions;
+            for (var i = 0; i < fields.Count; i++)
+                if (fields[i].Path == _textPath) return fields[i].Entry;
+            return null;
+        }
+    }
+
+    /// <summary>Where the caret sits, clamped to the text that is actually there — the app may have
+    /// replaced the value with something shorter (a formatter, a reset) between keystrokes.</summary>
+    public int CaretIndex => Math.Clamp(_caret, 0, TextTarget?.Value.Length ?? 0);
+
+    /// <summary>Half-second on, half-second off, off the frame clock — the rate every desktop uses.
+    /// A caret that does not blink reads as a rendering artifact rather than a place to type.</summary>
+    public bool CaretVisible => _textPath is null || (int)(_lastTimeMs / CaretBlinkMs) % 2 == 0;
+
+    private const float CaretBlinkMs = 500f;
+
+    private void BeginEditing(TextRegion field)
+    {
+        if (field.Entry.Disabled) return;
+        var changed = _textPath != field.Path;
+        // Tell the field being LEFT that it lost focus before telling the next one it gained it.
+        // Skipping this left every field the user had passed through still wearing its focus ring —
+        // a form where four boxes all look like the active one.
+        if (changed) EndEditing();
+        _textPath = field.Path;
+        // v1: the caret lands at the END. Placing it where the pointer fell needs per-character hit
+        // testing from the rasterizer, which is the same measurement the selection work will need.
+        _caret = field.Entry.Value.Length;
+        _focused = null;
+        _focusedPath = null;
+        if (changed) field.Entry.OnFocusChanged?.Invoke(true);
+        NeedsRender = true;
+    }
+
+    private void EndEditing()
+    {
+        if (_textPath is null) return;
+        TextTarget?.OnFocusChanged?.Invoke(false);
+        _textPath = null;
+        _caret = 0;
+        NeedsRender = true;
+    }
+
+    /// <summary>
+    /// Text the platform decided the user typed — one character, a pasted paragraph, or the result
+    /// of a dead key or an input method. It arrives as a STRING for that reason: what a keystroke
+    /// produces is the platform's business, and "á" may be one key or three.
+    /// </summary>
+    public bool TextInput(string text)
+    {
+        if (string.IsNullOrEmpty(text) || TextTarget is not { } entry || entry.Disabled) return false;
+        var caret = CaretIndex;
+        Commit(entry, entry.Value[..caret] + text + entry.Value[caret..], caret + text.Length);
+        return true;
+    }
+
+    /// <summary>The editing keys — what Backspace and the arrows mean inside a field. Returns false
+    /// for anything it does not claim, so Tab and Escape go on meaning what they mean everywhere.</summary>
+    private bool EditKey(TextEntry entry, string key, KeyModifiers modifiers)
+    {
+        if (entry.Disabled) return false;
+        var value = entry.Value;
+        var caret = CaretIndex;
+
+        switch (key)
+        {
+            case "Backspace" when caret > 0:
+                Commit(entry, value.Remove(caret - 1, 1), caret - 1);
+                return true;
+            case "Backspace":
+                return true; // claimed at the start of the field: it must not fall through to Back
+
+            case "Delete" when caret < value.Length:
+                Commit(entry, value.Remove(caret, 1), caret);
+                return true;
+            case "Delete":
+                return true;
+
+            case "ArrowLeft":
+                _caret = Math.Max(0, caret - 1);
+                NeedsRender = true;
+                return true;
+            case "ArrowRight":
+                _caret = Math.Min(value.Length, caret + 1);
+                NeedsRender = true;
+                return true;
+
+            case "Home" or "ArrowUp":
+                _caret = 0;
+                NeedsRender = true;
+                return true;
+            case "End" or "ArrowDown":
+                _caret = value.Length;
+                NeedsRender = true;
+                return true;
+
+            case "Enter":
+                // Submit, then leave: a form that stays in the field after Enter makes the user
+                // wonder whether anything happened.
+                entry.OnSubmit?.Invoke();
+                EndEditing();
+                return true;
+
+            case "Escape":
+                EndEditing();
+                return true;
+
+            // Tab belongs to the FORM, not the field — falling through is what moves to the next one.
+            default:
+                return false;
+        }
+    }
+
+    private void Commit(TextEntry entry, string value, int caret)
+    {
+        _caret = caret;
+        NeedsRender = true;
+        // The caret moves whether or not the app takes the change: a field with no OnChanged is a
+        // read-only field, and pretending the character landed would be a lie the next frame undoes.
+        entry.OnChanged?.Invoke(value);
     }
 
     /// <summary>Clears keyboard focus (pointer interaction, escape).</summary>
     public void ClearFocus()
     {
-        if (_focused is null) return;
+        if (_focused is null && _focusedPath is null) return;
         _focused = null;
+        _focusedPath = null;
         NeedsRender = true;
+    }
+
+    /// <summary>Runs the focused control, the way Enter and Space do everywhere else. Answers false
+    /// when nothing holds focus, so the shell can let the key travel on.</summary>
+    public bool ActivateFocused()
+    {
+        var regions = _lastFrame?.HitRegions;
+        if (regions is null) return false;
+        for (var i = 0; i < regions.Count; i++)
+        {
+            var region = regions[i];
+            if (!IsFocused(region) || region.Node.Disabled) continue;
+            // Resolved out of THIS frame's regions rather than the remembered node: same reason as
+            // the press — the handler on a node from three rebuilds ago closes over dead state.
+            region.Node.OnPressed?.Invoke();
+            NeedsRender = true;
+            return true;
+        }
+        return false;
     }
 
     /// <summary>The Pressable currently held down (pressed visuals render while set).</summary>
@@ -415,9 +633,30 @@ public sealed class PhotonHost
             if (region.Node.Disabled) return true; // swallowed, no visual
             _pressed = region.Node;
             _pressedPath = region.Path;
+            // Pressing a control takes focus off whatever had it — including a field being edited,
+            // whose caret must not go on blinking somewhere the user is no longer looking.
+            EndEditing();
+            // Focused, but not RINGED: pressing Enter after clicking a button goes on working,
+            // and the click leaves no ring behind it.
+            Focus(region.Node, region.Path, visible: false);
             NeedsRender = true;
             return true;
         }
+
+        // No pressable claimed it: a field might. Fields register UNDER the buttons on purpose — a
+        // button drawn over a search box is still a button.
+        var fields = _lastFrame.TextRegions;
+        for (var i = fields.Count - 1; i >= 0; i--)
+        {
+            if (!fields[i].Bounds.Contains(point)) continue;
+            BeginEditing(fields[i]);
+            return true;
+        }
+
+        // A press on empty space ends editing, which is how every form on every platform behaves —
+        // and is the only way to leave a field without Tab.
+        EndEditing();
+        ClearFocus();
         return _drag is not null || _pan is not null;
     }
 
@@ -586,16 +825,42 @@ public sealed class PhotonHost
     /// </summary>
     public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
     {
+        // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.
         var bindings = _lastFrame?.Shortcuts;
-        if (bindings is null) return false;
-        for (var i = bindings.Count - 1; i >= 0; i--)
+        if (bindings is not null)
         {
-            var chord = bindings[i].Chord;
-            if (chord.Modifiers != modifiers) continue;
-            if (!string.Equals(chord.Key, key, StringComparison.OrdinalIgnoreCase)) continue;
-            bindings[i].OnPressed();
-            NeedsRender = true;
-            return true;
+            for (var i = bindings.Count - 1; i >= 0; i--)
+            {
+                var chord = bindings[i].Chord;
+                if (chord.Modifiers != modifiers) continue;
+                if (!string.Equals(chord.Key, key, StringComparison.OrdinalIgnoreCase)) continue;
+                bindings[i].OnPressed();
+                NeedsRender = true;
+                return true;
+            }
+        }
+
+        // Then the keys every UI owes the user, whatever the app declared. Reaching a control
+        // without a mouse and running it from the keyboard is not a nicety — for some people it is
+        // the only way in, and it is also how anyone fills a form quickly.
+        if (TextTarget is { } editing && EditKey(editing, key, modifiers)) return true;
+
+        switch (key)
+        {
+            case "Tab":
+                return modifiers.HasFlag(KeyModifiers.Shift) ? FocusPrevious() : FocusNext();
+
+            case "Enter" or " " or "Space" when modifiers == KeyModifiers.None:
+                return ActivateFocused();
+
+            case "Escape" when modifiers == KeyModifiers.None:
+                if (Focused is null && _focusedPath is null) return false;
+                ClearFocus();
+                return true;
+
+            // A blinking caret is a running animation: the frame clock has to keep turning for it,
+            // and only while a field is actually being edited.
+            
         }
         return false;
     }

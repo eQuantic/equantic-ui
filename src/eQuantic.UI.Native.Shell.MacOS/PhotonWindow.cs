@@ -134,6 +134,9 @@ public sealed class PhotonWindow
 
         SendVoid(window, Sel("makeKeyAndOrderFront:"), IntPtr.Zero);
         SendVoid(app, Sel("activateIgnoringOtherApps:"), true);
+        // Saying YES to acceptsFirstResponder only makes the view ELIGIBLE; someone still has to
+        // hand it the keyboard. Without this the window opens deaf.
+        SendVoid(window, Sel("makeFirstResponder:"), contentView);
 
         // W4: CoreText serves BOTH measuring (layout breaks) and rasterizing (A8 coverage) —
         // real glyphs in the window, breaks identical by construction.
@@ -178,6 +181,18 @@ public sealed class PhotonWindow
         }
 
         PhotonContentView.OnResized = OnLiveResize;
+        PhotonContentView.OnKey = (key, modifiers, typed) =>
+        {
+            // The named key first — Tab, Enter, Backspace, a chord the app declared. Only what
+            // nothing claimed becomes text, so Space runs the focused button instead of typing one
+            // into whatever field was last touched.
+            var handled = host.KeyDown(key, modifiers);
+            if (!handled && typed.Length > 0) handled = host.TextInput(typed);
+            // Drawn straight away rather than left to the next tick: a caret that appears a frame
+            // after the click, or a character that shows up late, both read as a slow app.
+            if (handled) Present();
+            return handled;
+        };
 
         // A LIVE RESIZE never returns to the loop below: AppKit runs its own, inside sendEvent:,
         // until the button comes up. The window keeps growing and the last frame is stretched to
