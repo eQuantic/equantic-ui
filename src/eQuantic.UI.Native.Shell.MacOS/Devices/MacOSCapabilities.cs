@@ -21,5 +21,6 @@ public sealed class MacOSCapabilities : IPhotonCapabilities
         // realization IS the absence report here, with no platform check written by hand.
         services.TryAddSingleton<IMotionSensor, AppleMotionSensor>();
         services.TryAddSingleton<ILocation, AppleLocation>();
+        services.TryAddSingleton<ICamera, AppleCamera>();
     }
 }

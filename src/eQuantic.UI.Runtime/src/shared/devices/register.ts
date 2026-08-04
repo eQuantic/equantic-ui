@@ -1,5 +1,6 @@
 import { getRootServiceProvider } from '../../core/service-provider';
 import { WebBiometrics } from './biometrics';
+import { WebCamera } from './camera';
 import { WebLocation } from './location';
 import { WebMotionSensor } from './motion-sensor';
 import { WebNetworkStatus } from './network-status';
@@ -23,4 +24,5 @@ export function registerDeviceCapabilities(): void {
   services.registerSingleton('INetworkStatus', () => new WebNetworkStatus());
   services.registerSingleton('IMotionSensor', () => new WebMotionSensor());
   services.registerSingleton('ILocation', () => new WebLocation());
+  services.registerSingleton('ICamera', () => new WebCamera());
 }

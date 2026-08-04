@@ -37,6 +37,7 @@ import type {
   FlexNodeValue,
   FlexibleNode,
   IconNode,
+  CameraPreviewNode,
   ImageNode,
   GridPatternValue,
   LinearGradientValue,
@@ -210,6 +211,8 @@ function lowerNode(
       return lowerDraggable(node as DraggableNode, context, horizontalAxis, path);
     case 'link':
       return lowerLink(node as LinkNode, context, path);
+    case 'cameraPreview':
+      return lowerCameraPreview(node as unknown as CameraPreviewNode);
     case 'image':
       return lowerImage(node as ImageNode);
     case 'icon':
@@ -591,6 +594,42 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
 }
 
 /** Spec A11 mirror: explicitly sized <img> with object-fit and the rrect clip. */
+/**
+ * The live surface (C# twin: PhotonRealizer.EmitCameraPreview). Without a session it is the SAME
+ * SurfaceSubtle placeholder Image degrades to — both realizers must agree, or hydration does not.
+ * With one, a muted autoplaying video the after-pass sweep wires to its MediaStream by id.
+ */
+function lowerCameraPreview(node: CameraPreviewNode): HtmlNode {
+  const radius = node.cornerRadius;
+  const hasRadius =
+    !!radius &&
+    (radius.topLeft > 0 || radius.topRight > 0 || radius.bottomRight > 0 || radius.bottomLeft > 0);
+  const sizing = atomicAttrs({
+    width: px(node.width),
+    height: px(node.height),
+    'border-radius': hasRadius && radius ? radiusValue(radius) : undefined,
+    'object-fit': 'cover',
+    background: 'var(--eq-color-surface-subtle)',
+  });
+
+  if (!node.session) {
+    return { tag: 'div', attributes: { ...sizing }, events: {}, children: [] };
+  }
+  return {
+    tag: 'video',
+    attributes: {
+      ...sizing,
+      'data-eq-camera': node.session.id,
+      autoplay: '',
+      muted: '',
+      playsinline: '',
+      'aria-label': node.alt ?? '',
+    },
+    events: {},
+    children: [],
+  };
+}
+
 function lowerImage(node: ImageNode): HtmlNode {
   const fit = node.fit === 'contain' ? 'contain' : node.fit === 'stretch' ? 'fill' : 'cover';
   const radius = node.cornerRadius;

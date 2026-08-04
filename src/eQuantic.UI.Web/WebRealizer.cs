@@ -59,6 +59,7 @@ public static class WebRealizer
         Vector vector => LowerVector(vector),
         Spinner spinner => LowerSpinner(spinner, context),
         Primitives.Image image => LowerImage(image),
+        CameraPreview camera => LowerCameraPreview(camera),
         Pressable pressable => LowerPressable(pressable, context),
         Hoverable hoverable => LowerHoverable(hoverable, context),
         Shortcut shortcut => LowerShortcut(shortcut, context, horizontalAxis),
@@ -597,6 +598,36 @@ public static class WebRealizer
         // mount, which is what a dialog opened later needs.
         if (entry.Autofocus) element.RawAttributes["autofocus"] = "";
         return element;
+    }
+
+    /// <summary>
+    /// The live surface (TS twin: lowerCameraPreview). No session — which is every SSR, since a
+    /// stream only ever exists client-side — renders the SurfaceSubtle placeholder div both
+    /// realizers agree on; with one, the muted autoplaying video the runtime wires by session id.
+    /// </summary>
+    private static HtmlElement LowerCameraPreview(CameraPreview camera)
+    {
+        var style = new HtmlStyle
+        {
+            Width = TokenCss.Px(camera.Width),
+            Height = TokenCss.Px(camera.Height),
+            ObjectFit = "cover",
+            Background = "var(--eq-color-surface-subtle)",
+            BorderRadius = camera.CornerRadius.IsZero ? null : TokenCss.Radius(camera.CornerRadius),
+        };
+        if (camera.Session is null) return new RealizedElement("div") { Style = style };
+        return new RealizedElement("video")
+        {
+            Style = style,
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["data-eq-camera"] = camera.Session.Id,
+                ["autoplay"] = "",
+                ["muted"] = "",
+                ["playsinline"] = "",
+                ["aria-label"] = camera.Alt,
+            },
+        };
     }
 
     private static HtmlElement LowerImage(Primitives.Image image)

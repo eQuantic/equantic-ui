@@ -92,7 +92,7 @@ public static class Gallery
         GallerySection.Navigation => 4,
         GallerySection.Feedback => 4,
         GallerySection.Overlays => 4,
-        _ => 5,
+        _ => 6,
     };
 
     public static VisualNode Render(GallerySection section, IAppTheme theme, SectionState state,
@@ -483,6 +483,37 @@ public static class Gallery
         column.Add(Card(theme, "Location",
             "Where PermissionState earns its three values: asking prompts, Denied explains the way "
             + "to Settings, and asking again is never the answer.", whereabouts));
+
+        var filming = Column(Space.S3);
+        var controls = Row(Space.S3);
+        controls.Add(new Button(state.CameraSession is null ? "Start camera" : "Stop", Variant.Secondary)
+        {
+            OnPressed = state.OnToggleCamera,
+            Disabled = state.OnToggleCamera is null,
+        });
+        controls.Add(new Button("Capture", Variant.Primary)
+        {
+            OnPressed = state.OnCapture,
+            Disabled = state.CameraSession is null,
+        });
+        filming.Add(controls);
+        // The node itself: null session = the SurfaceSubtle placeholder, no branching here.
+        filming.Add(new CameraPreview(state.CameraSession, 320, 240)
+        {
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
+            Alt = "Live camera preview",
+        });
+        if (state.Captured is { } still)
+        {
+            filming.Add(new Image(still.ToDataUri(), 160, 120, ImageFit.Cover, "captured still")
+            {
+                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Small)),
+            });
+            filming.Add(Label(theme, $"{still.Width}×{still.Height} · {still.ByteCount / 1024} KB · {still.MimeType}"));
+        }
+        column.Add(Card(theme, "Camera",
+            "The one capability whose answer is a picture that MOVES — a new node in the "
+            + "vocabulary, composited by the engine like any other texture.", filming));
         return column;
     }
 

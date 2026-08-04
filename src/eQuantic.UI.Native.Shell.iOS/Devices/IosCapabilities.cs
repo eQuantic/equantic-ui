@@ -18,5 +18,6 @@ public sealed class IosCapabilities : IPhotonCapabilities
         services.TryAddSingleton<IBiometrics, IosBiometrics>();
         services.TryAddSingleton<IMotionSensor, AppleMotionSensor>();
         services.TryAddSingleton<ILocation, AppleLocation>();
+        services.TryAddSingleton<ICamera, AppleCamera>();
     }
 }

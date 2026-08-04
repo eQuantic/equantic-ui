@@ -471,6 +471,16 @@ export interface ScrollViewNode extends VisualNodeValue {
   height?: SizeValueValue;
 }
 
+/** A live camera surface — the session id names the MediaStream the runtime attaches. */
+export interface CameraPreviewNode extends VisualNodeValue {
+  nodeKind: 'cameraPreview';
+  session?: { id: string } | null;
+  width: number;
+  height: number;
+  cornerRadius?: CornerRadiiValue | null;
+  alt?: string;
+}
+
 export interface ImageNode extends VisualNodeValue {
   nodeKind: 'image';
   source: string;
