@@ -596,6 +596,43 @@ public class ComponentParser
             definition.Constructors.Add(primaryDef);
         }
 
+        /// <summary>
+        /// Whether an interface parameter is a DEPENDENCY rather than a shape data arrives in.
+        /// <para>
+        /// The runtime's own interfaces are not dependencies: `IReadOnlyList&lt;AccordionItem&gt;` is
+        /// how a component receives its items, and an Accordion resolving its rows from a container
+        /// is nonsense — which is exactly what the first version of this rule did, and what the
+        /// committed transpilation caught within the hour.
+        /// </para>
+        /// </summary>
+        static bool IsDependency(ITypeSymbol service) =>
+            service.ContainingNamespace?.ToDisplayString() is { } space
+            && !space.StartsWith("System", StringComparison.Ordinal);
+
+        // The parameter, and whether it is a dependency. Asked of the MODEL rather than guessed from
+        // the name: `IPhotoLibrary` looks like an interface and so does a class somebody called
+        // that, and only one of them belongs in the container.
+        ParameterDefinition Describe(ParameterSyntax param)
+        {
+            var described = new ParameterDefinition
+            {
+                Name = param.Identifier.ValueText,
+                Type = param.Type?.ToString() ?? "object",
+                DefaultValueNode = param.Default?.Value,
+            };
+
+            if (param.Type is not null
+                && TryGetSemanticModel(param.SyntaxTree) is { } model
+                && model.GetTypeInfo(param.Type).Type is { TypeKind: TypeKind.Interface } service
+                && IsDependency(service))
+            {
+                described.IsService = true;
+                described.ServiceKey = service.Name;
+            }
+
+            return described;
+        }
+
         var constructors = classDecl.Members
             .OfType<ConstructorDeclarationSyntax>()
             .Where(c => c.ParameterList.Parameters.Count > 0); // Only non-default constructors
@@ -613,12 +650,7 @@ public class ComponentParser
 
             foreach (var param in ctor.ParameterList.Parameters)
             {
-                ctorDef.Parameters.Add(new ParameterDefinition
-                {
-                    Name = param.Identifier.ValueText,
-                    Type = param.Type?.ToString() ?? "object",
-                    DefaultValueNode = param.Default?.Value
-                });
+                ctorDef.Parameters.Add(Describe(param));
             }
 
             definition.Constructors.Add(ctorDef);

@@ -122,6 +122,13 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
   shape no capability can hand an app. `PhotonActivity.PickAsync` bridges it once, so every
   capability that starts an intent gets to be an ordinary awaitable method.
 
-  **Still open for web parity:** a transpiled page's constructor does not yet resolve services. The
-  browser realization is registered and tested; what is missing is the eqc emitting the resolution
-  for a `page(IPhotoLibrary library)` the way ActivatorUtilities does natively.
+  **Web parity closed.** A transpiled constructor now resolves its dependencies itself, which is
+  what ActivatorUtilities does natively: a parameter whose type is an INTERFACE leaves the
+  signature and is resolved from the container before the C# body runs, keyed by the interface's
+  name — the one thing that survives the crossing, since a C# type does not exist at run time in a
+  browser.
+
+  The rule needed one narrowing, and the committed transpilation found it within the hour: the
+  runtime's own interfaces are not dependencies. `IReadOnlyList<AccordionItem>` is how a component
+  receives its items, and an Accordion resolving its rows from a container is nonsense. Anything in
+  a `System.*` namespace is data.

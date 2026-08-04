@@ -43,6 +43,9 @@ public static class Eq
     /// <c>Set.add</c> returns the set, so the toggle idiom silently stops removing.</summary>
     public const string SetAdd = "$eq.collections.setAdd";
 
+    /// <summary>The container, for a constructor dependency — the browser's ActivatorUtilities.</summary>
+    public const string ResolveService = "$eq.services.resolve";
+
     /// <summary>How many a collection holds, whichever shape it turned out to be.</summary>
     public const string Count = "$eq.collections.count";
 
