@@ -208,7 +208,7 @@ public sealed class RhiRenderer : IDisposable
     public const int ColorSlot = 1;
 
     private readonly IRhiDevice _device;
-    private readonly Dictionary<TextureData, IRhiTexture> _textures = new();
+    private readonly Dictionary<TextureData, (IRhiTexture Texture, int Version)> _textures = new();
     private IRhiTexture? _dummy;
 
     public RhiRenderer(IRhiDevice device) => _device = device;
@@ -619,12 +619,19 @@ public sealed class RhiRenderer : IDisposable
     }
 
     /// <summary>Uploads (and caches by IDENTITY) a display-list raster. Cache lifetime is the
-    /// renderer's — the host's raster caches reuse instances across frames, so entries stay warm.</summary>
+    /// renderer's — the host's raster caches reuse instances across frames, so entries stay warm.
+    /// A LIVE texture (camera) mutates its bytes in place and bumps <see cref="TextureData.Version"/>:
+    /// same instance, same cache slot, re-uploaded when the number moved — which is what keeps a
+    /// 30 fps feed at exactly ONE GPU texture instead of a new leaked one per frame.</summary>
     private IRhiTexture TextureFor(TextureData data)
     {
-        if (_textures.TryGetValue(data, out var cached)) return cached;
+        if (_textures.TryGetValue(data, out var cached))
+        {
+            if (cached.Version == data.Version) return cached.Texture;
+            cached.Texture.Dispose();
+        }
         var texture = _device.CreateTexture(data);
-        _textures[data] = texture;
+        _textures[data] = (texture, data.Version);
         return texture;
     }
 
@@ -632,7 +639,7 @@ public sealed class RhiRenderer : IDisposable
 
     public void Dispose()
     {
-        foreach (var texture in _textures.Values) texture.Dispose();
+        foreach (var entry in _textures.Values) entry.Texture.Dispose();
         _textures.Clear();
         _dummy?.Dispose();
         _dummy = null;

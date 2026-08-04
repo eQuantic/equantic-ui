@@ -79,6 +79,15 @@ public sealed class TextureData
     public byte[] Alpha { get; }
 
     public TextureFormat Format { get; }
+
+    /// <summary>
+    /// Bumped after mutating <see cref="Alpha"/> IN PLACE — a live camera writes each frame into
+    /// the same instance and increments this, and the renderer re-uploads when the number moved.
+    /// Static rasters never touch it, and their cache behaviour is exactly what it was. This is
+    /// what keeps a 30 fps feed from minting a new instance per frame into an identity-keyed cache
+    /// that never evicts — which would be a GPU leak with a frame rate.
+    /// </summary>
+    public int Version { get; set; }
 }
 
 /// <summary>How a <see cref="TextureData"/>'s bytes are interpreted.</summary>

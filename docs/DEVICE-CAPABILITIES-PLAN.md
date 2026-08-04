@@ -277,3 +277,35 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
   a RequestPermissionsAsync bridge on PhotonActivity — the permission twin of PickAsync; compiled,
   not run. Web is navigator.geolocation, whose contract this IS; the permission property is a
   lazily-honest cache because the Permissions API answers asynchronously.
+
+- **2026-08-04 (D7)** — **the camera**, and with it the track's last box: LIVE VIDEO in the
+  vocabulary, running in the window.
+
+  The node first. `CameraPreview(session, w, h)` is the vocabulary's first surface whose pixels
+  the engine does not draw from a display list alone — and it is composited as an ORDINARY
+  texture, deliberately. AVCaptureVideoPreviewLayer would have been zero-copy and OUTSIDE the
+  engine: above every clip, radius, transform and overlay the display list draws. A preview that
+  ignores the page's own geometry is not a node, it is a hole. One BGRA→RGBA swizzle per frame is
+  the price, and the M-series does not notice it.
+
+  The engine grew the one primitive this needed: `TextureData.Version`. The session mutates ONE
+  byte array in place and bumps the number; the renderer's identity cache re-uploads the same GPU
+  slot when it moved. Without this, 30 new instances per second would have met a cache that never
+  evicts — a GPU leak with a frame rate (and the audit found the existing smaller one: an Image
+  whose source changes already leaked a texture).
+
+  PROVEN LIVE: the Studio's Device section streamed the FaceTime camera into the window — real
+  faces, moving, through AVCaptureSession → runtime delegate → per-frame swizzle → texture →
+  Metal. Capture hands back a BMP still (54-byte header written by hand; a capture is an input to
+  the app's pipeline, not an archival format) that the same page shows via data URI. Stop disposes
+  the session and the camera LIGHT goes out — verified by the menu bar's own indicator.
+
+  Web is getUserMedia: the node lowers to a muted autoplaying `<video>` carrying the session id,
+  and the stream attaches in the same after-the-pass moment the shortcut set commits. Pixels never
+  cross into script; capture is a canvas drawImage → PNG, the browser's own encoder. The C#
+  WebRealizer twin pins both shapes (no session = the placeholder div, which is every SSR).
+
+  KNOWN ISSUE, stated rather than hidden: the 640×480 session preset does not take on this Mac —
+  canSetSessionPreset says yes, setSessionPreset is called (before AND after addInput; both were
+  tried), and frames arrive at 1920×1080 anyway. The preview works; the cost is a bigger swizzle.
+  Next lever when it matters: setting the AVCaptureDevice's activeFormat directly.

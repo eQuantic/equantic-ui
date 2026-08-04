@@ -540,6 +540,10 @@ public static class PhotonRealizer
                 EmitImage(node, image, theme, mode, builder, motion);
                 break;
 
+            case CameraPreview camera:
+                EmitCameraPreview(node, camera, theme, mode, builder, motion);
+                break;
+
             // Spec A10, W4 fence: a tinted disc at 30% alpha stands in for the glyph until the atlas
             // lands — the same documented placeholder pattern as text bars.
             case Icon icon:
@@ -939,6 +943,53 @@ public static class PhotonRealizer
                     new CornerRadii(barHeight / 3)),
                 Paint.Solid(color));
         }
+    }
+
+    /// <summary>
+    /// The live camera surface. The session mutates ONE byte array and bumps a version; this keeps
+    /// ONE TextureData wrapping that array and mirrors the version, so the renderer's identity
+    /// cache re-uploads the same GPU slot instead of minting a leaked texture per frame. While a
+    /// session is on screen the frame clock keeps turning — video IS motion.
+    /// </summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ICameraSession, TextureData>
+        LiveFrames = new();
+
+    private static void EmitCameraPreview(LayoutNode node, CameraPreview camera, IAppTheme theme,
+        ThemeMode mode, DisplayListBuilder builder, MotionScope motion)
+    {
+        var rrect = new RRect(node.Bounds, camera.CornerRadius);
+        if (camera.Session is not { FrameBytes: { } bytes, FrameWidth: > 0 } session)
+        {
+            // Not started (or no pixels yet): the same SurfaceSubtle placeholder Image degrades to.
+            builder.FillRRect(rrect, Paint.Solid(theme.SurfaceSubtle.Resolve(mode)));
+            return;
+        }
+
+        motion.Active = true;   // frames keep arriving; the host must keep asking for them
+
+        if (!LiveFrames.TryGetValue(session, out var texture)
+            || texture.Width != session.FrameWidth || texture.Height != session.FrameHeight
+            || !ReferenceEquals(texture.Alpha, bytes))
+        {
+            texture = TextureData.Rgba(session.FrameWidth, session.FrameHeight, bytes);
+            LiveFrames.Remove(session);
+            LiveFrames.Add(session, texture);
+        }
+        texture.Version = session.FrameVersion;
+
+        builder.PushClip(rrect);
+        builder.Texture(CoverRect(node.Bounds, session.FrameWidth, session.FrameHeight),
+            Color.White, texture);
+        builder.PopClip();
+    }
+
+    /// <summary>Center-crop: the rect that fills the slot at the source's aspect (ImageFit.Cover).</summary>
+    private static Rect CoverRect(in Rect slot, float sourceW, float sourceH)
+    {
+        var scale = MathF.Max(slot.Width / sourceW, slot.Height / sourceH);
+        var w = sourceW * scale;
+        var h = sourceH * scale;
+        return new Rect(slot.X + (slot.Width - w) / 2, slot.Y + (slot.Height - h) / 2, w, h);
     }
 
     /// <summary>The TextEntry stand-in (spec B9 fence): one soft bar per the W4 text placeholder

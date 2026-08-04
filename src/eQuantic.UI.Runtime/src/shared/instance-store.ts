@@ -16,6 +16,7 @@
  */
 
 import { commitShortcuts } from '../dom/shortcuts';
+import { attachCameraStreams } from './devices/camera';
 
 /** The duck-typed surface of a transpiled shared-stateful instance (marker set by the base class). */
 interface SharedStatefulLike {
@@ -106,6 +107,9 @@ export function exitPass(): void {
   // Spec S8: the pass's Shortcut declarations become the live set — bindings whose subtree was not
   // re-lowered drop out, which is how unmounting unsubscribes.
   commitShortcuts();
+  // A CameraPreview lowered this pass has a fresh <video>; the stream re-attaches here, the same
+  // after-the-pass moment the shortcut set commits.
+  attachCameraStreams();
   activePass = null;
 }
 

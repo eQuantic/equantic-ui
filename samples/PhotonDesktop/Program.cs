@@ -16,6 +16,7 @@ public partial class Program
         // The DECLARATION half of D6: the generator reads this call, the bundle writes the
         // NSLocationUsageDescription the system shows in its own prompt. No plist anywhere.
         builder.Capabilities.UseLocation("Shows where this Mac is — the capability demo.");
+        builder.Capabilities.UseCamera("Shows a live preview in the Device section.");
 
         builder.Configure(photon =>
         {

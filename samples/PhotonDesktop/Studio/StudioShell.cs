@@ -29,8 +29,14 @@ public sealed class StudioShell : StatefulComponent
     /// </param>
     public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null,
         IBiometrics? biometrics = null, INetworkStatus? network = null, IMotionSensor? motion = null,
-        ILocation? location = null)
+        ILocation? location = null, ICamera? camera = null)
     {
+        if (camera?.IsAvailable == true)
+        {
+            _demo.OnToggleCamera = () => ToggleCameraAsync(camera);
+            _demo.OnCapture = () => SetState(() => _demo.Captured = _demo.CameraSession?.Capture());
+        }
+
         if (location?.IsAvailable == true)
             _demo.OnLocate = () => LocateAsync(location);
 
@@ -99,6 +105,22 @@ public sealed class StudioShell : StatefulComponent
                 PermissionState.NotDetermined => "No answer — the prompt was dismissed.",
                 _ => "Granted, but no fix arrived. Is Location Services on?",
             });
+    }
+
+    /// <summary>
+    /// D7: start prompts (asking IS the permission flow); stop disposes, which is what turns the
+    /// camera light off — the user's own evidence the feed ended.
+    /// </summary>
+    private async void ToggleCameraAsync(ICamera camera)
+    {
+        if (_demo.CameraSession is { } running)
+        {
+            running.Dispose();
+            SetState(() => _demo.CameraSession = null);
+            return;
+        }
+        var session = await camera.StartPreviewAsync();
+        SetState(() => _demo.CameraSession = session);
     }
 
     /// <summary>
@@ -523,6 +545,12 @@ public sealed class SectionState
     /// <summary>D6: what asking for the position came to, in words the user can act on.</summary>
     public string? Position;
     public Action? OnLocate;
+
+    /// <summary>D7: the running feed (null = stopped), the last still, and the two controls.</summary>
+    public ICameraSession? CameraSession;
+    public ImageData? Captured;
+    public Action? OnToggleCamera;
+    public Action? OnCapture;
 
     public string Name = "Ana Beatriz Nogueira";
     public string Email = "";
