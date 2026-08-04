@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine.Metal\eQuantic.UI.Native.Engine.Metal.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine.Vulkan\eQuantic.UI.Native.Engine.Vulkan.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Components\eQuantic.UI.Native.Components.csproj" />
+    <ProjectReference Include="..\..\src\eQuantic.UI.Native.Shell.Apple\eQuantic.UI.Native.Shell.Apple.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Codegen\eQuantic.UI.Codegen.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Hosting\eQuantic.UI.Native.Hosting.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" />

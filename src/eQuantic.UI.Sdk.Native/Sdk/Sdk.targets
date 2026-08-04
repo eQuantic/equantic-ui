@@ -89,16 +89,37 @@
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; bundle --app &quot;$(_EqBundleDir)&quot; --exec &quot;$(AssemblyName)&quot; --name &quot;$(_EqAppName)&quot; --id &quot;$(_EqBundleId)&quot; --version &quot;$(Version)&quot; --icns &quot;$(_EqIcns)&quot;"
               StandardOutputImportance="normal" />
 
-        <!-- The payload: the build's own output, verbatim. The apphost inside the bundle is the
-             same one `dotnet build` already wrote, so `open` launches exactly what `dotnet run` does. -->
+        <!--
+            The payload: what the app needs to RUN, and nothing else. Debug symbols and the runtime
+            packs for other operating systems are not payload — and they are not merely wasteful.
+            codesign refuses to sign a bundle with unsignable files under Contents/MacOS, so a
+            single stray .pdb leaves the app unsigned; and an unsigned app is refused by the very
+            capabilities that check who is asking. LocalAuthentication simply never showed its sheet
+            and never said why, which cost an afternoon to find.
+        -->
         <ItemGroup>
             <_EqBundlePayload Include="$(TargetDir)**/*"
-                              Exclude="$(TargetDir)$(_EqAppName).app/**/*;$(TargetDir)**/*.app/**/*" />
+                              Exclude="$(TargetDir)$(_EqAppName).app/**/*;$(TargetDir)**/*.app/**/*;
+                                       $(TargetDir)**/*.pdb;
+                                       $(TargetDir)runtimes/win*/**/*;
+                                       $(TargetDir)runtimes/linux*/**/*;
+                                       $(TargetDir)runtimes/android*/**/*;
+                                       $(TargetDir)runtimes/ios*/**/*" />
         </ItemGroup>
         <Copy SourceFiles="@(_EqBundlePayload)"
               DestinationFiles="@(_EqBundlePayload->'$(_EqBundleDir)/Contents/MacOS/%(RecursiveDir)%(Filename)%(Extension)')"
               SkipUnchangedFiles="true" />
         <Exec Command="chmod +x &quot;$(_EqBundleDir)/Contents/MacOS/$(AssemblyName)&quot;" />
+
+        <!--
+            And SIGN it, ad hoc, under the bundle's own identifier. Without this the identity is
+            whatever the apphost was signed as — "apphost" — and a capability that asks who is
+            calling gets an answer that names nothing. Ad hoc is right for a development build: it
+            proves nothing about origin, which is honest, and it is what a local app needs to be
+            treated as an app at all. A shipped build re-signs with a real identity.
+        -->
+        <Exec Command="codesign --force --deep --sign - --identifier &quot;$(_EqBundleId)&quot; &quot;$(_EqBundleDir)&quot;"
+              ContinueOnError="true" StandardOutputImportance="normal" />
     </Target>
 
     <!--
