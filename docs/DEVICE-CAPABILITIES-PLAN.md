@@ -107,4 +107,21 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
   produced `NSPhotoLibraryUsageDescription` + `NSFaceIDUsageDescription` in the plist and
   `READ_MEDIA_IMAGES` + `USE_BIOMETRIC` in the Android manifest.
 
-  Next: the same capability on iOS, Android and web.
+  **The same capability on all four.** iOS through PHPicker, Android through the Photo Picker
+  (falling back to ACTION_OPEN_DOCUMENT below 13), the browser through a file input. What the three
+  modern pickers have in common is the reason none of them asks for a permission: they run OUTSIDE
+  the app, hand over exactly what was tapped, and the app never sees the library. Asking for
+  READ_MEDIA_IMAGES to use them would put a prompt in front of the user for access the app does not
+  want — which is how apps teach users to say no.
+
+  So `GetPermissionAsync` answers Granted on all four. That is not a hole in the model; it is the
+  honest answer for a picker whose contract is "you get what was chosen". D2 (biometrics) and D6
+  (location) are where NotDetermined and Denied start to mean something.
+
+  Android needed one piece of plumbing: activity results arrive through a callback, which is a
+  shape no capability can hand an app. `PhotonActivity.PickAsync` bridges it once, so every
+  capability that starts an intent gets to be an ordinary awaitable method.
+
+  **Still open for web parity:** a transpiled page's constructor does not yet resolve services. The
+  browser realization is registered and tested; what is missing is the eqc emitting the resolution
+  for a `page(IPhotoLibrary library)` the way ActivatorUtilities does natively.

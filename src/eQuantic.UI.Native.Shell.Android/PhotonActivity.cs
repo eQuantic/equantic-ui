@@ -1,3 +1,4 @@
+using Android.Content;
 using Android.Content.PM;
 using Android.Graphics;
 using Android.Runtime;
@@ -54,9 +55,54 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// <summary>The app the runner built. Static because Android constructs the Activity itself.</summary>
     internal static PhotonApplication? Application { get; set; }
 
+    /// <summary>
+    /// The activity on screen. A capability needs one to start anything — a picker, a camera, a
+    /// permission prompt — and Android constructs the activity itself, so it says which it is.
+    /// </summary>
+    internal static PhotonActivity? Current { get; private set; }
+
+    private readonly Dictionary<int, TaskCompletionSource<Intent?>> _pending = new();
+    private int _nextRequest = 1;
+
+    /// <summary>
+    /// Starts something and AWAITS what comes back. Android answers activity results through a
+    /// callback on the activity, which is a shape no capability can expose to an app — so it is
+    /// bridged here, once, and every capability that starts an intent gets to be an ordinary
+    /// awaitable method.
+    /// </summary>
+    internal Task<Intent?> PickAsync(Intent intent, CancellationToken cancellationToken = default)
+    {
+        var completion = new TaskCompletionSource<Intent?>();
+        int request;
+        lock (_pending)
+        {
+            request = _nextRequest++;
+            _pending[request] = completion;
+        }
+
+        // Cancelling stops the WAIT, not the system UI: nothing can dismiss the picker from here,
+        // and pretending otherwise would leave a caller believing it had.
+        cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
+        StartActivityForResult(intent, request);
+        return completion.Task;
+    }
+
+    protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
+    {
+        base.OnActivityResult(requestCode, resultCode, data);
+        TaskCompletionSource<Intent?>? completion;
+        lock (_pending)
+        {
+            if (!_pending.Remove(requestCode, out completion)) return;
+        }
+        // Cancelled and "came back with nothing" are the same answer to a caller: no picture.
+        completion.TrySetResult(resultCode == Result.Ok ? data : null);
+    }
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+        Current = this;
 
         _view = new SurfaceView(this);
         _view.Holder!.AddCallback(this);
