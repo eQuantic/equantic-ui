@@ -192,3 +192,30 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
   And the identity rule earned another scar: a `Button` is a component, so the `Pressable` inside it
   is rebuilt on every layout. Reference identity fails on the very next frame even with no state
   change at all — not just across a `SetState`, which is how it kept looking almost-right.
+
+- **2026-08-04 (D4)** — **network status**, the first capability whose answer does not hold still.
+
+  The contract is `Current` (answers from the monitor's cache, safe in a Build) plus
+  `Subscribe(Action<NetworkState>)` returning an IDisposable — a disposable rather than a .NET
+  event, deliberately: components are torn down and rebuilt constantly, and an event subscription
+  has no end you can see. The kind (`Wifi`/`Cellular`/`Wired`/`Other`) is what "should I download a
+  gigabyte here" reads.
+
+  Apple's realization is NWPathMonitor — the same framework on the Mac and the iPhone — and it is
+  the first DIRECT beneficiary of the ObjCBlock lifetime fix: the monitor OWNS its update handler,
+  copies it on install and releases it on cancel, exactly the cycle that used to crash after the
+  biometric prompt. The dylib path was probed with dlopen before being written down: the C API
+  lives in the framework binary, not in the plausible-looking /usr/lib/swift path.
+
+  Proven END TO END in the window, with the app's own log because the remote-automation route
+  cannot see through an offline window (requests do not arrive while the network is down —
+  learned the honest way): launch → `Online, Wifi`; `networksetup` wifi off → `Offline, None`;
+  wifi on → `Online, Wifi`, all flowing through Subscribe → SetState with no refresh anywhere.
+
+  Android reads ConnectivityManager's default-network callback and answers `Current` from the
+  ACTIVE network rather than a cached callback (a phone that never changes networks would
+  otherwise answer Offline forever); compiled, not run. Web is `navigator.onLine` and the
+  online/offline events; the kind is honestly `other` while online rather than a guess, because
+  the Network Information API never shipped outside Chromium. `UseNetworkStatus()` takes no reason
+  string — nothing anywhere shows one, and a demanded sentence nobody reads teaches filler; it
+  maps to ACCESS_NETWORK_STATE on Android and to nothing at all on Apple.

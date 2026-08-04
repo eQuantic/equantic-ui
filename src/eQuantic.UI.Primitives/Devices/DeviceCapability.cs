@@ -16,6 +16,10 @@ public enum DeviceCapability
     /// <summary>Reading what the user already has: the photo library.</summary>
     PhotoLibrary,
 
+    /// <summary>Observing whether the device is online and through what. No prompt anywhere; on
+    /// Android it is an install-time manifest entry the user never sees.</summary>
+    NetworkStatus,
+
     /// <summary>Writing into the photo library.</summary>
     PhotoLibraryAdd,
 
