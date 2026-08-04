@@ -80,4 +80,16 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
 
 ## Status log
 
-- **2026-08-04** — plan written. D1 starting.
+- **2026-08-04** — plan written. The shape landed: capabilities as services, discovered per shell
+  through `IPhotonCapabilities` the same way the runner already is, and registered LAST so an app's
+  own registration (a fake in a test) wins. `IPhotoLibrary` realized on macOS with an open panel,
+  and the Studio grew a **Device** section that takes it through its constructor — confirmed in the
+  window end to end: system panel → chosen file → bytes → an `Image`, with `1176×877 · 870 KB ·
+  image/png` read from the header.
+
+  Two pieces the demo asked for and got: `ImageHeader` (dimensions from PNG/JPEG/GIF headers,
+  (0,0) for anything else) and `DataUri` (an image the user picked may never have been a file, so
+  the source string carries the bytes — native loaders decode it, browsers already do).
+
+  Next: writing the platform keys from `[assembly: PhotonCapability]` — the step where "nobody
+  opens an Info.plist" becomes true — then the same capability on iOS, Android and web.

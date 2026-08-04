@@ -20,4 +20,18 @@ public sealed record ImageData(
 {
     /// <summary>How big the file is. Useful before deciding to upload it.</summary>
     public int ByteCount => Bytes.Length;
+
+    /// <summary>
+    /// These bytes as an <c>Image</c> source. A data URI because it is the ONE spelling every
+    /// target already understands: the browser natively, and the native loaders by decoding it —
+    /// so a page that shows what the user just picked is the same page on all four, with no
+    /// temporary file and no path to clean up.
+    /// <para>
+    /// It is not free: base64 is a third bigger than the bytes, and a large photograph held as a
+    /// string is a large photograph held twice. For a thumbnail or a preview that is the right
+    /// trade; for keeping a 40-megapixel original, hold the <see cref="Bytes"/> and hand them to
+    /// whatever stores them.
+    /// </para>
+    /// </summary>
+    public string ToDataUri() => $"data:{MimeType};base64,{Convert.ToBase64String(Bytes)}";
 }

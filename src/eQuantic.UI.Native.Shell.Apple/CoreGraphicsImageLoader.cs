@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
 
 namespace eQuantic.UI.Native.Shell.Apple;
@@ -55,18 +56,22 @@ public sealed partial class CoreGraphicsImageLoader : IImageLoader
     [LibraryImport(CoreGraphics)]
     private static partial void CGContextRelease(IntPtr context);
 
-    public RgbaImage? Load(string source)
+    private static byte[]? ReadFile(string path)
     {
-        byte[] file;
         try
         {
-            if (!File.Exists(source)) return null;
-            file = File.ReadAllBytes(source);
+            return File.Exists(path) ? File.ReadAllBytes(path) : null;
         }
         catch
         {
             return null;
         }
+    }
+
+    public RgbaImage? Load(string source)
+    {
+        var file = DataUri.TryDecode(source, out var inline) ? inline : ReadFile(source);
+        if (file is null) return null;
 
         IntPtr cfData = IntPtr.Zero, imageSource = IntPtr.Zero, image = IntPtr.Zero;
         IntPtr colorSpace = IntPtr.Zero, context = IntPtr.Zero;

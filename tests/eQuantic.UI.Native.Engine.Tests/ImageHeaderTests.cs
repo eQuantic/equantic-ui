@@ -1,4 +1,5 @@
 using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;
 
@@ -53,5 +54,36 @@ public class ImageHeaderTests
         // A zero-length segment would walk the cursor nowhere for ever.
         var broken = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         ImageHeader.Measure(broken).Should().Be((0, 0));
+    }
+}
+
+/// <summary>
+/// Bytes carried inside a URI. An image the user just picked may never have been a file, so the
+/// source string carries the bytes — which every target already understands.
+/// </summary>
+public class DataUriTests
+{
+    [Fact]
+    public void ItRoundTripsThroughAnImageSource()
+    {
+        var picked = new ImageData([9, 8, 7, 6], "image/png", 2, 2, "x.png");
+
+        DataUri.TryDecode(picked.ToDataUri(), out var bytes).Should().BeTrue();
+        bytes.Should().Equal(picked.Bytes);
+    }
+
+    [Fact]
+    public void APath_IsRejectedCheaply()
+    {
+        // The common case by far, and it must not cost anything to say no to.
+        DataUri.TryDecode("/Users/someone/Pictures/holiday.jpg", out _).Should().BeFalse();
+        DataUri.TryDecode("https://example.com/a.png", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void AMangledOne_ReadsAsNoImage_NotAsACrash()
+    {
+        DataUri.TryDecode("data:image/png;base64,not-base64!!", out _).Should().BeFalse();
+        DataUri.TryDecode("data:image/png,%89PNG", out _).Should().BeFalse();
     }
 }
