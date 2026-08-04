@@ -8,20 +8,29 @@ namespace eQuantic.UI.Native.Shell.Apple;
 /// anything that finishes later.
 /// <para>
 /// A block is a struct with a known layout: an isa pointer naming its kind, flags, a function
-/// pointer, and a descriptor. The runtime exports <c>_NSConcreteStackBlock</c> as the isa for one
-/// built on the stack; this one lives on the heap for as long as the call needs it, which is what
-/// the pinned handle is for. Getting the layout wrong does not fail politely — it jumps to whatever
-/// the fourth field happened to be — so it is written once, here, rather than at each call site.
+/// pointer, and a descriptor. Getting the layout wrong does not fail politely — it jumps to
+/// whatever the fourth field happened to be — so it is written once, here, rather than at each
+/// call site.
+/// </para>
+/// <para>
+/// It declares itself GLOBAL, and that is the whole trick. A framework that will call back later
+/// does not borrow a block, it OWNS one: it copies on the way in and releases when done. A block
+/// that says it lives on the stack invites the runtime to copy it to the heap and free it — with
+/// memory this class allocated and still intends to free itself. A global block is immortal by
+/// contract: copy hands back the same pointer, release does nothing, and the lifetime stays here,
+/// where the handle keeping the delegate alive already is.
 /// </para>
 /// </summary>
-internal sealed class ObjCBlock : IDisposable
+public sealed class ObjCBlock : IDisposable
 {
-    private const string ObjCLib = "/usr/lib/libobjc.A.dylib";
+    /// <summary>Look a symbol up in everything already loaded, rather than naming the library that
+    /// exports it — the blocks runtime has moved between libSystem's sub-libraries before.</summary>
+    private static readonly IntPtr AnyLoadedLibrary = new(-2); // RTLD_DEFAULT
 
-    /// <summary>BLOCK_HAS_COPY_DISPOSE is deliberately NOT set: this block owns nothing the runtime
-    /// would need to copy, and claiming otherwise means a descriptor with two more function
-    /// pointers that do not exist.</summary>
-    private const int BlockFlagsNone = 0;
+    /// <summary>BLOCK_IS_GLOBAL. BLOCK_HAS_COPY_DISPOSE is deliberately NOT set: this block owns
+    /// nothing the runtime would need to copy, and claiming otherwise means a descriptor with two
+    /// more function pointers that do not exist.</summary>
+    private const int BlockIsGlobal = 1 << 28;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Layout
@@ -49,7 +58,7 @@ internal sealed class ObjCBlock : IDisposable
     /// framework might call it — a block whose function pointer outlives its delegate is a crash
     /// that arrives minutes later, in another thread, with nothing pointing back here.
     /// </summary>
-    internal ObjCBlock(Delegate callback)
+    public ObjCBlock(Delegate callback)
     {
         _callback = GCHandle.Alloc(callback);
 
@@ -59,8 +68,8 @@ internal sealed class ObjCBlock : IDisposable
 
         var layout = new Layout
         {
-            Isa = ConcreteStackBlock(),
-            Flags = BlockFlagsNone,
+            Isa = ConcreteGlobalBlock(),
+            Flags = BlockIsGlobal,
             Reserved = 0,
             Invoke = Marshal.GetFunctionPointerForDelegate(callback),
             Descriptor = _descriptor,
@@ -70,16 +79,16 @@ internal sealed class ObjCBlock : IDisposable
     }
 
     /// <summary>What gets passed where a framework expects a block.</summary>
-    internal IntPtr Handle => _block;
+    public IntPtr Handle => _block;
 
-    private static IntPtr ConcreteStackBlock()
+    private static IntPtr ConcreteGlobalBlock()
     {
-        var handle = dlopen(ObjCLib, 2 /* RTLD_NOW */);
-        return dlsym(handle, "_NSConcreteStackBlock");
+        var isa = dlsym(AnyLoadedLibrary, "_NSConcreteGlobalBlock");
+        // A null isa is a block the runtime will follow into nothing, later, on another thread.
+        // Better to say so here, where the stack still names the cause.
+        if (isa == IntPtr.Zero) throw new InvalidOperationException("_NSConcreteGlobalBlock not found");
+        return isa;
     }
-
-    [DllImport("/usr/lib/libSystem.B.dylib")]
-    private static extern IntPtr dlopen(string path, int mode);
 
     [DllImport("/usr/lib/libSystem.B.dylib")]
     private static extern IntPtr dlsym(IntPtr handle, string symbol);

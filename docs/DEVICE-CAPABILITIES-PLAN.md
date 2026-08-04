@@ -148,12 +148,35 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
   against a server), and pretending otherwise would hand apps a method that fails in ways the
   interface cannot describe.
 
-  **What does not work: the prompt never appears on macOS.** `canEvaluatePolicy` answers true, the
-  call to `evaluatePolicy:localizedReason:reply:` is made — and neither the sheet nor the reply ever
-  arrives, with nothing in the system log to say why. The suspect is the hand-built ObjC BLOCK
-  (`ObjCBlock`): a malformed one is ignored silently, which matches exactly what is seen. iOS and
-  Android are written but were run on neither.
+  **It works on macOS**, and the way it was WRONG is the lesson worth keeping.
 
-  What did get fixed regardless: a reply that never comes now times out into `Failed` instead of
-  leaving the promise pending for ever. A button that never answers is the failure mode this
-  codebase spent the day removing, and the cause does not change that.
+  The prompt appeared, the user authenticated, the reply came back — and the app died a second
+  later, in `_Block_release`, on a background thread. The hand-built block claimed to live on the
+  stack. A synchronous API borrows a block and hands it straight back; an asynchronous framework
+  OWNS it — copies it on the way in, releases it when done — and releasing a stack block means the
+  runtime copying and freeing memory this code allocated and still frees itself.
+
+  The block now declares itself GLOBAL: copy hands back the same pointer, release does nothing, and
+  the lifetime stays with the handle that already keeps the delegate alive.
+
+  Two tests had already passed on the broken version, which is the part worth writing down. They
+  checked the block against `enumerateObjectsUsingBlock:` — called three times, arguments intact —
+  and proved the CALL while never touching the LIFETIME. The bug lived entirely in the half the
+  synchronous API does not exercise. `ItSurvivesTheCOPY_AND_RELEASE_AnAsyncFrameworkDoes` does the
+  copy and release by hand, and fails on the old version.
+
+  A reply that never comes still times out into `Failed` rather than leaving the promise pending
+  for ever — worth keeping regardless of the cause. iOS and Android are written but were run on
+  neither.
+
+- **2026-08-04 (later still)** — the macOS bundle was MALFORMED, and finding it was worth the hunt
+  even though it did not fix the biometrics.
+
+  Found while hunting the crash above, and worth its own line. Everything the build produced was being copied into `Contents/MacOS`, debug symbols and the
+  runtime packs for Windows, Linux, Android and iOS included. `codesign` refuses a bundle with
+  unsignable files there, so a single stray `.pdb` left the app unsigned — and the identity it
+  reported was `apphost`, the .NET host's, not the app's. An app that cannot say who it is gets
+  refused by the capabilities that ask, silently.
+
+  The SDK now copies only what runs, and signs ad hoc under the bundle's own identifier
+  (`--deep`, because the managed assemblies beside the apphost each need one of their own).
