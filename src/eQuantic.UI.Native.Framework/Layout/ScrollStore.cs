@@ -30,8 +30,43 @@ public sealed class ScrollStore
     /// </summary>
     public bool Smooth { get; set; } = true;
 
+    /// <summary>
+    /// How far a fling carries per dp/ms of release velocity. The glide's own decay does the
+    /// slowing down, so this only says how much runway the flick buys.
+    /// </summary>
+    private const float FlingReach = 90;
+
     /// <summary>The stored offset, or null when the host never scrolled this view.</summary>
     public float? Get(string path) => _offsets.TryGetValue(path, out var offset) ? offset : null;
+
+    /// <summary>
+    /// Puts an offset exactly where the caller says, now. This is what a FINGER does: the content
+    /// is under it and follows it, with nothing to smooth — smoothing a direct manipulation is how
+    /// a surface stops feeling attached to the hand.
+    /// </summary>
+    public bool ScrollTo(string path, float offset, float maxOffset)
+    {
+        var next = Math.Clamp(offset, 0, MathF.Max(0, maxOffset));
+        if (Get(path) is { } current && current == next) return false;
+        _offsets[path] = next;
+        _targets.Remove(path);
+        return true;
+    }
+
+    /// <summary>
+    /// Carries on after the finger lifts, in proportion to how fast it was moving. The glide is
+    /// already an exponential decay, so a fling is nothing more than a target far enough away —
+    /// the slowing down comes free and matches every other movement in the app.
+    /// </summary>
+    public bool Fling(string path, float velocity, float maxOffset)
+    {
+        if (!Smooth || MathF.Abs(velocity) < 0.05f) return false;
+        var current = Get(path) ?? 0;
+        var target = Math.Clamp(current + velocity * FlingReach, 0, MathF.Max(0, maxOffset));
+        if (target == current) return false;
+        _targets[path] = target;
+        return true;
+    }
 
     /// <summary>Adjusts an offset by <paramref name="delta"/> (positive scrolls toward the content
     /// end), clamped to [0, <paramref name="maxOffset"/>]. Returns true when the value changed.</summary>

@@ -61,6 +61,13 @@ public sealed class PhotonViewController : UIViewController
     public PhotonViewController(NativeHandle handle) : base(handle) =>
         throw new NotSupportedException("PhotonViewController is built in code, not from a storyboard.");
 
+    /// <summary>
+    /// Whether a scroll GLIDES to where it was sent instead of jumping. On by default on every
+    /// surface — a phone rolls too, and a jump reads as a redraw there just as it does on a
+    /// desktop. Reduce Motion turns it off whatever this says.
+    /// </summary>
+    public bool SmoothScroll { get; set; } = true;
+
     /// <summary>Frames actually presented — the self-test's exit evidence, as on macOS.</summary>
     public int FramesPresented { get; private set; }
 
@@ -93,6 +100,7 @@ public sealed class PhotonViewController : UIViewController
             ImageLoader = new CoreGraphicsImageLoader(),
             IconRasterizer = new CoreGraphicsIconRasterizer(),
             ReducedMotion = UIAccessibility.IsReduceMotionEnabled,
+            SmoothScroll = SmoothScroll,
         };
 
         _clock = CADisplayLink.Create(OnFrame);

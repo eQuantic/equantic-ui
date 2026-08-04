@@ -96,6 +96,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             RenderScale = scale,
             TextRasterizer = text,
             IconRasterizer = new AndroidIconRasterizer(),
+            // A phone rolls too: a scroll that jumps reads as a redraw there just as on a desktop.
+            SmoothScroll = app.Options.SmoothScroll,
         };
 
         Choreographer.Instance!.PostFrameCallback(this);
