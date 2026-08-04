@@ -21,7 +21,12 @@ public class ScrollCompositorTests
         content.Add(new Sticky(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 24 })));
         content.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 376 }));
         scroll = new ScrollView(content) { Width = SizeValue.Fill, Height = 200 };
-        return new PhotonHost(scroll, PhotonTheme.Instance, ThemeMode.Light, 300, 200);
+        // The MECHANICS, not the glide: these pin where a wheel puts the content and where the
+        // extent stops it. The gliding is its own feature, with its own tests.
+        return new PhotonHost(scroll, PhotonTheme.Instance, ThemeMode.Light, 300, 200)
+        {
+            SmoothScroll = false,
+        };
     }
 
     private static LayoutNode StickyNode(RealizeResult frame)

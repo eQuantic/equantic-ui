@@ -32,6 +32,29 @@ public sealed class PhotonOptions
 
     public float Height { get; set; } = 844;
 
+    /// <summary>
+    /// How much of the window the system draws. <see cref="WindowChrome.Unified"/> gives the whole
+    /// window to the app and reports the strip the window controls sit in as a top safe-area inset
+    /// — the same channel a phone reports its notch through, so the tree that handles one handles
+    /// the other.
+    /// </summary>
+    public WindowChrome Chrome { get; set; } = WindowChrome.Standard;
+
+    /// <summary>Whether the user may resize the window. A device ignores it.</summary>
+    public bool Resizable { get; set; } = true;
+
+    /// <summary>The smallest the window may be dragged to. Zero leaves the shell's own floor.</summary>
+    public float MinWidth { get; set; }
+
+    public float MinHeight { get; set; }
+
+    /// <summary>
+    /// Whether a wheel or drag GLIDES to where it was sent instead of jumping there. On by default
+    /// — a jump reads as a redraw rather than as movement, and the eye loses its place. Reduce
+    /// Motion turns it off whatever this says.
+    /// </summary>
+    public bool SmoothScroll { get; set; } = true;
+
     /// <summary>Stops after this many presented frames. Zero runs until the app is closed.</summary>
     public int MaxFrames { get; set; }
 }

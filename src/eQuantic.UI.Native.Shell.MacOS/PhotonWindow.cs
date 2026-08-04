@@ -25,8 +25,18 @@ namespace eQuantic.UI.Native.Shell.MacOS;
 /// </summary>
 public sealed class PhotonWindow
 {
-    private const ulong StyleTitledClosableMiniaturizableResizable = 1 | 2 | 4 | 8;
+    private const ulong StyleTitled = 1;
+    private const ulong StyleClosable = 2;
+    private const ulong StyleMiniaturizable = 4;
+    private const ulong StyleResizable = 8;
+    /// <summary>The content view extends UNDER the title bar — the whole window is the app's.</summary>
+    private const ulong StyleFullSizeContentView = 1UL << 15;
     private const ulong BackingBuffered = 2;
+
+    /// <summary>How tall the strip the window controls sit in is. Reported as a top safe-area inset
+    /// under <see cref="WindowChrome.Unified"/>, so an app insets its own toolbar the same way it
+    /// insets under a phone's notch.</summary>
+    private const float TitleBarHeight = 28;
     private const ulong EventTypeLeftMouseDown = 1;
     private const ulong EventTypeLeftMouseUp = 2;
     private const ulong EventTypeMouseMoved = 5;
@@ -39,14 +49,27 @@ public sealed class PhotonWindow
     private float _currentWidth;
     private float _currentHeight;
 
-    public PhotonWindow(string title, float width = 800, float height = 600)
+    public PhotonWindow(string title, float width = 800, float height = 600,
+        WindowChrome chrome = WindowChrome.Standard, bool resizable = true,
+        float minWidth = 0, float minHeight = 0, bool smoothScroll = true)
     {
         _title = title;
         _width = width;
         _height = height;
         _currentWidth = width;
         _currentHeight = height;
+        _chrome = chrome;
+        _resizable = resizable;
+        _minWidth = minWidth > 0 ? minWidth : 320;
+        _minHeight = minHeight > 0 ? minHeight : 240;
+        _smoothScroll = smoothScroll;
     }
+
+    private readonly WindowChrome _chrome;
+    private readonly bool _resizable;
+    private readonly float _minWidth;
+    private readonly float _minHeight;
+    private readonly bool _smoothScroll;
 
     /// <summary>Frames actually presented — the self-test's exit evidence.</summary>
     public int FramesPresented { get; private set; }
@@ -66,13 +89,25 @@ public sealed class PhotonWindow
         SendVoid(app, Sel("finishLaunching"));
 
         // NSWindow + CAMetalLayer content.
+        var styleMask = StyleTitled | StyleClosable | StyleMiniaturizable
+            | (_resizable ? StyleResizable : 0)
+            | (_chrome == WindowChrome.Unified ? StyleFullSizeContentView : 0);
+
         var window = Send(Send(objc_getClass("NSWindow"), Sel("alloc")),
             Sel("initWithContentRect:styleMask:backing:defer:"),
-            new CGRect(0, 0, _width, _height), StyleTitledClosableMiniaturizableResizable, BackingBuffered, false);
+            new CGRect(0, 0, _width, _height), styleMask, BackingBuffered, false);
         SendVoid(window, Sel("setTitle:"), NSString(_title));
+
+        // Unified: the bar stops being drawn and stops being a strip the content sits below — what
+        // stays is the three controls, floating over the app's own top edge.
+        if (_chrome == WindowChrome.Unified)
+        {
+            SendVoid(window, Sel("setTitlebarAppearsTransparent:"), true);
+            SendVoid(window, Sel("setTitleVisibility:"), 1ul); // NSWindowTitleHidden
+        }
         SendVoid(window, Sel("setReleasedWhenClosed:"), false);
         SendVoid(window, Sel("setAcceptsMouseMovedEvents:"), true);
-        SendVoid(window, Sel("setContentMinSize:"), new CGSize(320, 240));
+        SendVoid(window, Sel("setContentMinSize:"), new CGSize(_minWidth, _minHeight));
         SendVoid(window, Sel("center"));
 
         var scale = (float)SendDouble(window, Sel("backingScaleFactor"));
@@ -106,6 +141,11 @@ public sealed class PhotonWindow
         var host = new PhotonHost(root, theme, mode, _width, _height, textService)
         {
             RenderScale = scale,
+            SmoothScroll = _smoothScroll,
+            // Whatever the system kept for itself is a safe area, exactly as a phone's notch is.
+            SafeAreaInsets = _chrome == WindowChrome.Unified
+                ? new EdgeInsets(0, TitleBarHeight, 0, 0)
+                : default,
             // W4b: the Metal textured pipeline is live — REAL glyphs on screen.
             TextRasterizer = textService,
             ImageLoader = new CoreGraphicsImageLoader(),
