@@ -219,3 +219,30 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
   the Network Information API never shipped outside Chromium. `UseNetworkStatus()` takes no reason
   string — nothing anywhere shows one, and a demanded sentence nobody reads teaches filler; it
   maps to ACCESS_NETWORK_STATE on Android and to nothing at all on Apple.
+
+- **2026-08-04 (D5)** — **motion sensors**, and the first capability whose DESKTOP story is the
+  absence.
+
+  `MotionReading` carries what apps want rather than what hardware separates: user acceleration
+  with gravity already removed (shake detection becomes a threshold instead of a subtraction every
+  app writes badly), gravity as its own vector (the input tilt UIs actually read), and rotation
+  rate. One unit set across platforms — g and radians per second, CoreMotion's frame — with the
+  conversions living where the differences do: Android divides its m/s² by standard gravity, the
+  web additionally converts its degrees per second.
+
+  Apple is CMMotionManager through the same shared shell as biometrics and the network, with the
+  framework dlopen'd before `objc_getClass` can find the class. The desktop answer comes from
+  CoreMotion ITSELF — `isDeviceMotionAvailable` says no on a Mac — not from a platform check
+  written here, and the real-framework test pins exactly that. The handler is the global ObjCBlock
+  again, at sensor rate this time. The hardware powers down with the last subscriber: a running
+  gyroscope is a battery cost an idle page should not carry.
+
+  Web availability is stated honestly: the DeviceMotionEvent constructor exists on desktop
+  browsers that will never fire it, so `isAvailable` also wants a coarse touch check, and iOS
+  Safari's `requestPermission` gate is honoured where it exists (asked outside a user gesture,
+  Safari says no and means it). Android fuses LinearAcceleration + Gravity + Gyroscope listeners
+  into the one reading; compiled, not run.
+
+  The Studio's Device section shows the whole point on a desk: "No motion sensors on this desk —
+  and that is the design working, not a gap." The same page on a phone streams readings with no
+  new line written.

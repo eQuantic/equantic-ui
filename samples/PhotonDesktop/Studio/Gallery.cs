@@ -92,7 +92,7 @@ public static class Gallery
         GallerySection.Navigation => 4,
         GallerySection.Feedback => 4,
         GallerySection.Overlays => 4,
-        _ => 3,
+        _ => 4,
     };
 
     public static VisualNode Render(GallerySection section, IAppTheme theme, SectionState state,
@@ -448,6 +448,27 @@ public static class Gallery
         column.Add(Card(theme, "Network",
             "The first capability whose answer does not hold still: the state seeds the page and "
             + "every change streams into SetState.", connectivity));
+
+        var movement = Column(Space.S3);
+        if (state.MotionAvailable && state.Motion is { } sample)
+        {
+            movement.Add(Label(theme,
+                $"gravity ({sample.Gravity.X:0.00}, {sample.Gravity.Y:0.00}, {sample.Gravity.Z:0.00}) g"));
+            movement.Add(Label(theme,
+                $"rotation ({sample.RotationRate.X:0.0}, {sample.RotationRate.Y:0.0}, {sample.RotationRate.Z:0.0}) rad/s"));
+        }
+        else if (state.MotionAvailable)
+        {
+            movement.Add(Label(theme, "Listening — move the device."));
+        }
+        else
+        {
+            movement.Add(Label(theme,
+                "No motion sensors on this desk — and that is the design working, not a gap: "
+                + "IsAvailable is part of the contract, and the tilt UI belongs behind it."));
+        }
+        column.Add(Card(theme, "Motion",
+            "A high-rate stream, and the first capability most devices honestly lack.", movement));
         return column;
     }
 
