@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Engine.Metal;
@@ -103,6 +104,42 @@ public sealed class PhotonWindow
         };
 
         var clock = Stopwatch.StartNew();
+
+        // Draw one frame, wherever we are called from.
+        void Present()
+        {
+            var drawable = Send(layer, Sel("nextDrawable"));
+            if (drawable == IntPtr.Zero) return;
+            var builder = new DisplayListBuilder();
+            host.RenderFrame(builder, (float)clock.Elapsed.TotalMilliseconds);
+            backend.RenderToDrawable(builder.Build(), Send(drawable, Sel("texture")),
+                MetalBackend.PixelFormatBgra8UnormSrgb, drawable);
+            FramesPresented++;
+        }
+
+        // A LIVE RESIZE never returns to the loop below: AppKit runs its own, inside sendEvent:,
+        // until the button comes up. The window keeps growing and the last frame is stretched to
+        // fit it — which is exactly what a resize looked like, snapping into place only on release.
+        // A run-loop OBSERVER is called from inside whatever loop is running, so the frame is drawn
+        // there: it re-measures against the new size and the content follows the edge.
+        AppKit.ObserverCallback onIdle = (_, _, _) =>
+        {
+            var live = SendRect(contentView, Sel("bounds"));
+            if (live.Width <= 0 || live.Height <= 0) return;
+            if ((float)live.Width != _currentWidth || (float)live.Height != _currentHeight)
+            {
+                _currentWidth = (float)live.Width;
+                _currentHeight = (float)live.Height;
+                SendVoid(layer, Sel("setDrawableSize:"), new CGSize(_currentWidth * scale, _currentHeight * scale));
+                host.Resize(_currentWidth, _currentHeight);
+            }
+            if (host.NeedsRender) Present();
+        };
+        var observerHandle = GCHandle.Alloc(onIdle);
+        var observer = AppKit.CFRunLoopObserverCreate(IntPtr.Zero, AppKit.ActivityBeforeWaiting,
+            true, 0, Marshal.GetFunctionPointerForDelegate(onIdle), IntPtr.Zero);
+        AppKit.CFRunLoopAddObserver(AppKit.CFRunLoopGetCurrent(), observer,
+            AppKit.CFStringCreateWithCString(IntPtr.Zero, AppKit.CommonModes, 0x08000100 /* UTF8 */));
         // COMMON modes, not the default one. The moment a button goes down, AppKit switches to
         // NSEventTrackingRunLoopMode and delivers the drag and the mouse-UP there. Asking only for
         // the default mode means the up never arrives: the press is begun and never completed, so
@@ -148,18 +185,7 @@ public sealed class PhotonWindow
                 host.Resize(newW, newH);
             }
 
-            if (host.NeedsRender || forced)
-            {
-                var drawable = Send(layer, Sel("nextDrawable"));
-                if (drawable != IntPtr.Zero)
-                {
-                    var builder = new DisplayListBuilder();
-                    host.RenderFrame(builder, (float)clock.Elapsed.TotalMilliseconds);
-                    backend.RenderToDrawable(builder.Build(), Send(drawable, Sel("texture")),
-                        MetalBackend.PixelFormatBgra8UnormSrgb, drawable);
-                    FramesPresented++;
-                }
-            }
+            if (host.NeedsRender || forced) Present();
 
             if (maxFrames > 0 && FramesPresented >= maxFrames)
             {
