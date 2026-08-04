@@ -79,6 +79,14 @@ public sealed class LayoutNode
     /// the emit pass keys its exit snapshot by it (paths exist only during layout).</summary>
     public string? PresencePath { get; internal set; }
 
+    /// <summary>
+    /// Where this node sits in the tree, in the same stable form the scroll and drag stores key on.
+    /// A gesture outlives the frame it began in — the press repaints, the next Build makes fresh
+    /// nodes, and a target remembered by REFERENCE is gone by the time the finger lifts. The path
+    /// is what stays the same.
+    /// </summary>
+    public string? Path { get; internal set; }
+
     /// <summary>The drag offset (dp downward) of a <see cref="DragDismiss"/> node, resolved at
     /// measure time against the host's drag clock — the emit pass paints the translate.</summary>
     public float DragOffset { get; internal set; }
@@ -110,7 +118,17 @@ public static class LayoutEngine
 
     // ---- measurement (bounds are PARENT-RELATIVE until Absolutize) ------------------------------
 
-    private static LayoutNode Measure(VisualNode node, float maxW, float maxH, LayoutContext ctx, string path) => node switch
+    /// <summary>Measures, then stamps the node with WHERE it is. Every node gets the path, so any
+    /// gesture that has to survive a frame can key on it rather than on an object identity the next
+    /// Build will not share.</summary>
+    private static LayoutNode Measure(VisualNode node, float maxW, float maxH, LayoutContext ctx, string path)
+    {
+        var measured = MeasureCore(node, maxW, maxH, ctx, path);
+        measured.Path ??= path;
+        return measured;
+    }
+
+    private static LayoutNode MeasureCore(VisualNode node, float maxW, float maxH, LayoutContext ctx, string path) => node switch
     {
         Box box => MeasureBox(box, maxW, maxH, ctx, path),
         FlexNode flex => MeasureFlex(flex, maxW, maxH, ctx, path),

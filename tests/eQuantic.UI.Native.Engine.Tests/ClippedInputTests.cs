@@ -130,3 +130,68 @@ public class NestedPressableTests
         page.Fired.Should().Equal(["inner"], "the topmost region is the control itself");
     }
 }
+
+
+/// <summary>
+/// A press begins in one frame and ends in another — always. Showing the pressed state repaints,
+/// and the next Build hands back FRESH nodes, so a target remembered by object identity is already
+/// gone when the finger lifts. Nothing errors: the control lights up, the release finds nothing,
+/// and the handler never runs. A synthetic click that never moves and never spans a frame passes,
+/// which is exactly how this survived every self-test while no human could click anything.
+/// </summary>
+public class PressAcrossFramesTests
+{
+    private sealed class OneButton : Primitives.StatefulComponent
+    {
+        public readonly List<string> Fired = [];
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Button("Continue", onPressed: () => Fired.Add("pressed"));
+    }
+
+    private static (OneButton Page, PhotonHost Host, Point Centre) Mount()
+    {
+        var page = new OneButton();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 390, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        var frame = host.RenderFrame(new DisplayListBuilder(), 1000);
+        return (page, host, frame.HitRegions[^1].Bounds.Center);
+    }
+
+    [Fact]
+    public void APress_ThatSpansAFrame_StillFires()
+    {
+        var (page, host, centre) = Mount();
+
+        host.PressDown(centre.X, centre.Y);
+        host.RenderFrame(new DisplayListBuilder(), 1016);   // the pressed state paints
+        host.PressUp(centre.X, centre.Y);
+
+        page.Fired.Should().Equal(["pressed"]);
+    }
+
+    [Fact]
+    public void APress_ThatWANDERSAndComesBack_StillFires()
+    {
+        var (page, host, centre) = Mount();
+
+        host.PressDown(centre.X, centre.Y);
+        host.PointerMove(centre.X + 2, centre.Y + 2);       // no hand holds perfectly still
+        host.RenderFrame(new DisplayListBuilder(), 1016);
+        host.PressUp(centre.X + 2, centre.Y + 2);
+
+        page.Fired.Should().Equal(["pressed"]);
+    }
+
+    [Fact]
+    public void AReleaseOUTSIDE_StillCancels()
+    {
+        var (page, host, centre) = Mount();
+
+        host.PressDown(centre.X, centre.Y);
+        host.RenderFrame(new DisplayListBuilder(), 1016);
+        host.PressUp(centre.X + 400, centre.Y + 400);
+
+        page.Fired.Should().BeEmpty("a press abandoned off the control is not a press");
+    }
+}

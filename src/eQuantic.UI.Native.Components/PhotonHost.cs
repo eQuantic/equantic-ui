@@ -141,6 +141,10 @@ public sealed class PhotonHost
     private readonly ComponentInstanceStore _instances = new();
 
     private Pressable? _pressed;
+
+    /// <summary>Where the pressed node was, so the release finds it in whatever frame is current by
+    /// then. The object itself does not survive a Build; the path does.</summary>
+    private string? _pressedPath;
     private VisualNode? _hovered;
     private readonly TransitionStore _transitions = new();
     private readonly ScrollStore _scrolls = new();
@@ -231,6 +235,7 @@ public sealed class PhotonHost
             {
                 _drag = drag with { Active = true };
                 _pressed = null;
+                _pressedPath = null;
                 drag = _drag.Value;
             }
             if (drag.Active)
@@ -338,6 +343,7 @@ public sealed class PhotonHost
             if (!region.Bounds.Contains(point)) continue;
             if (region.Node.Disabled) return true; // swallowed, no visual
             _pressed = region.Node;
+            _pressedPath = region.Path;
             NeedsRender = true;
             return true;
         }
@@ -423,8 +429,10 @@ public sealed class PhotonHost
         _drag = null;
 
         var pressed = _pressed;
+        var pressedPath = _pressedPath;
         if (pressed is null) return ResolveLink(x, y);
         _pressed = null;
+        _pressedPath = null;
         NeedsRender = true;
 
         var point = new Point(x, y);
@@ -433,13 +441,22 @@ public sealed class PhotonHost
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             var region = regions[i];
-            if (!ReferenceEquals(region.Node, pressed)) continue;
+            // The SAME pressable, found by where it sits. Matching on object identity looked right
+            // and failed for every press that outlived its frame — which is every real one, because
+            // showing the pressed state repaints and the next Build hands back new nodes.
+            if (!IsTheSamePressable(region, pressed, pressedPath)) continue;
             if (!region.Bounds.Contains(point)) return false; // canceled by releasing outside
-            pressed.OnPressed?.Invoke();
+            region.Node.OnPressed?.Invoke();
             return true;
         }
         return false;
     }
+
+    /// <summary>Whether a region is the one the press began on: the same object while the frame
+    /// survives, and otherwise the same PLACE in the tree.</summary>
+    private static bool IsTheSamePressable(HitRegion region, Pressable pressed, string? pressedPath) =>
+        ReferenceEquals(region.Node, pressed)
+        || (!string.IsNullOrEmpty(pressedPath) && region.Path == pressedPath);
 
     /// <summary>A tap that no pressable claimed: the TOPMOST link region under the point navigates
     /// through the host's seam (a Pressable INSIDE a link wins — checked before this).</summary>

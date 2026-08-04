@@ -58,6 +58,45 @@
               StandardOutputImportance="normal" />
     </Target>
 
+    <!--
+        The macOS head ships as an APPLICATION. Everything the build produced goes inside the
+        bundle, the Info.plist states what the system needs to know, and the icon is the same
+        Assets/AppIcon that feeds the phones. Without this the head is a process with a window: no
+        Dock tile, no menu bar, no app switcher, and nothing the OS will treat as an app.
+        Skipped when an app opts out (EQuanticMacAppBundle=false) or is not an executable.
+    -->
+    <Target Name="EQuanticMacAppBundle" AfterTargets="Build"
+            Condition="'$(_EqPlatform)' == '' AND '$(OutputType)' == 'Exe' AND '$([MSBuild]::IsOSPlatform(`OSX`))' == 'true' AND '$(EQuanticMacAppBundle)' != 'false' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+        <PropertyGroup>
+            <!-- The name the user reads, which a project already states as ApplicationTitle —
+                 the same property MAUI uses, so nobody learns a second one. -->
+            <_EqAppName>$(AssemblyName)</_EqAppName>
+            <_EqAppName Condition="'$(ApplicationTitle)' != ''">$(ApplicationTitle)</_EqAppName>
+            <_EqBundleDir>$(TargetDir)$(_EqAppName).app</_EqBundleDir>
+            <_EqBundleId Condition="'$(EQuanticBundleId)' == ''">com.equantic.$(AssemblyName.ToLowerInvariant())</_EqBundleId>
+            <_EqBundleId Condition="'$(EQuanticBundleId)' != ''">$(EQuanticBundleId)</_EqBundleId>
+            <_EqIcns>$(_EqIconDir)/$(_EqAppName).icns</_EqIcns>
+        </PropertyGroup>
+
+        <Exec Condition="'$(EQuanticAppIconSource)' != ''"
+              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --macos &quot;$(_EqIcns)&quot;"
+              StandardOutputImportance="normal" />
+
+        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; bundle --app &quot;$(_EqBundleDir)&quot; --exec &quot;$(AssemblyName)&quot; --name &quot;$(_EqAppName)&quot; --id &quot;$(_EqBundleId)&quot; --version &quot;$(Version)&quot; --icns &quot;$(_EqIcns)&quot;"
+              StandardOutputImportance="normal" />
+
+        <!-- The payload: the build's own output, verbatim. The apphost inside the bundle is the
+             same one `dotnet build` already wrote, so `open` launches exactly what `dotnet run` does. -->
+        <ItemGroup>
+            <_EqBundlePayload Include="$(TargetDir)**/*"
+                              Exclude="$(TargetDir)$(_EqAppName).app/**/*" />
+        </ItemGroup>
+        <Copy SourceFiles="@(_EqBundlePayload)"
+              DestinationFiles="@(_EqBundlePayload->'$(_EqBundleDir)/Contents/MacOS/%(RecursiveDir)%(Filename)%(Extension)')"
+              SkipUnchangedFiles="true" />
+        <Exec Command="chmod +x &quot;$(_EqBundleDir)/Contents/MacOS/$(AssemblyName)&quot;" />
+    </Target>
+
     <Target Name="EQuanticAppIcon"
             Condition="'$(EQuanticAppIconSource)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')"
             BeforeTargets="_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;_UpdateAndroidResgen;CoreCompile">
