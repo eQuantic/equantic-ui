@@ -10,6 +10,9 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// <summary>What an Android device can do, offered to the container.</summary>
 public sealed class AndroidCapabilities : IPhotonCapabilities
 {
-    public void Register(IServiceCollection services) =>
+    public void Register(IServiceCollection services)
+    {
         services.TryAddSingleton<IPhotoLibrary, AndroidPhotoLibrary>();
+        services.TryAddSingleton<IBiometrics, AndroidBiometrics>();
+    }
 }

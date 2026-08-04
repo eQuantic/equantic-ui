@@ -132,3 +132,28 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
   runtime's own interfaces are not dependencies. `IReadOnlyList<AccordionItem>` is how a component
   receives its items, and an Accordion resolving its rows from a container is nonsense. Anything in
   a `System.*` namespace is data.
+
+- **2026-08-04 (later)** — **D2 biometrics**, and the first capability that does not work yet.
+
+  The contract went in with a six-way result, for the same reason a permission is not a boolean:
+  "did not succeed" hides a wrong finger (try again), a device with nothing enrolled (go to
+  Settings), someone who backed out (leave them alone), and no reader at all (never offer this).
+  An app that collapses them either nags or gives up in silence.
+
+  Apple's side is shared between the Mac and the iPhone — LocalAuthentication is the same framework
+  and only the sensor differs, which is exactly the kind of difference an app should never see.
+  Android uses the FRAMEWORK's BiometricPrompt rather than AndroidX: same prompt, no dependency an
+  app carries for a capability it may never use. The browser reports itself unavailable, on purpose:
+  WebAuthn looks similar from a distance but is a different contract (a credential registered
+  against a server), and pretending otherwise would hand apps a method that fails in ways the
+  interface cannot describe.
+
+  **What does not work: the prompt never appears on macOS.** `canEvaluatePolicy` answers true, the
+  call to `evaluatePolicy:localizedReason:reply:` is made — and neither the sheet nor the reply ever
+  arrives, with nothing in the system log to say why. The suspect is the hand-built ObjC BLOCK
+  (`ObjCBlock`): a malformed one is ignored silently, which matches exactly what is seen. iOS and
+  Android are written but were run on neither.
+
+  What did get fixed regardless: a reply that never comes now times out into `Failed` instead of
+  leaving the promise pending for ever. A button that never answers is the failure mode this
+  codebase spent the day removing, and the cause does not change that.
