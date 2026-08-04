@@ -25,6 +25,20 @@ public sealed class LayoutContext
 
     public bool IndeterminateHeight { get; set; }
 
+    /// <summary>
+    /// The MIRROR of the indeterminate flags: an axis the parent has already decided FOR this child,
+    /// because it aligns stretch. There, a Hug is not a hug — a stretched flex item with an auto
+    /// cross size IS the line's size, which is what CSS does and what makes `Main = Center` inside
+    /// it have any room to centre in. Without this the box was stretched after its contents had
+    /// already been laid out inside the smaller one, so a centred tab label sat against the left
+    /// edge of its cell while the indicator underneath spanned the whole cell.
+    /// <para>One-shot: consumed by the child it was set for, never inherited by that child's own
+    /// children — the same save/restore discipline the indeterminate flags use.</para>
+    /// </summary>
+    public bool StretchWidth { get; set; }
+
+    public bool StretchHeight { get; set; }
+
     public IAppTheme Theme { get; }
 
     /// <summary>Spec S6: the window size class layout resolves AdaptiveNodes against — derived from
@@ -134,15 +148,25 @@ public static class LayoutEngine
     /// Build will not share.</summary>
     private static LayoutNode Measure(VisualNode node, float maxW, float maxH, LayoutContext ctx, string path)
     {
-        var measured = MeasureCore(node, maxW, maxH, ctx, path);
+        // The stretch flags belong to THIS node and to nothing under it: read and cleared here, so a
+        // stretched row does not go on stretching every box inside it.
+        var stretchW = ctx.StretchWidth;
+        var stretchH = ctx.StretchHeight;
+        ctx.StretchWidth = false;
+        ctx.StretchHeight = false;
+
+        var measured = MeasureCore(node, maxW, maxH, ctx, path, stretchW, stretchH);
         measured.Path ??= path;
         return measured;
     }
 
-    private static LayoutNode MeasureCore(VisualNode node, float maxW, float maxH, LayoutContext ctx, string path) => node switch
+    private static LayoutNode MeasureCore(VisualNode node, float maxW, float maxH, LayoutContext ctx, string path,
+        bool stretchW = false, bool stretchH = false) => node switch
     {
-        Box box => MeasureBox(box, maxW, maxH, ctx, path),
-        FlexNode flex => MeasureFlex(flex, maxW, maxH, ctx, path),
+        // Only the nodes that can HAVE an auto size worth stretching take the flags; for the rest
+        // (text, images, fixed primitives) the parent's decision changes nothing.
+        Box box => MeasureBox(box, maxW, maxH, ctx, path, stretchW, stretchH),
+        FlexNode flex => MeasureFlex(flex, maxW, maxH, ctx, path, stretchW, stretchH),
         Stack stack => MeasureStack(stack, maxW, maxH, ctx, path),
         Grid grid => MeasureGrid(grid, maxW, maxH, ctx, path),
         // Spec S6: an AdaptiveNode IS its resolved variant on native — the other variants never
@@ -429,7 +453,8 @@ public static class LayoutEngine
         return result;
     }
 
-    private static LayoutNode MeasureBox(Box box, float maxW, float maxH, LayoutContext ctx, string path)
+    private static LayoutNode MeasureBox(Box box, float maxW, float maxH, LayoutContext ctx, string path,
+        bool stretchW = false, bool stretchH = false)
     {
         var result = new LayoutNode(box);
         var style = box.Style;
@@ -457,8 +482,10 @@ public static class LayoutEngine
             result.Children.Add(child);
         }
 
-        var width = ResolveSelf(style.Width, selfMaxW, (child?.Bounds.Width ?? 0) + style.Padding.Horizontal);
-        var height = ResolveSelf(style.Height, selfMaxH, (child?.Bounds.Height ?? 0) + style.Padding.Vertical);
+        var width = ResolveSelf(style.Width, selfMaxW, (child?.Bounds.Width ?? 0) + style.Padding.Horizontal,
+            stretched: stretchW);
+        var height = ResolveSelf(style.Height, selfMaxH, (child?.Bounds.Height ?? 0) + style.Padding.Vertical,
+            stretched: stretchH);
         width = Clamp(width, style.MinWidth, style.MaxWidth);
         height = Clamp(height, style.MinHeight, style.MaxHeight);
 
@@ -487,7 +514,8 @@ public static class LayoutEngine
 
     // ---- flex ------------------------------------------------------------------------------------
 
-    private static LayoutNode MeasureFlex(FlexNode flex, float maxW, float maxH, LayoutContext ctx, string path)
+    private static LayoutNode MeasureFlex(FlexNode flex, float maxW, float maxH, LayoutContext ctx, string path,
+        bool stretchW = false, bool stretchH = false)
     {
         if (flex.Wrap) return MeasureFlexWrapped(flex, maxW, maxH, ctx, path);
 
@@ -521,6 +549,25 @@ public static class LayoutEngine
             : !float.IsPositiveInfinity(crossMax) ? crossMax - padCross
             : float.PositiveInfinity;
 
+
+        // Whether THIS container decides the child's cross size for it. Only when the container's
+        // own cross extent is known: a hugging container has nothing to hand out, and CSS agrees —
+        // stretch there means "as wide as the widest sibling", which is a second pass, not a size.
+        bool StretchesCross(VisualNode child)
+        {
+            if (child is Text) return false;                       // text sizes itself
+            if ((child.AlignSelf ?? flex.Cross) != CrossAlign.Stretch) return false;
+            if (float.IsPositiveInfinity(crossAvail)) return false;
+            return !(horizontal ? ctx.IndeterminateHeight : ctx.IndeterminateWidth);
+        }
+
+        void MarkStretch(VisualNode child)
+        {
+            if (!StretchesCross(child)) return;
+            if (horizontal) ctx.StretchHeight = true;
+            else ctx.StretchWidth = true;
+        }
+
         var children = flex.Children;
         var laid = new LayoutNode?[children.Count];
         var mains = new float[children.Count];
@@ -551,6 +598,7 @@ public static class LayoutEngine
 
             var childMaxW = horizontal ? mainAvail : crossAvail;
             var childMaxH = horizontal ? crossAvail : mainAvail;
+            MarkStretch(children[i]);
             var child = Measure(children[i], childMaxW, childMaxH, ctx, path + "/" + i);
             laid[i] = child;
             mains[i] = horizontal ? child.Bounds.Width : child.Bounds.Height;
@@ -600,6 +648,10 @@ public static class LayoutEngine
             {
                 var childMaxW = horizontal ? share : crossAvail;
                 var childMaxH = horizontal ? crossAvail : share;
+                // A Flexible is layout-transparent: whatever the container would stretch, it
+                // stretches THROUGH it. Without this the wrapper grew to the cell and the content
+                // inside it stayed at its own width, which is exactly what the tab labels did.
+                MarkStretch(flexible);
                 var child = Measure(flexible.Child, childMaxW, childMaxH, ctx, path + "/" + i + "/0");
                 // The flexible slot IS the share on the main axis (the child fills it).
                 child.Bounds = horizontal
@@ -622,11 +674,17 @@ public static class LayoutEngine
         var mainIndeterminate = horizontal ? ctx.IndeterminateWidth : ctx.IndeterminateHeight;
         var crossIndeterminate = horizontal ? ctx.IndeterminateHeight : ctx.IndeterminateWidth;
 
+        var mainStretched = horizontal ? stretchW : stretchH;
+        var crossStretched = horizontal ? stretchH : stretchW;
+
         var contentMain = rigidSum + (flexTotal > 0 ? leftover : 0) + gapTotal;
         var main = mainSize.Kind switch
         {
             SizeKind.Fixed => mainSize.Value,
             SizeKind.Fill when !mainIndeterminate && !float.IsPositiveInfinity(mainMax) => mainMax,
+            // Stretched by the parent: the auto size IS the size it was given, and only then does
+            // MainAlign have room to place anything — this is what makes a centred label centre.
+            SizeKind.Hug when mainStretched && !mainIndeterminate && !float.IsPositiveInfinity(mainMax) => mainMax,
             _ => contentMain + padMain,
         };
 
@@ -638,6 +696,7 @@ public static class LayoutEngine
         {
             SizeKind.Fixed => crossSize.Value,
             SizeKind.Fill when !crossIndeterminate && !float.IsPositiveInfinity(crossMax) => crossMax,
+            SizeKind.Hug when crossStretched && !crossIndeterminate && !float.IsPositiveInfinity(crossMax) => crossMax,
             _ => crossContent + padCross,
         };
 
@@ -976,10 +1035,13 @@ public static class LayoutEngine
 
     /// <summary>Own size: explicit &gt; Fill &gt; Hug (spec A1). On an INDETERMINATE axis — one the
     /// parent is sizing from its content — Fill has nothing to fill and falls back to Hug.</summary>
-    private static float ResolveSelf(SizeValue size, float available, float hug, bool indeterminate = false) => size.Kind switch
+    private static float ResolveSelf(SizeValue size, float available, float hug, bool indeterminate = false,
+        bool stretched = false) => size.Kind switch
     {
         SizeKind.Fixed => size.Value,
         SizeKind.Fill when !indeterminate && !float.IsPositiveInfinity(available) => available,
+        // Stretched by the parent: an auto size becomes the size the parent decided.
+        SizeKind.Hug when stretched && !indeterminate && !float.IsPositiveInfinity(available) => available,
         _ => hug,
     };
 
