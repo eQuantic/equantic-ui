@@ -901,6 +901,21 @@ export class Image extends VisualNode {
   }
 }
 
+/** Mirror of the C# `Adjustable` node: the child answers to the arrow keys as ONE Tab stop. */
+export class Adjustable extends VisualNode {
+  readonly nodeKind = 'adjustable';
+  child: VisualNode;
+  onAdjust: (direction: number) => void;
+  label = '';
+
+  constructor(child: VisualNode, onAdjust: (direction: number) => void, config?: { label?: string }) {
+    super();
+    this.child = child;
+    this.onAdjust = onAdjust;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /**
  * Mirror of the C# `CameraPreview` node: the LIVE surface. The session is whatever ICamera's
  * realization handed back — here that carries the id the lowered <video> finds its stream by.

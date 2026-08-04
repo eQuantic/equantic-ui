@@ -37,6 +37,7 @@ import type {
   FlexNodeValue,
   FlexibleNode,
   IconNode,
+  AdjustableNode,
   CameraPreviewNode,
   ImageNode,
   GridPatternValue,
@@ -236,6 +237,10 @@ function lowerNode(
       return lowerSafeArea(node as unknown as SafeAreaNode, context, path);
     case 'anchored':
       return lowerAnchored(node as unknown as AnchoredNode, context, path);
+    case 'adjustable':
+      return lowerAdjustable(node as unknown as AdjustableNode, context, path);
+    case 'adjustable':
+      return lowerAdjustable(node as unknown as AdjustableNode, context, path);
     case 'hoverable':
       return lowerHoverable(node as unknown as HoverableNode, context, path);
     case 'positioned':
@@ -1084,6 +1089,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
     }
     case 'pressable':
       return fills((node as PressableNode).child);
+    case 'adjustable':
+      return fills((node as AdjustableNode).child as VisualNodeValue);
     case 'hoverable':
       return fills((node as HoverableNode).child);
     case 'flexible':
@@ -1309,6 +1316,35 @@ function chordId(chord: KeyChordValue | undefined): string {
  * S5 programmable hover (the C# LowerHoverable twin): a layout-transparent div whose
  * mouseenter/mouseleave feed the boolean callback. Fill passes through like Pressable's button.
  */
+/**
+ * ADJUSTMENT semantics (C# twin: the Photon host's arrow dispatch): one focusable wrapper for the
+ * whole control, arrows nudge, and the inner press targets stay pointer-only — the wrapper is the
+ * Tab stop, so the browser's own focus order matches the native one.
+ */
+function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['role'] = 'slider';
+  host.attributes['tabindex'] = '0';
+  if (node.label) host.attributes['aria-label'] = node.label;
+  if (node.onAdjust) {
+    const adjust = node.onAdjust;
+    host.events['keydown'] = ((event: KeyboardEvent) => {
+      const direction = event.key === 'ArrowRight' || event.key === 'ArrowUp' ? 1
+        : event.key === 'ArrowLeft' || event.key === 'ArrowDown' ? -1 : 0;
+      if (direction === 0) return;
+      event.preventDefault();   // an arrow that also scrolls the page is two answers to one key
+      adjust(direction);
+    }) as unknown as EventHandler;
+  }
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
 function lowerHoverable(node: HoverableNode, context: LoweringContext, path: string): HtmlNode {
   const fill = fills(node.child);
   const host = element('div', {

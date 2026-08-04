@@ -56,7 +56,8 @@ public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Pa
 /// mouse, with the tab order quietly looping over the five that showed.
 /// </para>
 /// </summary>
-public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry, Rect Bounds);
+public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry, Rect Bounds,
+    Adjustable? Adjustable = null);
 
 /// <summary>The realized frame: the laid-out tree (absolute bounds) and the interactive hit regions.</summary>
 public sealed class RealizeResult
@@ -439,7 +440,8 @@ public static class PhotonRealizer
     {
         if (press.IsTracked(node, press.Pressed, press.PressedPath) && press.Pressed?.PressedBackground is { } pressedFill)
             press.PendingFill = pressedFill;
-        if (press.Focused is not null && press.IsTracked(node, press.Focused, press.FocusedPath))
+        if ((press.Focused is not null || press.FocusedPath is not null)
+            && press.IsTracked(node, press.Focused, press.FocusedPath))
             press.PendingFocusRing = true;
 
         switch (node.Source)
@@ -598,6 +600,15 @@ public static class PhotonRealizer
             case Hoverable hoverable:
                 input.Add(new HoverRegion(node.Bounds, hoverable));
                 break;
+
+            // ONE Tab stop for the whole control; the press targets inside it stay pointer-only —
+            // stopping on "decrease half" and then "increase half" is two stops for one slider,
+            // and neither of them answers to the arrows.
+            case Adjustable adjustable:
+                input.AddAdjustable(new FocusStop(node.Path ?? "", null, null, node.Bounds, adjustable));
+                foreach (var child in node.Children)
+                    Emit(child, theme, mode, builder, input.WithoutFocusStops(), scrollMeta, press, motion, overlays);
+                return;
 
             // Spec S8: being on screen IS the subscription — the binding lives for exactly as long
             // as this frame, so an unmounted dialog's Esc stops firing with no bookkeeping.

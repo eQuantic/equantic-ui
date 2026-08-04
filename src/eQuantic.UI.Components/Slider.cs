@@ -88,12 +88,22 @@ public sealed class Slider : StatelessComponent
             OnMoved = f => OnChanged?.Invoke(Quantize(Min + f * span, step)),
         };
 
-        return new Box(new BoxStyle
+        var box = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = Touch.MinTarget,
             Opacity = Disabled ? theme.DisabledOpacity : 1f,
         }, surface);
+
+        // ONE Tab stop for the whole control, and the arrows nudge by the same step a track press
+        // moves — the keyboard is a third hand on the same knob, not a different control.
+        return Disabled
+            ? box
+            : new Adjustable(box, direction =>
+                OnChanged?.Invoke(Quantize(Value + direction * step, step)))
+            {
+                Label = Label,
+            };
     }
 
     /// <summary>A scrub lands on the same values a press does — a stepped slider has no in-between

@@ -62,6 +62,7 @@ public static class WebRealizer
         CameraPreview camera => LowerCameraPreview(camera),
         Pressable pressable => LowerPressable(pressable, context),
         Hoverable hoverable => LowerHoverable(hoverable, context),
+        Adjustable adjustable => LowerAdjustable(adjustable, context),
         Shortcut shortcut => LowerShortcut(shortcut, context, horizontalAxis),
         Link link => LowerLink(link, context),
         LoopMotion motion => LowerLoopMotion(motion, context),
@@ -605,6 +606,30 @@ public static class WebRealizer
     /// stream only ever exists client-side — renders the SurfaceSubtle placeholder div both
     /// realizers agree on; with one, the muted autoplaying video the runtime wires by session id.
     /// </summary>
+    /// <summary>
+    /// The TS twin's SSR half: same markup, no handler — keydown only exists client-side, exactly
+    /// as Pressable's click does. One focusable wrapper is the control's whole Tab presence.
+    /// </summary>
+    private static HtmlElement LowerAdjustable(Adjustable adjustable, ComponentContext context)
+    {
+        var fillsWidth = Fills(adjustable.Child).Width;
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fillsWidth ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["role"] = "slider",
+                ["tabindex"] = "0",
+            },
+        };
+        if (adjustable.Label.Length > 0) element.RawAttributes["aria-label"] = adjustable.Label;
+        if (LowerNode(adjustable.Child, context, null) is { } child) element.Children.Add(child);
+        return element;
+    }
+
     private static HtmlElement LowerCameraPreview(CameraPreview camera)
     {
         var style = new HtmlStyle
@@ -1035,6 +1060,7 @@ public static class WebRealizer
         Stack stack => (stack.Width.Kind == SizeKind.Fill, stack.Height.Kind == SizeKind.Fill),
         Pressable pressable => Fills(pressable.Child),
         Hoverable hoverable => Fills(hoverable.Child),
+        Adjustable adjustable => Fills(adjustable.Child),
         Flexible flexible => Fills(flexible.Child),
         LoopMotion motion => Fills(motion.Child),
         _ => (false, false),

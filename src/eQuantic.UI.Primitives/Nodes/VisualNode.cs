@@ -808,6 +808,34 @@ public readonly record struct KeyChord(string Key, KeyModifiers Modifiers = KeyM
 }
 
 /// <summary>
+/// ADJUSTMENT semantics in the vocabulary: the child is a control whose value the arrow keys
+/// nudge — a slider, and whatever else answers to "a little more / a little less". One Tab stop
+/// for the whole control (its inner press targets stay pointer-only), arrows call
+/// <see cref="OnAdjust"/> with the direction, and the web twin is <c>role="slider"</c> with a
+/// keydown handler — the reason this is a NODE and not component wiring: both realizers need to
+/// agree on what focus means here.
+/// </summary>
+public sealed class Adjustable : VisualNode
+{
+    public override string NodeKind => "adjustable";
+
+    public Adjustable(VisualNode child, Action<int> onAdjust)
+    {
+        Child = child;
+        OnAdjust = onAdjust;
+    }
+
+    public VisualNode Child { get; init; }
+
+    /// <summary>+1 for the increasing arrow, −1 for the decreasing one. The CONTROL owns what a
+    /// step is worth — the keyboard only says which way.</summary>
+    public Action<int> OnAdjust { get; init; }
+
+    /// <summary>Announced by assistive tech, exactly as <see cref="Pressable.Label"/> is.</summary>
+    public string Label { get; init; } = "";
+}
+
+/// <summary>
 /// A KEYBOARD SHORTCUT that is live while this subtree is mounted (spec S8): the chord fires
 /// <see cref="OnPressed"/> from anywhere on the page — it is not a focus-scoped handler, which is
 /// exactly what a command palette (⌘K), an Esc-dismiss and a list's ↑/↓ navigation need. Mounting

@@ -895,3 +895,78 @@ public class PanLatchTests
         host.ScrollOffsetOf(scrollPath).Should().Be(mid, "letting go lets go");
     }
 }
+
+/// <summary>
+/// A slider under the keyboard: ONE Tab stop for the whole control, arrows nudge by its own step.
+/// Before the Adjustable node, Tab stopped twice per slider (each track half is a pressable) and
+/// the arrows did nothing at either stop.
+/// </summary>
+public class AdjustableTests
+{
+    private sealed class Page : Primitives.StatefulComponent
+    {
+        public float Value = 0.4f;
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+            column.Add(new Slider(Value, v => SetState(() => Value = v)) { Step = 0.1f, Label = "Budget" });
+            column.Add(new Button("Save", onPressed: () => { }));
+            return column;
+        }
+    }
+
+    private static (PhotonHost Host, Page Page) Open()
+    {
+        var page = new Page();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 300, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        return (host, page);
+    }
+
+    private static void Press(PhotonHost host, string key)
+    {
+        host.KeyDown(key);
+        host.RenderFrame(new DisplayListBuilder());
+    }
+
+    [Fact]
+    public void TheWholeSliderIsONETabStop()
+    {
+        var (host, _) = Open();
+        var stops = host.RenderFrame(new DisplayListBuilder()).FocusStops;
+
+        stops.Should().HaveCount(2, "the slider and the button — not the slider's two track halves");
+        stops[0].Adjustable.Should().NotBeNull();
+        stops[1].Pressable.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void ArrowsNudgeByTheSliderStep_AcrossTheRebuildEachNudgeCauses()
+    {
+        var (host, page) = Open();
+        Press(host, "Tab");   // onto the slider
+
+        Press(host, "ArrowRight");
+        Press(host, "ArrowRight");
+        page.Value.Should().BeApproximately(0.6f, 0.001f);
+
+        Press(host, "ArrowLeft");
+        page.Value.Should().BeApproximately(0.5f, 0.001f);
+    }
+
+    [Fact]
+    public void TheTrackHalvesStillAnswerThePointer()
+    {
+        var (host, page) = Open();
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        // The UNFILLED half sits right of the thumb; pressing it steps up — pointer behaviour is
+        // untouched by the keyboard wrapper. Tree order: filled half, unfilled half, then Save.
+        var right = frame.HitRegions[1];
+        host.PressDown(right.Bounds.Center.X, right.Bounds.Center.Y);
+        host.PressUp(right.Bounds.Center.X, right.Bounds.Center.Y);
+
+        page.Value.Should().BeApproximately(0.5f, 0.001f);
+    }
+}

@@ -119,6 +119,8 @@ export {
   Sticky,
   Text,
   Pressable,
+  Adjustable,
+  CameraPreview,
   Hoverable,
   Flexible,
   Spacer,
