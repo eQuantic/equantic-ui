@@ -25,6 +25,8 @@ internal sealed class InputSink(
     List<DragRegion> drags,
     List<LinkRegion> links,
     List<ShortcutBinding> shortcuts,
+    List<TextRegion> texts,
+    List<FocusStop> stops,
     Rect? clip = null)
 {
     /// <summary>The visible rectangle, or null at the top level where nothing is clipped.</summary>
@@ -33,10 +35,17 @@ internal sealed class InputSink(
     /// <summary>The same sink, narrowed to a nested clip. Clips INTERSECT: a scroll view inside a
     /// scroll view shows only what both agree on, and so does its input.</summary>
     public InputSink Under(Rect rect) =>
-        new(hits, hovers, scrolls, drags, links, shortcuts,
+        new(hits, hovers, scrolls, drags, links, shortcuts, texts, stops,
             Clip is { } outer ? Intersect(outer, rect) : rect);
 
-    public void Add(HitRegion region) { if (Visible(region.Bounds)) hits.Add(Clipped(region)); }
+    public void Add(HitRegion region)
+    {
+        if (!Visible(region.Bounds)) return;
+        hits.Add(Clipped(region));
+        // A disabled control is still drawn and still swallows taps, but it is not somewhere Tab
+        // should ever land — nothing there to do once you arrive.
+        if (!region.Node.Disabled) stops.Add(new FocusStop(region.Path, region.Node, null));
+    }
 
     public void Add(HoverRegion region) { if (Visible(region.Bounds)) hovers.Add(region); }
 
@@ -45,6 +54,13 @@ internal sealed class InputSink(
     public void Add(DragRegion region) { if (Visible(region.Bounds)) drags.Add(region); }
 
     public void Add(LinkRegion region) { if (Visible(region.Bounds)) links.Add(region); }
+
+    public void Add(TextRegion region)
+    {
+        if (!Visible(region.Bounds)) return;
+        texts.Add(region);
+        if (!region.Entry.Disabled) stops.Add(new FocusStop(region.Path, null, region.Entry));
+    }
 
     /// <summary>A chord is not a place — being on screen is the whole subscription (spec S8), and a
     /// clip has nothing to say about it.</summary>

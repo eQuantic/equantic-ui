@@ -49,6 +49,30 @@ public class PressedStateTests
         host.Pressed.Should().BeNull();
     }
 
+    /// <summary>
+    /// The pressed token actually reaches the paint. Said out loud rather than left to the golden,
+    /// because the golden was RECORDED without it: a button that never darkens still renders as a
+    /// perfectly good button, and every pixel matched the image blessing the bug. The reason it
+    /// failed is worth keeping too — a Button is a component, so the Pressable inside it is built
+    /// fresh on every layout, and the object the press remembered was already replaced by the time
+    /// the very next frame painted.
+    /// </summary>
+    [Fact]
+    public void PressingActuallyPaintsThePressedToken()
+    {
+        var host = Host(out var resting);
+        var pressed = PhotonTheme.Instance.Colors(Variant.Primary).Pressed.Resolve(ThemeMode.Light);
+        resting.Build().Commands.ToArray().Should().NotContain(c => c.Paint.Color == pressed,
+            "nothing is pressed yet");
+
+        host.PressDown(40, 36);
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+
+        builder.Build().Commands.ToArray().Should().Contain(c => c.Paint.Color == pressed,
+            "the press has to be visible, not merely recorded");
+    }
+
     [Fact]
     public void PressedFrame_Golden()
     {

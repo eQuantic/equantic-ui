@@ -41,6 +41,52 @@ public class FocusRingTests
         host.Focused.Should().BeNull();
     }
 
+    /// <summary>
+    /// The ring is DRAWN, not merely tracked — and its golden was recorded without it, so this says
+    /// it in a way pixels cannot quietly bless.
+    /// </summary>
+    [Fact]
+    public void FocusingActuallyPaintsTheRing()
+    {
+        // Counted against the SAME frame unfocused, rather than looked up by colour: the ring's
+        // token and the primary button's fill are both #0050A0, so "a command of that colour exists"
+        // is true of a frame with no ring in it at all.
+        var host = Host();
+        var before = Paint(host);
+
+        host.FocusNext();
+        var after = Paint(host);
+
+        after.Length.Should().BeGreaterThan(before.Length,
+            "a keyboard user has nothing but the ring to tell them where they are");
+    }
+
+    private static DrawCommand[] Paint(PhotonHost host)
+    {
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+        return builder.Build().Commands.ToArray();
+    }
+
+    /// <summary>
+    /// …and it stays away from the mouse. Focus and its ring are different things: someone who
+    /// clicked a button knows what they clicked, and a ring left behind on every click reads as a
+    /// glitch. Same rule as `:focus-visible` on the web, same reason.
+    /// </summary>
+    [Fact]
+    public void ClickingDoesNotLeaveARingBehind()
+    {
+        var host = Host();
+        var before = Paint(host);
+
+        host.PressDown(40, 36);
+        host.PressUp(40, 36);
+        var after = Paint(host);
+
+        after.Length.Should().Be(before.Length, "a click must not leave a ring behind");
+        host.Focused.Should().NotBeNull("the button still holds focus — Enter after a click must work");
+    }
+
     [Fact]
     public void FocusedFrame_Golden()
     {

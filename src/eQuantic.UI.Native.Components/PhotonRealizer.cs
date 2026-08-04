@@ -37,13 +37,28 @@ public readonly record struct LinkRegion(Rect Bounds, Link Node);
 /// dispatches a key press to the LAST registered match (the dialog on top wins the chord).</summary>
 public readonly record struct ShortcutBinding(KeyChord Chord, Action OnPressed);
 
+/// <summary>An editable field. A text entry is not a pressable — a click puts a CARET in it and the
+/// keys that follow belong to it — so it registers its own kind of region, and the host keeps the
+/// caret against the <paramref name="Path"/> for the same reason the press does: the tree is rebuilt
+/// on every keystroke.</summary>
+public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Path);
+
+/// <summary>
+/// One stop on the Tab route. Buttons and fields are different kinds of region and are dispatched
+/// differently, but they are ONE sequence to the person pressing Tab — a form whose traversal skips
+/// its own text fields is not a form. Stops are appended as they are registered, so the order is
+/// paint order, which is tree order.
+/// </summary>
+public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry);
+
 /// <summary>The realized frame: the laid-out tree (absolute bounds) and the interactive hit regions.</summary>
 public sealed class RealizeResult
 {
     public RealizeResult(LayoutNode root, IReadOnlyList<HitRegion> hitRegions, bool hasActiveMotion,
         IReadOnlyList<HoverRegion>? hoverRegions = null, IReadOnlyList<ScrollRegion>? scrollRegions = null,
         IReadOnlyList<DragRegion>? dragRegions = null, IReadOnlyList<LinkRegion>? linkRegions = null,
-        IReadOnlyList<ShortcutBinding>? shortcuts = null)
+        IReadOnlyList<ShortcutBinding>? shortcuts = null, IReadOnlyList<TextRegion>? textRegions = null,
+        IReadOnlyList<FocusStop>? focusStops = null)
     {
         Root = root;
         HitRegions = hitRegions;
@@ -53,7 +68,15 @@ public sealed class RealizeResult
         DragRegions = dragRegions ?? Array.Empty<DragRegion>();
         LinkRegions = linkRegions ?? Array.Empty<LinkRegion>();
         Shortcuts = shortcuts ?? Array.Empty<ShortcutBinding>();
+        TextRegions = textRegions ?? Array.Empty<TextRegion>();
+        FocusStops = focusStops ?? Array.Empty<FocusStop>();
     }
+
+    /// <summary>Everything Tab visits, in tree order: buttons and fields in one sequence.</summary>
+    public IReadOnlyList<FocusStop> FocusStops { get; }
+
+    /// <summary>Editable fields, in paint order (topmost last).</summary>
+    public IReadOnlyList<TextRegion> TextRegions { get; }
 
     public LayoutNode Root { get; }
     public IReadOnlyList<HitRegion> HitRegions { get; }
@@ -112,7 +135,19 @@ public static class PhotonRealizer
         IconRasterCache? iconCache = null,
         Framework.IImageLoader? imageLoader = null,
         Dictionary<string, TextureData?>? imageCache = null,
-        EdgeInsets safeAreaInsets = default)
+        EdgeInsets safeAreaInsets = default,
+        // A press lasts a moment and focus lasts until the user says otherwise — both outlive the
+        // frame that started them, and `Build` hands back NEW nodes every time. The node is the
+        // thing to draw; the PATH is the thing that survives. (Tests still pass nodes alone: with
+        // one frame and no rebuild, identity by reference is the same answer.)
+        string? pressedPath = null,
+        string? focusedPath = null,
+        // The field being edited and where its caret sits. Both live in the HOST, not in the tree:
+        // the app owns the text and hands back a new node for every character, so a caret stored in
+        // the node would be reborn at the end of the string on every keystroke.
+        string? textPath = null,
+        int caretIndex = 0,
+        bool caretVisible = true)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
         {
@@ -155,8 +190,10 @@ public static class PhotonRealizer
         var dragRegions = new List<DragRegion>();
         var links = new List<LinkRegion>();
         var shortcuts = new List<ShortcutBinding>();
-        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts);
-        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered), motion, overlays);
+        var texts = new List<TextRegion>();
+        var stops = new List<FocusStop>();
+        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops);
+        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible), motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -168,7 +205,7 @@ public static class PhotonRealizer
                 context, rootPath: $"ov{i}");
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered), motion, overlays);
+            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible), motion, overlays);
         }
 
         // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
@@ -191,7 +228,7 @@ public static class PhotonRealizer
         return new RealizeResult(layout, hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts);
+            hovers, scrolls, dragRegions, links, shortcuts, texts, stops);
     }
 
     /// <summary>The frame clock for loop motion: offsets resolve as a PURE function of
@@ -236,15 +273,39 @@ public static class PhotonRealizer
     /// carries the fill — the spec's "token swap on the same rrect").</summary>
     private sealed class PressScope
     {
-        public PressScope(Pressable? pressed, Pressable? focused, VisualNode? hovered = null)
+        public PressScope(Pressable? pressed, Pressable? focused, VisualNode? hovered = null,
+            string? pressedPath = null, string? focusedPath = null,
+            string? textPath = null, int caretIndex = 0, bool caretVisible = true)
         {
             Pressed = pressed;
             Focused = focused;
             Hovered = hovered;
+            PressedPath = pressedPath;
+            FocusedPath = focusedPath;
+            TextPath = textPath;
+            CaretIndex = caretIndex;
+            CaretVisible = caretVisible;
         }
+
+        /// <summary>The field under edit, its caret, and whether the caret is in its ON blink.</summary>
+        public string? TextPath { get; }
+        public int CaretIndex { get; }
+        public bool CaretVisible { get; }
 
         public Pressable? Pressed { get; }
         public Pressable? Focused { get; }
+
+        /// <summary>Where the held press and the focus LIVE, which is what survives a rebuild. The
+        /// node reference is kept alongside as the answer for a single frame that never rebuilt.</summary>
+        public string? PressedPath { get; }
+        public string? FocusedPath { get; }
+
+        /// <summary>True when this node is the one being tracked: by path when there is one (the
+        /// tree may have been rebuilt since), by reference otherwise.</summary>
+        public bool IsTracked(LayoutNode node, VisualNode? tracked, string? trackedPath) =>
+            trackedPath is { Length: > 0 }
+                ? node.Path == trackedPath
+                : tracked is not null && ReferenceEquals(node.Source, tracked);
 
         /// <summary>Spec S5: the node the pointer is over — its Box applies its Hover diff. Fed by
         /// the host's pointer tracking (the gesture slice); tests pass it directly.</summary>
@@ -354,9 +415,9 @@ public static class PhotonRealizer
 
     private static void EmitNode(LayoutNode node, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, InputSink input, Dictionary<ScrollView, (string Path, float MaxOffset)> scrollMeta, PressScope press, MotionScope motion, List<Overlay> overlays)
     {
-        if (ReferenceEquals(node.Source, press.Pressed) && press.Pressed?.PressedBackground is { } pressedFill)
+        if (press.IsTracked(node, press.Pressed, press.PressedPath) && press.Pressed?.PressedBackground is { } pressedFill)
             press.PendingFill = pressedFill;
-        if (ReferenceEquals(node.Source, press.Focused))
+        if (press.Focused is not null && press.IsTracked(node, press.Focused, press.FocusedPath))
             press.PendingFocusRing = true;
 
         switch (node.Source)
@@ -448,7 +509,7 @@ public static class PhotonRealizer
             // Spec B9 fence: the entry renders the W4 one-line placeholder bar — value in
             // TextPrimary, empty shows the placeholder in TextMuted. Caret/selection/IME land at M4.
             case TextEntry entry:
-                EmitEntryPlaceholder(node, entry, theme, mode, builder);
+                EmitEntry(node, entry, theme, mode, builder, input, press, motion);
                 break;
 
             // Spec A11 fence: a SurfaceSubtle box under the radius stands in for the bitmap until the
@@ -856,6 +917,74 @@ public static class PhotonRealizer
     /// <summary>The TextEntry stand-in (spec B9 fence): one soft bar per the W4 text placeholder
     /// convention — the VALUE in the entry's text color, an empty value shows the PLACEHOLDER in
     /// TextMuted. Deterministic layout geometry until the real text stack (M4).</summary>
+    /// <summary>
+    /// An editable field: its text, its caret, and the region that makes it clickable.
+    /// <para>
+    /// The bar this used to draw was the W4 fence, kept long after the fence came down — every other
+    /// string on screen was already rastering real glyphs. A field that shows a grey bar instead of
+    /// what you typed is not a placeholder for a missing feature; it is a field nobody can use.
+    /// </para>
+    /// </summary>
+    private static void EmitEntry(LayoutNode node, TextEntry entry, IAppTheme theme, ThemeMode mode,
+        DisplayListBuilder builder, InputSink input, PressScope press, MotionScope motion)
+    {
+        // Clickable even when empty and even without a rasterizer: the region is where the caret
+        // comes from, and an empty field is exactly the one you most need to click into.
+        if (!entry.Disabled) input.Add(new TextRegion(node.Bounds, entry, node.Path ?? ""));
+
+        var editing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
+        var value = entry.Obscure ? new string('•', entry.Value.Length) : entry.Value;
+        var shown = value.Length > 0 ? value : entry.Placeholder ?? "";
+        var token = value.Length > 0 ? theme.TextPrimary : theme.TextMuted;
+        var style = theme.Type(entry.Role);
+
+        var advance = 0f;
+        if (motion.TextRasterizer is null)
+        {
+            // No platform text service — headless tests, and any surface where glyphs are not
+            // available yet. The soft bar is the same stand-in `Text` falls back to; the caret still
+            // draws, because where it is remains the useful thing to see.
+            EmitEntryPlaceholder(node, entry, theme, mode, builder);
+        }
+        else if (shown.Length > 0)
+        {
+            var rasterizer = motion.TextRasterizer;
+            var raster = (motion.TextCache ?? TextRasterCache.Shared)
+                .Get(rasterizer, shown, style, motion.TypeScale, node.Bounds.Width, 1, motion.RenderScale);
+            if (raster is not null)
+            {
+                var width = raster.Texture.Width / motion.RenderScale;
+                var rect = new Rect(node.Bounds.X, node.Bounds.Y, width, raster.Texture.Height / motion.RenderScale);
+                builder.Texture(rect, token.Resolve(mode), raster.Texture);
+                // Where the caret goes is a measurement of the text BEFORE it, not a fraction of the
+                // whole: proportional glyphs make "iii" and "WWW" different widths at equal length.
+                advance = press.CaretIndex >= value.Length
+                    ? (value.Length > 0 ? width : 0)
+                    : MeasureUpTo(rasterizer, value, press.CaretIndex, style, motion);
+            }
+        }
+
+        if (!editing || !press.CaretVisible || entry.Disabled) return;
+
+        var caretHeight = node.Text?.LineHeight ?? style.LineHeight;
+        builder.FillRRect(
+            new RRect(new Rect(node.Bounds.X + advance, node.Bounds.Y, CaretWidth, caretHeight), new CornerRadii(0)),
+            Paint.Solid(theme.TextPrimary.Resolve(mode)));
+    }
+
+    /// <summary>The width of the first <paramref name="count"/> characters — the caret's x.</summary>
+    private static float MeasureUpTo(Framework.ITextRasterizer rasterizer, string value, int count,
+        TypeStyle style, MotionScope motion)
+    {
+        if (count <= 0) return 0;
+        var raster = (motion.TextCache ?? TextRasterCache.Shared).Get(
+            rasterizer, value[..Math.Min(count, value.Length)], style, motion.TypeScale, float.MaxValue, 1, motion.RenderScale);
+        return raster is null ? 0 : raster.Texture.Width / motion.RenderScale;
+    }
+
+    /// <summary>2dp: thin enough to sit between glyphs, thick enough to see on a scaled display.</summary>
+    private const float CaretWidth = 2f;
+
     private static void EmitEntryPlaceholder(LayoutNode node, TextEntry entry, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder)
     {
         if (node.Text is not { } measurement || measurement.Lines.Count == 0) return;

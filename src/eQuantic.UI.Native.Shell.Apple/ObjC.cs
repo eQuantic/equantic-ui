@@ -119,6 +119,11 @@ public static partial class ObjC
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial ulong SendULong(IntPtr receiver, IntPtr selector);
 
+    /// <summary>For the small integer returns — a key code is an <c>unsigned short</c>, and reading
+    /// it as a wider type leaves whatever the high bits happened to hold.</summary>
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial ushort SendUShort(IntPtr receiver, IntPtr selector);
+
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial double SendDouble(IntPtr receiver, IntPtr selector);
 
