@@ -154,7 +154,10 @@ public static class PhotonRealizer
         // the node would be reborn at the end of the string on every keystroke.
         string? textPath = null,
         int caretIndex = 0,
-        bool caretVisible = true)
+        bool caretVisible = true,
+        // The selected range inside that field. Zero-length = a caret and nothing more.
+        int selectionStart = 0,
+        int selectionEnd = 0)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
         {
@@ -200,7 +203,7 @@ public static class PhotonRealizer
         var texts = new List<TextRegion>();
         var stops = new List<FocusStop>();
         var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops);
-        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible), motion, overlays);
+        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd), motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -212,7 +215,7 @@ public static class PhotonRealizer
                 context, rootPath: $"ov{i}");
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible), motion, overlays);
+            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd), motion, overlays);
         }
 
         // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
@@ -287,8 +290,11 @@ public static class PhotonRealizer
     {
         public PressScope(Pressable? pressed, Pressable? focused, VisualNode? hovered = null,
             string? pressedPath = null, string? focusedPath = null,
-            string? textPath = null, int caretIndex = 0, bool caretVisible = true)
+            string? textPath = null, int caretIndex = 0, bool caretVisible = true,
+            int selectionStart = 0, int selectionEnd = 0)
         {
+            SelectionStart = selectionStart;
+            SelectionEnd = selectionEnd;
             Pressed = pressed;
             Focused = focused;
             Hovered = hovered;
@@ -298,6 +304,10 @@ public static class PhotonRealizer
             CaretIndex = caretIndex;
             CaretVisible = caretVisible;
         }
+
+        /// <summary>The selected range in the field under edit (equal = no selection).</summary>
+        public int SelectionStart { get; }
+        public int SelectionEnd { get; }
 
         /// <summary>The field under edit, its caret, and whether the caret is in its ON blink.</summary>
         public string? TextPath { get; }
@@ -981,9 +991,26 @@ public static class PhotonRealizer
             }
         }
 
-        if (!editing || !press.CaretVisible || entry.Disabled) return;
+        if (!editing || entry.Disabled) return;
 
         var caretHeight = node.Text?.LineHeight ?? style.LineHeight;
+
+        // The selection band. Drawn AFTER the glyphs and translucent rather than under them and
+        // opaque: the text stays legible through it, which is what every platform does, and it
+        // saves measuring the run twice to paint around it.
+        if (press.SelectionEnd > press.SelectionStart && motion.TextRasterizer is { } selectionRasterizer)
+        {
+            var from = MeasureUpTo(selectionRasterizer, value, press.SelectionStart, style, motion);
+            var to = MeasureUpTo(selectionRasterizer, value, press.SelectionEnd, style, motion);
+            if (to > from)
+                builder.FillRRect(
+                    new RRect(new Rect(node.Bounds.X + from, node.Bounds.Y, to - from, caretHeight),
+                        new CornerRadii(1)),
+                    Paint.Solid(theme.FocusRing.Resolve(mode).WithOpacity(0.28f)));
+        }
+
+        // A caret inside a selection would be noise: the range already says where you are.
+        if (!press.CaretVisible || press.SelectionEnd > press.SelectionStart) return;
         builder.FillRRect(
             new RRect(new Rect(node.Bounds.X + advance, node.Bounds.Y, CaretWidth, caretHeight), new CornerRadii(0)),
             Paint.Solid(theme.TextPrimary.Resolve(mode)));
