@@ -224,11 +224,16 @@ public static class PhotonRealizer
         {
             foreach (var exit in presences.ActiveExits(timeMs, reducedMotion))
             {
-                if (exit.Drop != 0) builder.PushTransform(Matrix2D.Translation(0, exit.Drop));
+                // The drop is handed to the replay in DEVICE units instead of being pushed as a
+                // transform. Pushing it made the recorded commands compose with the whole current
+                // transform — root scale included, which they already carry — so on a retina screen
+                // a closing dialog jumped down and right for one frame before it faded.
+                var offset = exit.Drop != 0
+                    ? Matrix2D.Translation(0, exit.Drop * renderScale)
+                    : Matrix2D.Identity;
                 builder.PushLayer(exit.Alpha);
-                foreach (var command in exit.Commands) builder.Replay(command);
+                foreach (var command in exit.Commands) builder.Replay(command, offset);
                 builder.PopLayer();
-                if (exit.Drop != 0) builder.Pop();
             }
         }
         context.Instances?.EndPass();
