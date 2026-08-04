@@ -339,7 +339,12 @@ public static class Gallery
                 new DialogAction("Keep card", () => mutate(() => state.DialogOpen = false)),
                 new DialogAction("Remove", () => mutate(() => state.DialogOpen = false),
                     Variant.Destructive),
-            ]));
+            ],
+            // Destructive, and still dismissible: Escape and a tap outside both mean "not that",
+            // which is the answer someone who opened this by accident is looking for. Only the
+            // Remove button removes.
+            dismissible: true,
+            onDismiss: () => mutate(() => state.DialogOpen = false)));
         return stack;
     }
 
