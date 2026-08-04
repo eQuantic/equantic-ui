@@ -257,8 +257,18 @@ public sealed class PhotonWindow
                 host.PointerMove(x, y);
                 break;
             case EventTypeScrollWheel:
-                host.ScrollBy(x, y, (float)-SendDouble(e, Sel("scrollingDeltaY")));
+                host.ScrollBy(x, y, WheelTravel(e));
                 break;
         }
     }
+
+    /// <summary>
+    /// How far this wheel event asked the content to move, in dp. A trackpad (and a Magic Mouse)
+    /// reports PRECISE deltas already in points; a wheel reports LINES, and one line is
+    /// <see cref="Touch.WheelLine"/>. Passing the line count straight through moved a page three
+    /// pixels per notch, which is a hundred turns of the wheel to reach the bottom of anything.
+    /// </summary>
+    private static float WheelTravel(IntPtr e) => Touch.WheelTravel(
+        (float)-SendDouble(e, Sel("scrollingDeltaY")),
+        SendBool(e, Sel("hasPreciseScrollingDeltas")));
 }

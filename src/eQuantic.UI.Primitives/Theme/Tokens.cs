@@ -119,6 +119,24 @@ public static class Touch
 
     /// <summary>Drag beyond this distance from the hit rect cancels a press without firing.</summary>
     public const float PressCancelSlop = 12;
+
+    /// <summary>
+    /// How far one LINE of wheel scrolling travels. A trackpad reports its scroll in points and
+    /// needs no conversion; a mouse wheel reports LINES, and taking that number for points makes a
+    /// notch move three pixels — the whole page then costs a hundred turns of the wheel. Sixteen is
+    /// the browsers' own line, so a wheel behaves the same in a Photon window as in a page.
+    /// </summary>
+    public const float WheelLine = 16;
+
+    /// <summary>
+    /// How far a wheel event moves the content, in dp. A trackpad reports PRECISE deltas already in
+    /// points and passes straight through; a wheel reports LINES, and each is
+    /// <see cref="WheelLine"/>. Taking a line count for points is why a page moved a few pixels per
+    /// notch — the rule lives here, where it can be stated and tested, rather than inside a shell's
+    /// event interop where nobody can see it.
+    /// </summary>
+    public static float WheelTravel(float delta, bool precise) =>
+        precise ? delta : delta * WheelLine;
 }
 
 /// <summary>
