@@ -22,10 +22,29 @@ public sealed class StudioShell : StatefulComponent
     /// the environment and the command line, already merged — so `--section sliders` opens there
     /// with nothing parsed here.
     /// </summary>
-    public StudioShell(IConfiguration configuration) =>
+    /// <param name="library">
+    /// The device's own photo library, arriving like any other dependency — the shell registered
+    /// whichever one this platform has and this page never learns which. Nullable so a head with
+    /// none simply shows the capability as absent instead of failing to construct.
+    /// </param>
+    public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null)
+    {
         _section = Enum.TryParse<GallerySection>(configuration["section"], ignoreCase: true, out var section)
             ? section
             : GallerySection.Buttons;
+
+        if (library?.IsAvailable == true) _demo.OnPickImage = () => PickAsync(library);
+    }
+
+    /// <summary>
+    /// Asking IS the permission flow. Null covers cancelling and refusing alike, and neither is an
+    /// error path — a picker the user closes is an ordinary Tuesday.
+    /// </summary>
+    private async void PickAsync(IPhotoLibrary library)
+    {
+        var picked = await library.PickImageAsync();
+        if (picked is not null) SetState(() => _demo.PickedImage = picked);
+    }
     private ThemeMode _mode = ThemeMode.Light;
 
     // The inspector drives the Buttons section's live specimen.
@@ -419,6 +438,11 @@ public sealed class SectionState
 {
     public int Presses;
     public string? Toast;
+
+    /// <summary>What the device handed back, and how to ask for it. Null when this head has no
+    /// photo library at all — which a desktop always does, but a stripped-down one might not.</summary>
+    public ImageData? PickedImage;
+    public Action? OnPickImage;
 
     public string Name = "Ana Beatriz Nogueira";
     public string Email = "";

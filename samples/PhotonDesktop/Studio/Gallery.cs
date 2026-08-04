@@ -14,6 +14,7 @@ public enum GallerySection
     Navigation = 5,
     Feedback = 6,
     Overlays = 7,
+    Device = 8,
 }
 
 /// <summary>
@@ -42,7 +43,8 @@ public static class Gallery
         GallerySection.Progress => "Progress",
         GallerySection.Navigation => "Navigation",
         GallerySection.Feedback => "Feedback",
-        _ => "Overlays",
+        GallerySection.Overlays => "Overlays",
+        _ => "Device",
     };
 
     public static string BlurbOf(GallerySection section) => section switch
@@ -61,7 +63,9 @@ public static class Gallery
             "Moving between places, and knowing which place you are in.",
         GallerySection.Feedback =>
             "Messages that arrive: banners you keep, toasts you dismiss, states with nothing in them.",
-        _ => "Surfaces over the page — and how each one maps to a desktop window.",
+        GallerySection.Overlays =>
+            "Surfaces over the page — and how each one maps to a desktop window.",
+        _ => "What the DEVICE can do, taken through a constructor like any other dependency.",
     };
 
     public static Icons IconOf(GallerySection section) => section switch
@@ -73,7 +77,8 @@ public static class Gallery
         GallerySection.Progress => Icons.ChevronRight,
         GallerySection.Navigation => Icons.Search,
         GallerySection.Feedback => Icons.Notifications,
-        _ => Icons.Info,
+        GallerySection.Overlays => Icons.Info,
+        _ => Icons.Person,
     };
 
     /// <summary>How many distinct components the section puts on screen — the status bar's count.</summary>
@@ -86,7 +91,8 @@ public static class Gallery
         GallerySection.Progress => 3,
         GallerySection.Navigation => 4,
         GallerySection.Feedback => 4,
-        _ => 4,
+        GallerySection.Overlays => 4,
+        _ => 1,
     };
 
     public static VisualNode Render(GallerySection section, IAppTheme theme, SectionState state,
@@ -99,7 +105,8 @@ public static class Gallery
         GallerySection.Progress => Progress(theme, state),
         GallerySection.Navigation => Navigation(theme, state, mutate),
         GallerySection.Feedback => Feedback(theme, state),
-        _ => Overlays(theme, state, mutate),
+        GallerySection.Overlays => Overlays(theme, state, mutate),
+        _ => Device(theme, state, mutate),
     };
 
     // ---- Sections --------------------------------------------------------------------------
@@ -354,6 +361,47 @@ public static class Gallery
     }
 
     /// <summary>One demo cell: what the component is, one sentence on WHEN to reach for it, and it.</summary>
+    /// <summary>
+    /// What the DEVICE can do. The shell takes an IPhotoLibrary through its constructor and passes
+    /// what it got here — which is the whole point of the design: this section has no idea whether
+    /// a Mac's open panel, an iPhone's picker or a browser's file input answered, and it does not
+    /// change by one line when the answer comes from somewhere else.
+    /// </summary>
+    private static VisualNode Device(IAppTheme theme, SectionState state, Action<Action> mutate)
+    {
+        var pick = Column(Space.S3);
+        pick.Add(new Button("Choose a picture…", Variant.Primary)
+        {
+            Leading = CuratedIcons.Resolve(Icons.Plus),
+            OnPressed = state.OnPickImage,
+            Disabled = state.OnPickImage is null,
+        });
+
+        if (state.PickedImage is { } picked)
+        {
+            // The bytes as a data URI: no temporary file, no path to clean up, and the same node
+            // shows it on every target.
+            pick.Add(new Image(picked.ToDataUri(), 240, 160, ImageFit.Contain, picked.Name ?? "picked")
+            {
+                CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
+            });
+            pick.Add(Label(theme, $"{picked.Name} · {picked.Width}×{picked.Height} · "
+                + $"{picked.ByteCount / 1024} KB · {picked.MimeType}"));
+        }
+        else
+        {
+            pick.Add(Label(theme, state.OnPickImage is null
+                ? "No photo library on this device."
+                : "Nothing chosen yet."));
+        }
+
+        var column = Column(Space.S5);
+        column.Add(Card(theme, "Photo library",
+            "A capability is a SERVICE: an interface taken through the constructor, so this page is "
+            + "testable with a fake and identical on all four targets.", pick));
+        return column;
+    }
+
     private static VisualNode Card(IAppTheme theme, string title, string rule, VisualNode demo)
     {
         var head = Column(2);
