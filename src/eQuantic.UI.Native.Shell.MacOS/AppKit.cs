@@ -18,14 +18,30 @@ internal static partial class AppKit
 
     // ---- The run loop, so a frame can be drawn from INSIDE someone else's loop -----------------
 
-    /// <summary>Before waiting — the moment a nested loop is about to go idle, which is exactly
-    /// when there is time to draw.</summary>
-    internal const ulong ActivityBeforeWaiting = 1UL << 5;
+    /// <summary>
+    /// Every point in a loop's cycle where drawing is allowed: before it dispatches sources, before
+    /// it waits, and right after it wakes. A live resize's loop is BUSY — it never idles while the
+    /// pointer is moving — so hooking only "about to wait" is hooking the one moment that never
+    /// comes.
+    /// </summary>
+    internal const ulong ActivityDrawable = (1UL << 2) | (1UL << 5) | (1UL << 6);
 
     /// <summary>Every mode, including the tracking one AppKit runs a live resize in.</summary>
     internal const string CommonModes = "kCFRunLoopCommonModes";
 
     internal delegate void ObserverCallback(IntPtr observer, ulong activity, IntPtr info);
+
+    internal delegate void TimerCallback(IntPtr timer, IntPtr info);
+
+    [LibraryImport(CoreFoundation, EntryPoint = "CFRunLoopTimerCreate")]
+    internal static partial IntPtr CFRunLoopTimerCreate(IntPtr allocator, double fireDate,
+        double interval, ulong flags, long order, IntPtr callback, IntPtr context);
+
+    [LibraryImport(CoreFoundation, EntryPoint = "CFRunLoopAddTimer")]
+    internal static partial void CFRunLoopAddTimer(IntPtr runLoop, IntPtr timer, IntPtr mode);
+
+    [LibraryImport(CoreFoundation, EntryPoint = "CFAbsoluteTimeGetCurrent")]
+    internal static partial double CFAbsoluteTimeGetCurrent();
 
     [LibraryImport(CoreFoundation, EntryPoint = "CFRunLoopObserverCreate")]
     internal static partial IntPtr CFRunLoopObserverCreate(IntPtr allocator, ulong activities,
