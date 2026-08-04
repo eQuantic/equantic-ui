@@ -31,6 +31,15 @@ public sealed class PropertyListWriter : CodeWriter
         return this;
     }
 
+    /// <summary>A real boolean. `<string>true</string>` is a STRING, and every reader that asks
+    /// the plist for a bool gets the wrong answer from it.</summary>
+    public PropertyListWriter Bool(string key, bool value)
+    {
+        Key(key);
+        AppendLine(value ? "<true/>" : "<false/>");
+        return this;
+    }
+
     /// <summary>A key whose value is a dictionary — the shape that nests.</summary>
     public PropertyListWriter Dictionary(string key, Action<PropertyListWriter> body)
     {

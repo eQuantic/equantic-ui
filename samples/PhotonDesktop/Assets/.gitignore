@@ -1,0 +1,3 @@
+# Derived from the assets beside it — the icon sets each platform installs from. The SDK writes them
+# before anything reads them, on every build, so there is nothing here worth a diff.
+.generated/

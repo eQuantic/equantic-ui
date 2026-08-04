@@ -103,6 +103,13 @@ public sealed class PhotonWindow
         };
 
         var clock = Stopwatch.StartNew();
+        // COMMON modes, not the default one. The moment a button goes down, AppKit switches to
+        // NSEventTrackingRunLoopMode and delivers the drag and the mouse-UP there. Asking only for
+        // the default mode means the up never arrives: the press is begun and never completed, so
+        // a control lights up and answers nothing. A synthetic click that never moves works — every
+        // human click moves a pixel — which is exactly how this survived a self-test.
+        // The same mode is why a live resize showed a stretched frame until the button was let go:
+        // the resize's own events were invisible too, so nothing re-rendered until tracking ended.
         var runLoopMode = NSString("kCFRunLoopDefaultMode");
         var nsDate = objc_getClass("NSDate");
         var distantPast = Send(nsDate, Sel("distantPast"));

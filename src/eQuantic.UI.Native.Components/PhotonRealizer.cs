@@ -5,7 +5,11 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>A pressable region registered by the realizer — hit rect expanded to the §08 contract.</summary>
-public readonly record struct HitRegion(Rect Bounds, Pressable Node);
+/// <param name="Path">Where the pressable sits in the tree. A press outlives the frame it began in
+/// — the pressed state repaints, and the next Build makes fresh nodes — so the target is remembered
+/// by PATH. Remembering the object meant every press that spanned a frame quietly did nothing, and
+/// a real click always spans one.</param>
+public readonly record struct HitRegion(Rect Bounds, Pressable Node, string Path = "");
 
 /// <summary>Spec S5/gestures: a hover-reactive region — a Box carrying a Hover diff. The host's
 /// pointer tracking resolves the TOPMOST region under the pointer (paint order = registration
@@ -499,7 +503,7 @@ public static class PhotonRealizer
                 break;
 
             case Pressable pressable:
-                input.Add(new HitRegion(ExpandHitRect(node.Bounds), pressable));
+                input.Add(new HitRegion(ExpandHitRect(node.Bounds), pressable, node.Path ?? ""));
                 break;
 
             // S5 programmable hover: the region rides the SAME pointer pipeline Style.Hover uses;
