@@ -93,6 +93,22 @@ public sealed class PhotonApplication
     /// </summary>
     public void Run() => FindRunner().Run(this);
 
+    /// <summary>
+    /// Lets every shell that shipped register what the device can do, before the container is built.
+    /// A shell that offers nothing is not an error — a head with no camera simply has none to offer,
+    /// and the app finds the capability reporting itself unavailable rather than missing.
+    /// </summary>
+    internal static void RegisterCapabilities(IServiceCollection services)
+    {
+        foreach (var declaration in ShellAssemblies()
+            .SelectMany(assembly => assembly.GetCustomAttributes<PhotonCapabilitiesAttribute>())
+            .Select(attribute => attribute.ProviderType)
+            .Distinct())
+        {
+            ((IPhotonCapabilities)Activator.CreateInstance(declaration)!).Register(services);
+        }
+    }
+
     private static IPhotonRunner FindRunner()
     {
         var declarations = ShellAssemblies()
