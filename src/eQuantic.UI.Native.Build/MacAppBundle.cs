@@ -16,7 +16,7 @@ namespace eQuantic.UI.Build;
 public static class MacAppBundle
 {
     public static void Write(string bundlePath, string executable, string displayName,
-        string identifier, string version, string? icnsSource)
+        string identifier, string version, string? icnsSource, string? capabilitiesAssembly = null)
     {
         var contents = Path.Combine(bundlePath, "Contents");
         var resources = Path.Combine(contents, "Resources");
@@ -44,9 +44,28 @@ public static class MacAppBundle
                  .Bool("NSHighResolutionCapable", true)
                  .Bool("NSSupportsAutomaticGraphicsSwitching", true);
             if (icon is not null) plist.String("CFBundleIconFile", icon);
+
+            // What the app DECLARED, straight off its compiled assembly — the same attributes the
+            // iOS partial plist is written from. The Mac spelling of the location key differs from
+            // the phones' (Apple's names are historical, not derivable), so both are written: a
+            // key the platform does not read is inert, a missing one silently suppresses the
+            // system prompt.
+            if (capabilitiesAssembly is not null && File.Exists(capabilitiesAssembly))
+            {
+                foreach (var (capability, reason) in CapabilityManifest.Read(capabilitiesAssembly))
+                {
+                    foreach (var key in AppleKeys(capability)) plist.String(key, reason);
+                }
+            }
         }));
 
         // The Finder reads this to know the directory IS a bundle even before the plist is parsed.
         File.WriteAllText(Path.Combine(contents, "PkgInfo"), "APPL????");
+    }
+
+    private static IEnumerable<string> AppleKeys(string capability)
+    {
+        if (CapabilityManifest.AppleKey(capability) is { } shared) yield return shared;
+        if (capability == "Location") yield return "NSLocationUsageDescription";   // the Mac's own spelling
     }
 }

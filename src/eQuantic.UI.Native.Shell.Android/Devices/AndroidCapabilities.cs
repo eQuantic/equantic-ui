@@ -16,5 +16,6 @@ public sealed class AndroidCapabilities : IPhotonCapabilities
         services.TryAddSingleton<IBiometrics, AndroidBiometrics>();
         services.TryAddSingleton<INetworkStatus, AndroidNetworkStatus>();
         services.TryAddSingleton<IMotionSensor, AndroidMotionSensor>();
+        services.TryAddSingleton<ILocation, AndroidLocation>();
     }
 }

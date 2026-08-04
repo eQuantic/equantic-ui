@@ -92,7 +92,7 @@ public static class Gallery
         GallerySection.Navigation => 4,
         GallerySection.Feedback => 4,
         GallerySection.Overlays => 4,
-        _ => 4,
+        _ => 5,
     };
 
     public static VisualNode Render(GallerySection section, IAppTheme theme, SectionState state,
@@ -469,6 +469,20 @@ public static class Gallery
         }
         column.Add(Card(theme, "Motion",
             "A high-rate stream, and the first capability most devices honestly lack.", movement));
+
+        var whereabouts = Column(Space.S3);
+        whereabouts.Add(new Button("Where am I?", Variant.Secondary)
+        {
+            OnPressed = state.OnLocate,
+            Disabled = state.OnLocate is null,
+        });
+        whereabouts.Add(Label(theme, state.Position
+            ?? (state.OnLocate is null
+                ? "Location services are off on this device."
+                : "Not asked yet — the system prompt appears on the first press.")));
+        column.Add(Card(theme, "Location",
+            "Where PermissionState earns its three values: asking prompts, Denied explains the way "
+            + "to Settings, and asking again is never the answer.", whereabouts));
         return column;
     }
 

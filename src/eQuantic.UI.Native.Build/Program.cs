@@ -77,7 +77,8 @@ if (args.Length > 0 && args[0] == "bundle")
         Arg("--name") ?? executable,
         Arg("--id") ?? $"com.equantic.{executable.ToLowerInvariant()}",
         Arg("--version") ?? "1.0.0",
-        Arg("--icns"));
+        Arg("--icns"),
+        Arg("--capabilities"));
     Console.WriteLine($"eqicon: wrote {bundle}");
     return 0;
 }

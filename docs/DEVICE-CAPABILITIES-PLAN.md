@@ -246,3 +246,34 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
   The Studio's Device section shows the whole point on a desk: "No motion sensors on this desk —
   and that is the design working, not a gap." The same page on a phone streams readings with no
   new line written.
+
+- **2026-08-04 (D6)** — **location**, where PermissionState earns its three values — and where a
+  LATENT BUG in the declaration pipeline surfaced and died.
+
+  The contract: `Permission` never prompts (reading a property must not put a dialog on screen),
+  `GetCurrentAsync` prompts when the answer is still NotDetermined and resolves null for every
+  flavour of "you do not get a position" — Permission says which flavour. Apple is CoreLocation
+  with a RUNTIME delegate class (`objc_allocateClassPair`, the content view's own trick), and one
+  behaviour cost a round: CoreLocation calls `didChangeAuthorization` IMMEDIATELY when the
+  delegate is installed, with the status as it already was — which is not the user's answer, it is
+  the absence of one, and resolving the ask on it closed the prompt three seconds after it opened.
+  NotDetermined now resolves nothing.
+
+  The bug worth the log line: the capability attribute used to carry the enum's ORDINAL, and the
+  day NetworkStatus was inserted mid-enum every declaration after it silently became a different
+  one — the Studio asked for Location and its manifest got NSMotionUsageDescription, because the
+  writer (the app's generator) and the reader (the build tool) are different assemblies built at
+  different times. The attribute now carries the NAME; the ordinal table is deleted. A name cannot
+  be renumbered.
+
+  The macOS bundle now receives capability keys at all — the manifest step only ran for iOS, so no
+  mac app could ever have shown a permission prompt. `eqicon bundle --capabilities <assembly>`
+  reads the same attributes the iOS partial plist is written from, and writes BOTH location
+  spellings (the Mac's `NSLocationUsageDescription` and the phones' WhenInUse — an unread key is
+  inert, a missing one silently suppresses the prompt).
+
+  Proven END TO END in the window: press → live GPS fix with ±35 m through CoreLocation → runtime
+  delegate → SetState. Android is the framework LocationManager (no Play Services dependency) plus
+  a RequestPermissionsAsync bridge on PhotonActivity — the permission twin of PickAsync; compiled,
+  not run. Web is navigator.geolocation, whose contract this IS; the permission property is a
+  lazily-honest cache because the Permissions API answers asynchronously.
