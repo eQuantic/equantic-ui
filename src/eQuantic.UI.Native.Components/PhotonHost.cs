@@ -867,6 +867,10 @@ public sealed class PhotonHost
         return CursorShape.Default;
     }
 
+    /// <summary>Where a scroll surface currently sits — the test seam for gesture regressions
+    /// (a latched pan shows up here as an offset nobody asked for).</summary>
+    public float ScrollOffsetOf(string path) => _scrolls.Get(path) ?? 0f;
+
     /// <summary>The pointer left the window (or the input is touch) — hover clears.</summary>
     public void PointerLeave()
     {
@@ -1027,7 +1031,16 @@ public sealed class PhotonHost
         _dragSelecting = false;
         if (_pressSwallowed)
         {
+            // Suppressed OUTCOME, not suppressed CLEANUP. The press-down armed the same gesture
+            // candidates every press arms — the pan for a scrollable under the point above all —
+            // and returning without clearing them left the pan latched: every mouse move after
+            // releasing on an inert control kept scrolling, stuck to the pointer with no button
+            // down. The release still ends the gesture; it just performs nothing.
             _pressSwallowed = false;
+            _drag = null;
+            _pan = null;
+            _pressed = null;
+            _pressedPath = null;
             return true;
         }
 
