@@ -575,6 +575,43 @@ public sealed class PhotonHost
         return false;
     }
 
+    /// <summary>
+    /// What the pointer should LOOK like where it is. The web has had this since it had a mouse —
+    /// a hand over what you can press, a beam over what you can type into — and its absence is the
+    /// kind of thing nobody reports and everybody feels: you end up clicking to find out whether
+    /// something is a control.
+    /// <para>
+    /// Derived from the regions already registered rather than declared anywhere. A Pressable IS a
+    /// hand and a field IS a beam; making the developer say so as well would be one more thing to
+    /// forget, and the shared web lowering already answers it the same way, from the same tree.
+    /// </para>
+    /// </summary>
+    public CursorShape CursorAt(float x, float y)
+    {
+        if (_lastFrame is null) return CursorShape.Default;
+        var point = new Point(x, y);
+
+        // Topmost first, exactly as dispatch does — a button drawn over a field is a button.
+        var fields = _lastFrame.TextRegions;
+        var hits = _lastFrame.HitRegions;
+        var links = _lastFrame.LinkRegions;
+
+        for (var i = hits.Count - 1; i >= 0; i--)
+        {
+            if (!hits[i].Bounds.Contains(point)) continue;
+            // A disabled control says so: the pointer is the only warning before the click that
+            // does nothing.
+            return hits[i].Node.Disabled ? CursorShape.NotAllowed : CursorShape.Pointer;
+        }
+        for (var i = fields.Count - 1; i >= 0; i--)
+            if (fields[i].Bounds.Contains(point))
+                return fields[i].Entry.Disabled ? CursorShape.NotAllowed : CursorShape.Text;
+        for (var i = links.Count - 1; i >= 0; i--)
+            if (links[i].Bounds.Contains(point)) return CursorShape.Pointer;
+
+        return CursorShape.Default;
+    }
+
     /// <summary>The pointer left the window (or the input is touch) — hover clears.</summary>
     public void PointerLeave()
     {
