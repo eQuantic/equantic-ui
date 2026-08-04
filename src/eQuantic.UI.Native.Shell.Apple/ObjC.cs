@@ -131,6 +131,24 @@ public static partial class ObjC
 
     public static IntPtr Sel(string name) => sel_registerName(name);
 
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial long SendLong(IntPtr receiver, IntPtr selector);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial IntPtr Send(IntPtr receiver, IntPtr selector, nuint arg1);
+
+    /// <summary>The managed string behind an NSString, or null when there is none.</summary>
+    public static string? FromNSString(IntPtr value) =>
+        value == IntPtr.Zero ? null : Marshal.PtrToStringUTF8(Send(value, Sel("UTF8String")));
+
+    /// <summary>An NSArray of NSStrings — what several AppKit setters take.</summary>
+    public static IntPtr StringArray(IReadOnlyList<string> values)
+    {
+        var array = Send(objc_getClass("NSMutableArray"), Sel("array"));
+        foreach (var value in values) SendVoid(array, Sel("addObject:"), NSString(value));
+        return array;
+    }
+
     public static IntPtr NSString(string value)
     {
         var utf8 = Marshal.StringToCoTaskMemUTF8(value);

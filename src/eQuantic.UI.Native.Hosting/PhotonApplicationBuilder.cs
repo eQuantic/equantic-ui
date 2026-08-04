@@ -54,5 +54,11 @@ public sealed class PhotonApplicationBuilder
     /// <summary>The theme the whole tree resolves against — the one setting no app can skip.</summary>
     public PhotonApplicationBuilder UseTheme(IAppTheme theme) => Configure(options => options.Theme = theme);
 
-    public PhotonApplication Build() => new(_host.Build(), Args);
+    public PhotonApplication Build()
+    {
+        // LAST, so anything the app registered itself already sits in the collection and the
+        // shell's TryAdd steps aside. A fake photo library in a test wins over the real one.
+        PhotonApplication.RegisterCapabilities(_host.Services);
+        return new PhotonApplication(_host.Build(), Args);
+    }
 }
