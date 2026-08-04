@@ -44,6 +44,7 @@ export const IconSize = {
 export const Touch = {
   minTarget: 48,
   pressCancelSlop: 12,
+  wheelLine: 16,
 } as const;
 
 export const Curve = {

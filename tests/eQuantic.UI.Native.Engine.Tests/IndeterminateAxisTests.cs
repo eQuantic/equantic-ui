@@ -91,3 +91,31 @@ public class IndeterminateAxisTests
             .Children[0].Bounds.Width.Should().Be(600);
     }
 }
+
+/// <summary>
+/// A wheel notch has to move the page a useful distance. AppKit reports a TRACKPAD's scroll in
+/// points and a WHEEL's in lines; taking the line count for points moved the content a few pixels
+/// per notch, so reaching the bottom of anything cost a hundred turns.
+/// </summary>
+public class WheelTravelTests
+{
+    [Fact]
+    public void AWheelNotch_MovesALine_NotAPixel()
+    {
+        Touch.WheelTravel(3, precise: false).Should().Be(3 * Touch.WheelLine);
+        Touch.WheelTravel(1, precise: false).Should().BeGreaterThanOrEqualTo(16);
+    }
+
+    [Fact]
+    public void ATrackpad_AlreadySpeaksPoints()
+    {
+        Touch.WheelTravel(42.5f, precise: true).Should().Be(42.5f);
+    }
+
+    [Fact]
+    public void DirectionSurvivesBothWays()
+    {
+        Touch.WheelTravel(-2, precise: false).Should().Be(-2 * Touch.WheelLine);
+        Touch.WheelTravel(-8, precise: true).Should().Be(-8);
+    }
+}
