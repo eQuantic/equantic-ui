@@ -92,7 +92,7 @@ public static class Gallery
         GallerySection.Navigation => 4,
         GallerySection.Feedback => 4,
         GallerySection.Overlays => 4,
-        _ => 1,
+        _ => 2,
     };
 
     public static VisualNode Render(GallerySection section, IAppTheme theme, SectionState state,
@@ -395,10 +395,24 @@ public static class Gallery
                 : "Nothing chosen yet."));
         }
 
+        var identity = Column(Space.S3);
+        identity.Add(new Button("Confirm it's you", Variant.Secondary)
+        {
+            OnPressed = state.OnAuthenticate,
+            Disabled = state.OnAuthenticate is null,
+        });
+        identity.Add(Label(theme, state.Authentication
+            ?? (state.OnAuthenticate is null
+                ? "No reader on this device — the section says so instead of offering a dead button."
+                : "Not asked yet.")));
+
         var column = Column(Space.S5);
         column.Add(Card(theme, "Photo library",
             "A capability is a SERVICE: an interface taken through the constructor, so this page is "
             + "testable with a fake and identical on all four targets.", pick));
+        column.Add(Card(theme, "Biometrics",
+            "Four ways not to succeed, and they are not the same — a wrong finger, nothing enrolled, "
+            + "someone who backed out, a device with no reader at all.", identity));
         return column;
     }
 

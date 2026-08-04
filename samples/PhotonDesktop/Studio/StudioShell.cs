@@ -27,13 +27,37 @@ public sealed class StudioShell : StatefulComponent
     /// whichever one this platform has and this page never learns which. Nullable so a head with
     /// none simply shows the capability as absent instead of failing to construct.
     /// </param>
-    public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null)
+    public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null,
+        IBiometrics? biometrics = null)
     {
         _section = Enum.TryParse<GallerySection>(configuration["section"], ignoreCase: true, out var section)
             ? section
             : GallerySection.Buttons;
 
         if (library?.IsAvailable == true) _demo.OnPickImage = () => PickAsync(library);
+
+        // ABSENT is a first-class answer: a device with no reader (or nothing enrolled) leaves this
+        // null, and the section says so rather than offering a button that cannot work.
+        if (biometrics?.IsAvailable == true) _demo.OnAuthenticate = () => AuthenticateAsync(biometrics);
+    }
+
+    /// <summary>
+    /// Four ways for this not to succeed, and they are not the same: a wrong finger invites another
+    /// try, a device with nothing enrolled needs Settings, and someone who backed out asked to be
+    /// left alone. An app that collapses them into "failed" either nags or gives up.
+    /// </summary>
+    private async void AuthenticateAsync(IBiometrics biometrics)
+    {
+        var result = await biometrics.AuthenticateAsync("Confirm it's you to reveal the key.");
+        SetState(() => _demo.Authentication = result switch
+        {
+            BiometricResult.Succeeded => "Confirmed — sk_live_4f8a…c21b",
+            BiometricResult.Cancelled => "Cancelled. Nothing was revealed.",
+            BiometricResult.FallbackRequested => "Use your password instead.",
+            BiometricResult.NotEnrolled => "No fingerprint enrolled — add one in Settings.",
+            BiometricResult.Unavailable => "This device has no reader.",
+            _ => "Not recognised. Try again.",
+        });
     }
 
     /// <summary>
@@ -443,6 +467,10 @@ public sealed class SectionState
     /// photo library at all — which a desktop always does, but a stripped-down one might not.</summary>
     public ImageData? PickedImage;
     public Action? OnPickImage;
+
+    /// <summary>How the last attempt at the reader ended, in words the user can act on.</summary>
+    public string? Authentication;
+    public Action? OnAuthenticate;
 
     public string Name = "Ana Beatriz Nogueira";
     public string Email = "";

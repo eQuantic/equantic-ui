@@ -11,6 +11,9 @@ namespace eQuantic.UI.Native.Shell.MacOS;
 /// its own — a fake in a test, a wrapper that logs — has already decided.</summary>
 public sealed class MacOSCapabilities : IPhotonCapabilities
 {
-    public void Register(IServiceCollection services) =>
+    public void Register(IServiceCollection services)
+    {
         services.TryAddSingleton<IPhotoLibrary, MacOSPhotoLibrary>();
+        services.TryAddSingleton<IBiometrics, AppleBiometrics>();
+    }
 }

@@ -1,4 +1,5 @@
 import { getRootServiceProvider } from '../../core/service-provider';
+import { WebBiometrics } from './biometrics';
 import { WebPhotoLibrary } from './photo-library';
 
 /**
@@ -13,4 +14,7 @@ import { WebPhotoLibrary } from './photo-library';
 export function registerDeviceCapabilities(): void {
   const services = getRootServiceProvider();
   services.registerSingleton('IPhotoLibrary', () => new WebPhotoLibrary());
+  // Registered even though it reports itself unavailable: a page that takes one must RECEIVE one,
+  // or it fails to construct instead of showing the fallback it already knows how to show.
+  services.registerSingleton('IBiometrics', () => new WebBiometrics());
 }

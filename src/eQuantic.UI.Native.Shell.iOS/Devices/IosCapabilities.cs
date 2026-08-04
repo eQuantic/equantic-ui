@@ -10,6 +10,9 @@ namespace eQuantic.UI.Native.Shell.iOS;
 /// <summary>What an iPhone can do, offered to the container.</summary>
 public sealed class IosCapabilities : IPhotonCapabilities
 {
-    public void Register(IServiceCollection services) =>
+    public void Register(IServiceCollection services)
+    {
         services.TryAddSingleton<IPhotoLibrary, IosPhotoLibrary>();
+        services.TryAddSingleton<IBiometrics, IosBiometrics>();
+    }
 }

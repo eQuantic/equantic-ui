@@ -135,6 +135,13 @@ public static partial class ObjC
     public static partial long SendLong(IntPtr receiver, IntPtr selector);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static partial bool SendBool(IntPtr receiver, IntPtr selector, long arg1, IntPtr arg2);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial void SendVoid(IntPtr receiver, IntPtr selector, long arg1, IntPtr arg2, IntPtr arg3);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial IntPtr Send(IntPtr receiver, IntPtr selector, nuint arg1);
 
     /// <summary>The managed string behind an NSString, or null when there is none.</summary>
