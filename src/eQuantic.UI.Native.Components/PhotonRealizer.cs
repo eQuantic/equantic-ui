@@ -1017,6 +1017,7 @@ public static class PhotonRealizer
         var style = theme.Type(entry.Role);
 
         var advance = 0f;
+        var shift = 0f;
         if (motion.TextRasterizer is null)
         {
             // No platform text service — headless tests, and any surface where glyphs are not
@@ -1027,18 +1028,39 @@ public static class PhotonRealizer
         else if (shown.Length > 0)
         {
             var rasterizer = motion.TextRasterizer;
+            // While EDITING, the raster is unbounded and the FIELD is the window onto it — the
+            // browser's own input behaviour. Bounded-and-ellipsized is for reading, and an ellipsis
+            // in a field someone is typing into hides exactly the characters they just typed.
             var raster = (motion.TextCache ?? TextRasterCache.Shared)
-                .Get(rasterizer, shown, style, motion.TypeScale, node.Bounds.Width, 1, motion.RenderScale);
+                .Get(rasterizer, shown, style, motion.TypeScale,
+                    editing ? float.MaxValue : node.Bounds.Width, 1, motion.RenderScale);
             if (raster is not null)
             {
                 var width = raster.Texture.Width / motion.RenderScale;
-                var rect = new Rect(node.Bounds.X, node.Bounds.Y, width, raster.Texture.Height / motion.RenderScale);
-                builder.Texture(rect, token.Resolve(mode), raster.Texture);
                 // Where the caret goes is a measurement of the text BEFORE it, not a fraction of the
                 // whole: proportional glyphs make "iii" and "WWW" different widths at equal length.
                 advance = press.CaretIndex >= value.Length
                     ? (value.Length > 0 ? width : 0)
                     : MeasureUpTo(rasterizer, value, press.CaretIndex, style, motion);
+
+                // The window FOLLOWS the caret: when it would leave the right edge, the text slides
+                // left just enough to keep it visible (a small margin shows the character being
+                // approached). Derived from the caret alone — no scroll state to desynchronize.
+                if (editing && advance > node.Bounds.Width - CaretFollowMargin)
+                    shift = advance - (node.Bounds.Width - CaretFollowMargin);
+
+                var rect = new Rect(node.Bounds.X - shift, node.Bounds.Y,
+                    width, raster.Texture.Height / motion.RenderScale);
+                if (shift > 0 || width > node.Bounds.Width)
+                {
+                    builder.PushClip(new RRect(node.Bounds, default));
+                    builder.Texture(rect, token.Resolve(mode), raster.Texture);
+                    builder.PopClip();
+                }
+                else
+                {
+                    builder.Texture(rect, token.Resolve(mode), raster.Texture);
+                }
             }
         }
 
@@ -1051,8 +1073,10 @@ public static class PhotonRealizer
         // saves measuring the run twice to paint around it.
         if (press.SelectionEnd > press.SelectionStart && motion.TextRasterizer is { } selectionRasterizer)
         {
-            var from = MeasureUpTo(selectionRasterizer, value, press.SelectionStart, style, motion);
-            var to = MeasureUpTo(selectionRasterizer, value, press.SelectionEnd, style, motion);
+            var from = MeasureUpTo(selectionRasterizer, value, press.SelectionStart, style, motion) - shift;
+            var to = MeasureUpTo(selectionRasterizer, value, press.SelectionEnd, style, motion) - shift;
+            from = MathF.Max(from, 0);
+            to = MathF.Min(to, node.Bounds.Width);
             if (to > from)
                 builder.FillRRect(
                     new RRect(new Rect(node.Bounds.X + from, node.Bounds.Y, to - from, caretHeight),
@@ -1063,7 +1087,8 @@ public static class PhotonRealizer
         // A caret inside a selection would be noise: the range already says where you are.
         if (!press.CaretVisible || press.SelectionEnd > press.SelectionStart) return;
         builder.FillRRect(
-            new RRect(new Rect(node.Bounds.X + advance, node.Bounds.Y, CaretWidth, caretHeight), new CornerRadii(0)),
+            new RRect(new Rect(node.Bounds.X + advance - shift, node.Bounds.Y, CaretWidth, caretHeight),
+                new CornerRadii(0)),
             Paint.Solid(theme.TextPrimary.Resolve(mode)));
     }
 
@@ -1079,6 +1104,10 @@ public static class PhotonRealizer
 
     /// <summary>2dp: thin enough to sit between glyphs, thick enough to see on a scaled display.</summary>
     private const float CaretWidth = 2f;
+
+    /// <summary>How close to the right edge the caret may ride before the text slides: enough to
+    /// see the caret itself plus a sliver of what comes next.</summary>
+    private const float CaretFollowMargin = 8f;
 
     private static void EmitEntryPlaceholder(LayoutNode node, TextEntry entry, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder)
     {

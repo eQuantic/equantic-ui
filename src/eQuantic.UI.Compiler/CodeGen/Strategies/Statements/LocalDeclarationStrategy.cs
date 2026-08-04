@@ -37,7 +37,34 @@ public class LocalDeclarationStrategy : IStatementStrategy
             return $"{patternVars}const {name} = {init}; /* using */";
         }
 
-        return $"{patternVars}let {name} = {init};";
+        return $"{patternVars}let {name}{Annotation(decl, variable, context)} = {init};";
+    }
+
+    /// <summary>
+    /// The TS annotation, exactly when C# had one that MATTERS: an explicit declared type that is
+    /// not what the initializer already is. `VisualNode menu = new Anchored(...)` declares a base
+    /// on purpose — the variable is reassigned to a Shortcut two lines later — and an unannotated
+    /// `let` makes TypeScript infer the derived type and reject the reassignment. `var` stays bare:
+    /// inference was the author's own choice there.
+    /// </summary>
+    private static string Annotation(LocalDeclarationStatementSyntax decl, VariableDeclaratorSyntax variable,
+        ConversionContext context)
+    {
+        if (decl.Declaration.Type.IsVar || variable.Initializer is null) return "";
+
+        var declared = context.SemanticHelper.GetType(decl.Declaration.Type);
+        var actual = context.SemanticHelper.GetType(variable.Initializer.Value);
+        if (declared is null || actual is null) return "";
+        if (SymbolEqualityComparer.Default.Equals(declared, actual)) return "";
+
+        // Only NAMED vocabulary/user types annotate — primitives, generics and arrays keep their
+        // C# spellings, which are not TypeScript's, and inference is already right for them.
+        if (declared is not INamedTypeSymbol { IsGenericType: false, SpecialType: SpecialType.None } named)
+            return "";
+        // `VisualNode?` crosses as the union it is — an annotation that rejects the null the C#
+        // explicitly allowed would refuse `VisualNode? icon = selected ? new Icon(…) : null`.
+        var nullable = decl.Declaration.Type is NullableTypeSyntax ? " | null" : "";
+        return $": {named.Name}{nullable}";
     }
 
     public int Priority => 0;

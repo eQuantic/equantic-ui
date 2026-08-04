@@ -36,4 +36,17 @@ public class PressedStateRealizerTests
         css.Should().Contain(".eq-pressable:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
         css.Should().Contain("transition: background-color var(--eq-motion-fast) ease-out");
     }
+
+    /// <summary>
+    /// The native dispatch twin: INERT yields to the pressable that wraps it. Without this rule the
+    /// browser suppresses the click on a disabled control entirely and a Menu whose trigger is a
+    /// disabled-looking Button never opens — the wrapper never hears a thing.
+    /// </summary>
+    [Fact]
+    public void GeneratedCss_LetsAWrappedInertControlYieldTheClick()
+    {
+        var css = PhotonCssGenerator.Generate(Theme);
+        css.Should().Contain(
+            ".eq-pressable [disabled], .eq-pressable [aria-disabled=\"true\"] { pointer-events: none; }");
+    }
 }

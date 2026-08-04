@@ -765,3 +765,74 @@ public class DropdownKeyboardTests
         picked.Should().Equal([2], "the highlight never lands where Enter would refuse to run");
     }
 }
+
+/// <summary>
+/// The field is a WINDOW onto its text: when what you typed is wider than the box, the text slides
+/// so the caret never leaves view. Without this, typing past the edge kept appending characters
+/// nobody could see — the caret rode off the right side and stayed there.
+/// </summary>
+public class CaretFollowTests
+{
+    /// <summary>8dp per character, deterministic — long text vs a 100dp field is the scenario.</summary>
+    private sealed class WideRasterizer : Framework.ITextRasterizer
+    {
+        public Framework.TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
+            float maxWidth, int maxLines, float scale)
+        {
+            if (string.IsNullOrEmpty(content)) return null;
+            var width = Math.Max(1, (int)Math.Min(content.Length * 8 * scale, maxWidth * scale));
+            var height = Math.Max(1, (int)(style.LineHeight * scale));
+            return new Framework.TextRaster(width, height, new byte[width * height]);
+        }
+    }
+
+    private static (DrawCommand[] Commands, Rect Field) TypeInto(string value)
+    {
+        var column = new Column(gap: 0) { Width = 100 };
+        column.Add(new TextEntry(value, _ => { }));
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 100, 100)
+        {
+            TextRasterizer = new WideRasterizer(),
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var field = frame.TextRegions.Single().Bounds;
+
+        // Click in, then End: the caret is at the far end of the overflowing text. (End rather
+        // than the click position: the stub rasterizer and the approximate measurer disagree about
+        // widths, which the real platform cannot — CoreText serves both by construction.)
+        host.PressDown(field.Center.X, field.Center.Y);
+        host.PressUp(field.Center.X, field.Center.Y);
+        host.KeyDown("End");
+        host.RenderFrame(new DisplayListBuilder());
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+        return (builder.Build().Commands.ToArray(), field);
+    }
+
+    [Fact]
+    public void TheCaretStaysInsideTheField_HoweverLongTheText()
+    {
+        // 30 chars × 8dp = 240dp of text in a 100dp field.
+        var (commands, field) = TypeInto(new string('m', 30));
+
+        var caret = commands.Last(c => c.Kind == DrawCommandKind.FillRRect && c.Shape.Rect.Width == 2);
+        caret.Shape.Rect.X.Should().BeInRange(field.X, field.X + field.Width,
+            "a caret off the right edge is a field nobody can type into with confidence");
+
+        // …and the text slid LEFT to make that true, clipped to the field's own window.
+        var texture = commands.Single(c => c.Kind == DrawCommandKind.Texture);
+        texture.Shape.Rect.X.Should().BeLessThan(field.X, "the start of the text is out of view");
+        texture.Clip.Should().NotBeNull("what slid out must not paint over the neighbours");
+    }
+
+    [Fact]
+    public void ShortTextDoesNotSlide()
+    {
+        var (commands, field) = TypeInto("abc");
+
+        var texture = commands.Single(c => c.Kind == DrawCommandKind.Texture);
+        texture.Shape.Rect.X.Should().Be(field.X, "nothing overflows, nothing moves");
+    }
+}

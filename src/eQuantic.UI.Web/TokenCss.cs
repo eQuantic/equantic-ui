@@ -269,6 +269,11 @@ public static class PhotonCssGenerator
         // Focus (spec §01): the double ring — 2dp Surface gap + 2dp FocusRing — on keyboard focus only
         // (:focus-visible). The shadow sits on the CHILD so it follows the control's border-radius.
         css.AppendLine(".eq-pressable { outline: none; }");
+        // INERT yields to its wrapper (the native dispatch twin): a disabled control inside an
+        // enabled pressable lets the click reach the pressable that composed it — a Menu whose
+        // trigger is a disabled-looking Button still opens. Without this the browser suppresses
+        // the click on the disabled control entirely and the wrapper never hears it.
+        css.AppendLine(".eq-pressable [disabled], .eq-pressable [aria-disabled=\"true\"] { pointer-events: none; }");
         css.AppendLine(".eq-pressable:focus-visible > :first-child { box-shadow: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
 
         // Overlay layer (Phase C): the viewport-fixed stacking layer — composition (scrim,
