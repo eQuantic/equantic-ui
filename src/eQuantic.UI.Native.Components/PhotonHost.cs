@@ -131,7 +131,8 @@ public sealed class PhotonHost
         _scrolls.Smooth = SmoothScroll && !ReducedMotion;
         var gliding = _scrolls.Advance(timeMs);
         _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets, _pressedPath,
-            _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible);
+            _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible,
+            Selection.Start, Selection.End);
         if (RenderScale != 1f) builder.Pop();
         AdoptAutofocus();
         // A blinking caret is running motion like any other: while a field is being edited the loop
@@ -331,6 +332,71 @@ public sealed class PhotonHost
     private string? _textPath;
     private int _caret;
 
+    /// <summary>
+    /// Where a selection STARTED, or null when there is none. The caret is the moving end, this is
+    /// the fixed one — which is what makes shift-arrow extend in both directions and a drag reverse
+    /// on itself without the range flipping inside out.
+    /// </summary>
+    private int? _anchor;
+
+    /// <summary>A press that began inside a field: the pointer is drawing a selection until it lifts.</summary>
+    private bool _dragSelecting;
+
+    /// <summary>The selected range, low end first. Empty when nothing is selected.</summary>
+    public (int Start, int End) Selection
+    {
+        get
+        {
+            if (_anchor is not { } anchor) return (CaretIndex, CaretIndex);
+            var caret = CaretIndex;
+            var length = TextTarget?.Value.Length ?? 0;
+            anchor = Math.Clamp(anchor, 0, length);
+            return anchor <= caret ? (anchor, caret) : (caret, anchor);
+        }
+    }
+
+    public bool HasSelection => Selection.Start != Selection.End;
+
+    /// <summary>
+    /// The caret position a click at <paramref name="localX"/> dp into the field lands on — the
+    /// character boundary NEAREST the point, so clicking the right half of a letter puts the caret
+    /// after it, which is what every text field does and what makes clicking feel aimed rather
+    /// than approximate.
+    /// </summary>
+    private int IndexAt(TextEntry entry, float localX)
+    {
+        var value = entry.Value;
+        if (value.Length == 0 || localX <= 0) return 0;
+        var measurer = _measurer ?? ApproximateTextMeasurer.Instance;
+        var style = _theme.Type(entry.Role);
+
+        float Width(int count) => count <= 0 ? 0
+            : measurer.Measure(Shown(entry, value[..count]), style, _typeScale, float.PositiveInfinity, 1)
+                .Lines is { Count: > 0 } lines ? lines[0].Width : 0;
+
+        if (localX >= Width(value.Length)) return value.Length;
+
+        // Binary search over prefix widths: proportional glyphs make "iii" and "WWW" different
+        // widths at equal length, so a ratio of the total would land in the wrong place.
+        var low = 0;
+        var high = value.Length;
+        while (low < high)
+        {
+            var mid = (low + high) / 2;
+            if (Width(mid + 1) <= localX) low = mid + 1;
+            else high = mid;
+        }
+        // Nearest boundary rather than the one before: half a glyph either way.
+        var before = Width(low);
+        var after = Width(Math.Min(low + 1, value.Length));
+        return localX - before > after - localX && low < value.Length ? low + 1 : low;
+    }
+
+    /// <summary>What is actually DRAWN for a value — a password shows dots, and a click has to land
+    /// where the dots are.</summary>
+    private static string Shown(TextEntry entry, string value) =>
+        entry.Obscure ? new string('•', value.Length) : value;
+
     /// <summary>The field being edited in the CURRENT frame, or null. Resolved by path every time
     /// rather than remembered: the node handed out last frame is already stale.</summary>
     public TextEntry? TextTarget
@@ -382,9 +448,10 @@ public sealed class PhotonHost
 
     private readonly HashSet<string> _autofocused = [];
 
-    private void BeginEditing(TextRegion field) => BeginEditing(field.Entry, field.Path);
+    private void BeginEditing(TextRegion field, float? atX = null) =>
+        BeginEditing(field.Entry, field.Path, atX is { } x ? IndexAt(field.Entry, x - field.Bounds.X) : null);
 
-    private void BeginEditing(TextEntry entry, string path)
+    private void BeginEditing(TextEntry entry, string path, int? caret = null)
     {
         var field = new TextRegion(default, entry, path);
         if (field.Entry.Disabled) return;
@@ -394,9 +461,9 @@ public sealed class PhotonHost
         // a form where four boxes all look like the active one.
         if (changed) EndEditing();
         _textPath = field.Path;
-        // v1: the caret lands at the END. Placing it where the pointer fell needs per-character hit
-        // testing from the rasterizer, which is the same measurement the selection work will need.
-        _caret = field.Entry.Value.Length;
+        // Where the pointer fell, or the end of the text when it arrived by Tab.
+        _caret = caret ?? field.Entry.Value.Length;
+        _anchor = caret is null ? null : _caret;
         _focused = null;
         _focusedPath = null;
         if (changed) field.Entry.OnFocusChanged?.Invoke(true);
@@ -409,6 +476,7 @@ public sealed class PhotonHost
         TextTarget?.OnFocusChanged?.Invoke(false);
         _textPath = null;
         _caret = 0;
+        _anchor = null;
         NeedsRender = true;
     }
 
@@ -420,8 +488,10 @@ public sealed class PhotonHost
     public bool TextInput(string text)
     {
         if (string.IsNullOrEmpty(text) || TextTarget is not { } entry || entry.Disabled) return false;
-        var caret = CaretIndex;
-        Commit(entry, entry.Value[..caret] + text + entry.Value[caret..], caret + text.Length);
+        // Typing over a selection REPLACES it — the one behaviour that makes selecting worth doing.
+        var (start, end) = Selection;
+        var value = entry.Value;
+        Commit(entry, value[..start] + text + value[end..], start + text.Length, clearAnchor: true);
         return true;
     }
 
@@ -432,37 +502,52 @@ public sealed class PhotonHost
         if (entry.Disabled) return false;
         var value = entry.Value;
         var caret = CaretIndex;
+        var (start, end) = Selection;
+        var selecting = modifiers.HasFlag(KeyModifiers.Shift);
+        var command = modifiers.HasFlag(KeyModifiers.Command);
+
+        // Select all, then the movements. A movement WITH shift extends from the anchor; without
+        // it, an existing selection collapses to the edge you moved towards rather than to the
+        // caret — press Right with three words selected and you land after them, not in the middle.
+        if (command && key.Equals("a", StringComparison.OrdinalIgnoreCase))
+        {
+            _anchor = 0;
+            _caret = value.Length;
+            NeedsRender = true;
+            return true;
+        }
 
         switch (key)
         {
+            case "Backspace" when start != end:
+            case "Delete" when start != end:
+                Commit(entry, value.Remove(start, end - start), start, clearAnchor: true);
+                return true;
+
             case "Backspace" when caret > 0:
-                Commit(entry, value.Remove(caret - 1, 1), caret - 1);
+                Commit(entry, value.Remove(caret - 1, 1), caret - 1, clearAnchor: true);
                 return true;
             case "Backspace":
                 return true; // claimed at the start of the field: it must not fall through to Back
 
             case "Delete" when caret < value.Length:
-                Commit(entry, value.Remove(caret, 1), caret);
+                Commit(entry, value.Remove(caret, 1), caret, clearAnchor: true);
                 return true;
             case "Delete":
                 return true;
 
             case "ArrowLeft":
-                _caret = Math.Max(0, caret - 1);
-                NeedsRender = true;
+                MoveCaret(selecting ? Math.Max(0, caret - 1) : start != end ? start : Math.Max(0, caret - 1), selecting);
                 return true;
             case "ArrowRight":
-                _caret = Math.Min(value.Length, caret + 1);
-                NeedsRender = true;
+                MoveCaret(selecting ? Math.Min(value.Length, caret + 1) : start != end ? end : Math.Min(value.Length, caret + 1), selecting);
                 return true;
 
             case "Home" or "ArrowUp":
-                _caret = 0;
-                NeedsRender = true;
+                MoveCaret(0, selecting);
                 return true;
             case "End" or "ArrowDown":
-                _caret = value.Length;
-                NeedsRender = true;
+                MoveCaret(value.Length, selecting);
                 return true;
 
             case "Enter":
@@ -482,9 +567,20 @@ public sealed class PhotonHost
         }
     }
 
-    private void Commit(TextEntry entry, string value, int caret)
+    /// <summary>Moves the caret, keeping the anchor when the movement is EXTENDING a selection and
+    /// dropping it when it is not.</summary>
+    private void MoveCaret(int to, bool selecting)
+    {
+        if (selecting) _anchor ??= _caret;
+        else _anchor = null;
+        _caret = to;
+        NeedsRender = true;
+    }
+
+    private void Commit(TextEntry entry, string value, int caret, bool clearAnchor = false)
     {
         _caret = caret;
+        if (clearAnchor) _anchor = null;
         NeedsRender = true;
         // The caret moves whether or not the app takes the change: a field with no OnChanged is a
         // read-only field, and pretending the character landed would be a lie the next frame undoes.
@@ -536,6 +632,24 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerMove(float x, float y)
     {
+        // A press that began in a field is DRAWING a selection: the anchor stays where the press
+        // landed and the caret follows the pointer, so dragging back past the start reverses the
+        // range instead of collapsing it.
+        if (_dragSelecting && TextTarget is { } editing && _lastFrame is not null)
+        {
+            var fields = _lastFrame.TextRegions;
+            for (var i = 0; i < fields.Count; i++)
+            {
+                if (fields[i].Path != _textPath) continue;
+                var index = IndexAt(editing, x - fields[i].Bounds.X);
+                if (index == _caret) break;
+                _caret = index;
+                NeedsRender = true;
+                break;
+            }
+            return;
+        }
+
         // Gestures v2: a pressed pointer travelling inside a drag surface becomes a DRAG once it
         // passes the slop — the pressable press cancels (spec §08's cancel rule) and the subtree
         // follows the pointer (downward only) until release.
@@ -765,7 +879,8 @@ public sealed class PhotonHost
         for (var i = fields.Count - 1; i >= 0; i--)
         {
             if (!fields[i].Bounds.Contains(point)) continue;
-            BeginEditing(fields[i]);
+            BeginEditing(fields[i], x);
+            _dragSelecting = true;
             return true;
         }
 
@@ -817,6 +932,8 @@ public sealed class PhotonHost
     /// </summary>
     public bool PressUp(float x, float y)
     {
+        _dragSelecting = false;
+
         // Gestures v2: an ACTIVE drag resolves here — past the threshold it dismisses (state then
         // removes the subtree and the presence EXIT completes from the dragged position); short of
         // it, the offset glides back over Motion.Base. Either way the press was already cancelled.

@@ -416,3 +416,108 @@ public class EscapeDismissTests
         closed.Should().Be(1, "a menu opened with the keyboard has to close with it");
     }
 }
+
+/// <summary>
+/// Selecting text — which the field could not do at all: a click landed the caret at the end of
+/// whatever was there, and there was no way to select a word, let alone replace one.
+/// </summary>
+public class SelectionTests
+{
+    private sealed class Field : Primitives.StatefulComponent
+    {
+        public string Value = "hello world";
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: 0) { Width = SizeValue.Fill };
+            column.Add(new TextEntry(Value, v => SetState(() => Value = v)) { Placeholder = "Name" });
+            return column;
+        }
+    }
+
+    private static (PhotonHost Host, Field Field, Rect Bounds) Open()
+    {
+        var field = new Field();
+        var host = new PhotonHost(field, PhotonTheme.Instance, ThemeMode.Light, 400, 100);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        return (host, field, frame.TextRegions.Single().Bounds);
+    }
+
+    private static void Press(PhotonHost host, string key, KeyModifiers modifiers = KeyModifiers.None)
+    {
+        host.KeyDown(key, modifiers);
+        host.RenderFrame(new DisplayListBuilder());
+    }
+
+    [Fact]
+    public void AClickLandsTheCaretWhereItWasAimed()
+    {
+        var (host, _, bounds) = Open();
+
+        // Far left: before the first character. Far right: after the last.
+        host.PressDown(bounds.X + 1, bounds.Center.Y);
+        host.PressUp(bounds.X + 1, bounds.Center.Y);
+        host.CaretIndex.Should().Be(0);
+
+        host.PressDown(bounds.X + bounds.Width - 1, bounds.Center.Y);
+        host.PressUp(bounds.X + bounds.Width - 1, bounds.Center.Y);
+        host.CaretIndex.Should().Be("hello world".Length, "past the end of the text is the end of it");
+    }
+
+    [Fact]
+    public void DraggingSelects_AndTypingReplacesWhatWasSelected()
+    {
+        var (host, field, bounds) = Open();
+
+        host.PressDown(bounds.X + 1, bounds.Center.Y);
+        host.PointerMove(bounds.X + bounds.Width - 1, bounds.Center.Y);
+        host.RenderFrame(new DisplayListBuilder());
+        host.PressUp(bounds.X + bounds.Width - 1, bounds.Center.Y);
+
+        host.HasSelection.Should().BeTrue("the pointer drew a range");
+        host.Selection.Should().Be((0, "hello world".Length));
+
+        host.TextInput("x");
+        field.Value.Should().Be("x", "typing over a selection replaces it");
+    }
+
+    [Fact]
+    public void ShiftArrowsExtendFromWhereYouWere()
+    {
+        var (host, field, _) = Open();
+        Press(host, "Tab");                       // caret at the end
+        Press(host, "ArrowLeft", KeyModifiers.Shift);
+        Press(host, "ArrowLeft", KeyModifiers.Shift);
+        Press(host, "ArrowLeft", KeyModifiers.Shift);
+
+        host.Selection.Should().Be((8, 11));
+
+        Press(host, "Backspace");
+        field.Value.Should().Be("hello wo", "backspace over a selection deletes the range, not one character");
+    }
+
+    [Fact]
+    public void CommandASelectsEverything()
+    {
+        var (host, field, _) = Open();
+        Press(host, "Tab");
+
+        Press(host, "a", KeyModifiers.Command);
+        host.Selection.Should().Be((0, "hello world".Length));
+
+        Press(host, "Delete");
+        field.Value.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void AnArrowWithoutShiftCollapsesToTheEdgeYouMovedTowards()
+    {
+        var (host, _, _) = Open();
+        Press(host, "Tab");
+        Press(host, "a", KeyModifiers.Command);
+
+        Press(host, "ArrowLeft");
+        host.HasSelection.Should().BeFalse();
+        host.CaretIndex.Should().Be(0, "left of a selection is its start, not one before the caret");
+    }
+}
