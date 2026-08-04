@@ -25,10 +25,12 @@ internal static class PhotonContentView
     private delegate void SetFrameSize(IntPtr self, IntPtr selector, CGSize size);
     private delegate bool ReturnsBool(IntPtr self, IntPtr selector);
     private delegate void KeyDown(IntPtr self, IntPtr selector, IntPtr @event);
+    private delegate bool PerformKeyEquivalent(IntPtr self, IntPtr selector, IntPtr @event);
 
     private static SetFrameSize? _override;      // kept alive for the runtime's sake
     private static ReturnsBool? _acceptsFirstResponder;
     private static KeyDown? _keyDown;
+    private static PerformKeyEquivalent? _performKeyEquivalent;
     private static IntPtr _superSetFrameSize;
     private static IntPtr _superKeyDown;
     private static Action<float, float>? _onResized;
@@ -72,9 +74,35 @@ internal static class PhotonContentView
         class_addMethod(_cls, sel_registerName("keyDown:"),
             Marshal.GetFunctionPointerForDelegate(_keyDown), "v@:@");
 
+        // Escape's SECOND route. AppKit can deliver it either as an ordinary key press or, when
+        // something in the window claims cancel, through the key-equivalent pass that runs first.
+        // `keyDown:` above covers the former; this covers the latter, so a dialog closes whichever
+        // way the frameworks route it that day.
+        _performKeyEquivalent = OnPerformKeyEquivalent;
+        class_addMethod(_cls, sel_registerName("performKeyEquivalent:"),
+            Marshal.GetFunctionPointerForDelegate(_performKeyEquivalent), "B@:@");
+
         objc_registerClassPair(_cls);
         return _cls;
     }
+
+    /// <summary>
+    /// The key-equivalent pass, which runs BEFORE any key press is delivered. ONLY Escape is
+    /// claimed here. Everything else is left alone, because this pass is also how ⌘Q, ⌘W and the
+    /// whole menu bar work: claiming a key here takes it away from them.
+    /// <para>
+    /// Not observed on this machine — a synthesised Escape never reached the process at all, so the
+    /// route could not be exercised from the outside. It is here because it costs one selector and
+    /// the alternative is a dialog that a real keyboard cannot close.
+    /// </para>
+    /// </summary>
+    private static bool OnPerformKeyEquivalent(IntPtr self, IntPtr selector, IntPtr @event)
+    {
+        if (SendUShort(@event, Sel("keyCode")) != EscapeKeyCode) return false;
+        return OnKey?.Invoke("Escape", Primitives.KeyModifiers.None, "") == true;
+    }
+
+    private const ushort EscapeKeyCode = 53;
 
     private static void OnKeyDown(IntPtr self, IntPtr selector, IntPtr @event)
     {
