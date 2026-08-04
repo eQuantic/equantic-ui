@@ -54,10 +54,19 @@ public sealed class PhotonApplicationBuilder
     /// <summary>The theme the whole tree resolves against — the one setting no app can skip.</summary>
     public PhotonApplicationBuilder UseTheme(IAppTheme theme) => Configure(options => options.Theme = theme);
 
+    /// <summary>
+    /// What this app asks of the device — the camera, the photo library, the sensors. Stated here
+    /// rather than in any platform file: the generator reads these calls and writes the Info.plist
+    /// keys and the Android permissions from them.
+    /// </summary>
+    public PhotonCapabilitiesBuilder Capabilities { get; } = new();
+
     public PhotonApplication Build()
     {
         // LAST, so anything the app registered itself already sits in the collection and the
         // shell's TryAdd steps aside. A fake photo library in a test wins over the real one.
+        // The declarations reach run time too, so an app can explain itself before it asks.
+        _host.Services.Configure<PhotonOptions>(options => options.Declared = Capabilities.Declared);
         PhotonApplication.RegisterCapabilities(_host.Services);
         return new PhotonApplication(_host.Build(), Args);
     }

@@ -40,15 +40,24 @@ Three consequences worth stating:
 
 ## Permissions
 
-The developer declares the capability and WHY, once, in C#:
+The developer declares the capability and WHY, once, on the builder — the same place and the same
+shape as everything else about the app:
 
 ```csharp
-[assembly: PhotonCapability(DeviceCapability.Camera, "Reads the code on your card.")]
+builder.Capabilities
+    .UseCamera("Reads the code on your card.")
+    .UsePhotoLibrary("Pick the picture for your profile.");
 ```
 
-An assembly attribute rather than a fluent call because the BUILD needs it: the reason string is
-what iOS shows in its permission sheet and what Android's manifest has to carry. From that one
-declaration the SDK writes:
+A permission has to be in a manifest the OS reads at INSTALL time, long before any of this runs —
+so the generator READS these calls at compile time and writes the platform files from them. The
+attribute still exists as the transport between the two, but it is generated: nobody types it.
+
+The price is honest and stated where it is paid: the reason must be a constant, and an interpolated
+one is a build error (EQ3003) rather than a permission that quietly goes missing and is discovered
+by a user, on a device, when the camera does not open.
+
+From that one declaration the SDK writes:
 
 - the `NSCameraUsageDescription` key into the app's `Info.plist`;
 - the `<uses-permission android:name="android.permission.CAMERA" />` into the manifest (through the
@@ -91,5 +100,11 @@ the engine did not draw, and that decision deserves the pattern to be settled fi
   (0,0) for anything else) and `DataUri` (an image the user picked may never have been a file, so
   the source string carries the bytes — native loaders decode it, browsers already do).
 
-  Next: writing the platform keys from `[assembly: PhotonCapability]` — the step where "nobody
-  opens an Info.plist" becomes true — then the same capability on iOS, Android and web.
+  The declaration became FLUENT, which is what an app already does with everything else it
+  configures. The generator reads `builder.Capabilities.UseX("…")` out of the app's own source and
+  emits both the transport attribute and Android's `UsesPermission`; a build step reads the former
+  off the compiled assembly and writes the Apple keys. Confirmed on WalletMobile: two fluent lines
+  produced `NSPhotoLibraryUsageDescription` + `NSFaceIDUsageDescription` in the plist and
+  `READ_MEDIA_IMAGES` + `USE_BIOMETRIC` in the Android manifest.
+
+  Next: the same capability on iOS, Android and web.

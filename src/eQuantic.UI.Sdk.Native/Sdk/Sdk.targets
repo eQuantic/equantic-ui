@@ -101,6 +101,25 @@
         <Exec Command="chmod +x &quot;$(_EqBundleDir)/Contents/MacOS/$(AssemblyName)&quot;" />
     </Target>
 
+    <!--
+        The permission keys an Apple platform reads, from what the app declared on its builder. The
+        generator put the declarations on the assembly; this reads them back off the compiled
+        output and writes the partial manifest. One statement in C#, and no app author opens an
+        Info.plist — which is the promise the whole SDK is making.
+    -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == 'ios'">
+        <_EqCapabilityPlist>$(_EqIconDir)/Capabilities.plist</_EqCapabilityPlist>
+    </PropertyGroup>
+
+    <Target Name="EQuanticCapabilityManifest" AfterTargets="Compile"
+            Condition="'$(_EqPlatform)' == 'ios' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; capabilities --assembly &quot;@(IntermediateAssembly)&quot; --plist &quot;$(_EqCapabilityPlist)&quot;"
+              StandardOutputImportance="normal" />
+        <ItemGroup Condition="Exists('$(_EqCapabilityPlist)')">
+            <PartialAppManifest Include="$(_EqCapabilityPlist)" />
+        </ItemGroup>
+    </Target>
+
     <Target Name="EQuanticAppIcon"
             Condition="'$(EQuanticAppIconSource)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')"
             BeforeTargets="_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;_UpdateAndroidResgen;CoreCompile">

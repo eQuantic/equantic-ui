@@ -23,6 +23,13 @@ public partial class Program
         // framework should make dependency injection a special case.
         builder.Services.AddSingleton<IWalletLedger, WalletLedger>();
 
+        // What this app asks of the device, said the same way everything else about the app is
+        // said. The generator reads these calls at compile time and writes the Info.plist keys and
+        // the Android permissions from them — nobody opens a platform file.
+        builder.Capabilities
+            .UsePhotoLibrary("Attach a receipt to a payment.")
+            .UseBiometrics("Confirm a transfer with Face ID.");
+
         builder.Configure(photon =>
         {
             photon.Theme = PhotonTheme.Instance;

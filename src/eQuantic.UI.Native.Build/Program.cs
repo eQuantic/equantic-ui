@@ -28,6 +28,32 @@ using Microsoft.CodeAnalysis.CSharp;
 // manifest's install icons, the one iOS Safari pins, the one in the tab. Same source, both ways:
 // an app states its icon ONCE and it appears everywhere it belongs.
 
+// `capabilities` — the Apple manifest keys for what the app declared. Read off the compiled
+// assembly, where the generator put them; written where the SDK hands them to Apple's packaging.
+if (args.Length > 0 && args[0] == "capabilities")
+{
+    string? Arg(string flag)
+    {
+        var index = Array.IndexOf(args, flag);
+        return index >= 0 && args.Length > index + 1 ? args[index + 1].Trim() : null;
+    }
+
+    var appAssembly = Arg("--assembly");
+    var plist = Arg("--plist");
+    if (appAssembly is null || plist is null)
+    {
+        Console.Error.WriteLine("Usage: eqicon capabilities --assembly <app.dll> --plist <out.plist>");
+        return 1;
+    }
+
+    if (!File.Exists(appAssembly)) return 0;      // nothing built yet; the build will come back
+    var wrote = CapabilityManifest.Write(appAssembly, plist);
+    Console.WriteLine(wrote
+        ? $"eqicon: wrote {plist}"
+        : "eqicon: no device capabilities declared");
+    return 0;
+}
+
 // `bundle` — the macOS .app around a built head. A separate verb because it is a different job
 // from deriving artwork, and the SDK calls it with what the project already knows.
 if (args.Length > 0 && args[0] == "bundle")
