@@ -66,13 +66,17 @@
         Skipped when an app opts out (EQuanticMacAppBundle=false) or is not an executable.
     -->
     <Target Name="EQuanticMacAppBundle" AfterTargets="Build"
-            Condition="'$(_EqPlatform)' == '' AND '$(OutputType)' == 'Exe' AND '$([MSBuild]::IsOSPlatform(`OSX`))' == 'true' AND '$(EQuanticMacAppBundle)' != 'false' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+            Condition="'$(_EqPlatform)' == '' AND '$(TargetFramework)' != '' AND '$(OutputType)' == 'Exe' AND '$([MSBuild]::IsOSPlatform(`OSX`))' == 'true' AND '$(EQuanticMacAppBundle)' != 'false' AND Exists('$(_EqIconToolDir)eqicon.dll')">
         <PropertyGroup>
             <!-- The name the user reads, which a project already states as ApplicationTitle —
                  the same property MAUI uses, so nobody learns a second one. -->
             <_EqAppName>$(AssemblyName)</_EqAppName>
             <_EqAppName Condition="'$(ApplicationTitle)' != ''">$(ApplicationTitle)</_EqAppName>
-            <_EqBundleDir>$(TargetDir)$(_EqAppName).app</_EqBundleDir>
+            <!-- ALWAYS beside the build output, never beside the sources. In an outer multi-TFM
+                 pass TargetDir is empty, and a bundle written there lands in the project folder —
+                 where the next build reads its own obj/ back as source files and fails on
+                 duplicate assembly attributes. -->
+            <_EqBundleDir>$([MSBuild]::EnsureTrailingSlash('$(TargetDir)'))$(_EqAppName).app</_EqBundleDir>
             <_EqBundleId Condition="'$(EQuanticBundleId)' == ''">com.equantic.$(AssemblyName.ToLowerInvariant())</_EqBundleId>
             <_EqBundleId Condition="'$(EQuanticBundleId)' != ''">$(EQuanticBundleId)</_EqBundleId>
             <_EqIcns>$(_EqIconDir)/$(_EqAppName).icns</_EqIcns>
@@ -89,7 +93,7 @@
              same one `dotnet build` already wrote, so `open` launches exactly what `dotnet run` does. -->
         <ItemGroup>
             <_EqBundlePayload Include="$(TargetDir)**/*"
-                              Exclude="$(TargetDir)$(_EqAppName).app/**/*" />
+                              Exclude="$(TargetDir)$(_EqAppName).app/**/*;$(TargetDir)**/*.app/**/*" />
         </ItemGroup>
         <Copy SourceFiles="@(_EqBundlePayload)"
               DestinationFiles="@(_EqBundlePayload->'$(_EqBundleDir)/Contents/MacOS/%(RecursiveDir)%(Filename)%(Extension)')"

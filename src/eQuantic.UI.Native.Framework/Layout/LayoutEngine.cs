@@ -14,6 +14,17 @@ public sealed class LayoutContext
         Components = new ComponentContext(theme, typeScale);
     }
 
+    /// <summary>
+    /// Whether the parent's own size on this axis is being decided BY the content — a Hug. Fill has
+    /// nothing to fill against there: a child that takes the maximum available would decide the
+    /// size of the very thing that was supposed to measure it, which is how a 16dp badge came out
+    /// as wide as the window. On an indeterminate axis, Fill resolves to the intrinsic size, the
+    /// same rule CSS shrink-to-fit and Flutter's min-size rows follow.
+    /// </summary>
+    public bool IndeterminateWidth { get; set; }
+
+    public bool IndeterminateHeight { get; set; }
+
     public IAppTheme Theme { get; }
 
     /// <summary>Spec S6: the window size class layout resolves AdaptiveNodes against — derived from
@@ -433,7 +444,15 @@ public static class LayoutEngine
         LayoutNode? child = null;
         if (box.Child is not null)
         {
+            // The available space still bounds the child (text has to wrap somewhere), but on an
+            // axis this box HUGS there is nothing to fill: say so, and a Fill child measures itself.
+            var outerW = ctx.IndeterminateWidth;
+            var outerH = ctx.IndeterminateHeight;
+            ctx.IndeterminateWidth = style.Width.Kind == SizeKind.Hug;
+            ctx.IndeterminateHeight = style.Height.Kind == SizeKind.Hug;
             child = Measure(box.Child, MathF.Max(0, childMaxW), MathF.Max(0, childMaxH), ctx, path + "/0");
+            ctx.IndeterminateWidth = outerW;
+            ctx.IndeterminateHeight = outerH;
             child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
             result.Children.Add(child);
         }
@@ -596,12 +615,18 @@ public static class LayoutEngine
             }
         }
 
-        // Container size.
+        // Container size. Fill on an axis the PARENT is sizing from its content has nothing to fill
+        // — see LayoutContext.IndeterminateWidth. Without this a `Centered()` wrapper (Fill on both
+        // axes, which is what makes centring possible at all) dragged its hugging parent to the
+        // full width of the window: a 16dp badge came out 600dp wide, shoving its neighbours off.
+        var mainIndeterminate = horizontal ? ctx.IndeterminateWidth : ctx.IndeterminateHeight;
+        var crossIndeterminate = horizontal ? ctx.IndeterminateHeight : ctx.IndeterminateWidth;
+
         var contentMain = rigidSum + (flexTotal > 0 ? leftover : 0) + gapTotal;
         var main = mainSize.Kind switch
         {
             SizeKind.Fixed => mainSize.Value,
-            SizeKind.Fill when !float.IsPositiveInfinity(mainMax) => mainMax,
+            SizeKind.Fill when !mainIndeterminate && !float.IsPositiveInfinity(mainMax) => mainMax,
             _ => contentMain + padMain,
         };
 
@@ -612,7 +637,7 @@ public static class LayoutEngine
         var cross = crossSize.Kind switch
         {
             SizeKind.Fixed => crossSize.Value,
-            SizeKind.Fill when !float.IsPositiveInfinity(crossMax) => crossMax,
+            SizeKind.Fill when !crossIndeterminate && !float.IsPositiveInfinity(crossMax) => crossMax,
             _ => crossContent + padCross,
         };
 
@@ -949,11 +974,12 @@ public static class LayoutEngine
         _ => available,
     };
 
-    /// <summary>Own size: explicit &gt; Fill &gt; Hug (spec A1).</summary>
-    private static float ResolveSelf(SizeValue size, float available, float hug) => size.Kind switch
+    /// <summary>Own size: explicit &gt; Fill &gt; Hug (spec A1). On an INDETERMINATE axis — one the
+    /// parent is sizing from its content — Fill has nothing to fill and falls back to Hug.</summary>
+    private static float ResolveSelf(SizeValue size, float available, float hug, bool indeterminate = false) => size.Kind switch
     {
         SizeKind.Fixed => size.Value,
-        SizeKind.Fill when !float.IsPositiveInfinity(available) => available,
+        SizeKind.Fill when !indeterminate && !float.IsPositiveInfinity(available) => available,
         _ => hug,
     };
 
