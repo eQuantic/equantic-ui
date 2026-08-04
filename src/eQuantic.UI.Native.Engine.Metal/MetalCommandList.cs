@@ -52,8 +52,22 @@ internal sealed class MetalCommandList : IRhiCommandList
     public void Submit(bool waitUntilCompleted)
     {
         ObjC.SendVoid(_encoder, Sel("endEncoding"));
+
+        // A DRAWABLE is presented inside the caller's CATransaction, not queued on the command
+        // buffer. Queued, the layer's new BOUNDS land in one transaction and the matching pixels in
+        // another — and in between the compositor stretches the old frame to the new size, which is
+        // what a live resize looked like all the way until the button came up. Scheduling first and
+        // presenting here puts both in the same transaction: the frame and the size change together.
+        // (The layer must carry presentsWithTransaction; the window shell sets it.)
         if (_drawable != IntPtr.Zero)
-            ObjC.SendVoid(_commandBuffer, Sel("presentDrawable:"), _drawable);
+        {
+            ObjC.SendVoid(_commandBuffer, Sel("commit"));
+            ObjC.SendVoid(_commandBuffer, Sel("waitUntilScheduled"));
+            ObjC.SendVoid(_drawable, Sel("present"));
+            if (waitUntilCompleted) ObjC.SendVoid(_commandBuffer, Sel("waitUntilCompleted"));
+            return;
+        }
+
         ObjC.SendVoid(_commandBuffer, Sel("commit"));
         if (waitUntilCompleted)
             ObjC.SendVoid(_commandBuffer, Sel("waitUntilCompleted"));

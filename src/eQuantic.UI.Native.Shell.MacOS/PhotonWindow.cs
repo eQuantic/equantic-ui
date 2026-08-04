@@ -82,6 +82,12 @@ public sealed class PhotonWindow
         SendVoid(layer, Sel("setDevice:"), backend.DeviceHandle);
         SendVoid(layer, Sel("setPixelFormat:"), MetalBackend.PixelFormatBgra8UnormSrgb);
         SendVoid(layer, Sel("setFramebufferOnly:"), true);
+        // The frame and the layer's size change in ONE transaction — see MetalCommandList.Submit.
+        SendVoid(layer, Sel("setPresentsWithTransaction:"), true);
+        // …and until the new frame lands, the old one stays ANCHORED at the top-left instead of
+        // being scaled to fill: a window growing shows background at the new edge, never a
+        // stretched copy of what was there before.
+        SendVoid(layer, Sel("setContentsGravity:"), NSString("topLeft"));
         SendVoid(layer, Sel("setContentsScale:"), (double)scale);
         SendVoid(layer, Sel("setDrawableSize:"), new CGSize(_width * scale, _height * scale));
         var contentView = Send(window, Sel("contentView"));
@@ -122,7 +128,7 @@ public sealed class PhotonWindow
         // fit it — which is exactly what a resize looked like, snapping into place only on release.
         // A run-loop OBSERVER is called from inside whatever loop is running, so the frame is drawn
         // there: it re-measures against the new size and the content follows the edge.
-        AppKit.ObserverCallback onIdle = (_, _, _) =>
+        void FollowTheWindow()
         {
             var live = SendRect(contentView, Sel("bounds"));
             if (live.Width <= 0 || live.Height <= 0) return;
@@ -134,12 +140,19 @@ public sealed class PhotonWindow
                 host.Resize(_currentWidth, _currentHeight);
             }
             if (host.NeedsRender) Present();
-        };
-        var observerHandle = GCHandle.Alloc(onIdle);
-        var observer = AppKit.CFRunLoopObserverCreate(IntPtr.Zero, AppKit.ActivityBeforeWaiting,
-            true, 0, Marshal.GetFunctionPointerForDelegate(onIdle), IntPtr.Zero);
-        AppKit.CFRunLoopAddObserver(AppKit.CFRunLoopGetCurrent(), observer,
-            AppKit.CFStringCreateWithCString(IntPtr.Zero, AppKit.CommonModes, 0x08000100 /* UTF8 */));
+        }
+
+        // A TIMER in the common modes, because that is what still fires while AppKit is tracking a
+        // drag. An observer only runs when the loop it is attached to reaches one of its phases,
+        // and a resize never gives it one; a common-modes timer is scheduled by the loop that IS
+        // running, whichever that happens to be. 120 Hz so it is never the thing you are waiting
+        // for — it does nothing at all unless the window changed or a frame is due.
+        AppKit.TimerCallback onTick = (_, _) => FollowTheWindow();
+        var tickHandle = GCHandle.Alloc(onTick);
+        var commonModes = AppKit.CFStringCreateWithCString(IntPtr.Zero, AppKit.CommonModes, 0x08000100 /* UTF8 */);
+        var timer = AppKit.CFRunLoopTimerCreate(IntPtr.Zero, AppKit.CFAbsoluteTimeGetCurrent(),
+            1.0 / 120.0, 0, 0, Marshal.GetFunctionPointerForDelegate(onTick), IntPtr.Zero);
+        AppKit.CFRunLoopAddTimer(AppKit.CFRunLoopGetCurrent(), timer, commonModes);
         // COMMON modes, not the default one. The moment a button goes down, AppKit switches to
         // NSEventTrackingRunLoopMode and delivers the drag and the mouse-UP there. Asking only for
         // the default mode means the up never arrives: the press is begun and never completed, so
