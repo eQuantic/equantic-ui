@@ -90,7 +90,10 @@ public sealed class PhotonWindow
         SendVoid(layer, Sel("setContentsGravity:"), NSString("topLeft"));
         SendVoid(layer, Sel("setContentsScale:"), (double)scale);
         SendVoid(layer, Sel("setDrawableSize:"), new CGSize(_width * scale, _height * scale));
-        var contentView = Send(window, Sel("contentView"));
+        // OUR content view: the one place AppKit reports a live resize to (see PhotonContentView).
+        var viewClass = PhotonContentView.Register();
+        var contentView = Send(Send(viewClass, Sel("alloc")), Sel("init"));
+        SendVoid(window, Sel("setContentView:"), contentView);
         SendVoid(contentView, Sel("setWantsLayer:"), true);
         SendVoid(contentView, Sel("setLayer:"), layer);
 
@@ -122,6 +125,19 @@ public sealed class PhotonWindow
                 MetalBackend.PixelFormatBgra8UnormSrgb, drawable);
             FramesPresented++;
         }
+
+        // Called by AppKit ON EVERY STEP of a resize drag, from inside its own loop.
+        void OnLiveResize(float w, float h)
+        {
+            if (w <= 0 || h <= 0) return;
+            _currentWidth = w;
+            _currentHeight = h;
+            SendVoid(layer, Sel("setDrawableSize:"), new CGSize(w * scale, h * scale));
+            host.Resize(w, h);
+            Present();
+        }
+
+        PhotonContentView.OnResized = OnLiveResize;
 
         // A LIVE RESIZE never returns to the loop below: AppKit runs its own, inside sendEvent:,
         // until the button comes up. The window keeps growing and the last frame is stretched to
