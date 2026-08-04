@@ -836,3 +836,62 @@ public class CaretFollowTests
         texture.Shape.Rect.X.Should().Be(field.X, "nothing overflows, nothing moves");
     }
 }
+
+/// <summary>
+/// The scroll must NOT stay stuck to the pointer after a release. Found in the field: click any
+/// inert control inside a ScrollView (the Studio's variant matrix is a wall of handler-less
+/// buttons) and from then on every bare mouse move scrolled the page — the pan candidate armed by
+/// the press-down was never cleared, because the swallowed-press path returned before cleanup.
+/// </summary>
+public class PanLatchTests
+{
+    private static (PhotonHost Host, Rect Inert, string ScrollPath) Open()
+    {
+        var column = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+        column.Add(new Button("Inert specimen"));   // no handler: exactly the variant matrix
+        for (var i = 0; i < 30; i++) column.Add(new Text($"row {i}", TypeRole.BodyM));
+        var host = new PhotonHost(new ScrollView(column), PhotonTheme.Instance, ThemeMode.Light, 300, 200);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        return (host, frame.HitRegions[0].Bounds, frame.ScrollRegions[0].Path);
+    }
+
+    [Fact]
+    public void ReleasingOnAnInertControl_DoesNotLeaveTheScrollStuckToThePointer()
+    {
+        var (host, inert, scrollPath) = Open();
+
+        host.PressDown(inert.Center.X, inert.Center.Y);
+        host.PressUp(inert.Center.X, inert.Center.Y);
+
+        // The bug: these moves — no button held — kept scrolling. UPWARD, deliberately: the
+        // latched pan scrolls the content the opposite way, and a downward move lands on a
+        // negative offset the clamp silently turns back into zero — a false pass.
+        host.PointerMove(inert.Center.X, inert.Center.Y - 40);
+        host.PointerMove(inert.Center.X, inert.Center.Y - 80);
+        host.RenderFrame(new DisplayListBuilder());
+
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        frame.ScrollRegions[0].Path.Should().Be(scrollPath);
+        host.ScrollOffsetOf(scrollPath).Should().Be(0,
+            "a released press is over — nothing may keep steering the scroll");
+    }
+
+    [Fact]
+    public void ADeliberatePanStillScrolls_AndStillLetsGo()
+    {
+        var (host, inert, scrollPath) = Open();
+        var startY = inert.Center.Y + 60;   // on the rows, not the button
+
+        host.PressDown(inert.Center.X, startY);
+        host.PointerMove(inert.Center.X, startY - 50);   // drag up = scroll down
+        host.RenderFrame(new DisplayListBuilder());
+        var mid = host.ScrollOffsetOf(scrollPath);
+        mid.Should().BeGreaterThan(0, "a held drag pans the scroll");
+
+        host.PressUp(inert.Center.X, startY - 50);
+        host.PointerMove(inert.Center.X, startY);        // bare move after release
+        host.RenderFrame(new DisplayListBuilder());
+
+        host.ScrollOffsetOf(scrollPath).Should().Be(mid, "letting go lets go");
+    }
+}
