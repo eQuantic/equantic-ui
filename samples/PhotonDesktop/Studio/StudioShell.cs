@@ -227,7 +227,7 @@ public sealed class StudioShell : StatefulComponent
     {
         var title = new Column(gap: 0) { Cross = CrossAlign.Center };
         title.Add(new Text("Component Gallery", TypeRole.Label, theme.TextPrimary, maxLines: 1));
-        title.Add(new Text("eQuantic.UI · Photon tokens", TypeRole.Caption, theme.TextMuted,
+        title.Add(new Text("eQuantic.UI · Photon tokens", TypeRole.LabelSmall, theme.TextMuted,
             maxLines: 1));
 
         // Height = Fill is what gives Cross.Center a middle to centre ON — a box does not centre
@@ -404,7 +404,7 @@ public sealed class StudioShell : StatefulComponent
         var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Height = SizeValue.Fill, Cross = CrossAlign.Center };
         row.Add(new Icon(Icons.Search, IconSize.Sm, theme.TextMuted));
         row.Add(new Flexible(new Text("Search components", TypeRole.Caption, theme.TextMuted, maxLines: 1), 1));
-        row.Add(new Text("⌘K", TypeRole.Caption, theme.TextMuted, maxLines: 1) { Mono = true });
+        row.Add(new Text("⌘K", TypeRole.LabelSmall, theme.TextMuted, maxLines: 1) { Mono = true });
 
         var pill = new Box(new BoxStyle
         {
@@ -509,7 +509,7 @@ public sealed class StudioShell : StatefulComponent
     {
         var text = new Column(gap: 0);
         text.Add(new Text("Ana Beatriz", TypeRole.Label, theme.TextPrimary, maxLines: 1));
-        text.Add(new Text("SDK maintainer", TypeRole.Caption, theme.TextMuted, maxLines: 1));
+        text.Add(new Text("SDK maintainer", TypeRole.LabelSmall, theme.TextMuted, maxLines: 1));
 
         var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
         row.Add(new Avatar("AB", SizeVariant.Small, "Ana Beatriz"));
@@ -526,10 +526,13 @@ public sealed class StudioShell : StatefulComponent
             Height = SizeValue.Fill,
             Cross = CrossAlign.Center,
         };
-        row.Add(new Text($"{Gallery.TotalCoverage()} components", TypeRole.Caption, theme.TextMuted,
-            maxLines: 1) { Mono = true, Tabular = true });
-        row.Add(new Text("Photon tokens", TypeRole.Caption, theme.TextMuted, maxLines: 1) { Mono = true });
-        row.Add(new Text("light + dark verified", TypeRole.Caption, theme.TextMuted, maxLines: 1)
+        row.Add(new Text($"{Gallery.TotalCoverage()} components", TypeRole.LabelSmall,
+            theme.TextMuted, maxLines: 1) { Mono = true, Tabular = true });
+        row.Add(new Text("Photon tokens", TypeRole.LabelSmall, theme.TextMuted, maxLines: 1)
+        {
+            Mono = true,
+        });
+        row.Add(new Text("light + dark verified", TypeRole.LabelSmall, theme.TextMuted, maxLines: 1)
         {
             Mono = true,
         });
@@ -542,8 +545,8 @@ public sealed class StudioShell : StatefulComponent
             Background = theme.Colors(Variant.Success).Base,
             CornerRadius = new CornerRadii(Radius.Full),
         }));
-        live.Add(new Text("renderer live", TypeRole.Caption, theme.Colors(Variant.Success).OnSubtle,
-            maxLines: 1) { Mono = true });
+        live.Add(new Text("renderer live", TypeRole.LabelSmall,
+            theme.Colors(Variant.Success).OnSubtle, maxLines: 1) { Mono = true });
         row.Add(live);
 
         return new Box(new BoxStyle
@@ -647,7 +650,7 @@ public sealed class StudioShell : StatefulComponent
     {
         var column = new Column(gap: 2);
         column.Add(new Text("Inspector", TypeRole.Label, theme.TextPrimary, maxLines: 1));
-        column.Add(new Text("eQuantic.UI.Components.Button", TypeRole.Caption, theme.TextMuted,
+        column.Add(new Text("eQuantic.UI.Components.Button", TypeRole.LabelSmall, theme.TextMuted,
             maxLines: 1) { Mono = true });
         return Panel(theme, column);
     }
@@ -716,25 +719,21 @@ public sealed class StudioShell : StatefulComponent
         column.Add(Metric(theme, "Radius", Sizing.Radius(_size)));
         column.Add(Metric(theme, "HitTarget", Sizing.HitTarget(_size)));
         column.Add(new Divider());
-        column.Add(new Text("press \u2192 Motion.Press", TypeRole.Caption, theme.TextMuted, maxLines: 1)
-        {
-            Mono = true,
-        });
-        column.Add(new Text("state \u2192 Motion.State", TypeRole.Caption, theme.TextMuted, maxLines: 1)
-        {
-            Mono = true,
-        });
+        column.Add(new Text("press \u2192 Motion.Press", TypeRole.LabelSmall, theme.TextMuted,
+            maxLines: 1) { Mono = true });
+        column.Add(new Text("state \u2192 Motion.State", TypeRole.LabelSmall, theme.TextMuted,
+            maxLines: 1) { Mono = true });
         return Panel(theme, column);
     }
 
     private static VisualNode Metric(IAppTheme theme, string name, float value)
     {
         var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        row.Add(new Flexible(new Text(name, TypeRole.Caption, theme.TextSecondary, maxLines: 1)
+        row.Add(new Flexible(new Text(name, TypeRole.LabelSmall, theme.TextSecondary, maxLines: 1)
         {
             Mono = true,
         }, 1));
-        row.Add(new Text(value.ToString("0.#"), TypeRole.Caption, theme.TextPrimary, maxLines: 1)
+        row.Add(new Text(value.ToString("0.#"), TypeRole.LabelSmall, theme.TextPrimary, maxLines: 1)
         {
             Mono = true,
             Tabular = true,
@@ -750,7 +749,7 @@ public sealed class StudioShell : StatefulComponent
         var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
         column.Add(Eyebrow("Accessibility", theme));
         column.Add(new Text($"Role button \u00b7 name \"Continue\" \u00b7 {note}",
-            TypeRole.Caption, theme.TextSecondary, maxLines: 3));
+            TypeRole.LabelSmall, theme.TextSecondary, maxLines: 3));
         return Panel(theme, column);
     }
 
@@ -766,7 +765,7 @@ public sealed class StudioShell : StatefulComponent
         }, child);
 
     private static VisualNode Eyebrow(string text, IAppTheme theme) =>
-        new Text(text.ToUpperInvariant(), TypeRole.Caption, theme.TextMuted, maxLines: 1);
+        new Text(text.ToUpperInvariant(), TypeRole.Overline, theme.TextMuted, maxLines: 1);
 }
 
 /// <summary>

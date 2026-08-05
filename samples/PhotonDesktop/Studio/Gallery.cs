@@ -149,15 +149,15 @@ public static class Gallery
         // Live preview, per the handoff: title row, the STAGE (a SurfaceSubtle slab the specimen
         // centres on), and the C# that builds it on the code slab.
         var head = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        head.Add(new Text("Live preview", TypeRole.Label, theme.TextPrimary, maxLines: 1));
+        head.Add(new Text("Live preview", TypeRole.TitleSmall, theme.TextPrimary, maxLines: 1));
         head.Add(new Box(new BoxStyle
         {
             Background = theme.SurfaceSubtle,
             CornerRadius = new CornerRadii(Radius.Xs),
             Padding = EdgeInsets.Symmetric(Space.S2, 2),
-        }, new Text("Button", TypeRole.Caption, theme.TextSecondary, maxLines: 1) { Mono = true }));
+        }, new Text("Button", TypeRole.Overline, theme.TextSecondary, maxLines: 1) { Mono = true }));
         head.Add(new Spacer(1));
-        head.Add(new Text("driven by the inspector \u2192", TypeRole.Caption, theme.TextMuted,
+        head.Add(new Text("driven by the inspector \u2192", TypeRole.LabelSmall, theme.TextMuted,
             maxLines: 1));
 
         var staged = new Row(gap: 0)
@@ -178,7 +178,7 @@ public static class Gallery
 
         var codeLines = Column(2);
         foreach (var line in specimenCode.Split('\n'))
-            codeLines.Add(new Text(line.Length == 0 ? " " : line, TypeRole.Caption, CodeInk,
+            codeLines.Add(new Text(line.Length == 0 ? " " : line, TypeRole.LabelSmall, CodeInk,
                 maxLines: 1) { Mono = true });
         var code = new Box(new BoxStyle
         {
@@ -405,8 +405,8 @@ public static class Gallery
         // footer the divider separates — a Card is a SURFACE, so its anatomy is composed here.
         var heading = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
         var titles = new Column(gap: 0);
-        titles.Add(new Text("Monthly spend", TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
-        titles.Add(new Text("April · 14 categories", TypeRole.Caption, theme.TextMuted, maxLines: 1));
+        titles.Add(new Text("Monthly spend", TypeRole.TitleSmall, theme.TextPrimary, maxLines: 1));
+        titles.Add(new Text("April · 14 categories", TypeRole.LabelSmall, theme.TextMuted, maxLines: 1));
         heading.Add(new Flexible(titles, 1));
         heading.Add(new IconButton(Icons.ChevronDown, "More", IconButtonKind.Standard)
         {
@@ -643,7 +643,7 @@ public static class Gallery
             "Menu · arrows walk it, Enter takes it, Escape closes", 230);
 
         var mapping = new Column(gap: Space.S2) { Width = SizeValue.Fill };
-        mapping.Add(new Text("Desktop mapping", TypeRole.Label, theme.TextPrimary, maxLines: 1));
+        mapping.Add(new Text("Desktop mapping", TypeRole.TitleSmall, theme.TextPrimary, maxLines: 1));
         mapping.Add(new Text(
             "On macOS the mobile BottomSheet becomes a popover anchored to its trigger; "
             + "ActionSheet becomes a context menu; Toast docks bottom-trailing. The Dialog keeps "
@@ -717,7 +717,8 @@ public static class Gallery
         float padding = Space.S4)
     {
         var column = Column(Space.S2);
-        column.Add(new Text(eyebrow.ToUpperInvariant(), TypeRole.Caption, theme.TextMuted, maxLines: 1));
+        column.Add(new Text(eyebrow.ToUpperInvariant(), TypeRole.Overline, theme.TextMuted,
+            maxLines: 1));
         column.Add(new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
@@ -733,7 +734,7 @@ public static class Gallery
     /// <summary>The small grey line under a specimen that NAMES it — the handoff labels every
     /// specimen this way, and it is what turns a gallery into documentation.</summary>
     private static VisualNode Caption(IAppTheme theme, string text) =>
-        new Text(text, TypeRole.Caption, theme.TextMuted, maxLines: 2);
+        new Text(text, TypeRole.LabelSmall, theme.TextMuted, maxLines: 2);
 
     /// <summary>
     /// A specimen with its caption underneath, as one cell. WIDTH matters: a caption with no

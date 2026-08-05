@@ -20,6 +20,14 @@ public enum TypeRole : byte
     BodyM = 4,    // dense UI copy
     Label = 5,    // controls, nav, chips
     Caption = 6,  // meta, timestamps
+
+    // The DENSE end of the scale. A phone screen stops at Caption; a desktop chrome does not —
+    // a sidebar, a toolbar, a status rail and an inspector all live below it, and without these
+    // rungs every one of them comes out a fifth too large. (Material calls them title-small,
+    // label-small and overline; Apple, subheadline / caption2 / a tracked all-caps.)
+    TitleSmall = 7,   // card headers — the weight of a title at the size of body copy
+    LabelSmall = 8,   // dense meta: status rails, inspector read-outs, specimen captions
+    Overline = 9,     // the tracked, uppercase eyebrow over a group or a section
 }
 
 /// <summary>
