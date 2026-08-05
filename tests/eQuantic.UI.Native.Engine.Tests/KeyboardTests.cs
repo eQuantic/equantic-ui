@@ -525,7 +525,7 @@ public class SelectionTests
 /// <summary>⌘C/⌘X/⌘V against a fake pasteboard — the field's half of the contract.</summary>
 public class ClipboardTests
 {
-    private sealed class FakeClipboard : Framework.ITextClipboard
+    private sealed class FakeClipboard : ITextClipboard
     {
         public string? Content;
         public string? Read() => Content;

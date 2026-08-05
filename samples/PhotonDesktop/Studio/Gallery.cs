@@ -39,13 +39,32 @@ public static class Gallery
         GallerySection.Buttons => "Buttons",
         GallerySection.Inputs => "Inputs",
         GallerySection.Selection => "Selection",
-        GallerySection.DataDisplay => "Data display",
+        GallerySection.DataDisplay => "Identity & status",
         GallerySection.Progress => "Progress",
-        GallerySection.Navigation => "Navigation",
-        GallerySection.Feedback => "Feedback",
+        GallerySection.Navigation => "Tabs & bars",
+        GallerySection.Feedback => "Banners & toasts",
         GallerySection.Overlays => "Overlays",
         _ => "Device",
     };
+
+    /// <summary>The sidebar's group headings, exactly as the handoff draws them — plus DEVICE,
+    /// which the 1.0 handoff predates (Track D landed after it was drawn).</summary>
+    public static string GroupOf(GallerySection section) => section switch
+    {
+        GallerySection.Buttons or GallerySection.Inputs or GallerySection.Selection => "Primitives",
+        GallerySection.DataDisplay or GallerySection.Progress => "Data display",
+        GallerySection.Navigation => "Navigation",
+        GallerySection.Feedback or GallerySection.Overlays => "Feedback",
+        _ => "Device",
+    };
+
+    /// <summary>The footer's headline number: every distinct component this gallery puts live.</summary>
+    public static int TotalCoverage()
+    {
+        var total = 0;
+        foreach (var section in Sections) total += CoverageOf(section);
+        return total;
+    }
 
     public static string BlurbOf(GallerySection section) => section switch
     {

@@ -1,6 +1,8 @@
 using eQuantic.UI.Native.Framework;
 using static eQuantic.UI.Native.Shell.Apple.ObjC;
 
+using eQuantic.UI.Primitives;
+
 namespace eQuantic.UI.Native.Shell.MacOS;
 
 /// <summary>

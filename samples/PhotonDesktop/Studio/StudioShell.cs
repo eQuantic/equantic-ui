@@ -29,8 +29,10 @@ public sealed class StudioShell : StatefulComponent
     /// </param>
     public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null,
         IBiometrics? biometrics = null, INetworkStatus? network = null, IMotionSensor? motion = null,
-        ILocation? location = null, ICamera? camera = null, IThemeController? themeSwitch = null)
+        ILocation? location = null, ICamera? camera = null, IThemeController? themeSwitch = null,
+        ITextClipboard? clipboard = null)
     {
+        _clipboard = clipboard;
         // The light/dark hand arrives like any capability. Seed from whatever the host opened
         // with, so the toggle never starts out of step with the window.
         _themeSwitch = themeSwitch;
@@ -139,12 +141,23 @@ public sealed class StudioShell : StatefulComponent
     }
     private ThemeMode _mode = ThemeMode.Light;
     private readonly IThemeController? _themeSwitch;
+    private readonly ITextClipboard? _clipboard;
 
-    // The inspector drives the Buttons section's live specimen.
+    // The inspector drives the Buttons section's live specimen. Loading and Disabled are
+    // INDEPENDENT switches, exactly as the handoff draws them — a control can be both.
     private Variant _variant = Variant.Primary;
     private SizeVariant _size = SizeVariant.Medium;
-    private SpecimenState _state = SpecimenState.Default;
+    private bool _loading;
+    private bool _disabled;
     private bool _leadingIcon = true;
+
+    // The header's back/forward arrows walk REAL section history.
+    private readonly List<GallerySection> _past = new();
+    private readonly List<GallerySection> _ahead = new();
+
+    // ⌘K — the section search overlay.
+    private bool _searchOpen;
+    private string _searchQuery = "";
 
     /// <summary>Section-local demo state, so every control on screen is really interactive.</summary>
     private readonly SectionState _demo = new();
@@ -153,10 +166,19 @@ public sealed class StudioShell : StatefulComponent
     {
         var theme = context.Theme;
 
+        // Handoff structure: the sidebar runs FULL height on the left; the right column stacks
+        // the breadcrumb bar over (canvas | inspector); the status rail closes the window.
+        var content = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Stretch };
+        content.Add(new Flexible(Canvas(theme), 1));
+        content.Add(Inspector(theme));
+
+        var main = new Column(gap: 0) { Height = SizeValue.Fill };
+        main.Add(BreadcrumbBar(theme));
+        main.Add(new Flexible(content, 1));
+
         var body = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Stretch };
         body.Add(Sidebar(theme));
-        body.Add(new Flexible(Canvas(theme), 1));
-        body.Add(Inspector(theme));
+        body.Add(new Flexible(main, 1));
 
         var page = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         // The window has no title bar (WindowChrome.Unified), so the strip its controls sit in
@@ -166,27 +188,100 @@ public sealed class StudioShell : StatefulComponent
         page.Add(new Flexible(body, 1));
         page.Add(StatusBar(theme));
 
-        return new Box(new BoxStyle
+        VisualNode shell = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
             Background = theme.Background,
         }, page);
+
+        // ⌘K anywhere opens the section search; the overlay itself closes on Escape (Dialog).
+        shell = new Shortcut(shell, KeyChord.Command("k"),
+            () => SetState(() => { _searchOpen = true; _searchQuery = ""; }));
+        if (!_searchOpen) return shell;
+        var layers = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        layers.Add(shell);
+        layers.Add(SearchOverlay(theme));
+        return layers;
+    }
+
+    /// <summary>Section navigation that the header's arrows can WALK — a jump records history.</summary>
+    private void Navigate(GallerySection section)
+    {
+        if (section == _section) return;
+        SetState(() =>
+        {
+            _past.Add(_section);
+            _ahead.Clear();
+            _section = section;
+        });
     }
 
     // ---- Chrome ----------------------------------------------------------------------------
 
-    /// <summary>The window's own toolbar: what you are looking at, and the two global switches.</summary>
+    /// <summary>The window's own toolbar, as the handoff draws it: back/forward over REAL section
+    /// history, the app's name dead centre, and the two actions on the right.</summary>
     private VisualNode Toolbar(IAppTheme theme)
     {
-        var title = new Column(gap: 1);
+        var title = new Column(gap: 0) { Cross = CrossAlign.Center };
         title.Add(new Text("Component Gallery", TypeRole.Label, theme.TextPrimary, maxLines: 1));
-        title.Add(new Text($"{Gallery.Sections.Length} sections · every control the SDK ships",
-            TypeRole.Caption, theme.TextMuted, maxLines: 1));
+        title.Add(new Text("eQuantic.UI · Photon tokens", TypeRole.Caption, theme.TextMuted,
+            maxLines: 1));
 
-        var row = new Row(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        row.Add(Wordmark(theme));
+        var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        row.Add(new IconButton(Icons.ChevronLeft, "Back")
+        {
+            Size = SizeVariant.Small,
+            Disabled = _past.Count == 0,
+            OnPressed = _past.Count == 0 ? null : () => SetState(() =>
+            {
+                _ahead.Add(_section);
+                _section = _past[^1];
+                _past.RemoveAt(_past.Count - 1);
+            }),
+        });
+        row.Add(new IconButton(Icons.ChevronRight, "Forward")
+        {
+            Size = SizeVariant.Small,
+            Disabled = _ahead.Count == 0,
+            OnPressed = _ahead.Count == 0 ? null : () => SetState(() =>
+            {
+                _past.Add(_section);
+                _section = _ahead[^1];
+                _ahead.RemoveAt(_ahead.Count - 1);
+            }),
+        });
         row.Add(new Flexible(title, 1));
+        row.Add(new IconButton(Icons.Refresh, "Re-render", IconButtonKind.Tonal)
+        {
+            Size = SizeVariant.Small,
+            OnPressed = () => SetState(() => { }),
+        });
+        row.Add(new Button("Run sample", Variant.Primary, SizeVariant.Small)
+        {
+            Leading = CuratedIcons.Resolve(Icons.Play),
+            OnPressed = () => SetState(() => _demo.Toast = "Sample run — 0 regressions"),
+        });
+
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = 44,
+            Padding = EdgeInsets.Symmetric(Space.S3, 0),
+            Background = theme.Surface,
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+        }, row);
+    }
+
+    /// <summary>Breadcrumb + the two per-page switches, exactly the handoff's second bar.</summary>
+    private VisualNode BreadcrumbBar(IAppTheme theme)
+    {
+        var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        row.Add(new Text("Components", TypeRole.Caption, theme.TextMuted, maxLines: 1));
+        row.Add(new Icon(Icons.ChevronRight, IconSize.Sm, theme.TextMuted));
+        row.Add(new Text(Gallery.NameOf(_section), TypeRole.Label, theme.TextPrimary, maxLines: 1));
+        row.Add(new Spacer(1));
         row.Add(new SegmentedControl(["Light", "Dark"], _mode == ThemeMode.Dark ? 1 : 0,
             i => SetState(() =>
             {
@@ -200,68 +295,58 @@ public sealed class StudioShell : StatefulComponent
             Size = SizeVariant.Small,
             Stretch = false,
         });
-        row.Add(new Button("Run sample", Variant.Primary, SizeVariant.Small)
+        row.Add(new Button("Copy C#", Variant.Outline, SizeVariant.Small)
         {
-            Leading = CuratedIcons.Resolve(Icons.Check),
-            OnPressed = () => SetState(() => _demo.Toast = "Sample run — 0 regressions"),
+            Leading = CuratedIcons.Resolve(Icons.Copy),
+            OnPressed = _clipboard is null ? null : () => SetState(() =>
+            {
+                _clipboard.Write(SpecimenCSharp());
+                _demo.Toast = "C# copied to the clipboard";
+            }),
         });
 
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Height = 56,
+            Height = 42,
             Padding = EdgeInsets.Symmetric(Space.S4, 0),
-            Background = theme.Surface,
+            Background = theme.Background,
             BorderWidth = 1,
             BorderColor = theme.Border,
         }, row);
     }
 
-    private static VisualNode Wordmark(IAppTheme theme)
-    {
-        var dot = new Box(new BoxStyle
-        {
-            Width = 10,
-            Height = 10,
-            Background = theme.Colors(Variant.Success).Base,
-            CornerRadius = new CornerRadii(Radius.Xs),
-        });
-
-        var centered = new Row(gap: 0)
-        {
-            Width = SizeValue.Fill,
-            Height = SizeValue.Fill,
-            Main = MainAlign.Center,
-            Cross = CrossAlign.Center,
-        };
-        centered.Add(dot);
-
-        return new Box(new BoxStyle
-        {
-            Width = 26,
-            Height = 26,
-            Background = theme.Colors(Variant.Primary).Base,
-            CornerRadius = new CornerRadii(Radius.Sm),
-        }, centered);
-    }
-
-    /// <summary>The section list — the gallery's table of contents, and the app's only navigation.</summary>
+    /// <summary>The section list — grouped exactly as the handoff groups it, with the ⌘K search
+    /// pill on top and the maintainer at the bottom.</summary>
     private VisualNode Sidebar(IAppTheme theme)
     {
-        var list = new Column(gap: 2) { Width = SizeValue.Fill };
+        var column = new Column(gap: 2) { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        column.Add(SearchPill(theme));
+
+        string? group = null;
         foreach (var section in Gallery.Sections)
         {
+            if (Gallery.GroupOf(section) != group)
+            {
+                group = Gallery.GroupOf(section);
+                column.Add(new Box(new BoxStyle
+                {
+                    Width = SizeValue.Fill,
+                    Padding = new EdgeInsets(Space.S2, Space.S3, Space.S2, Space.S1),
+                }, Eyebrow(group, theme)));
+            }
+
             var current = section == _section;
             var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Height = SizeValue.Fill };
             row.Add(new Icon(Gallery.IconOf(section), IconSize.Sm,
-                current ? theme.Colors(Variant.Primary).Base : theme.TextMuted));
+                current ? theme.Colors(Variant.Primary).OnSubtle : theme.TextMuted));
             row.Add(new Text(Gallery.NameOf(section), TypeRole.Label,
-                current ? theme.TextPrimary : theme.TextSecondary, maxLines: 1));
+                current ? theme.Colors(Variant.Primary).OnSubtle : theme.TextSecondary, maxLines: 1));
 
             var item = new Box(new BoxStyle
             {
                 Width = SizeValue.Fill,
-                Height = 34,
+                Height = 28,
                 Padding = EdgeInsets.Symmetric(Space.S2, 0),
                 Background = current ? theme.Colors(Variant.Primary).Subtle : null,
                 CornerRadius = new CornerRadii(Radius.Sm),
@@ -269,30 +354,138 @@ public sealed class StudioShell : StatefulComponent
             }, row);
 
             var captured = section;
-            list.Add(new Pressable(item, () => SetState(() => _section = captured))
+            column.Add(new Pressable(item, () => Navigate(captured))
             {
                 Label = Gallery.NameOf(section),
                 Selected = current,
+                PressedBackground = theme.Surface,
+            });
+        }
+
+        column.Add(new Spacer(1));
+        column.Add(new Divider());
+        column.Add(new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Padding = new EdgeInsets(0, Space.S2, 0, 0),
+        }, Account(theme)));
+
+        return new Box(new BoxStyle
+        {
+            Width = 214,
+            Height = SizeValue.Fill,
+            Padding = EdgeInsets.All(Space.S3),
+            Background = theme.SurfaceSubtle,
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+        }, column);
+    }
+
+    /// <summary>The search affordance — a pill that opens the ⌘K overlay, stating its shortcut.</summary>
+    private VisualNode SearchPill(IAppTheme theme)
+    {
+        var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Height = SizeValue.Fill, Cross = CrossAlign.Center };
+        row.Add(new Icon(Icons.Search, IconSize.Sm, theme.TextMuted));
+        row.Add(new Flexible(new Text("Search components", TypeRole.Caption, theme.TextMuted, maxLines: 1), 1));
+        row.Add(new Text("⌘K", TypeRole.Caption, theme.TextMuted, maxLines: 1) { Mono = true });
+
+        var pill = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = 30,
+            Padding = EdgeInsets.Symmetric(Space.S2, 0),
+            Background = theme.Surface,
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+            CornerRadius = new CornerRadii(Radius.Sm),
+        }, row);
+
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Padding = new EdgeInsets(0, 0, 0, Space.S2),
+        }, new Pressable(pill, () => SetState(() => { _searchOpen = true; _searchQuery = ""; }))
+        {
+            Label = "Search components",
+        });
+    }
+
+    /// <summary>⌘K: a dialog listing the sections that match, Enter-or-click to jump.</summary>
+    private VisualNode SearchOverlay(IAppTheme theme)
+    {
+        var list = new Column(gap: 2) { Width = SizeValue.Fill };
+        var matches = Gallery.Sections
+            .Where(section => Gallery.NameOf(section)
+                .Contains(_searchQuery.Trim(), StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        foreach (var section in matches)
+        {
+            var captured = section;
+            var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Height = SizeValue.Fill };
+            row.Add(new Icon(Gallery.IconOf(section), IconSize.Sm, theme.TextMuted));
+            row.Add(new Flexible(new Text(Gallery.NameOf(section), TypeRole.BodyM, theme.TextPrimary,
+                maxLines: 1), 1));
+            row.Add(new Text(Gallery.GroupOf(section), TypeRole.Caption, theme.TextMuted, maxLines: 1));
+            list.Add(new Pressable(new Box(new BoxStyle
+            {
+                Width = SizeValue.Fill,
+                Height = 36,
+                Padding = EdgeInsets.Symmetric(Space.S3, 0),
+                CornerRadius = new CornerRadii(Radius.Sm),
+            }, row), () => { SetState(() => _searchOpen = false); Navigate(captured); })
+            {
+                Label = Gallery.NameOf(section),
                 PressedBackground = theme.SurfaceSubtle,
             });
         }
 
-        var column = new Column(gap: Space.S3) { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        column.Add(Eyebrow("Components", theme));
-        column.Add(list);
-        column.Add(new Spacer(1));
-        column.Add(new Divider());
-        column.Add(Account(theme));
-
-        return new Box(new BoxStyle
+        var body = new Column(gap: Space.S3) { Width = SizeValue.Fill };
+        body.Add(new TextInput(_searchQuery, value => SetState(() => _searchQuery = value),
+            placeholder: "Jump to a section…", size: SizeVariant.Medium)
         {
-            Width = 208,
+            Autofocus = true,
+        });
+        body.Add(matches.Length == 0
+            ? new Text("Nothing matches.", TypeRole.Caption, theme.TextMuted, maxLines: 1)
+            : list);
+
+        // The Dialog component carries TEXT; this palette needs a live field, so it builds the
+        // same layer by hand — scrim under, card over, Presence in, Escape out.
+        void Close() => SetState(() => _searchOpen = false);
+        var scrim = new Pressable(new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
             Height = SizeValue.Fill,
-            Padding = EdgeInsets.All(Space.S3),
+            Background = theme.Scrim,
+        }), Close) { Label = "dismiss" };
+
+        var card = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            MaxWidth = 420,
             Background = theme.Surface,
-            BorderWidth = 1,
-            BorderColor = theme.Border,
-        }, column);
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.ExtraLarge)),
+            Elevation = 5,
+            Padding = EdgeInsets.All(Space.S4),
+        }, body);
+        var centering = new Column(gap: 0)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Main = MainAlign.Center,
+            Cross = CrossAlign.Center,
+            Padding = EdgeInsets.Symmetric(Space.S6, 0),
+        };
+        centering.Add(card);
+
+        var layersStack = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        layersStack.Add(scrim);
+        layersStack.Add(centering);
+        VisualNode layer = new Shortcut(new Overlay(new Presence(layersStack)), KeyChord.Escape, Close);
+        // Enter takes the top match — the reason the list is ordered and filtered here.
+        return matches.Length > 0
+            ? new Shortcut(layer, KeyChord.Enter, () => { Close(); Navigate(matches[0]); })
+            : layer;
     }
 
     private static VisualNode Account(IAppTheme theme)
@@ -307,21 +500,34 @@ public sealed class StudioShell : StatefulComponent
         return row;
     }
 
-    /// <summary>The bottom rail: what this screen is FOR, stated where a build target belongs.</summary>
+    /// <summary>The bottom rail, monospaced like the handoff: the honest numbers, and a live dot.</summary>
     private VisualNode StatusBar(IAppTheme theme)
     {
-        var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        row.Add(new Icon(Icons.Info, IconSize.Sm, theme.TextMuted));
-        row.Add(new Text("Build target: every control below is the shipped component, not a mock.",
-            TypeRole.Caption, theme.TextMuted, maxLines: 1));
+        var row = new Row(gap: Space.S4) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        row.Add(new Text($"{Gallery.TotalCoverage()} components", TypeRole.Caption, theme.TextMuted,
+            maxLines: 1) { Mono = true, Tabular = true });
+        row.Add(new Text("Photon tokens", TypeRole.Caption, theme.TextMuted, maxLines: 1) { Mono = true });
+        row.Add(new Text("light + dark verified", TypeRole.Caption, theme.TextMuted, maxLines: 1)
+        {
+            Mono = true,
+        });
         row.Add(new Spacer(1));
-        row.Add(new Text($"{Gallery.NameOf(_section)} · {Gallery.CoverageOf(_section)} components",
-            TypeRole.Caption, theme.TextSecondary, maxLines: 1) { Tabular = true });
+        var live = new Row(gap: Space.S1) { Cross = CrossAlign.Center };
+        live.Add(new Box(new BoxStyle
+        {
+            Width = 7,
+            Height = 7,
+            Background = theme.Colors(Variant.Success).Base,
+            CornerRadius = new CornerRadii(Radius.Full),
+        }));
+        live.Add(new Text("renderer live", TypeRole.Caption, theme.Colors(Variant.Success).OnSubtle,
+            maxLines: 1) { Mono = true });
+        row.Add(live);
 
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Height = 32,
+            Height = 28,
             Padding = EdgeInsets.Symmetric(Space.S4, 0),
             Background = theme.Surface,
             BorderWidth = 1,
@@ -363,11 +569,29 @@ public sealed class StudioShell : StatefulComponent
     private VisualNode Specimen(IAppTheme theme) =>
         new Button("Continue", _variant, _size)
         {
-            Leading = _leadingIcon ? CuratedIcons.Resolve(Icons.Check) : null,
-            Loading = _state == SpecimenState.Loading,
-            Disabled = _state == SpecimenState.Disabled,
+            Leading = _leadingIcon ? CuratedIcons.Resolve(Icons.Play) : null,
+            Loading = _loading,
+            Disabled = _disabled,
             OnPressed = () => SetState(() => _demo.Presses++),
         };
+
+    /// <summary>The C# that BUILDS the specimen — what "Copy C#" writes and the code card shows.
+    /// The comment lines quote the ladder the same way the inspector reads it: from Sizing.</summary>
+    private string SpecimenCSharp()
+    {
+        var arguments = $"\"Continue\", Variant.{_variant}, SizeVariant.{_size}";
+        var inits = "";
+        if (_leadingIcon) inits += "\n    Leading = CuratedIcons.Resolve(Icons.Play),";
+        if (_loading) inits += "\n    Loading = true,";
+        if (_disabled) inits += "\n    Disabled = true,";
+        var body = inits.Length == 0
+            ? $"new Button({arguments});"
+            : $"new Button({arguments})\n{{{inits}\n}};";
+        return body
+            + "\n\n// resolved through Sizing \u2014 never inlined:"
+            + $"\n// Sizing.Height({_size}) = {Sizing.Height(_size):0.#}   Sizing.PaddingX = {Sizing.PaddingX(_size):0.#}"
+            + $"\n// Sizing.Icon = {Sizing.Icon(_size):0.#}   Sizing.HitTarget = {Sizing.HitTarget(_size):0.#}";
+    }
 
     // ---- Inspector -------------------------------------------------------------------------
 
@@ -383,7 +607,6 @@ public sealed class StudioShell : StatefulComponent
         column.Add(VariantPicker(theme));
         column.Add(SizePicker(theme));
         column.Add(StatePicker(theme));
-        column.Add(TogglesPanel(theme));
         column.Add(LadderReadout(theme));
         column.Add(AccessibilityPanel(theme));
 
@@ -437,32 +660,27 @@ public sealed class StudioShell : StatefulComponent
         return Panel(theme, column);
     }
 
+    /// <summary>Three INDEPENDENT switches, as the handoff draws them — loading and disabled
+    /// are not exclusive states of one radio.</summary>
     private VisualNode StatePicker(IAppTheme theme)
     {
-        var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        var column = new Column(gap: Space.S3) { Width = SizeValue.Fill };
         column.Add(Eyebrow("State", theme));
-        column.Add(new RadioGroup(["Default", "Loading", "Disabled"], (int)_state,
-            i => SetState(() => _state = (SpecimenState)i)));
+        column.Add(StateSwitch(theme, "Leading icon", _leadingIcon,
+            () => SetState(() => _leadingIcon = !_leadingIcon)));
+        column.Add(StateSwitch(theme, "Loading", _loading,
+            () => SetState(() => _loading = !_loading)));
+        column.Add(StateSwitch(theme, "Disabled", _disabled,
+            () => SetState(() => _disabled = !_disabled)));
         return Panel(theme, column);
     }
 
-    private VisualNode TogglesPanel(IAppTheme theme)
+    private static VisualNode StateSwitch(IAppTheme theme, string label, bool value, Action toggle)
     {
         var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        row.Add(new Flexible(new Text("Leading icon", TypeRole.BodyM, theme.TextSecondary, maxLines: 1), 1));
-        row.Add(new Switch(_leadingIcon, () => SetState(() => _leadingIcon = !_leadingIcon)));
-
-        var presses = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        presses.Add(new Flexible(new Text("Presses", TypeRole.BodyM, theme.TextSecondary, maxLines: 1), 1));
-        presses.Add(new Text(_demo.Presses.ToString(), TypeRole.Label, theme.TextPrimary, maxLines: 1)
-        {
-            Tabular = true,
-        });
-
-        var column = new Column(gap: Space.S3) { Width = SizeValue.Fill };
-        column.Add(row);
-        column.Add(presses);
-        return Panel(theme, column);
+        row.Add(new Switch(value, toggle));
+        row.Add(new Text(label, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
+        return row;
     }
 
     /// <summary>Seven rows, seven <see cref="Sizing"/> calls — the ladder, read live.</summary>
@@ -477,6 +695,15 @@ public sealed class StudioShell : StatefulComponent
         column.Add(Metric(theme, "Icon", Sizing.Icon(_size)));
         column.Add(Metric(theme, "Radius", Sizing.Radius(_size)));
         column.Add(Metric(theme, "HitTarget", Sizing.HitTarget(_size)));
+        column.Add(new Divider());
+        column.Add(new Text("press \u2192 Motion.Press", TypeRole.Caption, theme.TextMuted, maxLines: 1)
+        {
+            Mono = true,
+        });
+        column.Add(new Text("state \u2192 Motion.State", TypeRole.Caption, theme.TextMuted, maxLines: 1)
+        {
+            Mono = true,
+        });
         return Panel(theme, column);
     }
 
@@ -497,13 +724,13 @@ public sealed class StudioShell : StatefulComponent
 
     private VisualNode AccessibilityPanel(IAppTheme theme)
     {
+        var note = _loading ? "announces \"busy\" while loading"
+            : _disabled ? "announced dimmed, not focusable"
+            : "activation on Space / Enter / double-tap";
         var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
         column.Add(Eyebrow("Accessibility", theme));
-        column.Add(Metric(theme, "role", 0));
-        column.Add(new Text(_state == SpecimenState.Loading
-            ? "button · disabled while work is in flight"
-            : _state == SpecimenState.Disabled ? "button · disabled" : "button",
-            TypeRole.Caption, theme.TextSecondary, maxLines: 2));
+        column.Add(new Text($"Role button \u00b7 name \"Continue\" \u00b7 {note}",
+            TypeRole.Caption, theme.TextSecondary, maxLines: 3));
         return Panel(theme, column);
     }
 
@@ -520,14 +747,6 @@ public sealed class StudioShell : StatefulComponent
 
     private static VisualNode Eyebrow(string text, IAppTheme theme) =>
         new Text(text.ToUpperInvariant(), TypeRole.Caption, theme.TextMuted, maxLines: 1);
-}
-
-/// <summary>The specimen's interaction state — what the inspector's State radio picks.</summary>
-public enum SpecimenState
-{
-    Default = 0,
-    Loading = 1,
-    Disabled = 2,
 }
 
 /// <summary>
