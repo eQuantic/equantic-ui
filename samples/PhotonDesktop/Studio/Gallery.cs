@@ -122,9 +122,10 @@ public static class Gallery
     };
 
     public static VisualNode Render(GallerySection section, IAppTheme theme, SectionState state,
-        Action<Action> mutate, Func<IAppTheme, VisualNode> specimen, string specimenCode = "") => section switch
+        Action<Action> mutate, Func<IAppTheme, VisualNode> specimen, string specimenCode = "",
+        Density density = Density.Comfortable) => section switch
     {
-        GallerySection.Buttons => Buttons(theme, specimen, specimenCode),
+        GallerySection.Buttons => Buttons(theme, specimen, specimenCode, density),
         GallerySection.Inputs => Inputs(theme, state, mutate),
         GallerySection.Selection => Selection(theme, state, mutate),
         GallerySection.DataDisplay => DataDisplay(theme, state, mutate),
@@ -144,7 +145,7 @@ public static class Gallery
     private static readonly ColorToken CodeInk = new(new Color(0xC9, 0xD4, 0xDE, 0xFF));
 
     private static VisualNode Buttons(IAppTheme theme, Func<IAppTheme, VisualNode> specimen,
-        string specimenCode)
+        string specimenCode, Density density)
     {
         // Live preview, per the handoff: title row, the STAGE (a SurfaceSubtle slab the specimen
         // centres on), and the C# that builds it on the code slab.
@@ -211,7 +212,7 @@ public static class Gallery
 
         var ladder = new Row(gap: Space.S3) { Width = SizeValue.Fill, Wrap = true };
         foreach (var size in Enum.GetValues<SizeVariant>())
-            ladder.Add(new Button($"{size} {Sizing.Height(size):0}", Variant.Primary, size));
+            ladder.Add(new Button($"{size} {Sizing.Height(size, density):0}", Variant.Primary, size));
 
         var kinds = new Row(gap: Space.S3) { Width = SizeValue.Fill, Wrap = true, Cross = CrossAlign.Center };
         foreach (var kind in Enum.GetValues<IconButtonKind>())

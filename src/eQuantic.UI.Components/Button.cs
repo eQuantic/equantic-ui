@@ -52,7 +52,7 @@ public sealed class Button : StatelessComponent
     {
         var theme = context.Theme;
         var colors = theme.Colors(Variant);
-        var (height, padX, gap, labelSize, iconSize, _, _) = ButtonStyles.Metrics(Size);
+        var (height, padX, gap, labelSize, iconSize, _, _) = ButtonStyles.Metrics(Size, context.Density);
         // Shape is theme-driven (Material overrides the ladder): XLarge rides Large, the rest Medium.
         var radius = theme.Shape(Size == SizeVariant.XLarge ? ShapeScale.Large : ShapeScale.Medium);
 

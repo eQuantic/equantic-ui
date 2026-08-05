@@ -82,7 +82,15 @@ export const Sizing = {
       default: return 10;
     }
   },
-  height(size: string): number {
+  height(size: string, density = 'comfortable'): number {
+    if (density === 'compact') {
+      switch (size) {
+        case 'small': return 26;
+        case 'medium': return 32;
+        case 'large': return 40;
+        default: return 48;
+      }
+    }
     switch (size) {
       case 'small': return 32;
       case 'medium': return 40;
@@ -90,7 +98,15 @@ export const Sizing = {
       default: return 56;
     }
   },
-  hitTarget(size: string): number {
+  hitTarget(size: string, density = 'comfortable'): number {
+    if (density === 'compact') {
+      switch (size) {
+        case 'small': return 26;
+        case 'medium': return 32;
+        case 'large': return 40;
+        default: return 48;
+      }
+    }
     switch (size) {
       case 'small': return 48;
       case 'medium': return 48;
@@ -106,7 +122,15 @@ export const Sizing = {
       default: return 24;
     }
   },
-  labelSize(size: string): number {
+  labelSize(size: string, density = 'comfortable'): number {
+    if (density === 'compact') {
+      switch (size) {
+        case 'small': return 11.5;
+        case 'medium': return 13;
+        case 'large': return 14.5;
+        default: return 15.5;
+      }
+    }
     switch (size) {
       case 'small': return 13;
       case 'medium': return 15;
@@ -114,7 +138,15 @@ export const Sizing = {
       default: return 17;
     }
   },
-  paddingX(size: string): number {
+  paddingX(size: string, density = 'comfortable'): number {
+    if (density === 'compact') {
+      switch (size) {
+        case 'small': return 8;
+        case 'medium': return 12;
+        case 'large': return 16;
+        default: return 20;
+      }
+    }
     switch (size) {
       case 'small': return 12;
       case 'medium': return 16;
@@ -135,7 +167,15 @@ export const Sizing = {
 /** Height · PadX · Gap · Label · Icon · Radius · HitTarget — the spec A12 size table. */
 export const ButtonStyles = {
   minWidth: 64,
-  metrics(size: string): [number, number, number, number, number, number, number] {
+  metrics(size: string, density = 'comfortable'): [number, number, number, number, number, number, number] {
+    if (density === 'compact') {
+      switch (size) {
+        case 'small': return [26, 8, 6, 11.5, 16, 10, 26];
+        case 'medium': return [32, 12, 8, 13, 20, 10, 32];
+        case 'large': return [40, 16, 8, 14.5, 20, 10, 40];
+        default: return [48, 20, 10, 15.5, 24, 14, 48];
+      }
+    }
     switch (size) {
       case 'small': return [32, 12, 6, 13, 16, 10, 48];
       case 'medium': return [40, 16, 8, 15, 20, 10, 48];

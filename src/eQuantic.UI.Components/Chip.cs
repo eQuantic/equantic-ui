@@ -78,7 +78,7 @@ public sealed class Chip : StatelessComponent
 
         var box = new Box(new BoxStyle
         {
-            Height = Sizing.Height(SizeVariant.Small),
+            Height = Sizing.Height(SizeVariant.Small, context.Density),
             Padding = EdgeInsets.Symmetric(Space.S3, 0),
             Background = fill,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),

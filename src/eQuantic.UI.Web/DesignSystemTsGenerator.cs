@@ -106,22 +106,59 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("export const Sizing = {");
         foreach (var method in typeof(Sizing).GetMethods(BindingFlags.Public | BindingFlags.Static)
                      .Where(m => m.ReturnType == typeof(float)
-                                 && m.GetParameters() is [{ ParameterType: var p }] && p == typeof(SizeVariant))
+                                 && m.GetParameters() is { Length: 1 or 2 } parameters
+                                 && parameters[0].ParameterType == typeof(SizeVariant)
+                                 && (parameters.Length == 1
+                                     || parameters[1].ParameterType == typeof(Density)))
                      .OrderBy(m => m.Name, StringComparer.Ordinal))
         {
-            ts.AppendLine($"  {Camel(method.Name)}(size: string): number {{");
-            ts.AppendLine("    switch (size) {");
-            foreach (var size in Enum.GetValues<SizeVariant>())
+            // A rung may be density-aware (two parameters) or not (one) — the generator reads which
+            // from the SIGNATURE, so adding density to another rung never needs an edit here.
+            var dense = method.GetParameters().Length == 2;
+            ts.AppendLine(dense
+                ? $"  {Camel(method.Name)}(size: string, density = 'comfortable'): number {{"
+                : $"  {Camel(method.Name)}(size: string): number {{");
+            if (dense)
             {
-                var value = Num((float)method.Invoke(null, [size])!);
-                ts.AppendLine(size == SizeVariant.XLarge
-                    ? $"      default: return {value};"
-                    : $"      case '{Camel(size.ToString())}': return {value};");
+                ts.AppendLine("    if (density === 'compact') {");
+                AppendSizeSwitch(ts, method, Density.Compact, "      ");
+                ts.AppendLine("    }");
             }
-            ts.AppendLine("    }");
+            AppendSizeSwitch(ts, method, Density.Comfortable, "    ");
             ts.AppendLine("  },");
         }
         ts.AppendLine("};");
+    }
+
+    /// <summary>The metrics tuple for every rung, at a given density.</summary>
+    private static void AppendMetricsSwitch(StringBuilder ts, Density density, string indent)
+    {
+        ts.AppendLine($"{indent}switch (size) {{");
+        foreach (var size in Enum.GetValues<SizeVariant>())
+        {
+            var (height, padX, gap, label, icon, radius, hit) = ButtonStyles.Metrics(size, density);
+            var row = $"[{Num(height)}, {Num(padX)}, {Num(gap)}, {Num(label)}, {Num(icon)}, "
+                + $"{Num(radius)}, {Num(hit)}]";
+            ts.AppendLine(size == SizeVariant.XLarge
+                ? $"{indent}  default: return {row};"
+                : $"{indent}  case '{Camel(size.ToString())}': return {row};");
+        }
+        ts.AppendLine($"{indent}}}");
+    }
+
+    /// <summary>One switch over the size rungs, at a given density.</summary>
+    private static void AppendSizeSwitch(StringBuilder ts, MethodInfo method, Density density, string indent)
+    {
+        ts.AppendLine($"{indent}switch (size) {{");
+        foreach (var size in Enum.GetValues<SizeVariant>())
+        {
+            object?[] args = method.GetParameters().Length == 2 ? [size, density] : [size];
+            var value = Num((float)method.Invoke(null, args)!);
+            ts.AppendLine(size == SizeVariant.XLarge
+                ? $"{indent}  default: return {value};"
+                : $"{indent}  case '{Camel(size.ToString())}': return {value};");
+        }
+        ts.AppendLine($"{indent}}}");
     }
 
     /// <summary>The spec A12 size table, one entry per <see cref="SizeVariant"/> — emitted as the ARRAY the
@@ -133,17 +170,13 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("/** Height · PadX · Gap · Label · Icon · Radius · HitTarget — the spec A12 size table. */");
         ts.AppendLine("export const ButtonStyles = {");
         ts.AppendLine($"  minWidth: {Num(ButtonStyles.MinWidth)},");
-        ts.AppendLine("  metrics(size: string): [number, number, number, number, number, number, number] {");
-        ts.AppendLine("    switch (size) {");
-        foreach (var size in Enum.GetValues<SizeVariant>())
-        {
-            var (height, padX, gap, label, icon, radius, hit) = ButtonStyles.Metrics(size);
-            var row = $"[{Num(height)}, {Num(padX)}, {Num(gap)}, {Num(label)}, {Num(icon)}, {Num(radius)}, {Num(hit)}]";
-            ts.AppendLine(size == SizeVariant.XLarge
-                ? $"      default: return {row};"
-                : $"      case '{Camel(size.ToString())}': return {row};");
-        }
+        ts.AppendLine("  metrics(size: string, density = 'comfortable'): "
+            + "[number, number, number, number, number, number, number] {");
+        // The dense branch FIRST — the comfortable switch returns, so anything after it is dead.
+        ts.AppendLine("    if (density === 'compact') {");
+        AppendMetricsSwitch(ts, Density.Compact, "      ");
         ts.AppendLine("    }");
+        AppendMetricsSwitch(ts, Density.Comfortable, "    ");
         ts.AppendLine("  },");
         ts.AppendLine("};");
     }

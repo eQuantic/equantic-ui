@@ -158,9 +158,11 @@ public static class PhotonRealizer
         bool caretVisible = true,
         // The selected range inside that field. Zero-length = a caret and nothing more.
         int selectionStart = 0,
-        int selectionEnd = 0)
+        int selectionEnd = 0,
+        Density density = Density.Comfortable)
     {
-        var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale)
+        var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
+            density)
         {
             // The HOST's cutouts. Zero on a desktop window, and the shell's real numbers on a phone
             // — the tree is the same either way, which is the point of the node.

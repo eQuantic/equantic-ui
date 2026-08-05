@@ -8,14 +8,22 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public sealed class ComponentContext
 {
-    public ComponentContext(IAppTheme theme, float typeScale = 1f)
+    public ComponentContext(IAppTheme theme, float typeScale = 1f,
+        Density density = Density.Comfortable)
     {
         Theme = theme;
         TypeScale = typeScale;
+        Density = density;
     }
 
     public IAppTheme Theme { get; }
     public float TypeScale { get; }
+
+    /// <summary>
+    /// How tight this TARGET wants its controls — the same reason a Mac's toolbar is not a
+    /// phone's. A component reads it where it reads the theme, and never asks which target it is.
+    /// </summary>
+    public Density Density { get; }
 }
 
 /// <summary>
