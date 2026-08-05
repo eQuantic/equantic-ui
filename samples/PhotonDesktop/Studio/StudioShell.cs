@@ -175,18 +175,20 @@ public sealed class StudioShell : StatefulComponent
         var main = new Column(gap: 0) { Height = SizeValue.Fill };
         main.Add(BreadcrumbBar(theme));
         main.Add(new Flexible(content, 1));
+        // The status rail lives INSIDE the right column — the sidebar runs to the window's
+        // bottom edge, exactly as the handoff draws it.
+        main.Add(StatusBar(theme));
 
         var body = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Stretch };
         body.Add(Sidebar(theme));
         body.Add(new Flexible(main, 1));
 
         var page = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        // The window has no title bar (WindowChrome.Unified), so the strip its controls sit in
-        // arrives as a TOP safe-area inset — the very same node an iPhone's notch drives. The
-        // toolbar keeps clear of it and the gallery's own top row becomes the window's.
-        page.Add(new SafeArea(Toolbar(theme), SafeEdges.Top));
+        // The toolbar IS the title bar: WindowChrome.Unified hides the system strip and the
+        // traffic lights float over the app's own top row — the toolbar reserves their corner
+        // instead of sitting below them (two stacked bars was exactly the unfaithful part).
+        page.Add(Toolbar(theme));
         page.Add(new Flexible(body, 1));
-        page.Add(StatusBar(theme));
 
         VisualNode shell = new Box(new BoxStyle
         {
@@ -229,6 +231,9 @@ public sealed class StudioShell : StatefulComponent
             maxLines: 1));
 
         var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        // The corner the SYSTEM owns: close/minimize/zoom float here (the window has no bar of
+        // its own), and the navigation arrows sit immediately to their right, per the handoff.
+        row.Add(new Spacer(74));
         row.Add(new IconButton(Icons.ChevronLeft, "Back")
         {
             Size = SizeVariant.Small,
