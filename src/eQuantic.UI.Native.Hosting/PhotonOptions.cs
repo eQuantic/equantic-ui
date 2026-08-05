@@ -65,4 +65,11 @@ public sealed class PhotonOptions
 
     /// <summary>Stops after this many presented frames. Zero runs until the app is closed.</summary>
     public int MaxFrames { get; set; }
+
+    /// <summary>
+    /// Render ONE settled frame headlessly (reference backend) to this PNG path and exit — no
+    /// window, no GPU. What a CI screenshot step or a fidelity pass against a design handoff
+    /// calls: `--Photon:ScreenshotPath out.png` (+ `--Photon:Mode Dark` for the other palette).
+    /// </summary>
+    public string? ScreenshotPath { get; set; }
 }
