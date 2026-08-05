@@ -29,8 +29,13 @@ public sealed class StudioShell : StatefulComponent
     /// </param>
     public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null,
         IBiometrics? biometrics = null, INetworkStatus? network = null, IMotionSensor? motion = null,
-        ILocation? location = null, ICamera? camera = null)
+        ILocation? location = null, ICamera? camera = null, IThemeController? themeSwitch = null)
     {
+        // The light/dark hand arrives like any capability. Seed from whatever the host opened
+        // with, so the toggle never starts out of step with the window.
+        _themeSwitch = themeSwitch;
+        _mode = themeSwitch?.Mode ?? ThemeMode.Light;
+
         if (camera?.IsAvailable == true)
         {
             _demo.OnToggleCamera = () => ToggleCameraAsync(camera);
@@ -133,6 +138,7 @@ public sealed class StudioShell : StatefulComponent
         if (picked is not null) SetState(() => _demo.PickedImage = picked);
     }
     private ThemeMode _mode = ThemeMode.Light;
+    private readonly IThemeController? _themeSwitch;
 
     // The inspector drives the Buttons section's live specimen.
     private Variant _variant = Variant.Primary;
@@ -182,7 +188,14 @@ public sealed class StudioShell : StatefulComponent
         row.Add(Wordmark(theme));
         row.Add(new Flexible(title, 1));
         row.Add(new SegmentedControl(["Light", "Dark"], _mode == ThemeMode.Dark ? 1 : 0,
-            i => SetState(() => _mode = i == 1 ? ThemeMode.Dark : ThemeMode.Light))
+            i => SetState(() =>
+            {
+                _mode = i == 1 ? ThemeMode.Dark : ThemeMode.Light;
+                // The switch is the HOST's: the window repaints this same tree against the other
+                // palette (the browser flips color-scheme). Without a controller the toggle is a
+                // label of what it would do.
+                _themeSwitch?.Apply(_mode);
+            }))
         {
             Size = SizeVariant.Small,
             Stretch = false,

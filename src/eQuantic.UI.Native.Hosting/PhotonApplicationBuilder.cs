@@ -1,6 +1,7 @@
 using eQuantic.UI.Primitives;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -67,6 +68,9 @@ public sealed class PhotonApplicationBuilder
         // shell's TryAdd steps aside. A fake photo library in a test wins over the real one.
         // The declarations reach run time too, so an app can explain itself before it asks.
         _host.Services.Configure<PhotonOptions>(options => options.Declared = Capabilities.Declared);
+        // The light/dark hand, present on every head unless the app brought its own. The runner
+        // attaches it to the window's host after Build — services exist before any window does.
+        _host.Services.TryAddSingleton<IThemeController, PhotonThemeController>();
         PhotonApplication.RegisterCapabilities(_host.Services);
         return new PhotonApplication(_host.Build(), Args);
     }

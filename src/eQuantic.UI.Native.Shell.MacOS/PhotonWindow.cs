@@ -78,7 +78,8 @@ public sealed class PhotonWindow
     /// Opens the window and runs the event/render loop until the window closes (or
     /// <paramref name="maxFrames"/> presents, when positive — the self-test mode).
     /// </summary>
-    public void Run(VisualNode root, IAppTheme theme, ThemeMode mode = ThemeMode.Light, int maxFrames = 0)
+    public void Run(VisualNode root, IAppTheme theme, ThemeMode mode = ThemeMode.Light, int maxFrames = 0,
+        eQuantic.UI.Native.Hosting.PhotonThemeController? themeController = null)
     {
         LoadFrameworks();
         using var backend = new MetalBackend();
@@ -155,6 +156,14 @@ public sealed class PhotonWindow
             ImageLoader = new CoreGraphicsImageLoader(),
             IconRasterizer = new CoreGraphicsIconRasterizer(),
         };
+
+        // The app's hand on the light/dark switch, attached now that the host exists: flipping
+        // the mode re-realizes the SAME tree against the other palette on the next frame.
+        themeController?.Attach(mode, next =>
+        {
+            host.Mode = next;
+            host.Invalidate();
+        });
 
         var clock = Stopwatch.StartNew();
 
