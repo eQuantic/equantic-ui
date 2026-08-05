@@ -115,14 +115,19 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static IntPtr LoadGlobalAddress(string library, string symbol) =>
         dlsym(dlopen(library, 2), symbol);
 
-    private readonly Dictionary<(float Size, bool Bold), IntPtr> _fonts = new();
+    private readonly Dictionary<(float Size, bool Bold, bool Mono), IntPtr> _fonts = new();
 
-    private IntPtr FontFor(float size, FontWeight weight)
+    private IntPtr FontFor(float size, FontWeight weight, bool mono)
     {
         var bold = weight >= FontWeight.SemiBold;
-        if (_fonts.TryGetValue((size, bold), out var cached)) return cached;
+        if (_fonts.TryGetValue((size, bold, mono), out var cached)) return cached;
 
-        var font = CTFontCreateUIFontForLanguage(2 /* kCTFontUIFontSystem */, size, IntPtr.Zero);
+        // kCTFontUIFontUserFixedPitch is the system's own MONOSPACED face (SF Mono on a modern
+        // Mac) — the one every native editor uses. Asking the OS for it beats naming a family
+        // that may not be installed.
+        var font = CTFontCreateUIFontForLanguage(
+            mono ? 1u /* kCTFontUIFontUserFixedPitch */ : 2u /* kCTFontUIFontSystem */,
+            size, IntPtr.Zero);
         if (bold)
         {
             const uint boldTrait = 1 << 1;
@@ -133,17 +138,17 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
                 font = boldFont;
             }
         }
-        _fonts[(size, bold)] = font; // per-process cache (the documented lifetime fence)
+        _fonts[(size, bold, mono)] = font; // per-process cache (the documented lifetime fence)
         return font;
     }
 
     /// <summary>The framesetter + laid-out frame for a block (caller releases all three handles).</summary>
     private (IntPtr Framesetter, IntPtr Frame, IntPtr Path, IntPtr Attributed, IntPtr CfText, IntPtr Dict)
-        Layout(string content, float fontSize, FontWeight weight, float maxWidth)
+        Layout(string content, float fontSize, FontWeight weight, float maxWidth, bool mono)
     {
         var cfText = CFStringCreateWithCString(IntPtr.Zero, content.Length == 0 ? " " : content, Utf8);
         var dict = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
-        CFDictionarySetValue(dict, FontAttributeName, FontFor(fontSize, weight));
+        CFDictionarySetValue(dict, FontAttributeName, FontFor(fontSize, weight, mono));
         var attributed = CFAttributedStringCreate(IntPtr.Zero, cfText, dict);
         var framesetter = CTFramesetterCreateWithAttributedString(attributed);
         var width = float.IsFinite(maxWidth) && maxWidth > 0 ? maxWidth : 100_000f;
@@ -166,7 +171,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     {
         var size = style.ScaledSize(typeScale);
         var lineHeight = style.ScaledLineHeight(typeScale);
-        var layout = Layout(content, size, style.Weight, maxWidth);
+        var layout = Layout(content, size, style.Weight, maxWidth, style.Mono);
         try
         {
             var ctLines = CTFrameGetLines(layout.Frame);
@@ -196,7 +201,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         if (content.Length == 0) return null;
         var size = style.ScaledSize(typeScale);
         var lineHeight = style.ScaledLineHeight(typeScale);
-        var layout = Layout(content, size, style.Weight, maxWidth);
+        var layout = Layout(content, size, style.Weight, maxWidth, style.Mono);
         try
         {
             var ctLines = CTFrameGetLines(layout.Frame);

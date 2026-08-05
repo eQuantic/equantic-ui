@@ -161,6 +161,8 @@ export class TypeStyle implements TypeStyleValue {
     readonly weight: string | number,
     readonly tracking = 0,
     readonly maxScale = 1,
+    /** The MONOSPACED face — code, keys, versions (C# `TypeStyle.Mono`). */
+    readonly mono = false,
   ) {}
 
   /**
@@ -171,7 +173,7 @@ export class TypeStyle implements TypeStyleValue {
   withSize(size: number): TypeStyle {
     const lineHeight =
       this.size <= 0 ? this.lineHeight : Math.round((this.lineHeight * size) / this.size * 2) / 2;
-    return new TypeStyle(size, lineHeight, this.weight, this.tracking, this.maxScale);
+    return new TypeStyle(size, lineHeight, this.weight, this.tracking, this.maxScale, this.mono);
   }
 
   /** A style from a SIZE alone, with the typographic default line box (1.25×). */
