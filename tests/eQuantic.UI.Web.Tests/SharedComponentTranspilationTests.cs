@@ -417,16 +417,14 @@ public class SharedComponentTranspilationTests
     }
 
     [Fact]
-    public void WithOverAPositionalVocabularyRecord_PatchesInsteadOfRebuilding()
+    public void SharedComponentsNeverRebuildAPositionalTwinFromAnObject()
     {
-        // `theme.Type(TypeRole.Label) with { Size = … }` — TypeStyle's twin takes its arguments
-        // POSITIONALLY, so it cannot be built from one object, and a plain spread would drop the
-        // prototype. The name also appears nowhere in the source, which is how it used to reach the
-        // browser as "TypeStyle is not defined" with no build error.
-        var ts = TranspileSharedComponents()["SegmentedControl"];
-
-        ts.Should().Contain("$eq.withPatch(theme.type('label')");
-        ts.Should().NotContain("new TypeStyle(", "positional twins take arguments, not a config");
+        // A positional twin takes its arguments IN ORDER, so `new TypeStyle({...})` reaches the
+        // browser as a control with no size at all. The compiler's rule (patch, never rebuild) is
+        // pinned in eQuantic.UI.Compiler.Tests — PositionalRecordWithTests — where it belongs; what
+        // this guards is that no shared component ever emits the broken shape.
+        foreach (var (name, ts) in TranspileSharedComponents())
+            ts.Should().NotContain("new TypeStyle({", $"{name} rebuilds a positional twin");
     }
 
 }

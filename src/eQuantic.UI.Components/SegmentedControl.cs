@@ -65,7 +65,7 @@ public sealed class SegmentedControl : StatelessComponent
             label.Add(new Text(Segments[index], TypeRole.Label,
                 selected ? theme.TextPrimary : theme.TextSecondary, maxLines: 1)
             {
-                StyleOverride = theme.Type(TypeRole.Label) with { Size = Sizing.LabelSize(Size, context.Density) },
+                StyleOverride = theme.Type(TypeRole.Label).WithSize(Sizing.LabelSize(Size, context.Density)),
                 Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
             });
 

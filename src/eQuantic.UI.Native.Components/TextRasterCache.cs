@@ -17,7 +17,9 @@ public sealed class TextRasterCache
 
     private readonly Dictionary<(string Content, TypeStyle Style, float TypeScale, float MaxWidth, int MaxLines, float Scale), Entry?> _entries = new();
 
-    public sealed record Entry(TextureData Texture);
+    /// <param name="PadTop">Device pixels of ink ABOVE the line box (see <see cref="TextRaster"/>)
+    /// — the draw rect rises by this much so the line box lands where layout put it.</param>
+    public sealed record Entry(TextureData Texture, int PadTop = 0);
 
     public Entry? Get(ITextRasterizer rasterizer, string content, TypeStyle style, float typeScale,
         float maxWidth, int maxLines, float scale)
@@ -28,7 +30,7 @@ public sealed class TextRasterCache
         var raster = rasterizer.Rasterize(content, style, typeScale, maxWidth, maxLines, scale);
         var entry = raster is null || raster.Width <= 0 || raster.Height <= 0
             ? null
-            : new Entry(new TextureData(raster.Width, raster.Height, raster.Alpha));
+            : new Entry(new TextureData(raster.Width, raster.Height, raster.Alpha), raster.PadTop);
         _entries[key] = entry;
         return entry;
     }

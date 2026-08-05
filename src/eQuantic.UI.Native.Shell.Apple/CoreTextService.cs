@@ -53,6 +53,12 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     [LibraryImport(CoreTextLib)]
     private static partial IntPtr CTFontCreateCopyWithSymbolicTraits(IntPtr font, double size, IntPtr matrix, uint traits, uint mask);
 
+    /// <summary>The INK box of a line — what the glyphs actually cover, which is not the font's
+    /// declared ascent/descent: a deep 'g' tail, an accent or a swash all pass beyond it. A null
+    /// context is legal and gives the default text matrix, which is what we draw with.</summary>
+    [LibraryImport(CoreTextLib)]
+    private static partial CGRect CTLineGetImageBounds(IntPtr line, IntPtr context);
+
     [LibraryImport(CoreTextLib)]
     private static partial IntPtr CTFramesetterCreateWithAttributedString(IntPtr attributed);
 
@@ -208,9 +214,43 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
                 widthDp = MathF.Max(widthDp, w);
             }
 
-            var heightDp = shown * lineHeight;
+            // The line box is the LAYOUT's; the ink is the FONT's, and it does not always fit —
+            // a 17dp glyph in a 16dp line has its descender outside, and every accent in every
+            // script is a second way to overflow. So the bitmap grows to hold the ink and reports
+            // how far it grew UPWARD; clipping the 'g' off "Large" is not an option a text
+            // rasterizer gets to take.
+            // Where the INK actually starts and ends, line by line, against the line-box grid.
+            // The image bounds — not the typographic ones: a font's declared descent is a promise
+            // about the LINE, and glyph outlines are free to break it.
+            var inkTop = 0f;
+            var inkBottom = shown * lineHeight;
+            for (var i = 0; i < shown; i++)
+            {
+                var image = CTLineGetImageBounds(metrics[i].Line, IntPtr.Zero);
+                // CG is bottom-up around the baseline: Y is the ink's lowest point (negative for
+                // a descender), Y+Height its highest.
+                var above = MathF.Max(metrics[i].Ascent, (float)(image.Y + image.Height));
+                var below = MathF.Max(metrics[i].Descent, (float)-image.Y);
+                var baseline = i * lineHeight
+                    + (lineHeight - (metrics[i].Ascent + metrics[i].Descent)) / 2 + metrics[i].Ascent;
+                inkTop = MathF.Min(inkTop, baseline - above);
+                inkBottom = MathF.Max(inkBottom, baseline + below);
+            }
+            // Rounded UP in DEVICE pixels — a fraction of a dp is still a row of glyph on screen,
+            // and one extra row absorbs the antialiasing at the edge.
+            // The guard is ONE DP on each side, not one pixel: antialiasing spreads in device
+            // pixels and a dp is the unit the rest of the geometry speaks, so the margin holds at
+            // any render scale.
+            var guardPx = (int)MathF.Ceiling(scale);
+            var padTopPx = (int)MathF.Ceiling(MathF.Max(0, -inkTop) * scale) + guardPx;
+            var padDp = padTopPx / scale;
+
+            // The bitmap ends where the INK ends, measured from the padded top — deriving the
+            // bottom from a second rounded pad left the last row of the descender outside by a
+            // fraction of a pixel, which is exactly enough to cut a 'g'.
             var pxWidth = Math.Max(1, (int)MathF.Ceiling(widthDp * scale));
-            var pxHeight = Math.Max(1, (int)MathF.Ceiling(heightDp * scale));
+            var pxHeight = Math.Max(1,
+                (int)MathF.Ceiling(MathF.Max(padDp + inkBottom, shown * lineHeight) * scale)) + guardPx;
 
             // Alpha-only bitmap; the CTM scales dp → device px, so positioning stays in dp.
             var context = CGBitmapContextCreate(IntPtr.Zero, (nuint)pxWidth, (nuint)pxHeight,
@@ -222,9 +262,9 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
                 for (var i = 0; i < shown; i++)
                 {
                     // Center the glyph run on OUR line-height grid; CG is bottom-up.
-                    var baselineFromTop = i * lineHeight
+                    var baselineFromTop = padDp + i * lineHeight
                         + (lineHeight - (metrics[i].Ascent + metrics[i].Descent)) / 2 + metrics[i].Ascent;
-                    CGContextSetTextPosition(context, 0, heightDp - baselineFromTop);
+                    CGContextSetTextPosition(context, 0, pxHeight / scale - baselineFromTop);
                     CTLineDraw(metrics[i].Line, context);
                 }
 
@@ -232,7 +272,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
                 if (data == IntPtr.Zero) return null;
                 var alpha = new byte[pxWidth * pxHeight];
                 Marshal.Copy(data, alpha, 0, alpha.Length);
-                return new TextRaster(pxWidth, pxHeight, alpha);
+                return new TextRaster(pxWidth, pxHeight, alpha, padTopPx);
             }
             finally
             {
