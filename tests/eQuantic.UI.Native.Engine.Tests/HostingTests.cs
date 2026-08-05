@@ -59,14 +59,18 @@ public class HostingTests
         app.Options.Title.Should().Be("From code");
     }
 
+    /// <summary>
+    /// AppKit is a main-thread framework, and xUnit runs nowhere near the main thread — so this
+    /// is the message a developer gets for calling Run() from a worker (a test, a Task, a
+    /// background service). It used to be an uncatchable ObjC exception that took the whole
+    /// process with it, which told nobody anything.
+    /// </summary>
     [Fact]
-    public void RunningWithNoShellSaysWhichOneIsMissing()
+    public void RunningOffTheMainThreadSaysSo_InsteadOfKillingTheProcess()
     {
-        // The test host references no platform shell, so this is the message a misconfigured app
-        // gets — and it names the fix rather than the failure.
         var app = PhotonApplication.CreateBuilder().Build();
 
         var run = () => app.UseRoot(() => new Text("x")).Run();
-        run.Should().Throw<InvalidOperationException>().WithMessage("*eQuantic.UI.Sdk.Native*");
+        run.Should().Throw<InvalidOperationException>().WithMessage("*MAIN thread*");
     }
 }

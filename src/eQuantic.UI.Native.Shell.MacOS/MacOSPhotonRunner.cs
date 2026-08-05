@@ -14,6 +14,19 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
 {
     public void Run(PhotonApplication app)
     {
+        // AppKit is a MAIN-THREAD framework: an NSWindow built anywhere else takes the whole
+        // process down with an ObjC exception nobody can catch. Saying so in .NET terms, before
+        // touching AppKit, is the difference between a fixable mistake and a crash log.
+        if (!Shell.Apple.ObjC.SendBool(Shell.Apple.ObjC.objc_getClass("NSThread"),
+                Shell.Apple.ObjC.Sel("isMainThread")))
+        {
+            throw new InvalidOperationException(
+                "A Photon window must be created on the MAIN thread — AppKit requires it. Call "
+                + "Run() from Main (the SDK's generated entry point already does), or dispatch to "
+                + "the main queue first. For a headless render use --Photon:ScreenshotPath, which "
+                + "needs no window at all.");
+        }
+
         var options = app.Options;
         if (options.ScreenshotPath is { } screenshot)
         {
