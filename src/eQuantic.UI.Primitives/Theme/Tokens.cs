@@ -100,6 +100,37 @@ public static class Sizing
         _ => 56,
     };
 
+    // ---- the SELECTION ladder (spec B10/B11) -------------------------------------------------
+    // A switch, a checkbox and a radio have no size rung of their own: there is one of each, and
+    // the only thing that moves it is the DENSITY of the target. These numbers used to live in
+    // three private tables inside the three components, which is why the Mac's switch stayed at
+    // the size a thumb needs — a component that keeps its own copy of the ladder cannot follow it.
+
+    /// <summary>The switch track: 52×32 under a thumb, 44×26 under a pointer.</summary>
+    public static float SwitchWidth(Density density = Density.Comfortable) =>
+        density == Density.Compact ? 44 : 52;
+
+    public static float SwitchHeight(Density density = Density.Comfortable) =>
+        density == Density.Compact ? 26 : 32;
+
+    /// <summary>The travelling knob, inset <see cref="SwitchInset"/> from every edge.</summary>
+    public static float SwitchThumb(Density density = Density.Comfortable) =>
+        density == Density.Compact ? 20 : 26;
+
+    public const float SwitchInset = 3;
+
+    /// <summary>How far the knob travels — the track's slack, so it is never restated.</summary>
+    public static float SwitchTravel(Density density = Density.Comfortable) =>
+        SwitchWidth(density) - SwitchThumb(density) - SwitchInset * 2;
+
+    /// <summary>The checkbox square and the radio circle — one number, both controls.</summary>
+    public static float SelectionBox(Density density = Density.Comfortable) =>
+        density == Density.Compact ? 20 : 22;
+
+    /// <summary>The radio's filled centre.</summary>
+    public static float RadioDot(Density density = Density.Comfortable) =>
+        density == Density.Compact ? 9 : 10;
+
     public static float PaddingX(SizeVariant size, Density density = Density.Comfortable) => size switch
     {
         SizeVariant.Small => density == Density.Compact ? Space.S2 : Space.S3,

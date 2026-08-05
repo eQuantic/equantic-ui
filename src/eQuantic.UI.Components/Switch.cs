@@ -20,7 +20,6 @@ public sealed class Switch : StatelessComponent
     }
 
     /// <summary>Track 52, thumb 26, inset 3 each side — what is left is what the thumb can cross.</summary>
-    private const float Travel = 52 - 26 - 3 - 3;
 
     public bool On { get; init; }
     public Action? OnChanged { get; init; }
@@ -32,37 +31,43 @@ public sealed class Switch : StatelessComponent
         var trackFill = On ? theme.Colors(Variant.Primary).Base : theme.BorderStrong;
         if (Disabled) trackFill = trackFill.WithOpacity(theme.DisabledOpacity);
 
+        // The ladder comes from the TOKEN LAYER, resolved for this target's density — a switch is
+        // 52×32 under a thumb and 44×26 under a pointer, and neither number is written here.
+        var density = context.Density;
+        var travel = Sizing.SwitchTravel(density);
+        var inset = Sizing.SwitchInset;
+
         var track = new Box(new BoxStyle
         {
-            Width = 52,
-            Height = 32,
+            Width = Sizing.SwitchWidth(density),
+            Height = Sizing.SwitchHeight(density),
             Background = trackFill,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
         });
 
         var thumb = new Box(new BoxStyle
         {
-            Width = 26,
-            Height = 26,
+            Width = Sizing.SwitchThumb(density),
+            Height = Sizing.SwitchThumb(density),
             Background = theme.Surface,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             Elevation = 1,
         });
 
         // The thumb travels the track's slack: the width, less the thumb, less both insets.
-        VisualNode draggableThumb = Disabled ? thumb : new Draggable(thumb, OnReleased)
+        VisualNode draggableThumb = Disabled ? thumb : new Draggable(thumb, offset => Release(offset, travel))
         {
             Axis = DragAxis.Horizontal,
             // Signed by state, so the thumb never drags off the end it is already resting against.
-            Min = On ? -Travel : 0,
-            Max = On ? 0 : Travel,
+            Min = On ? -travel : 0,
+            Max = On ? 0 : travel,
         };
 
         var stack = new Stack();
         stack.Add(track);
         stack.Add(On
-            ? new Positioned(draggableThumb, top: 3, end: 3)
-            : new Positioned(draggableThumb, top: 3, start: 3));
+            ? new Positioned(draggableThumb, top: inset, end: inset)
+            : new Positioned(draggableThumb, top: inset, start: inset));
 
         return new Pressable(stack, Disabled ? null : OnChanged)
         {
@@ -73,9 +78,9 @@ public sealed class Switch : StatelessComponent
 
     /// <summary>Past half the slack the switch flips; short of it the thumb returns and nothing
     /// changed — which is why the caller hears about a CHANGE, not about every release.</summary>
-    private void OnReleased(float offset)
+    private void Release(float offset, float travel)
     {
-        var next = On ? offset > -Travel / 2 : offset >= Travel / 2;
+        var next = On ? offset > -travel / 2 : offset >= travel / 2;
         if (next != On) OnChanged?.Invoke();
     }
 }

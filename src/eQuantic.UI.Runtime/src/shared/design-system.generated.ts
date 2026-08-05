@@ -162,6 +162,25 @@ export const Sizing = {
       default: return 14;
     }
   },
+  radioDot(density = 'comfortable'): number {
+    return density === 'compact' ? 9 : 10;
+  },
+  selectionBox(density = 'comfortable'): number {
+    return density === 'compact' ? 20 : 22;
+  },
+  switchHeight(density = 'comfortable'): number {
+    return density === 'compact' ? 26 : 32;
+  },
+  switchThumb(density = 'comfortable'): number {
+    return density === 'compact' ? 20 : 26;
+  },
+  switchTravel(density = 'comfortable'): number {
+    return density === 'compact' ? 18 : 20;
+  },
+  switchWidth(density = 'comfortable'): number {
+    return density === 'compact' ? 44 : 52;
+  },
+  switchInset: 3,
 };
 
 /** Height · PadX · Gap · Label · Icon · Radius · HitTarget — the spec A12 size table. */

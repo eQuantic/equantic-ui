@@ -127,6 +127,29 @@ public static class DesignSystemTsGenerator
             AppendSizeSwitch(ts, method, Density.Comfortable, "    ");
             ts.AppendLine("  },");
         }
+
+        // Rungs with NO size axis at all — a switch, a checkbox and a radio have one of each, and
+        // only the density moves them. Same reflection rule: the signature says what the twin gets.
+        foreach (var method in typeof(Sizing).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                     .Where(m => m.ReturnType == typeof(float)
+                                 && m.GetParameters() is [{ ParameterType: var only }]
+                                 && only == typeof(Density))
+                     .OrderBy(m => m.Name, StringComparer.Ordinal))
+        {
+            ts.AppendLine($"  {Camel(method.Name)}(density = 'comfortable'): number {{");
+            ts.AppendLine($"    return density === 'compact' "
+                + $"? {Num((float)method.Invoke(null, [Density.Compact])!)} "
+                + $": {Num((float)method.Invoke(null, [Density.Comfortable])!)};");
+            ts.AppendLine("  },");
+        }
+
+        // …and the plain constants of the ladder.
+        foreach (var field in typeof(Sizing).GetFields(BindingFlags.Public | BindingFlags.Static)
+                     .Where(f => f.IsLiteral && f.FieldType == typeof(float))
+                     .OrderBy(f => f.Name, StringComparer.Ordinal))
+        {
+            ts.AppendLine($"  {Camel(field.Name)}: {Num((float)field.GetRawConstantValue()!)},");
+        }
         ts.AppendLine("};");
     }
 

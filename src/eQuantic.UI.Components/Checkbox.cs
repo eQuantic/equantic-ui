@@ -49,8 +49,8 @@ public sealed class Checkbox : StatelessComponent
 
         var box = new Box(new BoxStyle
         {
-            Width = 22,
-            Height = 22,
+            Width = Sizing.SelectionBox(context.Density),
+            Height = Sizing.SelectionBox(context.Density),
             Background = filled ? primary.Base : null,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.ExtraSmall)),
             BorderWidth = filled ? 0f : 2f,

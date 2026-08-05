@@ -45,8 +45,8 @@ public sealed class RadioGroup : StatelessComponent
             var circleContent = isSelected
                 ? new Box(new BoxStyle
                 {
-                    Width = 10,
-                    Height = 10,
+                    Width = Sizing.RadioDot(context.Density),
+                    Height = Sizing.RadioDot(context.Density),
                     Background = primary.Base,
                     CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
                 }).Centered()
@@ -54,8 +54,8 @@ public sealed class RadioGroup : StatelessComponent
 
             var circle = new Box(new BoxStyle
             {
-                Width = 22,
-                Height = 22,
+                Width = Sizing.SelectionBox(context.Density),
+                Height = Sizing.SelectionBox(context.Density),
                 CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
                 BorderWidth = 2f,
                 BorderColor = isSelected ? primary.Base : theme.BorderStrong,
