@@ -230,7 +230,14 @@ public sealed class StudioShell : StatefulComponent
         title.Add(new Text("eQuantic.UI · Photon tokens", TypeRole.Caption, theme.TextMuted,
             maxLines: 1));
 
-        var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        // Height = Fill is what gives Cross.Center a middle to centre ON — a box does not centre
+        // its child (block flow starts at the top, the CSS twin), the row centres its items.
+        var row = new Row(gap: Space.S2)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Cross = CrossAlign.Center,
+        };
         // The corner the SYSTEM owns: close/minimize/zoom float here (the window has no bar of
         // its own), and the navigation arrows sit immediately to their right, per the handoff.
         row.Add(Spacer.Fixed(74));
@@ -282,7 +289,12 @@ public sealed class StudioShell : StatefulComponent
     /// <summary>Breadcrumb + the two per-page switches, exactly the handoff's second bar.</summary>
     private VisualNode BreadcrumbBar(IAppTheme theme)
     {
-        var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        var row = new Row(gap: Space.S2)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Cross = CrossAlign.Center,
+        };
         row.Add(new Text("Components", TypeRole.Caption, theme.TextMuted, maxLines: 1));
         row.Add(new Icon(Icons.ChevronRight, IconSize.Sm, theme.TextMuted));
         row.Add(new Text(Gallery.NameOf(_section), TypeRole.Label, theme.TextPrimary, maxLines: 1));
@@ -508,7 +520,12 @@ public sealed class StudioShell : StatefulComponent
     /// <summary>The bottom rail, monospaced like the handoff: the honest numbers, and a live dot.</summary>
     private VisualNode StatusBar(IAppTheme theme)
     {
-        var row = new Row(gap: Space.S4) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        var row = new Row(gap: Space.S4)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Cross = CrossAlign.Center,
+        };
         row.Add(new Text($"{Gallery.TotalCoverage()} components", TypeRole.Caption, theme.TextMuted,
             maxLines: 1) { Mono = true, Tabular = true });
         row.Add(new Text("Photon tokens", TypeRole.Caption, theme.TextMuted, maxLines: 1) { Mono = true });
