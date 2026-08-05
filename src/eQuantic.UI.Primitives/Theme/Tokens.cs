@@ -60,14 +60,30 @@ public static class IconSize
 /// the same size must measure identically. Reach for it instead of re-typing 40.
 /// </para>
 /// </summary>
+/// <summary>
+/// How TIGHT the controls are — a property of the TARGET, never of the call site. The same
+/// <c>SizeVariant.Small</c> is 32dp under a finger and 26dp under a mouse, because a pointer is
+/// precise and a fingertip is not: this is Material's density and Apple's control size, and it is
+/// what keeps ONE tree honest on a phone and on a desktop. An app never asks for a smaller button
+/// on the Mac; the Mac asks for a denser app.
+/// </summary>
+public enum Density : byte
+{
+    /// <summary>Touch: the §08 hit-target contract, full-size controls.</summary>
+    Comfortable = 0,
+
+    /// <summary>Pointer: chrome tightens — toolbars, sidebars, inspectors, status rails.</summary>
+    Compact = 1,
+}
+
 public static class Sizing
 {
-    public static float Height(SizeVariant size) => size switch
+    public static float Height(SizeVariant size, Density density = Density.Comfortable) => size switch
     {
-        SizeVariant.Small => 32,
-        SizeVariant.Medium => 40,
-        SizeVariant.Large => 48,
-        _ => 56,
+        SizeVariant.Small => density == Density.Compact ? 26 : 32,
+        SizeVariant.Medium => density == Density.Compact ? 32 : 40,
+        SizeVariant.Large => density == Density.Compact ? 40 : 48,
+        _ => density == Density.Compact ? 48 : 56,
     };
 
     /// <summary>
@@ -84,12 +100,12 @@ public static class Sizing
         _ => 56,
     };
 
-    public static float PaddingX(SizeVariant size) => size switch
+    public static float PaddingX(SizeVariant size, Density density = Density.Comfortable) => size switch
     {
-        SizeVariant.Small => Space.S3,
-        SizeVariant.Medium => Space.S4,
-        SizeVariant.Large => Space.S5,
-        _ => Space.S6,
+        SizeVariant.Small => density == Density.Compact ? Space.S2 : Space.S3,
+        SizeVariant.Medium => density == Density.Compact ? Space.S3 : Space.S4,
+        SizeVariant.Large => density == Density.Compact ? Space.S4 : Space.S5,
+        _ => density == Density.Compact ? Space.S5 : Space.S6,
     };
 
     /// <summary>Gap between a control's icon and its label.</summary>
@@ -101,12 +117,12 @@ public static class Sizing
         _ => 10,
     };
 
-    public static float LabelSize(SizeVariant size) => size switch
+    public static float LabelSize(SizeVariant size, Density density = Density.Comfortable) => size switch
     {
-        SizeVariant.Small => 13,
-        SizeVariant.Medium => 15,
-        SizeVariant.Large => 16,
-        _ => 17,
+        SizeVariant.Small => density == Density.Compact ? 11.5f : 13,
+        SizeVariant.Medium => density == Density.Compact ? 13 : 15,
+        SizeVariant.Large => density == Density.Compact ? 14.5f : 16,
+        _ => density == Density.Compact ? 15.5f : 17,
     };
 
     public static float Icon(SizeVariant size) => size switch
@@ -121,8 +137,13 @@ public static class Sizing
         size == SizeVariant.XLarge ? Primitives.Radius.Lg : Primitives.Radius.Md;
 
     /// <summary>The hit rect: the enforced minimum, except XLarge whose visual already exceeds it.</summary>
-    public static float HitTarget(SizeVariant size) =>
-        size == SizeVariant.XLarge ? 56 : Touch.MinTarget;
+    public static float HitTarget(SizeVariant size, Density density = Density.Comfortable) =>
+        // A POINTER lands where it is aimed, so a dense control needs no invisible margin around
+        // it — and on a toolbar of 26dp buttons those margins would overlap each other anyway.
+        // A finger gets the §08 minimum, always.
+        density == Density.Compact
+            ? Height(size, density)
+            : size == SizeVariant.XLarge ? 56 : Touch.MinTarget;
 }
 
 /// <summary>Touch-target rules (spec §08): the engine enforces the stricter 48dp on both platforms.</summary>

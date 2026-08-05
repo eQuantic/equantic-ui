@@ -37,6 +37,10 @@ export interface RenderContext {
    * is TYPE-ONLY (erased at compile time), so core/types carries the vocabulary's types without taking
    * any runtime dependency on it — the constraint the previous `unknown` was protecting. */
   theme: import('../shared/value-types').AppTheme;
+  /** How tight this target's controls are — 'comfortable' | 'compact' (C# `context.Density`).
+   * Optional so a host that predates the axis still type-checks; the components read it through
+   * the ladder, which defaults to comfortable. */
+  density?: string;
 }
 
 /**

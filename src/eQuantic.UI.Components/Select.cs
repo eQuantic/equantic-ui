@@ -61,7 +61,7 @@ public sealed class Select : StatefulComponent
 
         var field = new Box(new BoxStyle
         {
-            Height = Sizing.Height(SizeVariant.Medium),
+            Height = Sizing.Height(SizeVariant.Medium, context.Density),
             Width = SizeValue.Fill,
             Padding = EdgeInsets.Symmetric(Space.S3, 0),
             Background = theme.Surface,
@@ -90,7 +90,7 @@ public sealed class Select : StatefulComponent
             var highlighted = _open && i == _highlight;
             list.Add(new Pressable(new Box(new BoxStyle
             {
-                Height = Sizing.Height(SizeVariant.Medium),
+                Height = Sizing.Height(SizeVariant.Medium, context.Density),
                 Padding = EdgeInsets.Symmetric(Space.S3, 0),
                 Width = SizeValue.Fill,
                 // The keyboard's row wears the hover coat: one visual language for "you are here",

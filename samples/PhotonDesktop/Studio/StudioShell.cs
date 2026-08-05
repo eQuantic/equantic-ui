@@ -142,6 +142,7 @@ public sealed class StudioShell : StatefulComponent
     private ThemeMode _mode = ThemeMode.Light;
     private readonly IThemeController? _themeSwitch;
     private readonly ITextClipboard? _clipboard;
+    private Density _density = Density.Comfortable;
 
     // The inspector drives the Buttons section's live specimen. Loading and Disabled are
     // INDEPENDENT switches, exactly as the handoff draws them — a control can be both.
@@ -165,6 +166,9 @@ public sealed class StudioShell : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The ladder read-out has to quote the numbers this TARGET resolved, not the comfortable
+        // ones: a gallery that says 40 next to a 32dp button documents a lie.
+        _density = context.Density;
 
         // Handoff structure: the sidebar runs FULL height on the left; the right column stacks
         // the breadcrumb bar over (canvas | inspector); the status rail closes the window.
@@ -567,7 +571,7 @@ public sealed class StudioShell : StatefulComponent
         var content = new Column(gap: Space.S5) { Width = SizeValue.Fill };
         content.Add(SectionHeader(theme));
         content.Add(Gallery.Render(_section, theme, _demo, mutation => SetState(mutation), Specimen,
-            SpecimenCSharp()));
+            SpecimenCSharp(), _density));
 
         var scroll = new ScrollView(new Box(new BoxStyle
         {
@@ -615,8 +619,9 @@ public sealed class StudioShell : StatefulComponent
             : $"new Button({arguments})\n{{{inits}\n}};";
         return body
             + "\n\n// resolved through Sizing \u2014 never inlined:"
-            + $"\n// Sizing.Height({_size}) = {Sizing.Height(_size):0.#}   Sizing.PaddingX = {Sizing.PaddingX(_size):0.#}"
-            + $"\n// Sizing.Icon = {Sizing.Icon(_size):0.#}   Sizing.HitTarget = {Sizing.HitTarget(_size):0.#}";
+            + $"\n// Sizing.Height({_size}) = {Sizing.Height(_size, _density):0.#}"
+            + $"   Sizing.PaddingX = {Sizing.PaddingX(_size, _density):0.#}   ({_density})"
+            + $"\n// Sizing.Icon = {Sizing.Icon(_size):0.#}   Sizing.HitTarget = {Sizing.HitTarget(_size, _density):0.#}";
     }
 
     // ---- Inspector -------------------------------------------------------------------------
@@ -710,14 +715,14 @@ public sealed class StudioShell : StatefulComponent
     private VisualNode LadderReadout(IAppTheme theme)
     {
         var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
-        column.Add(Eyebrow("Resolved via Sizing", theme));
-        column.Add(Metric(theme, "Height", Sizing.Height(_size)));
-        column.Add(Metric(theme, "PaddingX", Sizing.PaddingX(_size)));
+        column.Add(Eyebrow($"Resolved via Sizing · {_density}", theme));
+        column.Add(Metric(theme, "Height", Sizing.Height(_size, _density)));
+        column.Add(Metric(theme, "PaddingX", Sizing.PaddingX(_size, _density)));
         column.Add(Metric(theme, "Gap", Sizing.Gap(_size)));
-        column.Add(Metric(theme, "LabelSize", Sizing.LabelSize(_size)));
+        column.Add(Metric(theme, "LabelSize", Sizing.LabelSize(_size, _density)));
         column.Add(Metric(theme, "Icon", Sizing.Icon(_size)));
         column.Add(Metric(theme, "Radius", Sizing.Radius(_size)));
-        column.Add(Metric(theme, "HitTarget", Sizing.HitTarget(_size)));
+        column.Add(Metric(theme, "HitTarget", Sizing.HitTarget(_size, _density)));
         column.Add(new Divider());
         column.Add(new Text("press \u2192 Motion.Press", TypeRole.LabelSmall, theme.TextMuted,
             maxLines: 1) { Mono = true });

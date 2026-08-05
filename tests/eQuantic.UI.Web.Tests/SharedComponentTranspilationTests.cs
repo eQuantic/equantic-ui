@@ -248,7 +248,7 @@ public class SharedComponentTranspilationTests
         button.Should().Contain("minWidth: 64");
 
         // The size-table tuple deconstructs as an array — the generated ButtonStyles.metrics shape.
-        button.Should().Contain("let [height, padX, gap, labelSize, iconSize, , ] = ButtonStyles.metrics(this.size)");
+        button.Should().Contain("let [height, padX, gap, labelSize, iconSize, , ] = ButtonStyles.metrics(this.size, context.density)");
         // Shape is theme-driven (Material overrides the ladder) — resolved from the enum member string.
         button.Should().Contain("theme.shape(this.size === 'xLarge' ? 'large' : 'medium')");
     }

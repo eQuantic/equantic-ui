@@ -9,6 +9,7 @@ import {
   matchRoute,
   setCurrentRouteFrom,
   registerDeviceCapabilities,
+  detectPhotonDensity,
   setPhotonTheme,
   materializeTheme,
   type EqConfig,
@@ -80,6 +81,9 @@ export async function boot(): Promise<void> {
   // What a BROWSER can do, under the same names the C# interfaces have — the web's answer to the
   // native shells' IPhotonCapabilities.
   registerDeviceCapabilities();
+  // A desktop browser is driven by a POINTER: the controls tighten to the density a native
+  // desktop app has. Read once at boot, from what the browser says about the pointer.
+  detectPhotonDensity();
 
   if (isDev()) {
     console.log('eQuantic.UI Runtime initializing...');

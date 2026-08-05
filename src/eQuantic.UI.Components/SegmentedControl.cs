@@ -36,7 +36,7 @@ public sealed class SegmentedControl : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var height = Sizing.Height(Size);
+        var height = Sizing.Height(Size, context.Density);
         var inset = 3f;                                   // the track's lip around the thumb
         var trackRadius = Sizing.Radius(Size);
 
@@ -65,7 +65,7 @@ public sealed class SegmentedControl : StatelessComponent
             label.Add(new Text(Segments[index], TypeRole.Label,
                 selected ? theme.TextPrimary : theme.TextSecondary, maxLines: 1)
             {
-                StyleOverride = theme.Type(TypeRole.Label) with { Size = Sizing.LabelSize(Size) },
+                StyleOverride = theme.Type(TypeRole.Label) with { Size = Sizing.LabelSize(Size, context.Density) },
                 Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
             });
 
@@ -73,7 +73,7 @@ public sealed class SegmentedControl : StatelessComponent
             {
                 Width = Stretch ? SizeValue.Fill : SizeValue.Hug,
                 Height = SizeValue.Fill,
-                Padding = Stretch ? default : EdgeInsets.Symmetric(Sizing.PaddingX(Size), 0),
+                Padding = Stretch ? default : EdgeInsets.Symmetric(Sizing.PaddingX(Size, context.Density), 0),
                 Background = selected ? theme.Surface : null,
                 CornerRadius = new CornerRadii(trackRadius - inset),
                 Elevation = selected ? 1 : 0,

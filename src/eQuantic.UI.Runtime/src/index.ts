@@ -160,6 +160,9 @@ export {
   ComponentContext,
   setPhotonTheme,
   getPhotonTheme,
+  setPhotonDensity,
+  getPhotonDensity,
+  detectPhotonDensity,
   photonComponentContext,
   ambientLoweringContext,
 } from './shared/photon-context';

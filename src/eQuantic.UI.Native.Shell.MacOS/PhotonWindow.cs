@@ -145,6 +145,9 @@ public sealed class PhotonWindow
         var host = new PhotonHost(root, theme, mode, _width, _height, textService)
         {
             RenderScale = scale,
+            // A Mac is driven by a POINTER: the controls tighten, exactly as every native desktop
+            // app's do. The same tree on a phone stays comfortable, and no page chose either.
+            Density = Density.Compact,
             SmoothScroll = _smoothScroll,
             Clipboard = new MacClipboard(),
             // Whatever the system kept for itself is a safe area, exactly as a phone's notch is.

@@ -19,13 +19,18 @@ public enum StretchKind
 /// <summary>Everything a layout pass needs besides the tree: theme (type styles), text metrics, Dynamic Type factor.</summary>
 public sealed class LayoutContext
 {
-    public LayoutContext(IAppTheme theme, ITextMeasurer measurer, float typeScale = 1f)
+    public LayoutContext(IAppTheme theme, ITextMeasurer measurer, float typeScale = 1f,
+        Density density = Density.Comfortable)
     {
         Theme = theme;
         Measurer = measurer;
         TypeScale = typeScale;
-        Components = new ComponentContext(theme, typeScale);
+        Density = density;
+        Components = new ComponentContext(theme, typeScale, density);
     }
+
+    /// <summary>How tight this target's controls are (see <see cref="Primitives.Density"/>).</summary>
+    public Density Density { get; }
 
     /// <summary>
     /// Whether the parent's own size on this axis is being decided BY the content — a Hug. Fill has

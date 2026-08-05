@@ -69,7 +69,7 @@ public sealed class TextInput : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var height = Sizing.Height(Size);
+        var height = Sizing.Height(Size, context.Density);
 
         var hasError = !string.IsNullOrEmpty(Error);
         var borderColor = hasError

@@ -60,6 +60,7 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
             TextRasterizer = textService,
             ImageLoader = new Shell.Apple.CoreGraphicsImageLoader(),
             IconRasterizer = new Shell.Apple.CoreGraphicsIconRasterizer(),
+            Density = Density.Compact,
         };
 
         var width = (int)options.Width;

@@ -107,7 +107,9 @@ public static class ButtonStyles
     /// given size must measure exactly like any other control of that size, so the numbers live in
     /// the token layer and this is the tuple view of them.
     /// </summary>
-    public static (float Height, float PadX, float Gap, float LabelSize, float IconSize, float Radius, float Hit) Metrics(SizeVariant size) =>
-        (Sizing.Height(size), Sizing.PaddingX(size), Sizing.Gap(size), Sizing.LabelSize(size),
-         Sizing.Icon(size), Sizing.Radius(size), Sizing.HitTarget(size));
+    public static (float Height, float PadX, float Gap, float LabelSize, float IconSize, float Radius, float Hit) Metrics(
+        SizeVariant size, Density density = Density.Comfortable) =>
+        (Sizing.Height(size, density), Sizing.PaddingX(size, density), Sizing.Gap(size),
+         Sizing.LabelSize(size, density), Sizing.Icon(size), Sizing.Radius(size),
+         Sizing.HitTarget(size, density));
 }

@@ -38,6 +38,13 @@ public sealed class PhotonHost
     }
 
     public ThemeMode Mode { get; set; }
+
+    /// <summary>
+    /// How tight this host wants its controls. A window driven by a MOUSE is Compact — the
+    /// toolbars, sidebars and status rails of a desktop app; a touch screen stays Comfortable.
+    /// The shell decides, and no page ever asks.
+    /// </summary>
+    public Density Density { get; set; } = Density.Comfortable;
     public float Width { get; private set; }
     public float Height { get; private set; }
 
@@ -136,7 +143,7 @@ public sealed class PhotonHost
         var gliding = _scrolls.Advance(timeMs);
         _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets, _pressedPath,
             _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible,
-            Selection.Start, Selection.End);
+            Selection.Start, Selection.End, density: Density);
         if (RenderScale != 1f) builder.Pop();
         AdoptAutofocus();
         // A blinking caret is running motion like any other: while a field is being edited the loop
