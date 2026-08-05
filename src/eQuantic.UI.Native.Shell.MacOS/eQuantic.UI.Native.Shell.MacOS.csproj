@@ -14,6 +14,7 @@
     <ProjectReference Include="../eQuantic.UI.Native.Shell.Apple/eQuantic.UI.Native.Shell.Apple.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Engine/eQuantic.UI.Native.Engine.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Engine.Metal/eQuantic.UI.Native.Engine.Metal.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Engine.Reference/eQuantic.UI.Native.Engine.Reference.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj" />
     <ProjectReference Include="../eQuantic.UI.Native.Components/eQuantic.UI.Native.Components.csproj" />
   </ItemGroup>

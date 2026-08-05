@@ -233,7 +233,7 @@ public sealed class StudioShell : StatefulComponent
         var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
         // The corner the SYSTEM owns: close/minimize/zoom float here (the window has no bar of
         // its own), and the navigation arrows sit immediately to their right, per the handoff.
-        row.Add(new Spacer(74));
+        row.Add(Spacer.Fixed(74));
         row.Add(new IconButton(Icons.ChevronLeft, "Back")
         {
             Size = SizeVariant.Small,
@@ -546,7 +546,8 @@ public sealed class StudioShell : StatefulComponent
     {
         var content = new Column(gap: Space.S5) { Width = SizeValue.Fill };
         content.Add(SectionHeader(theme));
-        content.Add(Gallery.Render(_section, theme, _demo, mutation => SetState(mutation), Specimen));
+        content.Add(Gallery.Render(_section, theme, _demo, mutation => SetState(mutation), Specimen,
+            SpecimenCSharp()));
 
         var scroll = new ScrollView(new Box(new BoxStyle
         {
@@ -636,10 +637,7 @@ public sealed class StudioShell : StatefulComponent
 
     private VisualNode VariantPicker(IAppTheme theme)
     {
-        var wrap = new Grid([GridTrack.Flex(), GridTrack.Flex()], gap: Space.S1)
-        {
-            Width = SizeValue.Fill,
-        };
+        var wrap = new Row(gap: Space.S1) { Width = SizeValue.Fill, Wrap = true };
         foreach (var variant in Gallery.InspectableVariants)
         {
             var captured = variant;

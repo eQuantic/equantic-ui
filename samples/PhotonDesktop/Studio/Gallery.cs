@@ -115,9 +115,9 @@ public static class Gallery
     };
 
     public static VisualNode Render(GallerySection section, IAppTheme theme, SectionState state,
-        Action<Action> mutate, Func<IAppTheme, VisualNode> specimen) => section switch
+        Action<Action> mutate, Func<IAppTheme, VisualNode> specimen, string specimenCode = "") => section switch
     {
-        GallerySection.Buttons => Buttons(theme, specimen),
+        GallerySection.Buttons => Buttons(theme, specimen, specimenCode),
         GallerySection.Inputs => Inputs(theme, state, mutate),
         GallerySection.Selection => Selection(theme, state, mutate),
         GallerySection.DataDisplay => DataDisplay(theme),
@@ -130,24 +130,111 @@ public static class Gallery
 
     // ---- Sections --------------------------------------------------------------------------
 
-    private static VisualNode Buttons(IAppTheme theme, Func<IAppTheme, VisualNode> specimen)
+    /// <summary>The code card's fixed colours — the handoff paints the snippet on the same dark
+    /// slab in BOTH modes, so these are tokens with one answer.</summary>
+    private static readonly ColorToken CodeSlab = new(new Color(0x10, 0x14, 0x18, 0xFF));
+    private static readonly ColorToken CodeInk = new(new Color(0xC9, 0xD4, 0xDE, 0xFF));
+
+    private static VisualNode Buttons(IAppTheme theme, Func<IAppTheme, VisualNode> specimen,
+        string specimenCode)
     {
-        var live = Row(Space.S3);
-        live.Add(specimen(theme));
+        // Live preview, per the handoff: title row, the STAGE (a SurfaceSubtle slab the specimen
+        // centres on), and the C# that builds it on the code slab.
+        var head = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        head.Add(new Text("Live preview", TypeRole.Label, theme.TextPrimary, maxLines: 1));
+        head.Add(new Box(new BoxStyle
+        {
+            Background = theme.SurfaceSubtle,
+            CornerRadius = new CornerRadii(Radius.Xs),
+            Padding = EdgeInsets.Symmetric(Space.S2, 2),
+        }, new Text("Button", TypeRole.Caption, theme.TextSecondary, maxLines: 1) { Mono = true }));
+        head.Add(new Spacer(1));
+        head.Add(new Text("driven by the inspector \u2192", TypeRole.Caption, theme.TextMuted,
+            maxLines: 1));
 
-        var matrix = new Grid([GridTrack.Flex(), GridTrack.Flex(), GridTrack.Flex()], gap: Space.S3) { Width = SizeValue.Fill };
-        foreach (var variant in InspectableVariants)
-            matrix.Add(new Button(variant.ToString(), variant));
+        var staged = new Row(gap: 0)
+        {
+            Width = SizeValue.Fill,
+            Main = MainAlign.Center,
+            Cross = CrossAlign.Center,
+        };
+        staged.Add(specimen(theme));
+        var stage = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            MinHeight = 120,
+            Background = theme.SurfaceSubtle,
+            CornerRadius = new CornerRadii(Radius.Md),
+            Padding = EdgeInsets.All(Space.S5),
+        }, staged);
 
-        var ladder = Row(Space.S3);
+        var codeLines = Column(2);
+        foreach (var line in specimenCode.Split('\n'))
+            codeLines.Add(new Text(line.Length == 0 ? " " : line, TypeRole.Caption, CodeInk,
+                maxLines: 1) { Mono = true });
+        var code = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Background = CodeSlab,
+            CornerRadius = new CornerRadii(Radius.Sm),
+            Padding = new EdgeInsets(Space.S4, Space.S3, Space.S4, Space.S3),
+        }, codeLines);
+
+        var preview = Column(Space.S4);
+        preview.Add(head);
+        preview.Add(stage);
+        preview.Add(code);
+        var previewCard = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Background = theme.Surface,
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+            CornerRadius = new CornerRadii(Radius.Lg),
+            Padding = EdgeInsets.All(Space.S5),
+            Elevation = 1,
+        }, preview);
+
+        // The matrix card: every variant at Medium, the size ladder, and the IconButton kinds —
+        // three rows separated by dividers, exactly the handoff's one card.
+        var variants = new Row(gap: Space.S3) { Width = SizeValue.Fill, Wrap = true };
+        foreach (var variant in Enum.GetValues<Variant>())
+            variants.Add(new Button(variant.ToString(), variant));
+
+        var ladder = new Row(gap: Space.S3) { Width = SizeValue.Fill, Wrap = true };
         foreach (var size in Enum.GetValues<SizeVariant>())
-            ladder.Add(new Button($"{size} {Sizing.Height(size):0}", Variant.Secondary, size));
+            ladder.Add(new Button($"{size} {Sizing.Height(size):0}", Variant.Primary, size));
 
-        var column = Column(Space.S5);
-        column.Add(Card(theme, "Live preview", "Driven by the inspector on the right.", live));
-        column.Add(Card(theme, "Variant matrix", "Medium size, so only the colour role differs.", matrix));
-        column.Add(Card(theme, "Size ladder",
-            "Each label states the height the ladder resolved — the numbers are read, not typed.", ladder));
+        var kinds = new Row(gap: Space.S3) { Width = SizeValue.Fill, Wrap = true, Cross = CrossAlign.Center };
+        foreach (var kind in Enum.GetValues<IconButtonKind>())
+            kinds.Add(new IconButton(Icons.Heart, $"{kind} icon button", kind));
+        kinds.Add(new Text("IconButton \u00b7 Standard \u00b7 Tonal \u00b7 Filled \u00b7 Outline",
+            TypeRole.Caption, theme.TextMuted, maxLines: 1));
+
+        var matrix = Column(Space.S4);
+        matrix.Add(variants);
+        matrix.Add(new Divider());
+        matrix.Add(ladder);
+        matrix.Add(new Divider());
+        matrix.Add(kinds);
+        var matrixCard = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Background = theme.Surface,
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+            CornerRadius = new CornerRadii(Radius.Lg),
+            Padding = EdgeInsets.All(Space.S4),
+        }, matrix);
+
+        var column = Column(Space.S3);
+        column.Add(previewCard);
+        column.Add(new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Padding = new EdgeInsets(0, Space.S4, 0, 0),
+        }, new Text("VARIANT MATRIX \u00b7 MEDIUM", TypeRole.Caption, theme.TextMuted, maxLines: 1)));
+        column.Add(matrixCard);
         return column;
     }
 
