@@ -22,8 +22,10 @@ public partial class Program
         {
             photon.Theme = PhotonTheme.Instance;
             photon.Title = "eQuantic Studio";
-            photon.Width = 1180;
-            photon.Height = 820;
+            // The handoff's own canvas, to the pixel: a window 100dp narrower squeezes every
+            // column and reads as "the proportions are off" before a single token is wrong.
+            photon.Width = 1280;
+            photon.Height = 824;
             // The handoff drew this screen with no native title bar: the gallery's own top row IS
             // the window's. The strip the traffic lights sit in comes back as a safe-area inset,
             // and the shell insets its header by it — the same node an iPhone's notch drives.

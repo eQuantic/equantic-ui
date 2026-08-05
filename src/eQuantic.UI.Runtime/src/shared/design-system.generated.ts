@@ -226,6 +226,9 @@ const typeScale: Record<string, TypeStyle> = {
   bodyM: new TypeStyle(15, 20, 'regular', 0, 1.3),
   label: new TypeStyle(13, 16, 'semiBold', 0.1, 1.3),
   caption: new TypeStyle(12, 16, 'medium', 0.2, 1.3),
+  titleSmall: new TypeStyle(15, 20, 'bold', -0.1, 1.3),
+  labelSmall: new TypeStyle(11, 15, 'medium', 0.1, 1.3),
+  overline: new TypeStyle(10, 14, 'extraBold', 1, 1.2),
 };
 
 const elevations: ShadowSpec[] = [

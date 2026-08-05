@@ -118,6 +118,9 @@ public sealed class PhotonTheme : IAppTheme
         TypeRole.BodyM => new TypeStyle(15, 20, FontWeight.Regular, 0f, 1.3f),
         TypeRole.Label => new TypeStyle(13, 16, FontWeight.SemiBold, 0.1f, 1.3f),
         TypeRole.Caption => new TypeStyle(12, 16, FontWeight.Medium, 0.2f, 1.3f),
+        TypeRole.TitleSmall => new TypeStyle(15, 20, FontWeight.Bold, -0.1f, 1.3f),
+        TypeRole.LabelSmall => new TypeStyle(11, 15, FontWeight.Medium, 0.1f, 1.3f),
+        TypeRole.Overline => new TypeStyle(10, 14, FontWeight.ExtraBold, 1f, 1.2f),
         _ => new TypeStyle(15, 20, FontWeight.Regular, 0f, 1.3f),
     };
 

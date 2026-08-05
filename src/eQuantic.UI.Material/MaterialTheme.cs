@@ -78,6 +78,9 @@ public sealed class MaterialTheme : IAppTheme
         TypeRole.BodyM => new TypeStyle(14, 20, FontWeight.Regular, 0.25f, 1.4f),  // body-medium
         TypeRole.Label => new TypeStyle(14, 20, FontWeight.Medium, 0.1f, 1.3f),    // label-large
         TypeRole.Caption => new TypeStyle(12, 16, FontWeight.Regular, 0.4f, 1.3f), // body-small
+        TypeRole.TitleSmall => new TypeStyle(14, 20, FontWeight.Medium, 0.1f, 1.3f),  // title-small
+        TypeRole.LabelSmall => new TypeStyle(11, 16, FontWeight.Medium, 0.5f, 1.3f),  // label-small
+        TypeRole.Overline => new TypeStyle(10, 14, FontWeight.Medium, 1.5f, 1.2f),    // M2 overline
         _ => new TypeStyle(14, 20, FontWeight.Regular, 0.25f, 1.4f),
     };
 
