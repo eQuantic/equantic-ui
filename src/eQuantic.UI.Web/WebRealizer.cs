@@ -621,7 +621,12 @@ public static class WebRealizer
             },
             RawAttributes = new Dictionary<string, string>
             {
-                ["role"] = "slider",
+                ["role"] = adjustable.Role switch
+                {
+                    AdjustableRole.Tablist => "tablist",
+                    AdjustableRole.Radiogroup => "radiogroup",
+                    _ => "slider",
+                },
                 ["tabindex"] = "0",
             },
         };

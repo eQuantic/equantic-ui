@@ -47,8 +47,23 @@ describe('wave-2 transpiled components (real eqc output)', () => {
     const node = new Tabs(['One', 'Two'], 0, (i: number) => {
       picked = i;
     }).render();
-    const secondCell = node.children[1].children[0];
+    // The strip wraps in an Adjustable host (role=tablist); the row of cells sits inside it.
+    expect(node.attributes['role']).toBe('tablist');
+    const secondCell = node.children[0].children[1].children[0];
     (secondCell.events.click as () => void)();
+    expect(picked).toBe(1);
+  });
+
+  it('Tabs arrows move the selection and wrap at the ends', () => {
+    let picked = -1;
+    const node = new Tabs(['One', 'Two', 'Three'], 2, (i: number) => {
+      picked = i;
+    }).render();
+    const press = (key: string) =>
+      (node.events.keydown as (e: unknown) => void)({ key, preventDefault: () => {} });
+    press('ArrowRight');
+    expect(picked).toBe(0); // wraps off the last tab, like the native radio group twin
+    press('ArrowLeft');
     expect(picked).toBe(1);
   });
 });

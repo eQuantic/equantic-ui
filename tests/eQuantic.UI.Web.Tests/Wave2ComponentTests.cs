@@ -83,7 +83,10 @@ public class Wave2ComponentTests
     [Fact]
     public void Tabs_ActiveIndicatorAndWeights()
     {
-        var node = Render(new Tabs(["A", "B"], selected: 0, _ => { }));
+        // The strip wraps in an Adjustable (role=tablist, ONE Tab stop); the row sits inside it.
+        var host = Render(new Tabs(["A", "B"], selected: 0, _ => { }));
+        host.Attributes["role"].Should().Be("tablist");
+        var node = host.Children[0];
         node.Attributes["style"].Should().Contain("height: 48px");
         var activeCell = node.Children[0];
         activeCell.Attributes["style"].Should().Contain("flex: 1 1 0%", "fixed mode = equal width");
