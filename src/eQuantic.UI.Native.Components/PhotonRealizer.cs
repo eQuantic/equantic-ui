@@ -1122,8 +1122,10 @@ public static class PhotonRealizer
                     Paint.Solid(theme.FocusRing.Resolve(mode).WithOpacity(0.28f)));
         }
 
-        // A caret inside a selection would be noise: the range already says where you are.
-        if (!press.CaretVisible || press.SelectionEnd > press.SelectionStart) return;
+        // The caret is drawn WITH the selection, not instead of it. The band says which characters
+        // are held; the caret says which END you are holding — the one ⇧→ will move, the one the
+        // next character replaces from. Hiding it is why a selection used to feel directionless.
+        if (!press.CaretVisible) return;
         builder.FillRRect(
             new RRect(new Rect(node.Bounds.X + advance - shift, node.Bounds.Y, CaretWidth, caretHeight),
                 new CornerRadii(0)),

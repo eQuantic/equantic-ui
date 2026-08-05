@@ -48,6 +48,8 @@ export interface TypeStyleValue {
   weight: string | number;
   tracking: number;
   maxScale?: number;
+  /** The MONOSPACED face (C# `TypeStyle.Mono`) — code, keys, versions. */
+  mono?: boolean;
 }
 
 export type MainAlignValue = 'start' | 'center' | 'end' | 'spaceBetween';

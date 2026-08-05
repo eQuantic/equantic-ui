@@ -31,9 +31,28 @@ import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 export const withPatch = <T extends object>(value: T, patch: Partial<T>): T =>
   Object.assign(Object.create(Object.getPrototypeOf(value)), value, patch);
 
+/**
+ * C# `value[range]` where an endpoint may count from the END and may be ZERO. The direct shapes
+ * (`text[a..b]`, `text[..^1]`) compile to a plain `.slice` — this is only for the case JS cannot
+ * say: `^0` means "the end", while `slice(0, -0)` is `slice(0, 0)`, which is empty.
+ */
+export const slice = <T extends string | unknown[]>(
+  value: T,
+  start: number,
+  startFromEnd: boolean,
+  end: number | null,
+  endFromEnd: boolean,
+): T => {
+  const from = startFromEnd ? value.length - start : start;
+  const to = end === null ? value.length : endFromEnd ? value.length - end : end;
+  return (value as string).slice(from, to) as T;
+};
+
 export const $eq = {
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
+  /** C# range indexing whose endpoints count from the end — see `slice`. */
+  slice,
   /** Numeric compat: exact decimal and 64-bit integer. */
   num: { dec, long },
   /** Math with .NET semantics (banker's rounding). */

@@ -9,7 +9,7 @@ import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
 import { getCurrentRoute } from '../router/current-route';
 import { ComponentInstanceStore, enterPass, exitPass } from '../shared/instance-store';
-import { getPhotonTheme } from '../shared/photon-context';
+import { getPhotonTheme, measurePhotonText, photonMonoAdvance } from '../shared/photon-context';
 import { scheduleRenderFlush } from './render-scheduler';
 
 /**
@@ -65,6 +65,8 @@ export abstract class StatelessComponent extends Component {
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
+      measureText: measurePhotonText,
+      monoAdvance: photonMonoAdvance,
     };
     if (!this._mounted) adoptServerState(this);
     // Reconciler pass (W6): a stateless page IS re-renderable — build is pure and the instance
@@ -215,6 +217,8 @@ export abstract class StatefulComponent extends Component {
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
+      measureText: measurePhotonText,
+      monoAdvance: photonMonoAdvance,
     };
     this.state._context = context;
 
@@ -382,6 +386,8 @@ export abstract class SharedStatefulComponent extends Component {
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
+      measureText: measurePhotonText,
+      monoAdvance: photonMonoAdvance,
     };
     if (!this._mounted) adoptServerState(this);
     // Reconciler pass (W6 slice 2): as a page root this component persists by itself; its store

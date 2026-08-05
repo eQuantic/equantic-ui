@@ -41,6 +41,15 @@ export interface RenderContext {
    * Optional so a host that predates the axis still type-checks; the components read it through
    * the ladder, which defaults to comfortable. */
   density?: string;
+  /** The type scale multiplier the target is rendering at (C# `context.TypeScale`). */
+  typeScale?: number;
+  /** How wide a string WOULD be, in dp, at a given type style (C# `context.MeasureText`). A
+   * component that has to size a column to its content — a code gutter, a numeric field — cannot
+   * guess it, and guessing is how a gutter ends up too narrow for a four-digit line number. */
+  measureText(text: string, style: import('../shared/nodes').TypeStyleValue): number;
+  /** One character's advance in the monospaced face (C# `context.MonoAdvance`) — with a fixed
+   * pitch, one measurement answers for every column. */
+  monoAdvance(style: import('../shared/nodes').TypeStyleValue): number;
 }
 
 /**

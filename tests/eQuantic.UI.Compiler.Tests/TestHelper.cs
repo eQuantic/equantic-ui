@@ -12,6 +12,28 @@ public static class TestHelper
     public static string ConvertExpression(string code, string? expectedType = null)
         => ConvertExpressionCore(code, expectedType).Js;
 
+    /// <summary>
+    /// Transpiles a plain (non-component) CLASS built from the given members, through the same
+    /// emitter an app build uses. What a method's signature and body become — as opposed to one
+    /// expression in isolation — is only visible here.
+    /// </summary>
+    public static string ConvertClass(string members, string className = "Sample")
+    {
+        var source = "using System;\nusing System.Collections.Generic;\nusing System.Linq;\n\n"
+            + "public class " + className + "\n{\n" + members + "\n}\n";
+        var tree = CSharpSyntaxTree.ParseText(source);
+        var compilation = CSharpCompilation.Create("ClassUnderTest", [tree],
+            ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+                .Split(Path.PathSeparator)
+                .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path)),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        var declaration = tree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>().First();
+        return new TypeScriptEmitter()
+            .EmitPlainClassModule(declaration, compilation.GetSemanticModel(tree));
+    }
+
     /// <summary>Convert and return the transpilation diagnostics raised (for fail-on-unsupported tests).</summary>
     public static IReadOnlyList<ConversionDiagnostic> DiagnosticsFor(string code)
         => ConvertExpressionCore(code, null).Diagnostics;

@@ -199,6 +199,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<AssignmentExpressionStrategy>();
         _strategyRegistry.Register<IdentifierStrategy>();
         _strategyRegistry.Register<RangeExpressionStrategy>();
+        _strategyRegistry.Register<RangeIndexerStrategy>();
         _strategyRegistry.Register<ThrowExpressionStrategy>();
         _strategyRegistry.Register<StackAllocArrayCreationStrategy>();
         _strategyRegistry.Register<WithExpressionStrategy>();
@@ -226,6 +227,7 @@ public class CSharpToJsConverter
         // Phase 7: Static Helpers & Async
         _strategyRegistry.Register<TaskMethodStrategy>();
         _strategyRegistry.Register<NumberMethodStrategy>();
+        _strategyRegistry.Register<CompareToStrategy>();
         _strategyRegistry.Register<BooleanMethodStrategy>();
         _strategyRegistry.Register<CharMethodStrategy>();
         _strategyRegistry.Register<ConvertStrategy>();

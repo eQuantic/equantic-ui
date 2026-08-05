@@ -352,7 +352,7 @@ public sealed class XmlLanguage : ICodeLanguage
 
             if (c == '<')
             {
-                if (line.AsSpan(i).StartsWith("<!--"))
+                if (line[i..].StartsWith("<!--", StringComparison.Ordinal))
                 {
                     var close = line.IndexOf("-->", i, StringComparison.Ordinal);
                     if (close < 0)

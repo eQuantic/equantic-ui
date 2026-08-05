@@ -520,6 +520,118 @@ public class SelectionTests
         host.HasSelection.Should().BeFalse();
         host.CaretIndex.Should().Be(0, "left of a selection is its start, not one before the caret");
     }
+
+    // ---- the caret INSIDE a selection ----------------------------------------------------------
+    //
+    // A selection has two ends and only one of them moves. Which one is not something a person can
+    // deduce from the band: it is the caret, and hiding the caret while a range is up leaves every
+    // ⇧-arrow a guess about what the next one will do.
+
+    /// <summary>The x of the caret bar in a frame, or null when none was drawn.</summary>
+    private static float? CaretX(PhotonHost host, float timeMs = 0)
+    {
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, timeMs);
+        foreach (var command in builder.Build().Commands)
+        {
+            if (command.Kind != DrawCommandKind.FillRRect) continue;
+            if (MathF.Abs(command.Shape.Rect.Width - 2f) > 0.01f) continue;
+            if (command.Shape.Rect.Height < 8) continue;   // not a dot or a divider
+            return command.Shape.Rect.X;
+        }
+        return null;
+    }
+
+    /// <summary>8dp per character: with no platform text service the caret has nowhere to be but 0,
+    /// and a test about WHERE it is needs widths that mean something.</summary>
+    private sealed class FixedWidthRasterizer : Framework.ITextRasterizer
+    {
+        public Framework.TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
+            float maxWidth, int maxLines, float scale)
+        {
+            if (string.IsNullOrEmpty(content)) return null;
+            var width = Math.Max(1, (int)Math.Min(content.Length * 8 * scale, maxWidth * scale));
+            var height = Math.Max(1, (int)(style.LineHeight * scale));
+            return new Framework.TextRaster(width, height, new byte[width * height]);
+        }
+    }
+
+    private static (PhotonHost Host, Rect Bounds) OpenMeasured()
+    {
+        var host = new PhotonHost(new Field(), PhotonTheme.Instance, ThemeMode.Light, 400, 100)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        return (host, frame.TextRegions.Single().Bounds);
+    }
+
+    [Fact]
+    public void TheCaretStaysVISIBLEWhileARangeIsSelected()
+    {
+        var (host, _, _) = Open();
+        Press(host, "Tab");
+        Press(host, "a", KeyModifiers.Command);
+
+        host.HasSelection.Should().BeTrue();
+        CaretX(host).Should().NotBeNull("the end you are holding has to be somewhere on screen");
+    }
+
+    [Fact]
+    public void AndSitsAtTheEndThatMOVES_WhicheverEndThatIs()
+    {
+        // Selecting "ld" by walking LEFT from the end: the caret holds the left edge, at column 9.
+        var (host, bounds) = OpenMeasured();
+        Press(host, "Tab");
+        Press(host, "ArrowLeft", KeyModifiers.Shift);
+        Press(host, "ArrowLeft", KeyModifiers.Shift);
+        var extendingLeft = CaretX(host);
+
+        // The SAME range, grown from the other side. The band is identical; the caret is not.
+        var (other, _) = OpenMeasured();
+        Press(other, "Tab");
+        Press(other, "Home");
+        for (var i = 0; i < 9; i++) Press(other, "ArrowRight");
+        Press(other, "ArrowRight", KeyModifiers.Shift);
+        Press(other, "ArrowRight", KeyModifiers.Shift);
+        var extendingRight = CaretX(other);
+
+        host.Selection.Should().Be(other.Selection, "the two ways of selecting agree on the range");
+        extendingLeft.Should().Be(bounds.X + 9 * 8, "column 9 is where the moving end stopped");
+        extendingRight.Should().Be(bounds.X + 11 * 8, "and here it stopped at the other end");
+    }
+
+    /// <summary>
+    /// The blink phase belongs to the caret, not to the clock. Off a free-running phase, a caret
+    /// that just moved can be in its OFF half for half a second — you press ⇧→ and look at nothing.
+    /// </summary>
+    [Fact]
+    public void AMovedCaretIsSolidTheInstantItArrives()
+    {
+        var (host, _, _) = Open();
+        Press(host, "Tab");
+
+        // A moment the free-running blink would have been dark in.
+        host.RenderFrame(new DisplayListBuilder(), 700);
+        CaretX(host, 700).Should().BeNull("mid-blink, with nothing having happened, the caret is off");
+
+        host.KeyDown("ArrowLeft", KeyModifiers.None);
+        CaretX(host, 700).Should().NotBeNull("the key restarted the cycle at ON");
+    }
+
+    [Fact]
+    public void TheCaretDoesNotBLINKWhileThePointerIsDrawingASelection()
+    {
+        var (host, _, bounds) = Open();
+        host.PressDown(bounds.X + 1, bounds.Center.Y);
+        host.PointerMove(bounds.X + bounds.Width / 2, bounds.Center.Y);
+
+        // Every phase of the cycle, mid-drag: the end following the pointer is always drawn.
+        foreach (var t in new float[] { 0, 300, 600, 900 })
+            CaretX(host, t).Should().NotBeNull($"still dragging at {t}ms");
+
+        host.PressUp(bounds.X + bounds.Width / 2, bounds.Center.Y);
+    }
 }
 
 /// <summary>⌘C/⌘X/⌘V against a fake pasteboard — the field's half of the contract.</summary>

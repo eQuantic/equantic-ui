@@ -145,7 +145,7 @@ public class AuthoringCoverageTests
         var fmt = TsOf("Fmt", src);
         fmt.Should().Contain("export class Fmt");
         fmt.Should().Contain("static tag(n: number) {");
-        fmt.Should().Contain("static get prefix() { return 'P'; }");
+        fmt.Should().Contain("static get prefix(): string { return 'P'; }");
         // The referencing component calls it statically (Fmt.tag), not as an instance method.
         TsOf("C", src).Should().Contain("Fmt.tag(3)");
     }
@@ -314,7 +314,7 @@ public class AuthoringCoverageTests
                   "  public override IComponent Build(RenderContext c) => new Text(Block.P(\"x\").Text); }";
         var ts = TsOf("Block", src);
 
-        ts.Should().Contain("static p(text)");
+        ts.Should().Contain("static p(text: string)");
         ts.Should().Contain("static get empty()");
     }
 
@@ -372,7 +372,7 @@ public class AuthoringCoverageTests
                   "  public override IComponent Build(RenderContext c) => " +
                   "    new Text((new Money(1) + new Money(2)).Amount.ToString()); }";
 
-        TsOfResolved("Money", src).Should().Contain("static opAdd(a, b)");
+        TsOfResolved("Money", src).Should().Contain("static opAdd(a: Money, b: Money)");
         TsOfResolved("C", src).Should().Contain("Money.opAdd(");
     }
 
@@ -420,10 +420,13 @@ public class AuthoringCoverageTests
                   "    new Text(new Bucket().Count.ToString()); }";
         var ts = TsOfResolved("Bucket", src);
 
-        ts.Should().Contain("constructor(seed = 0)");
+        // Typed on the way out, too: a plain class is where an app's own model lives, and an
+        // untyped emission ends the checking exactly where the model starts.
+        ts.Should().Contain("constructor(seed: number = 0)");
         ts.Should().Contain("this._items = []", "field initialisers run before the constructor body");
-        ts.Should().Contain("get count()");
-        ts.Should().Contain("add(item)");
+        ts.Should().Contain("_items: string[]");
+        ts.Should().Contain("get count(): number");
+        ts.Should().Contain("add(item: string)");
         ts.Should().NotContain("equals(o", "a class is identity, not value");
         ts.Should().NotContain(" with(patch");
 

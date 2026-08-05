@@ -357,6 +357,28 @@ public sealed class PhotonHost
     private int _caret;
 
     /// <summary>
+    /// Where the caret is, as something you ASSIGN — because every assignment restarts the blink.
+    /// <para>
+    /// With a free-running phase, a caret that just moved is invisible for up to half a second: press
+    /// ⇧→ and the one thing you are looking for — which end of the range you are holding — may not be
+    /// on screen when you look. Every desktop text stack restarts the phase on activity, and this is
+    /// the single place all activity passes through.
+    /// </para>
+    /// </summary>
+    private int Caret
+    {
+        get => _caret;
+        set
+        {
+            _caret = value;
+            _caretPhaseMs = _lastTimeMs;
+        }
+    }
+
+    /// <summary>When the current blink cycle started — the last time the caret moved.</summary>
+    private float _caretPhaseMs;
+
+    /// <summary>
     /// Where a selection STARTED, or null when there is none. The caret is the moving end, this is
     /// the fixed one — which is what makes shift-arrow extend in both directions and a drag reverse
     /// on itself without the range flipping inside out.
@@ -425,13 +447,13 @@ public sealed class PhotonHost
         var at = Math.Clamp(CaretIndex, 0, value.Length);
         // On a boundary, prefer the word BEHIND the caret — the one the click was visually inside.
         if (at > 0 && (at == value.Length || !IsWord(value[at]))) at--;
-        if (!IsWord(value[at])) { _anchor = at; _caret = at + 1; return; }   // a run of spaces
+        if (!IsWord(value[at])) { _anchor = at; Caret = at + 1; return; }   // a run of spaces
         var start = at;
         while (start > 0 && IsWord(value[start - 1])) start--;
         var end = at;
         while (end < value.Length && IsWord(value[end])) end++;
         _anchor = start;
-        _caret = end;
+        Caret = end;
     }
 
     private static bool IsWord(char c) => char.IsLetterOrDigit(c) || c == '_';
@@ -466,9 +488,17 @@ public sealed class PhotonHost
     /// replaced the value with something shorter (a formatter, a reset) between keystrokes.</summary>
     public int CaretIndex => Math.Clamp(_caret, 0, TextTarget?.Value.Length ?? 0);
 
-    /// <summary>Half-second on, half-second off, off the frame clock — the rate every desktop uses.
-    /// A caret that does not blink reads as a rendering artifact rather than a place to type.</summary>
-    public bool CaretVisible => _textPath is null || (int)(_lastTimeMs / CaretBlinkMs) % 2 == 0;
+    /// <summary>
+    /// Half-second on, half-second off, off the frame clock — the rate every desktop uses. A caret
+    /// that does not blink reads as a rendering artifact rather than a place to type.
+    /// <para>
+    /// The phase is measured from the last caret MOVE, not from the epoch, so a caret that just
+    /// arrived somewhere is solid the instant it gets there. While a drag is drawing a selection it
+    /// does not blink at all: the end following your pointer is the one thing you are watching.
+    /// </para>
+    /// </summary>
+    public bool CaretVisible => _textPath is null || _dragSelecting
+        || (int)((_lastTimeMs - _caretPhaseMs) / CaretBlinkMs) % 2 == 0;
 
     private const float CaretBlinkMs = 500f;
 
@@ -513,7 +543,7 @@ public sealed class PhotonHost
         if (changed) EndEditing();
         _textPath = field.Path;
         // Where the pointer fell, or the end of the text when it arrived by Tab.
-        _caret = caret ?? field.Entry.Value.Length;
+        Caret = caret ?? field.Entry.Value.Length;
         _anchor = caret is null ? null : _caret;
         _focused = null;
         _focusedPath = null;
@@ -526,7 +556,7 @@ public sealed class PhotonHost
         if (_textPath is null) return;
         TextTarget?.OnFocusChanged?.Invoke(false);
         _textPath = null;
-        _caret = 0;
+        Caret = 0;
         _anchor = null;
         NeedsRender = true;
     }
@@ -563,7 +593,7 @@ public sealed class PhotonHost
         if (command && key.Equals("a", StringComparison.OrdinalIgnoreCase))
         {
             _anchor = 0;
-            _caret = value.Length;
+            Caret = value.Length;
             NeedsRender = true;
             return true;
         }
@@ -650,15 +680,15 @@ public sealed class PhotonHost
     /// dropping it when it is not.</summary>
     private void MoveCaret(int to, bool selecting)
     {
-        if (selecting) _anchor ??= _caret;
+        if (selecting) _anchor ??= Caret;
         else _anchor = null;
-        _caret = to;
+        Caret = to;
         NeedsRender = true;
     }
 
     private void Commit(TextEntry entry, string value, int caret, bool clearAnchor = false)
     {
-        _caret = caret;
+        Caret = caret;
         if (clearAnchor) _anchor = null;
         NeedsRender = true;
         // The caret moves whether or not the app takes the change: a field with no OnChanged is a
@@ -721,8 +751,8 @@ public sealed class PhotonHost
             {
                 if (fields[i].Path != _textPath) continue;
                 var index = IndexAt(editing, x - fields[i].Bounds.X);
-                if (index == _caret) break;
-                _caret = index;
+                if (index == Caret) break;
+                Caret = index;
                 NeedsRender = true;
                 break;
             }
@@ -990,7 +1020,7 @@ public sealed class PhotonHost
             BeginEditing(fields[i], x);
             // Double-click: the word under the point. Triple: everything. The platform counts the
             // clicks (its double-click interval is a system setting, not ours to guess).
-            if (clickCount >= 3) { _anchor = 0; _caret = fields[i].Entry.Value.Length; }
+            if (clickCount >= 3) { _anchor = 0; Caret = fields[i].Entry.Value.Length; }
             else if (clickCount == 2) SelectWordAt(fields[i].Entry);
             _dragSelecting = clickCount < 2;   // a drag right after a double-click keeps the word
             NeedsRender = true;

@@ -132,7 +132,7 @@ public sealed class CodeEditorController
     public bool Type(char c)
     {
         if (ReadOnly) return false;
-        var rules = Rules;
+        CodeLanguageRules rules = Rules;
 
         // Wrapping a selection in a pair keeps the selection — that is the point of doing it.
         if (!_selection.IsEmpty)
@@ -155,7 +155,7 @@ public sealed class CodeEditorController
         var after = Caret.Column < line.Length ? line[Caret.Column] : '\0';
 
         // Typing the closing half over the one that was auto-inserted just steps over it.
-        foreach (var (open, close) in rules.Brackets)
+        foreach (var (_, close) in rules.Brackets)
         {
             if (c == close && after == close)
             {
@@ -208,7 +208,7 @@ public sealed class CodeEditorController
     public bool InsertNewLine()
     {
         if (ReadOnly) return false;
-        var rules = Rules;
+        CodeLanguageRules rules = Rules;
         var line = _document.Line(Caret.Line);
         var indent = _document.IndentOf(Caret.Line);
         var step = rules.InsertSpaces ? new string(' ', rules.IndentWidth) : "\t";
@@ -542,18 +542,22 @@ public sealed class CodeEditorController
     {
         var matches = new List<CodeRange>();
         if (needle.Length == 0) return matches;
-        var comparison = matchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        // Case folded into the STRINGS rather than carried as a comparison flag: the flag is a .NET
+        // concept with no twin in `indexOf`, so a case-insensitive search would have quietly become
+        // a case-sensitive one on the web half. Folding means the same thing on both.
+        var pin = matchCase ? needle : needle.ToLowerInvariant();
 
         for (var line = 0; line < _document.LineCount; line++)
         {
-            var text = _document.Line(line);
-            var at = text.IndexOf(needle, comparison);
+            var raw = _document.Line(line);
+            var text = matchCase ? raw : raw.ToLowerInvariant();
+            var at = text.IndexOf(pin, StringComparison.Ordinal);
             while (at >= 0)
             {
                 matches.Add(new CodeRange(new CodePosition(line, at),
                     new CodePosition(line, at + needle.Length)));
-                at = at + needle.Length <= text.Length
-                    ? text.IndexOf(needle, at + needle.Length, comparison)
+                at = at + pin.Length <= text.Length
+                    ? text.IndexOf(pin, at + pin.Length, StringComparison.Ordinal)
                     : -1;
             }
         }

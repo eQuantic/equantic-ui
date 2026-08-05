@@ -22,9 +22,65 @@ public class InvocationStrategy : IConversionStrategy
         return node is InvocationExpressionSyntax;
     }
 
+    /// <summary>
+    /// The call itself, plus the unwrapping a call with `out`/`ref` arguments needs — see
+    /// <see cref="OutParameters"/> for the shape and why it exists.
+    /// </summary>
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
+        var call = ConvertCall(invocation, context);
+
+        var byReference = ByReferenceArguments(invocation, context);
+        if (byReference.Count == 0) return call;
+        // Only a method the compiler EMITS returns the object this unwraps. A framework method with
+        // an `out` either has a strategy of its own (higher priority, never reaching here) or is
+        // already reported as untranslatable.
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol method
+            || !method.Locations.Any(location => location.IsInSource))
+            return call;
+
+        var assignments = byReference
+            .Where(entry => entry.Target.Length > 0)
+            .Select(entry => $"{entry.Target} = $o.{entry.Field}, ");
+        return $"($o => ({string.Concat(assignments)}$o.$))({call})";
+    }
+
+    /// <summary>Each `out`/`ref` argument: what it assigns to, and the field of the result object it
+    /// takes that from (the callee's parameter name). `out _` discards, so it has no target.</summary>
+    private static List<(string Target, string Field, bool IsOut)> ByReferenceArguments(
+        InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        var result = new List<(string, string, bool)>();
+        var symbol = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        var arguments = invocation.ArgumentList.Arguments;
+        for (var index = 0; index < arguments.Count; index++)
+        {
+            var argument = arguments[index];
+            var isOut = argument.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword);
+            if (!isOut && !argument.RefOrOutKeyword.IsKind(SyntaxKind.RefKeyword)) continue;
+
+            var target = argument.Expression switch
+            {
+                DeclarationExpressionSyntax { Designation: SingleVariableDesignationSyntax single }
+                    => single.Identifier.Text.ToJsIdentifier(),
+                // A discard, written either way: `out int _` carries a type, plain `out _` does not.
+                DeclarationExpressionSyntax => "",
+                IdentifierNameSyntax { Identifier.Text: "_" } => "",
+                var expression => context.Converter.ConvertExpression(expression),
+            };
+            var field = argument.NameColon is { } named
+                ? named.Name.Identifier.Text.ToJsIdentifier()
+                : symbol is not null && index < symbol.Parameters.Length
+                    ? symbol.Parameters[index].Name.ToJsIdentifier()
+                    : $"$out{index}";
+            result.Add((target, field, isOut));
+        }
+        return result;
+    }
+
+    private string ConvertCall(InvocationExpressionSyntax invocation, ConversionContext context)
+    {
         var methodExpression = invocation.Expression;
         var methodName = methodExpression.ToString();
 
@@ -48,21 +104,12 @@ public class InvocationStrategy : IConversionStrategy
         var argsList = new List<string>();
         foreach (var arg in invocation.ArgumentList.Arguments)
         {
-            if (arg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword))
-            {
-                if (arg.Expression is DeclarationExpressionSyntax decl)
-                {
-                    argsList.Add(decl.Designation.ToString());
-                }
-                else
-                {
-                    argsList.Add(arg.Expression.ToString().Trim());
-                }
-            }
-            else
-            {
-                argsList.Add(context.Converter.ConvertExpression(arg.Expression));
-            }
+            // `out` is not passed IN — it comes back in the result object. `ref` is read before it
+            // is written, so it stays an argument as well as a field of the result.
+            if (arg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword)) continue;
+            argsList.Add(arg.Expression is DeclarationExpressionSyntax declaration
+                ? declaration.Designation.ToString().ToJsIdentifier()
+                : context.Converter.ConvertExpression(arg.Expression));
         }
 
         // NAMED arguments bind by NAME in C# but JS only has positions: reorder into the
@@ -115,6 +162,18 @@ public class InvocationStrategy : IConversionStrategy
                 if (IsRuntimeVocabulary(symbol.ContainingType))
                     return $"{caller}.{methodName.ToCamelCase()}({args})";
 
+                // An extension declared OUTSIDE this compilation has no module to go home to:
+                // emitting `MemoryExtensions.startsWith(...)` names a class the bundle never
+                // contains, and the failure surfaces as a bare "is not defined" in the browser.
+                if (!symbol.ContainingType.Locations.Any(location => location.IsInSource)
+                    && !IsFrameworkProvided(symbol.ContainingType))
+                {
+                    context.Report(invocation, ConversionSeverity.Error, "EQ2004",
+                        $"'{symbol.ContainingType.ToDisplayString()}.{symbol.Name}' is an extension "
+                        + "method with no JavaScript translation — the class that declares it is not "
+                        + "part of this compilation, so nothing emits it. Use an instance member, or "
+                        + "add a strategy for it.");
+                }
                 // The declaring class never appears in the SOURCE (the call is reduced), so the
                 // syntax-walking import collector can't see it — register the name we introduced.
                 context.UsedAppTypes.Add(symbol.ContainingType.Name);

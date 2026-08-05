@@ -20,7 +20,10 @@ public static class PatternVariableScanner
         if (expression is null) return "";
         var vars = new List<string>();
         Walk(expression, vars);
-        return vars.Count == 0 ? "" : string.Join(" ", vars.Select(v => $"let {v};")) + " ";
+        // `: any`, not a bare `let`: these are assigned inside the CONDITION they are hoisted out
+        // of, and TypeScript cannot see through that — an untyped slot reads as "implicitly any in
+        // some locations", which is an error, where an explicit one is a decision.
+        return vars.Count == 0 ? "" : string.Join(" ", vars.Select(v => $"let {v}: any;")) + " ";
     }
 
     private static void Walk(SyntaxNode node, List<string> vars)

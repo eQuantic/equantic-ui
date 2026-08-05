@@ -65,6 +65,17 @@ public class ObjectCreationStrategy : IConversionStrategy
             return "undefined";
         }
 
+        // `Color` is a positional record in C# and a hand-written factory NAMESPACE in the runtime
+        // (a plain object, so channels stay cheap). `new Color(…)` has to become the factory that
+        // means the same thing, or the module loads and the first construction throws.
+        if (typeName == "Color" && creation.ArgumentList is { Arguments.Count: >= 3 })
+        {
+            var channels = OrderedArguments(creation, context);
+            return channels.Count >= 4
+                ? $"Color.fromRgba({string.Join(", ", channels.Take(4))})"
+                : $"Color.fromRgb({string.Join(", ", channels.Take(3))})";
+        }
+
         // Records and user structs are emitted as named JS classes (they carry instance methods) —
         // construct via `new`, mapping positional args and any object initializer onto the constructor.
         if (createdType is { IsRecord: true }
@@ -109,17 +120,36 @@ public class ObjectCreationStrategy : IConversionStrategy
             }
         }
 
-        // Special handling for Collections (handle both short and fully-qualified names)
+        // Special handling for Collections (handle both short and fully-qualified names).
+        //
+        // The single argument means one of TWO opposite things, and only the semantic model can say
+        // which: `new List<T>(capacity)` is an empty list sized ahead, `new List<T>(source)` is a
+        // copy. Passing it straight through emitted the capacity AS the list — `var lines = 7;`
+        // followed by `lines.push(...)`, which throws — and nothing said so at build time.
         if (typeName.StartsWith("List<") || typeName.Contains(".List<")
             || typeName.StartsWith("IEnumerable<") || typeName.Contains(".IEnumerable<"))
         {
-            return string.IsNullOrEmpty(arguments) || arguments == "{}" ? "[]" : arguments;
+            if (string.IsNullOrEmpty(arguments) || arguments == "{}") return "[]";
+            if (IsCapacityArgument(creation, context)) return "[]";
+            if (creation.Initializer == null && creation.ArgumentList?.Arguments.Count == 1)
+                return $"[...{arguments}]";     // a copy of the source, not an alias of it
+            return arguments;
         }
         if (typeName.StartsWith("Dictionary<") || typeName.Contains(".Dictionary<"))
         {
-            return string.IsNullOrEmpty(arguments) || arguments == "[]" ? "{}" : arguments;
+            if (string.IsNullOrEmpty(arguments) || arguments == "[]") return "{}";
+            if (IsCapacityArgument(creation, context)) return "{}";
+            return arguments;
         }
         
+        // `new string(c, count)` — the padding idiom (`new string(' ', indentWidth)`). There is no
+        // String constructor in JS that means this; `repeat` is what it means.
+        if (typeName == "string" && creation.ArgumentList?.Arguments.Count == 2)
+        {
+            var parts = OrderedArguments(creation, context);
+            return $"{parts[0]}.repeat({parts[1]})";
+        }
+
         // HtmlNode -> Plain Object
         if (typeName == "HtmlNode")
         {
@@ -175,6 +205,21 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// order would silently bind values to the wrong parameters. Without a resolvable constructor
     /// symbol or named arguments, syntactic order passes through untouched.
     /// </summary>
+    /// <summary>
+    /// Is the single argument a CAPACITY (an int) rather than a source collection or a comparer?
+    /// Answered from the resolved constructor, not from the way the expression looks: `new
+    /// List&lt;string&gt;(other.Count)` and `new List&lt;string&gt;(other)` are one character apart.
+    /// </summary>
+    private static bool IsCapacityArgument(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
+    {
+        if (creation.ArgumentList?.Arguments.Count != 1) return false;
+        if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol { Parameters.Length: 1 } ctor)
+            return ctor.Parameters[0].Type.SpecialType == SpecialType.System_Int32;
+        // No symbol (a partial semantic model): an integer literal is still unambiguous.
+        return context.SemanticHelper.GetType(creation.ArgumentList.Arguments[0].Expression)
+            is { SpecialType: SpecialType.System_Int32 };
+    }
+
     private static IReadOnlyList<string> OrderedArguments(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var args = creation.ArgumentList!.Arguments;

@@ -41,7 +41,7 @@ public static class TypeDeclarationExtensions
                     ? DefaultLiteral(declared.Value, model)
                     : DefaultFor(p.Type);
                 members.Add(new ValueMember(
-                    p.Identifier.Text, p.Identifier.Text.ToCamelCase(), fallback, TsTypeFor(p.Type)));
+                    p.Identifier.Text, p.Identifier.Text.ToCamelCase(), fallback, TsTypeFor(p.Type, model)));
             }
         }
 
@@ -49,23 +49,26 @@ public static class TypeDeclarationExtensions
         {
             switch (member)
             {
-                // Body auto-properties (an instance get accessor — not static, not expression-bodied computed).
+                // AUTO-properties only. A `get` with a BODY is computed — it is behaviour, not
+                // state, and counting it as a member gave the class both a stored field and a
+                // getter of the same name (a duplicate identifier, and the getter shadowed).
                 case PropertyDeclarationSyntax prop
                     when !prop.Modifiers.Any(SyntaxKind.StaticKeyword)
                          && prop.ExpressionBody == null
-                         && prop.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)) == true:
+                         && prop.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)
+                             && a.Body == null && a.ExpressionBody == null) == true:
                     members.Add(new ValueMember(
                         prop.Identifier.Text,
                         prop.Identifier.Text.ToCamelCase(),
                         prop.Initializer is { } init ? DefaultLiteral(init.Value, model) : DefaultFor(prop.Type),
-                        TsTypeFor(prop.Type)));
+                        TsTypeFor(prop.Type, model)));
                     break;
 
                 // Public instance fields (common in plain structs).
                 case FieldDeclarationSyntax field
                     when field.Modifiers.Any(SyntaxKind.PublicKeyword) && !field.Modifiers.Any(SyntaxKind.StaticKeyword):
                     foreach (var v in field.Declaration.Variables)
-                        members.Add(new ValueMember(v.Identifier.Text, v.Identifier.Text.ToCamelCase(), DefaultFor(field.Declaration.Type), TsTypeFor(field.Declaration.Type)));
+                        members.Add(new ValueMember(v.Identifier.Text, v.Identifier.Text.ToCamelCase(), DefaultFor(field.Declaration.Type), TsTypeFor(field.Declaration.Type, model)));
                     break;
             }
         }
@@ -125,20 +128,37 @@ public static class TypeDeclarationExtensions
     /// module cannot resolve would just trade one error for another. A member that defaults to null is
     /// declared nullable, matching the constructor's own default.
     /// </summary>
-    private static string TsTypeFor(TypeSyntax? type)
+    internal static string TsTypeFor(TypeSyntax? type, SemanticModel? model = null)
     {
         var raw = type?.ToString() ?? "";
         var name = raw.TrimEnd('?');
 
-        var ts = name switch
+        // An ENUM crosses as its member STRING and a USER interface has no emitted twin to name.
+        // The kind is only asked once the mapper has passed, though: `IReadOnlyList<T>` is an
+        // interface too, and answering `any` for it threw away every element type in the model.
+        var asked = type is NullableTypeSyntax wrapper ? wrapper.ElementType : type;
+        if (((model?.GetSymbolInfo(asked!).Symbol as ITypeSymbol) ?? model?.GetTypeInfo(asked!).Type) is { } resolved
+            && TypeScriptEmitter.CSharpTypeToTypeScript(name) == name)
         {
-            "string" or "String" or "Guid" => "string",
-            "int" or "Int32" or "short" or "Int16" or "byte" or "sbyte"
-                or "uint" or "UInt32" or "ushort" or "UInt16"
-                or "double" or "Double" or "float" or "Single" => "number",
-            "bool" or "Boolean" => "boolean",
-            _ => "any",
-        };
+            // `Icons?` is a Nullable<Icons> STRUCT — asking it whether it is an enum answers no,
+            // and the member came out annotated `Icons | null`, a type nothing declares.
+            var core = resolved is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
+                ? nullable.TypeArguments[0]
+                : resolved;
+            if (core.TypeKind == TypeKind.Enum) return type is NullableTypeSyntax ? "string | null" : "string";
+            if (core.TypeKind == TypeKind.Interface) return "any";
+        }
+
+        // ONE mapper for the whole emission. This used to keep its own short list and answer `any`
+        // to everything else, so a record member typed `IReadOnlyList<(char, char)>` arrived as
+        // `any` and every lambda over it lost its parameter types with it.
+        var ts = TypeScriptEmitter.CSharpTypeToTypeScript(name);
+        // With no model to ask, a NAME could be an enum (a string at runtime), an interface (no
+        // emitted twin), or a class — and annotating the wrong one is a type nothing declares.
+        // Only what is unambiguous survives; the rest stays open, as it always did.
+        if (model is null && !System.Text.RegularExpressions.Regex.IsMatch(
+                ts, @"^(string|number|boolean|any|void|Date)(\[\])*$"))
+            ts = "any";
 
         // Nullable iff the DECLARED TYPE says so. Keying off the default made every `string` member
         // nullable — a C# string's default IS null — so `string Header` was declared `string | null`
@@ -149,7 +169,7 @@ public static class TypeDeclarationExtensions
 
     /// <summary>JS literal for <c>default(T)</c> from the declared type syntax (name-based — the emitter
     /// runs pre-symbol). Nullable and reference types default to <c>null</c>.</summary>
-    private static string DefaultFor(TypeSyntax? type)
+    internal static string DefaultFor(TypeSyntax? type)
     {
         var name = type?.ToString() ?? "";
         if (name.EndsWith("?")) return "null"; // Nullable<T> / nullable reference

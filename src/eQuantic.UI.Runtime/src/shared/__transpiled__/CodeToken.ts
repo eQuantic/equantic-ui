@@ -1,0 +1,3 @@
+import { $eq } from "@equantic/runtime";
+
+export class CodeToken { declare start: number; declare length: number; declare kind: string; constructor(start: any = 0, length: any = 0, kind: any = null) { this.start = start; this.length = length; this.kind = kind; } equals(o: unknown) { return o instanceof CodeToken && $eq.equals(this.start, o.start) && $eq.equals(this.length, o.length) && $eq.equals(this.kind, o.kind); } with(patch: any) { return new CodeToken(('start' in patch ? patch.start : this.start), ('length' in patch ? patch.length : this.length), ('kind' in patch ? patch.kind : this.kind)); } get end() { return this.start + this.length; } toString() { return `CodeToken { Start = ${this.start}, Length = ${this.length}, Kind = ${this.kind} }`; } }

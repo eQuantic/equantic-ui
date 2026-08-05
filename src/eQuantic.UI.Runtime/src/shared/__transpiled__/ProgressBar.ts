@@ -22,7 +22,7 @@ export class ProgressBar extends SharedStatefulComponent {
     }
 
     adoptConfig(next: UiComponent) {
-        let fresh; if (!((next instanceof ProgressBar && (fresh = next, true)))) return;let incoming; let current; this._snapNext = ((fresh.value != null) && (incoming = fresh.value, true)) && ((this.value != null) && (current = this.value, true)) && incoming < current;this.value = fresh.value;this.variant = fresh.variant;
+        let fresh; if (!((next instanceof ProgressBar && (fresh = next, true)))) return;let incoming: any; let current: any; this._snapNext = ((fresh.value != null) && (incoming = fresh.value, true)) && ((this.value != null) && (current = this.value, true)) && incoming < current;this.value = fresh.value;this.variant = fresh.variant;
     }
 
 }
