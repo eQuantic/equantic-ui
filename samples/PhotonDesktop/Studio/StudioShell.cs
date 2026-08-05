@@ -814,8 +814,10 @@ public sealed class SectionState
     public bool Notifications = true;
     public bool Wifi;
     public int Choice = 1;
-    public bool Agreed;
+    public bool Agreed = true;
     public int Tab;
     public int Page;
     public bool DialogOpen;
+    public bool SheetOpen;
+    public string TaxId = "123.456.789-0";
 }

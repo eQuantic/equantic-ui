@@ -66,6 +66,14 @@ export const Motion = {
 
 /** The control ladder — every control of a given size measures the same (spec A12). */
 export const Sizing = {
+  avatar(size: string): number {
+    switch (size) {
+      case 'small': return 24;
+      case 'medium': return 32;
+      case 'large': return 40;
+      default: return 56;
+    }
+  },
   gap(size: string): number {
     switch (size) {
       case 'small': return 6;

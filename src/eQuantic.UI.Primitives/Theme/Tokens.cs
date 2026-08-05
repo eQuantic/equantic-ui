@@ -70,6 +70,20 @@ public static class Sizing
         _ => 56,
     };
 
+    /// <summary>
+    /// The AVATAR ladder (spec B6) — 24/32/40/56, deliberately NOT the control ladder: a face is
+    /// a circle read at a glance, not a control you press. It lives here rather than inside the
+    /// component so a caller (a gallery, a layout reserving room) reads the SAME number the
+    /// component draws, instead of a copy that drifts.
+    /// </summary>
+    public static float Avatar(SizeVariant size) => size switch
+    {
+        SizeVariant.Small => 24,
+        SizeVariant.Medium => 32,
+        SizeVariant.Large => 40,
+        _ => 56,
+    };
+
     public static float PaddingX(SizeVariant size) => size switch
     {
         SizeVariant.Small => Space.S3,

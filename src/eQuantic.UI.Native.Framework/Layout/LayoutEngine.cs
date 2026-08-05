@@ -272,6 +272,81 @@ public static class LayoutEngine
         return node;
     }
 
+    /// <summary>
+    /// MIN-CONTENT width — the floor CSS puts under every flex item (<c>min-width: auto</c>), and
+    /// the reason a browser shrinks the stretchy item rather than squashing the word next to it.
+    /// For text it is the longest WORD (a word never breaks); for a row it is the sum of its
+    /// children's floors plus the gaps; for a column, the widest of them. Computed only when a
+    /// line actually overflows, so the common path never pays for it.
+    /// </summary>
+    private static float MinContentWidth(VisualNode node, LayoutContext ctx) => node switch
+    {
+        Text text => LongestWordWidth(text, ctx),
+        Box box => box.Style.Width.Kind == SizeKind.Fixed
+            ? box.Style.Width.Value
+            : (box.Child is null ? 0 : MinContentWidth(box.Child, ctx)) + box.Style.Padding.Horizontal,
+        Row row => RowMinContent(row, ctx),
+        Column column => ColumnMinContent(column, ctx),
+        Image image => image.Width,
+        Icon icon => icon.Size,
+        Vector vector => vector.Size,
+        Spinner spinner => spinner.Size,
+        CameraPreview camera => camera.Width,
+        Spacer spacer => spacer.FixedLength,
+        // Wrappers are transparent to the floor exactly as they are to layout.
+        Pressable pressable => MinContentWidth(pressable.Child, ctx),
+        Link link => MinContentWidth(link.Child, ctx),
+        Adjustable adjustable => MinContentWidth(adjustable.Child, ctx),
+        Hoverable hoverable => MinContentWidth(hoverable.Child, ctx),
+        Shortcut shortcut => MinContentWidth(shortcut.Child, ctx),
+        Flexible flexible => MinContentWidth(flexible.Child, ctx),
+        Presence presence => MinContentWidth(presence.Child, ctx),
+        UiComponent component => MinContentWidth(component.Build(ctx.Components), ctx),
+        _ => 0,
+    };
+
+    private static float RowMinContent(Row row, LayoutContext ctx)
+    {
+        if (row.Width.Kind == SizeKind.Fixed) return row.Width.Value;
+        var total = row.Padding.Horizontal + row.Gap * MathF.Max(0, row.Children.Count - 1);
+        foreach (var child in row.Children) total += MinContentWidth(child, ctx);
+        return total;
+    }
+
+    private static float ColumnMinContent(Column column, LayoutContext ctx)
+    {
+        if (column.Width.Kind == SizeKind.Fixed) return column.Width.Value;
+        var widest = 0f;
+        foreach (var child in column.Children)
+            widest = MathF.Max(widest, MinContentWidth(child, ctx));
+        return widest + column.Padding.Horizontal;
+    }
+
+    /// <summary>The widest single word — text wraps between words and never inside one.</summary>
+    private static float LongestWordWidth(Text text, LayoutContext ctx)
+    {
+        var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
+        var widest = 0f;
+        foreach (var word in text.PlainContent.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            widest = MathF.Max(widest,
+                ctx.Measurer.Measure(word, style, ctx.TypeScale, float.PositiveInfinity, 1).Width);
+        return widest;
+    }
+
+    /// <summary>
+    /// Whether a flex item gives up width when the line overflows. CSS shrinks every item by
+    /// default; what it never shrinks is a size the AUTHOR pinned — so a Fixed extent, a Spacer
+    /// and a Flexible (which is sized from leftover, not from content) all stay put.
+    /// </summary>
+    private static bool Shrinkable(VisualNode child) => child switch
+    {
+        Text => false,                       // already asked, above
+        Spacer or Flexible => false,
+        Box box => box.Style.Width.Kind != SizeKind.Fixed,
+        FlexNode flex => flex.Width.Kind != SizeKind.Fixed,
+        _ => true,
+    };
+
     /// <summary>The inline-block boundary: BLOCK stretch stops here; FLEX stretch passes through.</summary>
     private static StretchKind Inline(StretchKind kind) => kind == StretchKind.Block ? StretchKind.None : kind;
 
@@ -779,6 +854,55 @@ public static class LayoutEngine
                     laid[i] = node;
                     rigidSum -= mains[i] - (horizontal ? node.Bounds.Width : node.Bounds.Height);
                     mains[i] = horizontal ? node.Bounds.Width : node.Bounds.Height;
+                }
+            }
+
+            // FLEX-SHRINK (the CSS twin, and the rest of the same contract): text is asked first
+            // because ellipsis is the cheapest loss, but if the line STILL does not fit, every
+            // item that is not pinned gives up a proportional share and re-measures inside it.
+            // Without this a row of auto-sized cells simply ran off the right edge and the clip
+            // ate it — silently, because a clipped press region cannot be pressed either.
+            deficit = rigidSum + gapTotal - mainAvail;
+            if (deficit > 0.5f)
+            {
+                var shrinkTotal = 0f;
+                for (var i = 0; i < children.Count; i++)
+                    if (Shrinkable(children[i])) shrinkTotal += mains[i];
+
+                if (shrinkTotal > 0)
+                {
+                    // Two passes, because a floor one item refuses to cross is width the OTHERS
+                    // have to give: pass 1 finds how much is really available to take, pass 2
+                    // takes it. This is what makes a hugging button keep its word while the
+                    // stretchy one beside it absorbs the overflow, exactly as a browser does.
+                    var floors = new float[children.Count];
+                    var yielding = 0f;
+                    for (var i = 0; i < children.Count; i++)
+                    {
+                        if (!Shrinkable(children[i])) continue;
+                        floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], ctx));
+                        yielding += mains[i] - floors[i];
+                    }
+
+                    var taking = MathF.Min(deficit, yielding);
+                    if (taking > 0)
+                    {
+                        for (var i = 0; i < children.Count; i++)
+                        {
+                            if (!Shrinkable(children[i])) continue;
+                            var room = mains[i] - floors[i];
+                            if (room <= 0) continue;
+                            var bound = MathF.Max(floors[i], mains[i] - taking * (room / yielding));
+                            var childMaxW2 = horizontal ? bound : crossAvail;
+                            var childMaxH2 = horizontal ? crossAvail : bound;
+                            MarkStretch(children[i]);
+                            var reflowed = MeasureChild(children[i], childMaxW2, childMaxH2, path + "/" + i);
+                            laid[i] = reflowed;
+                            var shrunk = horizontal ? reflowed.Bounds.Width : reflowed.Bounds.Height;
+                            rigidSum -= mains[i] - shrunk;
+                            mains[i] = shrunk;
+                        }
+                    }
                 }
             }
         }

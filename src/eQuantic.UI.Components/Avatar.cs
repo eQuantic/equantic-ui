@@ -48,13 +48,7 @@ public sealed class Avatar : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var side = Size switch
-        {
-            SizeVariant.Small => 24f,
-            SizeVariant.Medium => 32f,
-            SizeVariant.Large => 40f,
-            _ => 56f,
-        };
+        var side = Sizing.Avatar(Size);
         // Initials scale with the tier: 10/13/16/22 at 600 (derived — the spec pins only the sides).
         var labelSize = Size switch
         {

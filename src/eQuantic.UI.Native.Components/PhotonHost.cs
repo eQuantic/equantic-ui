@@ -1176,6 +1176,20 @@ public sealed class PhotonHost
     /// twin, so one authored chord is right everywhere.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// WHERE the keyboard focus is, as the stable path the frame's <see cref="FocusStop"/>s carry
+    /// — null when nothing holds it. Read-only and public because the host is not the only thing
+    /// that needs the answer: a platform accessibility bridge has to report the focused element,
+    /// and any harness driving this window has to know where Tab left off.
+    /// <para>
+    /// A field being EDITED holds the focus as much as a button wearing the ring does — the caret
+    /// is simply that field's own indicator, which is why the ring state is tracked separately.
+    /// Tab's own "where am I" already merges the two; reporting only the ring's half told the
+    /// outside world that a form being typed into had focus nowhere.
+    /// </para>
+    /// </summary>
+    public string? FocusedPath => _textPath ?? _focusedPath;
+
     public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
     {
         // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.

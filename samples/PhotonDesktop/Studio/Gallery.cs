@@ -10,11 +10,12 @@ public enum GallerySection
     Inputs = 1,
     Selection = 2,
     DataDisplay = 3,
-    Progress = 4,
-    Navigation = 5,
-    Feedback = 6,
-    Overlays = 7,
-    Device = 8,
+    Containers = 4,
+    Progress = 5,
+    Navigation = 6,
+    Feedback = 7,
+    Overlays = 8,
+    Device = 9,
 }
 
 /// <summary>
@@ -40,6 +41,7 @@ public static class Gallery
         GallerySection.Inputs => "Inputs",
         GallerySection.Selection => "Selection",
         GallerySection.DataDisplay => "Identity & status",
+        GallerySection.Containers => "Cards & lists",
         GallerySection.Progress => "Progress",
         GallerySection.Navigation => "Tabs & bars",
         GallerySection.Feedback => "Banners & toasts",
@@ -52,7 +54,8 @@ public static class Gallery
     public static string GroupOf(GallerySection section) => section switch
     {
         GallerySection.Buttons or GallerySection.Inputs or GallerySection.Selection => "Primitives",
-        GallerySection.DataDisplay or GallerySection.Progress => "Data display",
+        GallerySection.DataDisplay or GallerySection.Containers or GallerySection.Progress
+            => "Data display",
         GallerySection.Navigation => "Navigation",
         GallerySection.Feedback or GallerySection.Overlays => "Feedback",
         _ => "Device",
@@ -75,7 +78,9 @@ public static class Gallery
         GallerySection.Selection =>
             "Binary and exclusive choice, each announcing its state rather than only painting it.",
         GallerySection.DataDisplay =>
-            "Reading surfaces: identity, counts, rows and tables.",
+            "Who someone is and how something stands: avatars, badges, chips.",
+        GallerySection.Containers =>
+            "Surfaces that hold other things — a card you read at a glance, a list you scan.",
         GallerySection.Progress =>
             "Work in flight — determinate, indeterminate, and the shape of what is coming.",
         GallerySection.Navigation =>
@@ -93,7 +98,8 @@ public static class Gallery
         GallerySection.Inputs => Icons.Mail,
         GallerySection.Selection => Icons.CheckCircle,
         GallerySection.DataDisplay => Icons.Person,
-        GallerySection.Progress => Icons.ChevronRight,
+        GallerySection.Containers => Icons.CheckCircle,
+        GallerySection.Progress => Icons.Refresh,
         GallerySection.Navigation => Icons.Search,
         GallerySection.Feedback => Icons.Notifications,
         GallerySection.Overlays => Icons.Info,
@@ -106,8 +112,9 @@ public static class Gallery
         GallerySection.Buttons => 3,
         GallerySection.Inputs => 6,
         GallerySection.Selection => 5,
-        GallerySection.DataDisplay => 6,
-        GallerySection.Progress => 3,
+        GallerySection.DataDisplay => 3,
+        GallerySection.Containers => 3,
+        GallerySection.Progress => 4,
         GallerySection.Navigation => 4,
         GallerySection.Feedback => 4,
         GallerySection.Overlays => 4,
@@ -120,10 +127,11 @@ public static class Gallery
         GallerySection.Buttons => Buttons(theme, specimen, specimenCode),
         GallerySection.Inputs => Inputs(theme, state, mutate),
         GallerySection.Selection => Selection(theme, state, mutate),
-        GallerySection.DataDisplay => DataDisplay(theme),
+        GallerySection.DataDisplay => DataDisplay(theme, state, mutate),
+        GallerySection.Containers => Containers(theme),
         GallerySection.Progress => Progress(theme, state),
         GallerySection.Navigation => Navigation(theme, state, mutate),
-        GallerySection.Feedback => Feedback(theme, state),
+        GallerySection.Feedback => Feedback(theme, state, mutate),
         GallerySection.Overlays => Overlays(theme, state, mutate),
         _ => Device(theme, state, mutate),
     };
@@ -240,221 +248,515 @@ public static class Gallery
 
     private static VisualNode Inputs(IAppTheme theme, SectionState state, Action<Action> mutate)
     {
-        var fields = Column(Space.S4);
-        fields.Add(new TextInput(state.Name, v => mutate(() => state.Name = v), "Full name",
-            placeholder: "As it appears on the document"));
-        fields.Add(new TextInput(state.Email, v => mutate(() => state.Email = v), "Email",
-            placeholder: "name@company.com",
-            helper: "We only use it for the receipt.",
-            error: state.Email.Length > 0 && !state.Email.Contains('@')
-                ? "That address is missing an @"
-                : null));
-        fields.Add(new Select(["Checking ··· 4821", "Savings ··· 1190", "Card ··· 7702"], state.Account,
-            i => mutate(() => state.Account = i), placeholder: "Choose an account"));
-        fields.Add(new SearchField(state.Query, v => mutate(() => state.Query = v),
-            placeholder: "Search transactions"));
-
-        var ranges = Column(Space.S4);
-        // A Flexible needs slack to take, so the row that holds one has to fill.
-        var quantity = new Row(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        quantity.Add(new Flexible(Label(theme, "Quantity"), 1));
-        quantity.Add(new Stepper(state.Quantity, v => mutate(() => state.Quantity = v))
+        // The handoff's two-column grid: every field states what STATE it is demonstrating on the
+        // caption line under it, because a gallery that only shows the resting state documents a
+        // third of the component.
+        var grid = new Grid([GridTrack.Flex(), GridTrack.Flex()], gap: Space.S4)
         {
-            Min = 1,
-            Max = 9,
-            Label = "Quantity",
-        });
-        ranges.Add(quantity);
-        ranges.Add(Label(theme, $"Monthly budget · {state.Budget * 100:0}%"));
-        ranges.Add(new Slider(state.Budget, v => mutate(() => state.Budget = v))
-        {
-            Step = 0.05f,
-            Label = "Monthly budget",
-        });
+            Width = SizeValue.Fill,
+        };
 
-        var column = Column(Space.S5);
-        column.Add(Card(theme, "Text and choice",
-            "A field carries its own label, helper and error — the caller never lays them out.", fields));
-        column.Add(Card(theme, "Bounded values",
-            "Stepper for a number you will read; Slider for a proportion you will feel.", ranges));
-        return column;
+        grid.Add(Labelled(theme,
+            new TextInput(state.Name, v => mutate(() => state.Name = v), "Full name",
+                placeholder: "As it appears on the document"),
+            "Default · Radius.Md · 1dp BorderStrong"));
+
+        grid.Add(Labelled(theme,
+            new TextInput(state.Email, v => mutate(() => state.Email = v), "Email",
+                placeholder: "name@company.com",
+                error: state.Email.Length > 0 && !state.Email.Contains('@')
+                    ? "That address is missing an @"
+                    : null),
+            "Click it — the focus ring is 2dp, and the caret is real"));
+
+        grid.Add(Labelled(theme,
+            new TextInput(state.TaxId, v => mutate(() => state.TaxId = v), "Tax ID",
+                placeholder: "000.000.000-00",
+                error: state.TaxId.Length is > 0 and < 14 ? "Enter all 11 digits" : null),
+            "Error · 2dp Destructive border, message under the field"));
+
+        grid.Add(Labelled(theme,
+            new Select(["Checking ··· 4821", "Savings ··· 1190", "Card ··· 7702"], state.Account,
+                i => mutate(() => state.Account = i), placeholder: "Choose an account"),
+            "Select · opens the picker, matched to the field's width"));
+
+        grid.Add(Labelled(theme,
+            new SearchField(state.Query, v => mutate(() => state.Query = v),
+                placeholder: "Search transactions"),
+            "SearchField · Radius.Full, clears itself"));
+
+        // Stepper and Slider share the last cell, as they do in the handoff.
+        var bounded = new Row(gap: Space.S4) { Width = SizeValue.Fill, Cross = CrossAlign.End };
+        bounded.Add(Labelled(theme,
+            new Stepper(state.Quantity, v => mutate(() => state.Quantity = v))
+            {
+                Min = 1,
+                Max = 9,
+                Label = "Quantity",
+            },
+            "Stepper"));
+        bounded.Add(new Flexible(Labelled(theme,
+            new Slider(state.Budget, v => mutate(() => state.Budget = v))
+            {
+                Step = 0.05f,
+                Label = "Monthly budget",
+            },
+            $"Slider · {state.Budget * 100:0}%"), 1));
+        grid.Add(bounded);
+
+        return Section(theme, "Inputs", grid);
     }
 
     private static VisualNode Selection(IAppTheme theme, SectionState state, Action<Action> mutate)
     {
-        var boxes = Column(Space.S3);
+        // Three groups side by side, hairlines between — the handoff's one card.
+        var boxes = new Column(gap: Space.S3) { Cross = CrossAlign.Start };
         boxes.Add(new Checkbox(state.Agreed, () => mutate(() => state.Agreed = !state.Agreed),
-            "I have read the terms"));
-        boxes.Add(new Checkbox(true, null, "Checked, not editable") { Disabled = true });
+            "Checked"));
+        boxes.Add(new Checkbox(false, () => mutate(() => { }), "Unchecked"));
+        boxes.Add(new Checkbox(false, null, "Indeterminate") { Indeterminate = true });
+        boxes.Add(new Checkbox(false, null, "Disabled") { Disabled = true });
 
-        var toggles = Column(Space.S3);
-        toggles.Add(SwitchRow(theme, "Notifications", state.Notifications,
-            () => mutate(() => state.Notifications = !state.Notifications)));
-        toggles.Add(SwitchRow(theme, "Wi-Fi only", state.Wifi,
-            () => mutate(() => state.Wifi = !state.Wifi)));
-
-        var exclusive = Column(Space.S4);
-        exclusive.Add(new RadioGroup(["Standard delivery", "Express", "Pick-up point"], state.Choice,
+        var exclusive = new Column(gap: Space.S3) { Cross = CrossAlign.Start };
+        exclusive.Add(new RadioGroup(["Selected", "Option B", "Option C"], state.Choice,
             i => mutate(() => state.Choice = i)));
-        exclusive.Add(new SegmentedControl(["All", "Income", "Expenses"], state.Filter,
-            i => mutate(() => state.Filter = i)));
+        exclusive.Add(Caption(theme, "RadioGroup · roving focus"));
 
-        var column = Column(Space.S5);
-        column.Add(Card(theme, "Checkbox", "Independent yes/no, each one its own decision.", boxes));
-        column.Add(Card(theme, "Switch",
-            "Takes effect immediately — a Switch never waits for a Save button.", toggles));
-        column.Add(Card(theme, "One of a set",
-            "RadioGroup when the options need explaining; SegmentedControl when they fit in a word.",
-            exclusive));
-        return column;
+        var toggles = new Column(gap: Space.S3) { Cross = CrossAlign.Start };
+        var faceId = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
+        faceId.Add(new Switch(state.Notifications,
+            () => mutate(() => state.Notifications = !state.Notifications)));
+        faceId.Add(new Text($"Face ID · {(state.Notifications ? "on" : "off")}", TypeRole.BodyM,
+            theme.TextPrimary, maxLines: 1));
+        toggles.Add(faceId);
+
+        var off = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
+        off.Add(new Switch(false, null) { Disabled = true });
+        off.Add(new Text("Disabled", TypeRole.BodyM, theme.TextMuted, maxLines: 1));
+        toggles.Add(off);
+
+        toggles.Add(new SegmentedControl(["1M", "6M", "1Y"], state.Filter,
+            i => mutate(() => state.Filter = i))
+        {
+            Size = SizeVariant.Small,
+            Stretch = false,
+        });
+
+        var row = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Start };
+        row.Add(boxes);
+        row.Add(GroupDivider());
+        row.Add(exclusive);
+        row.Add(GroupDivider());
+        row.Add(toggles);
+
+        return Section(theme, "Selection controls", row);
     }
 
-    private static VisualNode DataDisplay(IAppTheme theme)
+    /// <summary>Identity &amp; status: who someone is, and how a thing stands.</summary>
+    private static VisualNode DataDisplay(IAppTheme theme, SectionState state, Action<Action> mutate)
     {
-        var people = Row(Space.S3);
-        foreach (var size in Enum.GetValues<SizeVariant>())
-            people.Add(new Avatar("AB", size, "Ana Beatriz"));
+        var people = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
+        people.Add(new Avatar("AB", SizeVariant.Small, "Ana Beatriz"));
+        people.Add(new Avatar("AB", SizeVariant.Medium, "Ana Beatriz"));
+        people.Add(new Avatar("AB", SizeVariant.Large, "Ana Beatriz")
+        {
+            Status = PresenceStatus.Online,
+        });
+        people.Add(new Avatar("AB", SizeVariant.XLarge, "Ana Beatriz"));
+        var identity = Labelled(theme, people,
+            $"Avatar {Sizing.Avatar(SizeVariant.Small):0}/{Sizing.Avatar(SizeVariant.Medium):0}"
+            + $"/{Sizing.Avatar(SizeVariant.Large):0}/{Sizing.Avatar(SizeVariant.XLarge):0} · with presence");
 
-        var badges = Row(Space.S3);
-        badges.Add(new Badge(3));
-        badges.Add(new Badge(128, variant: Variant.Warning));
-        badges.Add(new Chip("Beta", ChipKind.Tag));
-        badges.Add(new Chip("Paid", ChipKind.Tag));
+        var badges = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Wrap = true };
+        badges.Add(new Chip("Beta", ChipKind.Tag) { Variant = Variant.Primary });
+        badges.Add(new Chip("Paid", ChipKind.Tag) { Variant = Variant.Success });
+        badges.Add(new Chip("Pending", ChipKind.Tag) { Variant = Variant.Warning });
+        badges.Add(new Chip("Failed", ChipKind.Tag) { Variant = Variant.Destructive });
+        badges.Add(new Badge(12));
+        badges.Add(new Badge { Dot = true });
+        var status = Labelled(theme, badges, "Tag · tonal status · Badge count · Badge dot");
+
+        var chips = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Wrap = true };
+        chips.Add(new Chip("All", ChipKind.Filter, state.Filter == 0,
+            () => mutate(() => state.Filter = 0)));
+        chips.Add(new Chip("Income", ChipKind.Input, true, onRemove: () => mutate(() => { })));
+        chips.Add(new Chip("April", ChipKind.Filter, state.Filter == 2,
+            () => mutate(() => state.Filter = 2)));
+        var filters = Labelled(theme, chips, "Chip · filter, removable");
+
+        var row = new Row(gap: Space.S3)
+        {
+            Width = SizeValue.Fill,
+            Cross = CrossAlign.Start,
+            Wrap = true,
+            RunGap = Space.S4,
+        };
+        row.Add(identity);
+        row.Add(status);
+        row.Add(filters);
+
+        return Section(theme, "Identity & status", row);
+    }
+
+    /// <summary>Cards &amp; lists: the two containers the handoff puts side by side.</summary>
+    private static VisualNode Containers(IAppTheme theme)
+    {
+        // The stat card: heading row, the number that matters, the delta, and one action in a
+        // footer the divider separates — a Card is a SURFACE, so its anatomy is composed here.
+        var heading = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        var titles = new Column(gap: 0);
+        titles.Add(new Text("Monthly spend", TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
+        titles.Add(new Text("April · 14 categories", TypeRole.Caption, theme.TextMuted, maxLines: 1));
+        heading.Add(new Flexible(titles, 1));
+        heading.Add(new IconButton(Icons.ChevronDown, "More", IconButtonKind.Standard)
+        {
+            Size = SizeVariant.Small,
+            OnPressed = () => { },
+        });
+
+        var delta = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
+        delta.Add(new Chip("+12%", ChipKind.Tag) { Variant = Variant.Success });
+        delta.Add(new Text("vs March", TypeRole.Caption, theme.TextMuted, maxLines: 1));
+
+        var figures = new Column(gap: Space.S1) { Width = SizeValue.Fill };
+        figures.Add(new Text("R$ 3.842", TypeRole.Display, theme.TextPrimary, maxLines: 1)
+        {
+            Tabular = true,
+        });
+        figures.Add(delta);
+
+        var footer = new Row(gap: 0) { Width = SizeValue.Fill, Main = MainAlign.End };
+        footer.Add(new Button("See report", Variant.Link, SizeVariant.Small) { OnPressed = () => { } });
+
+        var cardBody = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+        cardBody.Add(heading);
+        cardBody.Add(figures);
+        cardBody.Add(new Divider());
+        cardBody.Add(footer);
+        var stat = new eQuantic.UI.Components.Card(cardBody) { Width = SizeValue.Fill };
 
         var rows = new List([
-            new ListItem("Marcos Ribeiro", "Transfer · today 14:02"),
-            new ListItem("Photon-5G", "Connected · 5 GHz"),
-            new ListItem("Notifications", "All apps"),
+            new ListItem("Wi-Fi", onPressed: () => { })
+            {
+                Leading = new Icon(Icons.Info, IconSize.Md, theme.TextSecondary),
+                Trailing = new Icon(Icons.ChevronRight, IconSize.Sm, theme.TextMuted),
+            },
+            new ListItem("Marcos Ribeiro", "Invoice #0311 — paid", onPressed: () => { })
+            {
+                Leading = new Avatar("MR", SizeVariant.Medium, "Marcos Ribeiro"),
+                Trailing = new Text("09:12", TypeRole.Caption, theme.TextMuted, maxLines: 1),
+            },
+            new ListItem("Notifications", "Push, email and in-app alerts")
+            {
+                Leading = new Icon(Icons.Notifications, IconSize.Md, theme.TextSecondary),
+                Trailing = new Switch(true, () => { }),
+            },
         ]);
+        var listCard = new eQuantic.UI.Components.Card(rows, CardKind.Outlined)
+        {
+            Width = SizeValue.Fill,
+            Padding = default,
+        };
 
-        var table = new Table(
-            ["Month", "Categories", "Spend"],
-            [["April", "14", "R$ 4.280"], ["March", "12", "R$ 3.910"], ["February", "13", "R$ 4.006"]]);
+        var grid = new Grid([GridTrack.Flex(), GridTrack.Flex(1.15f)], gap: Space.S3)
+        {
+            Width = SizeValue.Fill,
+        };
+        grid.Add(stat);
+        grid.Add(listCard);
 
-        var column = Column(Space.S5);
-        column.Add(Card(theme, "Identity", "Avatars ride the same four-step ladder as everything else.",
-            people));
-        column.Add(Card(theme, "Counts and labels", "Badge for a number, Chip for a word.", badges));
-        column.Add(Card(theme, "Rows", "A list item states its title and its subtitle, never a layout.", rows));
-        column.Add(Card(theme, "Table", "Columns that stay aligned as the figures change.", table));
-        return column;
+        return Section(theme, "Cards & lists", grid, Space.S3);
     }
 
     private static VisualNode Progress(IAppTheme theme, SectionState state)
     {
-        var bars = Column(Space.S4);
-        bars.Add(Label(theme, $"Determinate · {state.Budget * 100:0}%"));
-        bars.Add(new ProgressBar(state.Budget));
-        bars.Add(Label(theme, "Indeterminate · work of unknown length"));
-        bars.Add(new ProgressBar());
+        var determinate = Labelled(theme,
+            new Box(new BoxStyle { Width = SizeValue.Fill }, new ProgressBar(state.Budget)),
+            $"Determinate · {state.Budget * 100:0}%", 200);
 
-        var spinners = Row(Space.S4);
-        spinners.Add(new Spinner(IconSize.Sm));
-        spinners.Add(new Spinner(IconSize.Dense));
-        spinners.Add(new Spinner(IconSize.Md, theme.Colors(Variant.Primary).Base));
+        var indeterminate = Labelled(theme,
+            new Box(new BoxStyle { Width = SizeValue.Fill }, new ProgressBar()),
+            "Indeterminate · length honestly unknown", 200);
 
-        var skeleton = Column(Space.S2);
-        skeleton.Add(new Skeleton(SkeletonShape.Line, 220));
-        skeleton.Add(new Skeleton(SkeletonShape.Line, 160));
-        skeleton.Add(new Skeleton(SkeletonShape.Block, 260, 72));
+        var spinner = Labelled(theme,
+            new Spinner(IconSize.Md, theme.Colors(Variant.Primary).Base),
+            "Spinner · shows after 400ms", 150);
 
-        var column = Column(Space.S5);
-        column.Add(Card(theme, "ProgressBar",
-            "Determinate when the end is known; indeterminate when it is honestly not.", bars));
-        column.Add(Card(theme, "Spinner",
-            "Appears only after 400ms, so a fast round-trip never flashes.", spinners));
-        column.Add(Card(theme, "Skeleton",
-            "The SHAPE of what is loading — never a spinner where a layout is already known.", skeleton));
-        return column;
+        // Skeleton: the SHAPE of the row that is coming — a circle where the avatar goes and two
+        // lines where the text goes, which is the whole argument against a spinner here.
+        var lines = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        lines.Add(new Skeleton(SkeletonShape.Line, 150));
+        lines.Add(new Skeleton(SkeletonShape.Line, 96));
+        var placeholder = new Row(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        placeholder.Add(new Skeleton(SkeletonShape.Circle, 36, 36));
+        placeholder.Add(new Flexible(lines, 1));
+        var skeleton = Labelled(theme, placeholder, "Skeleton · the SHAPE of what is coming", 240);
+
+        var row = new Row(gap: Space.S5)
+        {
+            Width = SizeValue.Fill,
+            Cross = CrossAlign.Start,
+            Wrap = true,
+            RunGap = Space.S4,
+        };
+        row.Add(determinate);
+        row.Add(indeterminate);
+        row.Add(spinner);
+        row.Add(skeleton);
+
+        return Section(theme, "Progress & loading", row);
     }
 
     private static VisualNode Navigation(IAppTheme theme, SectionState state, Action<Action> mutate)
     {
-        var tabs = new Tabs(["Overview", "Activity", "Reports"], state.Tab,
-            i => mutate(() => state.Tab = i));
+        var tabs = Labelled(theme,
+            new Box(new BoxStyle { Width = SizeValue.Fill },
+                new Tabs(["Overview", "Activity", "Reports"], state.Tab,
+                    i => mutate(() => state.Tab = i))),
+            "Tabs · underline indicator, one Tab stop, arrows move", 260);
 
-        var pager = Column(Space.S3);
-        pager.Add(new PageIndicator(5, state.Page, i => mutate(() => state.Page = i)));
-        pager.Add(new PageIndicator(12, 3));
+        var pager = Labelled(theme,
+            new PageIndicator(5, state.Page, i => mutate(() => state.Page = i)),
+            "PageIndicator · position, not navigation", 200);
 
-        var actions = Row(Space.S3);
-        actions.Add(new Tooltip(new IconButton(Icons.Search, "Search", IconButtonKind.Filled), "Search ⌘K"));
-        actions.Add(new Tooltip(new IconButton(Icons.Mail, "Messages"), "Messages"));
-        actions.Add(new Tooltip(new IconButton(Icons.Notifications, "Alerts"), "Alerts"));
+        var actions = new Row(gap: Space.S3) { Cross = CrossAlign.Center };
+        actions.Add(new Tooltip(new IconButton(Icons.Search, "Search", IconButtonKind.Tonal)
+        {
+            OnPressed = () => { },
+        }, "Search ⌘K"));
+        actions.Add(new Tooltip(new IconButton(Icons.Mail, "Messages") { OnPressed = () => { } },
+            "Messages"));
+        actions.Add(new Tooltip(new IconButton(Icons.Notifications, "Alerts") { OnPressed = () => { } },
+            "Alerts"));
+        var tooltips = Labelled(theme, actions, "Tooltip · hover any of them", 180);
 
-        var column = Column(Space.S5);
-        column.Add(Card(theme, "Tabs", "Peers on one screen, with the indicator under the current one.", tabs));
-        column.Add(Card(theme, "PageIndicator",
-            "Position, not navigation — past eight pages it becomes a readout on its own.", pager));
-        column.Add(Card(theme, "Icon actions",
-            "An icon-only control always carries a name, and a tooltip repeats it for sighted users.",
-            actions));
-        return column;
+        var row = new Row(gap: Space.S4)
+        {
+            Width = SizeValue.Fill,
+            Cross = CrossAlign.Start,
+            Wrap = true,
+            RunGap = Space.S4,
+        };
+        row.Add(tabs);
+        row.Add(pager);
+        row.Add(tooltips);
+
+        return Section(theme, "Navigation", row);
     }
 
-    private static VisualNode Feedback(IAppTheme theme, SectionState state)
+    private static VisualNode Feedback(IAppTheme theme, SectionState state, Action<Action> mutate)
     {
+        // Four banners, one per status — the handoff stacks them so the tonal pairs can be
+        // compared at a glance (each is background + on-background from the SAME variant).
         var banners = Column(Space.S3);
-        banners.Add(new Banner(Variant.Success, "Transfer completed", "R$ 1.240 to Marcos Ribeiro."));
-        banners.Add(new Banner(Variant.Warning, "Limit almost reached", "You have used 92% of April."));
-        banners.Add(new Banner(Variant.Destructive, "Payment failed", "The card issuer declined it."));
+        banners.Add(new Banner(Variant.Info, "Statement ready",
+            "Your April statement is available for download.")
+        {
+            OnDismiss = () => { },
+        });
+        banners.Add(new Banner(Variant.Success, "Transfer completed",
+            "R$ 1.200,00 sent to Marcos Ribeiro."));
+        banners.Add(new Banner(Variant.Warning, "Limit almost reached",
+            "You have used 92% of this month's transfer limit.")
+        {
+            PrimaryAction = new Button("Raise limit", Variant.Link, SizeVariant.Small)
+            {
+                OnPressed = () => { },
+            },
+        });
+        banners.Add(new Banner(Variant.Destructive, "Payment failed",
+            "The card issuer declined this charge. Try another card."));
 
-        var toast = new Toast(state.Toast ?? "Card removed", Variant.Info) { ActionLabel = "Undo" };
+        // A Toast is an OVERLAY: it docks itself bottom-trailing on this target and cannot sit
+        // inside a card. So the card carries the TRIGGER, and pressing it shows the real thing
+        // where the real thing belongs — which documents the behaviour the handoff only drew.
+        var toast = Labelled(theme,
+            new Button("Show toast", Variant.Secondary)
+            {
+                OnPressed = () => mutate(() => state.Toast = "Card removed"),
+            },
+            "Toast · inverse surface, docks bottom-trailing, leaves on its own", 240);
 
         var empty = new EmptyState(Icons.Search, "No transactions yet",
-            "When money moves, it shows up here.");
+            "They will appear here once you transfer.")
+        {
+            Action = new Button("New transfer", Variant.Primary, SizeVariant.Small)
+            {
+                OnPressed = () => { },
+            },
+        };
 
-        var column = Column(Space.S5);
-        column.Add(Card(theme, "Banner", "Stays until the situation changes — it is part of the page.",
-            banners));
-        column.Add(Card(theme, "Toast",
-            "Leaves on its own, so it never carries anything the user must read.", toast));
-        column.Add(Card(theme, "EmptyState",
-            "Says what will appear here and how to make it happen — never just \"no data\".", empty));
-        return column;
+        var bottom = new Row(gap: Space.S5)
+        {
+            Width = SizeValue.Fill,
+            Cross = CrossAlign.Start,
+            Wrap = true,
+            RunGap = Space.S4,
+        };
+        bottom.Add(toast);
+        bottom.Add(new Box(new BoxStyle { Width = 300 }, empty));
+
+        var column = Column(Space.S4);
+        column.Add(banners);
+        column.Add(bottom);
+
+        var section = Section(theme, "Feedback", column);
+        if (state.Toast is null) return section;
+
+        // The overlay rides ALONGSIDE the section: an Overlay node is zero in the page flow, so
+        // the layer lays out against the viewport and this column is unaffected.
+        var layers = new Stack { Width = SizeValue.Fill };
+        layers.Add(section);
+        layers.Add(new Toast(state.Toast)
+        {
+            ActionLabel = "Undo",
+            OnAction = () => mutate(() => state.Toast = null),
+        });
+        return layers;
     }
 
     private static VisualNode Overlays(IAppTheme theme, SectionState state, Action<Action> mutate)
     {
-        var dialogTrigger = new Button("Remove card", Variant.Destructive)
-        {
-            OnPressed = () => mutate(() => state.DialogOpen = true),
-        };
+        // The handoff draws the three overlays side by side with the desktop mapping beside them.
+        // Here they are LIVE: the triggers open the real thing, over this same window.
+        var dialog = Labelled(theme,
+            new Button("Delete card…", Variant.Destructive)
+            {
+                OnPressed = () => mutate(() => state.DialogOpen = true),
+            },
+            "Dialog · centred, E5; Escape and the scrim both mean no", 230);
 
-        var menu = new Menu(
-            new Button("Transfer options", Variant.Outline),
-            [new MenuItem("Schedule"), new MenuItem("Repeat monthly"), new MenuItem("Remove recipient")]);
+        var sheet = Labelled(theme,
+            new Button("Transfer options", Variant.Outline)
+            {
+                OnPressed = () => mutate(() => state.SheetOpen = true),
+            },
+            "BottomSheet · a popover here, a sheet on a phone", 230);
 
-        var mapping = new Text(
-            "On macOS a mobile BottomSheet becomes a window-anchored popover — same tree, "
-            + "same component, resolved by the target rather than by the caller.",
-            TypeRole.BodyM, theme.TextSecondary, maxLines: 3);
-
-        var column = Column(Space.S5);
-        column.Add(Card(theme, "Dialog", "Interrupts, so it must be worth interrupting for.", dialogTrigger));
-        column.Add(Card(theme, "Menu", "A short list of actions on the thing you just pressed.", menu));
-        column.Add(Card(theme, "Desktop mapping", "One tree, two shapes.", mapping));
-
-        if (!state.DialogOpen) return column;
-
-        var stack = new Stack();
-        stack.Add(column);
-        stack.Add(new Dialog("Remove this card?",
-            "Scheduled payments on it will fail until you add another.",
+        var menu = Labelled(theme,
+            new Menu(new Button("Row actions", Variant.Secondary),
             [
-                new DialogAction("Keep card", () => mutate(() => state.DialogOpen = false)),
-                new DialogAction("Remove", () => mutate(() => state.DialogOpen = false),
-                    Variant.Destructive),
-            ],
-            // Destructive, and still dismissible: Escape and a tap outside both mean "not that",
-            // which is the answer someone who opened this by accident is looking for. Only the
-            // Remove button removes.
-            dismissible: true,
-            onDismiss: () => mutate(() => state.DialogOpen = false)));
+                new MenuItem("Schedule") { Icon = Icons.Refresh },
+                new MenuItem("Repeat monthly") { Icon = Icons.Check },
+                new MenuItem("Remove recipient") { Icon = Icons.Close, Destructive = true },
+            ]),
+            "Menu · arrows walk it, Enter takes it, Escape closes", 230);
+
+        var mapping = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        mapping.Add(new Text("Desktop mapping", TypeRole.Label, theme.TextPrimary, maxLines: 1));
+        mapping.Add(new Text(
+            "On macOS the mobile BottomSheet becomes a popover anchored to its trigger; "
+            + "ActionSheet becomes a context menu; Toast docks bottom-trailing. The Dialog keeps "
+            + "the same anatomy, centred on the window with E5.",
+            TypeRole.Caption, theme.TextSecondary, maxLines: 4));
+        mapping.Add(new Text(
+            "Hover states exist here (the desktop adapter): every pressable surface takes a "
+            + "SurfaceSubtle hover fill 100ms before its pressed state.",
+            TypeRole.Caption, theme.TextSecondary, maxLines: 3));
+
+        var specimens = new Row(gap: Space.S4) { Width = SizeValue.Fill, Cross = CrossAlign.Start, Wrap = true };
+        specimens.Add(dialog);
+        specimens.Add(sheet);
+        specimens.Add(menu);
+
+        var content = Column(Space.S4);
+        content.Add(specimens);
+        content.Add(new Divider());
+        content.Add(mapping);
+        var section = Section(theme, "Overlays", content);
+
+        if (!state.DialogOpen && !state.SheetOpen) return section;
+
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(section);
+        if (state.DialogOpen)
+        {
+            stack.Add(new Dialog("Delete card?",
+                "\"Work Visa ··· 4821\" will be removed and its automatic payments will stop.",
+                [
+                    new DialogAction("Keep card", () => mutate(() => state.DialogOpen = false)),
+                    new DialogAction("Delete", () => mutate(() => state.DialogOpen = false),
+                        Variant.Destructive),
+                ],
+                // Destructive, and still dismissible: Escape and a tap outside both mean "not
+                // that", which is the answer someone who opened this by accident is looking for.
+                // Only the Delete button deletes.
+                dismissible: true,
+                onDismiss: () => mutate(() => state.DialogOpen = false)));
+        }
+        if (state.SheetOpen)
+        {
+            var options = new List([
+                new ListItem("Instant (PIX)", onPressed: () => mutate(() => state.SheetOpen = false))
+                {
+                    Leading = new Icon(Icons.Play, IconSize.Md, theme.TextSecondary),
+                },
+                new ListItem("Schedule", onPressed: () => mutate(() => state.SheetOpen = false))
+                {
+                    Leading = new Icon(Icons.Refresh, IconSize.Md, theme.TextSecondary),
+                },
+                new ListItem("Remove recipient", onPressed: () => mutate(() => state.SheetOpen = false))
+                {
+                    Leading = new Icon(Icons.Close, IconSize.Md,
+                        theme.Colors(Variant.Destructive).Base),
+                },
+            ]);
+            var body = Column(Space.S2);
+            body.Add(new Text("Transfer options", TypeRole.Label, theme.TextPrimary, maxLines: 1));
+            body.Add(options);
+            stack.Add(new BottomSheet(body, () => mutate(() => state.SheetOpen = false)));
+        }
         return stack;
     }
 
     // ---- Shared pieces ---------------------------------------------------------------------
+
+    /// <summary>The handoff's section shape: an UPPERCASE eyebrow, then one bordered surface. The
+    /// eyebrow sits outside the card, which is why it is not the Card component's own header.</summary>
+    private static VisualNode Section(IAppTheme theme, string eyebrow, VisualNode content,
+        float padding = Space.S4)
+    {
+        var column = Column(Space.S2);
+        column.Add(new Text(eyebrow.ToUpperInvariant(), TypeRole.Caption, theme.TextMuted, maxLines: 1));
+        column.Add(new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Background = theme.Surface,
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+            CornerRadius = new CornerRadii(Radius.Lg),
+            Padding = EdgeInsets.All(padding),
+        }, content));
+        return column;
+    }
+
+    /// <summary>The small grey line under a specimen that NAMES it — the handoff labels every
+    /// specimen this way, and it is what turns a gallery into documentation.</summary>
+    private static VisualNode Caption(IAppTheme theme, string text) =>
+        new Text(text, TypeRole.Caption, theme.TextMuted, maxLines: 2);
+
+    /// <summary>
+    /// A specimen with its caption underneath, as one cell. WIDTH matters: a caption with no
+    /// bound measures at everything available and pushes its neighbours onto the next line, so a
+    /// row of specimens gives each one a column to live in.
+    /// </summary>
+    private static VisualNode Labelled(IAppTheme theme, VisualNode specimen, string caption,
+        float width = 0)
+    {
+        var column = new Column(gap: Space.S2)
+        {
+            Cross = CrossAlign.Start,
+            Width = width > 0 ? SizeValue.Fixed(width) : SizeValue.Hug,
+        };
+        column.Add(specimen);
+        column.Add(Caption(theme, caption));
+        return column;
+    }
+
+    /// <summary>The hairline between the handoff's specimen groups.</summary>
+    private static VisualNode GroupDivider() =>
+        new Box(new BoxStyle { Height = SizeValue.Fill, Padding = EdgeInsets.Symmetric(Space.S3, 0) },
+            new Divider(axis: DividerAxis.Vertical));
 
     private static Row Row(float gap) => new(gap) { Cross = CrossAlign.Center };
 
