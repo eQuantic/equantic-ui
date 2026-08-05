@@ -57,7 +57,7 @@ public sealed class Stepper : StatelessComponent
         {
             Align = TextAlignment.Center,
             Tabular = true,
-            StyleOverride = theme.Type(TypeRole.Label) with { Size = Sizing.LabelSize(Size, context.Density) },
+            StyleOverride = theme.Type(TypeRole.Label).WithSize(Sizing.LabelSize(Size, context.Density)),
         });
         row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
 

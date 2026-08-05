@@ -77,7 +77,7 @@ public sealed class Button : StatelessComponent
         // free-form size (spec A8). Single line, ellipsis — never two lines (spec A12).
         var label = new Text(Label, TypeRole.Label, textColor, maxLines: 1)
         {
-            StyleOverride = new TypeStyle(labelSize, labelSize, FontWeight.SemiBold, 0.1f, 1.3f),
+            StyleOverride = TypeStyle.OfSize(labelSize, FontWeight.SemiBold, 0.1f),
         };
 
         var content = new Row(gap: gap)

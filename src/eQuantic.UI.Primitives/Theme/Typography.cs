@@ -46,6 +46,24 @@ public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight
         return MathF.Round(scaled * 2f) / 2f;
     }
 
+    /// <summary>
+    /// The same style at another SIZE, with the line box following the ratio — what CSS's unitless
+    /// `line-height` does. Patching only the size leaves a bigger glyph in the old box: a 17dp
+    /// label in a 16dp line has its descender outside the line, and whoever rasterizes it has to
+    /// decide whether to clip the 'g'. Nobody should have to decide that.
+    /// </summary>
+    public TypeStyle WithSize(float size) => Size <= 0
+        ? this with { Size = size }
+        : this with { Size = size, LineHeight = MathF.Round(LineHeight * size / Size * 2f) / 2f };
+
+    /// <summary>
+    /// A style from a SIZE alone, with the typographic default line box (1.25×) — the ratio that
+    /// holds an ascender and a descender without either leaving the line.
+    /// </summary>
+    public static TypeStyle OfSize(float size, FontWeight weight, float tracking = 0f,
+        float maxScale = 1.3f) =>
+        new(size, MathF.Round(size * 1.25f * 2f) / 2f, weight, tracking, maxScale);
+
     /// <summary>Line height under the same factor (same clamp, same snap — the line box grows with the glyphs).</summary>
     public float ScaledLineHeight(float osFactor)
     {

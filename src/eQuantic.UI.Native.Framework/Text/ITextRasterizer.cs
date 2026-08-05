@@ -6,7 +6,12 @@ namespace eQuantic.UI.Native.Framework;
 /// A rasterized text BLOCK (W4): pure A8 coverage at device scale — color is the draw command's
 /// tint, so one raster serves every theme mode. Width/Height are PIXELS (dp × scale).
 /// </summary>
-public sealed record TextRaster(int Width, int Height, byte[] Alpha);
+/// <param name="PadTop">
+/// Device pixels of INK the rasterizer had to add ABOVE the line box — an ascender or an accent
+/// that does not fit inside it. The caller draws the bitmap that much higher, so the line box
+/// still lands where layout put it and nothing is clipped. Zero for text that fits, which is most.
+/// </param>
+public sealed record TextRaster(int Width, int Height, byte[] Alpha, int PadTop = 0);
 
 /// <summary>
 /// The platform text service (W4): turns a measured text block into an A8 coverage raster the

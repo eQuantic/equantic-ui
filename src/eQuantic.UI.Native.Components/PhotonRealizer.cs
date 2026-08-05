@@ -930,7 +930,10 @@ public static class PhotonRealizer
                 rasterizer, text.PlainContent, style, motion.TypeScale, node.Bounds.Width, text.MaxLines, motion.RenderScale);
             if (raster is not null)
             {
-                var rect = new Rect(node.Bounds.X, node.Bounds.Y,
+                // The bitmap may carry ink ABOVE the line box (a tall ascender, an accent); it
+                // was grown upward, so the draw rises by the same amount and the line box itself
+                // still sits exactly where layout put it.
+                var rect = new Rect(node.Bounds.X, node.Bounds.Y - raster.PadTop / motion.RenderScale,
                     raster.Texture.Width / motion.RenderScale, raster.Texture.Height / motion.RenderScale);
                 if (text.Gradient is { } g)
                 {

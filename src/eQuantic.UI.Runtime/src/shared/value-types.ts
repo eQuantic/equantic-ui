@@ -162,6 +162,22 @@ export class TypeStyle implements TypeStyleValue {
     readonly tracking = 0,
     readonly maxScale = 1,
   ) {}
+
+  /**
+   * The same style at another SIZE, with the line box following the ratio — the C# twin of
+   * `TypeStyle.WithSize`. Patching only the size leaves a bigger glyph in the old box, which is
+   * how a descender ends up outside its line.
+   */
+  withSize(size: number): TypeStyle {
+    const lineHeight =
+      this.size <= 0 ? this.lineHeight : Math.round((this.lineHeight * size) / this.size * 2) / 2;
+    return new TypeStyle(size, lineHeight, this.weight, this.tracking, this.maxScale);
+  }
+
+  /** A style from a SIZE alone, with the typographic default line box (1.25×). */
+  static ofSize(size: number, weight: string | number, tracking = 0, maxScale = 1.3): TypeStyle {
+    return new TypeStyle(size, Math.round(size * 1.25 * 2) / 2, weight, tracking, maxScale);
+  }
 }
 
 /** The five sub-tokens of an interactive variant (spec §01). */
