@@ -5,6 +5,7 @@ import { WebLocation } from './location';
 import { WebMotionSensor } from './motion-sensor';
 import { WebNetworkStatus } from './network-status';
 import { WebPhotoLibrary } from './photo-library';
+import { WebThemeController } from './theme-controller';
 
 /**
  * Registers what a BROWSER can do, under the same names the C# interfaces have.
@@ -25,4 +26,7 @@ export function registerDeviceCapabilities(): void {
   services.registerSingleton('IMotionSensor', () => new WebMotionSensor());
   services.registerSingleton('ILocation', () => new WebLocation());
   services.registerSingleton('ICamera', () => new WebCamera());
+  // Not a device, but the same contract: a component asks for the light/dark hand by interface
+  // name and never learns that on this target it is one color-scheme declaration.
+  services.registerSingleton('IThemeController', () => new WebThemeController());
 }

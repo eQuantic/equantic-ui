@@ -18,7 +18,11 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         var window = new PhotonWindow(options.Title, options.Width, options.Height,
             options.Chrome, options.Resizable, options.MinWidth, options.MinHeight,
             options.SmoothScroll);
-        window.Run(app.Root(), options.Theme, options.Mode ?? ThemeMode.Light, options.MaxFrames);
+        // The concrete controller only — an app that registered its own IThemeController has
+        // taken over the switch, and this attach quietly steps aside.
+        var themeController = app.Services.GetService(typeof(IThemeController)) as PhotonThemeController;
+        window.Run(app.Root(), options.Theme, options.Mode ?? ThemeMode.Light, options.MaxFrames,
+            themeController);
         Console.WriteLine($"[photon] frames presented: {window.FramesPresented}");
     }
 }
