@@ -213,7 +213,7 @@ public static class PhotonRealizer
         var texts = new List<TextRegion>();
         var stops = new List<FocusStop>();
         var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops);
-        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd), motion, overlays);
+        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density), motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -225,7 +225,7 @@ public static class PhotonRealizer
                 context, rootPath: $"ov{i}");
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd), motion, overlays);
+            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density), motion, overlays);
         }
 
         // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
@@ -301,8 +301,10 @@ public static class PhotonRealizer
         public PressScope(Pressable? pressed, Pressable? focused, VisualNode? hovered = null,
             string? pressedPath = null, string? focusedPath = null,
             string? textPath = null, int caretIndex = 0, bool caretVisible = true,
-            int selectionStart = 0, int selectionEnd = 0)
+            int selectionStart = 0, int selectionEnd = 0,
+            Density density = Density.Comfortable)
         {
+            Density = density;
             SelectionStart = selectionStart;
             SelectionEnd = selectionEnd;
             Pressed = pressed;
@@ -323,6 +325,9 @@ public static class PhotonRealizer
         public string? TextPath { get; }
         public int CaretIndex { get; }
         public bool CaretVisible { get; }
+
+        /// <summary>The target's density — what the hit-rect expansion answers to.</summary>
+        public Density Density { get; }
 
         public Pressable? Pressed { get; }
         public Pressable? Focused { get; }
@@ -601,7 +606,7 @@ public static class PhotonRealizer
                 break;
 
             case Pressable pressable:
-                input.Add(new HitRegion(ExpandHitRect(node.Bounds), pressable, node.Path ?? ""));
+                input.Add(new HitRegion(ExpandHitRect(node.Bounds, press.Density), pressable, node.Path ?? ""));
                 break;
 
             // S5 programmable hover: the region rides the SAME pointer pipeline Style.Hover uses;
@@ -1195,10 +1200,13 @@ public static class PhotonRealizer
 
     /// <summary>Hit contract (spec §08): every interactive node exposes ≥ 48dp per side — visual bounds
     /// may be smaller; the hit rect expands symmetrically.</summary>
-    private static Rect ExpandHitRect(Rect bounds)
+    private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)
     {
-        var growX = MathF.Max(0, Touch.MinTarget - bounds.Width) / 2;
-        var growY = MathF.Max(0, Touch.MinTarget - bounds.Height) / 2;
+        // A POINTER lands where it is aimed: the §08 minimum is a FINGER's contract, and applying
+        // it to a dense toolbar grew every 26dp button into its neighbour's margin.
+        var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+        var growX = MathF.Max(0, minimum - bounds.Width) / 2;
+        var growY = MathF.Max(0, minimum - bounds.Height) / 2;
         return new Rect(bounds.X - growX, bounds.Y - growY, bounds.Width + growX * 2, bounds.Height + growY * 2);
     }
 }
