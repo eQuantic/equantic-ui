@@ -65,6 +65,14 @@ public sealed class Tabs : StatelessComponent
                 PressedBackground = theme.SurfaceSubtle,
             }));
         }
-        return row;
+
+        // ONE Tab stop for the strip, arrows move the selection and WRAP at the ends — the ARIA
+        // tablist pattern, same family as the SegmentedControl's radio-group twin.
+        if (OnSelect is null || Labels.Count == 0) return row;
+        var count = Labels.Count;
+        return new Adjustable(row, direction => OnSelect((Selected + direction + count) % count))
+        {
+            Role = AdjustableRole.Tablist,
+        };
     }
 }

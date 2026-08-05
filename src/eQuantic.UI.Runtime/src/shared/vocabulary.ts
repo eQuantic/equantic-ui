@@ -907,8 +907,14 @@ export class Adjustable extends VisualNode {
   child: VisualNode;
   onAdjust: (direction: number) => void;
   label = '';
+  /** ARIA identity of the host element — 'slider' (default), 'tablist' or 'radiogroup'. */
+  role: 'slider' | 'tablist' | 'radiogroup' = 'slider';
 
-  constructor(child: VisualNode, onAdjust: (direction: number) => void, config?: { label?: string }) {
+  constructor(
+    child: VisualNode,
+    onAdjust: (direction: number) => void,
+    config?: { label?: string; role?: 'slider' | 'tablist' | 'radiogroup' },
+  ) {
     super();
     this.child = child;
     this.onAdjust = onAdjust;

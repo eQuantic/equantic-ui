@@ -1327,7 +1327,7 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
     width: fill.width ? '100%' : undefined,
     height: fill.height ? '100%' : undefined,
   });
-  host.attributes['role'] = 'slider';
+  host.attributes['role'] = node.role ?? 'slider';
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
   if (node.onAdjust) {

@@ -90,7 +90,7 @@ public sealed class SegmentedControl : StatelessComponent
             row.Add(Stretch ? new Flexible(press, 1) : press);
         }
 
-        return new Box(new BoxStyle
+        var track = new Box(new BoxStyle
         {
             Width = Stretch ? SizeValue.Fill : SizeValue.Hug,
             Height = height,
@@ -99,5 +99,16 @@ public sealed class SegmentedControl : StatelessComponent
             CornerRadius = new CornerRadii(trackRadius),
             Opacity = Disabled ? theme.DisabledOpacity : 1f,
         }, row);
+
+        // ONE Tab stop for the whole control, arrows move the choice and WRAP at the ends — the
+        // native <input type=radio> group is the twin, and it wraps. (A Menu doesn't: its twin,
+        // the platform menu, stops at the edges.)
+        if (Disabled || OnChanged is null || Segments.Count == 0) return track;
+        var count = Segments.Count;
+        return new Adjustable(track,
+            direction => OnChanged.Invoke((SelectedIndex + direction + count) % count))
+        {
+            Role = AdjustableRole.Radiogroup,
+        };
     }
 }

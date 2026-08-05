@@ -970,3 +970,114 @@ public class AdjustableTests
         page.Value.Should().BeApproximately(0.5f, 0.001f);
     }
 }
+
+/// <summary>
+/// A visible choice group under the keyboard — SegmentedControl and Tabs: ONE Tab stop for the
+/// whole group, arrows move the selection and WRAP at the ends (the native radio group is the
+/// twin, and it wraps; a Menu doesn't, because the platform menu stops at its edges). Before,
+/// Tab stopped once per segment and the arrows did nothing.
+/// </summary>
+public class ChoiceGroupKeyboardTests
+{
+    private sealed class SegmentedPage : Primitives.StatefulComponent
+    {
+        public int Selected = 1;
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+            column.Add(new SegmentedControl(["All", "Income", "Expenses"], Selected,
+                i => SetState(() => Selected = i)));
+            column.Add(new Button("Save", onPressed: () => { }));
+            return column;
+        }
+    }
+
+    private sealed class TabsPage : Primitives.StatefulComponent
+    {
+        public int Selected;
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+            column.Add(new Tabs(["Overview", "Activity", "Reports"], Selected,
+                i => SetState(() => Selected = i)));
+            return column;
+        }
+    }
+
+    private static PhotonHost Open(VisualNode page)
+    {
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        return host;
+    }
+
+    private static void Press(PhotonHost host, string key)
+    {
+        host.KeyDown(key);
+        host.RenderFrame(new DisplayListBuilder());
+    }
+
+    [Fact]
+    public void TheWholeSegmentedControlIsONETabStop()
+    {
+        var host = Open(new SegmentedPage());
+        var stops = host.RenderFrame(new DisplayListBuilder()).FocusStops;
+
+        stops.Should().HaveCount(2, "the group and the button — not one stop per segment");
+        stops[0].Adjustable.Should().NotBeNull();
+        stops[1].Pressable.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void ArrowsMoveTheChoice_AndWrapAtTheEnds()
+    {
+        var page = new SegmentedPage();
+        var host = Open(page);
+        Press(host, "Tab");   // onto the group
+
+        Press(host, "ArrowRight");
+        page.Selected.Should().Be(2);
+
+        Press(host, "ArrowRight");
+        page.Selected.Should().Be(0, "past the last segment the choice wraps, like a native radio group");
+
+        Press(host, "ArrowLeft");
+        page.Selected.Should().Be(2, "and wraps backward off the first");
+    }
+
+    [Fact]
+    public void ASegmentStillAnswersThePointer()
+    {
+        var page = new SegmentedPage();
+        var host = Open(page);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        // Tree order: segment presses first ("All" is index 0), then Save. The selected segment
+        // is inert (null handler), so "All" is the first ENABLED press target.
+        var all = frame.HitRegions[0];
+        host.PressDown(all.Bounds.Center.X, all.Bounds.Center.Y);
+        host.PressUp(all.Bounds.Center.X, all.Bounds.Center.Y);
+
+        page.Selected.Should().Be(0, "the keyboard wrapper leaves pointer behaviour untouched");
+    }
+
+    [Fact]
+    public void TheTabStripFollowsTheSamePattern()
+    {
+        var page = new TabsPage();
+        var host = Open(page);
+
+        host.RenderFrame(new DisplayListBuilder()).FocusStops
+            .Should().HaveCount(1, "the strip is one stop, not one per tab");
+
+        Press(host, "Tab");
+        Press(host, "ArrowRight");
+        page.Selected.Should().Be(1);
+
+        Press(host, "ArrowLeft");
+        Press(host, "ArrowLeft");
+        page.Selected.Should().Be(2, "wraps backward off the first tab");
+    }
+}

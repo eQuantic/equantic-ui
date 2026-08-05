@@ -477,6 +477,8 @@ export interface AdjustableNode extends VisualNodeValue {
   child: VisualNodeValue;
   onAdjust?: (direction: number) => void;
   label?: string;
+  /** ARIA identity of the host — 'slider' (default), 'tablist' or 'radiogroup'. */
+  role?: 'slider' | 'tablist' | 'radiogroup';
 }
 
 /** A live camera surface — the session id names the MediaStream the runtime attaches. */
