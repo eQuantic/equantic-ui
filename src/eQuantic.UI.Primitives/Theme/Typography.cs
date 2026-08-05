@@ -34,7 +34,14 @@ public enum TypeRole : byte
 /// One row of the type scale: dp size, line height, weight, letter tracking, and the Dynamic Type
 /// clamp (spec §02: reading roles scale fully to ×1.3; Display/Heading clamp ×1.15, Title ×1.25).
 /// </summary>
-public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight Weight, float Tracking, float MaxScale)
+/// <param name="Mono">
+/// The MONOSPACED face instead of the proportional one — code, keys, versions, anything read
+/// column by column. It lives on the STYLE rather than on the node because it changes the glyphs:
+/// the measurer, the rasterizer and the raster cache all key on the style, so a face that lives
+/// here is honoured by all three for free — and a face that lives anywhere else is a layout that
+/// disagrees with its own pixels.
+/// </param>
+public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight Weight, float Tracking, float MaxScale, bool Mono = false)
 {
     /// <summary>
     /// The effective size under an OS Dynamic Type factor: <c>Size × min(factor, MaxScale)</c>, snapped

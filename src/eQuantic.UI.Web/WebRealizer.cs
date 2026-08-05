@@ -945,6 +945,9 @@ public static class WebRealizer
 
     private static HtmlElement LowerText(Text text, ComponentContext context)
     {
+        // The face can come from the NODE (this text is code) or from the STYLE (this ROLE is
+        // code) — the native side merges the two into the style, and so does this.
+        var mono = text.Mono || (text.StyleOverride?.Mono ?? context.Theme.Type(text.Role).Mono);
         var element = new RealizedElement("span")
         {
             ClassName = $"eq-type-{text.Role.ToString().ToLowerInvariant()}",
@@ -963,8 +966,9 @@ public static class WebRealizer
                 // Authored \n is a HARD break (the designed headline's line turns) — pre-line
                 // keeps normal wrapping between them.
                 // Mono text is CODE (indentation survives); plain text only keeps its newlines.
-                WhiteSpace = text.Mono ? "pre-wrap" : text.Content.Contains('\n') ? "pre-line" : null,
-                FontFamily = text.Mono ? TokenCss.MonoStack : null,
+                WhiteSpace = mono ? "pre-wrap"
+                    : text.Content.Contains('\n') ? "pre-line" : null,
+                FontFamily = mono ? TokenCss.MonoStack : null,
                 FontVariantNumeric = text.Tabular ? "tabular-nums" : null,
                 // Spec S6: recolors glide (the design's transition-colors on nav labels/links).
                 Transition = text.Transition is { } transition ? TokenCss.Transition(transition) : null,

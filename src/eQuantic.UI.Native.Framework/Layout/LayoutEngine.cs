@@ -331,6 +331,7 @@ public static class LayoutEngine
     private static float LongestWordWidth(Text text, LayoutContext ctx)
     {
         var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
+        if (text.Mono) style = style with { Mono = true };
         var widest = 0f;
         foreach (var word in text.PlainContent.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             widest = MathF.Max(widest,
@@ -552,6 +553,7 @@ public static class LayoutEngine
     {
         var result = new LayoutNode(text);
         var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
+        if (text.Mono) style = style with { Mono = true };
         var measurement = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, maxW, text.MaxLines);
         result.Text = measurement;
         result.Bounds = new Rect(0, 0, measurement.Width, measurement.Height);
@@ -852,6 +854,7 @@ public static class LayoutEngine
                     if (children[i] is not Text text) continue;
                     var reduced = MathF.Max(0, mains[i] - deficit * (mains[i] / textTotal));
                     var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
+                    if (text.Mono) style = style with { Mono = true };
                     var remeasured = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, reduced,
                         Math.Max(1, text.MaxLines));
                     var node = new LayoutNode(text) { Text = remeasured };
