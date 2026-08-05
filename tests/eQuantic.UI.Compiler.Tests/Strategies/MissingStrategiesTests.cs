@@ -1,4 +1,5 @@
 using eQuantic.UI.Compiler.CodeGen;
+using FluentAssertions;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
@@ -6,12 +7,17 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 
 public class MissingStrategiesTests
 {
+    /// <summary>
+    /// A range used as a VALUE. It used to convert to `{ start: 1, end: 5 }` and this test blessed
+    /// it — but nothing on the JavaScript side ever read that object, so the only thing the shape
+    /// bought was silence. Slicing with a range is <see cref="Strategies.RangeIndexerTests"/>;
+    /// storing one is reported.
+    /// </summary>
     [Fact]
-    public void RangeExpression_ConvertsToStartEndObject()
+    public void RangeAsAValue_IsReportedRatherThanFaked()
     {
-        var code = "1..5";
-        var js = ConvertExpression(code);
-        Assert.Equal("{ start: 1, end: 5 }", js);
+        TestHelper.DiagnosticsFor("var r = 1..5")
+            .Should().Contain(d => d.Code == "EQ2004");
     }
 
     [Fact]

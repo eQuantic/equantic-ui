@@ -177,17 +177,14 @@ public static class Gallery
             Padding = EdgeInsets.All(Space.S5),
         }, staged);
 
-        var codeLines = Column(2);
-        foreach (var line in specimenCode.Split('\n'))
-            codeLines.Add(new Text(line.Length == 0 ? " " : line, TypeRole.LabelSmall, CodeInk,
-                maxLines: 1) { Mono = true });
-        var code = new Box(new BoxStyle
+        // The SDK's own code component, coloured by the shared C# tokenizer — the gallery shows
+        // the thing itself rather than a hand-drawn slab that looks like it.
+        VisualNode code = new CodeBlock(specimenCode, "csharp")
         {
-            Width = SizeValue.Fill,
-            Background = CodeSlab,
-            CornerRadius = new CornerRadii(Radius.Sm),
-            Padding = new EdgeInsets(Space.S4, Space.S3, Space.S4, Space.S3),
-        }, codeLines);
+            Inverse = true,
+            ShowLineNumbers = false,
+            Caption = "C#",
+        };
 
         var preview = Column(Space.S4);
         preview.Add(head);

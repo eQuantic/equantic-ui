@@ -90,42 +90,9 @@ export { VisualNodeComponent } from './visual-node-component';
 // EmptyState → Button) resolve those names through this aggregator too. The module cycle
 // (components/X → runtime-exports → components/X) is benign: ESM live bindings only dereference at
 // build()/render() time, never during module evaluation.
-export { Button } from './components/Button';
-export { Card } from './components/Card';
-export { Divider } from './components/Divider';
-export { Badge } from './components/Badge';
-export { Chip } from './components/Chip';
-export { ProgressBar } from './components/ProgressBar';
-export { Avatar } from './components/Avatar';
-export { Banner } from './components/Banner';
-export { IconButton } from './components/IconButton';
-export { Checkbox } from './components/Checkbox';
-export { Switch } from './components/Switch';
-export { RadioGroup } from './components/RadioGroup';
-export { ListItem } from './components/ListItem';
-export { List } from './components/List';
-export { Tabs } from './components/Tabs';
-export { EmptyState } from './components/EmptyState';
-export { Skeleton } from './components/Skeleton';
-export { TextInput } from './components/TextInput';
-export { Dialog } from './components/Dialog';
-export { DialogAction } from './components/DialogAction';
-export { SearchField } from './components/SearchField';
-export { AppBar } from './components/AppBar';
-export { BottomNavigation } from './components/BottomNavigation';
-export { NavItem } from './components/NavItem';
-export { Breadcrumb } from './components/Breadcrumb';
-export { Crumb } from './components/Crumb';
-export { DataColumn } from './components/DataColumn';
-export { DataRow } from './components/DataRow';
-export { DataTable } from './components/DataTable';
-export { PageIndicator } from './components/PageIndicator';
-export { Pagination } from './components/Pagination';
-export { SegmentedControl } from './components/SegmentedControl';
-export { Slider } from './components/Slider';
-export { Stepper } from './components/Stepper';
-export { AccordionItem } from './components/AccordionItem';
-export { MenuItem } from './components/MenuItem';
+// The roster is the GENERATED barrel, never a hand-kept list: a list fell thirteen components
+// behind, and each of them transpiled, embedded, and then failed to import.
+export * from './components';
 
 // ---- Device capabilities ---------------------------------------------------------------------
 // A capability is a service on both sides: C# takes it through a constructor, and here it is

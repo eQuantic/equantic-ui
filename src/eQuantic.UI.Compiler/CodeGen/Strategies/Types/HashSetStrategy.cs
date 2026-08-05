@@ -27,13 +27,25 @@ public class HashSetStrategy : IConversionStrategy
         // Check for Invocation (Add, Contains)
         if (node is InvocationExpressionSyntax inv && inv.Expression is MemberAccessExpressionSyntax ma)
         {
-            var typeSymbol = context.SemanticHelper.GetType(ma.Expression);
-            var type = typeSymbol?.ToDisplayString();
-            return type != null && type.StartsWith("System.Collections.Generic.HashSet");
-            // No safe heuristic for variable name
+            // The INTERFACES too. A member typed `IReadOnlySet<string>` is a JS Set at runtime
+            // exactly as a HashSet is — matching only the concrete name left `Keywords.Contains(w)`
+            // emitting `.contains`, which a Set does not have.
+            return IsSet(context.SemanticHelper.GetType(ma.Expression));
         }
         
         return false;
+    }
+
+    /// <summary>Whether a type IS a JS Set on the other side — the class or any of its read-only
+    /// faces.</summary>
+    private static bool IsSet(Microsoft.CodeAnalysis.ITypeSymbol? type)
+    {
+        if (type is null) return false;
+        var name = type.OriginalDefinition.ToDisplayString();
+        return name is "System.Collections.Generic.HashSet<T>"
+            or "System.Collections.Generic.ISet<T>"
+            or "System.Collections.Generic.IReadOnlySet<T>"
+            || type.ToDisplayString().StartsWith("System.Collections.Generic.HashSet");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

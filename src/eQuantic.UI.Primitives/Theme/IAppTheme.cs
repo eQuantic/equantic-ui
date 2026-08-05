@@ -93,4 +93,30 @@ public interface IAppTheme
 
     /// <summary>Disabled is not a color pair: a 38% opacity group over the resolved style (spec §01).</summary>
     float DisabledOpacity { get; }
+
+    /// <summary>
+    /// The colour of a code token. DEFAULTED from the palette the theme already has — a design
+    /// system that ships one set of variants should not have to invent a second one to show code,
+    /// and a theme that wants a real syntax palette overrides this and nothing else.
+    /// <para>
+    /// The mapping is chosen for READING, not for decoration: comments recede to the muted tier,
+    /// strings and numbers take the two calm variants (success, warning), keywords take the primary
+    /// accent, and the punctuation that only separates stays quieter than the code it separates.
+    /// </para>
+    /// </summary>
+    ColorToken Code(CodeTokenKind kind) => kind switch
+    {
+        CodeTokenKind.Keyword => Colors(Variant.Primary).Base,
+        CodeTokenKind.Type => Colors(Variant.Info).Base,
+        CodeTokenKind.String => Colors(Variant.Success).Base,
+        CodeTokenKind.Number => Colors(Variant.Warning).Base,
+        CodeTokenKind.Comment => TextMuted,
+        CodeTokenKind.Function => Colors(Variant.Tertiary).Base,
+        CodeTokenKind.Attribute => Colors(Variant.Warning).OnSubtle,
+        CodeTokenKind.Property => Colors(Variant.Info).OnSubtle,
+        CodeTokenKind.Constant => Colors(Variant.Destructive).Base,
+        CodeTokenKind.Operator => TextSecondary,
+        CodeTokenKind.Punctuation => TextSecondary,
+        _ => TextPrimary,
+    };
 }

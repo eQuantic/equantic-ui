@@ -1081,6 +1081,7 @@ public class TypeScriptEmitter
         bool asStatic = true)
     {
         var qualifier = asStatic ? "static " : "";
+        var name = cls.Identifier.Text;
         if (!asStatic) EmitInstanceConstructor(cls, c);
 
             foreach (var f in cls.Members.OfType<FieldDeclarationSyntax>())
@@ -1090,28 +1091,95 @@ public class TypeScriptEmitter
                     var def = v.Initializer != null
                         ? _converter.ConvertExpression(v.Initializer.Value, f.Declaration.Type.ToString())
                         : null;
-                    c.Field(v.Identifier.Text.ToCamelCase(),
-                        asStatic ? CSharpTypeToTypeScript(f.Declaration.Type.ToString()) : null,
-                        asStatic ? def : null, v, isStatic: asStatic);
+                    // The TYPE is emitted either way. Without it every field of a plain class is
+                    // implicitly `any`, and the first thing that goes is the checking the whole
+                    // two-layer design exists for.
+                    // A member's OWN `static` wins over the class-level default: a plain class
+                    // with `public const int StateBlockComment = 1;` needs it on the CLASS, with
+                    // its value — dropping either left `CurlyBraceLanguage.stateBlockComment`
+                    // undefined and every comparison against it false.
+                    var isStaticMember = asStatic
+                        || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
+                        || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
+                    var fieldName = v.Identifier.Text.ToCamelCase();
+                    // A static field that CONSTRUCTS something runs at module-evaluation time, and
+                    // the library's modules import each other through one barrel: whichever loads
+                    // first sees the other's class as undefined. C# initialises a type's statics on
+                    // FIRST USE, so a lazy getter is both the faithful translation and the only one
+                    // that survives the cycle. (`static x = 0` stays a field: nothing to break.)
+                    if (isStaticMember && def is not null && NeedsLazyInit(def))
+                    {
+                        var slot = $"_{fieldName}";
+                        c.Raw($"static {slot}: {DeclaredType(f.Declaration.Type)} | undefined;", v);
+                        c.Raw($"static get {fieldName}(): {DeclaredType(f.Declaration.Type)} "
+                            + $"{{ return {name}.{slot} ??= {def}; }}", v);
+                    }
+                    else
+                    {
+                        c.Field(fieldName, DeclaredType(f.Declaration.Type),
+                            isStaticMember ? def : null, v, isStatic: isStaticMember);
+                    }
                 }
             }
             foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
             {
                 var pn = p.Identifier.Text.ToCamelCase();
+                // The RETURN type is emitted: a computed property is where a model's types cross
+                // from one member to the next, and an unannotated getter makes every read of it
+                // `any` — which then spreads to every lambda over what it returned.
+                var propertyType = DeclaredType(p.Type);
                 if (p.ExpressionBody != null)
                 {
-                    c.Raw($"{qualifier}get {pn}() {{ return {_converter.ConvertExpression(p.ExpressionBody.Expression)}; }}", p);
+                    c.Raw($"{qualifier}get {pn}(): {propertyType} {{ return {_converter.ConvertExpression(p.ExpressionBody.Expression)}; }}", p);
                 }
                 else if (p.AccessorList != null)
                 {
                     var g = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
                     if (g?.ExpressionBody != null)
-                        c.Raw($"{qualifier}get {pn}() {{ return {_converter.ConvertExpression(g.ExpressionBody.Expression)}; }}", g);
+                        c.Raw($"{qualifier}get {pn}(): {propertyType} {{ return {_converter.ConvertExpression(g.ExpressionBody.Expression)}; }}", g);
                     else if (g?.Body != null)
-                        c.Raw($"{qualifier}get {pn}() {{ {StripJsBraces(_converter.Convert(g.Body))} }}", g);
+                        c.Raw($"{qualifier}get {pn}(): {propertyType} {{ {StripJsBraces(_converter.Convert(g.Body))} }}", g);
                     else if (p.Initializer != null)
-                        c.Field(pn, asStatic ? CSharpTypeToTypeScript(p.Type.ToString()) : null,
-                            _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()), p, isStatic: asStatic);
+                        c.Field(pn, DeclaredType(p.Type),
+                            _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()), p,
+                            isStatic: asStatic || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
+                    // An AUTO-property — `{ get; set; }`, `{ get; private set; }`, `{ get; }` — is a
+                    // field with a name. Emitting nothing for it left the class without the member
+                    // its own constructor assigns: `Property 'readOnly' does not exist`.
+                    else
+                    {
+                        // A VALUE type carries its C# default — `public bool ReadOnly { get; set; }`
+                        // IS false before anyone assigns it, and leaving it undefined is not false
+                        // to `===`. A reference type is DECLARED only: its C# default is null, but
+                        // the declared type is non-nullable and the constructor is what assigns.
+                        var defaulted = TypeDeclarationExtensions.DefaultFor(p.Type);
+                        var isStaticProperty = asStatic
+                            || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
+                        if (defaulted == "null" && !isStaticProperty)
+                            c.Raw($"declare {pn}: {DeclaredType(p.Type)};", p);
+                        else
+                            c.Field(pn, DeclaredType(p.Type), defaulted, p, isStatic: isStaticProperty);
+                    }
+
+                    // A property with a SETTER body — the guarded assignment idiom
+                    // (`set { if (value == _x) return; _x = value; Raise(); }`) — is where a model
+                    // keeps its invariants. Emitting only the getter made every assignment to it a
+                    // type error, and would have dropped the invariant if it had compiled.
+                    var setter = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "set");
+                    if (setter?.ExpressionBody != null)
+                        c.Raw($"{qualifier}set {pn}(value: {DeclaredType(p.Type)}) {{ {_converter.ConvertExpression(setter.ExpressionBody.Expression)}; }}", setter);
+                    else if (setter?.Body != null)
+                        c.Raw($"{qualifier}set {pn}(value: {DeclaredType(p.Type)}) {{ {StripJsBraces(_converter.Convert(setter.Body))} }}", setter);
+                }
+            }
+            // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
+            // Nothing emitted it, so `this.changed?.(edit)` reached a property that did not exist.
+            foreach (var e in cls.Members.OfType<EventFieldDeclarationSyntax>())
+            {
+                foreach (var v in e.Declaration.Variables)
+                {
+                    c.Field(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v,
+                        isStatic: asStatic || e.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
                 }
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
@@ -1119,11 +1187,21 @@ public class TypeScriptEmitter
                 var mn = m.Identifier.Text.ToCamelCase();
                 // Optional parameters keep their default here too — a STATIC helper is exactly what
                 // other modules call with the trailing arguments omitted.
-                var pars = string.Join(", ", m.ParameterList.Parameters.Select(pp =>
+                // `out` leaves the signature — it is not passed IN. What it carries comes back in
+                // the returned object; see OutParameters.
+                var byReference = OutParameters.Of(m.ParameterList);
+                var pars = string.Join(", ", m.ParameterList.Parameters
+                    .Where(pp => !OutParameters.IsOut(pp))
+                    .Select(pp =>
                 {
-                    var declared = asStatic
-                        ? $"{pp.Identifier.Text.ToJsIdentifier()}: {CSharpTypeToTypeScript(pp.Type?.ToString() ?? "object")}"
-                        : pp.Identifier.Text.ToJsIdentifier();
+                    // A parameter the body never mentions takes the underscore convention — the
+                    // interface a tokenizer implements hands over state that a simple language
+                    // never reads, and the runtime's own build rejects an unused name.
+                    var body = m.Body?.ToString() ?? m.ExpressionBody?.ToString() ?? "";
+                    var parameterName = body.Contains(pp.Identifier.Text)
+                        ? pp.Identifier.Text.ToJsIdentifier()
+                        : "_" + pp.Identifier.Text.ToJsIdentifier();
+                    var declared = $"{parameterName}: {DeclaredType(pp.Type)}";
                     return pp.Default is null
                         ? declared
                         : $"{declared} = {_converter.ConvertExpression(pp.Default.Value)}";
@@ -1147,6 +1225,9 @@ public class TypeScriptEmitter
                 }
                 else if (m.ExpressionBody != null) mbody = $"return {_converter.ConvertExpression(m.ExpressionBody.Expression)};";
                 else continue;
+                // `out var x` at a CALL SITE inside this body needs `x` to exist before the call.
+                mbody = OutParameters.HoistedLocals(m.Body ?? (SyntaxNode?)m.ExpressionBody) + mbody;
+                if (byReference.Count > 0) mbody = OutParameters.WrapBody(mbody, byReference, isAsync);
                 c.Raw($"{(m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")}"
                     + $"{(isAsync ? "async " : "")}{mn}{generics}({pars}) {{ {mbody} }}", m);
             }
@@ -1162,12 +1243,17 @@ public class TypeScriptEmitter
         var initialisers = new StringBuilder();
         foreach (var field in cls.Members.OfType<FieldDeclarationSyntax>())
         {
-            if (field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)) continue;
+            // `const` is static in C#. Assigning one per instance shadowed the class member the
+            // subclasses read, so `StateNormal` was undefined on the class and 0 on the instance.
+            if (field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
+                || field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword)) continue;
             foreach (var variable in field.Declaration.Variables)
             {
                 if (variable.Initializer is not { } init) continue;
                 var value = _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString());
-                initialisers.Append($"this.{variable.Identifier.Text.ToJsIdentifier()} = {value}; ");
+                // The SAME casing the field declaration uses, or the constructor writes a second,
+                // differently-spelled member beside the one every read goes through.
+                initialisers.Append($"this.{variable.Identifier.Text.ToCamelCase()} = {value}; ");
             }
         }
 
@@ -1180,7 +1266,7 @@ public class TypeScriptEmitter
             ? ""
             : string.Join(", ", ctor.ParameterList.Parameters.Select(p =>
             {
-                var declared = p.Identifier.Text.ToJsIdentifier();
+                var declared = $"{p.Identifier.Text.ToJsIdentifier()}: {DeclaredType(p.Type)}";
                 return p.Default is null ? declared : $"{declared} = {_converter.ConvertExpression(p.Default.Value)}";
             }));
 
@@ -1223,6 +1309,67 @@ public class TypeScriptEmitter
         return $"{{ const {IteratorBufferName} = []; {inner} return {IteratorBufferName}; }}";
     }
 
+    /// <summary>
+    /// The TS annotation for a declared type, asking the semantic model what KIND of thing it is
+    /// before falling back to the name. The name alone is not enough for the two shapes that have
+    /// no TypeScript twin to name: an enum (its runtime form is the member string) and an interface
+    /// (the compiler emits no module for one, so importing the name asks for a file that does not
+    /// exist — `Cannot find name 'ICodeLanguage'`).
+    /// </summary>
+    private string DeclaredType(TypeSyntax? type)
+    {
+        if (type is null) return "any";
+        // Ask about the type ITSELF. `IThing?` is a NullableTypeSyntax WRAPPER: Roslyn answers
+        // nothing about the wrapper, and the mapper answers "IThing | null" for it — which is not
+        // the name, so nothing downstream could tell an echoed name from a translated one.
+        var nullable = type is NullableTypeSyntax;
+        var asked = nullable ? ((NullableTypeSyntax)type).ElementType : type;
+        var mapped = CSharpTypeToTypeScript(asked.ToString());
+        var echoed = mapped == asked.ToString();
+
+        var resolvedRaw = (_semanticModel?.GetSymbolInfo(asked).Symbol as ITypeSymbol)
+            ?? _semanticModel?.GetTypeInfo(asked).Type;
+        var resolved = resolvedRaw is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } lifted
+            ? lifted.TypeArguments[0]
+            : resolvedRaw;
+
+        var core = (echoed ? resolved : null) switch
+        {
+            // An enum crosses as its member STRING; a user interface has no emitted twin to name.
+            { TypeKind: TypeKind.Enum } => "string",
+            { TypeKind: TypeKind.Interface } => "any",
+            { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
+            // A name nothing here can VERIFY is a name the module may not resolve. Annotating with
+            // it trades a missing type for a broken one, so it stays open.
+            null when echoed && !Resolvable(mapped) => "any",
+            _ => mapped,
+        };
+        // A function type has to be PARENTHESISED before a union, or the `| null` binds to its
+        // RETURN: `(e: Edit) => void | null` says the handler may return null, not that the
+        // handler itself may be absent.
+        if (!nullable || core == "any") return core;
+        return core.Contains("=>") ? $"({core}) | null" : $"{core} | null";
+    }
+
+    /// <summary>Whether a bare NAME is something the emitted module can actually name: a type this
+    /// compilation emits, or one the runtime provides.</summary>
+    /// <summary>
+    /// Whether an initialiser has to wait for first USE. Anything that NAMES another module — by
+    /// constructing it, calling it, or just reading one of its members — is unsafe at
+    /// module-evaluation time, because the library's modules import each other through one barrel
+    /// and whichever loads first sees the other as undefined. Only a self-contained literal is
+    /// safe where it stands, so that is what the test asks for.
+    /// </summary>
+    private static bool NeedsLazyInit(string initialiser) =>
+        !System.Text.RegularExpressions.Regex.IsMatch(initialiser.Trim(),
+            @"^(-?\d+(\.\d+)?|'[^']*'|""[^""]*""|`[^`]*`|true|false|null|undefined|\[\]|\{\})$");
+
+    private bool Resolvable(string name) =>
+        _dependencyResolver?.GetAllComponents().Contains(name) == true
+        || _dependencyResolver?.GetAllRecords().Contains(name) == true
+        || _dependencyResolver?.GetAllStaticHelpers().Contains(name) == true
+        || _dependencyResolver?.GetAllPlainClasses().Contains(name) == true;
+
     public string EmitPlainClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
         EmitClassModule(cls, semanticModel, asStatic: false);
 
@@ -1239,6 +1386,7 @@ public class TypeScriptEmitter
 
         var builder = new TypeScriptCodeBuilder();
         builder.Class(name, null, c => EmitStaticMembers(cls, c, asStatic));
+        var emitted = builder.ToString();
 
         // Imports: $eq (if used) + runtime-provided references (the same semantic routing components
         // get — a static helper composing the shared vocabulary/library imports it from the runtime)
@@ -1250,6 +1398,11 @@ public class TypeScriptEmitter
         if (semanticModel != null)
             Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, runtimeProvided, referencedEnums);
         runtimeProvided.Remove(name);
+        // Only what the emitted text NAMES. A type the C# mentions and the emission erases (an
+        // interface, an enum) would otherwise import a name nothing uses — which the runtime's own
+        // build rejects. Lookarounds rather than `\b`: `$eq` starts with a non-word character.
+        runtimeProvided.RemoveWhere(referenced => !System.Text.RegularExpressions.Regex.IsMatch(
+            emitted, $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(referenced)}(?![\w$])"));
         core.UnionWith(runtimeProvided);
         if (core.Count > 0) ib.Import(core, "@equantic/runtime");
         var knownComp = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
@@ -1289,8 +1442,16 @@ public class TypeScriptEmitter
         // it into the same literal the rest of the emit uses (enums → their member string, consts
         // inlined).
         var syntaxParameters = method.SyntaxNode?.ParameterList.Parameters;
-        var parameters = string.Join(", ", method.Parameters.Select((p, index) =>
+        // `out` parameters leave the signature and come back in the returned object — OutParameters.
+        var byReference = OutParameters.Of(method.SyntaxNode?.ParameterList);
+        var outNames = byReference.Where(OutParameters.IsOut)
+            .Select(p => p.Identifier.Text).ToHashSet(StringComparer.Ordinal);
+        var parameters = string.Join(", ", method.Parameters
+            .Select((p, index) => (Parameter: p, Index: index))
+            .Where(entry => !outNames.Contains(entry.Parameter.Name))
+            .Select(entry =>
         {
+            var (p, index) = entry;
             var name = bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name;
             var declared = $"{name}: {DeclarationType(component, p.Type)}";
             var defaultValue = syntaxParameters is { } list && index < list.Count
@@ -1350,6 +1511,9 @@ public class TypeScriptEmitter
                 {
                     body = body.Substring(1, body.Length - 2).Trim();
                 }
+                body = OutParameters.HoistedLocals(method.SyntaxNode.Body
+                    ?? (SyntaxNode?)method.SyntaxNode.ExpressionBody) + body;
+                if (byReference.Count > 0) body = OutParameters.WrapBody(body, byReference, isAsync);
                 c.Raw(body);
             }, method.TypeParameters, sourceNode: method.SyntaxNode, isStatic: method.IsStatic);
         }
@@ -1471,7 +1635,7 @@ public class TypeScriptEmitter
         return sb.ToString();
     }
     
-    private static string CSharpTypeToTypeScript(string? csharpType)
+    internal static string CSharpTypeToTypeScript(string? csharpType)
     {
         if (string.IsNullOrEmpty(csharpType)) return "any";
 
@@ -1509,7 +1673,7 @@ public class TypeScriptEmitter
 
         string tsType = baseType switch
         {
-            "string" => "string",
+            "string" or "char" => "string",
             "int" or "long" or "double" or "float" or "decimal" or "number" => "number",
             "bool" or "boolean" => "boolean",
             "void" => "void",
@@ -1517,6 +1681,10 @@ public class TypeScriptEmitter
             "DateTime" => "Date",
             "Guid" => "string",
             "Task" => "void",
+            // C# names the build argument `ComponentContext`; the runtime declares one interface
+            // for it, under the name the DOM side has always used. Emitting the C# name asked for
+            // a second, incompatible type with the same meaning.
+            "ComponentContext" or "BuildContext" => "RenderContext",
             _ => baseType
         };
 

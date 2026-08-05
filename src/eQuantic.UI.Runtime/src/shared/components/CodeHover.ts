@@ -1,0 +1,3 @@
+import { $eq, CodeRange } from "../runtime-exports";
+
+export class CodeHover { declare range: CodeRange; declare text: string; declare signature: string | null; constructor(range: any = null, text: any = null, signature: any = null) { this.range = range; this.text = text; this.signature = signature; } equals(o: unknown) { return o instanceof CodeHover && $eq.equals(this.range, o.range) && $eq.equals(this.text, o.text) && $eq.equals(this.signature, o.signature); } with(patch: any) { return new CodeHover(('range' in patch ? patch.range : this.range), ('text' in patch ? patch.text : this.text), ('signature' in patch ? patch.signature : this.signature)); } toString() { return `CodeHover { Range = ${this.range}, Text = ${this.text}, Signature = ${this.signature} }`; } }

@@ -26,7 +26,10 @@ public sealed class LayoutContext
         Measurer = measurer;
         TypeScale = typeScale;
         Density = density;
-        Components = new ComponentContext(theme, typeScale, density);
+        // The measurer the layout already holds, handed to components as a SEAM — a code editor
+        // maps a click to a column with it, and nothing else in the tree pays for it.
+        Components = new ComponentContext(theme, typeScale, density,
+            (text, style) => measurer.Measure(text, style, typeScale, float.PositiveInfinity, 1).Width);
     }
 
     /// <summary>How tight this target's controls are (see <see cref="Primitives.Density"/>).</summary>

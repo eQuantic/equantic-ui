@@ -6,6 +6,7 @@
 
 import type { LoweringContext } from './lowering';
 import type { AppTheme } from './value-types';
+import type { TypeStyleValue } from './nodes';
 import { photonTheme } from './design-system.generated';
 
 /** Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free). */
@@ -16,6 +17,54 @@ export class ComponentContext {
     /** 'comfortable' | 'compact' — how tight this target's controls are (C# `Density`). */
     readonly density = 'comfortable',
   ) {}
+
+  /**
+   * How WIDE this text would be in this style, in dp — the C# `ComponentContext.MeasureText`.
+   * The browser's own measurer, through a canvas: the same numbers it will lay the text out with,
+   * which is what a code editor mapping a click to a column depends on.
+   */
+  measureText(text: string, style: TypeStyleValue): number {
+    return measurePhotonText(text, style, this.typeScale);
+  }
+
+  /** The advance of ONE character in a monospaced style (C# `MonoAdvance`). */
+  monoAdvance(style: TypeStyleValue): number {
+    return photonMonoAdvance(style, this.typeScale);
+  }
+}
+
+/**
+ * The same measurement WITHOUT a context object — the DOM render path builds its context as a plain
+ * literal, and a component that has to size a column to its content needs the answer either way.
+ */
+export function measurePhotonText(text: string, style: TypeStyleValue, typeScale = 1): number {
+  if (!text) return 0;
+  const context = measuringContext();
+  if (!context) return 0;
+  const family = style.mono ? MONO_STACK : SANS_STACK;
+  context.font = `${style.weight ?? 400} ${style.size * typeScale}px ${family}`;
+  return context.measureText(text).width;
+}
+
+export function photonMonoAdvance(style: TypeStyleValue, typeScale = 1): number {
+  const sample = '0000000000';
+  const width = measurePhotonText(sample, { ...style, mono: true } as TypeStyleValue, typeScale);
+  return width > 0 ? width / sample.length : 0;
+}
+
+/** The font stacks the CSS uses — measuring with anything else measures the wrong text. */
+const SANS_STACK =
+  'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+const MONO_STACK =
+  'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
+
+let measuring: CanvasRenderingContext2D | null | undefined;
+
+/** One canvas for the whole page — creating one per call is how a measurer becomes the slow part. */
+function measuringContext(): CanvasRenderingContext2D | null {
+  if (measuring !== undefined) return measuring;
+  measuring = typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d');
+  return measuring;
 }
 
 let activeTheme: AppTheme = photonTheme;

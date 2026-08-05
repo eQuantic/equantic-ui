@@ -50,6 +50,29 @@ public class LocalDeclarationStrategy : IStatementStrategy
     private static string Annotation(LocalDeclarationStatementSyntax decl, VariableDeclaratorSyntax variable,
         ConversionContext context)
     {
+        // An EMPTY collection is the one case `var` still needs an annotation: `new List<Token>()`
+        // emits `[]`, and TypeScript infers `any[]` from it — every push into it and every read
+        // out of it then goes unchecked, which is the opposite of what two type layers are for.
+        if (variable.Initializer is not null
+            && context.SemanticHelper.GetType(variable.Initializer.Value)
+                is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 1 } collection
+            // List and HashSet ONLY: a Queue or a Stack lowers to a runtime helper, not an array,
+            // and annotating one  says it is something it is not.
+            && collection.Name is "List" or "HashSet"
+            && variable.Initializer.Value is BaseObjectCreationExpressionSyntax { Initializer: null } creation
+            && (creation.ArgumentList?.Arguments.Count ?? 0) <= 1)
+        {
+            var item = collection.TypeArguments[0];
+            var itemName = item.SpecialType switch
+            {
+                SpecialType.System_String or SpecialType.System_Char => "string",
+                SpecialType.System_Boolean => "boolean",
+                SpecialType.None => item.Name,
+                _ => "number",
+            };
+            return collection.Name == "HashSet" ? $": Set<{itemName}>" : $": {itemName}[]";
+        }
+
         if (decl.Declaration.Type.IsVar || variable.Initializer is null) return "";
 
         var declared = context.SemanticHelper.GetType(decl.Declaration.Type);

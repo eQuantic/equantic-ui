@@ -173,51 +173,7 @@ export { VisualNodeComponent } from './shared/visual-node-component';
 // to the live eqc output (SharedComponentTranspilationTests). `using eQuantic.UI.Components`
 // in app code routes imports here; the standard web components keep their per-app ./modules, so the
 // deliberate name reuse never collides.
-export { Button } from './shared/components/Button';
-export { Card } from './shared/components/Card';
-export { Divider } from './shared/components/Divider';
-export { Badge } from './shared/components/Badge';
-export { Chip } from './shared/components/Chip';
-export { ProgressBar } from './shared/components/ProgressBar';
-export { Avatar } from './shared/components/Avatar';
-export { Banner } from './shared/components/Banner';
-export { IconButton } from './shared/components/IconButton';
-export { Checkbox } from './shared/components/Checkbox';
-export { Switch } from './shared/components/Switch';
-export { RadioGroup } from './shared/components/RadioGroup';
-export { ListItem } from './shared/components/ListItem';
-export { List } from './shared/components/List';
-export { Tabs } from './shared/components/Tabs';
-export { EmptyState } from './shared/components/EmptyState';
-export { AppBar } from './shared/components/AppBar';
-export { BottomNavigation } from './shared/components/BottomNavigation';
-export { NavItem } from './shared/components/NavItem';
-export { Skeleton } from './shared/components/Skeleton';
-export { TextInput } from './shared/components/TextInput';
-export { Dialog } from './shared/components/Dialog';
-export { Toast } from './shared/components/Toast';
-export { BottomSheet } from './shared/components/BottomSheet';
-export { DialogAction } from './shared/components/DialogAction';
-export { SearchField } from './shared/components/SearchField';
-export { Menu } from './shared/components/Menu';
-export { MenuItem } from './shared/components/MenuItem';
-export { Select } from './shared/components/Select';
-export { Popover } from './shared/components/Popover';
-export { Tooltip } from './shared/components/Tooltip';
-export { Drawer } from './shared/components/Drawer';
-export { Accordion } from './shared/components/Accordion';
-export { AccordionItem } from './shared/components/AccordionItem';
-export { Table } from './shared/components/Table';
-export { Breadcrumb } from './shared/components/Breadcrumb';
-export { Crumb } from './shared/components/Crumb';
-export { DataColumn } from './shared/components/DataColumn';
-export { DataRow } from './shared/components/DataRow';
-export { DataTable } from './shared/components/DataTable';
-export { PageIndicator } from './shared/components/PageIndicator';
-export { Pagination } from './shared/components/Pagination';
-export { SegmentedControl } from './shared/components/SegmentedControl';
-export { Slider } from './shared/components/Slider';
-export { Stepper } from './shared/components/Stepper';
+export * from './shared/components';
 // Generated design system (tokens + theme — values from the C# single source, never hand-written).
 export {
   Space,

@@ -47,11 +47,46 @@ public class RecordTypeEmitter
     /// </summary>
     public string EmitModule(TypeDeclarationSyntax type)
     {
-        var imports = new StringBuilder("import { $eq } from \"@equantic/runtime\";\n");
+        // What the BODIES reference, not just what the members declare: a computed property
+        // (`InsertedRange => new CodeRange(new CodePosition(…))`) names types the positional
+        // members never mention, and an unimported name is `Cannot find name 'CodePosition'`.
+        var runtimeProvided = new HashSet<string> { "$eq" };
+        if (ModelFor(type) is { } model)
+            Services.RuntimeProvidedTypeScanner.Collect(type, model, runtimeProvided, new HashSet<string>());
+        runtimeProvided.Remove(type.Identifier.Text);
+
+        var body = Emit(type, tsTypeDeclarations: true);
+        // Only what the emitted text actually NAMES: a type mentioned in the C# and erased on the
+        // way out (an interface, an enum) would otherwise import a name nothing uses, which the
+        // runtime's own build rejects.
+        var used = runtimeProvided
+            // Lookarounds, not `\b`: `$eq` starts with a non-word character, so a word boundary
+            // never matches it and the one import every module needs would be the first to go.
+            .Where(name => System.Text.RegularExpressions.Regex.IsMatch(body,
+                $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(name)}(?![\w$])"))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        var imports = new StringBuilder(
+            $"import {{ {string.Join(", ", used)} }} from \"@equantic/runtime\";\n");
         // A base record is emitted as its own module — import it so `extends` resolves.
         var (baseName, _, _) = BaseInfo(type);
         if (baseName != null) imports.Append($"import {{ {baseName} }} from \"./{baseName}\";\n");
-        return imports.Append("\nexport ").Append(Emit(type, tsTypeDeclarations: true)).Append('\n').ToString();
+        return imports.Append("\nexport ").Append(body).Append('\n').ToString();
+    }
+
+    /// <summary>The TS annotation for a declared type, resolved the way the class emitter does it:
+    /// an enum is its member string and an interface has no emitted twin to name.</summary>
+    private string TsTypeOf(TypeSyntax? type)
+    {
+        if (type is null) return "any";
+        var resolved = ModelFor(type)?.GetTypeInfo(type).Type;
+        return resolved switch
+        {
+            { TypeKind: TypeKind.Enum } => "string",
+            { TypeKind: TypeKind.Interface } => "any",
+            _ => TypeDeclarationExtensions.TsTypeFor(type, ModelFor(type)),
+        };
     }
 
     /// <param name="type">The record/struct declaration to emit.</param>
@@ -112,7 +147,7 @@ public class RecordTypeEmitter
         foreach (var method in type.Members.OfType<MethodDeclarationSyntax>())
         {
             if (method.Identifier.Text == "ToString") userToString = true;
-            sb.Append(EmitMethod(method, name)).Append(' ');
+            sb.Append(EmitMethod(method, name, tsTypeDeclarations)).Append(' ');
         }
 
         // OPERATOR overloads. JavaScript cannot overload `+`, so the operator becomes a static
@@ -122,22 +157,59 @@ public class RecordTypeEmitter
         {
             var opName = OperatorMethodName(op.OperatorToken.Text);
             if (opName is null) continue;
-            var pars = string.Join(", ", op.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()));
+            var pars = string.Join(", ", op.ParameterList.Parameters
+                .Select(p => tsTypeDeclarations
+                    ? $"{p.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(p.Type)}"
+                    : p.Identifier.Text.ToJsIdentifier()));
             var body = op.ExpressionBody is { } expr
                 ? $"return {_converter.ConvertExpression(expr.Expression)};"
                 : op.Body is { } block ? Unwrap(_converter.Convert(block)) : "";
             sb.Append($"static {opName}({pars}) {{ {body} }} ");
         }
 
-        // Static PROPERTIES are the other half of the factory idiom (`static Foo Empty => …`).
+        // Static FIELDS — `public static readonly CodePosition Start = new(0, 0);`. The other half of
+        // the "well-known value" idiom, and nothing emitted them: `CodePosition.start` was
+        // undefined, so every comparison against the origin silently failed.
+        foreach (var field in type.Members.OfType<FieldDeclarationSyntax>())
+        {
+            if (!field.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword) || m.IsKind(SyntaxKind.ConstKeyword)))
+                continue;
+            _converter.SetCurrentClass(name);
+            foreach (var variable in field.Declaration.Variables)
+            {
+                var value = variable.Initializer is { } init
+                    ? _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())
+                    : "undefined";
+                sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {value}; ");
+            }
+        }
+
+        // PROPERTIES with a body — computed, on the instance (`Start => Anchor <= Focus ? … : …`)
+        // or static (`static Foo Empty => …`, the factory idiom). A record is a value with
+        // BEHAVIOUR; emitting only its positional members threw the behaviour away.
         foreach (var property in type.Members.OfType<PropertyDeclarationSyntax>())
         {
-            if (!property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword))) continue;
-            if (property.ExpressionBody is not { } expression) continue;
+            var isStatic = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
+            var getter = property.ExpressionBody?.Expression
+                ?? property.AccessorList?.Accessors
+                    .FirstOrDefault(a => a.Keyword.Text == "get")?.ExpressionBody?.Expression;
             _converter.SetCurrentClass(name);
-            sb.Append($"static get {property.Identifier.Text.ToCamelCase()}() {{ return ")
-              .Append(_converter.Convert(expression.Expression))
-              .Append("; } ");
+            var prefix = isStatic ? "static " : "";
+            var propertyName = property.Identifier.Text.ToCamelCase();
+            if (getter is not null)
+            {
+                sb.Append($"{prefix}get {propertyName}() {{ return ")
+                  .Append(_converter.Convert(getter))
+                  .Append("; } ");
+                continue;
+            }
+            if (property.AccessorList?.Accessors
+                    .FirstOrDefault(a => a.Keyword.Text == "get")?.Body is { } block)
+            {
+                sb.Append($"{prefix}get {propertyName}() {{ ")
+                  .Append(Unwrap(_converter.Convert(block)))
+                  .Append(" } ");
+            }
         }
 
         // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it.
@@ -211,10 +283,18 @@ public class RecordTypeEmitter
         return trimmed.StartsWith('{') && trimmed.EndsWith('}') ? trimmed[1..^1].Trim() : trimmed;
     }
 
-    private string EmitMethod(MethodDeclarationSyntax method, string className)
+    private string EmitMethod(MethodDeclarationSyntax method, string className,
+        bool tsTypeDeclarations)
     {
         var jsName = method.Identifier.Text.ToCamelCase();
-        var pars = string.Join(", ", method.ParameterList.Parameters.Select(p => p.Identifier.Text.ToCamelCase()));
+        // Typed: a record is a VALUE and its methods are its behaviour — untyped parameters put an
+        // `any` at every one of them and quietly ended the checking on the way in. Only in the .ts
+        // emission, though: the conformance harness runs the same class as plain `.mjs`, where an
+        // annotation is a parse error rather than a type.
+        var pars = string.Join(", ", method.ParameterList.Parameters
+            .Select(p => tsTypeDeclarations
+                ? $"{p.Identifier.Text.ToCamelCase()}: {TsTypeOf(p.Type)}"
+                : p.Identifier.Text.ToCamelCase()));
         _converter.SetCurrentClass(className);
 
         string body;

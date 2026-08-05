@@ -9,12 +9,15 @@ namespace eQuantic.UI.Primitives;
 public sealed class ComponentContext
 {
     public ComponentContext(IAppTheme theme, float typeScale = 1f,
-        Density density = Density.Comfortable)
+        Density density = Density.Comfortable, Func<string, TypeStyle, float>? measureText = null)
     {
         Theme = theme;
         TypeScale = typeScale;
         Density = density;
+        _measureText = measureText;
     }
+
+    private readonly Func<string, TypeStyle, float>? _measureText;
 
     public IAppTheme Theme { get; }
     public float TypeScale { get; }
@@ -24,6 +27,36 @@ public sealed class ComponentContext
     /// phone's. A component reads it where it reads the theme, and never asks which target it is.
     /// </summary>
     public Density Density { get; }
+
+    /// <summary>
+    /// How WIDE this text would be in this style, in dp.
+    /// <para>
+    /// Layout measures text; a COMPONENT normally does not have to, and should not want to. The
+    /// exception is a control whose geometry IS text geometry — a code editor mapping a click to a
+    /// line and column, placing a caret between two characters, drawing a selection band across
+    /// part of a line. Without this seam that control cannot be a component at all: it has to be a
+    /// node with its own support in both realizers, written twice.
+    /// </para>
+    /// <para>
+    /// Answers 0 when no measurer is present (a headless render, a test that never draws) — a
+    /// caller that has to place something exactly should ask once and reuse the number, which for
+    /// a monospaced face is all it ever needs: one advance times a column.
+    /// </para>
+    /// </summary>
+    public float MeasureText(string text, TypeStyle style) =>
+        _measureText is null || text.Length == 0 ? 0 : _measureText(text, style);
+
+    /// <summary>
+    /// The advance of ONE character in a monospaced style — the number a code editor turns every
+    /// column into. Measured over a run and divided, because a single glyph's advance can round
+    /// differently than the run it sits in.
+    /// </summary>
+    public float MonoAdvance(TypeStyle style)
+    {
+        const string sample = "0000000000";
+        var width = MeasureText(sample, style with { Mono = true });
+        return width > 0 ? width / sample.Length : 0;
+    }
 }
 
 /// <summary>
