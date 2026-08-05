@@ -184,7 +184,7 @@ public static class PhotonRealizer
         // keep shrink-to-fit on both axes (position:fixed semantics), which is what lets a
         // dropdown panel hug its options while the page behind it still fills the viewport.
         // One-shot flag: the root consumes it.
-        context.StretchWidth = true;
+        context.StretchWidth = StretchKind.Block;
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context);
 
         var hits = new List<HitRegion>();

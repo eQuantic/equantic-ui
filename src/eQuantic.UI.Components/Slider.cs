@@ -91,6 +91,10 @@ public sealed class Slider : StatelessComponent
         var box = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
+            // The control's own intrinsic width, exactly why <input type=range> is ~129px in the
+            // UA stylesheet: in a shrink-to-fit container a fluid track has no width of its own,
+            // and a slider that collapses to its thumb is not a slider.
+            MinWidth = 120,
             Height = Touch.MinTarget,
             Opacity = Disabled ? theme.DisabledOpacity : 1f,
         }, surface);
