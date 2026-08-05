@@ -1,4 +1,4 @@
-namespace eQuantic.UI.Native.Framework;
+namespace eQuantic.UI.Primitives;
 
 /// <summary>
 /// The system clipboard, as far as a text field needs it.
@@ -9,8 +9,9 @@ namespace eQuantic.UI.Native.Framework;
 /// </para>
 /// <para>
 /// Null on a host means the platform has none — headless, a test, a shell that has not wired it —
-/// and the copy keys then do nothing rather than pretending. The web needs no realization at all:
-/// an <c>&lt;input&gt;</c> has done this since before any of us.
+/// and the copy keys then do nothing rather than pretending. Inside a text field the web needs no
+/// realization (an <c>&lt;input&gt;</c> has done this forever); as a SERVICE a page asks for — a
+/// "Copy C#" button — the web realizes it over <c>navigator.clipboard</c>.
 /// </para>
 /// </summary>
 public interface ITextClipboard

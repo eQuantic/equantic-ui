@@ -79,7 +79,7 @@ public sealed class PhotonHost
 
     /// <summary>The platform clipboard (null = the copy keys do nothing, which is the honest
     /// answer on a host that has none).</summary>
-    public Framework.ITextClipboard? Clipboard { get; set; }
+    public ITextClipboard? Clipboard { get; set; }
 
     /// <summary>W4: the platform image service (null = SurfaceSubtle placeholder boxes).</summary>
     public Framework.IImageLoader? ImageLoader { get; set; }

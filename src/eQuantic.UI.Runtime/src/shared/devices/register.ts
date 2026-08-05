@@ -5,6 +5,7 @@ import { WebLocation } from './location';
 import { WebMotionSensor } from './motion-sensor';
 import { WebNetworkStatus } from './network-status';
 import { WebPhotoLibrary } from './photo-library';
+import { WebTextClipboard } from './text-clipboard';
 import { WebThemeController } from './theme-controller';
 
 /**
@@ -29,4 +30,5 @@ export function registerDeviceCapabilities(): void {
   // Not a device, but the same contract: a component asks for the light/dark hand by interface
   // name and never learns that on this target it is one color-scheme declaration.
   services.registerSingleton('IThemeController', () => new WebThemeController());
+  services.registerSingleton('ITextClipboard', () => new WebTextClipboard());
 }

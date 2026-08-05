@@ -47,6 +47,10 @@ public sealed class TextInput : StatefulComponent
     public Icons? Leading { get; private set; }
     public SizeVariant Size { get; private set; }
     public bool Disabled { get; init; }
+
+    /// <summary>Claims the caret when it first appears — a search overlay's field wants typing
+    /// to start immediately. Honoured once, exactly as the underlying <see cref="TextEntry"/> does.</summary>
+    public bool Autofocus { get; init; }
     public bool Obscure { get; init; }
 
     public override void AdoptConfig(UiComponent next)
@@ -86,6 +90,7 @@ public sealed class TextInput : StatefulComponent
             Placeholder = Placeholder,
             Disabled = Disabled,
             Obscure = Obscure,
+            Autofocus = Autofocus,
             OnFocusChanged = focused => SetState(() => _focused = focused),
         }, 1));
 

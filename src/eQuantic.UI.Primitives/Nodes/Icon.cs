@@ -28,6 +28,15 @@ public enum Icons : byte
     Plus = 16,
     /// <summary>Stepper decrement.</summary>
     Minus = 17,
+
+    /// <summary>Run/play affordances — a gallery's "Run sample".</summary>
+    Play = 18,
+
+    /// <summary>Sync/refresh affordances.</summary>
+    Refresh = 19,
+
+    /// <summary>Copy-to-clipboard affordances — a "Copy C#" button.</summary>
+    Copy = 20,
 }
 
 /// <summary>

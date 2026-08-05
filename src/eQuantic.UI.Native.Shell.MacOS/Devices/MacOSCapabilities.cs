@@ -22,5 +22,8 @@ public sealed class MacOSCapabilities : IPhotonCapabilities
         services.TryAddSingleton<IMotionSensor, AppleMotionSensor>();
         services.TryAddSingleton<ILocation, AppleLocation>();
         services.TryAddSingleton<ICamera, AppleCamera>();
+        // The same two-method clipboard the text fields use, offered as a SERVICE — what a page's
+        // own "Copy" button asks for.
+        services.TryAddSingleton<ITextClipboard, MacClipboard>();
     }
 }
