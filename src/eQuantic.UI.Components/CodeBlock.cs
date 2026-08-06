@@ -68,6 +68,19 @@ public sealed class CodeBlock : StatelessComponent
     public CodeHighlighter? Highlighter { get; init; }
 
     /// <summary>
+    /// Where the viewport currently sits, and how tall it is. Given both, only the lines you can SEE
+    /// are built, and the rest of the document's height is a spacer — which is the difference between
+    /// a file that opens and a file that hangs the frame. Zero height = build everything, which is
+    /// right for a snippet and for the first frame, before layout has told anyone how tall it is.
+    /// </summary>
+    public float ViewportOffset { get; init; }
+    public float ViewportHeight { get; init; }
+
+    /// <summary>Reported when the viewport moves or resizes — an editor feeds these back in.</summary>
+    public Action<float>? OnScrolled { get; init; }
+    public Action<float>? OnViewportChanged { get; init; }
+
+    /// <summary>
     /// Where the code SITS, in dp. The editable twin needs exactly these numbers to place a caret,
     /// and two independent calculations of them would drift by a pixel and then by a character —
     /// so there is one, and both surfaces read it.
@@ -110,17 +123,42 @@ public sealed class CodeBlock : StatelessComponent
         var ink = Inverse ? CodeInk : theme.TextPrimary;
         var surface = Inverse ? CodeSlab : theme.SurfaceSubtle;
 
+        // The WINDOW: the lines the viewport can show, plus a margin either side so a scroll of one
+        // line does not have to build anything. Above and below it, one spacer each, so the content
+        // is as tall as the file and the scrollbar tells the truth.
+        var (first, last) = Window(lineHeight);
         var lines = new Column(gap: 0) { Width = SizeValue.Fill };
-        for (var index = 0; index < Document.LineCount; index++)
+        if (first > 0) lines.Add(Spacer.Fixed(first * lineHeight));
+        for (var index = first; index <= last; index++)
         {
             lines.Add(LineRow(context, highlighter, index, style, lineHeight, gutterWidth, ink, theme));
+        }
+        if (last < Document.LineCount - 1)
+            lines.Add(Spacer.Fixed((Document.LineCount - 1 - last) * lineHeight));
+
+        // Decorations are RANGES, and a range is a rectangle: the same column arithmetic the caret
+        // uses. Drawn UNDER the lines, in one layer, so the code reads through them — and drawn
+        // here rather than in a realizer so a read-only block gets them too.
+        VisualNode content = lines;
+        if (Decorations.Count > 0)
+        {
+            var decorated = new Stack { Width = SizeValue.Fill };
+            var marks = new Stack { Width = SizeValue.Fill };
+            foreach (var decoration in Decorations)
+            {
+                foreach (var mark in Marks(decoration, metrics, theme))
+                    marks.Add(mark);
+            }
+            decorated.Add(marks);
+            decorated.Add(lines);
+            content = decorated;
         }
 
         VisualNode body = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Padding = EdgeInsets.Symmetric(0, Space.S3),
-        }, lines);
+        }, content);
 
         // Long lines scroll sideways rather than wrapping: a wrapped line of code has lost the one
         // thing its indentation was telling you.
@@ -128,7 +166,12 @@ public sealed class CodeBlock : StatelessComponent
         if (MaxHeight > 0)
         {
             body = new Box(new BoxStyle { Width = SizeValue.Fill, MaxHeight = MaxHeight },
-                new ScrollView(body) { Width = SizeValue.Fill });
+                new ScrollView(body)
+                {
+                    Width = SizeValue.Fill,
+                    OnScrolled = OnScrolled,
+                    OnViewportChanged = OnViewportChanged,
+                });
         }
 
         var slab = new Box(new BoxStyle
@@ -224,21 +267,94 @@ public sealed class CodeBlock : StatelessComponent
 
         row.Add(new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(Space.S3, 0) }, code));
 
+        // The wash is the ACTIVE line only now: a decoration is a range, drawn column-accurately
+        // over the whole block rather than as a full-width stripe on whatever line it starts on.
         var active = ActiveLine == index;
-        var decoration = DecorationFor(index);
-        if (!active && decoration is null) return row;
+        if (!active) return row;
 
         // On the INVERSE slab the theme's light-mode tokens are near-white, and a near-white wash
         // over dark code reads as a rendering fault rather than "you are here". The slab has its
         // own pair, one shade off itself.
-        var wash = decoration?.Color is { } marked
-            ? (Inverse ? new ColorToken(marked.Dark, marked.Dark) : marked)
-            : Inverse
-                ? (active ? CodeSlabActive : CodeSlabMarked)
-                : (active ? theme.Colors(Variant.Primary).Subtle : theme.SurfaceHighlight);
-
+        var wash = Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle;
         return new Box(new BoxStyle { Width = SizeValue.Fill, Background = wash }, row);
     }
+
+    /// <summary>
+    /// The first and last line to BUILD. With no viewport reported yet the answer is "all of them",
+    /// which is right for a snippet and for the first frame — the window narrows as soon as layout
+    /// has said how tall the box turned out to be.
+    /// </summary>
+    private (int First, int Last) Window(float lineHeight)
+    {
+        if (ViewportHeight <= 0 || lineHeight <= 0) return (0, Document.LineCount - 1);
+        const int margin = 8;   // a scroll of one line builds nothing
+        var first = Math.Max(0, (int)MathF.Floor(ViewportOffset / lineHeight) - margin);
+        var visible = (int)MathF.Ceiling(ViewportHeight / lineHeight) + margin * 2;
+        return (first, Math.Min(Document.LineCount - 1, first + visible));
+    }
+
+    /// <summary>
+    /// One decoration as positioned rectangles — one per line it spans, like the selection band, and
+    /// for the same reason: a single rectangle over a multi-line range would cover the indentation
+    /// of lines the range never touched.
+    /// </summary>
+    private IEnumerable<VisualNode> Marks(CodeDecoration decoration, CodeMetrics metrics, IAppTheme theme)
+    {
+        var start = Document.Clamp(decoration.Range.Start);
+        var end = Document.Clamp(decoration.Range.End);
+        var color = decoration.Color ?? DefaultColor(decoration.Kind, theme);
+        if (Inverse) color = new ColorToken(color.Dark, color.Dark);
+
+        for (var line = start.Line; line <= end.Line; line++)
+        {
+            var from = line == start.Line ? start.Column : 0;
+            var to = line == end.Line ? end.Column : Document.Line(line).Length;
+            if (to <= from) continue;
+
+            var left = metrics.ContentLeft + from * metrics.ColumnWidth;
+            var top = line * metrics.LineHeight;
+            var width = (to - from) * metrics.ColumnWidth;
+
+            yield return decoration.Kind switch
+            {
+                // A box AROUND the range: what a matching bracket wears, because a wash would hide
+                // the character the box is pointing at.
+                CodeDecorationKind.Outline => new Positioned(new Box(new BoxStyle
+                {
+                    Width = width, Height = metrics.LineHeight,
+                    BorderWidth = 1, BorderColor = color,
+                    CornerRadius = new CornerRadii(2),
+                }), top: top, start: left),
+
+                // A line UNDER the range — a diagnostic. (Wavy needs a shader; a 2dp rule reads the
+                // same at this size and costs nothing.)
+                CodeDecorationKind.Squiggle => new Positioned(new Box(new BoxStyle
+                {
+                    Width = width, Height = 2, Background = color,
+                }), top: top + metrics.LineHeight - 2, start: left),
+
+                // A line THROUGH it — deleted in a diff, unreachable code.
+                CodeDecorationKind.Strike => new Positioned(new Box(new BoxStyle
+                {
+                    Width = width, Height = 1, Background = color,
+                }), top: top + metrics.LineHeight / 2, start: left),
+
+                _ => new Positioned(new Box(new BoxStyle
+                {
+                    Width = width, Height = metrics.LineHeight, Background = color,
+                    CornerRadius = new CornerRadii(2),
+                }), top: top, start: left),
+            };
+        }
+    }
+
+    private static ColorToken DefaultColor(CodeDecorationKind kind, IAppTheme theme) => kind switch
+    {
+        CodeDecorationKind.Squiggle => theme.Colors(Variant.Destructive).Base,
+        CodeDecorationKind.Outline => theme.BorderStrong,
+        CodeDecorationKind.Strike => theme.TextMuted,
+        _ => theme.Colors(Variant.Warning).Subtle,
+    };
 
     private static VisualNode Run(string content, ColorToken color, TypeStyle style) =>
         new Text(content, TypeRole.LabelSmall, color, maxLines: 1)
@@ -251,14 +367,6 @@ public sealed class CodeBlock : StatelessComponent
     {
         foreach (var marker in GutterMarkers)
             if (marker.Line == line) return marker;
-        return null;
-    }
-
-    private CodeDecoration? DecorationFor(int line)
-    {
-        foreach (var decoration in Decorations)
-            if (decoration.Range.Start.Line <= line && decoration.Range.End.Line >= line)
-                return decoration;
         return null;
     }
 
@@ -289,9 +397,8 @@ public sealed class CodeBlock : StatelessComponent
     private static readonly ColorToken CodeInk = new(new Color(0xC9, 0xD4, 0xDE, 0xFF));
     private static readonly ColorToken CodeInkMuted = new(new Color(0x7C, 0x8A, 0x99, 0xFF));
 
-    /// <summary>The slab, one shade lighter — the caret's line, and a marked one.</summary>
+    /// <summary>The slab, one shade lighter — the caret's line.</summary>
     private static readonly ColorToken CodeSlabActive = new(new Color(0x1B, 0x22, 0x2B, 0xFF));
-    private static readonly ColorToken CodeSlabMarked = new(new Color(0x16, 0x1C, 0x24, 0xFF));
 
     /// <summary>On the dark slab the theme's light-mode colours would vanish, so the DARK half of
     /// each token is used in both modes.</summary>

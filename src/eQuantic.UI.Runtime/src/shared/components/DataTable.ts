@@ -26,7 +26,7 @@ export class DataTable extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let tracks = this.tracks();let table = new Column(0, { width: SizeValue.fill });table.add(this.header(theme, tracks));let empty; if (this.rows.length === 0 && this.pendingRows === 0 && ((this.empty != null) && (empty = this.empty, true))) {table.add(empty);return table;}for (const row of this.rows) table.add(this.body(theme, tracks, row));for (let i = 0; i < this.pendingRows; i++) table.add(this.pending(theme, tracks, i));return table;
+        let theme = context.theme;let tracks = this.tracks();let table = new Column(0, { width: SizeValue.fill });table.add(this.header(theme, tracks));let empty: any; if (this.rows.length === 0 && this.pendingRows === 0 && ((this.empty != null) && (empty = this.empty, true))) {table.add(empty);return table;}for (const row of this.rows) table.add(this.body(theme, tracks, row));for (let i = 0; i < this.pendingRows; i++) table.add(this.pending(theme, tracks, i));return table;
     }
 
     tracks() {

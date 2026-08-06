@@ -1434,6 +1434,19 @@ public sealed class ScrollView : VisualNode
 
     /// <summary>Programmatic scroll position in dp (≥ 0, toward the content end).</summary>
     public float Offset { get; init; }
+
+    /// <summary>
+    /// Where it IS, whenever that changes — the out channel to the in channel above. A component
+    /// that has to know: a list that only builds the rows you can see, a header that shrinks, a
+    /// "back to top" that appears past a fold. Without it the offset lives in the host and no
+    /// component can ask, which is the difference between a list that scrolls and a list that
+    /// can be long.
+    /// </summary>
+    public Action<float>? OnScrolled { get; init; }
+
+    /// <summary>How tall the viewport turned out to be, reported once it is known. A window over a
+    /// long document is (offset, height) and neither is knowable before layout.</summary>
+    public Action<float>? OnViewportChanged { get; init; }
 }
 
 /// <summary>

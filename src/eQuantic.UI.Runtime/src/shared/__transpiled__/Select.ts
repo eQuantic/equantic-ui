@@ -23,7 +23,7 @@ export class Select extends SharedStatefulComponent {
     }
 
     adoptConfig(next: UiComponent) {
-        let fresh; if (!((next instanceof Select && (fresh = next, true)))) return;this.options = fresh.options;this.selectedIndex = fresh.selectedIndex;this.onChanged = fresh.onChanged;this.placeholder = fresh.placeholder;
+        let fresh: any; if (!((next instanceof Select && (fresh = next, true)))) return;this.options = fresh.options;this.selectedIndex = fresh.selectedIndex;this.onChanged = fresh.onChanged;this.placeholder = fresh.placeholder;
     }
 
     toggle() {

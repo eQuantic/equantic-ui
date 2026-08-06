@@ -585,6 +585,22 @@ public sealed class CodeEditorController
     /// The bracket that PAIRS with the one at a position, or null — what draws the outline around
     /// a matching brace and what ⌘⇧\ jumps to. Counts nesting, so it lands on the right one.
     /// </summary>
+    /// <summary>
+    /// The bracket pair the CARET is against — the one an editor outlines. A caret sits BETWEEN
+    /// characters, so it belongs to the bracket on either side of it, and the one behind wins
+    /// (having just typed `)`, that is the one you mean).
+    /// </summary>
+    public (CodePosition Here, CodePosition There)? BracketAtCaret()
+    {
+        var caret = Caret;
+        if (caret.Column > 0)
+        {
+            var behind = caret with { Column = caret.Column - 1 };
+            if (MatchingBracket(behind) is { } match) return (behind, match);
+        }
+        return MatchingBracket(caret) is { } ahead ? (caret, ahead) : null;
+    }
+
     public CodePosition? MatchingBracket(CodePosition at)
     {
         var here = _document.Clamp(at);

@@ -19,10 +19,11 @@ public class LocalFunctionTests : StrategyTestBase
 
         var js = Convert(code);
 
-        // LocalFunctionStatementStrategy now enforces camelCase
-        Assert.Contains("run() {", js);
+        // camelCase, and an ARROW rather than a `function`: a local function inside a method can
+        // use the instance, and a `function` declaration rebinds `this` to undefined in a module.
+        Assert.Contains("const run = () => {", js);
         Assert.Contains("let x = 10;", js);
-        Assert.Contains("function local() {", js);
+        Assert.Contains("const local = () => {", js);
         Assert.Contains("console.log(x);", js);
         Assert.Contains("local();", js);
     }
@@ -41,7 +42,9 @@ public class LocalFunctionTests : StrategyTestBase
 
         var js = Convert(code);
 
-        Assert.Contains("function add(a, b) {", js);
+        // No annotations here: this harness converts to plain JS, which is also what the
+        // conformance runner EXECUTES. Types are for the module emission.
+        Assert.Contains("const add = (a, b) => {", js);
         Assert.Contains("return a + b;", js);
         Assert.Contains("let sum = add(1, 2);", js);
     }
@@ -57,7 +60,7 @@ public class LocalFunctionTests : StrategyTestBase
 
         var js = Convert(code);
 
-        Assert.Contains("function square(x) {", js);
+        Assert.Contains("const square = (x) => {", js);
         Assert.Contains("return x * x;", js);
     }
 }

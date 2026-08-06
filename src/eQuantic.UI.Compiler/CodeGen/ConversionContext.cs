@@ -60,4 +60,11 @@ public class ConversionContext
     /// nonsense, so the conditional access steps aside and takes the call as the whole chain.
     /// </summary>
     public bool NullGuardAnswered { get; set; }
+
+    /// <summary>
+    /// Whether the output is TYPESCRIPT. Off by default, because the same converter also produces
+    /// plain `.mjs` — the conformance harness EXECUTES the emission, and `x: number` is a parse
+    /// error there rather than a type. The module emitters turn it on; nothing else may.
+    /// </summary>
+    public bool TypeAnnotations { get; set; }
 }

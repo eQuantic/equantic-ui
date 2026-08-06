@@ -21,7 +21,11 @@ public class LambdaExpressionStrategy : IConversionStrategy
     {
         if (node is ParenthesizedLambdaExpressionSyntax parenthesized)
         {
-            var parameters = string.Join(", ", parenthesized.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()));
+            // The parameter TYPES come from the semantic model: a lambda handed to a config object
+            // has nothing to infer from on the other side, and an untyped parameter is an error in
+            // the runtime's own build rather than merely a missing type.
+            var parameters = string.Join(", ", parenthesized.ParameterList.Parameters
+                .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
             var body = parenthesized.Block != null 
                 ? context.Converter.ConvertBlock(parenthesized.Block) 
                 : context.Converter.ConvertExpression(parenthesized.ExpressionBody!);
@@ -30,7 +34,7 @@ public class LambdaExpressionStrategy : IConversionStrategy
         
         if (node is SimpleLambdaExpressionSyntax simple)
         {
-            var param = simple.Parameter.Identifier.Text.ToJsIdentifier();
+            var param = Typed(simple.Parameter.Identifier.Text.ToJsIdentifier(), simple.Parameter, context);
             var body = simple.Block != null 
                 ? context.Converter.ConvertBlock(simple.Block) 
                 : context.Converter.ConvertExpression(simple.ExpressionBody!);
@@ -38,6 +42,39 @@ public class LambdaExpressionStrategy : IConversionStrategy
         }
         
         return "() => {}";
+    }
+
+    /// <summary>A parameter with its TS type, resolved through the model. Falls back to the bare
+    /// name when nothing can be said — an untyped parameter beats a wrong one.</summary>
+    private static string Typed(string name, ParameterSyntax parameter, ConversionContext context)
+    {
+        // A lambda parameter is DECLARED by the lambda, so it answers to GetDeclaredSymbol —
+        // GetSymbolInfo is for references, and asking it here came back empty every time.
+        var declared = parameter.Type is { } syntax
+            ? context.SemanticHelper.GetSymbol(syntax) as ITypeSymbol
+            : context.SemanticModel?.GetDeclaredSymbol(parameter) is IParameterSymbol symbol
+                ? symbol.Type
+                : null;
+        if (declared is null || !context.TypeAnnotations) return name;
+        // From the SPECIAL type, not the name: a `float` parameter's symbol is named "Single", and
+        // the name-keyed mapper answers "Single" — a type nothing declares.
+        var ts = declared.SpecialType switch
+        {
+            SpecialType.System_String or SpecialType.System_Char => "string",
+            SpecialType.System_Boolean => "boolean",
+            SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Double
+                or SpecialType.System_Single or SpecialType.System_Decimal or SpecialType.System_Int16
+                or SpecialType.System_Byte => "number",
+            _ => declared.TypeKind switch
+            {
+                TypeKind.Enum => "string",
+                TypeKind.Interface or TypeKind.TypeParameter => "any",
+                _ => TypeScriptEmitter.CSharpTypeToTypeScript(declared.Name),
+            },
+        };
+        // `any` is worse than nothing: an unannotated parameter INFERS from what it is passed, and
+        // only says nothing where there was nothing to say.
+        return ts == "any" || ts == declared.Name ? name : $"{name}: {ts}";
     }
 
     public int Priority => 10;

@@ -13,11 +13,11 @@ export class Accordion extends SharedStatefulComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let column = new Column(0, { width: SizeValue.fill });for (let i = 0; i < this.items.length; i++) {let item = this.items[i];let index = i;let open = this.isOpen(i);let header = new Row(8, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });header.add(new Text(item.title, 'label'));header.add(new Flexible(new Spacer()));header.add(new Icon(open ? 'chevronUp' : 'chevronDown', 16, theme.textSecondary));column.add(new Pressable(new Box(new BoxStyle({ height: Sizing.height('large'), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), hover: new StyleDiff({ background: theme.surfaceSubtle }) }), header), () => this.toggle(index)));let content; if (open && ((item.content != null) && (content = item.content, true))) {column.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(12, 0, 12, 12) }), content));}if (i < this.items.length - 1) column.add(new Divider());}return column;
+        let theme = context.theme;let column = new Column(0, { width: SizeValue.fill });for (let i = 0; i < this.items.length; i++) {let item = this.items[i];let index = i;let open = this.isOpen(i);let header = new Row(8, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });header.add(new Text(item.title, 'label'));header.add(new Flexible(new Spacer()));header.add(new Icon(open ? 'chevronUp' : 'chevronDown', 16, theme.textSecondary));column.add(new Pressable(new Box(new BoxStyle({ height: Sizing.height('large'), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), hover: new StyleDiff({ background: theme.surfaceSubtle }) }), header), () => this.toggle(index)));let content: any; if (open && ((item.content != null) && (content = item.content, true))) {column.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(12, 0, 12, 12) }), content));}if (i < this.items.length - 1) column.add(new Divider());}return column;
     }
 
     adoptConfig(next: UiComponent) {
-        let fresh; if ((next instanceof Accordion && (fresh = next, true))) this.items = fresh.items;
+        let fresh: any; if ((next instanceof Accordion && (fresh = next, true))) this.items = fresh.items;
     }
 
     isOpen(index: number) {

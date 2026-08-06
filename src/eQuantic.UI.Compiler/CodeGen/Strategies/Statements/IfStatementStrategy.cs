@@ -29,7 +29,10 @@ public class IfStatementStrategy : IStatementStrategy
         var patternVars = GetPatternVariables(ifStmt.Condition);
         if (patternVars.Any())
         {
-            var declarations = string.Join(" ", patternVars.Select(v => $"let {v};"));
+            // `: any`, not a bare `let`: the slot is assigned INSIDE the condition it is hoisted out
+            // of, and TypeScript cannot see through that — an untyped one is an error rather than
+            // merely a missing type. What the value IS stays checked where it comes from.
+            var declarations = string.Join(" ", patternVars.Select(v => $"let {v}: any;"));
             // C# pattern variables scope to the ENCLOSING block ("definite assignment when false":
             // `if (x is not T t) return;` leaves t usable AFTER the if — the guard idiom). Inside a
             // block parent the declarations emit as siblings; only a brace-less composite body

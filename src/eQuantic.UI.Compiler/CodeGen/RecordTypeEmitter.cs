@@ -96,6 +96,7 @@ public class RecordTypeEmitter
     /// class as <c>.mjs</c>, where <c>declare</c> is a parse error.</param>
     public string Emit(TypeDeclarationSyntax type, bool tsTypeDeclarations = false)
     {
+        _converter.EmitTypeAnnotations(tsTypeDeclarations);
         var name = type.Identifier.Text;
         var members = type.ValueMembers(ModelFor(type));
         var (baseName, superArgs, passedToBase) = BaseInfo(type);

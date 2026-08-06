@@ -143,7 +143,8 @@ public sealed class PhotonHost
         var gliding = _scrolls.Advance(timeMs);
         _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets, _pressedPath,
             _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible,
-            Selection.Start, Selection.End, density: Density);
+            Selection.Start, Selection.End, density: Density,
+            scrollOffset: path => _scrolls.Get(path));
         if (RenderScale != 1f) builder.Pop();
         AdoptAutofocus();
         // A blinking caret is running motion like any other: while a field is being edited the loop
