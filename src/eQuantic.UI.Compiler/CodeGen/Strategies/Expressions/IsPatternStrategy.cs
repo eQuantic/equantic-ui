@@ -48,6 +48,19 @@ public class IsPatternStrategy : IConversionStrategy
             var bindings = new List<(string Name, string Access)>();
             PatternConverter.CollectBindings(pattern, expr, context, bindings, exprType);
 
+            // `x is { } y` over a CALL — the shape that reads "if this returns something, name it".
+            // The subject appears in the condition and again in the binding, so it used to run
+            // TWICE: wasted work when the call is pure, and a different answer when it is not.
+            // Assigning inside the test runs it once, and gives TypeScript the narrowing too.
+            // Only the NULL test: `x is string s` must not assign when the type does not match, and
+            // `x is { } y` has nothing to check but presence, so assigning IS the test.
+            if (bindings.Count == 1 && bindings[0].Access == expr
+                && condition == $"{expr} != null")
+            {
+                var once = $"({bindings[0].Name} = {expr}) != null";
+                return negated ? $"!({once})" : once;
+            }
+
             var bound = bindings.Count == 0
                 ? condition
                 : $"({condition} && ({string.Concat(bindings.Select(b => $"{b.Name} = {b.Access}, "))}true))";

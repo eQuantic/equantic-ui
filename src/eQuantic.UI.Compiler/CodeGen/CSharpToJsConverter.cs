@@ -101,6 +101,9 @@ public class CSharpToJsConverter
     public void ClearDiagnostics() => _context.ClearDiagnostics();
 
     /// <summary>Raises a diagnostic from OUTSIDE a strategy — the emitter's own whole-method checks.</summary>
+    /// <summary>Turns TypeScript annotations on — see <see cref="ConversionContext.TypeAnnotations"/>.</summary>
+    public void EmitTypeAnnotations(bool enabled) => _context.TypeAnnotations = enabled;
+
     public void Report(SyntaxNode node, ConversionSeverity severity, string code, string message) =>
         _context.Report(node, severity, code, message);
 

@@ -20,10 +20,16 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
             name = char.ToLower(name[0]) + name.Substring(1);
         }
 
-        var parameters = string.Join(", ", localFn.ParameterList.Parameters.Select(p => p.Identifier.Text));
-        
+        // TYPED, and an ARROW rather than a `function`. A C# local function inside a method can use
+        // the instance — `this._findText` — and a `function` declaration rebinds `this` to
+        // undefined in a module, so every capture read as a TypeError the first time it ran.
+        var parameters = string.Join(", ", localFn.ParameterList.Parameters
+            .Select(p => context.TypeAnnotations
+                ? $"{p.Identifier.Text.ToJsIdentifier()}: {TypeScriptEmitter.CSharpTypeToTypeScript(p.Type?.ToString())}"
+                : p.Identifier.Text.ToJsIdentifier()));
+
         var sb = new StringBuilder();
-        sb.Append($"function {name}({parameters}) ");
+        sb.Append($"const {name} = ({parameters}) => ");
 
         if (localFn.Body != null)
         {
@@ -36,6 +42,9 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
             sb.Append("; }");
         }
 
+        // An arrow is an ASSIGNMENT, so it ends in a semicolon where a `function` declaration did
+        // not — without it the next statement runs on and the module fails to parse.
+        sb.Append(';');
         return sb.ToString();
     }
 

@@ -61,6 +61,7 @@ public class TypeScriptEmitter
     /// </summary>
     public string Emit(ComponentDefinition component, SemanticModel? semanticModel = null)
     {
+        _converter.EmitTypeAnnotations(true);
         _builder = new TypeScriptCodeBuilder();
         _semanticModel = semanticModel;
         _converter.SetSemanticModel(semanticModel);
@@ -1389,6 +1390,7 @@ public class TypeScriptEmitter
     private string EmitClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel, bool asStatic)
     {
         if (semanticModel != null) { _semanticModel = semanticModel; _converter.SetSemanticModel(semanticModel); }
+        _converter.EmitTypeAnnotations(true);
         _converter.SetCurrentClass(cls.Identifier.Text);
         _converter.UsedHelpers.Clear();
         _converter.UsedAppTypes.Clear();

@@ -883,11 +883,19 @@ export class ScrollView extends VisualNode {
   width?: SizeValue;
   height?: SizeValue;
   offset: number;
+  /** Where it IS, whenever that changes — what a windowed list reads to know what to build. */
+  onScrolled: ((offset: number) => void) | null = null;
+  /** How tall the viewport turned out to be, once layout knows. */
+  onViewportChanged: ((height: number) => void) | null = null;
 
   constructor(
     child: VisualChild,
     axis = 'vertical',
-    config?: { width?: SizeValue | number; height?: SizeValue | number; offset?: number },
+    config?: {
+      width?: SizeValue | number; height?: SizeValue | number; offset?: number;
+      onScrolled?: ((offset: number) => void) | null;
+      onViewportChanged?: ((height: number) => void) | null;
+    },
   ) {
     super();
     this.child = child;

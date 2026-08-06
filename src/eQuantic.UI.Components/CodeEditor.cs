@@ -20,6 +20,10 @@ namespace eQuantic.UI.Components;
 public sealed class CodeEditor : StatefulComponent
 {
     private CodeEditorController? _editor;
+    private bool _findOpen;
+    private string _findText = "";
+    private float _offset;
+    private float _viewport;
 
     public CodeEditor(string code = "", string? language = null)
     {
@@ -52,8 +56,19 @@ public sealed class CodeEditor : StatefulComponent
     /// <summary>Lines to point at — an error's line, a breakpoint, a diff hunk.</summary>
     public IReadOnlyList<CodeGutterMarker> GutterMarkers { get; init; } = [];
 
-    /// <summary>Ranges to mark — search matches, a squiggle.</summary>
+    /// <summary>Ranges to mark — search matches, a squiggle. The editor ADDS to these: the bracket
+    /// under the caret, and the matches of whatever is being searched for.</summary>
     public IReadOnlyList<CodeDecoration> Decorations { get; init; } = [];
+
+    /// <summary>Outlines the bracket the caret is against and the one it pairs with. On by default:
+    /// it is how you find the end of a block without counting.</summary>
+    public bool MatchBrackets { get; init; } = true;
+
+    /// <summary>What FIND is looking for. Every match is washed and the current one outlined; null
+    /// or empty means the find bar is closed and nothing is marked.</summary>
+    public string? Search { get; init; }
+
+    public bool SearchMatchCase { get; init; }
 
     /// <summary>A press on a gutter row — where an IDE toggles a breakpoint.</summary>
     public Action<int>? OnGutterPressed { get; init; }
@@ -72,6 +87,42 @@ public sealed class CodeEditor : StatefulComponent
         return editor;
     }
 
+    /// <summary>
+    /// Everything the block should mark: what the app handed in, every search match, and the bracket
+    /// pair under the caret. Computed per frame from the model rather than stored, because all three
+    /// are functions of where the caret is — and a stored copy would be one keystroke behind.
+    /// </summary>
+    private IReadOnlyList<CodeDecoration> Marks(CodeEditorController editor)
+    {
+        var needle = _findOpen && _findText.Length > 0 ? _findText : Search;
+        if (needle is not { Length: > 0 } && !MatchBrackets) return Decorations;
+
+        var marks = new List<CodeDecoration>(Decorations);
+        if (needle is { Length: > 0 } search)
+        {
+            var current = editor.Selection;
+            foreach (var match in editor.FindAll(search, SearchMatchCase))
+            {
+                // The one the caret is ON wears the outline; the rest are washed. Without that,
+                // "next match" moves something nobody can see.
+                marks.Add(new CodeDecoration(match,
+                    match.Start.Equals(current.Start) && match.End.Equals(current.End)
+                        ? CodeDecorationKind.Outline
+                        : CodeDecorationKind.Highlight));
+            }
+        }
+        if (MatchBrackets && editor.BracketAtCaret() is { } pair)
+        {
+            marks.Add(new CodeDecoration(
+                new CodeRange(pair.Here, pair.Here with { Column = pair.Here.Column + 1 }),
+                CodeDecorationKind.Outline));
+            marks.Add(new CodeDecoration(
+                new CodeRange(pair.There, pair.There with { Column = pair.There.Column + 1 }),
+                CodeDecorationKind.Outline));
+        }
+        return marks;
+    }
+
     public override VisualNode Build(ComponentContext context)
     {
         var editor = Editor;
@@ -85,6 +136,7 @@ public sealed class CodeEditor : StatefulComponent
 
         var block = new CodeBlock(editor.Document, highlighter.Language)
         {
+            Decorations = Marks(editor),
             ShowLineNumbers = ShowLineNumbers,
             FirstLineNumber = FirstLineNumber,
             MaxHeight = MaxHeight,
@@ -92,15 +144,28 @@ public sealed class CodeEditor : StatefulComponent
             Inverse = Inverse,
             Caption = Caption,
             GutterMarkers = GutterMarkers,
-            Decorations = Decorations,
             OnGutterPressed = OnGutterPressed,
             Highlighter = highlighter,
+            // The window the block builds. Both numbers come back from layout, so the first frame
+            // builds everything and every frame after builds what you can see.
+            ViewportOffset = _offset,
+            ViewportHeight = _viewport,
+            OnScrolled = offset =>
+            {
+                if (MathF.Abs(offset - _offset) < 1) return;
+                SetState(() => _offset = offset);
+            },
+            OnViewportChanged = height =>
+            {
+                if (MathF.Abs(height - _viewport) < 1) return;
+                SetState(() => _viewport = height);
+            },
             // The caret's line is washed while the editor holds it — the one piece of state the
             // read-only block cannot know about.
             ActiveLine = editor.Caret.Line,
         };
 
-        return new CodeSurface(block, editor)
+        VisualNode surface = new CodeSurface(block, editor)
         {
             ContentTop = metrics.ContentTop,
             LineHeight = metrics.LineHeight,
@@ -116,5 +181,82 @@ public sealed class CodeEditor : StatefulComponent
                 OnSelectionChanged?.Invoke(editor.Selection);
             }),
         };
+
+        // ⌘F is UI, not a model command, so it is not in the keymap: it is a chord that is live
+        // because this subtree is on screen, which is what Shortcut already means.
+        surface = new Shortcut(surface, new KeyChord("f", KeyModifiers.Command),
+            () => SetState(() => _findOpen = true));
+
+        if (!_findOpen) return surface;
+
+        var layers = new Stack { Width = SizeValue.Fill };
+        layers.Add(surface);
+        layers.Add(new Positioned(FindBar(context, editor), top: Space.S2, end: Space.S2));
+        return layers;
+    }
+
+    /// <summary>
+    /// The find bar: what to look for, how many there are, and the two ways through them. It floats
+    /// over the top-right corner rather than pushing the code down — code that jumps when you open
+    /// find has lost the line you were looking at.
+    /// </summary>
+    private VisualNode FindBar(ComponentContext context, CodeEditorController editor)
+    {
+        var theme = context.Theme;
+        var matches = _findText.Length > 0 ? editor.FindAll(_findText, SearchMatchCase).Count : 0;
+        var index = 0;
+        if (matches > 0)
+        {
+            var current = editor.Selection;
+            var all = editor.FindAll(_findText, SearchMatchCase);
+            for (var i = 0; i < all.Count; i++)
+                if (all[i].Start.Equals(current.Start)) { index = i + 1; break; }
+        }
+
+        void Step(bool forward)
+        {
+            if (_findText.Length == 0) return;
+            var match = editor.FindNext(_findText, SearchMatchCase, backward: !forward);
+            if (match is { } found) SetState(() => editor.Selection = found);
+        }
+
+        var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
+        row.Add(new Box(new BoxStyle { Width = 168 }, new TextEntry(_findText,
+            value => SetState(() => _findText = value))
+        {
+            Placeholder = "Find",
+            Autofocus = true,
+            OnSubmit = () => Step(true),
+        }));
+        row.Add(new Text(matches == 0 ? (_findText.Length == 0 ? "" : "0") : $"{index}/{matches}",
+            TypeRole.LabelSmall, theme.TextMuted, maxLines: 1)
+        {
+            Tabular = true,
+        });
+        row.Add(new IconButton(Icons.ChevronUp, "Previous match")
+        {
+            Size = SizeVariant.Small,
+            OnPressed = () => Step(false),
+        });
+        row.Add(new IconButton(Icons.ChevronDown, "Next match")
+        {
+            Size = SizeVariant.Small,
+            OnPressed = () => Step(true),
+        });
+        row.Add(new IconButton(Icons.Close, "Close find")
+        {
+            Size = SizeVariant.Small,
+            OnPressed = () => SetState(() => { _findOpen = false; _findText = ""; }),
+        });
+
+        return new Box(new BoxStyle
+        {
+            Background = theme.Surface,
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
+            Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
+            Shadow = theme.Elevation(2),
+        }, row);
     }
 }

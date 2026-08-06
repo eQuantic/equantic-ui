@@ -168,6 +168,7 @@ public static class PhotonRealizer
         // The selected range inside that field. Zero-length = a caret and nothing more.
         int selectionStart = 0,
         int selectionEnd = 0,
+        Func<string, float?>? scrollOffset = null,
         Density density = Density.Comfortable)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
@@ -223,7 +224,7 @@ public static class PhotonRealizer
         var stops = new List<FocusStop>();
         var codes = new List<CodeRegion>();
         var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes);
-        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density), motion, overlays);
+        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset }, motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -235,7 +236,7 @@ public static class PhotonRealizer
                 context, rootPath: $"ov{i}");
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density), motion, overlays);
+            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset }, motion, overlays);
         }
 
         // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
@@ -326,6 +327,11 @@ public static class PhotonRealizer
             CaretIndex = caretIndex;
             CaretVisible = caretVisible;
         }
+
+        /// <summary>Where a scrollable path currently sits — the host's own store, read-only.</summary>
+        public Func<string, float?>? ScrollOffset { get; init; }
+
+        public float? ScrollOffsetOf(string path) => ScrollOffset?.Invoke(path);
 
         /// <summary>The selected range in the field under edit (equal = no selection).</summary>
         public int SelectionStart { get; }
@@ -650,7 +656,15 @@ public static class PhotonRealizer
         {
             // Scroll compositor v1: the host routes wheel/drag to the topmost region (paint order).
             if (scrollMeta.TryGetValue(scrollView, out var meta))
+            {
                 input.Add(new ScrollRegion(node.Bounds, meta.Path, meta.MaxOffset, scrollView.Axis, scrollView.Offset));
+                // The out channel: a component that windows its content needs both numbers, and
+                // neither is knowable before layout. Reported from the realized frame, which is the
+                // first moment either is true.
+                scrollView.OnViewportChanged?.Invoke(
+                    scrollView.Axis == ScrollAxis.Horizontal ? node.Bounds.Width : node.Bounds.Height);
+                scrollView.OnScrolled?.Invoke(press.ScrollOffsetOf(meta.Path) ?? scrollView.Offset);
+            }
             builder.PushClip(new RRect(node.Bounds));
             // …and the SUBTREE'S INPUT to the same rectangle. A row scrolled out of the viewport is
             // drawn nowhere, so it takes no taps — otherwise it keeps taking the ones aimed at
