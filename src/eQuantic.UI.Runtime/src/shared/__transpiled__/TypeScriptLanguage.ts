@@ -1,5 +1,6 @@
 import { CodeLanguageRules } from "@equantic/runtime";
 export class TypeScriptLanguage {
+    constructor(props?: any) {  if (props && typeof props === 'object') Object.assign(this, props); }
     get name(): string { return 'TypeScript'; }
     get hasTemplateStrings(): boolean { return true; }
     get hasAtDecorators(): boolean { return true; }

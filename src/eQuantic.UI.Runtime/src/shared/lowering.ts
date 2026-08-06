@@ -39,6 +39,8 @@ import type {
   IconNode,
   AdjustableNode,
   CameraPreviewNode,
+  CodeSurfaceNode,
+  CodePositionLike,
   ImageNode,
   GridPatternValue,
   LinearGradientValue,
@@ -214,6 +216,8 @@ function lowerNode(
       return lowerLink(node as LinkNode, context, path);
     case 'cameraPreview':
       return lowerCameraPreview(node as unknown as CameraPreviewNode);
+    case 'codeSurface':
+      return lowerCodeSurface(node as unknown as CodeSurfaceNode, context, path);
     case 'image':
       return lowerImage(node as ImageNode);
     case 'icon':
@@ -323,6 +327,123 @@ function lowerPresence(
 
 /** Navigation mirror: a real <a href> (the SPA router intercepts internal clicks) with UA chrome
  * neutralized by the generated .eq-link — the child owns all visuals (the Pressable contract). */
+/**
+ * The editable code surface. The child renders the lines; this wraps them in a focusable box and
+ * paints the two marks that say where you are — a caret and a band per selected line — as absolutely
+ * positioned children.
+ * <p>
+ * The keyboard goes straight to the transpiled `CodeKeymap`, the same function the native host
+ * calls. Nothing about what a key MEANS is decided here: this file only turns a DOM event into the
+ * arguments that function takes, and turns (line, column) into pixels — which with a monospaced
+ * face is multiplication, not measurement.
+ * </p>
+ */
+function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path: string): HtmlNode {
+  const editor = node.editor;
+  const surface: HtmlNode = {
+    tag: 'div',
+    attributes: {
+      class: 'eq-code-surface',
+      tabindex: '0',
+      role: 'textbox',
+      'aria-multiline': 'true',
+      style: 'position:relative;outline:none;',
+    },
+    events: {},
+    children: [],
+  };
+  if (node.label) surface.attributes['aria-label'] = node.label;
+  if (node.autofocus) surface.attributes['autofocus'] = '';
+
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) surface.children.push(child);
+
+  // The marks, under the code: a band is translucent so the text reads through it, and a caret sits
+  // between glyphs where nothing covers it.
+  const selection = editor.selection;
+  if (!selection.isEmpty) {
+    for (let line = selection.start.line; line <= selection.end.line; line++) {
+      const from = line === selection.start.line ? selection.start.column : 0;
+      const lineLength = editor.document.line(line).length;
+      const to = line === selection.end.line ? selection.end.column : lineLength + 1;
+      if (to <= from) continue;
+      surface.children.push(mark(
+        node.contentLeft + from * node.columnWidth,
+        node.contentTop + line * node.lineHeight,
+        (to - from) * node.columnWidth, node.lineHeight,
+        'eq-code-selection'));
+    }
+  }
+  const caret = selection.focus;
+  surface.children.push(mark(
+    node.contentLeft + caret.column * node.columnWidth,
+    node.contentTop + caret.line * node.lineHeight,
+    2, node.lineHeight, 'eq-code-caret'));
+
+  if (typeof document === 'undefined') return surface;   // SSR: the marks are enough
+
+  const changed = () => node.onChanged?.();
+  surface.events['keydown'] = ((event: KeyboardEvent) => {
+    const modifiers =
+      (event.shiftKey ? 1 : 0) | (event.altKey ? 2 : 0) |
+      ((event.metaKey || event.ctrlKey) ? 4 : 0);
+    if (handleCodeKey(editor, event.key, modifiers)) {
+      event.preventDefault();
+      changed();
+      return;
+    }
+    // A printable character is TEXT, not a command — and what a keystroke produces is the
+    // browser's business, which is why it arrives as a string rather than a key name.
+    if (event.key.length === 1 && !event.metaKey && !event.ctrlKey) {
+      if (editor.type(event.key)) {
+        event.preventDefault();
+        changed();
+      }
+    }
+  }) as unknown as EventHandler;
+
+  surface.events['pointerdown'] = ((event: PointerEvent) => {
+    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const at = positionIn(node, event.clientX - box.left, event.clientY - box.top);
+    if (event.detail >= 3) editor.selectLine(at.line);
+    else if (event.detail === 2) editor.selectWord(at);
+    else (editor as unknown as { selection: unknown }).selection = { anchor: at, focus: at };
+    (event.currentTarget as HTMLElement).focus();
+    changed();
+  }) as unknown as EventHandler;
+
+  return surface;
+}
+
+/** One absolutely-positioned rectangle: a caret, or one line's band. */
+function mark(left: number, top: number, width: number, height: number, className: string): HtmlNode {
+  return {
+    tag: 'div',
+    attributes: {
+      class: className,
+      style: `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;`
+        + 'pointer-events:none;',
+    },
+    events: {},
+    children: [],
+  };
+}
+
+/** The (line, column) a point lands on. Division, not a search — the face is monospaced. */
+function positionIn(node: CodeSurfaceNode, x: number, y: number): CodePositionLike {
+  const line = Math.floor((y - node.contentTop) / node.lineHeight);
+  const column = Math.round((x - node.contentLeft) / node.columnWidth);
+  return node.editor.document.clamp({ line: Math.max(0, line), column: Math.max(0, column) });
+}
+
+/** The transpiled keymap, resolved lazily so this module does not import the shared library. */
+function handleCodeKey(editor: unknown, key: string, modifiers: number): boolean {
+  const keymap = (globalThis as unknown as {
+    CodeKeymap?: { handle(e: unknown, k: string, m: number): boolean };
+  }).CodeKeymap;
+  return keymap ? keymap.handle(editor, key, modifiers) : false;
+}
+
 function lowerLink(node: LinkNode, context: LoweringContext, path: string): HtmlNode {
   const anchor: HtmlNode = {
     tag: 'a',

@@ -1,6 +1,6 @@
 import { $eq, CodeDocument, CodeEdit, CodePosition } from "../runtime-exports";
 export class CodeHistory {
-    constructor() { this._past = []; this._future = []; this._runEnd = new CodePosition(-1, -1);  }
+    constructor(props?: any) { this._past = []; this._future = []; this._runEnd = new CodePosition(-1, -1);  if (props && typeof props === 'object') Object.assign(this, props); }
     _past: CodeEdit[];
     _future: CodeEdit[];
     _runEnd: CodePosition;

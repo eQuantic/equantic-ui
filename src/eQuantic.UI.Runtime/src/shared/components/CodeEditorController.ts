@@ -1,6 +1,6 @@
 import { $eq, CodeDocument, CodeEdit, CodeHighlighter, CodeHistory, CodeLanguageRules, CodeLanguages, CodePosition, CodeRange } from "../runtime-exports";
 export class CodeEditorController {
-    constructor(text: string = '', language: any = null) { this._desiredColumn = -1; this._document = CodeDocument.fromText(text);this._selection = new CodeRange(CodePosition.start);this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); }
+    constructor(text: string = '', language: any = null, props?: any) { this._desiredColumn = -1; this._document = CodeDocument.fromText(text);this._selection = new CodeRange(CodePosition.start);this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); if (props && typeof props === 'object') Object.assign(this, props); }
     _document: CodeDocument;
     _selection: CodeRange;
     _desiredColumn: number;

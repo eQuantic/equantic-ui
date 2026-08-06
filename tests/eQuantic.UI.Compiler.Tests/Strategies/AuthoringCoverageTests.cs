@@ -422,7 +422,10 @@ public class AuthoringCoverageTests
 
         // Typed on the way out, too: a plain class is where an app's own model lives, and an
         // untyped emission ends the checking exactly where the model starts.
-        ts.Should().Contain("constructor(seed: number = 0)");
+        // The trailing config is how an object initialiser arrives — `new Bucket(2) { Tag = "x" }`
+        // is an ordinary way to construct one, and a constructor without it is arity-wrong.
+        ts.Should().Contain("constructor(seed: number = 0, props?: any)");
+        ts.Should().Contain("Object.assign(this, props)");
         ts.Should().Contain("this._items = []", "field initialisers run before the constructor body");
         ts.Should().Contain("_items: string[]");
         ts.Should().Contain("get count(): number");
