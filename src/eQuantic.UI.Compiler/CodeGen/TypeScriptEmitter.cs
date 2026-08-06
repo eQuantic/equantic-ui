@@ -1274,8 +1274,13 @@ public class TypeScriptEmitter
             : ctor?.ExpressionBody is { } expression ? $"{_converter.ConvertExpression(expression.Expression)};"
             : "";
 
-        if (initialisers.Length == 0 && string.IsNullOrWhiteSpace(body) && parameters.Length == 0) return;
-        c.Raw($"constructor({parameters}) {{ {initialisers}{body} }}", ctor ?? (SyntaxNode)cls);
+        // `new Editor(text) { ReadOnly = true }` — an object initialiser is an ordinary way to
+        // construct one of these, and it arrives as a trailing config object exactly as it does for
+        // a component. A constructor that did not take one made the emitted call arity-wrong.
+        var config = parameters.Length == 0 ? "props?: any" : ", props?: any";
+        var assign = " if (props && typeof props === 'object') Object.assign(this, props);";
+        c.Raw($"constructor({parameters}{config}) {{ {initialisers}{body}{assign} }}",
+            ctor ?? (SyntaxNode)cls);
     }
 
     /// <summary>
@@ -1335,8 +1340,9 @@ public class TypeScriptEmitter
 
         var core = (echoed ? resolved : null) switch
         {
-            // An enum crosses as its member STRING; a user interface has no emitted twin to name.
-            { TypeKind: TypeKind.Enum } => "string",
+            // An enum crosses as its member STRING — unless it is [Flags], whose members COMBINE
+            // and therefore cross as the number the bitwise operators need.
+            { TypeKind: TypeKind.Enum } => IsFlags(resolved!) ? "number" : "string",
             { TypeKind: TypeKind.Interface } => "any",
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
             // A name nothing here can VERIFY is a name the module may not resolve. Annotating with
@@ -1350,6 +1356,10 @@ public class TypeScriptEmitter
         if (!nullable || core == "any") return core;
         return core.Contains("=>") ? $"({core}) | null" : $"{core} | null";
     }
+
+    /// <summary>A [Flags] enum is a SET of members, and a set of members is a number.</summary>
+    private static bool IsFlags(ITypeSymbol type) =>
+        type.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute");
 
     /// <summary>Whether a bare NAME is something the emitted module can actually name: a type this
     /// compilation emits, or one the runtime provides.</summary>

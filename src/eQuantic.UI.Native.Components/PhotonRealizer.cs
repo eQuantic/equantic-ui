@@ -43,6 +43,11 @@ public readonly record struct ShortcutBinding(KeyChord Chord, Action OnPressed);
 /// on every keystroke.</summary>
 public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Path);
 
+/// <summary>An editable CODE surface. Like a text region it takes the caret on a click and the keys
+/// that follow, but what those keys mean lives in its controller, so the region only has to carry
+/// the path and the geometry that turns a point into a (line, column).</summary>
+public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, string Path);
+
 /// <summary>
 /// One stop on the Tab route. Buttons and fields are different kinds of region and are dispatched
 /// differently, but they are ONE sequence to the person pressing Tab — a form whose traversal skips
@@ -57,7 +62,7 @@ public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Pa
 /// </para>
 /// </summary>
 public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry, Rect Bounds,
-    Adjustable? Adjustable = null);
+    Adjustable? Adjustable = null, CodeSurface? Code = null);
 
 /// <summary>The realized frame: the laid-out tree (absolute bounds) and the interactive hit regions.</summary>
 public sealed class RealizeResult
@@ -66,7 +71,7 @@ public sealed class RealizeResult
         IReadOnlyList<HoverRegion>? hoverRegions = null, IReadOnlyList<ScrollRegion>? scrollRegions = null,
         IReadOnlyList<DragRegion>? dragRegions = null, IReadOnlyList<LinkRegion>? linkRegions = null,
         IReadOnlyList<ShortcutBinding>? shortcuts = null, IReadOnlyList<TextRegion>? textRegions = null,
-        IReadOnlyList<FocusStop>? focusStops = null)
+        IReadOnlyList<FocusStop>? focusStops = null, IReadOnlyList<CodeRegion>? codeRegions = null)
     {
         Root = root;
         HitRegions = hitRegions;
@@ -78,7 +83,11 @@ public sealed class RealizeResult
         Shortcuts = shortcuts ?? Array.Empty<ShortcutBinding>();
         TextRegions = textRegions ?? Array.Empty<TextRegion>();
         FocusStops = focusStops ?? Array.Empty<FocusStop>();
+        CodeRegions = codeRegions ?? Array.Empty<CodeRegion>();
     }
+
+    /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
+    public IReadOnlyList<CodeRegion> CodeRegions { get; }
 
     /// <summary>Everything Tab visits, in tree order: buttons and fields in one sequence.</summary>
     public IReadOnlyList<FocusStop> FocusStops { get; }
@@ -212,7 +221,8 @@ public static class PhotonRealizer
         var shortcuts = new List<ShortcutBinding>();
         var texts = new List<TextRegion>();
         var stops = new List<FocusStop>();
-        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops);
+        var codes = new List<CodeRegion>();
+        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes);
         Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density), motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
@@ -253,7 +263,7 @@ public static class PhotonRealizer
         return new RealizeResult(layout, hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts, texts, stops);
+            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes);
     }
 
     /// <summary>The frame clock for loop motion: offsets resolve as a PURE function of
@@ -548,6 +558,10 @@ public static class PhotonRealizer
             // TextPrimary, empty shows the placeholder in TextMuted. Caret/selection/IME land at M4.
             case TextEntry entry:
                 EmitEntry(node, entry, theme, mode, builder, input, press, motion);
+                break;
+
+            case CodeSurface surface:
+                EmitCodeSurface(node, surface, theme, mode, builder, input, press, motion);
                 break;
 
             // Spec A11 fence: a SurfaceSubtle box under the radius stands in for the bitmap until the
@@ -1130,6 +1144,62 @@ public static class PhotonRealizer
             new RRect(new Rect(node.Bounds.X + advance - shift, node.Bounds.Y, CaretWidth, caretHeight),
                 new CornerRadii(0)),
             Paint.Solid(theme.TextPrimary.Resolve(mode)));
+    }
+
+    /// <summary>
+    /// The caret and the selection over an editable code surface. The child drew the code; these are
+    /// the two marks that say where you are in it.
+    /// <para>
+    /// No measuring: the face is monospaced, so a (line, column) IS arithmetic — which is the whole
+    /// reason a code editor can repaint a caret on every keystroke without re-laying-out anything.
+    /// </para>
+    /// </summary>
+    private static void EmitCodeSurface(LayoutNode node, CodeSurface surface, IAppTheme theme,
+        ThemeMode mode, DisplayListBuilder builder, InputSink input, PressScope press, MotionScope motion)
+    {
+        input.Add(new CodeRegion(node.Bounds, surface, node.Path ?? ""));
+
+        // Drawn BEFORE the child, so the code paints over both marks: a translucent band keeps the
+        // text legible through it, and a caret sits BETWEEN glyphs, where nothing occludes it.
+        var editing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
+        if (!editing) return;
+
+        var selection = surface.Editor.Selection;
+        var left = node.Bounds.X + surface.ContentLeft;
+        var top = node.Bounds.Y + surface.ContentTop;
+
+        // The selection is a BAND PER LINE — the first from its column to the end of the line, the
+        // last from the start to its column, and everything between full width. A single rectangle
+        // over a multi-line range would cover the indentation of lines the range never touched.
+        if (!selection.IsEmpty)
+        {
+            var paint = Paint.Solid(theme.FocusRing.Resolve(mode).WithOpacity(0.28f));
+            var start = selection.Start;
+            var end = selection.End;
+            for (var line = start.Line; line <= end.Line; line++)
+            {
+                var from = line == start.Line ? start.Column : 0;
+                var lineLength = surface.Editor.Document.Line(line).Length;
+                var to = line == end.Line ? end.Column : lineLength + 1;   // +1 shows the newline
+                if (to <= from) continue;
+                builder.FillRRect(new RRect(new Rect(
+                        left + from * surface.ColumnWidth,
+                        top + line * surface.LineHeight,
+                        (to - from) * surface.ColumnWidth,
+                        surface.LineHeight),
+                    new CornerRadii(1)), paint);
+            }
+        }
+
+        // The caret is at the FOCUS end, drawn with the selection and not instead of it: the band
+        // says which characters are held, this says which end ⇧-arrow moves.
+        if (!press.CaretVisible) return;
+        var caret = selection.Focus;
+        builder.FillRRect(new RRect(new Rect(
+                left + caret.Column * surface.ColumnWidth,
+                top + caret.Line * surface.LineHeight,
+                CaretWidth, surface.LineHeight),
+            new CornerRadii(0)), Paint.Solid(theme.TextPrimary.Resolve(mode)));
     }
 
     /// <summary>The width of the first <paramref name="count"/> characters — the caret's x.</summary>

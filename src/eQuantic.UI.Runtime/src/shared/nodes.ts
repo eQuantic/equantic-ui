@@ -483,6 +483,43 @@ export interface AdjustableNode extends VisualNodeValue {
   role?: 'slider' | 'tablist' | 'radiogroup';
 }
 
+/**
+ * An EDITABLE code surface: the child draws the lines, this adds a caret, a selection and a
+ * keyboard. Everything a key or a click MEANS lives in the controller, which is transpiled from the
+ * same C# the native host calls — so the two surfaces cannot drift on what ⌥← does.
+ */
+export interface CodeSurfaceNode extends VisualNodeValue {
+  nodeKind: 'codeSurface';
+  child: VisualNodeValue;
+  /** The live CodeEditorController — a transpiled class, not a copy of its state. */
+  editor: CodeEditorLike;
+  contentTop: number;
+  lineHeight: number;
+  contentLeft: number;
+  columnWidth: number;
+  onChanged?: (() => void) | null;
+  label?: string | null;
+  autofocus?: boolean;
+}
+
+/** What the surface needs from the controller — the transpiled class satisfies it structurally. */
+export interface CodeEditorLike {
+  readonly selection: { anchor: CodePositionLike; focus: CodePositionLike; isEmpty: boolean;
+    start: CodePositionLike; end: CodePositionLike };
+  readonly caret: CodePositionLike;
+  readonly document: { lineCount: number; line(index: number): string;
+    clamp(position: CodePositionLike): CodePositionLike };
+  readOnly: boolean;
+  type(c: string): boolean;
+  selectWord(at: CodePositionLike): void;
+  selectLine(line: number): void;
+}
+
+export interface CodePositionLike {
+  readonly line: number;
+  readonly column: number;
+}
+
 /** A live camera surface — the session id names the MediaStream the runtime attaches. */
 export interface CameraPreviewNode extends VisualNodeValue {
   nodeKind: 'cameraPreview';

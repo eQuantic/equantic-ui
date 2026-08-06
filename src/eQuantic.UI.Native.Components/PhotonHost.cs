@@ -484,6 +484,52 @@ public sealed class PhotonHost
         }
     }
 
+    /// <summary>
+    /// The CODE surface being edited in the current frame, or null. Resolved by path every frame for
+    /// the same reason the text field is: the node handed out last frame is already a corpse, but
+    /// the CONTROLLER it points at is the component's own and outlives every rebuild.
+    /// </summary>
+    public CodeSurface? CodeTarget
+    {
+        get
+        {
+            if (_textPath is null || _lastFrame is null) return null;
+            var regions = _lastFrame.CodeRegions;
+            for (var i = 0; i < regions.Count; i++)
+                if (regions[i].Path == _textPath) return regions[i].Surface;
+            return null;
+        }
+    }
+
+    /// <summary>A press that began in a code surface is drawing a selection until it lifts.</summary>
+    private bool _codeDragging;
+
+    /// <summary>
+    /// The (line, column) a point lands on. With a fixed pitch this is division, not a search — and
+    /// the column ROUNDS to the nearest boundary, so clicking the right half of a character puts the
+    /// caret after it, which is what makes clicking feel aimed rather than approximate.
+    /// </summary>
+    private static CodePosition PositionIn(CodeRegion region, float x, float y)
+    {
+        var surface = region.Surface;
+        var line = (int)MathF.Floor((y - region.Bounds.Y - surface.ContentTop) / surface.LineHeight);
+        var column = (int)MathF.Round((x - region.Bounds.X - surface.ContentLeft) / surface.ColumnWidth);
+        return surface.Editor.Document.Clamp(new CodePosition(Math.Max(0, line), Math.Max(0, column)));
+    }
+
+    private void BeginCodeEditing(CodeRegion region)
+    {
+        var changed = _textPath != region.Path;
+        if (changed) EndEditing();
+        _textPath = region.Path;
+        _focused = null;
+        _focusedPath = null;
+        NeedsRender = true;
+    }
+
+    /// <summary>Restarts the blink — anything that moved the caret, including a code command.</summary>
+    private void RestartBlink() => _caretPhaseMs = _lastTimeMs;
+
     /// <summary>Where the caret sits, clamped to the text that is actually there — the app may have
     /// replaced the value with something shorter (a formatter, a reset) between keystrokes.</summary>
     public int CaretIndex => Math.Clamp(_caret, 0, TextTarget?.Value.Length ?? 0);
@@ -497,7 +543,7 @@ public sealed class PhotonHost
     /// does not blink at all: the end following your pointer is the one thing you are watching.
     /// </para>
     /// </summary>
-    public bool CaretVisible => _textPath is null || _dragSelecting
+    public bool CaretVisible => _textPath is null || _dragSelecting || _codeDragging
         || (int)((_lastTimeMs - _caretPhaseMs) / CaretBlinkMs) % 2 == 0;
 
     private const float CaretBlinkMs = 500f;
@@ -568,7 +614,20 @@ public sealed class PhotonHost
     /// </summary>
     public bool TextInput(string text)
     {
-        if (string.IsNullOrEmpty(text) || TextTarget is not { } entry || entry.Disabled) return false;
+        if (string.IsNullOrEmpty(text)) return false;
+        // A code surface types through its controller, which is where auto-closing pairs, the
+        // "step over the closer" rule and undo coalescing all live.
+        if (CodeTarget is { } surface)
+        {
+            var typed = false;
+            foreach (var c in text) typed |= surface.Editor.Type(c);
+            if (!typed) return false;
+            RestartBlink();
+            surface.OnChanged?.Invoke();
+            NeedsRender = true;
+            return true;
+        }
+        if (TextTarget is not { } entry || entry.Disabled) return false;
         // Typing over a selection REPLACES it — the one behaviour that makes selecting worth doing.
         var (start, end) = Selection;
         var value = entry.Value;
@@ -741,6 +800,25 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerMove(float x, float y)
     {
+        // The same, over a code surface: the anchor stays put and the FOCUS follows the pointer,
+        // which is exactly what CodeRange already models.
+        if (_codeDragging && _lastFrame is not null)
+        {
+            var surfaces = _lastFrame.CodeRegions;
+            for (var i = 0; i < surfaces.Count; i++)
+            {
+                if (surfaces[i].Path != _textPath) continue;
+                var editor = surfaces[i].Surface.Editor;
+                var at = PositionIn(surfaces[i], x, y);
+                if (at.Equals(editor.Selection.Focus)) break;
+                editor.Selection = new CodeRange(editor.Selection.Anchor, at);
+                surfaces[i].Surface.OnChanged?.Invoke();
+                NeedsRender = true;
+                break;
+            }
+            return;
+        }
+
         // A press that began in a field is DRAWING a selection: the anchor stays where the press
         // landed and the caret follows the pointer, so dragging back past the start reverses the
         // range instead of collapsing it.
@@ -1027,6 +1105,27 @@ public sealed class PhotonHost
             return true;
         }
 
+        // …and so might a CODE surface. It registers under the fields for the same reason they
+        // register under the buttons: whatever is drawn on top is what you meant to press.
+        var surfaces = _lastFrame.CodeRegions;
+        for (var i = surfaces.Count - 1; i >= 0; i--)
+        {
+            if (!surfaces[i].Bounds.Contains(point)) continue;
+            BeginCodeEditing(surfaces[i]);
+            var at = PositionIn(surfaces[i], x, y);
+            var editor = surfaces[i].Surface.Editor;
+            // Double-click: the word under the point. Triple: the line. The platform counts the
+            // clicks — its double-click interval is a system setting, not ours to guess.
+            if (clickCount >= 3) editor.SelectLine(at.Line);
+            else if (clickCount == 2) editor.SelectWord(at);
+            else editor.Selection = new CodeRange(at);
+            _codeDragging = clickCount < 2;
+            RestartBlink();
+            surfaces[i].Surface.OnChanged?.Invoke();
+            NeedsRender = true;
+            return true;
+        }
+
         // A press on empty space ends editing, which is how every form on every platform behaves —
         // and is the only way to leave a field without Tab.
         EndEditing();
@@ -1076,6 +1175,7 @@ public sealed class PhotonHost
     public bool PressUp(float x, float y)
     {
         _dragSelecting = false;
+        _codeDragging = false;
         if (_pressSwallowed)
         {
             // Suppressed OUTCOME, not suppressed CLEANUP. The press-down armed the same gesture
@@ -1242,6 +1342,22 @@ public sealed class PhotonHost
                 NeedsRender = true;
                 return true;
             }
+        }
+
+        // A CODE surface under the caret takes the key through the shared keymap — the same
+        // function the web half calls, so the two never drift on what ⌥← or ⇧Tab mean.
+        if (CodeTarget is { } surface)
+        {
+            if (CodeKeymap.Handle(surface.Editor, key, modifiers, Clipboard))
+            {
+                RestartBlink();
+                surface.OnChanged?.Invoke();
+                NeedsRender = true;
+                return true;
+            }
+            // Escape LEAVES the editor rather than being swallowed: an editor that traps Escape is
+            // an editor you cannot get out of without a mouse.
+            if (key == "Escape") { EndEditing(); return true; }
         }
 
         // Then the keys every UI owes the user, whatever the app declared. Reaching a control

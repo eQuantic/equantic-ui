@@ -119,6 +119,7 @@ export {
   Sticky,
   Text,
   Pressable,
+  CodeSurface,
   Adjustable,
   CameraPreview,
   Hoverable,

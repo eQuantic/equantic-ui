@@ -1,5 +1,6 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken } from "@equantic/runtime";
 export class PythonLanguage {
+    constructor(props?: any) {  if (props && typeof props === 'object') Object.assign(this, props); }
     static normal: number = 0;
     static tripleDouble: number = 1;
     static tripleSingle: number = 2;

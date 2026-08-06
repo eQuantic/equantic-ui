@@ -545,6 +545,31 @@ export class Pressable extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `CodeSurface` — an editable code surface: the child draws the lines, this adds a
+ * caret, a selection and a keyboard. It carries the CONTROLLER, not a copy of its state, because
+ * the controller is the one thing that has to outlive the rebuild each keystroke causes.
+ */
+export class CodeSurface extends VisualNode {
+  readonly nodeKind = 'codeSurface';
+  child: VisualChild;
+  editor: unknown;
+  contentTop = 0;
+  lineHeight = 18;
+  contentLeft = 0;
+  columnWidth = 8;
+  onChanged: (() => void) | null = null;
+  label: string | null = null;
+  autofocus = false;
+
+  constructor(child: VisualChild, editor: unknown, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.editor = editor;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
 export class Hoverable extends VisualNode {
   readonly nodeKind = 'hoverable';

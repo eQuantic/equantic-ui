@@ -26,6 +26,7 @@ export {
   Column,
   Text,
   Pressable,
+  CodeSurface,
   Hoverable,
   Flexible,
   Spacer,

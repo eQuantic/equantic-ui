@@ -1,5 +1,6 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken } from "@equantic/runtime";
 export class CurlyBraceLanguage {
+    constructor(props?: any) {  if (props && typeof props === 'object') Object.assign(this, props); }
     static stateNormal: number = 0;
     static stateBlockComment: number = 1;
     static stateMultilineString: number = 2;

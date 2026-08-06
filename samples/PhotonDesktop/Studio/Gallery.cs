@@ -178,11 +178,12 @@ public static class Gallery
         }, staged);
 
         // The SDK's own code component, coloured by the shared C# tokenizer — the gallery shows
-        // the thing itself rather than a hand-drawn slab that looks like it.
-        VisualNode code = new CodeBlock(specimenCode, "csharp")
+        // the thing itself rather than a hand-drawn slab that looks like it. EDITABLE, because a
+        // gallery that only shows code you cannot put a caret in proves half the component.
+        VisualNode code = new CodeEditor(specimenCode, "csharp")
         {
             Inverse = true,
-            ShowLineNumbers = false,
+            ShowLineNumbers = true,
             Caption = "C#",
         };
 

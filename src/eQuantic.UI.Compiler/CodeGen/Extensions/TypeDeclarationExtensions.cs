@@ -145,7 +145,13 @@ public static class TypeDeclarationExtensions
             var core = resolved is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
                 ? nullable.TypeArguments[0]
                 : resolved;
-            if (core.TypeKind == TypeKind.Enum) return type is NullableTypeSyntax ? "string | null" : "string";
+            if (core.TypeKind == TypeKind.Enum)
+            {
+                // [Flags] members COMBINE, so they cross as the number the bitwise operators need.
+                var lowered = core.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute")
+                    ? "number" : "string";
+                return type is NullableTypeSyntax ? $"{lowered} | null" : lowered;
+            }
             if (core.TypeKind == TypeKind.Interface) return "any";
         }
 

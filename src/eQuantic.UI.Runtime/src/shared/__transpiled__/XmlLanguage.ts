@@ -1,5 +1,6 @@
 import { CodeDocument, CodeLanguageRules, CodeToken } from "@equantic/runtime";
 export class XmlLanguage {
+    constructor(props?: any) {  if (props && typeof props === 'object') Object.assign(this, props); }
     static normal: number = 0;
     static inComment: number = 1;
     get name(): string { return 'XML'; }

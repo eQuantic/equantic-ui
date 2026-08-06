@@ -67,23 +67,48 @@ public sealed class CodeBlock : StatelessComponent
     /// block makes its own, which is right for a snippet that never changes.</summary>
     public CodeHighlighter? Highlighter { get; init; }
 
+    /// <summary>
+    /// Where the code SITS, in dp. The editable twin needs exactly these numbers to place a caret,
+    /// and two independent calculations of them would drift by a pixel and then by a character —
+    /// so there is one, and both surfaces read it.
+    /// </summary>
+    public readonly record struct CodeMetrics(
+        TypeStyle Style, float LineHeight, float ColumnWidth, float GutterWidth)
+    {
+        /// <summary>Where column 0 begins: past the gutter and the code's own left padding.</summary>
+        public float ContentLeft => GutterWidth + Space.S3;
+
+        /// <summary>Where line 0 begins: the slab's vertical padding.</summary>
+        public float ContentTop => Space.S3;
+    }
+
+    /// <summary>The metrics for a block of these settings, measured through the context.</summary>
+    public static CodeMetrics MetricsFor(ComponentContext context, SizeVariant size,
+        bool showLineNumbers, int lastLineNumber)
+    {
+        var style = TypeStyle.OfSize(Sizing.LabelSize(size, context.Density),
+            FontWeight.Regular) with { Mono = true };
+        // The gutter is as wide as its widest number — measured, not guessed, because a file with
+        // 1000 lines needs a column a file with 10 does not.
+        var gutter = showLineNumbers
+            ? MathF.Ceiling(context.MeasureText(lastLineNumber.ToString() + "0", style)) + Space.S3
+            : 0;
+        return new CodeMetrics(style, MathF.Round(style.LineHeight * 1.15f),
+            context.MonoAdvance(style), gutter);
+    }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var highlighter = Highlighter ?? new CodeHighlighter(Language);
-        var style = TypeStyle.OfSize(Sizing.LabelSize(Size, context.Density),
-            FontWeight.Regular) with { Mono = true };
-        var lineHeight = MathF.Round(style.LineHeight * 1.15f);
+        var metrics = MetricsFor(context, Size, ShowLineNumbers,
+            FirstLineNumber + Document.LineCount - 1);
+        var style = metrics.Style;
+        var lineHeight = metrics.LineHeight;
+        var gutterWidth = metrics.GutterWidth;
 
         var ink = Inverse ? CodeInk : theme.TextPrimary;
         var surface = Inverse ? CodeSlab : theme.SurfaceSubtle;
-
-        // The gutter is as wide as its widest number — measured, not guessed, because a file with
-        // 1000 lines needs a column a file with 10 does not.
-        var lastNumber = (FirstLineNumber + Document.LineCount - 1).ToString();
-        var gutterWidth = ShowLineNumbers
-            ? MathF.Ceiling(context.MeasureText(lastNumber + "0", style)) + Space.S3
-            : 0;
 
         var lines = new Column(gap: 0) { Width = SizeValue.Fill };
         for (var index = 0; index < Document.LineCount; index++)
@@ -203,12 +228,16 @@ public sealed class CodeBlock : StatelessComponent
         var decoration = DecorationFor(index);
         if (!active && decoration is null) return row;
 
-        return new Box(new BoxStyle
-        {
-            Width = SizeValue.Fill,
-            Background = decoration?.Color
-                ?? (active ? theme.Colors(Variant.Primary).Subtle : theme.SurfaceHighlight),
-        }, row);
+        // On the INVERSE slab the theme's light-mode tokens are near-white, and a near-white wash
+        // over dark code reads as a rendering fault rather than "you are here". The slab has its
+        // own pair, one shade off itself.
+        var wash = decoration?.Color is { } marked
+            ? (Inverse ? new ColorToken(marked.Dark, marked.Dark) : marked)
+            : Inverse
+                ? (active ? CodeSlabActive : CodeSlabMarked)
+                : (active ? theme.Colors(Variant.Primary).Subtle : theme.SurfaceHighlight);
+
+        return new Box(new BoxStyle { Width = SizeValue.Fill, Background = wash }, row);
     }
 
     private static VisualNode Run(string content, ColorToken color, TypeStyle style) =>
@@ -233,7 +262,14 @@ public sealed class CodeBlock : StatelessComponent
         return null;
     }
 
-    private static ColorToken GutterColor(CodeGutterKind kind, IAppTheme theme) => kind switch
+    private ColorToken GutterColor(CodeGutterKind kind, IAppTheme theme)
+    {
+        var token = GutterToken(kind, theme);
+        // The DARK half in both modes on the inverse slab, for the same reason the tokens use it.
+        return Inverse ? new ColorToken(token.Dark, token.Dark) : token;
+    }
+
+    private static ColorToken GutterToken(CodeGutterKind kind, IAppTheme theme) => kind switch
     {
         CodeGutterKind.Breakpoint => theme.Colors(Variant.Destructive).Base,
         CodeGutterKind.BreakpointDisabled => theme.BorderStrong,
@@ -252,6 +288,10 @@ public sealed class CodeBlock : StatelessComponent
     private static readonly ColorToken CodeSlab = new(new Color(0x10, 0x14, 0x18, 0xFF));
     private static readonly ColorToken CodeInk = new(new Color(0xC9, 0xD4, 0xDE, 0xFF));
     private static readonly ColorToken CodeInkMuted = new(new Color(0x7C, 0x8A, 0x99, 0xFF));
+
+    /// <summary>The slab, one shade lighter — the caret's line, and a marked one.</summary>
+    private static readonly ColorToken CodeSlabActive = new(new Color(0x1B, 0x22, 0x2B, 0xFF));
+    private static readonly ColorToken CodeSlabMarked = new(new Color(0x16, 0x1C, 0x24, 0xFF));
 
     /// <summary>On the dark slab the theme's light-mode colours would vanish, so the DARK half of
     /// each token is used in both modes.</summary>

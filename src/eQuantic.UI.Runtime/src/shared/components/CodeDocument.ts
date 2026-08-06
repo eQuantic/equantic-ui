@@ -1,6 +1,6 @@
 import { $eq, CodePosition, CodeRange } from "../runtime-exports";
 export class CodeDocument {
-    constructor(lines: string[]) { this._lines = lines; }
+    constructor(lines: string[], props?: any) { this._lines = lines; if (props && typeof props === 'object') Object.assign(this, props); }
     _lines: string[];
     static _empty: CodeDocument | undefined;
     static get empty(): CodeDocument { return CodeDocument._empty ??= new CodeDocument(['']); }
