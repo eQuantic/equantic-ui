@@ -34,4 +34,8 @@ public sealed class TextRasterCache
         _entries[key] = entry;
         return entry;
     }
+
+    /// <summary>Drops every entry — hot reload's cue: a patched rasterizer or an edited style
+    /// would otherwise keep serving yesterday's pixels under today's keys.</summary>
+    public void Clear() => _entries.Clear();
 }

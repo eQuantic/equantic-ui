@@ -35,7 +35,16 @@ public sealed class PhotonHost
             stateful.StateInvalidated += () => NeedsRender = true;
         _instances.InstanceRetained += retained =>
             retained.StateInvalidated += () => NeedsRender = true;
+
+        // Hot reload reaches a running app through a static seam — every live host signs up, so an
+        // applied edit wakes this one too. Weakly: a host is not kept alive by having existed.
+        PhotonHotReload.Register(this);
+        _hotReloadGeneration = PhotonHotReload.Generation;
     }
+
+    /// <summary>The last hot-reload generation THIS host has adopted. Compared on the render
+    /// thread, which is the only place the caches may be touched.</summary>
+    private int _hotReloadGeneration;
 
     public ThemeMode Mode { get; set; }
 
@@ -132,6 +141,17 @@ public sealed class PhotonHost
     /// </summary>
     public RealizeResult RenderFrame(DisplayListBuilder builder, float timeMs = 0)
     {
+        // An edit landed since the last frame: drop the content caches BEFORE realizing, on this
+        // thread, where they are owned. Most edits would miss them anyway (the keys are content),
+        // but a patched rasterizer or an edited icon path re-rasters fresh — once.
+        if (_hotReloadGeneration != PhotonHotReload.Generation)
+        {
+            _hotReloadGeneration = PhotonHotReload.Generation;
+            _textCache.Clear();
+            _iconCache.Clear();
+            _imageCache.Clear();
+        }
+
         builder.Clear(_theme.Background.Resolve(Mode));
         if (RenderScale != 1f) builder.PushTransform(Engine.Matrix2D.Scale(RenderScale, RenderScale));
         _lastTimeMs = timeMs;

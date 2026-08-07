@@ -28,4 +28,7 @@ public sealed class IconRasterCache
         _entries[key] = entry;
         return entry;
     }
+
+    /// <summary>Drops every entry — see <see cref="TextRasterCache.Clear"/>.</summary>
+    public void Clear() => _entries.Clear();
 }
