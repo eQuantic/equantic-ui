@@ -254,6 +254,7 @@ public static class LayoutEngine
         Pressable pressable => MeasureWrapper(pressable, pressable.Child, maxW, maxH, ctx, path, Inline(stretchW), Inline(stretchH)),
         // Transparent to layout: the surface adds a caret and a selection, never a box.
         CodeSurface surface => MeasureWrapper(surface, surface.Child, maxW, maxH, ctx, path, stretchW, stretchH),
+        SheetSurface sheet => MeasureWrapper(sheet, sheet.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // Pointer presence is layout-transparent (S5 programmable hover — the child owns visuals).
         Hoverable hoverable => MeasureWrapper(hoverable, hoverable.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // Spec S8: a Shortcut is layout-transparent — the binding rides the realizer's walk.
@@ -333,6 +334,7 @@ public static class LayoutEngine
         // Wrappers are transparent to the floor exactly as they are to layout.
         Pressable pressable => MinContentWidth(pressable.Child, ctx),
         CodeSurface surface => MinContentWidth(surface.Child, ctx),
+        SheetSurface sheet => MinContentWidth(sheet.Child, ctx),
         Link link => MinContentWidth(link.Child, ctx),
         Adjustable adjustable => MinContentWidth(adjustable.Child, ctx),
         Hoverable hoverable => MinContentWidth(hoverable.Child, ctx),
@@ -1346,6 +1348,7 @@ public static class LayoutEngine
         FlexNode flex => (horizontal ? flex.Height : flex.Width).Kind,
         Pressable pressable => CrossSizeKind(pressable.Child, horizontal),
         CodeSurface surface => CrossSizeKind(surface.Child, horizontal),
+        SheetSurface sheet => CrossSizeKind(sheet.Child, horizontal),
         Hoverable hoverable => CrossSizeKind(hoverable.Child, horizontal),
         Shortcut shortcut => CrossSizeKind(shortcut.Child, horizontal),
         Adjustable adjustable => CrossSizeKind(adjustable.Child, horizontal),

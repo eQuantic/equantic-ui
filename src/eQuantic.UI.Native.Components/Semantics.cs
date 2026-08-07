@@ -79,6 +79,13 @@ public static class SemanticsTree
                     entry.Placeholder ?? "", entry.Value, entry.Disabled));
                 return;
 
+            // v1: a grid announces as an editable region with its label; per-cell semantics (the
+            // real AX grid role) joins with the component slice.
+            case SheetSurface sheetSurface:
+                nodes.Add(new(SemanticRole.CodeField, node.Path ?? "", node.Bounds,
+                    sheetSurface.Label ?? "", null, false));
+                return;
+
             case CodeSurface code:
                 nodes.Add(new(SemanticRole.CodeField, node.Path ?? "", node.Bounds,
                     code.Label ?? "", null, false));
