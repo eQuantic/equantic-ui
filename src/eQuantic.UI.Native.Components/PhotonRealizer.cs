@@ -718,10 +718,10 @@ public static class PhotonRealizer
 
         if (node.Source is SheetSurface sheetSurface)
         {
+            // The child paints EVERYTHING — cells, selection, active ring, the editing draft —
+            // write-once in the shared component, so web and native cannot drift. This node only
+            // registers the input region.
             input.Add(new SheetRegion(node.Bounds, sheetSurface, node.Path ?? ""));
-            var sheetEditing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
-            if (sheetEditing)
-                EmitSheetMarks(node, sheetSurface, theme, mode, builder, motion);
             foreach (var child in node.Children)
                 Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             return;
@@ -1273,92 +1273,6 @@ public static class PhotonRealizer
                 top + caret.Line * surface.LineHeight,
                 CaretWidth, surface.LineHeight),
             new CornerRadii(0)), Paint.Solid(theme.TextPrimary.Resolve(mode)));
-    }
-
-    /// <summary>
-    /// Excel's two marks over the grid: the translucent selection band and the active cell's ring.
-    /// Pure prefix-sum arithmetic over the VISIBLE window — the surface says which sheet cell its
-    /// child's top-left renders, and per-line sizes accumulate from there.
-    /// </summary>
-    private static void EmitSheetMarks(LayoutNode node, SheetSurface surface, IAppTheme theme,
-        ThemeMode mode, DisplayListBuilder builder, MotionScope? motionScope)
-    {
-        var sheet = surface.Controller;
-        var selection = sheet.Selection;
-        var document = sheet.Document;
-        var left = node.Bounds.X + surface.HeaderWidth;
-        var top = node.Bounds.Y + surface.HeaderHeight;
-
-        float ColX(int col)
-        {
-            var x = left;
-            for (var c = surface.FirstCol; c < col; c++) x += document.ColWidth(c);
-            return x;
-        }
-        float RowY(int row)
-        {
-            var y = top;
-            for (var r = surface.FirstRow; r < row; r++) y += document.RowHeight(r);
-            return y;
-        }
-
-        var fromRow = Math.Max(selection.TopRow, surface.FirstRow);
-        var fromCol = Math.Max(selection.LeftCol, surface.FirstCol);
-        if (fromRow <= selection.BottomRow && fromCol <= selection.RightCol)
-        {
-            var x = ColX(fromCol);
-            var y = RowY(fromRow);
-            var width = 0f;
-            for (var c = fromCol; c <= selection.RightCol && c < document.Cols; c++) width += document.ColWidth(c);
-            var height = 0f;
-            for (var r = fromRow; r <= selection.BottomRow && r < document.Rows; r++) height += document.RowHeight(r);
-
-            if (!selection.IsSingleCell)
-                builder.FillRRect(new RRect(new Rect(x, y, width, height), new CornerRadii(1)),
-                    Paint.Solid(theme.FocusRing.Resolve(mode).WithOpacity(0.16f)));
-        }
-
-        // The active cell's RING — where typing lands. Drawn even inside a band: the band says
-        // which cells are held, the ring says which one answers the keyboard.
-        var active = sheet.ActiveCell;
-        if (active.Row >= surface.FirstRow && active.Col >= surface.FirstCol)
-        {
-            var ax = ColX(active.Col);
-            var ay = RowY(active.Row);
-            var cellWidth = document.ColWidth(active.Col);
-            var cellHeight = document.RowHeight(active.Row);
-
-            // While EDITING, the DRAFT paints over the cell: a fresh surface, the draft's text,
-            // and a caret bar at its end. The document underneath is untouched until commit —
-            // which is exactly what Escape restoring it means visually.
-            if (sheet.Editing)
-            {
-                builder.FillRRect(new RRect(new Rect(ax, ay, cellWidth, cellHeight), new CornerRadii(0)),
-                    Paint.Solid(theme.Surface.Resolve(mode)));
-                var advance = 0f;
-                if (sheet.Draft.Length > 0 && motionScope?.TextRasterizer is { } rasterizer)
-                {
-                    var style = theme.Type(TypeRole.BodyM);
-                    var raster = (motionScope.TextCache ?? TextRasterCache.Shared).Get(
-                        rasterizer, sheet.Draft, style, motionScope.TypeScale, float.MaxValue, 1, motionScope.RenderScale);
-                    if (raster is not null)
-                    {
-                        advance = raster.Texture.Width / motionScope.RenderScale;
-                        builder.PushClip(new RRect(new Rect(ax, ay, cellWidth, cellHeight)));
-                        builder.Texture(new Rect(ax + 6, ay, advance, raster.Texture.Height / motionScope.RenderScale),
-                            theme.TextPrimary.Resolve(mode), raster.Texture);
-                        builder.PopClip();
-                    }
-                }
-                builder.FillRRect(new RRect(new Rect(
-                        MathF.Min(ax + 6 + advance, ax + cellWidth - 3), ay + 4, 2f, cellHeight - 8),
-                    new CornerRadii(0)), Paint.Solid(theme.TextPrimary.Resolve(mode)));
-            }
-
-            builder.StrokeRRect(
-                new RRect(new Rect(ax, ay, cellWidth, cellHeight), new CornerRadii(2)),
-                2f, Paint.Solid(theme.FocusRing.Resolve(mode)));
-        }
     }
 
     /// <summary>The width of the first <paramref name="count"/> characters — the caret's x.</summary>

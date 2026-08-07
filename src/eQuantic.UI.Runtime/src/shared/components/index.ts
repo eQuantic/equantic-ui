@@ -70,6 +70,7 @@ export { SheetController } from './SheetController';
 export { SheetDocument } from './SheetDocument';
 export { SheetEdit } from './SheetEdit';
 export { SheetHistory } from './SheetHistory';
+export { SheetKeymap } from './SheetKeymap';
 export { SheetRange } from './SheetRange';
 export { Skeleton } from './Skeleton';
 export { Slider } from './Slider';

@@ -145,20 +145,17 @@ public class SheetSurfaceTests
     }
 
     [Fact]
-    public void TheMarks_RenderForTheFocusedSheet()
+    public void ADrag_LeavesTheRangeInTheController_ForTheComponentToPaint()
     {
+        // Marks moved into the shared COMPONENT (write-once — both targets paint identically);
+        // the surface's job is input, and what a drag leaves behind is controller state.
         var (host, page) = Open();
         var (x, y) = CenterOf(1, 1);
         host.PressDown(x, y);
         host.PointerMove(CenterOf(2, 2).X, CenterOf(2, 2).Y);
         host.PressUp(CenterOf(2, 2).X, CenterOf(2, 2).Y);
 
-        var builder = new DisplayListBuilder();
-        host.RenderFrame(builder, 16);
-
-        // Band + ring: at least two fill/stroke commands beyond the child's own box.
-        builder.Build().Count.Should().BeGreaterThan(2,
-            "the selection band and the active-cell ring draw over the grid");
         page.Sheet.Selection.RowCount.Should().Be(2);
+        page.Sheet.Selection.ColCount.Should().Be(2);
     }
 }
