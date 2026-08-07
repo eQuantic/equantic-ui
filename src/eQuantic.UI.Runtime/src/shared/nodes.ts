@@ -471,6 +471,12 @@ export interface ScrollViewNode extends VisualNodeValue {
   axis: string;
   width?: SizeValueValue;
   height?: SizeValueValue;
+  /** Programmatic scroll position in dp (applied once, on adoption — the browser owns it after). */
+  offset?: number;
+  /** Where it IS, whenever that changes — what a windowed list reads to know what to build. */
+  onScrolled?: ((offset: number) => void) | null;
+  /** How tall the viewport turned out to be, reported after the pass mounts it. */
+  onViewportChanged?: ((height: number) => void) | null;
 }
 
 /** Arrow-key adjustment semantics — one Tab stop wrapping a slider-like control. */

@@ -75,6 +75,7 @@ import type {
   VisualNodeValue,
 } from './nodes';
 import { declareShortcut } from '../dom/shortcuts';
+import { declareScrollViewport } from './scroll-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
 
@@ -727,16 +728,40 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
   const children: HtmlNode[] = [];
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) children.push(child);
-  return element(
+  const horizontal = node.axis === 'horizontal';
+  const view = element(
     'div',
     {
       width: sizeValue(node.width),
-      height: sizeValue(node.height),
-      'overflow-y': node.axis === 'horizontal' ? 'hidden' : 'auto',
+      // A scroll view IS the window its parent gives it — never its content (native parity: the
+      // realizer hands it layout bounds and clips always). Auto height would grow with content
+      // and scroll nothing.
+      height: sizeValue(node.height) ?? '100%',
+      'overflow-y': horizontal ? 'hidden' : 'auto',
       'overflow-x': node.axis === 'vertical' ? 'hidden' : 'auto',
     },
     children,
   );
+  // The out-channels a WINDOWED LIST lives on (the native realizer has carried them all along):
+  // the scroll event reports where the view is; the after-pass sweep reports how tall the
+  // viewport turned out to be (and applies the initial offset once, on adoption — the browser
+  // owns the position after that).
+  if (node.onScrolled) {
+    const onScrolled = node.onScrolled;
+    view.events['scroll'] = ((event: Event) => {
+      const target = event.target as HTMLElement;
+      onScrolled(horizontal ? target.scrollLeft : target.scrollTop);
+    }) as EventHandler;
+  }
+  if (node.onViewportChanged || node.offset) {
+    view.attributes['data-eq-scroll'] = path;
+    declareScrollViewport(path, {
+      horizontal,
+      offset: node.offset,
+      onViewportChanged: node.onViewportChanged ?? undefined,
+    });
+  }
+  return view;
 }
 
 /** Spec A11 mirror: explicitly sized <img> with object-fit and the rrect clip. */

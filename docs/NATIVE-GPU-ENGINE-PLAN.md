@@ -819,6 +819,22 @@ Bun and the JS bundling chain, the TypeScript runtime.
   never flakes); the ratchet tightens as pooling lands, never loosens casually. The GPU half stays
   covered by parity goldens, not CI timing; device-class numbers wait on device runs.
 
+- **2026-08-07 — M3 recycling list: ten thousand rows cost a screenful, on BOTH targets.** The
+  write-once `ListView` (count + fixed extent + builder; overscan margin; the rest of the list is
+  two spacers, so layout and the scrollbar see the true content height) rides the ScrollView
+  out-channels the native realizer always had — and the WEB half of those channels now exists:
+  the scroll event feeds `onScrolled`, an after-pass sweep (the shortcut/camera pattern) measures
+  the viewport and adopts the initial offset once. Landing it surfaced and fixed THREE SDK gaps:
+  the `#app` frame is now EXACT viewport height (app pages scroll internally, document pages
+  overflow and body-scroll as before — one CSS rule, both worlds); a web `ScrollView` without
+  explicit Height defaults to 100% (a scroll view IS the window its parent gives it — native
+  parity; the console shell's fixed-toolbar design started working on web the moment this landed);
+  hydration adopts `data-eq-*` framework markers (SSR cannot know client identities). Proof: 6
+  `ListViewTests` (window materializes, commands independent of Count — 100 vs 10 000 emit
+  IDENTICAL command counts —, MaxOffset sees the whole list, scroll moves the window, sub-row
+  scrolls repaint without invalidating), 4 web specs, and the live browser: /rows at scrollTop
+  220 000 holds 25 children (#04997–#05019). v1 fence: vertical, fixed extent.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
