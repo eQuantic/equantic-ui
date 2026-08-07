@@ -1,25 +1,39 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <PackageType>Template</PackageType>
-        <PackageVersion>1.0.0</PackageVersion>
-        <PackageId>eQuantic.UI.Templates</PackageId>
-        <Title>eQuantic.UI Templates</Title>
-        <Authors>eQuantic</Authors>
-        <Description>Templates for creating eQuantic.UI applications and components.</Description>
-        <PackageTags>dotnet-new;templates;equantic;ui</PackageTags>
-        <TargetFramework>net10.0</TargetFramework>
+  <!--
+    The `dotnet new` templates (plan M5): an external developer types three commands and has a
+    running write-once app — no Node, no bundlers, no JS. The template content ships as-is except
+    for the SDK VERSION, which is stamped from $(Version) at pack time so a template never points
+    at an SDK older than itself.
+  -->
+  <PropertyGroup>
+    <PackageType>Template</PackageType>
+    <PackageId>eQuantic.UI.Templates</PackageId>
+    <Title>eQuantic.UI Templates</Title>
+    <Description>Project templates for eQuantic.UI — C# components compiled to JavaScript, no Node required. `dotnet new equantic-app` scaffolds a running write-once app.</Description>
+    <TargetFramework>net10.0</TargetFramework>
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+  </PropertyGroup>
 
-        <IncludeContentInPack>true</IncludeContentInPack>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
-        <ContentTargetFolders>content</ContentTargetFolders>
-        <NoWarn>$(NoWarn);NU5128</NoWarn>
-        <NoDefaultExcludes>true</NoDefaultExcludes>
-    </PropertyGroup>
-
+  <!-- Stamp the CURRENT framework version into the template's global.json, then pack the stamped
+       copy. The template source keeps a placeholder, so there is no per-release hand edit. -->
+  <Target Name="StampTemplateVersion" BeforeTargets="_GetPackageFiles;GenerateNuspec">
     <ItemGroup>
-        <Content Include="content\**\*" Exclude="content\**\bin\**;content\**\obj\**" />
-        <Compile Remove="**\*" />
+      <_TemplateFile Include="templates/**/*" />
     </ItemGroup>
+    <Copy SourceFiles="@(_TemplateFile)" DestinationFiles="@(_TemplateFile->'$(IntermediateOutputPath)stamped/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <WriteLinesToFile
+      File="$(IntermediateOutputPath)stamped/equantic-app/global.json"
+      Lines='{&#10;  "msbuild-sdks": {&#10;    "eQuantic.UI.Sdk": "$(Version)"&#10;  }&#10;}'
+      Overwrite="true" />
+    <ItemGroup>
+      <Content Include="$(IntermediateOutputPath)stamped/**/*" PackagePath="content/templates" />
+    </ItemGroup>
+  </Target>
 
 </Project>
