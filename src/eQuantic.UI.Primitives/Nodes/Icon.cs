@@ -37,6 +37,9 @@ public enum Icons : byte
 
     /// <summary>Copy-to-clipboard affordances — a "Copy C#" button.</summary>
     Copy = 20,
+
+    /// <summary>Tabular data — a spreadsheet or data-grid affordance.</summary>
+    Table = 21,
 }
 
 /// <summary>

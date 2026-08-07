@@ -16,6 +16,7 @@ public enum GallerySection
     Feedback = 7,
     Overlays = 8,
     Device = 9,
+    Sheets = 10,
 }
 
 /// <summary>
@@ -46,6 +47,7 @@ public static class Gallery
         GallerySection.Navigation => "Tabs & bars",
         GallerySection.Feedback => "Banners & toasts",
         GallerySection.Overlays => "Overlays",
+        GallerySection.Sheets => "Spreadsheet",
         _ => "Device",
     };
 
@@ -55,7 +57,7 @@ public static class Gallery
     {
         GallerySection.Buttons or GallerySection.Inputs or GallerySection.Selection => "Primitives",
         GallerySection.DataDisplay or GallerySection.Containers or GallerySection.Progress
-            => "Data display",
+            or GallerySection.Sheets => "Data display",
         GallerySection.Navigation => "Navigation",
         GallerySection.Feedback or GallerySection.Overlays => "Feedback",
         _ => "Device",
@@ -89,6 +91,8 @@ public static class Gallery
             "Messages that arrive: banners you keep, toasts you dismiss, states with nothing in them.",
         GallerySection.Overlays =>
             "Surfaces over the page — and how each one maps to a desktop window.",
+        GallerySection.Sheets =>
+            "The editable grid: Excel's keyboard, TSV clipboard, drag-resize — one C# for every target.",
         _ => "What the DEVICE can do, taken through a constructor like any other dependency.",
     };
 
@@ -103,6 +107,7 @@ public static class Gallery
         GallerySection.Navigation => Icons.Search,
         GallerySection.Feedback => Icons.Notifications,
         GallerySection.Overlays => Icons.Info,
+        GallerySection.Sheets => Icons.Table,
         _ => Icons.Person,
     };
 
@@ -118,6 +123,7 @@ public static class Gallery
         GallerySection.Navigation => 4,
         GallerySection.Feedback => 4,
         GallerySection.Overlays => 4,
+        GallerySection.Sheets => 1,
         _ => 6,
     };
 
@@ -134,6 +140,7 @@ public static class Gallery
         GallerySection.Navigation => Navigation(theme, state, mutate),
         GallerySection.Feedback => Feedback(theme, state, mutate),
         GallerySection.Overlays => Overlays(theme, state, mutate),
+        GallerySection.Sheets => Sheets(theme, state),
         _ => Device(theme, state, mutate),
     };
 
@@ -706,6 +713,42 @@ public static class Gallery
             stack.Add(new BottomSheet(body, () => mutate(() => state.SheetOpen = false)));
         }
         return stack;
+    }
+
+    private static VisualNode Sheets(IAppTheme theme, SectionState state)
+    {
+        // The SAME write-once Spreadsheet the web serves at /sheet — here it renders on Photon.
+        // The controller lives in SectionState so edits and undo history survive every rebuild.
+        var sheet = state.Sheet ??= SeedSheet();
+        var column = Column(Space.S2);
+        column.Add(Caption(theme,
+            "Click a cell and type (Excel's replace-and-go), Enter commits stepping down, "
+            + "drag a header separator to resize, ⌘C/⌘V speak TSV, ⌘Z undoes."));
+        column.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fixed(420) },
+            new eQuantic.UI.Components.Spreadsheet(sheet)
+            {
+                Width = SizeValue.Fill,
+                Height = SizeValue.Fill,
+            }));
+        return Section(theme, "Spreadsheet", column);
+    }
+
+    private static SheetController SeedSheet()
+    {
+        // Six columns FIT the studio's content pane (44 + 6×96 = 620dp). Eight would hang past the
+        // right edge, and until wide sheets get 2D scroll (a stated fence) the clipped columns
+        // would be content nobody can reach — the walk test is what said so.
+        var sheet = new SheetController(rows: 200, cols: 6);
+        sheet.Document.SetCell(new CellRef(0, 0), "Ledger");
+        sheet.Document.SetCell(new CellRef(0, 1), "Amount");
+        sheet.Document.SetCell(new CellRef(0, 2), "Status");
+        for (var r = 1; r <= 40; r++)
+        {
+            sheet.Document.SetCell(new CellRef(r, 0), $"Entry {r}");
+            sheet.Document.SetCell(new CellRef(r, 1), $"{r * 7},{r % 100:D2}");
+            sheet.Document.SetCell(new CellRef(r, 2), r % 3 == 0 ? "pending" : "settled");
+        }
+        return sheet;
     }
 
     // ---- Shared pieces ---------------------------------------------------------------------
