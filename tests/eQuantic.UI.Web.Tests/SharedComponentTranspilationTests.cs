@@ -38,6 +38,7 @@ public class SharedComponentTranspilationTests
     /// </summary>
     private static string[] SharedModelSources() =>
         Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Code"), "*.cs")
+            .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Sheet"), "*.cs"))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 

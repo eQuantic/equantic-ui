@@ -38,6 +38,21 @@ public class BinaryExpressionStrategy : IConversionStrategy
             return $"{declaring.Name}.{operatorMethod}({left}, {right})";
         }
 
+        // CHAR ARITHMETIC. A C# char in `+ - * / %` promotes to int and computes on the CODE
+        // UNIT; the transpiled char is a 1-length string, so the same expression concatenated
+        // ('A' + col produced "A0…") or went NaN (text[i] - 'A'). When the RESULT type is numeric
+        // and an operand is a char, that operand becomes its code unit — a constant char literal
+        // folds to the number, anything else asks charCodeAt(0). `char + string` stays concat:
+        // its result type is string, so this branch never sees it.
+        if (op is "+" or "-" or "*" or "/" or "%"
+            && context.SemanticHelper.GetType(binary) is { SpecialType: not SpecialType.System_String })
+        {
+            var leftIsChar = context.SemanticHelper.GetType(binary.Left) is { SpecialType: SpecialType.System_Char };
+            var rightIsChar = context.SemanticHelper.GetType(binary.Right) is { SpecialType: SpecialType.System_Char };
+            if (leftIsChar) left = CharCode(binary.Left, left, context);
+            if (rightIsChar) right = CharCode(binary.Right, right, context);
+        }
+
         // decimal is an exact base-10 type implemented by the runtime Decimal class; route its
         // operators to method calls. (Null comparisons fall through to the loose-equality logic.)
         if (left != "null" && right != "null"
@@ -263,6 +278,15 @@ public class BinaryExpressionStrategy : IConversionStrategy
         }
 
         return null;
+    }
+
+    /// <summary>A char operand's CODE UNIT: constant literals fold to the number, expressions
+    /// read charCodeAt(0). The parentheses keep a compound operand intact.</summary>
+    private static string CharCode(ExpressionSyntax operand, string emitted, ConversionContext context)
+    {
+        if (context.SemanticHelper.TryGetConstantValue(operand, out var constant) && constant is char ch)
+            return ((int)ch).ToString();
+        return $"({emitted}).charCodeAt(0)";
     }
 
     public int Priority => 0;

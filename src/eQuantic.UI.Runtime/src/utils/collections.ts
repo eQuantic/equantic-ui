@@ -356,3 +356,28 @@ export function count(collection: unknown): number {
     for (const _ of collection as Iterable<unknown>) total++;
   return total;
 }
+
+/**
+ * A transpiled C# `Dictionary` is a plain object — not iterable. This is what a `foreach` over
+ * one (and a `new List<KeyValuePair<,>>(dict)`) compiles to: each pair DESTRUCTURES as
+ * `[key, value]` and also answers `.key`/`.value` (both C# consumption shapes), and numeric keys
+ * come back as numbers — Object.entries strings them, and a stringified key turns the next
+ * `key + 1` into concatenation.
+ */
+export function entries<V>(
+  dict: Record<string, V>,
+  numericKeys: true,
+): Array<[number, V] & { key: number; value: V }>;
+export function entries<V>(
+  dict: Record<string, V>,
+  numericKeys?: false,
+): Array<[string, V] & { key: string; value: V }>;
+export function entries<V>(
+  dict: Record<string, V>,
+  numericKeys = false,
+): Array<[string | number, V] & { key: string | number; value: V }> {
+  return Object.entries(dict).map(([rawKey, value]) => {
+    const key = numericKeys ? Number(rawKey) : rawKey;
+    return Object.assign([key, value] as [string | number, V], { key, value });
+  });
+}

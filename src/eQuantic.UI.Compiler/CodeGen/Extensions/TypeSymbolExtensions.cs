@@ -265,4 +265,33 @@ public static class TypeSymbolExtensions
         }
         return null;
     }
+
+    /// <summary>
+    /// Whether the type is a Dictionary shape (Dictionary/IDictionary/IReadOnlyDictionary), and
+    /// whether its KEY is numeric. Transpiled dictionaries are plain JS objects — not iterable —
+    /// so every construct that ENUMERATES one (foreach, a List copy) must go through
+    /// <c>$eq.entries(obj, numericKeys)</c>, which yields destructurable [key, value] pairs that
+    /// also answer .key/.value, with numeric keys restored (Object.entries strings them, and a
+    /// stringified key silently turns later arithmetic into concatenation).
+    /// </summary>
+    public static bool IsDictionaryLike(this ITypeSymbol? type, out bool numericKey)
+    {
+        numericKey = false;
+        if (type is not INamedTypeSymbol named) return false;
+        var definition = named.OriginalDefinition.ToDisplayString();
+        var isDictionary = definition is "System.Collections.Generic.Dictionary<TKey, TValue>"
+            or "System.Collections.Generic.IDictionary<TKey, TValue>"
+            or "System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>";
+        if (!isDictionary || named.TypeArguments.Length != 2) return false;
+        var key = named.TypeArguments[0].SpecialType;
+        numericKey = key is SpecialType.System_Int32
+            or SpecialType.System_Int64 or SpecialType.System_Single or SpecialType.System_Double
+            or SpecialType.System_Int16 or SpecialType.System_Byte or SpecialType.System_Decimal;
+        // ONLY primitive-keyed dictionaries lower to plain objects. A record/struct key lowers to
+        // $eq.collections.valueMap, which is ITERABLE with .key/.value pairs already — wrapping it
+        // in Object.entries would enumerate the map's internals, not its entries (the conformance
+        // suite caught exactly that).
+        return numericKey || key == SpecialType.System_String
+            || named.TypeArguments[0] is INamedTypeSymbol { TypeKind: TypeKind.Enum };
+    }
 }
