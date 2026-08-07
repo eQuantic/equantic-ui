@@ -549,6 +549,49 @@ public sealed class PhotonHost
     /// <summary>A press that began in a code surface is drawing a selection until it lifts.</summary>
     private bool _codeDragging;
 
+    /// <summary>The SPREADSHEET surface being edited, resolved by path every frame like the code
+    /// surface: the node is a corpse, the CONTROLLER outlives every rebuild.</summary>
+    public SheetSurface? SheetTarget
+    {
+        get
+        {
+            if (_textPath is null || _lastFrame is null) return null;
+            var regions = _lastFrame.SheetRegions;
+            for (var i = 0; i < regions.Count; i++)
+                if (regions[i].Path == _textPath) return regions[i].Surface;
+            return null;
+        }
+    }
+
+    /// <summary>A press that began in a sheet is dragging a range until it lifts.</summary>
+    private bool _sheetDragging;
+
+    /// <summary>The cell a point lands on: prefix-sum arithmetic from the window's origin,
+    /// clamped into the grid so a drag past the edge holds the edge.</summary>
+    private static CellRef CellAt(SheetRegion region, float x, float y)
+    {
+        var surface = region.Surface;
+        var document = surface.Controller.Document;
+        var gridX = x - region.Bounds.X - surface.HeaderWidth;
+        var gridY = y - region.Bounds.Y - surface.HeaderHeight;
+
+        var col = surface.FirstCol;
+        var acc = 0f;
+        while (col < document.Cols - 1 && acc + document.ColWidth(col) <= gridX)
+        {
+            acc += document.ColWidth(col);
+            col++;
+        }
+        var row = surface.FirstRow;
+        acc = 0f;
+        while (row < document.Rows - 1 && acc + document.RowHeight(row) <= gridY)
+        {
+            acc += document.RowHeight(row);
+            row++;
+        }
+        return document.Clamp(new CellRef(row, col));
+    }
+
     /// <summary>
     /// The (line, column) a point lands on. With a fixed pitch this is division, not a search — and
     /// the column ROUNDS to the nearest boundary, so clicking the right half of a character puts the
@@ -927,6 +970,67 @@ public sealed class PhotonHost
         NeedsRender = true;
     }
 
+    /// <summary>
+    /// Excel's keyboard over the focused sheet. Selection commands repaint without announcing;
+    /// data commands go through the controller, whose Changed event the composing component
+    /// already subscribes. Answers false for keys the sheet does not claim.
+    /// </summary>
+    private bool SheetKey(SheetSurface surface, string key, KeyModifiers modifiers)
+    {
+        var sheet = surface.Controller;
+        var command = modifiers.HasFlag(KeyModifiers.Command);
+        var shift = modifiers.HasFlag(KeyModifiers.Shift);
+        var motion = command ? SheetMotion.DataEdge : SheetMotion.Cell;
+
+        switch (key)
+        {
+            case "ArrowUp": sheet.Move(-1, 0, motion, shift); surface.OnChanged?.Invoke(); return true;
+            case "ArrowDown": sheet.Move(1, 0, motion, shift); surface.OnChanged?.Invoke(); return true;
+            case "ArrowLeft": sheet.Move(0, -1, motion, shift); surface.OnChanged?.Invoke(); return true;
+            case "ArrowRight": sheet.Move(0, 1, motion, shift); surface.OnChanged?.Invoke(); return true;
+            case "Tab": sheet.Step(0, shift ? -1 : 1); surface.OnChanged?.Invoke(); return true;
+            case "Enter": sheet.Step(shift ? -1 : 1, 0); surface.OnChanged?.Invoke(); return true;
+            case "Home":
+                sheet.Move(0, -1, command ? SheetMotion.SheetBoundary : SheetMotion.RowBoundary, shift);
+                surface.OnChanged?.Invoke();
+                return true;
+            case "End":
+                sheet.Move(0, 1, command ? SheetMotion.SheetBoundary : SheetMotion.RowBoundary, shift);
+                surface.OnChanged?.Invoke();
+                return true;
+            case "Backspace":
+            case "Delete":
+                sheet.ClearSelection();
+                return true;
+            case "Escape":
+                EndEditing();
+                return true;
+        }
+
+        if (command && key.Length == 1)
+        {
+            switch (char.ToLowerInvariant(key[0]))
+            {
+                case 'a': sheet.SelectAll(); surface.OnChanged?.Invoke(); return true;
+                case 'c':
+                    if (Clipboard is { } copyBoard) copyBoard.Write(sheet.CopyTsv());
+                    return true;
+                case 'x':
+                    if (Clipboard is { } cutBoard) cutBoard.Write(sheet.CopyTsv());
+                    sheet.ClearSelection();
+                    return true;
+                case 'v':
+                    if (Clipboard?.Read() is { Length: > 0 } pasted) sheet.PasteTsv(pasted);
+                    return true;
+                case 'z':
+                    if (shift) sheet.Redo(); else sheet.Undo();
+                    surface.OnChanged?.Invoke();
+                    return true;
+            }
+        }
+        return false;
+    }
+
     /// <summary>Runs the focused control, the way Enter and Space do everywhere else. Answers false
     /// when nothing holds focus, so the shell can let the key travel on.</summary>
     public bool ActivateFocused()
@@ -991,6 +1095,24 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerMove(float x, float y)
     {
+        // A sheet drag: the anchor cell stays, the focus cell follows the pointer.
+        if (_sheetDragging && _lastFrame is not null)
+        {
+            var sheetRegions = _lastFrame.SheetRegions;
+            for (var i = 0; i < sheetRegions.Count; i++)
+            {
+                if (sheetRegions[i].Path != _textPath) continue;
+                var sheet = sheetRegions[i].Surface.Controller;
+                var cell = CellAt(sheetRegions[i], x, y);
+                if (cell == sheet.Selection.Focus) break;
+                sheet.Selection = new SheetRange(sheet.Selection.Anchor, cell);
+                sheetRegions[i].Surface.OnChanged?.Invoke();
+                NeedsRender = true;
+                break;
+            }
+            return;
+        }
+
         // The same, over a code surface: the anchor stays put and the FOCUS follows the pointer,
         // which is exactly what CodeRange already models.
         if (_codeDragging && _lastFrame is not null)
@@ -1317,6 +1439,25 @@ public sealed class PhotonHost
             return true;
         }
 
+        // …and a SPREADSHEET surface, the same way: click selects the cell, drag grows the range.
+        var sheetRegions = _lastFrame.SheetRegions;
+        for (var i = sheetRegions.Count - 1; i >= 0; i--)
+        {
+            if (!sheetRegions[i].Bounds.Contains(point)) continue;
+            var sheet = sheetRegions[i].Surface.Controller;
+            var changed = _textPath != sheetRegions[i].Path;
+            if (changed) EndEditing();
+            _textPath = sheetRegions[i].Path;
+            _focused = null;
+            _focusedPath = null;
+            var cell = CellAt(sheetRegions[i], x, y);
+            sheet.Selection = new SheetRange(cell);
+            _sheetDragging = true;
+            sheetRegions[i].Surface.OnChanged?.Invoke();
+            NeedsRender = true;
+            return true;
+        }
+
         // A press on empty space ends editing, which is how every form on every platform behaves —
         // and is the only way to leave a field without Tab.
         EndEditing();
@@ -1366,7 +1507,8 @@ public sealed class PhotonHost
     public bool PressUp(float x, float y)
     {
         _dragSelecting = false;
-        _codeDragging = false;
+_codeDragging = false;
+        _sheetDragging = false;
         if (_pressSwallowed)
         {
             // Suppressed OUTCOME, not suppressed CLEANUP. The press-down armed the same gesture
@@ -1530,6 +1672,17 @@ public sealed class PhotonHost
                 if (chord.Modifiers != modifiers) continue;
                 if (!string.Equals(chord.Key, key, StringComparison.OrdinalIgnoreCase)) continue;
                 bindings[i].OnPressed();
+                NeedsRender = true;
+                return true;
+            }
+        }
+
+        // A SPREADSHEET under the selection speaks Excel: arrows move (⌘ jumps to the data edge,
+        // ⇧ extends), Tab/Enter walk, Delete clears, ⌘C/⌘V are TSV through the platform clipboard.
+        if (SheetTarget is { } sheetSurface)
+        {
+            if (SheetKey(sheetSurface, key, modifiers))
+            {
                 NeedsRender = true;
                 return true;
             }

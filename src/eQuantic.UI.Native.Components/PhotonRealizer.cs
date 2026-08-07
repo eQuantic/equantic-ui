@@ -43,6 +43,11 @@ public readonly record struct ShortcutBinding(KeyChord Chord, Action OnPressed);
 /// on every keystroke.</summary>
 public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Path);
 
+/// <summary>An editable SPREADSHEET surface: a click takes the selection (a cell resolved by
+/// prefix-sum arithmetic over the window), a drag extends it, and the keys that follow speak
+/// Excel through the shared controller.</summary>
+public readonly record struct SheetRegion(Rect Bounds, SheetSurface Surface, string Path);
+
 /// <summary>An editable CODE surface. Like a text region it takes the caret on a click and the keys
 /// that follow, but what those keys mean lives in its controller, so the region only has to carry
 /// the path and the geometry that turns a point into a (line, column).</summary>
@@ -72,10 +77,11 @@ public sealed class RealizeResult
         IReadOnlyList<DragRegion>? dragRegions = null, IReadOnlyList<LinkRegion>? linkRegions = null,
         IReadOnlyList<ShortcutBinding>? shortcuts = null, IReadOnlyList<TextRegion>? textRegions = null,
         IReadOnlyList<FocusStop>? focusStops = null, IReadOnlyList<CodeRegion>? codeRegions = null,
-        IReadOnlyList<LayoutNode>? overlayRoots = null)
+        IReadOnlyList<LayoutNode>? overlayRoots = null, IReadOnlyList<SheetRegion>? sheetRegions = null)
     {
         Root = root;
         OverlayRoots = overlayRoots ?? Array.Empty<LayoutNode>();
+        SheetRegions = sheetRegions ?? Array.Empty<SheetRegion>();
         HitRegions = hitRegions;
         HasActiveMotion = hasActiveMotion;
         HoverRegions = hoverRegions ?? Array.Empty<HoverRegion>();
@@ -90,6 +96,9 @@ public sealed class RealizeResult
 
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
+
+    /// <summary>Editable spreadsheet surfaces, in paint order (topmost last).</summary>
+    public IReadOnlyList<SheetRegion> SheetRegions { get; }
 
     /// <summary>The overlay layers' laid-out trees, in paint order — retained so the semantics
     /// walk sees what a dialog shows, not just the page beneath it.</summary>
@@ -235,7 +244,8 @@ public static class PhotonRealizer
         var texts = new List<TextRegion>();
         var stops = new List<FocusStop>();
         var codes = new List<CodeRegion>();
-        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes);
+        var sheets = new List<SheetRegion>();
+        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, sheets);
         Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset, MarkedText = markedText }, motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
@@ -278,7 +288,7 @@ public static class PhotonRealizer
         return new RealizeResult(layout, hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots);
+            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots, sheets);
     }
 
     /// <summary>The frame clock for loop motion: offsets resolve as a PURE function of
@@ -703,6 +713,17 @@ public static class PhotonRealizer
             foreach (var child in node.Children)
                 Emit(child, theme, mode, builder, confined, scrollMeta, press, motion, overlays);
             builder.PopClip();
+            return;
+        }
+
+        if (node.Source is SheetSurface sheetSurface)
+        {
+            input.Add(new SheetRegion(node.Bounds, sheetSurface, node.Path ?? ""));
+            var sheetEditing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
+            if (sheetEditing)
+                EmitSheetMarks(node, sheetSurface, theme, mode, builder);
+            foreach (var child in node.Children)
+                Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             return;
         }
 
@@ -1252,6 +1273,63 @@ public static class PhotonRealizer
                 top + caret.Line * surface.LineHeight,
                 CaretWidth, surface.LineHeight),
             new CornerRadii(0)), Paint.Solid(theme.TextPrimary.Resolve(mode)));
+    }
+
+    /// <summary>
+    /// Excel's two marks over the grid: the translucent selection band and the active cell's ring.
+    /// Pure prefix-sum arithmetic over the VISIBLE window — the surface says which sheet cell its
+    /// child's top-left renders, and per-line sizes accumulate from there.
+    /// </summary>
+    private static void EmitSheetMarks(LayoutNode node, SheetSurface surface, IAppTheme theme,
+        ThemeMode mode, DisplayListBuilder builder)
+    {
+        var sheet = surface.Controller;
+        var selection = sheet.Selection;
+        var document = sheet.Document;
+        var left = node.Bounds.X + surface.HeaderWidth;
+        var top = node.Bounds.Y + surface.HeaderHeight;
+
+        float ColX(int col)
+        {
+            var x = left;
+            for (var c = surface.FirstCol; c < col; c++) x += document.ColWidth(c);
+            return x;
+        }
+        float RowY(int row)
+        {
+            var y = top;
+            for (var r = surface.FirstRow; r < row; r++) y += document.RowHeight(r);
+            return y;
+        }
+
+        var fromRow = Math.Max(selection.TopRow, surface.FirstRow);
+        var fromCol = Math.Max(selection.LeftCol, surface.FirstCol);
+        if (fromRow <= selection.BottomRow && fromCol <= selection.RightCol)
+        {
+            var x = ColX(fromCol);
+            var y = RowY(fromRow);
+            var width = 0f;
+            for (var c = fromCol; c <= selection.RightCol && c < document.Cols; c++) width += document.ColWidth(c);
+            var height = 0f;
+            for (var r = fromRow; r <= selection.BottomRow && r < document.Rows; r++) height += document.RowHeight(r);
+
+            if (!selection.IsSingleCell)
+                builder.FillRRect(new RRect(new Rect(x, y, width, height), new CornerRadii(1)),
+                    Paint.Solid(theme.FocusRing.Resolve(mode).WithOpacity(0.16f)));
+        }
+
+        // The active cell's RING — where typing lands. Drawn even inside a band: the band says
+        // which cells are held, the ring says which one answers the keyboard.
+        var active = sheet.ActiveCell;
+        if (active.Row >= surface.FirstRow && active.Col >= surface.FirstCol)
+        {
+            var ax = ColX(active.Col);
+            var ay = RowY(active.Row);
+            builder.StrokeRRect(
+                new RRect(new Rect(ax, ay, document.ColWidth(active.Col), document.RowHeight(active.Row)),
+                    new CornerRadii(2)),
+                2f, Paint.Solid(theme.FocusRing.Resolve(mode)));
+        }
     }
 
     /// <summary>The width of the first <paramref name="count"/> characters — the caret's x.</summary>
