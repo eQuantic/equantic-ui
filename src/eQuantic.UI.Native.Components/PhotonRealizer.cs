@@ -721,7 +721,7 @@ public static class PhotonRealizer
             input.Add(new SheetRegion(node.Bounds, sheetSurface, node.Path ?? ""));
             var sheetEditing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
             if (sheetEditing)
-                EmitSheetMarks(node, sheetSurface, theme, mode, builder);
+                EmitSheetMarks(node, sheetSurface, theme, mode, builder, motion);
             foreach (var child in node.Children)
                 Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             return;
@@ -1281,7 +1281,7 @@ public static class PhotonRealizer
     /// child's top-left renders, and per-line sizes accumulate from there.
     /// </summary>
     private static void EmitSheetMarks(LayoutNode node, SheetSurface surface, IAppTheme theme,
-        ThemeMode mode, DisplayListBuilder builder)
+        ThemeMode mode, DisplayListBuilder builder, MotionScope? motionScope)
     {
         var sheet = surface.Controller;
         var selection = sheet.Selection;
@@ -1325,9 +1325,38 @@ public static class PhotonRealizer
         {
             var ax = ColX(active.Col);
             var ay = RowY(active.Row);
+            var cellWidth = document.ColWidth(active.Col);
+            var cellHeight = document.RowHeight(active.Row);
+
+            // While EDITING, the DRAFT paints over the cell: a fresh surface, the draft's text,
+            // and a caret bar at its end. The document underneath is untouched until commit —
+            // which is exactly what Escape restoring it means visually.
+            if (sheet.Editing)
+            {
+                builder.FillRRect(new RRect(new Rect(ax, ay, cellWidth, cellHeight), new CornerRadii(0)),
+                    Paint.Solid(theme.Surface.Resolve(mode)));
+                var advance = 0f;
+                if (sheet.Draft.Length > 0 && motionScope?.TextRasterizer is { } rasterizer)
+                {
+                    var style = theme.Type(TypeRole.BodyM);
+                    var raster = (motionScope.TextCache ?? TextRasterCache.Shared).Get(
+                        rasterizer, sheet.Draft, style, motionScope.TypeScale, float.MaxValue, 1, motionScope.RenderScale);
+                    if (raster is not null)
+                    {
+                        advance = raster.Texture.Width / motionScope.RenderScale;
+                        builder.PushClip(new RRect(new Rect(ax, ay, cellWidth, cellHeight)));
+                        builder.Texture(new Rect(ax + 6, ay, advance, raster.Texture.Height / motionScope.RenderScale),
+                            theme.TextPrimary.Resolve(mode), raster.Texture);
+                        builder.PopClip();
+                    }
+                }
+                builder.FillRRect(new RRect(new Rect(
+                        MathF.Min(ax + 6 + advance, ax + cellWidth - 3), ay + 4, 2f, cellHeight - 8),
+                    new CornerRadii(0)), Paint.Solid(theme.TextPrimary.Resolve(mode)));
+            }
+
             builder.StrokeRRect(
-                new RRect(new Rect(ax, ay, document.ColWidth(active.Col), document.RowHeight(active.Row)),
-                    new CornerRadii(2)),
+                new RRect(new Rect(ax, ay, cellWidth, cellHeight), new CornerRadii(2)),
                 2f, Paint.Solid(theme.FocusRing.Resolve(mode)));
         }
     }
