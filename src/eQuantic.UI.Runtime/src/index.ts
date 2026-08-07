@@ -120,6 +120,7 @@ export {
   Text,
   Pressable,
   CodeSurface,
+  SheetSurface,
   Adjustable,
   CameraPreview,
   Hoverable,

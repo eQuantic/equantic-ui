@@ -204,6 +204,10 @@ function lowerNode(
       return lowerFlexible(node as FlexibleNode, context, horizontalAxis, path);
     case 'spacer':
       return lowerSpacer(node as SpacerNode, horizontalAxis);
+    case 'sheetSurface':
+      // The grid window renders; the marks and Excel keyboard are native-first and join the web
+      // with the editing slice. Transparent to layout, like every gesture wrapper.
+      return lowerNode((node as unknown as { child: VisualNodeValue }).child, context, horizontalAxis, path + '/0');
     case 'scrollView':
       return lowerScrollView(node as ScrollViewNode, context, path);
     case 'loopMotion':

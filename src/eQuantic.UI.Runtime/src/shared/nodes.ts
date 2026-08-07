@@ -479,6 +479,16 @@ export interface ScrollViewNode extends VisualNodeValue {
   onViewportChanged?: ((height: number) => void) | null;
 }
 
+export interface SheetSurfaceNode extends VisualNodeValue {
+  nodeKind: 'sheetSurface';
+  child: VisualNodeValue;
+  firstRow?: number;
+  firstCol?: number;
+  headerWidth?: number;
+  headerHeight?: number;
+  label?: string | null;
+}
+
 /** Arrow-key adjustment semantics — one Tab stop wrapping a slider-like control. */
 export interface AdjustableNode extends VisualNodeValue {
   nodeKind: 'adjustable';
