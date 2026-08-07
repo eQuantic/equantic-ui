@@ -119,6 +119,9 @@ public static partial class ObjC
     public static partial void SendVoid(IntPtr receiver, IntPtr selector, CGSize size);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial void SendVoid(IntPtr receiver, IntPtr selector, CGRect rect);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     [return: MarshalAs(UnmanagedType.I1)]
     public static partial bool SendBool(IntPtr receiver, IntPtr selector);
 

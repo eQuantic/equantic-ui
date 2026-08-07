@@ -206,6 +206,14 @@ public sealed class PhotonWindow
             if (handled) Present();
             return handled;
         };
+        PhotonAccessibility.Source = host.Semantics;
+        PhotonAccessibility.OnActivate = path =>
+        {
+            var handled = host.ActivatePath(path);
+            // Same rule as a key press: the pressed state paints NOW, not at the next tick.
+            if (handled) Present();
+            return handled;
+        };
 
         // A LIVE RESIZE never returns to the loop below: AppKit runs its own, inside sendEvent:,
         // until the button comes up. The window keeps growing and the last frame is stretched to
@@ -288,6 +296,15 @@ public sealed class PhotonWindow
 
             if (maxFrames > 0 && FramesPresented >= maxFrames)
             {
+                // The AX probe, through the REAL dispatch: what VoiceOver would receive if it asked
+                // this window right now. Self-test evidence, printed beside FramesPresented.
+                var axChildren = Send(contentView, Sel("accessibilityChildren"));
+                var axCount = axChildren != IntPtr.Zero ? SendULong(axChildren, Sel("count")) : 0;
+                var axFirst = axCount > 0 ? Send(axChildren, Sel("firstObject")) : IntPtr.Zero;
+                var axSample = axFirst != IntPtr.Zero
+                    ? $" — first: {FromNSString(Send(axFirst, Sel("accessibilityRole")))} \"{FromNSString(Send(axFirst, Sel("accessibilityLabel")))}\""
+                    : "";
+                Console.WriteLine($"[photon] accessibility elements: {axCount}{axSample}");
                 SendVoid(window, Sel("close"));
                 break;
             }

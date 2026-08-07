@@ -24,11 +24,14 @@ internal static class PhotonContentView
 {
     private delegate void SetFrameSize(IntPtr self, IntPtr selector, CGSize size);
     private delegate bool ReturnsBool(IntPtr self, IntPtr selector);
+    private delegate IntPtr ReturnsPtr(IntPtr self, IntPtr selector);
     private delegate void KeyDown(IntPtr self, IntPtr selector, IntPtr @event);
     private delegate bool PerformKeyEquivalent(IntPtr self, IntPtr selector, IntPtr @event);
 
     private static SetFrameSize? _override;      // kept alive for the runtime's sake
     private static ReturnsBool? _acceptsFirstResponder;
+    private static ReturnsPtr? _axChildren;
+    private static ReturnsPtr? _axRole;
     private static KeyDown? _keyDown;
     private static PerformKeyEquivalent? _performKeyEquivalent;
     private static IntPtr _superSetFrameSize;
@@ -81,6 +84,16 @@ internal static class PhotonContentView
         _performKeyEquivalent = OnPerformKeyEquivalent;
         class_addMethod(_cls, sel_registerName("performKeyEquivalent:"),
             Marshal.GetFunctionPointerForDelegate(_performKeyEquivalent), "B@:@");
+
+        // The accessibility face: AppKit sees one view drawing everything, so the view answers
+        // for its contents — children built from the frame's semantics tree, and a group role so
+        // VoiceOver descends instead of stopping at an opaque canvas.
+        _axChildren = (self, _) => PhotonAccessibility.BuildChildren(self);
+        class_addMethod(_cls, sel_registerName("accessibilityChildren"),
+            Marshal.GetFunctionPointerForDelegate(_axChildren), "@@:");
+        _axRole = (_, _) => NSString("AXGroup");
+        class_addMethod(_cls, sel_registerName("accessibilityRole"),
+            Marshal.GetFunctionPointerForDelegate(_axRole), "@@:");
 
         objc_registerClassPair(_cls);
         return _cls;
