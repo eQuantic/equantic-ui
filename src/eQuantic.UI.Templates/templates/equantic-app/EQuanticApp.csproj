@@ -1,0 +1,10 @@
+<Project Sdk="eQuantic.UI.Sdk">
+
+  <!-- The SDK version lives in global.json (msbuild-sdks) — one place, stamped by the template. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -848,6 +848,17 @@ Bun and the JS bundling chain, the TypeScript runtime.
   — parked rather than shipped on hope. The ratchet is pinned at 152 KB; goldens are the aliasing
   guard that caught both reverts.
 
+- **2026-08-07 — M5 first slice: `dotnet new equantic-app`, and the external-developer path RUNS.**
+  New `eQuantic.UI.Templates` package (PackageType=Template): scaffolds a csproj on
+  `Sdk="eQuantic.UI.Sdk"` with the version STAMPED into global.json at pack time from $(Version)
+  (no per-release hand edit), a Program.cs (AddUI/UseTheme/MapUI) and a write-once counter page.
+  Proven END-TO-END as an external developer would live it: `dotnet pack` the framework →
+  `dotnet new install` → `dotnet new equantic-app -n HelloQuantic` → `dotnet build` (SDK resolved
+  from the NuGet feed, first try) → `dotnet run` → the counter counts in the browser, themed and
+  viewport-centered. Three commands, no Node, no JS. This also re-ran the NuGet consumption path
+  nothing had exercised since 0.1.2 (samples moved to project references). Remaining M5: native
+  template (`equantic-native`), docs polish, preview NuGet publishing.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
