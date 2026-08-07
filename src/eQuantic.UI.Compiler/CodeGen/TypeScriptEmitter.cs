@@ -1438,6 +1438,11 @@ public class TypeScriptEmitter
         builder.Class(name, BaseClassOf(cls), c => EmitStaticMembers(cls, c, asStatic),
             isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();
+        // This module used a LOCAL builder, so the mappings it recorded never reached
+        // GetLastMappings — which is why a static helper (the app's ConsoleShell, say) shipped
+        // with no source map while every component beside it had one: the error overlay could
+        // walk a page's frame back to C# and had to stop dead on a helper's.
+        _builder = builder;
 
         // Imports: $eq (if used) + runtime-provided references (the same semantic routing components
         // get — a static helper composing the shared vocabulary/library imports it from the runtime)

@@ -16,6 +16,23 @@ public class ComponentCompiler
     private readonly CssEmitter _cssEmitter;
     private readonly SemanticModelProvider _semanticModelProvider;
     private readonly SourceMapGenerator _sourceMapGenerator;
+
+    /// <summary>
+    /// The C#→TS map for whatever the emitter just produced. One seam for every module kind: the
+    /// plain-class and static-helper branches used to RETURN before the component path's map
+    /// generation ran, so an app's helpers (its ConsoleShell, its data shapers) shipped mapless —
+    /// the error overlay could walk a page's frame back to C# and stopped dead on a helper's.
+    /// </summary>
+    private void AttachSourceMap(CompilationResult result, Models.ComponentDefinition component)
+    {
+        var mappings = _tsEmitter.GetLastMappings();
+        if (mappings.Any() && component.SyntaxTree != null)
+        {
+            var sourceContent = component.SyntaxTree.GetText().ToString();
+            result.SourceMap = _sourceMapGenerator.Generate(
+                $"{component.Name}.ts", component.SourcePath, mappings, sourceContent);
+        }
+    }
     private readonly StyleProviderRegistry _styleProviderRegistry;
 
     public ComponentCompiler()
@@ -113,6 +130,7 @@ public class ComponentCompiler
             {
                 var pm = component.SyntaxTree != null ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree) : null;
                 result.TypeScript = _tsEmitter.EmitPlainClassModule(plainClass, pm);
+                AttachSourceMap(result, component);
                 result.Success = true;
                 return result;
             }
@@ -123,6 +141,7 @@ public class ComponentCompiler
             {
                 var sm = component.SyntaxTree != null ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree) : null;
                 result.TypeScript = _tsEmitter.EmitStaticHelperModule(staticClass, sm);
+                AttachSourceMap(result, component);
                 result.Success = true;
                 return result;
             }
@@ -179,12 +198,7 @@ public class ComponentCompiler
             }
 
             // Generate Source Map
-            var mappings = _tsEmitter.GetLastMappings();
-            if (mappings.Any() && component.SyntaxTree != null)
-            {
-                var sourceContent = component.SyntaxTree.GetText().ToString();
-                result.SourceMap = _sourceMapGenerator.Generate($"{component.Name}.ts", component.SourcePath, mappings, sourceContent);
-            }
+            AttachSourceMap(result, component);
             
             // JavaScript generation is now handled by Bun in the build pipeline
             // result.JavaScript is empty here, but will be populated by Bun output later if needed
