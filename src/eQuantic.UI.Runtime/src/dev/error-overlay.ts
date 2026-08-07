@@ -3,10 +3,10 @@
  * Shows beautiful error UI during development
  */
 
-import { remapStackTrace, RemappedFrame } from './stack-remapper';
+import { remapFramesToCSharp, remapStackTrace, RemappedFrame } from './stack-remapper';
 import { RawSourceMap } from './source-map';
 
-const isDev = typeof window !== 'undefined' && window.__EQ_DEV__;
+const isDev = () => typeof window !== 'undefined' && window.__EQ_DEV__ === true;
 
 interface ErrorInfo {
   message: string;
@@ -19,7 +19,7 @@ class ErrorOverlay {
   private errors: ErrorInfo[] = [];
 
   show(error: ErrorInfo) {
-    if (!isDev) return;
+    if (!isDev()) return;
     this.errors.push(error);
     this.render();
   }
@@ -270,7 +270,10 @@ class ErrorOverlay {
   private async enhanceWithSourceMaps(stack: string): Promise<void> {
     let frames: RemappedFrame[];
     try {
+      // Hop one lands in the TS intermediates (Bun does not compose input maps); hop two walks
+      // each intermediate's own eqc map into the C# — file, line, and the source text itself.
       frames = await remapStackTrace(stack, (url) => this.fetchSourceMap(url));
+      frames = await remapFramesToCSharp(frames, (name) => this.fetchStageOneMap(name));
     } catch {
       return;
     }
@@ -295,8 +298,23 @@ class ErrorOverlay {
 
   private async fetchSourceMap(jsUrl: string): Promise<RawSourceMap | null> {
     try {
-      // Bun emits "<file>.js.map" next to the bundle; the sourceMappingURL points at it.
-      const response = await fetch(`${jsUrl}.map`);
+      // Bun emits "<file>.js.map" next to the bundle. The frame's URL carries the cache-busting
+      // query (`?v=…`), and appending ".map" AFTER it asked for a file that does not exist —
+      // which is why the very first live run of this overlay showed JS frames: the map fetch had
+      // been 404ing quietly since the day it was written.
+      const clean = jsUrl.split('?')[0];
+      const response = await fetch(`${clean}.map`);
+      if (!response.ok) return null;
+      return (await response.json()) as RawSourceMap;
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchStageOneMap(tsName: string): Promise<RawSourceMap | null> {
+    try {
+      // Development-only endpoint beside /hmr; 404s in production and the frame keeps its TS name.
+      const response = await fetch(`/_equantic/src-map/${encodeURIComponent(tsName)}.map`);
       if (!response.ok) return null;
       return (await response.json()) as RawSourceMap;
     } catch {
@@ -420,19 +438,30 @@ class ErrorOverlay {
 
 export const errorOverlay = new ErrorOverlay();
 
-// Capture unhandled errors
-if (isDev && typeof window !== 'undefined') {
+let installed = false;
+
+/**
+ * Installs the window-level hooks. EXPLICIT rather than a module side effect: the side-effect
+ * version shipped in June and never ran once, because nothing ever imported the module — an
+ * installation that depends on being imported is dead code with extra steps. Boot calls this in
+ * development; errors still reach the console untouched.
+ */
+export function installErrorOverlay(): void {
+  if (installed || typeof window === 'undefined') return;
+  installed = true;
+
   window.addEventListener('error', (event) => {
     errorOverlay.show({
       message: event.message,
-      stack: event.error?.stack,
+      stack: (event.error as Error | undefined)?.stack,
     });
   });
 
   window.addEventListener('unhandledrejection', (event) => {
+    const reason: unknown = event.reason;
     errorOverlay.show({
-      message: `Unhandled Promise Rejection: ${event.reason}`,
-      stack: event.reason?.stack,
+      message: `Unhandled Promise Rejection: ${String(reason)}`,
+      stack: reason instanceof Error ? reason.stack : undefined,
     });
   });
 }

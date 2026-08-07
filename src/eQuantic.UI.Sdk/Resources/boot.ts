@@ -3,6 +3,7 @@
 
 export * from '../../eQuantic.UI.Runtime/src/index';
 
+import { installErrorOverlay } from '../../eQuantic.UI.Runtime/src/dev/error-overlay';
 import {
   getReconciler,
   Router,
@@ -81,6 +82,9 @@ export async function boot(): Promise<void> {
   }
 
   initHotReload();
+  // The Next.js-style error modal, in the only language the developer wrote: an uncaught error's
+  // JS stack walks back through the two source maps to the C# file and line, code frame included.
+  if (isDev()) installErrorOverlay();
 
   // What a BROWSER can do, under the same names the C# interfaces have — the web's answer to the
   // native shells' IPhotonCapabilities.

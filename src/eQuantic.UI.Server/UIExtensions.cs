@@ -291,6 +291,27 @@ public static class UIExtensions
             var hotReload = new HotReload.HotReloadService(environment.ContentRootPath);
             hotReload.Start();
             endpoints.MapGet("/_equantic/hmr", hotReload.HandleClient);
+
+            // The stage-one source maps (TS intermediate → C#, C# text embedded) for the error
+            // overlay's second hop. Name-only — no separators survive the check, so nothing above
+            // obj/eQuantic/ts is reachable. 404s in production along with the whole dev block.
+            endpoints.MapGet("/_equantic/src-map/{name}", async context =>
+            {
+                var name = context.Request.RouteValues["name"] as string ?? "";
+                var valid = name.EndsWith(".ts.map", StringComparison.Ordinal)
+                    && !name.Contains('/') && !name.Contains('\\') && !name.Contains("..");
+                var path = valid
+                    ? Path.Combine(environment.ContentRootPath, "obj", "eQuantic", "ts", name)
+                    : null;
+                if (path is null || !File.Exists(path))
+                {
+                    context.Response.StatusCode = 404;
+                    return;
+                }
+                context.Response.ContentType = "application/json";
+                context.Response.Headers.CacheControl = "no-cache";
+                await context.Response.SendFileAsync(path);
+            });
         }
 
         // Apply package endpoint configurations

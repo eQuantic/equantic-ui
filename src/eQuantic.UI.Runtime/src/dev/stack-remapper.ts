@@ -103,3 +103,52 @@ export async function remapStackTrace(
 
   return frames;
 }
+
+/**
+ * The SECOND hop. Bun does not compose input maps, so the bundle's own map lands in the TS
+ * intermediates (`obj/eQuantic/ts/X.ts`) — true, and useless to a developer who never wrote TS.
+ * Each intermediate carries an eqc-generated `X.ts.map` beside it whose source (and embedded
+ * content) is the C# file, served in development at `/_equantic/src-map/X.ts.map`. A frame that
+ * made hop one into a TS intermediate walks that map too and lands in the C#; a frame that cannot
+ * keeps its TS answer — a true statement about where mapping stopped beats a guessed C# line.
+ */
+export async function remapFramesToCSharp(
+  frames: RemappedFrame[],
+  fetchStageOne: MapFetcher,
+): Promise<RemappedFrame[]> {
+  const consumers = new Map<string, SourceMapConsumer | null>();
+  const result: RemappedFrame[] = [];
+
+  for (const frame of frames) {
+    const isIntermediate = frame.mapped && /(^|\/)obj\/eQuantic\/ts\/[^/]+\.ts$/.test(frame.file);
+    if (!isIntermediate) {
+      result.push(frame);
+      continue;
+    }
+
+    const name = frame.file.split('/').pop() ?? frame.file;
+    if (!consumers.has(name)) {
+      let consumer: SourceMapConsumer | null = null;
+      try {
+        const raw = await fetchStageOne(name);
+        consumer = raw ? new SourceMapConsumer(raw) : null;
+      } catch {
+        consumer = null;
+      }
+      consumers.set(name, consumer);
+    }
+
+    const original = consumers.get(name)?.originalPositionFor(frame.line, frame.column) ?? null;
+    result.push(original
+      ? {
+          func: original.name ?? frame.func,
+          file: original.source,
+          line: original.line,
+          column: original.column,
+          mapped: true,
+          sourceContent: original.sourceContent,
+        }
+      : frame);
+  }
+  return result;
+}
