@@ -704,6 +704,17 @@ public sealed class PhotonHost
     public bool TextInput(string text)
     {
         if (string.IsNullOrEmpty(text)) return false;
+        // A focused SHEET types Excel's way: the first character REPLACES the cell (a fresh draft
+        // seeded with it); the rest append. The document only changes on commit.
+        if (SheetTarget is { } sheetTarget)
+        {
+            var sheet = sheetTarget.Controller;
+            if (sheet.Editing) sheet.TypeIntoDraft(text);
+            else sheet.BeginEdit(text);
+            sheetTarget.OnChanged?.Invoke();
+            NeedsRender = true;
+            return true;
+        }
         // A code surface types through its controller, which is where auto-closing pairs, the
         // "step over the closer" rule and undo coalescing all live.
         if (CodeTarget is { } surface)
@@ -981,6 +992,31 @@ public sealed class PhotonHost
         var command = modifiers.HasFlag(KeyModifiers.Command);
         var shift = modifiers.HasFlag(KeyModifiers.Shift);
         var motion = command ? SheetMotion.DataEdge : SheetMotion.Cell;
+
+        // While EDITING: Enter/Tab commit and move, Escape discards, Backspace erases, and the
+        // arrows COMMIT first and then move — exactly Excel's quick-entry rhythm. F2 opens the
+        // cell's current value for in-place editing.
+        if (sheet.Editing)
+        {
+            switch (key)
+            {
+                case "Enter": sheet.CommitEdit(); sheet.Step(shift ? -1 : 1, 0); surface.OnChanged?.Invoke(); return true;
+                case "Tab": sheet.CommitEdit(); sheet.Step(0, shift ? -1 : 1); surface.OnChanged?.Invoke(); return true;
+                case "Escape": sheet.CancelEdit(); surface.OnChanged?.Invoke(); return true;
+                case "Backspace": sheet.EraseFromDraft(); surface.OnChanged?.Invoke(); return true;
+                case "ArrowUp": sheet.CommitEdit(); sheet.Move(-1, 0); surface.OnChanged?.Invoke(); return true;
+                case "ArrowDown": sheet.CommitEdit(); sheet.Move(1, 0); surface.OnChanged?.Invoke(); return true;
+                case "ArrowLeft": sheet.CommitEdit(); sheet.Move(0, -1); surface.OnChanged?.Invoke(); return true;
+                case "ArrowRight": sheet.CommitEdit(); sheet.Move(0, 1); surface.OnChanged?.Invoke(); return true;
+            }
+            return false;
+        }
+        if (key == "F2")
+        {
+            sheet.BeginEdit(sheet.Document.GetCell(sheet.ActiveCell));
+            surface.OnChanged?.Invoke();
+            return true;
+        }
 
         switch (key)
         {
@@ -1451,8 +1487,11 @@ public sealed class PhotonHost
             _focused = null;
             _focusedPath = null;
             var cell = CellAt(sheetRegions[i], x, y);
+            if (sheet.Editing) sheet.CommitEdit();   // clicking away lands the draft, like Excel
             sheet.Selection = new SheetRange(cell);
-            _sheetDragging = true;
+            if (clickCount >= 2)
+                sheet.BeginEdit(sheet.Document.GetCell(cell));
+            _sheetDragging = clickCount < 2;
             sheetRegions[i].Surface.OnChanged?.Invoke();
             NeedsRender = true;
             return true;

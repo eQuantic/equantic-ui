@@ -164,6 +164,53 @@ public sealed class SheetController
         _active = new CellRef(0, 0);
     }
 
+    // ---- in-cell editing -------------------------------------------------------------------------
+    //
+    // The DRAFT lives here, not in a surface: both targets edit the same way, and the document
+    // only changes on COMMIT — Escape restores exactly what was there, like every spreadsheet.
+
+    /// <summary>Whether the active cell is being edited (the draft renders in its place).</summary>
+    public bool Editing { get; private set; }
+
+    /// <summary>The text being typed — the cell's value-to-be, until commit or cancel.</summary>
+    public string Draft { get; private set; } = "";
+
+    /// <summary>
+    /// Starts editing the ACTIVE cell. Typing starts with the typed character (Excel: typing
+    /// REPLACES); F2 and double-click start with the cell's current value (editing in place).
+    /// </summary>
+    public void BeginEdit(string seed)
+    {
+        Editing = true;
+        Draft = seed;
+    }
+
+    /// <summary>Appends typed text to the draft (the platform composes; this just receives).</summary>
+    public void TypeIntoDraft(string text) => Draft += text;
+
+    /// <summary>Removes the draft's last character — Backspace while editing.</summary>
+    public void EraseFromDraft()
+    {
+        if (Draft.Length > 0) Draft = Draft[..^1];
+    }
+
+    /// <summary>The draft becomes the cell's value (one undo step). Answers whether it changed.</summary>
+    public bool CommitEdit()
+    {
+        if (!Editing) return false;
+        var changed = SetCell(ActiveCell, Draft);
+        Editing = false;
+        Draft = "";
+        return changed;
+    }
+
+    /// <summary>Excel's Escape: the draft is discarded and the cell keeps what it had.</summary>
+    public void CancelEdit()
+    {
+        Editing = false;
+        Draft = "";
+    }
+
     // ---- cell edits ------------------------------------------------------------------------------
 
     /// <summary>One cell gets a value — the in-cell editor's commit. No-op if nothing changes.</summary>
