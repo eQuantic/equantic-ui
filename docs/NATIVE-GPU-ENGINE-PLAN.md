@@ -808,6 +808,17 @@ Bun and the JS bundling chain, the TypeScript runtime.
   (`ime probe: marked '´' → committed`). Fence: code surfaces compose blind (no marked-run visual
   in the editor's face yet); human fingers still owe the "system invokes us" half.
 
+- **2026-08-07 — W7 perf harness: the promises get numbers.** `PerfHarnessTests` measures the C#
+  half of a frame (realize: layout + token resolve + emit) on a dashboard-shaped scene (24 cards +
+  a loop-motion strip, 1280×900): steady-state managed allocation per frame, display-list command
+  count, and realize time. Baselines on this M-series, 2026-08-07: **183 KB/frame** allocated in
+  steady state (~22 MB/s of gen0 pressure at 120 Hz — the arena/pooling target, and now it has a
+  number: LayoutNode tree + paths + sink lists are rebuilt every frame), **146 commands**,
+  **realize p50 0.23 ms / p95 0.32 ms** against the 8.33 ms budget. Ceilings are pinned as
+  REGRESSION rulers (256 KB, 200 commands, 33 ms alarm — deliberately loose on time so shared CI
+  never flakes); the ratchet tightens as pooling lands, never loosens casually. The GPU half stays
+  covered by parity goldens, not CI timing; device-class numbers wait on device runs.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
