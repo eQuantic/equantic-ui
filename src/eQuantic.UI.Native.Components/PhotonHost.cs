@@ -566,6 +566,24 @@ public sealed class PhotonHost
     /// <summary>A press that began in a sheet is dragging a range until it lifts.</summary>
     private bool _sheetDragging;
 
+    /// <summary>A press that grabbed the fill handle is dragging a fill preview until it lifts.</summary>
+    private bool _sheetFilling;
+
+    /// <summary>The bottom-right corner of the selection's bottom-right CELL, in host space —
+    /// where Excel's little square sits. Prefix-sum arithmetic, the inverse of CellAt.</summary>
+    private static Point FillHandleCorner(SheetRegion region, SheetRange selection)
+    {
+        var surface = region.Surface;
+        var document = surface.Controller.Document;
+        var x = region.Bounds.X + surface.HeaderWidth;
+        for (var c = surface.FirstCol; c <= selection.RightCol; c++) x += document.ColWidth(c);
+        var y = region.Bounds.Y + surface.HeaderHeight;
+        for (var r = surface.FirstRow; r <= selection.BottomRow; r++) y += document.RowHeight(r);
+        return new Point(x, y);
+    }
+
+    private const float FillHandleGrab = 8f;
+
     /// <summary>The cell a point lands on: prefix-sum arithmetic from the window's origin,
     /// clamped into the grid so a drag past the edge holds the edge.</summary>
     private static CellRef CellAt(SheetRegion region, float x, float y)
@@ -1087,6 +1105,22 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerMove(float x, float y)
     {
+        // A fill drag: the preview follows the pointer, one dominant axis at a time.
+        if (_sheetFilling && _lastFrame is not null)
+        {
+            var fillRegions = _lastFrame.SheetRegions;
+            for (var i = 0; i < fillRegions.Count; i++)
+            {
+                if (fillRegions[i].Path != _textPath) continue;
+                var sheet = fillRegions[i].Surface.Controller;
+                sheet.UpdateFill(CellAt(fillRegions[i], x, y));
+                fillRegions[i].Surface.OnChanged?.Invoke();
+                NeedsRender = true;
+                break;
+            }
+            return;
+        }
+
         // A sheet drag: the anchor cell stays, the focus cell follows the pointer.
         if (_sheetDragging && _lastFrame is not null)
         {
@@ -1277,6 +1311,24 @@ public sealed class PhotonHost
         var point = new Point(x, y);
 
         // Topmost first, exactly as dispatch does — a button drawn over a field is a button.
+        // Explicit cursors (BoxStyle.Cursor) go first of all: a fill handle painted OVER a cell
+        // says crosshair even though the cell underneath would say default.
+        var cursors = _lastFrame.CursorRegions;
+        for (var i = cursors.Count - 1; i >= 0; i--)
+        {
+            if (!cursors[i].Bounds.Contains(point)) continue;
+            return cursors[i].Cursor switch
+            {
+                PointerCursor.Pointer => CursorShape.Pointer,
+                PointerCursor.Text => CursorShape.Text,
+                PointerCursor.NotAllowed => CursorShape.NotAllowed,
+                PointerCursor.Crosshair => CursorShape.Crosshair,
+                PointerCursor.ColResize => CursorShape.ColResize,
+                PointerCursor.RowResize => CursorShape.RowResize,
+                _ => CursorShape.Default,
+            };
+        }
+
         var fields = _lastFrame.TextRegions;
         var hits = _lastFrame.HitRegions;
         var links = _lastFrame.LinkRegions;
@@ -1315,7 +1367,7 @@ public sealed class PhotonHost
     /// the next frame renders its pressed token swap. Returns whether a region captured the press.
     /// (v1 fence: drag-slop/cancel and fling join the gesture system.)
     /// </summary>
-    public bool PressDown(float x, float y, int clickCount = 1)
+    public bool PressDown(float x, float y, int clickCount = 1, KeyModifiers modifiers = KeyModifiers.None)
     {
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
@@ -1444,10 +1496,26 @@ public sealed class PhotonHost
             _focusedPath = null;
             var cell = CellAt(sheetRegions[i], x, y);
             if (sheet.Editing) sheet.CommitEdit();   // clicking away lands the draft, like Excel
-            sheet.Selection = new SheetRange(cell);
+
+            // Excel's little square: a grab near the selection's bottom-right corner starts a
+            // FILL drag, not a new selection.
+            var corner = FillHandleCorner(sheetRegions[i], sheet.Selection);
+            if (Math.Abs(x - corner.X) <= FillHandleGrab && Math.Abs(y - corner.Y) <= FillHandleGrab)
+            {
+                sheet.BeginFill();
+                _sheetFilling = true;
+                sheetRegions[i].Surface.OnChanged?.Invoke();
+                NeedsRender = true;
+                return true;
+            }
+
+            if (modifiers.HasFlag(KeyModifiers.Shift))
+                sheet.SelectTo(cell);   // the anchor stands, the selection stretches to the click
+            else
+                sheet.Selection = new SheetRange(cell);
             if (clickCount >= 2)
                 sheet.BeginEdit(sheet.Document.GetCell(cell));
-            _sheetDragging = clickCount < 2;
+            _sheetDragging = clickCount < 2 && !modifiers.HasFlag(KeyModifiers.Shift);
             sheetRegions[i].Surface.OnChanged?.Invoke();
             NeedsRender = true;
             return true;
@@ -1504,6 +1572,21 @@ public sealed class PhotonHost
         _dragSelecting = false;
 _codeDragging = false;
         _sheetDragging = false;
+        if (_sheetFilling && _lastFrame is not null)
+        {
+            // The fill drag lands: the source tiles across the preview as ONE undo step.
+            _sheetFilling = false;
+            var fillRegions = _lastFrame.SheetRegions;
+            for (var i = 0; i < fillRegions.Count; i++)
+            {
+                if (fillRegions[i].Path != _textPath) continue;
+                fillRegions[i].Surface.Controller.CommitFill();
+                fillRegions[i].Surface.OnChanged?.Invoke();
+                NeedsRender = true;
+                break;
+            }
+            return true;
+        }
         if (_pressSwallowed)
         {
             // Suppressed OUTCOME, not suppressed CLEANUP. The press-down armed the same gesture

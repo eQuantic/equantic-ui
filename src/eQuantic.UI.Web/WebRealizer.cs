@@ -739,6 +739,8 @@ public static class WebRealizer
                 // Spec S6 — changes to the covered channels GLIDE (hover diffs, the scrolled
                 // variant, re-rendered values). Native fence: the style interpolator (snap).
                 Transition = style.Transition is { } transition ? TokenCss.Transition(transition) : null,
+                // The CSS cursor mirror (Photon twin: a cursor region the host answers from).
+                Cursor = style.Cursor != PointerCursor.Default ? TokenCss.Cursor(style.Cursor) : null,
             },
         };
 

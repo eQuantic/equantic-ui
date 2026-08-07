@@ -48,6 +48,10 @@ public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Pa
 /// Excel through the shared controller.</summary>
 public readonly record struct SheetRegion(Rect Bounds, SheetSurface Surface, string Path);
 
+/// <summary>A surface that changes what the mouse pointer looks like (BoxStyle.Cursor — the CSS
+/// cursor mirror). The host answers CursorAt from these, topmost first.</summary>
+public readonly record struct CursorRegion(Rect Bounds, PointerCursor Cursor);
+
 /// <summary>An editable CODE surface. Like a text region it takes the caret on a click and the keys
 /// that follow, but what those keys mean lives in its controller, so the region only has to carry
 /// the path and the geometry that turns a point into a (line, column).</summary>
@@ -77,11 +81,13 @@ public sealed class RealizeResult
         IReadOnlyList<DragRegion>? dragRegions = null, IReadOnlyList<LinkRegion>? linkRegions = null,
         IReadOnlyList<ShortcutBinding>? shortcuts = null, IReadOnlyList<TextRegion>? textRegions = null,
         IReadOnlyList<FocusStop>? focusStops = null, IReadOnlyList<CodeRegion>? codeRegions = null,
-        IReadOnlyList<LayoutNode>? overlayRoots = null, IReadOnlyList<SheetRegion>? sheetRegions = null)
+        IReadOnlyList<LayoutNode>? overlayRoots = null, IReadOnlyList<SheetRegion>? sheetRegions = null,
+        IReadOnlyList<CursorRegion>? cursorRegions = null)
     {
         Root = root;
         OverlayRoots = overlayRoots ?? Array.Empty<LayoutNode>();
         SheetRegions = sheetRegions ?? Array.Empty<SheetRegion>();
+        CursorRegions = cursorRegions ?? Array.Empty<CursorRegion>();
         HitRegions = hitRegions;
         HasActiveMotion = hasActiveMotion;
         HoverRegions = hoverRegions ?? Array.Empty<HoverRegion>();
@@ -99,6 +105,9 @@ public sealed class RealizeResult
 
     /// <summary>Editable spreadsheet surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<SheetRegion> SheetRegions { get; }
+
+    /// <summary>Pointer-shape surfaces (BoxStyle.Cursor), in paint order (topmost last).</summary>
+    public IReadOnlyList<CursorRegion> CursorRegions { get; }
 
     /// <summary>The overlay layers' laid-out trees, in paint order — retained so the semantics
     /// walk sees what a dialog shows, not just the page beneath it.</summary>
@@ -245,7 +254,8 @@ public static class PhotonRealizer
         var stops = new List<FocusStop>();
         var codes = new List<CodeRegion>();
         var sheets = new List<SheetRegion>();
-        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, sheets);
+        var cursors = new List<CursorRegion>();
+        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, sheets, cursors);
         Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset, MarkedText = markedText }, motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
@@ -288,7 +298,7 @@ public static class PhotonRealizer
         return new RealizeResult(layout, hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots, sheets);
+            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots, sheets, cursors);
     }
 
     /// <summary>The frame clock for loop motion: offsets resolve as a PURE function of
@@ -505,6 +515,9 @@ public static class PhotonRealizer
         {
             case Box box:
             {
+                if (box.Style.Cursor != PointerCursor.Default)
+                    input.Add(new CursorRegion(node.Bounds, box.Style.Cursor));
+
                 // Spec S3 frosted glass: the backdrop blurs FIRST — under the shadow and the box's
                 // own translucent fill (the engine consumes this as a pass split).
                 if (box.Style.BackdropBlur > 0)

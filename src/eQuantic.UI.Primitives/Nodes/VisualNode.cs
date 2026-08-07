@@ -177,6 +177,30 @@ public readonly record struct BoxStyle
     /// <summary>Spec S5: style DIFF applied while focused — CSS <c>:focus-visible</c> on web,
     /// the focus interaction on Photon. <c>null</c> = none.</summary>
     public StyleDiff? Focus { get; init; }
+
+    /// <summary>What the mouse pointer looks like over this box — the CSS <c>cursor</c> mirror.
+    /// Web emits the declaration; Photon registers a cursor region the host answers from.
+    /// <see cref="PointerCursor.Default"/> = inherit whatever the surface underneath says.</summary>
+    public PointerCursor Cursor { get; init; }
+}
+
+/// <summary>
+/// The pointer shapes that MEAN something to the person moving the mouse (CSS names, exactly —
+/// the web emits these verbatim and the shells map them to their native cursors). Deliberately
+/// small; grows only when a control genuinely needs a new meaning.
+/// </summary>
+public enum PointerCursor : byte
+{
+    Default = 0,
+    Pointer = 1,
+    Text = 2,
+    NotAllowed = 3,
+    /// <summary>Excel's fill handle; precision picking.</summary>
+    Crosshair = 4,
+    /// <summary>A column-resize grip.</summary>
+    ColResize = 5,
+    /// <summary>A row-resize grip.</summary>
+    RowResize = 6,
 }
 
 /// <summary>

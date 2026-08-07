@@ -164,6 +164,11 @@ public sealed class SheetController
         _active = new CellRef(0, 0);
     }
 
+    /// <summary>Shift+click: the selection stretches from its anchor to the clicked cell. The
+    /// active cell stays put — exactly what Excel leaves standing.</summary>
+    public void SelectTo(CellRef cell) =>
+        _selection = new SheetRange(_selection.Anchor, Document.Clamp(cell));
+
     // ---- in-cell editing -------------------------------------------------------------------------
     //
     // The DRAFT lives here, not in a surface: both targets edit the same way, and the document
@@ -355,6 +360,154 @@ public sealed class SheetController
         edit.SelectionAfter = _selection;
         Commit(edit);
         return true;
+    }
+
+    // ---- the fill handle (Excel's little square) ---------------------------------------------
+
+    /// <summary>The fill drag in flight: the SOURCE block the gesture started from, or null.</summary>
+    public SheetRange? FillSource { get; private set; }
+
+    /// <summary>Where a release would pour values — the painted preview. Never overlaps the
+    /// source, and always a straight extension of it (Excel picks ONE axis per drag).</summary>
+    public SheetRange? FillTarget { get; private set; }
+
+    public bool Filling => FillSource is not null;
+
+    /// <summary>The drag grabbed the little square: the current selection becomes the source.</summary>
+    public void BeginFill()
+    {
+        FillSource = _selection;
+        FillTarget = null;
+    }
+
+    /// <summary>
+    /// The pointer reached a cell: pick the DOMINANT axis out from the source — Excel's rule — and
+    /// preview the stretch a release would fill. Back inside the source, the preview clears.
+    /// </summary>
+    public void UpdateFill(CellRef at)
+    {
+        if (FillSource is not { } source) return;
+        at = Document.Clamp(at);
+        var dRow = at.Row < source.TopRow ? at.Row - source.TopRow
+            : at.Row > source.BottomRow ? at.Row - source.BottomRow : 0;
+        var dCol = at.Col < source.LeftCol ? at.Col - source.LeftCol
+            : at.Col > source.RightCol ? at.Col - source.RightCol : 0;
+        if (dRow == 0 && dCol == 0)
+        {
+            FillTarget = null;
+            return;
+        }
+        FillTarget = Math.Abs(dRow) >= Math.Abs(dCol)
+            ? dRow > 0
+                ? new SheetRange(new CellRef(source.BottomRow + 1, source.LeftCol),
+                    new CellRef(at.Row, source.RightCol))
+                : new SheetRange(new CellRef(at.Row, source.LeftCol),
+                    new CellRef(source.TopRow - 1, source.RightCol))
+            : dCol > 0
+                ? new SheetRange(new CellRef(source.TopRow, source.RightCol + 1),
+                    new CellRef(source.BottomRow, at.Col))
+                : new SheetRange(new CellRef(source.TopRow, at.Col),
+                    new CellRef(source.BottomRow, source.LeftCol - 1));
+    }
+
+    /// <summary>
+    /// Release: the source tiles across the target (one undo step) and the selection grows to
+    /// cover both — exactly what Excel leaves selected after the handle drops.
+    /// </summary>
+    public bool CommitFill()
+    {
+        var source = FillSource;
+        var target = FillTarget;
+        FillSource = null;
+        FillTarget = null;
+        if (source is null || target is null) return false;
+        var selectionBefore = _selection;
+        _selection = new SheetRange(
+            new CellRef(Math.Min(source.Value.TopRow, target.Value.TopRow),
+                Math.Min(source.Value.LeftCol, target.Value.LeftCol)),
+            new CellRef(Math.Max(source.Value.BottomRow, target.Value.BottomRow),
+                Math.Max(source.Value.RightCol, target.Value.RightCol)));
+        _active = source.Value.TopLeft;
+        return Fill(source.Value, target.Value, selectionBefore);
+    }
+
+    /// <summary>The drag left the surface without releasing over a target.</summary>
+    public void CancelFill()
+    {
+        FillSource = null;
+        FillTarget = null;
+    }
+
+    /// <summary>
+    /// The fill ENGINE the handle and ⌘D/⌘R share: the source block tiles across the target as one
+    /// undo step. Wrap-around indexing keeps the pattern in phase in all four directions.
+    /// </summary>
+    public bool Fill(SheetRange source, SheetRange target, SheetRange? selectionBefore = null)
+    {
+        var edit = new SheetEdit
+        {
+            Kind = SheetEditKind.SetCells,
+            SelectionBefore = selectionBefore ?? _selection,
+        };
+        var sourceRows = source.BottomRow - source.TopRow + 1;
+        var sourceCols = source.RightCol - source.LeftCol + 1;
+        for (var row = target.TopRow; row <= target.BottomRow; row++)
+        {
+            for (var col = target.LeftCol; col <= target.RightCol; col++)
+            {
+                var cell = new CellRef(row, col);
+                if (!InBounds(cell) || source.Contains(cell)) continue;
+                var from = new CellRef(
+                    source.TopRow + Mod(row - source.TopRow, sourceRows),
+                    source.LeftCol + Mod(col - source.LeftCol, sourceCols));
+                var value = Document.GetCell(from);
+                var old = Document.GetCell(cell);
+                if (old == value) continue;
+                edit.Before.Add(new SheetCellSnapshot(cell, old));
+                edit.After.Add(new SheetCellSnapshot(cell, value));
+                Document.SetCell(cell, value);
+            }
+        }
+        if (edit.Before.Count == 0) return false;
+        edit.SelectionAfter = _selection;
+        Commit(edit);
+        return true;
+    }
+
+    private static int Mod(int value, int size) => ((value % size) + size) % size;
+
+    /// <summary>⌘D: the selection's first row pours down through the rest of it. A single-row
+    /// selection takes from the row ABOVE instead — Excel's exact reading.</summary>
+    public bool FillDown()
+    {
+        var selection = _selection;
+        if (selection.TopRow == selection.BottomRow)
+        {
+            if (selection.TopRow == 0) return false;
+            var above = new SheetRange(new CellRef(selection.TopRow - 1, selection.LeftCol),
+                new CellRef(selection.TopRow - 1, selection.RightCol));
+            return Fill(above, selection);
+        }
+        var first = new SheetRange(new CellRef(selection.TopRow, selection.LeftCol),
+            new CellRef(selection.TopRow, selection.RightCol));
+        return Fill(first, selection);
+    }
+
+    /// <summary>⌘R: the selection's first column pours right — or a single-column selection takes
+    /// from the column to its LEFT.</summary>
+    public bool FillRight()
+    {
+        var selection = _selection;
+        if (selection.LeftCol == selection.RightCol)
+        {
+            if (selection.LeftCol == 0) return false;
+            var left = new SheetRange(new CellRef(selection.TopRow, selection.LeftCol - 1),
+                new CellRef(selection.BottomRow, selection.LeftCol - 1));
+            return Fill(left, selection);
+        }
+        var first = new SheetRange(new CellRef(selection.TopRow, selection.LeftCol),
+            new CellRef(selection.BottomRow, selection.LeftCol));
+        return Fill(first, selection);
     }
 
     // ---- undo/redo -------------------------------------------------------------------------------

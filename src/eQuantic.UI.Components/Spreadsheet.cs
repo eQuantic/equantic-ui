@@ -45,6 +45,9 @@ public sealed class Spreadsheet : StatefulComponent
     /// <summary>Grab zone width on a header's trailing edge, where the resize drag lives.</summary>
     public const float Grip = 6f;
 
+    /// <summary>The fill handle's painted size (its grab zone in the surface is a little larger).</summary>
+    public const float FillHandle = 7f;
+
     /// <summary>The size the resized row/col had when the drag engaged; −1 outside a gesture.</summary>
     private float _resizeBase = -1f;
 
@@ -114,7 +117,8 @@ public sealed class Spreadsheet : StatefulComponent
 
         // ---- fixed column headers (the corner + A..Z) --------------------------------------------
         var headerRow = new Row(gap: 0) { Width = SizeValue.Fill };
-        headerRow.Add(HeaderCell("", HeaderWidth, HeaderHeight, theme));
+        headerRow.Add(HeaderCell("", HeaderWidth, HeaderHeight, theme,
+            onPressed: () => SetState(Controller.SelectAll)));
         for (var c = 0; c < document.Cols; c++)
             headerRow.Add(ColumnHeader(c, document, theme));
 
@@ -160,15 +164,21 @@ public sealed class Spreadsheet : StatefulComponent
         }, frame);
     }
 
-    private static VisualNode HeaderCell(string label, float width, float height, IAppTheme theme) =>
-        new Box(new BoxStyle
+    private static VisualNode HeaderCell(string label, float width, float height, IAppTheme theme,
+        bool selected = false, Action? onPressed = null)
+    {
+        // A header inside the selection's band shades, exactly as Excel marks it.
+        var cell = new Box(new BoxStyle
         {
             Width = SizeValue.Fixed(width),
             Height = SizeValue.Fixed(height),
-            Background = theme.SurfaceSubtle,
+            Background = selected ? theme.SurfaceHighlight : theme.SurfaceSubtle,
             BorderColor = theme.Border,
             BorderWidth = 0.5f,
-        }, new Text(label, TypeRole.Caption, theme.TextMuted, maxLines: 1).Centered());
+        }, new Text(label, TypeRole.Caption, selected ? theme.TextPrimary : theme.TextMuted,
+            maxLines: 1).Centered());
+        return onPressed is null ? cell : new Pressable(cell, onPressed);
+    }
 
     // ---- resize grips: an invisible Draggable riding each header's trailing edge ----------------
     // The grip clamps in the COMPONENT (not via the node's Min/Max — those would rebuild mid-drag),
@@ -178,12 +188,16 @@ public sealed class Spreadsheet : StatefulComponent
     private VisualNode ColumnHeader(int c, SheetDocument document, IAppTheme theme)
     {
         var col = c;   // the loop variable would be shared by every closure
+        var selection = Controller.Selection;
+        var inBand = c >= selection.LeftCol && c <= selection.RightCol;
         var stack = new Stack();
-        stack.Add(HeaderCell(ColumnName(c), document.ColWidth(c), HeaderHeight, theme));
+        stack.Add(HeaderCell(ColumnName(c), document.ColWidth(c), HeaderHeight, theme,
+            selected: inBand, onPressed: () => SetState(() => Controller.SelectCols(col, col))));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {
             Width = SizeValue.Fixed(Grip),
             Height = SizeValue.Fixed(HeaderHeight),
+            Cursor = PointerCursor.ColResize,
         }))
         {
             Axis = DragAxis.Horizontal,
@@ -199,12 +213,16 @@ public sealed class Spreadsheet : StatefulComponent
     private VisualNode RowHeader(int r, SheetDocument document, IAppTheme theme)
     {
         var row = r;
+        var selection = Controller.Selection;
+        var inBand = r >= selection.TopRow && r <= selection.BottomRow;
         var stack = new Stack();
-        stack.Add(HeaderCell($"{r + 1}", HeaderWidth, document.RowHeight(r), theme));
+        stack.Add(HeaderCell($"{r + 1}", HeaderWidth, document.RowHeight(r), theme,
+            selected: inBand, onPressed: () => SetState(() => Controller.SelectRows(row, row))));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
         {
             Width = SizeValue.Fixed(HeaderWidth),
             Height = SizeValue.Fixed(Grip),
+            Cursor = PointerCursor.RowResize,
         }))
         {
             Axis = DragAxis.Vertical,
@@ -248,16 +266,18 @@ public sealed class Spreadsheet : StatefulComponent
 
     private VisualNode GridRow(int row, SheetDocument document, IAppTheme theme)
     {
-        // Selection, the active ring and the editing draft paint ON THE CELLS — write-once, so
-        // both targets are identical by construction (no realizer-side marks to drift).
+        // Selection, the active ring, the editing draft, the FILL HANDLE and the fill preview all
+        // paint ON THE CELLS — write-once, so both targets are identical by construction.
         var selection = Controller.Selection;
         var active = Controller.ActiveCell;
+        var fillTarget = Controller.FillTarget;
         var line = new Row(gap: 0);
         for (var c = 0; c < document.Cols; c++)
         {
             var cell = new CellRef(row, c);
             var isActive = cell == active;
             var selected = selection.Contains(cell) && !selection.IsSingleCell;
+            var inFillPreview = fillTarget is { } preview && preview.Contains(cell);
             var editingHere = isActive && Controller.Editing;
             var value = editingHere ? Controller.Draft : document.GetCell(cell);
 
@@ -281,15 +301,35 @@ public sealed class Spreadsheet : StatefulComponent
                 content = new Text(value, TypeRole.BodyM, theme.TextPrimary, maxLines: 1);
             }
 
-            line.Add(new Box(new BoxStyle
+            var box = new Box(new BoxStyle
             {
                 Width = SizeValue.Fixed(document.ColWidth(c)),
                 Height = SizeValue.Fixed(document.RowHeight(row)),
                 Background = selected ? theme.SurfaceHighlight : theme.Surface,
-                BorderColor = isActive ? theme.FocusRing : theme.Border,
-                BorderWidth = isActive ? 2f : 0.5f,
+                BorderColor = isActive || inFillPreview ? theme.FocusRing : theme.Border,
+                BorderWidth = isActive ? 2f : inFillPreview ? 1.5f : 0.5f,
                 Padding = new EdgeInsets(0, 6, 0, 6),
-            }, content));
+            }, content);
+
+            // Excel's little square: the fill handle rides the selection's bottom-right corner.
+            // Grabbing and dragging it is the surface's gesture; this is only the pixels + cursor.
+            if (!editingHere && row == selection.BottomRow && c == selection.RightCol)
+            {
+                var handled = new Stack();
+                handled.Add(box);
+                handled.Add(new Positioned(new Box(new BoxStyle
+                {
+                    Width = SizeValue.Fixed(FillHandle),
+                    Height = SizeValue.Fixed(FillHandle),
+                    Background = theme.FocusRing,
+                    BorderColor = theme.Surface,
+                    BorderWidth = 1f,
+                    Cursor = PointerCursor.Crosshair,
+                }), bottom: -1, end: -1) { ZIndex = 2 });
+                line.Add(handled);
+                continue;
+            }
+            line.Add(box);
         }
         return line;
     }

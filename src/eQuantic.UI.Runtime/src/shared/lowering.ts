@@ -763,11 +763,10 @@ function lowerSheetSurface(
   const sheet = node.controller;
   const changed = () => node.onChanged?.();
 
-  const cellAt = (event: MouseEvent): CellRefCtor => {
-    const target = event.currentTarget as HTMLElement;
+  const cellFor = (target: HTMLElement, clientX: number, clientY: number): CellRefCtor => {
     const box = target.getBoundingClientRect();
-    const gridX = event.clientX - box.left - (node.headerWidth ?? 0);
-    const gridY = event.clientY - box.top - (node.headerHeight ?? 0);
+    const gridX = clientX - box.left - (node.headerWidth ?? 0);
+    const gridY = clientY - box.top - (node.headerHeight ?? 0);
     const doc = sheet.document;
     let col = node.firstCol ?? 0;
     let acc = 0;
@@ -782,6 +781,20 @@ function lowerSheetSurface(
       row++;
     }
     return new CellRefCtor(Math.max(0, Math.min(row, doc.rows - 1)), Math.max(0, Math.min(col, doc.cols - 1)));
+  };
+  const cellAt = (event: MouseEvent): CellRefCtor =>
+    cellFor(event.currentTarget as HTMLElement, event.clientX, event.clientY);
+
+  // The bottom-right corner of the selection's bottom-right CELL — where the fill handle sits.
+  // The inverse of cellFor, in client coordinates.
+  const fillHandleCorner = (target: HTMLElement): { x: number; y: number } => {
+    const box = target.getBoundingClientRect();
+    const doc = sheet.document;
+    let x = box.left + (node.headerWidth ?? 0);
+    for (let c = node.firstCol ?? 0; c <= sheet.selection.rightCol; c++) x += doc.colWidth(c);
+    let y = box.top + (node.headerHeight ?? 0);
+    for (let r = node.firstRow ?? 0; r <= sheet.selection.bottomRow; r++) y += doc.rowHeight(r);
+    return { x, y };
   };
 
   view.events['keydown'] = ((event: KeyboardEvent) => {
@@ -804,12 +817,56 @@ function lowerSheetSurface(
   view.events['mousedown'] = ((event: MouseEvent) => {
     // The keyboard follows the click: focus explicitly — relying on the browser's focus-on-click
     // left the keydown handler deaf on some engines.
-    (event.currentTarget as HTMLElement).focus();
+    const target = event.currentTarget as HTMLElement;
+    target.focus();
     if (sheet.editing) {
       sheet.commitEdit();   // clicking away lands the draft, like Excel
     }
+
+    // Excel's little square: a grab near the selection's bottom-right corner starts a FILL drag.
+    const corner = fillHandleCorner(target);
+    const onFillHandle =
+      Math.abs(event.clientX - corner.x) <= 8 && Math.abs(event.clientY - corner.y) <= 8;
+    if (onFillHandle) {
+      sheet.beginFill();
+      const move = (ev: MouseEvent) => {
+        sheet.updateFill(cellFor(target, ev.clientX, ev.clientY));
+        changed();
+      };
+      const up = () => {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+        sheet.commitFill();
+        changed();
+      };
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
+      event.preventDefault();
+      changed();
+      return;
+    }
+
     const cell = cellAt(event);
+    if (event.shiftKey) {
+      sheet.selectTo(cell);   // the anchor stands, the selection stretches to the click
+      changed();
+      return;
+    }
     sheet.selection = new SheetRangeCtor(cell);
+
+    // Drag-select: the anchor stays where the press landed, the focus follows the pointer —
+    // document-level listeners so the sweep survives leaving the grid.
+    const move = (ev: MouseEvent) => {
+      const at = cellFor(target, ev.clientX, ev.clientY);
+      sheet.selection = new SheetRangeCtor(sheet.selection.anchor, at);
+      changed();
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
     changed();
   }) as EventHandler;
 
@@ -1100,6 +1157,20 @@ function textLeaf(content: string): HtmlNode {
   return { tag: '#text', attributes: {}, events: {}, children: [], textContent: content };
 }
 
+/** The C# PointerCursor member names (camelCase over the wire) → the CSS keywords they mirror. */
+function cssCursor(cursor: string): string {
+  switch (cursor) {
+    case 'colResize':
+      return 'col-resize';
+    case 'rowResize':
+      return 'row-resize';
+    case 'notAllowed':
+      return 'not-allowed';
+    default:
+      return cursor; // pointer, text, crosshair — already the CSS keyword
+  }
+}
+
 function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
   const style = box.style ?? ({} as BoxStyleValue);
   const result = element('div', {
@@ -1162,6 +1233,8 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     'aspect-ratio': style.aspectRatio && style.aspectRatio > 0 ? num(style.aspectRatio) : undefined,
     // Spec S6 — changes to the covered channels glide instead of snapping (C# twin).
     transition: style.transition ? transitionValue(style.transition) : undefined,
+    // The CSS cursor mirror — the C# enum's camelCase member names lower to the CSS keywords.
+    cursor: style.cursor && style.cursor !== 'default' ? cssCursor(style.cursor) : undefined,
   });
 
   if (style.hover) appendDiff(result, ':hover', style.hover);

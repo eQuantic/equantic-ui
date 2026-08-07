@@ -15,4 +15,7 @@ public enum CursorShape
     Pointer,
     Text,
     NotAllowed,
+    Crosshair,
+    ColResize,
+    RowResize,
 }

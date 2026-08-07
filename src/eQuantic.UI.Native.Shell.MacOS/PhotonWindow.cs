@@ -390,7 +390,12 @@ public sealed class PhotonWindow
         switch (type)
         {
             case EventTypeLeftMouseDown:
-                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")));
+                // Shift+click extends a sheet/text selection — the same bits OnKeyDown reads.
+                var mouseFlags = SendULong(e, Sel("modifierFlags"));
+                var mouseModifiers = Primitives.KeyModifiers.None;
+                if ((mouseFlags & (1UL << 17)) != 0) mouseModifiers |= Primitives.KeyModifiers.Shift;
+                if ((mouseFlags & (1UL << 20)) != 0) mouseModifiers |= Primitives.KeyModifiers.Command;
+                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")), mouseModifiers);
                 break;
             case EventTypeLeftMouseUp:
                 host.PressUp(x, y);

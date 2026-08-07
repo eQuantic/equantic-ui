@@ -260,4 +260,102 @@ public class SheetControllerTests
         sheet.Document.Cols.Should().Be(3);
         sheet.Document.GetCell(new CellRef(3, 2)).Should().Be("w");
     }
+
+    // ---- the fill engine (Excel's little square + ⌘D/⌘R) ------------------------------------
+
+    [Fact]
+    public void Fill_TilesTheSourceBlock_InAllFourDirections()
+    {
+        var sheet = WithBlock(5, 5, 2, 1);   // r5c5 / r6c5
+
+        sheet.Fill(new SheetRange(new CellRef(5, 5), new CellRef(6, 5)),
+            new SheetRange(new CellRef(7, 5), new CellRef(10, 5)));
+        sheet.Document.GetCell(new CellRef(7, 5)).Should().Be("r5c5", "the pattern stays in phase");
+        sheet.Document.GetCell(new CellRef(8, 5)).Should().Be("r6c5");
+        sheet.Document.GetCell(new CellRef(10, 5)).Should().Be("r6c5");
+
+        sheet.Fill(new SheetRange(new CellRef(5, 5), new CellRef(6, 5)),
+            new SheetRange(new CellRef(3, 5), new CellRef(4, 5)));
+        sheet.Document.GetCell(new CellRef(4, 5)).Should().Be("r6c5",
+            "filling UP keeps the wrap-around in phase (the row above the source is the block's last)");
+
+        sheet.Fill(new SheetRange(new CellRef(5, 5), new CellRef(5, 5)),
+            new SheetRange(new CellRef(5, 6), new CellRef(5, 8)));
+        sheet.Document.GetCell(new CellRef(5, 8)).Should().Be("r5c5");
+
+        sheet.Fill(new SheetRange(new CellRef(5, 5), new CellRef(5, 5)),
+            new SheetRange(new CellRef(5, 3), new CellRef(5, 4)));
+        sheet.Document.GetCell(new CellRef(5, 3)).Should().Be("r5c5");
+    }
+
+    [Fact]
+    public void TheHandleDrag_PicksTheDominantAxis_AndCommitsAsOneUndo()
+    {
+        var sheet = WithBlock(0, 0, 1, 2);   // r0c0, r0c1
+        sheet.Selection = new SheetRange(new CellRef(0, 0), new CellRef(0, 1));
+
+        sheet.BeginFill();
+        sheet.UpdateFill(new CellRef(3, 0));            // 3 down, 0 out sideways → DOWN wins
+        sheet.FillTarget.Should().Be(new SheetRange(new CellRef(1, 0), new CellRef(3, 1)));
+
+        sheet.UpdateFill(new CellRef(0, 1));            // back inside the source
+        sheet.FillTarget.Should().BeNull("inside the source there is nothing to fill");
+
+        sheet.UpdateFill(new CellRef(2, 4));            // 2 down vs 3 right → RIGHT wins
+        sheet.FillTarget.Should().Be(new SheetRange(new CellRef(0, 2), new CellRef(0, 4)));
+
+        sheet.CommitFill().Should().BeTrue();
+        sheet.Document.GetCell(new CellRef(0, 2)).Should().Be("r0c0", "the block tiles");
+        sheet.Document.GetCell(new CellRef(0, 3)).Should().Be("r0c1");
+        sheet.Document.GetCell(new CellRef(0, 4)).Should().Be("r0c0");
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(0, 0), new CellRef(0, 4)),
+            "the selection grows over source + fill, Excel's way");
+
+        sheet.Undo();
+        sheet.Document.GetCell(new CellRef(0, 2)).Should().Be("", "the whole drag is ONE inverse");
+        sheet.Document.GetCell(new CellRef(0, 4)).Should().Be("");
+    }
+
+    [Fact]
+    public void FillDown_PoursTheFirstRow_OrTakesFromAbove()
+    {
+        var sheet = WithBlock(0, 0, 1, 2);
+        sheet.Selection = new SheetRange(new CellRef(0, 0), new CellRef(2, 1));
+        sheet.FillDown().Should().BeTrue();
+        sheet.Document.GetCell(new CellRef(2, 0)).Should().Be("r0c0");
+        sheet.Document.GetCell(new CellRef(1, 1)).Should().Be("r0c1");
+
+        var single = WithBlock(0, 0, 1, 1);
+        single.Selection = new SheetRange(new CellRef(1, 0));
+        single.FillDown().Should().BeTrue();
+        single.Document.GetCell(new CellRef(1, 0)).Should().Be("r0c0",
+            "a single-row selection takes from the row above, Excel's reading");
+    }
+
+    [Fact]
+    public void FillRight_PoursTheFirstColumn_OrTakesFromTheLeft()
+    {
+        var sheet = WithBlock(0, 0, 2, 1);
+        sheet.Selection = new SheetRange(new CellRef(0, 0), new CellRef(1, 2));
+        sheet.FillRight().Should().BeTrue();
+        sheet.Document.GetCell(new CellRef(0, 2)).Should().Be("r0c0");
+        sheet.Document.GetCell(new CellRef(1, 1)).Should().Be("r1c0");
+
+        var single = WithBlock(0, 0, 1, 1);
+        single.Selection = new SheetRange(new CellRef(0, 1));
+        single.FillRight().Should().BeTrue();
+        single.Document.GetCell(new CellRef(0, 1)).Should().Be("r0c0");
+    }
+
+    [Fact]
+    public void SelectTo_StretchesFromTheAnchor_AndTheActiveCellStands()
+    {
+        var sheet = Sheet();
+        sheet.Selection = new SheetRange(new CellRef(2, 2));
+
+        sheet.SelectTo(new CellRef(5, 4));
+
+        sheet.Selection.Should().Be(new SheetRange(new CellRef(2, 2), new CellRef(5, 4)));
+        sheet.ActiveCell.Should().Be(new CellRef(2, 2), "shift+click never moves the active cell");
+    }
 }

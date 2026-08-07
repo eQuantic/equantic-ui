@@ -153,6 +153,8 @@ interface BoxStyleConfig {
   transition?: TransitionSpec | null;
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
+  /** CSS cursor mirror — the C# PointerCursor member name in camelCase ('crosshair', 'colResize'). */
+  cursor?: string;
 }
 
 /** Mirror of the C# `BoxStyle` record — constructed from the transpiled initializer config object.
@@ -195,6 +197,7 @@ export class BoxStyle {
   /** Spec S5 hover/focus diffs. */
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
+  cursor?: string;
 
   constructor(config?: BoxStyleConfig) {
     if (!config) return;

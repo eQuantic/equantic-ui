@@ -29,6 +29,7 @@ internal sealed class InputSink(
     List<FocusStop> stops,
     List<CodeRegion> codes,
     List<SheetRegion> sheets,
+    List<CursorRegion> cursors,
     Rect? clip = null,
     bool suppressFocusStops = false)
 {
@@ -38,13 +39,13 @@ internal sealed class InputSink(
     /// <summary>The same sink, narrowed to a nested clip. Clips INTERSECT: a scroll view inside a
     /// scroll view shows only what both agree on, and so does its input.</summary>
     public InputSink Under(Rect rect) =>
-        new(hits, hovers, scrolls, drags, links, shortcuts, texts, stops, codes, sheets,
+        new(hits, hovers, scrolls, drags, links, shortcuts, texts, stops, codes, sheets, cursors,
             Clip is { } outer ? Intersect(outer, rect) : rect, suppressFocusStops);
 
     /// <summary>The same sink, with Tab stops suppressed — an Adjustable IS the stop for its whole
     /// subtree, and the pressables inside it stay pointer-only.</summary>
     public InputSink WithoutFocusStops() =>
-        new(hits, hovers, scrolls, drags, links, shortcuts, texts, stops, codes, sheets, Clip, suppressFocusStops: true);
+        new(hits, hovers, scrolls, drags, links, shortcuts, texts, stops, codes, sheets, cursors, Clip, suppressFocusStops: true);
 
     /// <summary>The Adjustable's own stop — never suppressed: it is the replacement, not the noise.</summary>
     public void AddAdjustable(FocusStop stop) => stops.Add(stop);
@@ -61,6 +62,8 @@ internal sealed class InputSink(
     }
 
     public void Add(HoverRegion region) { if (Visible(region.Bounds)) hovers.Add(region); }
+
+    public void Add(CursorRegion region) { if (Visible(region.Bounds)) cursors.Add(region); }
 
     public void Add(ScrollRegion region) { if (Visible(region.Bounds)) scrolls.Add(region); }
 
