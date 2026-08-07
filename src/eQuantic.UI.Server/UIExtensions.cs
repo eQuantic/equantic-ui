@@ -63,10 +63,6 @@ public static class UIExtensions
     public static IServiceCollection AddUI(this IServiceCollection services, Action<UIOptions>? configure = null)
     {
         var options = new UIOptions();
-        
-        // Register default error pages first (can be overridden by user scanning)
-        options.ScanAssembly(typeof(UIExtensions).Assembly);
-        
         configure?.Invoke(options);
 
         // Execute package service registrations
@@ -325,7 +321,12 @@ public static class UIExtensions
 
         endpoints.MapFallback(async context =>
         {
-            // Fallback for 404s or root
+            // An unknown route IS a 404, and the status code says so unconditionally — a 200 that
+            // merely looks like a 404 teaches every crawler and monitor that the page exists.
+            // ServeAppShell(null) then resolves options.NotFoundPageType (registered by
+            // ScanAssembly when the app declares a `[Page("/404")]`) and boots that page as the
+            // content; absent one, the shell boots and the runtime paints its styled default.
+            context.Response.StatusCode = 404;
             await ServeAppShell(context, null);
         });
 
@@ -456,10 +457,10 @@ public static class UIExtensions
         }
         else
         {
-            // 404 Not Found Handling
+            // 404 Not Found Handling — the fallback endpoint already set the status; here the
+            // app's registered /404 page (if any) takes over the CONTENT.
             if (options.NotFoundPageType != null)
             {
-                context.Response.StatusCode = 404;
                 pageName = options.NotFoundPageType.Name;
                 pageValue = $"'{pageName}'";
                 

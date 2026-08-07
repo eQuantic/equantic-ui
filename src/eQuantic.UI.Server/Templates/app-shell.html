@@ -6,6 +6,13 @@
         <title>{{Title}}</title>
         {{MetadataTags}}
 
+        <!-- Framework invariants (before app styles, so an app CAN deliberately override):
+             the app root is the web mirror of the native window — a determinate frame at least
+             one viewport tall whose single child (the page root) stretches to it. A page root
+             asking Height=Fill gets the viewport here exactly as it gets the window on native. -->
+        <style>
+            #app { min-height: 100vh; min-height: 100dvh; display: grid; }
+        </style>
         {{?BaseStyles}}
         <style>
             {{BaseStyles}}
