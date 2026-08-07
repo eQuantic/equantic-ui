@@ -905,6 +905,18 @@ export class Reconciler {
       result.attachedListeners += Object.keys(virtualNode.events).length;
     }
 
+    // FRAMEWORK MARKERS adopt too. Hydration deliberately leaves the SSR markup alone, but
+    // `data-eq-*` attributes are client infrastructure (after-pass sweeps find their elements by
+    // them), not content — SSR cannot know the client-side identity, so without this the sweep
+    // finds nothing until the first full re-render, which the sweep itself was meant to trigger.
+    if (virtualNode.attributes) {
+      for (const [name, value] of Object.entries(virtualNode.attributes)) {
+        if (name.startsWith('data-eq-') && !existingElement.hasAttribute(name)) {
+          existingElement.setAttribute(name, String(value));
+        }
+      }
+    }
+
     // Recursively hydrate children. Both sides must use the SAME skip rule, otherwise
     // a virtual text node the server collapsed/omitted shifts the index alignment and the
     // following elements fail to hydrate. The DOM side drops whitespace-only text and

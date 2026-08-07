@@ -369,7 +369,10 @@ public static class WebRealizer
             Style = new HtmlStyle
             {
                 Width = Size(scroll.Width),
-                Height = Size(scroll.Height),
+                // A scroll view IS the window its parent gives it — never its content. Native gets
+                // that from layout (bounds in, clip always); an auto-height overflow div grows with
+                // the content instead and scrolls nothing, so the web mirror defaults to 100%.
+                Height = Size(scroll.Height) ?? "100%",
                 OverflowY = scroll.Axis is ScrollAxis.Vertical or ScrollAxis.Both ? "auto" : "hidden",
                 OverflowX = scroll.Axis is ScrollAxis.Horizontal or ScrollAxis.Both ? "auto" : "hidden",
             },

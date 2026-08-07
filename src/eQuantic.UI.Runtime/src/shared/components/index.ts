@@ -49,6 +49,7 @@ export { IndentationFoldProvider } from './IndentationFoldProvider';
 export { JsonLanguage } from './JsonLanguage';
 export { List } from './List';
 export { ListItem } from './ListItem';
+export { ListView } from './ListView';
 export { Menu } from './Menu';
 export { MenuItem } from './MenuItem';
 export { NavItem } from './NavItem';

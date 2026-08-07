@@ -17,6 +17,7 @@
 
 import { commitShortcuts } from '../dom/shortcuts';
 import { attachCameraStreams } from './devices/camera';
+import { commitScrollViewports } from './scroll-viewports';
 
 /** The duck-typed surface of a transpiled shared-stateful instance (marker set by the base class). */
 interface SharedStatefulLike {
@@ -110,6 +111,9 @@ export function exitPass(): void {
   // A CameraPreview lowered this pass has a fresh <video>; the stream re-attaches here, the same
   // after-the-pass moment the shortcut set commits.
   attachCameraStreams();
+  // Scroll views measure their viewport (and adopt an initial offset) here too — a windowed list
+  // is (offset, viewport), and neither is knowable before the pass has mounted.
+  commitScrollViewports();
   activePass = null;
 }
 

@@ -11,7 +11,12 @@
              one viewport tall whose single child (the page root) stretches to it. A page root
              asking Height=Fill gets the viewport here exactly as it gets the window on native. -->
         <style>
-            #app { min-height: 100vh; min-height: 100dvh; display: grid; }
+            /* Exact height, not min: an APP page (root Height=Fill → height:100%) resolves to
+               exactly one viewport and scrolls INTERNALLY; a DOCUMENT page (auto-height root)
+               overflows this frame visibly and the body scrolls, as it always did. The child
+               min-height:0 is what lets an app page's root obey its 100% instead of its content. */
+            #app { height: 100vh; height: 100dvh; display: grid; }
+            #app > * { min-height: 0; }
         </style>
         {{?BaseStyles}}
         <style>
