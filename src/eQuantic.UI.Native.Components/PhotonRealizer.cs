@@ -175,7 +175,10 @@ public static class PhotonRealizer
         int selectionStart = 0,
         int selectionEnd = 0,
         Func<string, float?>? scrollOffset = null,
-        Density density = Density.Comfortable)
+        Density density = Density.Comfortable,
+        // The IME composition in flight for the focused field — rendered inline at the caret,
+        // underlined, without the value changing (the value only changes on commit).
+        string markedText = "")
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
             density)
@@ -230,7 +233,7 @@ public static class PhotonRealizer
         var stops = new List<FocusStop>();
         var codes = new List<CodeRegion>();
         var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes);
-        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset }, motion, overlays);
+        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset, MarkedText = markedText }, motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -244,7 +247,7 @@ public static class PhotonRealizer
             overlayRoots.Add(overlayLayout);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset }, motion, overlays);
+            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset, MarkedText = markedText }, motion, overlays);
         }
 
         // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
@@ -338,6 +341,9 @@ public static class PhotonRealizer
 
         /// <summary>Where a scrollable path currently sits — the host's own store, read-only.</summary>
         public Func<string, float?>? ScrollOffset { get; init; }
+
+        /// <summary>The IME composition in flight for the focused field ("" when none).</summary>
+        public string MarkedText { get; init; } = "";
 
         public float? ScrollOffsetOf(string path) => ScrollOffset?.Invoke(path);
 
@@ -1085,7 +1091,14 @@ public static class PhotonRealizer
         if (!entry.Disabled) input.Add(new TextRegion(node.Bounds, entry, node.Path ?? ""));
 
         var editing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
-        var value = entry.Obscure ? new string('•', entry.Value.Length) : entry.Value;
+        // The composition in flight renders INSIDE the value at the caret — underlined below, caret
+        // at its end — while the VALUE stays untouched until the platform commits. An obscured
+        // field composes blind: echoing the composition would echo the secret.
+        var marked = editing && !entry.Obscure ? press.MarkedText : "";
+        var caretInValue = Math.Min(press.CaretIndex, entry.Value.Length);
+        var composed = marked.Length > 0 ? entry.Value.Insert(caretInValue, marked) : entry.Value;
+        var value = entry.Obscure ? new string('•', composed.Length) : composed;
+        var effectiveCaret = Math.Min(caretInValue + marked.Length, value.Length);
         var shown = value.Length > 0 ? value : entry.Placeholder ?? "";
         var token = value.Length > 0 ? theme.TextPrimary : theme.TextMuted;
         var style = theme.Type(entry.Role);
@@ -1113,9 +1126,9 @@ public static class PhotonRealizer
                 var width = raster.Texture.Width / motion.RenderScale;
                 // Where the caret goes is a measurement of the text BEFORE it, not a fraction of the
                 // whole: proportional glyphs make "iii" and "WWW" different widths at equal length.
-                advance = press.CaretIndex >= value.Length
+                advance = effectiveCaret >= value.Length
                     ? (value.Length > 0 ? width : 0)
-                    : MeasureUpTo(rasterizer, value, press.CaretIndex, style, motion);
+                    : MeasureUpTo(rasterizer, value, effectiveCaret, style, motion);
 
                 // The window FOLLOWS the caret: when it would leave the right edge, the text slides
                 // left just enough to keep it visible (a small margin shows the character being
@@ -1141,6 +1154,20 @@ public static class PhotonRealizer
         if (!editing || entry.Disabled) return;
 
         var caretHeight = node.Text?.LineHeight ?? style.LineHeight;
+
+        // The composition's underline — the one visual that says "this text is not yours yet".
+        if (marked.Length > 0 && motion.TextRasterizer is { } markedRasterizer)
+        {
+            var from = MeasureUpTo(markedRasterizer, value, caretInValue, style, motion) - shift;
+            var to = MeasureUpTo(markedRasterizer, value, caretInValue + marked.Length, style, motion) - shift;
+            from = MathF.Max(from, 0);
+            to = MathF.Min(to, node.Bounds.Width);
+            if (to > from)
+                builder.FillRRect(
+                    new RRect(new Rect(node.Bounds.X + from, node.Bounds.Y + caretHeight - 2f, to - from, 1.5f),
+                        new CornerRadii(0.75f)),
+                    Paint.Solid(theme.TextPrimary.Resolve(mode)));
+        }
 
         // The selection band. Drawn AFTER the glyphs and translucent rather than under them and
         // opaque: the text stays legible through it, which is what every platform does, and it

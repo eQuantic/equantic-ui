@@ -176,7 +176,7 @@ public sealed class PhotonHost
         _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets, _pressedPath,
             _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible,
             Selection.Start, Selection.End, density: Density,
-            scrollOffset: path => _scrolls.Get(path));
+            scrollOffset: path => _scrolls.Get(path), markedText: _marked);
         if (RenderScale != 1f) builder.Pop();
         AdoptAutofocus();
         NeedsRender = _lastFrame.HasActiveMotion || gliding;
@@ -643,6 +643,7 @@ public sealed class PhotonHost
         if (_textPath is null) return;
         TextTarget?.OnFocusChanged?.Invoke(false);
         _textPath = null;
+        _marked = "";
         Caret = 0;
         _anchor = null;
         NeedsRender = true;
@@ -674,6 +675,123 @@ public sealed class PhotonHost
         var value = entry.Value;
         Commit(entry, value[..start] + text + value[end..], start + text.Length, clearAnchor: true);
         return true;
+    }
+
+    // ---- IME composition ------------------------------------------------------------------------
+    //
+    // A dead key, an accent, a CJK candidate: the platform composes TEXT over several keystrokes,
+    // and until it commits, the field shows the composition INLINE (underlined, caret at its end)
+    // without the value changing. The value only ever changes through CommitText — cancelling a
+    // composition leaves the field exactly as it was.
+
+    private string _marked = "";
+
+    /// <summary>Whether a field or code surface holds the caret — the shell's cue to hand key
+    /// events to the platform's input context instead of interpreting them itself.</summary>
+    public bool HasTextFocus => _textPath is not null;
+
+    /// <summary>The last realized frame — the shells' read-only window onto regions and semantics
+    /// (probes, bridges). Null before the first render.</summary>
+    public RealizeResult? LastFrame => _lastFrame;
+
+    /// <summary>The composition in flight for the focused field ("" when none).</summary>
+    public string MarkedText => _textPath is null ? "" : _marked;
+
+    public bool HasMarkedText => MarkedText.Length > 0;
+
+    /// <summary>
+    /// Replaces the composition in flight ("" cancels it). Composing over a selection replaces the
+    /// selection first — the same rule typing has — and that edit is real: cancelling the
+    /// composition afterwards does not resurrect what typing over it would also have destroyed.
+    /// </summary>
+    public bool SetMarkedText(string text)
+    {
+        if (_textPath is null) return false;
+        // A code surface has no composition VISUAL yet (its face lives in its child's render) —
+        // the state still tracks, so commit lands and cancel is clean.
+        if (TextTarget is { } entry && !entry.Disabled)
+        {
+            var (start, end) = Selection;
+            if (end > start)
+                Commit(entry, entry.Value[..start] + entry.Value[end..], start, clearAnchor: true);
+        }
+        if (_marked == text) return true;
+        _marked = text;
+        RestartBlink();
+        NeedsRender = true;
+        return true;
+    }
+
+    /// <summary>The platform finished composing: the text enters the field at the caret, through
+    /// the same door every keystroke uses, and the composition clears.</summary>
+    public bool CommitText(string text)
+    {
+        if (_marked.Length > 0)
+        {
+            _marked = "";
+            NeedsRender = true;
+        }
+        return TextInput(text);
+    }
+
+    /// <summary>The selected range of the focused field, as (start, length) — what
+    /// NSTextInputClient's <c>selectedRange</c> answers.</summary>
+    public (int Start, int Length) SelectionRange
+    {
+        get
+        {
+            var (start, end) = Selection;
+            return (start, end - start);
+        }
+    }
+
+    /// <summary>The composition's range in the field, or (-1, 0) when nothing is marked.</summary>
+    public (int Start, int Length) MarkedRange =>
+        HasMarkedText ? (CaretIndex, _marked.Length) : (-1, 0);
+
+    /// <summary>
+    /// Where the caret sits, in WINDOW coordinates — the anchor for the platform's candidate
+    /// window (the CJK picker appears under the text being composed, not in a corner). Null when
+    /// nothing is focused or the frame has not rendered.
+    /// </summary>
+    public Rect? CaretRect()
+    {
+        if (_lastFrame is null || _textPath is null) return null;
+
+        var fields = _lastFrame.TextRegions;
+        for (var i = 0; i < fields.Count; i++)
+        {
+            if (fields[i].Path != _textPath) continue;
+            var bounds = fields[i].Bounds;
+            var entry = fields[i].Entry;
+            var style = _theme.Type(entry.Role);
+            var caretInValue = Math.Min(CaretIndex, entry.Value.Length);
+            var composed = _marked.Length > 0 ? entry.Value.Insert(caretInValue, _marked) : entry.Value;
+            var upTo = Math.Min(caretInValue + _marked.Length, composed.Length);
+            var advance = 0f;
+            if (upTo > 0 && TextRasterizer is { } rasterizer)
+            {
+                var raster = (_textCache ?? TextRasterCache.Shared).Get(
+                    rasterizer, composed[..upTo], style, _typeScale, float.MaxValue, 1, RenderScale);
+                if (raster is not null) advance = raster.Texture.Width / RenderScale;
+            }
+            // The same window-follows-caret clamp the realizer applies while editing.
+            advance = MathF.Min(advance, bounds.Width - 8f);
+            return new Rect(bounds.X + MathF.Max(advance, 0), bounds.Y, 2f, style.LineHeight);
+        }
+
+        var surfaces = _lastFrame.CodeRegions;
+        for (var i = 0; i < surfaces.Count; i++)
+        {
+            if (surfaces[i].Path != _textPath) continue;
+            var surface = surfaces[i].Surface;
+            var caret = surface.Editor.Selection.Focus;
+            return new Rect(
+                surfaces[i].Bounds.X + surface.ContentLeft + caret.Column * surface.ColumnWidth,
+                surfaces[i].Bounds.Y + surface.ContentTop + caret.Line * surface.LineHeight,
+                2f, surface.LineHeight);
+        }
+        return null;
     }
 
     /// <summary>The editing keys — what Backspace and the arrows mean inside a field. Returns false

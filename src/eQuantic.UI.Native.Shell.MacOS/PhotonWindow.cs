@@ -206,6 +206,18 @@ public sealed class PhotonWindow
             if (handled) Present();
             return handled;
         };
+        // The IME doors: while a field holds the caret the input context interprets keys, and
+        // what it decides comes back through these — composed text, the composition in flight,
+        // the ranges it asks about, and the caret rect its candidate window anchors to.
+        PhotonContentView.HasTextFocus = () => host.HasTextFocus;
+        PhotonContentView.OnInsertText = text => { if (host.CommitText(text)) Present(); };
+        PhotonContentView.OnMarkedText = text => { if (host.SetMarkedText(text)) Present(); };
+        PhotonContentView.HasMarked = () => host.HasMarkedText;
+        PhotonContentView.SelectedRangeSource = () => host.SelectionRange;
+        PhotonContentView.MarkedRangeSource = () => host.MarkedRange;
+        PhotonContentView.CaretRectSource = () =>
+            host.CaretRect() is { } rect ? (rect.X, rect.Y, rect.Width, rect.Height) : null;
+
         PhotonAccessibility.Source = host.Semantics;
         PhotonAccessibility.OnActivate = path =>
         {
@@ -305,10 +317,50 @@ public sealed class PhotonWindow
                     ? $" — first: {FromNSString(Send(axFirst, Sel("accessibilityRole")))} \"{FromNSString(Send(axFirst, Sel("accessibilityLabel")))}\""
                     : "";
                 Console.WriteLine($"[photon] accessibility elements: {axCount}{axSample}");
+                ProbeIme(contentView, host, (float)clock.Elapsed.TotalMilliseconds);
                 SendVoid(window, Sel("close"));
                 break;
             }
         }
+    }
+
+    /// <summary>
+    /// Self-test evidence for the IME plumbing, through the REAL registered selectors: focus the
+    /// first field (when the page has one), send <c>setMarkedText:</c> and <c>insertText:</c> to
+    /// the view the way the input context would, and report what the field ended up holding. This
+    /// proves the protocol methods are registered with the right encodings and route to the host —
+    /// only human fingers can prove the system INVOKES them.
+    /// </summary>
+    private static void ProbeIme(IntPtr contentView, PhotonHost host, float timeMs)
+    {
+        var frame = host.LastFrame;
+        if (frame is null || frame.TextRegions.Count == 0)
+        {
+            // No field on this page: open the ⌘K search the way the keyboard would, and let the
+            // next frames realize the palette and adopt its autofocus.
+            host.KeyDown("k", Primitives.KeyModifiers.Command);
+            host.RenderFrame(new DisplayListBuilder(), timeMs + 16);
+            host.RenderFrame(new DisplayListBuilder(), timeMs + 32);
+            frame = host.LastFrame;
+        }
+        if (frame is null || frame.TextRegions.Count == 0)
+        {
+            Console.WriteLine("[photon] ime probe: no text field reachable");
+            return;
+        }
+        if (!host.HasTextFocus)
+        {
+            var field = frame.TextRegions[0].Bounds;
+            host.PressDown(field.Center.X, field.Center.Y);
+            host.PressUp(field.Center.X, field.Center.Y);
+        }
+
+        SendVoid(contentView, Sel("setMarkedText:selectedRange:replacementRange:"),
+            NSString("´"), new NSRange(0, 1), NSRange.NotFound);
+        var marked = host.MarkedText;
+        SendVoid(contentView, Sel("insertText:replacementRange:"), NSString("á"), NSRange.NotFound);
+        var committed = host.HasMarkedText ? "still marked!" : "committed";
+        Console.WriteLine($"[photon] ime probe: marked '{marked}' → {committed}");
     }
 
     /// <summary>OS event → the host's pointer pipeline. AppKit is bottom-left; the UI is top-left.</summary>

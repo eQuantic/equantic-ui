@@ -25,6 +25,14 @@ internal static class PhotonContentView
     private delegate void SetFrameSize(IntPtr self, IntPtr selector, CGSize size);
     private delegate bool ReturnsBool(IntPtr self, IntPtr selector);
     private delegate IntPtr ReturnsPtr(IntPtr self, IntPtr selector);
+    private delegate void InsertTextDelegate(IntPtr self, IntPtr selector, IntPtr text, NSRange replacement);
+    private delegate void SetMarkedTextDelegate(IntPtr self, IntPtr selector, IntPtr text, NSRange selected, NSRange replacement);
+    private delegate void VoidDelegate(IntPtr self, IntPtr selector);
+    private delegate NSRange RangeDelegate(IntPtr self, IntPtr selector);
+    private delegate IntPtr SubstringDelegate(IntPtr self, IntPtr selector, NSRange range, IntPtr actual);
+    private delegate CGRect FirstRectDelegate(IntPtr self, IntPtr selector, NSRange range, IntPtr actual);
+    private delegate nuint CharIndexDelegate(IntPtr self, IntPtr selector, CGPoint point);
+    private delegate void CommandDelegate(IntPtr self, IntPtr selector, IntPtr command);
     private delegate void KeyDown(IntPtr self, IntPtr selector, IntPtr @event);
     private delegate bool PerformKeyEquivalent(IntPtr self, IntPtr selector, IntPtr @event);
 
@@ -32,6 +40,18 @@ internal static class PhotonContentView
     private static ReturnsBool? _acceptsFirstResponder;
     private static ReturnsPtr? _axChildren;
     private static ReturnsPtr? _axRole;
+    private static InsertTextDelegate? _insertText;
+    private static SetMarkedTextDelegate? _setMarkedText;
+    private static VoidDelegate? _unmarkText;
+    private static ReturnsBool? _hasMarkedText;
+    private static RangeDelegate? _markedRange;
+    private static RangeDelegate? _selectedRange;
+    private static SubstringDelegate? _attributedSubstring;
+    private static ReturnsPtr? _validAttributes;
+    private static FirstRectDelegate? _firstRect;
+    private static CharIndexDelegate? _characterIndex;
+    private static CommandDelegate? _doCommand;
+    private static IntPtr _emptyAttributes;
     private static KeyDown? _keyDown;
     private static PerformKeyEquivalent? _performKeyEquivalent;
     private static IntPtr _superSetFrameSize;
@@ -42,6 +62,30 @@ internal static class PhotonContentView
     /// text the platform composed (empty for a key that produces none). Answering false lets the
     /// event go back to AppKit, which is what makes ⌘Q still quit.</summary>
     internal static Func<string, Primitives.KeyModifiers, string, bool>? OnKey { get; set; }
+
+    // ---- NSTextInputClient doors ---------------------------------------------------------------
+    // While a field holds the caret, key events go to the PLATFORM'S input context and come back
+    // through these: composed text, the composition in flight, and editing keys as selectors.
+
+    /// <summary>Whether a field or code surface holds the caret — decides who interprets a key.</summary>
+    internal static Func<bool>? HasTextFocus { get; set; }
+
+    /// <summary>The platform finished composing: committed text enters the field.</summary>
+    internal static Action<string>? OnInsertText { get; set; }
+
+    /// <summary>The composition in flight changed ("" = cancelled).</summary>
+    internal static Action<string>? OnMarkedText { get; set; }
+
+    /// <summary>Whether a composition is in flight (the input context asks constantly).</summary>
+    internal static Func<bool>? HasMarked { get; set; }
+
+    /// <summary>The focused field's selection and composition ranges, as (start, length);
+    /// marked answers (-1, 0) when nothing is composed.</summary>
+    internal static Func<(int Start, int Length)>? SelectedRangeSource { get; set; }
+    internal static Func<(int Start, int Length)>? MarkedRangeSource { get; set; }
+
+    /// <summary>The caret's rect in VIEW coordinates (y-down) — anchor for the candidate window.</summary>
+    internal static Func<(float X, float Y, float Width, float Height)?>? CaretRectSource { get; set; }
 
     /// <summary>What runs after AppKit has applied a new size — the frame drawn from there is
     /// measured against it. Set once the host exists; the view is created before it does.</summary>
@@ -84,6 +128,52 @@ internal static class PhotonContentView
         _performKeyEquivalent = OnPerformKeyEquivalent;
         class_addMethod(_cls, sel_registerName("performKeyEquivalent:"),
             Marshal.GetFunctionPointerForDelegate(_performKeyEquivalent), "B@:@");
+
+        // NSTextInputClient: the view CONFORMS (that is what makes AppKit create an input
+        // context for it), and each protocol method routes to the host through the doors above.
+        // Encodings spell the structs out — a wrong one here is a silent no-op, not an error.
+        class_addProtocol(_cls, objc_getProtocol("NSTextInputClient"));
+
+        _insertText = OnInsertTextMethod;
+        class_addMethod(_cls, sel_registerName("insertText:replacementRange:"),
+            Marshal.GetFunctionPointerForDelegate(_insertText), "v@:@{_NSRange=QQ}");
+        _setMarkedText = OnSetMarkedTextMethod;
+        class_addMethod(_cls, sel_registerName("setMarkedText:selectedRange:replacementRange:"),
+            Marshal.GetFunctionPointerForDelegate(_setMarkedText), "v@:@{_NSRange=QQ}{_NSRange=QQ}");
+        _unmarkText = (_, _) => OnMarkedText?.Invoke("");
+        class_addMethod(_cls, sel_registerName("unmarkText"),
+            Marshal.GetFunctionPointerForDelegate(_unmarkText), "v@:");
+        _hasMarkedText = (_, _) => HasMarked?.Invoke() == true;
+        class_addMethod(_cls, sel_registerName("hasMarkedText"),
+            Marshal.GetFunctionPointerForDelegate(_hasMarkedText), "B@:");
+        _markedRange = (_, _) => RangeOf(MarkedRangeSource?.Invoke());
+        class_addMethod(_cls, sel_registerName("markedRange"),
+            Marshal.GetFunctionPointerForDelegate(_markedRange), "{_NSRange=QQ}@:");
+        _selectedRange = (_, _) => RangeOf(SelectedRangeSource?.Invoke());
+        class_addMethod(_cls, sel_registerName("selectedRange"),
+            Marshal.GetFunctionPointerForDelegate(_selectedRange), "{_NSRange=QQ}@:");
+        _attributedSubstring = (_, _, _, _) => IntPtr.Zero;
+        class_addMethod(_cls, sel_registerName("attributedSubstringForProposedRange:actualRange:"),
+            Marshal.GetFunctionPointerForDelegate(_attributedSubstring), "@@:{_NSRange=QQ}^{_NSRange=QQ}");
+        _validAttributes = (_, _) =>
+        {
+            if (_emptyAttributes == IntPtr.Zero)
+                _emptyAttributes = Send(Send(objc_getClass("NSArray"), Sel("alloc")), Sel("init"));
+            return _emptyAttributes;
+        };
+        class_addMethod(_cls, sel_registerName("validAttributesForMarkedText"),
+            Marshal.GetFunctionPointerForDelegate(_validAttributes), "@@:");
+        _firstRect = OnFirstRect;
+        class_addMethod(_cls, sel_registerName("firstRectForCharacterRange:actualRange:"),
+            Marshal.GetFunctionPointerForDelegate(_firstRect), "{CGRect={CGPoint=dd}{CGSize=dd}}@:{_NSRange=QQ}^{_NSRange=QQ}");
+        _characterIndex = (_, _, _) => NSRange.NotFound.Location;
+        class_addMethod(_cls, sel_registerName("characterIndexForPoint:"),
+            Marshal.GetFunctionPointerForDelegate(_characterIndex), "Q@:{CGPoint=dd}");
+        // Editing keys come BACK from the input context as selectors — Backspace, the arrows,
+        // Enter — and re-enter the app through the same OnKey door a direct key press uses.
+        _doCommand = OnDoCommand;
+        class_addMethod(_cls, sel_registerName("doCommandBySelector:"),
+            Marshal.GetFunctionPointerForDelegate(_doCommand), "v@::");
 
         // The accessibility face: AppKit sees one view drawing everything, so the view answers
         // for its contents — children built from the frame's semantics tree, and a group role so
@@ -130,11 +220,95 @@ internal static class PhotonContentView
         var text = FromNSString(Send(@event, Sel("characters"))) ?? "";
         var name = NameOf(SendUShort(@event, Sel("keyCode")), text);
 
+        // While a field holds the caret, the PLATFORM interprets the key: a dead key marks, "´"
+        // then "a" arrives as one committed "á", and a CJK method composes over many keystrokes.
+        // Command/Control chords keep the direct route — ⌘A/⌘C/⌘Z belong to the app, and handing
+        // them to the input context would type them.
+        var composing = HasTextFocus?.Invoke() == true
+            && (modifiers & (Primitives.KeyModifiers.Command | Primitives.KeyModifiers.Control)) == 0;
+        if (composing)
+        {
+            var context = Send(self, Sel("inputContext"));
+            if (context != IntPtr.Zero && SendBool(context, Sel("handleEvent:"), @event)) return;
+        }
+
         // A key the app claims stops here. Anything else goes back to AppKit — the menu bar's
         // shortcuts, ⌘Q, the window chrome — because swallowing every key would break the app's
         // own frame around it.
         if (OnKey?.Invoke(name, modifiers, TypedText(text, modifiers)) == true) return;
         Marshal.GetDelegateForFunctionPointer<KeyDown>(_superKeyDown)(self, selector, @event);
+    }
+
+    // ---- NSTextInputClient method bodies --------------------------------------------------------
+
+    /// <summary>The text argument is an NSString OR an NSAttributedString — ask, then unwrap.</summary>
+    private static string PlainString(IntPtr text)
+    {
+        if (text == IntPtr.Zero) return "";
+        var attributed = objc_getClass("NSAttributedString");
+        var isAttributed = SendBool(text, Sel("isKindOfClass:"), attributed);
+        return FromNSString(isAttributed ? Send(text, Sel("string")) : text) ?? "";
+    }
+
+    private static void OnInsertTextMethod(IntPtr self, IntPtr selector, IntPtr text, NSRange replacement)
+        => OnInsertText?.Invoke(PlainString(text));
+
+    private static void OnSetMarkedTextMethod(IntPtr self, IntPtr selector, IntPtr text, NSRange selected, NSRange replacement)
+        => OnMarkedText?.Invoke(PlainString(text));
+
+    private static NSRange RangeOf((int Start, int Length)? range) =>
+        range is { Start: >= 0 } r ? new NSRange((nuint)r.Start, (nuint)r.Length) : NSRange.NotFound;
+
+    /// <summary>Where the candidate window anchors, in SCREEN coordinates: the caret's rect in
+    /// view space (y-down), flipped to AppKit's y-up, then view → window → screen.</summary>
+    private static CGRect OnFirstRect(IntPtr self, IntPtr selector, NSRange range, IntPtr actual)
+    {
+        if (CaretRectSource?.Invoke() is not { } caret) return default;
+        var viewHeight = SendRect(self, Sel("bounds")).Height;
+        var inView = new CGRect(caret.X, viewHeight - caret.Y - caret.Height, caret.Width, caret.Height);
+        var inWindow = SendRect(self, Sel("convertRect:toView:"), inView, IntPtr.Zero);
+        var window = Send(self, Sel("window"));
+        return window == IntPtr.Zero ? inWindow : SendRect(window, Sel("convertRectToScreen:"), inWindow);
+    }
+
+    /// <summary>
+    /// The editing keys, back from the input context as SELECTORS, re-spelled into the DOM names
+    /// the host already understands. Unknown selectors are dropped on purpose: "noop:" arrives for
+    /// every chord the context declined, and beeping at those helps nobody.
+    /// </summary>
+    private static void OnDoCommand(IntPtr self, IntPtr selector, IntPtr command)
+    {
+        var name = Marshal.PtrToStringUTF8(sel_getName(command)) ?? "";
+        var (key, modifiers) = name switch
+        {
+            "insertNewline:" => ("Enter", Primitives.KeyModifiers.None),
+            "insertTab:" => ("Tab", Primitives.KeyModifiers.None),
+            "insertBacktab:" => ("Tab", Primitives.KeyModifiers.Shift),
+            "deleteBackward:" => ("Backspace", Primitives.KeyModifiers.None),
+            "deleteForward:" => ("Delete", Primitives.KeyModifiers.None),
+            "deleteWordBackward:" => ("Backspace", Primitives.KeyModifiers.Alt),
+            "cancelOperation:" => ("Escape", Primitives.KeyModifiers.None),
+            "moveLeft:" => ("ArrowLeft", Primitives.KeyModifiers.None),
+            "moveRight:" => ("ArrowRight", Primitives.KeyModifiers.None),
+            "moveUp:" => ("ArrowUp", Primitives.KeyModifiers.None),
+            "moveDown:" => ("ArrowDown", Primitives.KeyModifiers.None),
+            "moveLeftAndModifySelection:" => ("ArrowLeft", Primitives.KeyModifiers.Shift),
+            "moveRightAndModifySelection:" => ("ArrowRight", Primitives.KeyModifiers.Shift),
+            "moveUpAndModifySelection:" => ("ArrowUp", Primitives.KeyModifiers.Shift),
+            "moveDownAndModifySelection:" => ("ArrowDown", Primitives.KeyModifiers.Shift),
+            "moveWordLeft:" => ("ArrowLeft", Primitives.KeyModifiers.Alt),
+            "moveWordRight:" => ("ArrowRight", Primitives.KeyModifiers.Alt),
+            "moveWordLeftAndModifySelection:" => ("ArrowLeft", Primitives.KeyModifiers.Alt | Primitives.KeyModifiers.Shift),
+            "moveWordRightAndModifySelection:" => ("ArrowRight", Primitives.KeyModifiers.Alt | Primitives.KeyModifiers.Shift),
+            "moveToBeginningOfLine:" => ("Home", Primitives.KeyModifiers.None),
+            "moveToEndOfLine:" => ("End", Primitives.KeyModifiers.None),
+            "moveToBeginningOfLineAndModifySelection:" => ("Home", Primitives.KeyModifiers.Shift),
+            "moveToEndOfLineAndModifySelection:" => ("End", Primitives.KeyModifiers.Shift),
+            "moveToBeginningOfDocument:" => ("Home", Primitives.KeyModifiers.Command),
+            "moveToEndOfDocument:" => ("End", Primitives.KeyModifiers.Command),
+            _ => ("", Primitives.KeyModifiers.None),
+        };
+        if (key.Length > 0) OnKey?.Invoke(key, modifiers, "");
     }
 
     /// <summary>

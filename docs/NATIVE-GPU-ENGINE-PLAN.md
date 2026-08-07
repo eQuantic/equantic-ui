@@ -796,6 +796,18 @@ Bun and the JS bundling chain, the TypeScript runtime.
   gallery reports `accessibility elements: 100 — first: AXButton "Back"` through the real ObjC
   dispatch. iOS/Android bridges consume this same tree when their shells gain them.
 
+- **2026-08-07 — M4 IME: composition through NSTextInputClient.** The macOS view CONFORMS (runtime
+  `class_addProtocol` + ten methods with hand-spelled struct encodings — a wrong encoding is a
+  silent no-op). While a field holds the caret, keys go to the platform's input context: dead keys
+  and CJK methods compose as MARKED TEXT (host state, rendered inline underlined at the caret,
+  value untouched until commit; cancel restores exactly; compose-over-selection replaces like
+  typing; obscured fields compose blind), editing keys return as selectors re-spelled to the DOM
+  names the host already speaks, ⌘-chords never enter the context, and
+  `firstRectForCharacterRange` anchors the candidate window at the real caret. Proof: 8
+  `ImeCompositionTests` + the self-test driving the registered selectors against the ⌘K field
+  (`ime probe: marked '´' → committed`). Fence: code surfaces compose blind (no marked-run visual
+  in the editor's face yet); human fingers still owe the "system invokes us" half.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
