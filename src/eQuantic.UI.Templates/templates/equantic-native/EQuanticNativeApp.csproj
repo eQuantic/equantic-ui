@@ -1,0 +1,12 @@
+<Project Sdk="eQuantic.UI.Sdk.Native">
+
+  <!-- The SDK version lives in global.json (msbuild-sdks) — one place, stamped by the template. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationTitle>EQuanticNativeApp</ApplicationTitle>
+  </PropertyGroup>
+
+</Project>

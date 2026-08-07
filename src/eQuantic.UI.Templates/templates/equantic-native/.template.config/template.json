@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "eQuantic",
+  "classifications": ["Desktop", "Mobile", "eQuantic.UI", "Photon"],
+  "identity": "eQuantic.UI.NativeApp",
+  "name": "eQuantic.UI native app (Photon)",
+  "shortName": "equantic-native",
+  "description": "A write-once eQuantic.UI NATIVE app: the same C# components, rendered by the Photon GPU engine in a real window — no web view. Run it with `dotnet run`.",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "EQuanticNativeApp",
+  "preferNameDirectory": true
+}

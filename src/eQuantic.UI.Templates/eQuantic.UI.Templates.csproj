@@ -31,6 +31,10 @@
       File="$(IntermediateOutputPath)stamped/equantic-app/global.json"
       Lines='{&#10;  "msbuild-sdks": {&#10;    "eQuantic.UI.Sdk": "$(Version)"&#10;  }&#10;}'
       Overwrite="true" />
+    <WriteLinesToFile
+      File="$(IntermediateOutputPath)stamped/equantic-native/global.json"
+      Lines='{&#10;  "msbuild-sdks": {&#10;    "eQuantic.UI.Sdk.Native": "$(Version)"&#10;  }&#10;}'
+      Overwrite="true" />
     <ItemGroup>
       <Content Include="$(IntermediateOutputPath)stamped/**/*" PackagePath="content/templates" />
     </ItemGroup>
