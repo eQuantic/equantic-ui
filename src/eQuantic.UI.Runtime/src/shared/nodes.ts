@@ -210,6 +210,8 @@ export interface BoxStyleValue {
   hover?: StyleDiffValue | null;
   /** Spec S5: style diff while focused (CSS :focus-visible). */
   focus?: StyleDiffValue | null;
+  /** CSS cursor mirror — the C# PointerCursor member name in camelCase ('crosshair', 'colResize'). */
+  cursor?: string;
 }
 
 /** Wire shape of the C# `StyleDiff` — only set members override the base. */

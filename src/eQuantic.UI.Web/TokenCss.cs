@@ -57,6 +57,19 @@ public static class TokenCss
     /// <summary>A bare invariant number ("0.####") — opacity, aspect-ratio, scale factors.</summary>
     public static string Number(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 
+    /// <summary>The CSS keyword for a <see cref="PointerCursor"/> — the enum's names ARE the CSS
+    /// ones, so this is only the kebab-case spelling of the multi-word members.</summary>
+    public static string Cursor(PointerCursor cursor) => cursor switch
+    {
+        PointerCursor.Pointer => "pointer",
+        PointerCursor.Text => "text",
+        PointerCursor.NotAllowed => "not-allowed",
+        PointerCursor.Crosshair => "crosshair",
+        PointerCursor.ColResize => "col-resize",
+        PointerCursor.RowResize => "row-resize",
+        _ => "default",
+    };
+
     /// <summary>
     /// The S1 transform components as the equivalent CSS list — translate → rotate → scale, only the
     /// non-neutral parts, in that fixed order (the same order the native realizer's center-anchored

@@ -50,6 +50,8 @@ public static class SheetKeymap
             {
                 case "a": case "A": sheet.SelectAll(); return true;
                 case "z": if (shift) sheet.Redo(); else sheet.Undo(); return true;
+                case "d": case "D": sheet.FillDown(); return true;
+                case "r": case "R": sheet.FillRight(); return true;
             }
         }
         return false;

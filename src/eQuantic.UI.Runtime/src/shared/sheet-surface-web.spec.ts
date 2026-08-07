@@ -11,6 +11,7 @@ import { effectiveStyle } from './style-atomizer';
 import { photonTheme } from './design-system.generated';
 import { SheetController } from './__transpiled__/SheetController';
 import { CellRef } from './__transpiled__/CellRef';
+import { SheetRange } from './__transpiled__/SheetRange';
 import type { HtmlNode } from '../core/types';
 
 type Handler = (event: Event) => void;
@@ -28,6 +29,13 @@ function surfaceFor(sheet: SheetController): HtmlNode {
 }
 
 const events = (node: HtmlNode) => (node as { events: Record<string, Handler> }).events;
+
+/** A stand-in grid element: zeroed rect (so clientX/Y ARE grid coordinates) and a focus sink. */
+function makeTarget(): HTMLElement {
+  const target = document.createElement('div');
+  target.focus = () => {};
+  return target;
+}
 
 function key(node: HtmlNode, keyName: string, init: KeyboardEventInit = {}): void {
   events(node)['keydown'](new KeyboardEvent('keydown', { key: keyName, ...init }));
@@ -78,6 +86,63 @@ describe('SheetSurface on the web', () => {
     key(node, 'Enter');
     key(node, 'z', { metaKey: true });
     expect(sheet.document.getCell(new CellRef(0, 0))).toBe('');
+  });
+
+  it('shift+click stretches from the anchor; a plain drag sweeps a range', () => {
+    const sheet = new SheetController(50, 8);
+    const node = surfaceFor(sheet);
+    const mousedown = (init: MouseEventInit) => {
+      const event = new MouseEvent('mousedown', init);
+      Object.defineProperty(event, 'currentTarget', { value: makeTarget() });
+      events(node)['mousedown'](event);
+    };
+
+    // jsdom's getBoundingClientRect is all zeros, so clientX/Y ARE grid coordinates.
+    mousedown({ clientX: 48, clientY: 14 });                       // A1
+    mousedown({ clientX: 96 * 2 + 48, clientY: 28 * 2 + 14, shiftKey: true });   // shift+click C3
+    expect(sheet.selection.topRow).toBe(0);
+    expect(sheet.selection.bottomRow).toBe(2);
+    expect(sheet.selection.rightCol).toBe(2);
+    expect(sheet.activeCell).toEqual(new CellRef(0, 0));
+
+    // Plain drag: mousedown A1, document-level mousemove to B2 — the anchor stands.
+    mousedown({ clientX: 48, clientY: 14 });
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 96 + 48, clientY: 28 + 14 }));
+    expect(sheet.selection.bottomRow).toBe(1);
+    expect(sheet.selection.rightCol).toBe(1);
+    document.dispatchEvent(new MouseEvent('mouseup', {}));
+  });
+
+  it('grabbing the fill handle pours the source, one undo for the whole drag', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'seed');
+    const node = surfaceFor(sheet);
+
+    // A1 selected by default; its bottom-right corner is at (96, 28).
+    const grab = new MouseEvent('mousedown', { clientX: 95, clientY: 27 });
+    Object.defineProperty(grab, 'currentTarget', { value: makeTarget() });
+    events(node)['mousedown'](grab);
+    expect(sheet.filling).toBe(true);
+
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 95, clientY: 28 * 2 + 14 }));
+    expect(sheet.fillTarget).not.toBeNull();
+    document.dispatchEvent(new MouseEvent('mouseup', {}));
+
+    expect(sheet.document.getCell(new CellRef(1, 0))).toBe('seed');
+    expect(sheet.document.getCell(new CellRef(2, 0))).toBe('seed');
+    sheet.undo();
+    expect(sheet.document.getCell(new CellRef(1, 0))).toBe('');
+  });
+
+  it('⌘D pours the row above through the shared keymap', () => {
+    const sheet = new SheetController(50, 8);
+    sheet.document.setCell(new CellRef(0, 0), 'top');
+    sheet.selection = new SheetRange(new CellRef(1, 0));
+    const node = surfaceFor(sheet);
+
+    key(node, 'd', { metaKey: true });
+
+    expect(sheet.document.getCell(new CellRef(1, 0))).toBe('top');
   });
 
   it('copy and paste speak TSV through the browser clipboard events', () => {

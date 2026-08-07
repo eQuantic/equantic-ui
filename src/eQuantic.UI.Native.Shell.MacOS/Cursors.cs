@@ -22,6 +22,9 @@ internal static class Cursors
             CursorShape.Pointer => "pointingHandCursor",
             CursorShape.Text => "IBeamCursor",
             CursorShape.NotAllowed => "operationNotAllowedCursor",
+            CursorShape.Crosshair => "crosshairCursor",
+            CursorShape.ColResize => "resizeLeftRightCursor",
+            CursorShape.RowResize => "resizeUpDownCursor",
             _ => "arrowCursor",
         };
 
