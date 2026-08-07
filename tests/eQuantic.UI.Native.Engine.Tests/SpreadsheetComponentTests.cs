@@ -91,6 +91,61 @@ public class SpreadsheetComponentTests
     }
 
     [Fact]
+    public void DraggingAColumnSeparator_ResizesLive_AndLandsAsOneUndo()
+    {
+        var (host, sheet) = Open();
+        var edge = Spreadsheet.HeaderWidth + sheet.Document.ColWidth(0);   // the A|B separator
+        var y = Spreadsheet.HeaderHeight / 2;
+
+        host.PressDown(edge - 2f, y);
+        host.PointerMove(edge - 2f + 20f, y);
+        host.RenderFrame(new DisplayListBuilder(), 100);
+        sheet.Document.ColWidth(0).Should().Be(116f, "the drag previews live, every move");
+
+        host.PointerMove(edge - 2f + 40f, y);
+        host.PressUp(edge - 2f + 40f, y);
+
+        sheet.Document.ColWidth(0).Should().Be(136f);
+        sheet.Undo();
+        sheet.Document.ColWidth(0).Should().Be(96f,
+            "however many moves previewed, the gesture lands as ONE inverse");
+        sheet.Redo();
+        sheet.Document.ColWidth(0).Should().Be(136f);
+    }
+
+    [Fact]
+    public void DraggingARowSeparator_InsideTheScroll_ResizesInsteadOfScrolling()
+    {
+        var (host, sheet) = Open();
+        // Row 1's grip: riding the bottom edge of the first row header, inside the ScrollView.
+        var gripY = Spreadsheet.HeaderHeight + sheet.Document.RowHeight(0) - 2f;
+
+        host.PressDown(20f, gripY);
+        host.PointerMove(20f, gripY + 16f);   // past the 12dp arming slop
+        host.PressUp(20f, gripY + 16f);
+
+        sheet.Document.RowHeight(0).Should().Be(44f,
+            "a vertical drag on the grip is a resize, not a scroll");
+        sheet.Undo();
+        sheet.Document.RowHeight(0).Should().Be(28f);
+    }
+
+    [Fact]
+    public void TheResizeFloor_HoldsTheColumnGrabbable()
+    {
+        var (host, sheet) = Open();
+        var edge = Spreadsheet.HeaderWidth + sheet.Document.ColWidth(0);
+        var y = Spreadsheet.HeaderHeight / 2;
+
+        host.PressDown(edge - 2f, y);
+        host.PointerMove(edge - 2f - 300f, y);   // far past zero
+        host.PressUp(edge - 2f - 300f, y);
+
+        sheet.Document.ColWidth(0).Should().Be(Spreadsheet.MinColWidth,
+            "Excel lets a column vanish; we keep a grabbable sliver");
+    }
+
+    [Fact]
     public void TheKeyboard_ReachesTheSheet_ThroughTheComponent()
     {
         var (host, sheet) = Open();

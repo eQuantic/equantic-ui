@@ -49,13 +49,19 @@ public sealed class SheetDocument
     public float ColWidth(int col) =>
         _colWidths.TryGetValue(col, out var width) ? width : DefaultColWidth;
 
-    internal void SetRowHeight(int row, float height)
+    /// <summary>
+    /// Sizes a row DIRECTLY — the loading/PREVIEW path (a resize drag repaints every move through
+    /// here), deliberately not undoable. The drag's release goes through
+    /// <see cref="SheetController.Resize"/>, which records ONE inverse for the whole gesture.
+    /// </summary>
+    public void SetRowHeight(int row, float height)
     {
         if (Math.Abs(height - DefaultRowHeight) < 0.01f) _rowHeights.Remove(row);
         else _rowHeights[row] = Math.Max(12f, height);
     }
 
-    internal void SetColWidth(int col, float width)
+    /// <summary>Column twin of <see cref="SetRowHeight"/> — preview/load, not undoable.</summary>
+    public void SetColWidth(int col, float width)
     {
         if (Math.Abs(width - DefaultColWidth) < 0.01f) _colWidths.Remove(col);
         else _colWidths[col] = Math.Max(24f, width);

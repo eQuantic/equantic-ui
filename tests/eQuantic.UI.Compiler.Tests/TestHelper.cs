@@ -59,6 +59,14 @@ public static class TestHelper
             // constructor has.
             public record Col(string Header, int Track, string Align = ""start"", bool Sortable = false);
 
+            // The CLASS twin of that shape, with an initializer-set property: its config object has
+            // to land in the constructor's trailing slot even when named arguments skipped earlier
+            // parameters.
+            public class Anchor {{
+                public Anchor(string child, int? top = null, int? end = null, int? bottom = null, int? start = null) {{ }}
+                public int ZIndex {{ get; set; }}
+            }}
+
             public class TestClass {{
                 public List<TestClass> list {{ get; set; }}
                 public List<TestClass> otherList {{ get; set; }}

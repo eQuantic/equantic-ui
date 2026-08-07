@@ -87,10 +87,13 @@ public class ObjectCreationStrategy : IConversionStrategy
         }
 
         var arguments = "";
+        var emittedSlots = 0;
 
         if (creation.ArgumentList != null && creation.ArgumentList.Arguments.Count > 0)
         {
-             arguments = string.Join(", ", OrderedArguments(creation, context));
+            var ordered = OrderedArguments(creation, context);
+            emittedSlots = ordered.Count;
+            arguments = string.Join(", ", ordered);
         }
 
         var initializer = "";
@@ -101,15 +104,17 @@ public class ObjectCreationStrategy : IConversionStrategy
             // site supplied fewer positional arguments than the resolved constructor's arity, the
             // skipped parameters fill from their C# defaults first (`new Stack { Width = … }` must
             // emit `new Stack('topStart', {…})`, never the config in the align slot).
-            if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
+            // Fill from the slots actually EMITTED, not the syntactic argument count: named
+            // arguments that skip earlier parameters (`new Positioned(x, bottom: 0, start: 0)`)
+            // already emitted the skipped defaults, and counting the call site again would append
+            // them twice — pushing the config past the constructor's arity, where it is silently
+            // dropped.
+            if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor
+                && emittedSlots < ctor.Parameters.Length)
             {
-                var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
-                if (supplied < ctor.Parameters.Length)
-                {
-                    var defaults = ctor.Parameters.Skip(supplied).Select(ParameterDefaultLiteral);
-                    var filler = string.Join(", ", defaults);
-                    arguments = string.IsNullOrEmpty(arguments) ? filler : arguments + ", " + filler;
-                }
+                var defaults = ctor.Parameters.Skip(emittedSlots).Select(ParameterDefaultLiteral);
+                var filler = string.Join(", ", defaults);
+                arguments = string.IsNullOrEmpty(arguments) ? filler : arguments + ", " + filler;
             }
             // Append initializer to arguments if likely a UI component
             if (string.IsNullOrEmpty(arguments))

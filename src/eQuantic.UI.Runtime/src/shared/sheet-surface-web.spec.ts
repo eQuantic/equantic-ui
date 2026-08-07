@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { lowerVisualNode, type LoweringContext } from './lowering';
+import { effectiveStyle } from './style-atomizer';
 import { photonTheme } from './design-system.generated';
 import { SheetController } from './__transpiled__/SheetController';
 import { CellRef } from './__transpiled__/CellRef';
@@ -39,6 +40,8 @@ describe('SheetSurface on the web', () => {
 
     expect((node as { attributes: Record<string, string> }).attributes['tabindex']).toBe('0');
     expect((node as { attributes: Record<string, string> }).attributes['role']).toBe('grid');
+    // A selection drag must paint the band, not the browser's blue text sweep.
+    expect(effectiveStyle(node)).toContain('user-select: none');
 
     key(node, 'ArrowDown');
     key(node, 'ArrowRight', { shiftKey: true });
