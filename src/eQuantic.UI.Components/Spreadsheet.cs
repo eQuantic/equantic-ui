@@ -162,21 +162,48 @@ public sealed class Spreadsheet : StatefulComponent
 
     private VisualNode GridRow(int row, SheetDocument document, IAppTheme theme)
     {
+        // Selection, the active ring and the editing draft paint ON THE CELLS — write-once, so
+        // both targets are identical by construction (no realizer-side marks to drift).
+        var selection = Controller.Selection;
+        var active = Controller.ActiveCell;
         var line = new Row(gap: 0);
         for (var c = 0; c < document.Cols; c++)
         {
-            var value = document.GetCell(new CellRef(row, c));
+            var cell = new CellRef(row, c);
+            var isActive = cell == active;
+            var selected = selection.Contains(cell) && !selection.IsSingleCell;
+            var editingHere = isActive && Controller.Editing;
+            var value = editingHere ? Controller.Draft : document.GetCell(cell);
+
+            VisualNode? content = null;
+            if (editingHere)
+            {
+                var draftLine = new Row(gap: 0) { Cross = CrossAlign.Center };
+                if (value.Length > 0)
+                    draftLine.Add(new Text(value, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
+                // The caret at the draft's end — a thin bar, steady (the blink is the host's).
+                draftLine.Add(new Box(new BoxStyle
+                {
+                    Width = SizeValue.Fixed(2),
+                    Height = SizeValue.Fixed(document.RowHeight(row) - 8),
+                    Background = theme.TextPrimary,
+                }));
+                content = draftLine;
+            }
+            else if (value.Length > 0)
+            {
+                content = new Text(value, TypeRole.BodyM, theme.TextPrimary, maxLines: 1);
+            }
+
             line.Add(new Box(new BoxStyle
             {
                 Width = SizeValue.Fixed(document.ColWidth(c)),
                 Height = SizeValue.Fixed(document.RowHeight(row)),
-                Background = theme.Surface,
-                BorderColor = theme.Border,
-                BorderWidth = 0.5f,
+                Background = selected ? theme.SurfaceHighlight : theme.Surface,
+                BorderColor = isActive ? theme.FocusRing : theme.Border,
+                BorderWidth = isActive ? 2f : 0.5f,
                 Padding = new EdgeInsets(0, 6, 0, 6),
-            }, value.Length > 0
-                ? new Text(value, TypeRole.BodyM, theme.TextPrimary, maxLines: 1)
-                : null));
+            }, content));
         }
         return line;
     }

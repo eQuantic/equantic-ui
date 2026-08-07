@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CellRef, Column, EdgeInsets, Flexible, Row, ScrollView, SharedStatefulComponent, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Text, UiComponent } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, EdgeInsets, Flexible, Row, ScrollView, SharedStatefulComponent, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Text, UiComponent } from "../runtime-exports";
 
 export class Spreadsheet extends SharedStatefulComponent {
     _offset: number = 0;
@@ -48,7 +48,7 @@ export class Spreadsheet extends SharedStatefulComponent {
     }
 
     gridRow(row: number, document: SheetDocument, theme: any) {
-        let line = new Row(0);for (let c = 0; c < document.cols; c++) {let value = document.getCell(new CellRef(row, c));line.add(new Box(new BoxStyle({ width: SizeValue.fixed(document.colWidth(c)), height: SizeValue.fixed(document.rowHeight(row)), background: theme.surface, borderColor: theme.border, borderWidth: 0.5, padding: new EdgeInsets(0, 6, 0, 6) }), value.length > 0 ? new Text(value, 'bodyM', theme.textPrimary, 1) : null));}return line;
+        let selection = this.controller.selection;let active = this.controller.activeCell;let line = new Row(0);for (let c = 0; c < document.cols; c++) {let cell = new CellRef(row, c);let isActive = $eq.equals(cell, active);let selected = selection.contains(cell) && !selection.isSingleCell;let editingHere = isActive && this.controller.editing;let value = editingHere ? this.controller.draft : document.getCell(cell);let content = null;if (editingHere) {let draftLine = new Row(0, { cross: 'center' });if (value.length > 0) draftLine.add(new Text(value, 'bodyM', theme.textPrimary, 1));draftLine.add(new Box(new BoxStyle({ width: SizeValue.fixed(2), height: SizeValue.fixed(document.rowHeight(row) - 8), background: theme.textPrimary })));content = draftLine;} else if (value.length > 0) {content = new Text(value, 'bodyM', theme.textPrimary, 1);}line.add(new Box(new BoxStyle({ width: SizeValue.fixed(document.colWidth(c)), height: SizeValue.fixed(document.rowHeight(row)), background: selected ? theme.surfaceHighlight : theme.surface, borderColor: isActive ? theme.focusRing : theme.border, borderWidth: isActive ? 2 : 0.5, padding: new EdgeInsets(0, 6, 0, 6) }), content));}return line;
     }
 
 }

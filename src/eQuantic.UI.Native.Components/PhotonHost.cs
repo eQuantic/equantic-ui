@@ -709,8 +709,7 @@ public sealed class PhotonHost
         if (SheetTarget is { } sheetTarget)
         {
             var sheet = sheetTarget.Controller;
-            if (sheet.Editing) sheet.TypeIntoDraft(text);
-            else sheet.BeginEdit(text);
+            SheetKeymap.Type(sheet, text);
             sheetTarget.OnChanged?.Invoke();
             NeedsRender = true;
             return true;
@@ -991,63 +990,24 @@ public sealed class PhotonHost
         var sheet = surface.Controller;
         var command = modifiers.HasFlag(KeyModifiers.Command);
         var shift = modifiers.HasFlag(KeyModifiers.Shift);
-        var motion = command ? SheetMotion.DataEdge : SheetMotion.Cell;
 
-        // While EDITING: Enter/Tab commit and move, Escape discards, Backspace erases, and the
-        // arrows COMMIT first and then move — exactly Excel's quick-entry rhythm. F2 opens the
-        // cell's current value for in-place editing.
-        if (sheet.Editing)
+        // The SHARED keymap first — the web surface calls the same one, so they cannot drift.
+        if (SheetKeymap.Handle(sheet, key, command, shift))
         {
-            switch (key)
-            {
-                case "Enter": sheet.CommitEdit(); sheet.Step(shift ? -1 : 1, 0); surface.OnChanged?.Invoke(); return true;
-                case "Tab": sheet.CommitEdit(); sheet.Step(0, shift ? -1 : 1); surface.OnChanged?.Invoke(); return true;
-                case "Escape": sheet.CancelEdit(); surface.OnChanged?.Invoke(); return true;
-                case "Backspace": sheet.EraseFromDraft(); surface.OnChanged?.Invoke(); return true;
-                case "ArrowUp": sheet.CommitEdit(); sheet.Move(-1, 0); surface.OnChanged?.Invoke(); return true;
-                case "ArrowDown": sheet.CommitEdit(); sheet.Move(1, 0); surface.OnChanged?.Invoke(); return true;
-                case "ArrowLeft": sheet.CommitEdit(); sheet.Move(0, -1); surface.OnChanged?.Invoke(); return true;
-                case "ArrowRight": sheet.CommitEdit(); sheet.Move(0, 1); surface.OnChanged?.Invoke(); return true;
-            }
-            return false;
-        }
-        if (key == "F2")
-        {
-            sheet.BeginEdit(sheet.Document.GetCell(sheet.ActiveCell));
             surface.OnChanged?.Invoke();
             return true;
         }
 
-        switch (key)
+        // What stays platform-side: leaving the sheet, and the clipboard.
+        if (key == "Escape")
         {
-            case "ArrowUp": sheet.Move(-1, 0, motion, shift); surface.OnChanged?.Invoke(); return true;
-            case "ArrowDown": sheet.Move(1, 0, motion, shift); surface.OnChanged?.Invoke(); return true;
-            case "ArrowLeft": sheet.Move(0, -1, motion, shift); surface.OnChanged?.Invoke(); return true;
-            case "ArrowRight": sheet.Move(0, 1, motion, shift); surface.OnChanged?.Invoke(); return true;
-            case "Tab": sheet.Step(0, shift ? -1 : 1); surface.OnChanged?.Invoke(); return true;
-            case "Enter": sheet.Step(shift ? -1 : 1, 0); surface.OnChanged?.Invoke(); return true;
-            case "Home":
-                sheet.Move(0, -1, command ? SheetMotion.SheetBoundary : SheetMotion.RowBoundary, shift);
-                surface.OnChanged?.Invoke();
-                return true;
-            case "End":
-                sheet.Move(0, 1, command ? SheetMotion.SheetBoundary : SheetMotion.RowBoundary, shift);
-                surface.OnChanged?.Invoke();
-                return true;
-            case "Backspace":
-            case "Delete":
-                sheet.ClearSelection();
-                return true;
-            case "Escape":
-                EndEditing();
-                return true;
+            EndEditing();
+            return true;
         }
-
         if (command && key.Length == 1)
         {
             switch (char.ToLowerInvariant(key[0]))
             {
-                case 'a': sheet.SelectAll(); surface.OnChanged?.Invoke(); return true;
                 case 'c':
                     if (Clipboard is { } copyBoard) copyBoard.Write(sheet.CopyTsv());
                     return true;
@@ -1057,10 +1017,6 @@ public sealed class PhotonHost
                     return true;
                 case 'v':
                     if (Clipboard?.Read() is { Length: > 0 } pasted) sheet.PasteTsv(pasted);
-                    return true;
-                case 'z':
-                    if (shift) sheet.Redo(); else sheet.Undo();
-                    surface.OnChanged?.Invoke();
                     return true;
             }
         }
