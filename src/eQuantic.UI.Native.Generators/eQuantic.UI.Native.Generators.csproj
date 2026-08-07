@@ -9,10 +9,20 @@
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
         <Description>Writes the other half of an app's Program: the entry point on platforms that have one, and the registration that lets every shell reach the app's CreateApp without reflection.</Description>
+        <!-- A source generator ships as an ANALYZER, never a lib: in lib/ the consumer's compiler
+             would never load it — dev-mode ProjectReference hid this, and the first app built from
+             the packaged SDK had no entry point. -->
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true"
+              PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 
 </Project>
