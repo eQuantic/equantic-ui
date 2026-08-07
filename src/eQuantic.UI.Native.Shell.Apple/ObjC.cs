@@ -3,6 +3,22 @@ using System.Runtime.InteropServices;
 namespace eQuantic.UI.Native.Shell.Apple;
 
 [StructLayout(LayoutKind.Sequential)]
+/// <summary>Foundation's NSRange — two machine words (location, length).</summary>
+public struct NSRange
+{
+    public nuint Location;
+    public nuint Length;
+
+    public NSRange(nuint location, nuint length)
+    {
+        Location = location;
+        Length = length;
+    }
+
+    /// <summary>NSNotFound in a 64-bit process is NSIntegerMax.</summary>
+    public static NSRange NotFound => new((nuint)long.MaxValue, 0);
+}
+
 public struct CGPoint
 {
     public double X, Y;
@@ -66,6 +82,16 @@ public static partial class ObjC
     public static partial bool class_addMethod(IntPtr cls, IntPtr name, IntPtr implementation, string types);
 
     [LibraryImport(ObjCLib)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool class_addProtocol(IntPtr cls, IntPtr protocol);
+
+    [LibraryImport(ObjCLib, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr objc_getProtocol(string name);
+
+    [LibraryImport(ObjCLib)]
+    public static partial IntPtr sel_getName(IntPtr selector);
+
+    [LibraryImport(ObjCLib)]
     public static partial IntPtr class_getInstanceMethod(IntPtr cls, IntPtr name);
 
     [LibraryImport(ObjCLib)]
@@ -119,11 +145,21 @@ public static partial class ObjC
     public static partial void SendVoid(IntPtr receiver, IntPtr selector, CGSize size);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial void SendVoid(IntPtr receiver, IntPtr selector, IntPtr arg1, NSRange range);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial void SendVoid(IntPtr receiver, IntPtr selector, IntPtr arg1, NSRange range1, NSRange range2);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial void SendVoid(IntPtr receiver, IntPtr selector, CGRect rect);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     [return: MarshalAs(UnmanagedType.I1)]
     public static partial bool SendBool(IntPtr receiver, IntPtr selector);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    public static partial bool SendBool(IntPtr receiver, IntPtr selector, IntPtr arg1);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial ulong SendULong(IntPtr receiver, IntPtr selector);
@@ -142,6 +178,12 @@ public static partial class ObjC
     // Large-struct return rides x8 on arm64 — the single msgSend entry point handles it.
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial CGRect SendRect(IntPtr receiver, IntPtr selector);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial CGRect SendRect(IntPtr receiver, IntPtr selector, CGRect rect);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial CGRect SendRect(IntPtr receiver, IntPtr selector, CGRect rect, IntPtr arg2);
 
     public static IntPtr Sel(string name) => sel_registerName(name);
 
