@@ -76,6 +76,9 @@ import type {
 } from './nodes';
 import { declareShortcut } from '../dom/shortcuts';
 import { declareScrollViewport } from './scroll-viewports';
+import { SheetKeymap } from './components/SheetKeymap';
+import { CellRef as CellRefCtor } from './components/CellRef';
+import { SheetRange as SheetRangeCtor } from './components/SheetRange';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
 
@@ -205,9 +208,7 @@ function lowerNode(
     case 'spacer':
       return lowerSpacer(node as SpacerNode, horizontalAxis);
     case 'sheetSurface':
-      // The grid window renders; the marks and Excel keyboard are native-first and join the web
-      // with the editing slice. Transparent to layout, like every gesture wrapper.
-      return lowerNode((node as unknown as { child: VisualNodeValue }).child, context, horizontalAxis, path + '/0');
+      return lowerSheetSurface(node as unknown as SheetSurfaceLowering, context, horizontalAxis, path);
     case 'scrollView':
       return lowerScrollView(node as ScrollViewNode, context, path);
     case 'loopMotion':
@@ -728,6 +729,118 @@ function lowerLoopMotion(node: LoopMotionNode, context: LoweringContext, path: s
 }
 
 /** Spec A6 mirror: native browser scrolling — overflow auto on the axis, hidden on the cross. */
+interface SheetSurfaceLowering {
+  child: VisualNodeValue;
+  controller: import('./components/SheetController').SheetController;
+  firstRow?: number;
+  firstCol?: number;
+  headerWidth?: number;
+  headerHeight?: number;
+  onChanged?: (() => void) | null;
+  label?: string | null;
+}
+
+/**
+ * The spreadsheet's web half: a focusable region whose keyboard goes through the SHARED
+ * SheetKeymap (the same transpiled code the native host calls — the two cannot drift), whose
+ * clicks resolve cells by the same prefix-sum arithmetic, and whose clipboard speaks TSV through
+ * the browser's own copy/cut/paste events (no permissions dance — the user's ⌘C is the grant).
+ */
+function lowerSheetSurface(
+  node: SheetSurfaceLowering,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode {
+  const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  const view = element('div', { outline: 'none' }, child ? [child] : []);
+  view.attributes['tabindex'] = '0';
+  view.attributes['role'] = 'grid';
+  if (node.label) view.attributes['aria-label'] = node.label;
+
+  const sheet = node.controller;
+  const changed = () => node.onChanged?.();
+
+  const cellAt = (event: MouseEvent): CellRefCtor => {
+    const target = event.currentTarget as HTMLElement;
+    const box = target.getBoundingClientRect();
+    const gridX = event.clientX - box.left - (node.headerWidth ?? 0);
+    const gridY = event.clientY - box.top - (node.headerHeight ?? 0);
+    const doc = sheet.document;
+    let col = node.firstCol ?? 0;
+    let acc = 0;
+    while (col < doc.cols - 1 && acc + doc.colWidth(col) <= gridX) {
+      acc += doc.colWidth(col);
+      col++;
+    }
+    let row = node.firstRow ?? 0;
+    acc = 0;
+    while (row < doc.rows - 1 && acc + doc.rowHeight(row) <= gridY) {
+      acc += doc.rowHeight(row);
+      row++;
+    }
+    return new CellRefCtor(Math.max(0, Math.min(row, doc.rows - 1)), Math.max(0, Math.min(col, doc.cols - 1)));
+  };
+
+  view.events['keydown'] = ((event: KeyboardEvent) => {
+    const command = event.metaKey || event.ctrlKey;
+    // ⌘C/⌘X/⌘V fall through to the browser's copy/cut/paste events below — intercepting the
+    // keydown would starve them of clipboardData.
+    if (command && (event.key === 'c' || event.key === 'x' || event.key === 'v')) return;
+    if (SheetKeymap.handle(sheet, event.key, command, event.shiftKey)) {
+      event.preventDefault();
+      changed();
+      return;
+    }
+    if (!command && event.key.length === 1) {
+      SheetKeymap.type(sheet, event.key);
+      event.preventDefault();
+      changed();
+    }
+  }) as EventHandler;
+
+  view.events['mousedown'] = ((event: MouseEvent) => {
+    // The keyboard follows the click: focus explicitly — relying on the browser's focus-on-click
+    // left the keydown handler deaf on some engines.
+    (event.currentTarget as HTMLElement).focus();
+    if (sheet.editing) {
+      sheet.commitEdit();   // clicking away lands the draft, like Excel
+    }
+    const cell = cellAt(event);
+    sheet.selection = new SheetRangeCtor(cell);
+    changed();
+  }) as EventHandler;
+
+  view.events['dblclick'] = ((event: MouseEvent) => {
+    const cell = cellAt(event);
+    sheet.beginEdit(sheet.document.getCell(cell));
+    changed();
+  }) as EventHandler;
+
+  view.events['copy'] = ((event: ClipboardEvent) => {
+    event.clipboardData?.setData('text/plain', sheet.copyTsv());
+    event.preventDefault();
+  }) as EventHandler;
+
+  view.events['cut'] = ((event: ClipboardEvent) => {
+    event.clipboardData?.setData('text/plain', sheet.copyTsv());
+    sheet.clearSelection();
+    event.preventDefault();
+    changed();
+  }) as EventHandler;
+
+  view.events['paste'] = ((event: ClipboardEvent) => {
+    const text = event.clipboardData?.getData('text/plain');
+    if (text) {
+      sheet.pasteTsv(text);
+      changed();
+    }
+    event.preventDefault();
+  }) as EventHandler;
+
+  return view;
+}
+
 function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: string): HtmlNode {
   const children: HtmlNode[] = [];
   const child = lowerNode(node.child, context, null, path + '/0');
