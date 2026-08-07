@@ -328,6 +328,9 @@ export class Draggable extends VisualNode {
       normalized?: boolean;
       follows?: boolean;
       onMoved?: ((offset: number) => void) | null;
+      // Also a constructor parameter — C# lets an initializer set it instead, and the transpiled
+      // call then carries it in the config object.
+      onReleased?: ((offset: number) => void) | null;
       key?: string | null;
     },
   ) {

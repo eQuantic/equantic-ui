@@ -753,7 +753,9 @@ function lowerSheetSurface(
   path: string,
 ): HtmlNode {
   const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
-  const view = element('div', { outline: 'none' }, child ? [child] : []);
+  // user-select off: a drag on the grid EXTENDS the sheet selection — the browser's native text
+  // sweep would paint blue over the cells and fight the band.
+  const view = element('div', { outline: 'none', 'user-select': 'none', '-webkit-user-select': 'none' }, child ? [child] : []);
   view.attributes['tabindex'] = '0';
   view.attributes['role'] = 'grid';
   if (node.label) view.attributes['aria-label'] = node.label;

@@ -38,6 +38,16 @@ public sealed class Spreadsheet : StatefulComponent
     public const float HeaderWidth = 44f;
     public const float HeaderHeight = 26f;
 
+    /// <summary>Resize floors — Excel lets a column vanish; we keep a sliver so it stays grabbable.</summary>
+    public const float MinColWidth = 24f;
+    public const float MinRowHeight = 14f;
+
+    /// <summary>Grab zone width on a header's trailing edge, where the resize drag lives.</summary>
+    public const float Grip = 6f;
+
+    /// <summary>The size the resized row/col had when the drag engaged; −1 outside a gesture.</summary>
+    private float _resizeBase = -1f;
+
     public override void AdoptConfig(UiComponent next)
     {
         if (next is Spreadsheet fresh) Controller = fresh.Controller;
@@ -106,7 +116,7 @@ public sealed class Spreadsheet : StatefulComponent
         var headerRow = new Row(gap: 0) { Width = SizeValue.Fill };
         headerRow.Add(HeaderCell("", HeaderWidth, HeaderHeight, theme));
         for (var c = 0; c < document.Cols; c++)
-            headerRow.Add(HeaderCell(ColumnName(c), document.ColWidth(c), HeaderHeight, theme));
+            headerRow.Add(ColumnHeader(c, document, theme));
 
         // ---- the scrolling half: row headers + the surface, INSIDE the scroll --------------------
         var windowRows = new Row(gap: 0);
@@ -114,7 +124,7 @@ public sealed class Spreadsheet : StatefulComponent
         var grid = new Column(gap: 0);
         for (var r = _first; r <= _last; r++)
         {
-            rowHeaders.Add(HeaderCell($"{r + 1}", HeaderWidth, document.RowHeight(r), theme));
+            rowHeaders.Add(RowHeader(r, document, theme));
             grid.Add(GridRow(r, document, theme));
         }
         windowRows.Add(rowHeaders);
@@ -159,6 +169,82 @@ public sealed class Spreadsheet : StatefulComponent
             BorderColor = theme.Border,
             BorderWidth = 0.5f,
         }, new Text(label, TypeRole.Caption, theme.TextMuted, maxLines: 1).Centered());
+
+    // ---- resize grips: an invisible Draggable riding each header's trailing edge ----------------
+    // The grip clamps in the COMPONENT (not via the node's Min/Max — those would rebuild mid-drag),
+    // previews straight into the document every move, and the release replays the whole gesture as
+    // ONE undoable Controller.Resize.
+
+    private VisualNode ColumnHeader(int c, SheetDocument document, IAppTheme theme)
+    {
+        var col = c;   // the loop variable would be shared by every closure
+        var stack = new Stack();
+        stack.Add(HeaderCell(ColumnName(c), document.ColWidth(c), HeaderHeight, theme));
+        stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
+        {
+            Width = SizeValue.Fixed(Grip),
+            Height = SizeValue.Fixed(HeaderHeight),
+        }))
+        {
+            Axis = DragAxis.Horizontal,
+            Min = -4000,
+            Max = 4000,
+            Follows = false,
+            OnMoved = delta => PreviewResize(SheetAxis.Cols, col, delta),
+            OnReleased = delta => CommitResize(SheetAxis.Cols, col, delta),
+        }, top: 0, end: 0) { ZIndex = 1 });
+        return stack;
+    }
+
+    private VisualNode RowHeader(int r, SheetDocument document, IAppTheme theme)
+    {
+        var row = r;
+        var stack = new Stack();
+        stack.Add(HeaderCell($"{r + 1}", HeaderWidth, document.RowHeight(r), theme));
+        stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
+        {
+            Width = SizeValue.Fixed(HeaderWidth),
+            Height = SizeValue.Fixed(Grip),
+        }))
+        {
+            Axis = DragAxis.Vertical,
+            Min = -4000,
+            Max = 4000,
+            Follows = false,
+            OnMoved = delta => PreviewResize(SheetAxis.Rows, row, delta),
+            OnReleased = delta => CommitResize(SheetAxis.Rows, row, delta),
+        }, bottom: 0, start: 0) { ZIndex = 1 });
+        return stack;
+    }
+
+    private void PreviewResize(SheetAxis axis, int index, float delta)
+    {
+        var document = Controller.Document;
+        if (_resizeBase < 0)
+            _resizeBase = axis == SheetAxis.Cols ? document.ColWidth(index) : document.RowHeight(index);
+        var floor = axis == SheetAxis.Cols ? MinColWidth : MinRowHeight;
+        var size = Math.Max(floor, _resizeBase + delta);
+        SetState(() =>
+        {
+            if (axis == SheetAxis.Cols) document.SetColWidth(index, size);
+            else document.SetRowHeight(index, size);
+        });
+    }
+
+    private void CommitResize(SheetAxis axis, int index, float delta)
+    {
+        if (_resizeBase < 0) return;   // a tap on the grip never armed the gesture
+        var document = Controller.Document;
+        var floor = axis == SheetAxis.Cols ? MinColWidth : MinRowHeight;
+        var final = Math.Max(floor, _resizeBase + delta);
+
+        // Rewind the preview without touching history, then land the gesture as one inverse.
+        if (axis == SheetAxis.Cols) document.SetColWidth(index, _resizeBase);
+        else document.SetRowHeight(index, _resizeBase);
+        _resizeBase = -1f;
+        Controller.Resize(axis, index, final);
+        SetState(() => { });
+    }
 
     private VisualNode GridRow(int row, SheetDocument document, IAppTheme theme)
     {
