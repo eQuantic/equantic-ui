@@ -824,4 +824,8 @@ public sealed class SectionState
     public bool DialogOpen;
     public bool SheetOpen;
     public string TaxId = "123.456.789-0";
+
+    /// <summary>The Spreadsheet section's controller — held HERE so cell edits, resized columns
+    /// and the undo history survive every gallery rebuild.</summary>
+    public SheetController? Sheet;
 }
