@@ -58,6 +58,16 @@ public class CastExpressionStrategy : IConversionStrategy
         var inner = context.Converter.ConvertExpression(cast.Expression);
         var type = cast.Type.ToString();
 
+        // (char)numeric → the character for the code unit. The transpiled char IS a 1-length
+        // string, so without this the cast silently vanished and `(char)('A' + i)` stayed a number
+        // (or, worse, a concatenation the char-arithmetic branch had already prevented).
+        if (UnwrapNullable(targetType)?.SpecialType == SpecialType.System_Char
+            || (targetType is null && type == "char"))
+        {
+            if (operandType?.SpecialType == SpecialType.System_Char) return inner;   // identity
+            return $"String.fromCharCode({inner})";
+        }
+
         // Integral casts carry C#'s RANGE WRAPPING, not just float truncation: `(byte)(rgb >> 8)`
         // keeps only the low 8 bits. Emitting bare Math.trunc left the high bits in — found when
         // every brand color built through `Color.FromRgb((byte)(v >> 16), …)` corrupted on the

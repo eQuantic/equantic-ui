@@ -4,6 +4,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
 
+using eQuantic.UI.Compiler.CodeGen.Extensions;
+
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
@@ -132,7 +134,17 @@ public class ObjectCreationStrategy : IConversionStrategy
             if (string.IsNullOrEmpty(arguments) || arguments == "{}") return "[]";
             if (IsCapacityArgument(creation, context)) return "[]";
             if (creation.Initializer == null && creation.ArgumentList?.Arguments.Count == 1)
+            {
+                // A Dictionary SOURCE is a plain object — spreading it yields nothing. Its
+                // entries (as .key/.value pairs) are what `new List<KeyValuePair<,>>(dict)` means.
+                var sourceType = context.SemanticHelper.GetType(creation.ArgumentList.Arguments[0].Expression);
+                if (sourceType.IsDictionaryLike(out var numericKey))
+                {
+                    context.UsedHelpers.Add(Eq.Import);
+                    return $"$eq.entries({arguments}, {(numericKey ? "true" : "false")})";
+                }
                 return $"[...{arguments}]";     // a copy of the source, not an alias of it
+            }
             return arguments;
         }
         if (typeName.StartsWith("Dictionary<") || typeName.Contains(".Dictionary<"))

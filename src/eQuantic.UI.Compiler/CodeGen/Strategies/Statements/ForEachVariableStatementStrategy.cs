@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
@@ -28,6 +29,13 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
         var foreachStmt = (ForEachVariableStatementSyntax)node;
         var pattern = ConvertDesignation(foreachStmt.Variable);
         var collection = context.Converter.ConvertExpression(foreachStmt.Expression);
+        // A transpiled Dictionary is a plain object — not iterable. $eq.entries yields pairs that
+        // destructure AND answer .key/.value, with numeric keys restored as numbers.
+        if (context.SemanticHelper.GetType(foreachStmt.Expression).IsDictionaryLike(out var numericKey))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            collection = $"$eq.entries({collection}, {(numericKey ? "true" : "false")})";
+        }
         var body = context.Converter.Convert(foreachStmt.Statement);
 
         var isAsync = foreachStmt.AwaitKeyword.Value != null;

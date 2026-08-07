@@ -35,6 +35,9 @@ public static class Eq
     /// <summary>Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct.</summary>
     public const string Equals = "$eq.equals";
 
+    /// <summary>Dictionary enumeration (foreach / List copy): destructurable pairs with .key/.value.</summary>
+    public const string Entries = "$eq.entries";
+
     /// <summary>Membership over a collection whose runtime shape is not knowable statically —
     /// an <c>IReadOnlyCollection&lt;T&gt;</c> is a Set as readily as an array.</summary>
     public const string Contains = "$eq.collections.contains";

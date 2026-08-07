@@ -63,6 +63,9 @@ public class LocalDeclarationStrategy : IStatementStrategy
             && (creation.ArgumentList?.Arguments.Count ?? 0) <= 1)
         {
             var item = collection.TypeArguments[0];
+            // A GENERIC item (KeyValuePair<,>, a tuple) has no TS name to annotate with — its
+            // bare C# name names nothing over there. Inference from the initializer is right.
+            if (item is INamedTypeSymbol { IsGenericType: true }) return "";
             var itemName = item.SpecialType switch
             {
                 SpecialType.System_String or SpecialType.System_Char => "string",

@@ -4,7 +4,7 @@ import { round } from './utils/dotnet-math';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
-import { queue, stack, valueMap, linkedList, contains, count, setAdd } from './utils/collections';
+import { queue, stack, valueMap, linkedList, contains, count, setAdd, entries } from './utils/collections';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp } from './utils/nullable';
 import { equals } from './utils/equals';
@@ -49,6 +49,8 @@ export const slice = <T extends string | unknown[]>(
 };
 
 export const $eq = {
+  /** Dictionary enumeration for transpiled foreach/List-copy — see utils/collections. */
+  entries,
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** C# range indexing whose endpoints count from the end — see `slice`. */
