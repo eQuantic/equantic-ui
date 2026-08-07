@@ -142,6 +142,9 @@ public sealed class PhotonWindow
         // W4: CoreText serves BOTH measuring (layout breaks) and rasterizing (A8 coverage) —
         // real glyphs in the window, breaks identical by construction.
         var textService = new CoreTextService();
+        // ONE builder for the loop's lifetime: Reset keeps every buffer's capacity, so a steady
+        // 120 Hz stops growing fresh lists per frame.
+        var frameBuilder = new DisplayListBuilder();
         var host = new PhotonHost(root, theme, mode, _width, _height, textService)
         {
             RenderScale = scale,
@@ -175,7 +178,8 @@ public sealed class PhotonWindow
         {
             var drawable = Send(layer, Sel("nextDrawable"));
             if (drawable == IntPtr.Zero) return;
-            var builder = new DisplayListBuilder();
+            frameBuilder.Reset();
+            var builder = frameBuilder;
             host.RenderFrame(builder, (float)clock.Elapsed.TotalMilliseconds);
             backend.RenderToDrawable(builder.Build(), Send(drawable, Sel("texture")),
                 MetalBackend.PixelFormatBgra8UnormSrgb, drawable);

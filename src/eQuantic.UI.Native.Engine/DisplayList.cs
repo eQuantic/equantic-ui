@@ -365,6 +365,21 @@ public sealed class DisplayListBuilder
 
     public void PopClip() => _clip = _clipStack.Pop();
 
+    /// <summary>
+    /// Ready for the next frame, keeping every internal buffer's CAPACITY — the render loop hands
+    /// the same builder to every frame instead of growing fresh lists 120 times a second.
+    /// </summary>
+    public void Reset()
+    {
+        _commands.Clear();
+        _textures.Clear();
+        _stack.Clear();
+        _clipStack.Clear();
+        _current = Matrix2D.Identity;
+        _clip = null;
+        _openLayers = 0;
+    }
+
     public DisplayList Build()
     {
         if (_stack.Count != 0)

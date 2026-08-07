@@ -176,7 +176,7 @@ public sealed class PhotonHost
         _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets, _pressedPath,
             _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible,
             Selection.Start, Selection.End, density: Density,
-            scrollOffset: path => _scrolls.Get(path), markedText: _marked);
+            scrollOffset: path => _scrolls.Get(path), markedText: _marked, pathCache: _pathCache);
         if (RenderScale != 1f) builder.Pop();
         AdoptAutofocus();
         NeedsRender = _lastFrame.HasActiveMotion || gliding;
@@ -395,6 +395,10 @@ public sealed class PhotonHost
     // the caret sits — because both must survive the rebuild that each keystroke causes.
 
     private string? _textPath;
+
+    /// <summary>Path strings survive frames here — a path is identity, and the tree's shape barely
+    /// changes, so steady state re-uses the same strings instead of re-concatenating them.</summary>
+    private readonly Dictionary<(string Parent, int Index), string> _pathCache = new();
     private int _caret;
 
     /// <summary>
