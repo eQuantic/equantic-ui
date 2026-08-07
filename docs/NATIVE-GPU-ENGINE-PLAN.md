@@ -835,6 +835,19 @@ Bun and the JS bundling chain, the TypeScript runtime.
   scrolls repaint without invalidating), 4 web specs, and the live browser: /rows at scrollTop
   220 000 holds 25 children (#04997–#05019). v1 fence: vertical, fixed extent.
 
+- **2026-08-07 — Frame allocation: 183 → 106 KB (−42%), and an honest map of the rest.** Two safe
+  wins landed: the PATH-STRING CACHE (a path is identity — "0/1/2" this frame must be the same
+  string next frame; the host lends a dictionary that survives frames, `LayoutContext.ChildPath`
+  is the single concatenation point) and the REUSED DisplayListBuilder (`Reset()` keeps every
+  buffer's capacity; the macOS shell and the harness now run one builder per loop — worth 65 KB
+  alone). Two bigger wins were built, MEASURED (down to 75 KB combined), and REVERTED with their
+  lessons recorded: a double-buffered LayoutNodePool broke 155 tests that legitimately retain
+  RealizeResults across frames — recycling the tree needs an explicit result LIFETIME first (the
+  `LayoutContext.Node` factory every node now passes through is the hook waiting for it); and
+  ArrayPool-ing the flex scratch arrays corrupted goldens in ways the prefix-clearing did not fix
+  — parked rather than shipped on hope. The ratchet is pinned at 152 KB; goldens are the aliasing
+  guard that caught both reverts.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across

@@ -79,10 +79,12 @@ public class PerfHarnessTests
     // ---- the rulers ------------------------------------------------------------------------------
 
     /// <summary>Managed bytes allocated per steady-state frame (motion running, no interaction).
-    /// Baseline 2026-08-07: 183 KB/frame (LayoutNode tree + paths + sink lists, rebuilt every
-    /// frame) — ~22 MB/s of gen0 pressure at 120 Hz. The ceiling is 1.4× that; the aspiration is
-    /// zero, via arena/pooling, tightening this ratchet as it lands.</summary>
-    private const long AllocationCeilingBytesPerFrame = 256 * 1024;
+    /// Baselines: 183 KB on 2026-08-07 morning; 106 KB same day after the path-string cache and
+    /// the reused-builder loop (the shells' real pattern, measured here). What remains is the
+    /// LayoutNode tree — pooling it needs an explicit RealizeResult lifetime first (a double
+    /// buffer quietly rewrote retained trees under 155 tests). The ratchet tightens as that
+    /// lands; it never loosens casually.</summary>
+    private const long AllocationCeilingBytesPerFrame = 152 * 1024;
 
     /// <summary>Draw commands the dense scene emits — the batching ruler (M1 spoke of a static
     /// dashboard under 30 DRAW CALLS after batching; commands are the pre-batch upper bound).
@@ -105,9 +107,14 @@ public class PerfHarnessTests
             host.RenderFrame(new DisplayListBuilder(), frame * 8f);
 
         const int measured = 60;
+        // The shells reuse ONE builder and Reset it per frame — the harness measures that path.
+        var builder = new DisplayListBuilder();
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var frame = 0; frame < measured; frame++)
-            host.RenderFrame(new DisplayListBuilder(), 80f + frame * 8f);
+        {
+            builder.Reset();
+            host.RenderFrame(builder, 80f + frame * 8f);
+        }
         var perFrame = (GC.GetAllocatedBytesForCurrentThread() - before) / measured;
 
         _output.WriteLine($"steady-state allocation: {perFrame / 1024.0:F1} KB/frame " +

@@ -19,6 +19,35 @@ public enum StretchKind
 /// <summary>Everything a layout pass needs besides the tree: theme (type styles), text metrics, Dynamic Type factor.</summary>
 public sealed class LayoutContext
 {
+    /// <summary>
+    /// Cross-frame cache of child path strings. A path is IDENTITY — "0/1/2" this frame must be
+    /// the very same string next frame — and the tree's shape barely changes between frames, so
+    /// the host lends a dictionary that survives them and steady-state path allocation drops to
+    /// zero. Null (tests, one-shot layouts) simply concatenates.
+    /// </summary>
+    public Dictionary<(string Parent, int Index), string>? PathCache { get; init; }
+
+    // The single factory every laid-out node passes through. A LayoutNode recycler wants to live
+    // here — but a recycled tree needs an OWNERSHIP story first: tests (and any holder) retain
+    // RealizeResults across many frames, and a double-buffer quietly rewrote trees under 155 of
+    // them. Until results carry an explicit lifetime, every node is fresh.
+    internal LayoutNode Node(VisualNode source) => new(source);
+
+    internal LayoutNode Node(VisualNode source, Rect bounds)
+    {
+        var node = Node(source);
+        node.Bounds = bounds;
+        return node;
+    }
+
+    internal string ChildPath(string parent, int index)
+    {
+        if (PathCache is not { } cache) return parent + "/" + index;
+        if (!cache.TryGetValue((parent, index), out var cached))
+            cache[(parent, index)] = cached = parent + "/" + index;
+        return cached;
+    }
+
     public LayoutContext(IAppTheme theme, ITextMeasurer measurer, float typeScale = 1f,
         Density density = Density.Comfortable)
     {
@@ -192,7 +221,7 @@ public static class LayoutEngine
         Grid grid => MeasureGrid(grid, maxW, maxH, ctx, path),
         // Spec S6: an AdaptiveNode IS its resolved variant on native — the other variants never
         // measure, never paint (the web keeps them, CSS-gated).
-        AdaptiveNode adaptive => MeasureRearmed(adaptive.Resolve(ctx.SizeClass), maxW, maxH, ctx, path + "/0", stretchW, stretchH),
+        AdaptiveNode adaptive => MeasureRearmed(adaptive.Resolve(ctx.SizeClass), maxW, maxH, ctx, ctx.ChildPath(path, 0), stretchW, stretchH),
         // Spec S7: Sticky renders IN FLOW on native until engine scrolling lands (correct at scroll
         // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
         Sticky sticky => MeasureWrapper(sticky, sticky.Child, maxW, maxH, ctx, path, stretchW, stretchH),
@@ -211,14 +240,14 @@ public static class LayoutEngine
         Text text => MeasureText(text, maxW, ctx),
         TextEntry entry => MeasureTextEntry(entry, maxW, ctx),
         // Images are an explicitly sized slot - layout can't infer extent from undecoded sources (A11).
-        Image image => new LayoutNode(image) { Bounds = new Rect(0, 0, image.Width, image.Height) },
-        CameraPreview camera => new LayoutNode(camera) { Bounds = new Rect(0, 0, camera.Width, camera.Height) },
+        Image image => ctx.Node(image, new Rect(0, 0, image.Width, image.Height)),
+        CameraPreview camera => ctx.Node(camera, new Rect(0, 0, camera.Width, camera.Height)),
         // Icons are a fixed square em-box (§07 whitelist) and ignore Dynamic Type (spec A10).
-        Icon icon => new LayoutNode(icon) { Bounds = new Rect(0, 0, icon.Size, icon.Size) },
+        Icon icon => ctx.Node(icon, new Rect(0, 0, icon.Size, icon.Size)),
         // A vector is the same square em-box, at the size the author asked for.
-        Vector vector => new LayoutNode(vector) { Bounds = new Rect(0, 0, vector.Size, vector.Size) },
+        Vector vector => ctx.Node(vector, new Rect(0, 0, vector.Size, vector.Size)),
         // The Spinner shares the icon em-box contract (spec B15: sizes = the §07 whitelist).
-        Spinner spinner => new LayoutNode(spinner) { Bounds = new Rect(0, 0, spinner.Size, spinner.Size) },
+        Spinner spinner => ctx.Node(spinner, new Rect(0, 0, spinner.Size, spinner.Size)),
         // The INLINE-BLOCK barrier (CSS twin): a button, a link and an input are not block-level —
         // a BLOCK container does not stretch them (they hug), while a FLEX stretch reaches
         // through (align-items: stretch stretches any item, buttons included).
@@ -243,14 +272,14 @@ public static class LayoutEngine
         DragDismiss drag => MeasureDragDismiss(drag, maxW, maxH, ctx, path, stretchW, stretchH),
         // An Overlay is ZERO in the page flow — the realizer lays its child out against the
         // VIEWPORT in the overlay pass (path "ov<i>", stable for the reconciler).
-        Overlay => new LayoutNode(node),
+        Overlay => ctx.Node(node),
         // A component expands INLINE: Build produces its subtree (pure, mode-free), which is measured
         // in place — the component wraps it in the layout tree, drawing nothing itself.
         // Components RECONCILE by position first: the retained instance (state alive) replaces the
         // fresh one the parent just built, adopting its config; then it expands inline via Build.
         UiComponent component => MeasureComponent(component, maxW, maxH, ctx, path, stretchW, stretchH),
-        Spacer => new LayoutNode(node), // zero outside a flex container (layout-only)
-        _ => new LayoutNode(node),
+        Spacer => ctx.Node(node), // zero outside a flex container (layout-only)
+        _ => ctx.Node(node),
     };
 
     /// <summary>
@@ -271,13 +300,11 @@ public static class LayoutEngine
         ctx.StretchWidth = stretchW;
         ctx.StretchHeight = stretchH;
         var child = Measure(safeArea.Child, MathF.Max(0, maxW - start - end),
-            MathF.Max(0, maxH - top - bottom), ctx, path + "/0");
+            MathF.Max(0, maxH - top - bottom), ctx, ctx.ChildPath(path, 0));
         child.Bounds = child.Bounds with { X = start, Y = top };
 
-        var node = new LayoutNode(safeArea)
-        {
-            Bounds = new Rect(0, 0, child.Bounds.Width + start + end, child.Bounds.Height + top + bottom),
-        };
+        var node = ctx.Node(safeArea,
+            new Rect(0, 0, child.Bounds.Width + start + end, child.Bounds.Height + top + bottom));
         node.Children.Add(child);
         return node;
     }
@@ -375,13 +402,13 @@ public static class LayoutEngine
     private static LayoutNode MeasureWrapper(VisualNode node, VisualNode child, float maxW, float maxH, LayoutContext ctx, string path,
         StretchKind stretchW = StretchKind.None, StretchKind stretchH = StretchKind.None)
     {
-        var result = new LayoutNode(node);
+        var result = ctx.Node(node);
         // Layout-transparent means transparent to STRETCH too: whatever the parent would stretch,
         // it stretches through the wrapper — a Pressable around a tab cell (or the component node
         // around a page) must not eat the size the parent granted.
         ctx.StretchWidth = stretchW;
         ctx.StretchHeight = stretchH;
-        var inner = Measure(child, maxW, maxH, ctx, path + "/0");
+        var inner = Measure(child, maxW, maxH, ctx, ctx.ChildPath(path, 0));
         result.Children.Add(inner);
         result.Bounds = new Rect(0, 0, inner.Bounds.Width, inner.Bounds.Height);
         return result;
@@ -439,14 +466,14 @@ public static class LayoutEngine
     /// child order — the LayoutNode children keep it.</summary>
     private static LayoutNode MeasureStack(Stack stack, float maxW, float maxH, LayoutContext ctx, string path)
     {
-        var result = new LayoutNode(stack);
+        var result = ctx.Node(stack);
         var contentW = 0f;
         var contentH = 0f;
 
         for (var stackIndex = 0; stackIndex < stack.Children.Count; stackIndex++)
         {
             var child = stack.Children[stackIndex];
-            var measured = Measure(child, maxW, maxH, ctx, path + "/" + stackIndex);
+            var measured = Measure(child, maxW, maxH, ctx, ctx.ChildPath(path, stackIndex));
             result.Children.Add(measured);
             if (child is Positioned) continue;
             contentW = MathF.Max(contentW, measured.Bounds.Width);
@@ -499,12 +526,12 @@ public static class LayoutEngine
     /// realizer via the engine clip primitive.</summary>
     private static LayoutNode MeasureScrollView(ScrollView scroll, float maxW, float maxH, LayoutContext ctx, string path)
     {
-        var result = new LayoutNode(scroll);
+        var result = ctx.Node(scroll);
         var horizontal = scroll.Axis == ScrollAxis.Horizontal;
 
         var child = Measure(scroll.Child,
             horizontal ? float.PositiveInfinity : maxW,
-            horizontal ? maxH : float.PositiveInfinity, ctx, path + "/0");
+            horizontal ? maxH : float.PositiveInfinity, ctx, ctx.ChildPath(path, 0));
         result.Children.Add(child);
 
         var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));
@@ -557,7 +584,7 @@ public static class LayoutEngine
 
     private static LayoutNode MeasureText(Text text, float maxW, LayoutContext ctx)
     {
-        var result = new LayoutNode(text);
+        var result = ctx.Node(text);
         var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
         if (text.Mono) style = style with { Mono = true };
         var measurement = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, maxW, text.MaxLines);
@@ -573,7 +600,7 @@ public static class LayoutEngine
     /// grow and shrink as the user types.</summary>
     private static LayoutNode MeasureTextEntry(TextEntry entry, float maxW, LayoutContext ctx)
     {
-        var result = new LayoutNode(entry);
+        var result = ctx.Node(entry);
         var style = ctx.Theme.Type(entry.Role);
         var shown = entry.Value.Length > 0 ? entry.Value : entry.Placeholder ?? string.Empty;
         var lines = Math.Max(1, entry.Lines);
@@ -588,7 +615,7 @@ public static class LayoutEngine
     private static LayoutNode MeasureBox(Box box, float maxW, float maxH, LayoutContext ctx, string path,
         StretchKind stretchW = StretchKind.None, StretchKind stretchH = StretchKind.None)
     {
-        var result = new LayoutNode(box);
+        var result = ctx.Node(box);
         var style = box.Style;
 
         // The indeterminate flags AS INHERITED — what the PARENT said about this axis, before this
@@ -641,7 +668,7 @@ public static class LayoutEngine
             // hugging Column inside a Fill card at the card's width on native, the way the SAME
             // tree already behaves on the web, where a Column realizes as width:auto.
             if (!ctx.IndeterminateWidth) ctx.StretchWidth = StretchKind.Block;
-            child = Measure(box.Child, MathF.Max(0, childMaxW), MathF.Max(0, childMaxH), ctx, path + "/0");
+            child = Measure(box.Child, MathF.Max(0, childMaxW), MathF.Max(0, childMaxH), ctx, ctx.ChildPath(path, 0));
             ctx.IndeterminateWidth = outerW;
             ctx.IndeterminateHeight = outerH;
             child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
@@ -677,7 +704,7 @@ public static class LayoutEngine
             ctx.StretchWidth = StretchKind.Block;
             result.Children.Clear();
             child = Measure(box.Child!, MathF.Max(0, width - style.Padding.Horizontal),
-                MathF.Max(0, height - style.Padding.Vertical), ctx, path + "/0");
+                MathF.Max(0, height - style.Padding.Vertical), ctx, ctx.ChildPath(path, 0));
             ctx.IndeterminateWidth = outerW2;
             ctx.IndeterminateHeight = outerH2;
             child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
@@ -714,7 +741,7 @@ public static class LayoutEngine
     {
         if (flex.Wrap) return MeasureFlexWrapped(flex, maxW, maxH, ctx, path);
 
-        var result = new LayoutNode(flex);
+        var result = ctx.Node(flex);
         var horizontal = flex is Row;
 
         var (mainMax, crossMax) = horizontal ? (maxW, maxH) : (maxH, maxW);
@@ -821,11 +848,11 @@ public static class LayoutEngine
                 case Flexible f:
                     // Spec B14: an AnimateChanges weight LAYS OUT at the animator's interpolated
                     // value — forward changes glide over Motion.Base, everything else snaps.
-                    flexWeights[i] = ctx.Transitions?.Resolve(path + "/" + i, f.Flex, ctx.TimeMs,
+                    flexWeights[i] = ctx.Transitions?.Resolve(ctx.ChildPath(path, i), f.Flex, ctx.TimeMs,
                         f.AnimateChanges, ctx.ReducedMotion) ?? f.Flex;
                     continue;
                 case Spacer { Flex: > 0 } s:
-                    flexWeights[i] = ctx.Transitions?.Resolve(path + "/" + i, s.Flex, ctx.TimeMs,
+                    flexWeights[i] = ctx.Transitions?.Resolve(ctx.ChildPath(path, i), s.Flex, ctx.TimeMs,
                         s.AnimateChanges, ctx.ReducedMotion) ?? s.Flex;
                     continue;
                 case Spacer fixedSpacer:
@@ -837,7 +864,7 @@ public static class LayoutEngine
             var childMaxW = horizontal ? mainAvail : crossAvail;
             var childMaxH = horizontal ? crossAvail : mainAvail;
             MarkStretch(children[i]);
-            var child = MeasureChild(children[i], childMaxW, childMaxH, path + "/" + i);
+            var child = MeasureChild(children[i], childMaxW, childMaxH, ctx.ChildPath(path, i));
             laid[i] = child;
             mains[i] = horizontal ? child.Bounds.Width : child.Bounds.Height;
             rigidSum += mains[i];
@@ -863,7 +890,8 @@ public static class LayoutEngine
                     if (text.Mono) style = style with { Mono = true };
                     var remeasured = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, reduced,
                         Math.Max(1, text.MaxLines));
-                    var node = new LayoutNode(text) { Text = remeasured };
+                    var node = ctx.Node(text);
+                    node.Text = remeasured;
                     node.Bounds = new Rect(0, 0, remeasured.Width, remeasured.Height);
                     laid[i] = node;
                     rigidSum -= mains[i] - (horizontal ? node.Bounds.Width : node.Bounds.Height);
@@ -910,7 +938,7 @@ public static class LayoutEngine
                             var childMaxW2 = horizontal ? bound : crossAvail;
                             var childMaxH2 = horizontal ? crossAvail : bound;
                             MarkStretch(children[i]);
-                            var reflowed = MeasureChild(children[i], childMaxW2, childMaxH2, path + "/" + i);
+                            var reflowed = MeasureChild(children[i], childMaxW2, childMaxH2, ctx.ChildPath(path, i));
                             laid[i] = reflowed;
                             var shrunk = horizontal ? reflowed.Bounds.Width : reflowed.Bounds.Height;
                             rigidSum -= mains[i] - shrunk;
@@ -939,10 +967,10 @@ public static class LayoutEngine
             {
                 MarkStretch(unbounded);
                 var intrinsic = MeasureChild(unbounded.Child, horizontal ? mainAvail : crossAvail,
-                    horizontal ? crossAvail : mainAvail, path + "/" + i + "/0");
+                    horizontal ? crossAvail : mainAvail, ctx.ChildPath(ctx.ChildPath(path, i), 0));
                 mains[i] = horizontal ? intrinsic.Bounds.Width : intrinsic.Bounds.Height;
                 rigidSum += mains[i];
-                var grown = new LayoutNode(unbounded) { Bounds = intrinsic.Bounds };
+                var grown = ctx.Node(unbounded, intrinsic.Bounds);
                 grown.Children.Add(intrinsic);
                 laid[i] = grown;
                 continue;
@@ -964,19 +992,19 @@ public static class LayoutEngine
                 // lays out inside it — a flex-grow item's autos fill the cell, per CSS.
                 if (horizontal) ctx.StretchWidth = StretchKind.Flex;
                 else ctx.StretchHeight = StretchKind.Flex;
-                var child = MeasureChild(flexible.Child, childMaxW, childMaxH, path + "/" + i + "/0",
+                var child = MeasureChild(flexible.Child, childMaxW, childMaxH, ctx.ChildPath(ctx.ChildPath(path, i), 0),
                     mainGranted: true);
                 // The flexible slot IS the share on the main axis (the child fills it).
                 child.Bounds = horizontal
                     ? child.Bounds with { Width = share }
                     : child.Bounds with { Height = share };
-                var wrapper = new LayoutNode(flexible) { Bounds = child.Bounds };
+                var wrapper = ctx.Node(flexible, child.Bounds);
                 wrapper.Children.Add(child);
                 laid[i] = wrapper;
             }
             else
             {
-                laid[i] = new LayoutNode(children[i]); // flexible Spacer: pure space
+                laid[i] = ctx.Node(children[i]); // flexible Spacer: pure space
             }
         }
 
@@ -1002,9 +1030,11 @@ public static class LayoutEngine
         };
 
         var crossContent = 0f;
-        foreach (var child in laid)
-            if (child is not null)
-                crossContent = MathF.Max(crossContent, horizontal ? child.Bounds.Height : child.Bounds.Width);
+        // Indexed to children.Count: the rented array is LONGER than the child list, and the slots
+        // past it belong to whoever borrowed it last.
+        for (var ci = 0; ci < children.Count; ci++)
+            if (laid[ci] is { } laidChild)
+                crossContent = MathF.Max(crossContent, horizontal ? laidChild.Bounds.Height : laidChild.Bounds.Width);
         var cross = crossSize.Kind switch
         {
             SizeKind.Fixed => crossSize.Value,
@@ -1072,7 +1102,7 @@ public static class LayoutEngine
     /// </summary>
     private static LayoutNode MeasureFlexWrapped(FlexNode flex, float maxW, float maxH, LayoutContext ctx, string path)
     {
-        var result = new LayoutNode(flex);
+        var result = ctx.Node(flex);
         var horizontal = flex is Row;
 
         var (mainMax, crossMax) = horizontal ? (maxW, maxH) : (maxH, maxW);
@@ -1094,7 +1124,7 @@ public static class LayoutEngine
         {
             var child = flex.Children[i] is Flexible flexible ? flexible.Child : flex.Children[i];
             if (child is Spacer) continue;
-            var node = Measure(child, mainAvail, crossMax - padCross, ctx, path + "/" + i);
+            var node = Measure(child, mainAvail, crossMax - padCross, ctx, ctx.ChildPath(path, i));
             measured.Add(node);
             sources.Add(flex.Children[i]);
         }
@@ -1199,7 +1229,7 @@ public static class LayoutEngine
     /// </summary>
     private static LayoutNode MeasureGrid(Grid grid, float maxW, float maxH, LayoutContext ctx, string path)
     {
-        var result = new LayoutNode(grid);
+        var result = ctx.Node(grid);
         var columns = grid.Columns;
         var count = columns.Count;
         var rowGap = grid.RowGap ?? grid.Gap;
@@ -1256,7 +1286,7 @@ public static class LayoutEngine
             var (node, c, span, r) = placements[i];
             var cellW = grid.Gap * (span - 1);
             for (var k = c; k < c + span; k++) cellW += widths[k];
-            var child = Measure(node, cellW, maxH, ctx, path + "/" + i);
+            var child = Measure(node, cellW, maxH, ctx, ctx.ChildPath(path, i));
             // A Fill-width child pins to the cell (the realizer paints the full extent).
             if (CrossSizeKind(node, horizontal: false) == SizeKind.Fill || WidthKind(node) == SizeKind.Fill)
                 child.Bounds = child.Bounds with { Width = cellW };

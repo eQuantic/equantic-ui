@@ -178,11 +178,14 @@ public static class PhotonRealizer
         Density density = Density.Comfortable,
         // The IME composition in flight for the focused field — rendered inline at the caret,
         // underlined, without the value changing (the value only changes on commit).
-        string markedText = "")
+        string markedText = "",
+        // The host's cross-frame path-string cache (see LayoutContext.PathCache).
+        Dictionary<(string Parent, int Index), string>? pathCache = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
             density)
         {
+            PathCache = pathCache,
             // The HOST's cutouts. Zero on a desktop window, and the shell's real numbers on a phone
             // — the tree is the same either way, which is the point of the node.
             SafeAreaInsets = safeAreaInsets,
