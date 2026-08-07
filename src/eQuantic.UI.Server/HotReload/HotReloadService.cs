@@ -18,6 +18,7 @@ public sealed class HotReloadService : IDisposable
     private readonly ConcurrentDictionary<Guid, Channel<string>> _clients = new();
     private FileSystemWatcher? _watcher;
     private Timer? _debounce;
+    private Timer? _keepAlive;
     private int _building;
 
     public HotReloadService(string contentRoot) => _contentRoot = contentRoot;
@@ -33,6 +34,11 @@ public sealed class HotReloadService : IDisposable
         _watcher.Created += OnSourceChanged;
         _watcher.Renamed += OnSourceChanged;
         _watcher.EnableRaisingEvents = true;
+
+        // A parked SSE request that never says anything gets idle-dropped by Kestrel and by every
+        // proxy in between — a couple of quiet minutes and hot reload was silently over for that
+        // tab. A comment frame every 20s is invisible to the client and keeps the pipe warm.
+        _keepAlive = new Timer(_ => Send(": ping\n\n"), null, 20_000, 20_000);
     }
 
     private void OnSourceChanged(object sender, FileSystemEventArgs e)
@@ -58,9 +64,19 @@ public sealed class HotReloadService : IDisposable
                 RedirectStandardError = true,
             });
             if (process is null) return;
+            // The pipes are read BEFORE waiting: a build that says more than the pipe buffer holds
+            // (~64KB — any real error list) used to block writing while we blocked waiting, and the
+            // whole thing sat there until the 2-minute timeout.
+            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stderr = process.StandardError.ReadToEndAsync();
+            var started = Stopwatch.StartNew();
             process.WaitForExit(120_000);
-            if (process.ExitCode == 0) Broadcast("reload");
-            else Console.WriteLine($"[eQuantic.HotReload] eqc rebuild failed:\n{process.StandardError.ReadToEnd()}{process.StandardOutput.ReadToEnd()}");
+            if (process.ExitCode == 0)
+            {
+                Console.WriteLine($"[eQuantic.HotReload] rebuilt in {started.Elapsed.TotalSeconds:F1}s — reloading browsers");
+                Broadcast("reload");
+            }
+            else Console.WriteLine($"[eQuantic.HotReload] eqc rebuild failed:\n{stderr.Result}{stdout.Result}");
         }
         catch (Exception ex)
         {
@@ -72,12 +88,14 @@ public sealed class HotReloadService : IDisposable
         }
     }
 
-    private void Broadcast(string message)
+    private void Broadcast(string message) => Send($"data: {message}\n\n");
+
+    private void Send(string frame)
     {
         // Kestrel forbids synchronous response writes from arbitrary threads — hand each parked
-        // client its message through a channel; the request's own async loop does the writing.
+        // client its frame through a channel; the request's own async loop does the writing.
         foreach (var (_, channel) in _clients)
-            channel.Writer.TryWrite(message);
+            channel.Writer.TryWrite(frame);
     }
 
     /// <summary>The SSE endpoint body: parks the request, writing each broadcast ASYNCHRONOUSLY
@@ -94,9 +112,9 @@ public sealed class HotReloadService : IDisposable
         _clients[id] = channel;
         try
         {
-            await foreach (var message in channel.Reader.ReadAllAsync(context.RequestAborted))
+            await foreach (var frame in channel.Reader.ReadAllAsync(context.RequestAborted))
             {
-                await context.Response.WriteAsync($"data: {message}\n\n", context.RequestAborted);
+                await context.Response.WriteAsync(frame, context.RequestAborted);
                 await context.Response.Body.FlushAsync(context.RequestAborted);
             }
         }
@@ -114,5 +132,6 @@ public sealed class HotReloadService : IDisposable
     {
         _watcher?.Dispose();
         _debounce?.Dispose();
+        _keepAlive?.Dispose();
     }
 }

@@ -51,6 +51,9 @@ let initialized = false;
  */
 let currentComponent: MountableComponent | null = null;
 
+/** True when THIS boot re-entered through a hot-reload refresh — see initHotReload. */
+let hmrReplay = false;
+
 /**
  * Bootstraps the eQuantic application
  */
@@ -64,6 +67,7 @@ export async function boot(): Promise<void> {
     const saved = sessionStorage.getItem('__eq_hmr__');
     if (saved) {
       sessionStorage.removeItem('__eq_hmr__');
+      hmrReplay = true;
       const parsed = JSON.parse(saved) as { url: string; state: Record<string, unknown> };
       if (parsed.url === location.href) {
         (window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ = {
@@ -248,7 +252,13 @@ async function loadAndMountPage(
   // Hydration: attach events to existing SSR HTML. Prefer the component's own hydrate() so its render
   // manager owns the tree — that lets the first SPA navigation away diff against it (getCurrentTree) and
   // preserve a shared shell. Fall back to a direct reconciler hydrate for older component shapes.
-  if (hasSSRContent && config.ssr !== false && component.getVirtualNode) {
+  // After a hot-reload refresh the SSR HTML is the one thing KNOWN to be stale: it was rendered
+  // by the server's still-running old assembly, while the page bundle that just loaded is the new
+  // code. Hydration ADOPTS the DOM it finds — which kept the pre-edit pixels on screen and made
+  // the whole feature read as broken ("I saved, it reloaded, nothing changed"). A replay boot
+  // renders CLIENT-side instead: the new code paints, and the captured state re-enters through
+  // the same __INITIAL_STATE__ door the SSR mechanic already uses.
+  if (hasSSRContent && config.ssr !== false && component.getVirtualNode && !hmrReplay) {
     if (isDev()) {
       console.log(`Hydrating: ${pageName}`);
     }
@@ -382,23 +392,34 @@ function initHotReload(): void {
   if (typeof EventSource === 'undefined') return;
   try {
     const source = new EventSource('/_equantic/hmr');
-    source.onerror = () => source.close();
+    // No close-on-error: EventSource RECONNECTS by itself after a transient drop, which is the
+    // whole point of the API — closing on the first hiccup left hot reload silently dead minutes
+    // into every session. In production the endpoint 404s, and the browser abandons a non-200
+    // stream on its own (readyState CLOSED, no retries) — nothing leaks.
     source.onmessage = () => {
+      // The marker is written UNCONDITIONALLY: it is what tells the next boot to render with the
+      // NEW code instead of hydrating the stale SSR. Gating it on captured state left every
+      // write-once page (which keeps no legacy _state bag) hydrating old HTML after the reload —
+      // the pixels never changed, and the whole feature read as broken.
+      const data: Record<string, unknown> = {};
       try {
         const holder = currentComponent as unknown as { _state?: Record<string, unknown> } | null;
         const state = holder?._state;
         if (state) {
-          const data: Record<string, unknown> = {};
           for (const key of Object.keys(state)) {
             const value = state[key];
             if (typeof value === 'function') continue;
             if (key === '_component' || key === '_context' || key === '_needsRender') continue;
             data[key] = value;
           }
-          sessionStorage.setItem('__eq_hmr__', JSON.stringify({ url: location.href, state: data }));
         }
       } catch {
         /* reload without state rather than not at all */
+      }
+      try {
+        sessionStorage.setItem('__eq_hmr__', JSON.stringify({ url: location.href, state: data }));
+      } catch {
+        /* private mode etc. — the reload still shows the new code, only via hydration */
       }
       location.reload();
     };
