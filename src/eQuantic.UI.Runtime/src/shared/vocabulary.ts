@@ -571,6 +571,27 @@ export class CodeSurface extends VisualNode {
 }
 
 /** Mirror of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
+/** Mirror of the C# SheetSurface — the spreadsheet's marks-and-input node. Web INTERACTION joins
+ * with the editing slice; for now the child (the grid window) renders and the node is transparent. */
+export class SheetSurface extends VisualNode {
+  readonly nodeKind = 'sheetSurface';
+  child: VisualChild;
+  controller: unknown;
+  firstRow = 0;
+  firstCol = 0;
+  headerWidth = 0;
+  headerHeight = 0;
+  onChanged: (() => void) | null = null;
+  label: string | null = null;
+
+  constructor(child: VisualChild, controller: unknown, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.controller = controller;
+    if (config) Object.assign(this, config);
+  }
+}
+
 export class Hoverable extends VisualNode {
   readonly nodeKind = 'hoverable';
   child: VisualChild;

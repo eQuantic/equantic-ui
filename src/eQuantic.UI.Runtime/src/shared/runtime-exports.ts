@@ -27,6 +27,7 @@ export {
   Text,
   Pressable,
   CodeSurface,
+  SheetSurface,
   Hoverable,
   Flexible,
   Spacer,

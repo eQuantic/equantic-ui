@@ -73,6 +73,7 @@ export { SheetHistory } from './SheetHistory';
 export { SheetRange } from './SheetRange';
 export { Skeleton } from './Skeleton';
 export { Slider } from './Slider';
+export { Spreadsheet } from './Spreadsheet';
 export { Stepper } from './Stepper';
 export { SwipeableRow } from './SwipeableRow';
 export { Switch } from './Switch';
