@@ -223,7 +223,8 @@ public sealed class PhotonWindow
                 SendVoid(layer, Sel("setDrawableSize:"), new CGSize(_currentWidth * scale, _currentHeight * scale));
                 host.Resize(_currentWidth, _currentHeight);
             }
-            if (host.NeedsRender) Present();
+            // A due frame is the caret's next blink transition — two a second, not every vsync.
+            if (host.NeedsRender || host.IsFrameDue((float)clock.Elapsed.TotalMilliseconds)) Present();
         }
 
         // A TIMER in the common modes, because that is what still fires while AppKit is tracking a
@@ -282,7 +283,8 @@ public sealed class PhotonWindow
                 host.Resize(newW, newH);
             }
 
-            if (host.NeedsRender || forced) Present();
+            if (host.NeedsRender || forced
+                || host.IsFrameDue((float)clock.Elapsed.TotalMilliseconds)) Present();
 
             if (maxFrames > 0 && FramesPresented >= maxFrames)
             {

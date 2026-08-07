@@ -205,14 +205,17 @@ public sealed class PhotonViewController : UIViewController
         if (_host is null || _backend is null || View is not PhotonView view) return;
 
         var forced = MaxFrames > 0;
-        if (!_host.NeedsRender && !forced) return;   // a still screen presents nothing
+        if (_startedAt == 0) _startedAt = _clock!.Timestamp;
+        var nowMs = (float)((_clock!.Timestamp - _startedAt) * 1000);
+        // Dirty, forced, or DUE — the caret's next blink transition. The vsync tick itself keeps
+        // firing either way; what it skips is the render and the present.
+        if (!_host.NeedsRender && !_host.IsFrameDue(nowMs) && !forced) return;
 
         var drawable = Send(view.MetalLayer.Handle, Sel("nextDrawable"));
         if (drawable == IntPtr.Zero) return;         // the pool is empty this vsync; try the next
 
-        if (_startedAt == 0) _startedAt = _clock!.Timestamp;
         var builder = new DisplayListBuilder();
-        _host.RenderFrame(builder, (float)((_clock!.Timestamp - _startedAt) * 1000));
+        _host.RenderFrame(builder, nowMs);
         _backend.RenderToDrawable(builder.Build(), Send(drawable, Sel("texture")),
             MetalBackend.PixelFormatBgra8UnormSrgb, drawable);
         FramesPresented++;

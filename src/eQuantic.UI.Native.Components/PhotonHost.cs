@@ -61,6 +61,18 @@ public sealed class PhotonHost
     /// when the last frame carried running loop motion — animated frames keep the loop hot.</summary>
     public bool NeedsRender { get; private set; } = true;
 
+    /// <summary>When the next frame is due even though nothing is dirty — the caret's next blink
+    /// transition, in the same clock <see cref="RenderFrame"/> is fed. Null = nothing scheduled.</summary>
+    private float? _nextFrameDueMs;
+
+    /// <summary>
+    /// Whether a SCHEDULED frame has come due — the blink's half-period elapsed. The shells' idle
+    /// ticks (the macOS 120Hz timer, the phones' vsync callbacks) ask this alongside
+    /// <see cref="NeedsRender"/>: a caret still blinks, at two presents a second instead of the
+    /// display's whole refresh rate.
+    /// </summary>
+    public bool IsFrameDue(float nowMs) => _nextFrameDueMs is { } due && nowMs >= due;
+
     /// <summary>
     /// Something OUTSIDE the tree changed and the next frame will differ — the system switched to
     /// dark, reduce-motion came on, a font finished loading. The tree is the same; what it paints
@@ -167,9 +179,17 @@ public sealed class PhotonHost
             scrollOffset: path => _scrolls.Get(path));
         if (RenderScale != 1f) builder.Pop();
         AdoptAutofocus();
-        // A blinking caret is running motion like any other: while a field is being edited the loop
-        // has to keep turning, or the caret freezes in whichever half of the blink it stopped on.
-        NeedsRender = _lastFrame.HasActiveMotion || gliding || _textPath is not null;
+        NeedsRender = _lastFrame.HasActiveMotion || gliding;
+
+        // The caret is 2Hz motion, not vsync motion. Holding NeedsRender for it pinned the whole
+        // loop to the display's refresh — 120 presents a second on a ProMotion panel, measured, to
+        // flip a rectangle twice a second. So an editing caret SCHEDULES instead: the next frame is
+        // due at the next blink transition, and the shells' idle ticks ask IsFrameDue alongside
+        // NeedsRender. While a drag draws a selection the caret does not blink at all (it is forced
+        // solid), and the pointer is what drives frames — nothing to schedule.
+        _nextFrameDueMs = _textPath is not null && !NeedsRender && !_dragSelecting && !_codeDragging
+            ? _caretPhaseMs + (MathF.Floor((_lastTimeMs - _caretPhaseMs) / CaretBlinkMs) + 1) * CaretBlinkMs
+            : null;
         return _lastFrame;
     }
 
