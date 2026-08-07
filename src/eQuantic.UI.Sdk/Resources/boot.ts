@@ -332,50 +332,111 @@ async function navigateToPage(
 }
 
 // --- UI Renderers ---
+//
+// These are the pages that render when there is NO app page to render — an unknown route, a boot
+// crash, an app with no pages yet. They can't lean on any stylesheet (the app may not have one),
+// so each payload carries its own <style>: theme tokens first (`var(--eq-color-*)`, present when
+// the app selected a theme), OS-scheme fallbacks otherwise. An app takes over the 404 entirely by
+// declaring `[Page("/404")]` — the server SSRs it for unknown routes and this code never runs.
+
+const STATUS_PAGE_CSS = `
+  .eq-status-page { --eq-fb-bg: #fafafa; --eq-fb-fg: #171717; --eq-fb-muted: #666; --eq-fb-line: #e5e5e5; }
+  @media (prefers-color-scheme: dark) {
+    .eq-status-page { --eq-fb-bg: #0a0a0a; --eq-fb-fg: #ededed; --eq-fb-muted: #999; --eq-fb-line: #2e2e2e; }
+  }
+  .eq-status-page {
+    min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center;
+    background: var(--eq-color-background, var(--eq-fb-bg));
+    color: var(--eq-color-text-primary, var(--eq-fb-fg));
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; text-align: center; padding: 24px;
+  }
+  .eq-status-page__code {
+    font-size: 24px; font-weight: 600; margin: 0; padding-right: 23px; line-height: 49px;
+    border-right: 1px solid var(--eq-color-border, var(--eq-fb-line));
+  }
+  .eq-status-page__body { padding-left: 24px; text-align: left; max-width: 32rem; }
+  .eq-status-page__title { font-size: 14px; font-weight: 400; margin: 0; line-height: 49px; }
+  .eq-status-page__detail {
+    font-size: 13px; margin: 4px 0 0;
+    color: var(--eq-color-text-muted, var(--eq-fb-muted));
+    overflow-wrap: anywhere;
+  }
+  .eq-status-page__detail code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; }
+  .eq-status-page__link {
+    display: inline-block; margin-top: 10px; font-size: 13px;
+    color: var(--eq-color-link, inherit); text-decoration: underline; text-underline-offset: 3px;
+  }
+  .eq-status-page pre {
+    text-align: left; font-size: 12px; line-height: 1.6; margin: 10px 0 0; padding: 12px 14px;
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere;
+    background: var(--eq-color-surface-subtle, transparent);
+    border: 1px solid var(--eq-color-border, var(--eq-fb-line)); border-radius: 8px;
+  }
+`;
+
+/** The one shape all status pages share: a code, a title, and optional detail/actions. */
+function renderStatusPage(
+  root: HTMLElement,
+  code: string,
+  title: string,
+  detailHtml: string,
+): void {
+  root.innerHTML = `
+    <style>${STATUS_PAGE_CSS}</style>
+    <div class="eq-status-page">
+      <h1 class="eq-status-page__code">${escapeHtml(code)}</h1>
+      <div class="eq-status-page__body">
+        <h2 class="eq-status-page__title">${escapeHtml(title)}</h2>
+        ${detailHtml}
+      </div>
+    </div>
+  `;
+}
 
 function renderNoPage(root: HTMLElement): void {
   const isHome = window.location.pathname === '/' || window.location.pathname === '';
 
   if (isHome) {
-    root.innerHTML = `
-      <div class="eq-welcome">
-        <h1>Welcome to eQuantic.UI</h1>
-        <p>No default page configured.</p>
-      </div>
-    `;
+    renderStatusPage(
+      root,
+      'eQ',
+      'Welcome to eQuantic.UI',
+      `<p class="eq-status-page__detail">No default page configured — declare a component with <code>[Page("/")]</code> to take this spot.</p>`,
+    );
   } else {
     render404(root, window.location.pathname);
   }
 }
 
 function render404(root: HTMLElement, resource: string): void {
-  root.innerHTML = `
-    <div class="eq-error-page">
-      <h1 class="eq-error-code">404</h1>
-      <h2>Page Not Found</h2>
-      <p>The resource '<strong>${escapeHtml(resource)}</strong>' does not exist.</p>
-      <a href="/" class="eq-btn">Go Home</a>
-    </div>
-  `;
+  renderStatusPage(
+    root,
+    '404',
+    'This page could not be found.',
+    `<p class="eq-status-page__detail"><code>${escapeHtml(resource)}</code></p>
+     <a href="/" class="eq-status-page__link">Go home</a>`,
+  );
 }
 
 function renderError(root: HTMLElement, error: Error): void {
   console.error('Runtime Error:', error);
-  root.innerHTML = `
-    <div class="eq-error-page eq-error-page--critical">
-      <h2>Application Error</h2>
-      <pre>${escapeHtml(error.message)}</pre>
-    </div>
-  `;
+  renderStatusPage(
+    root,
+    '500',
+    'Application error.',
+    `<pre>${escapeHtml(error.message)}</pre>
+     <a href="/" class="eq-status-page__link">Go home</a>`,
+  );
 }
 
 function renderMountError(root: HTMLElement, pageName: string): void {
-  root.innerHTML = `
-    <div class="eq-error-page eq-error-page--warning">
-      <h2>Loaded: ${escapeHtml(pageName)}</h2>
-      <p>Component created but no <code>mount()</code> or <code>render()</code> method found.</p>
-    </div>
-  `;
+  renderStatusPage(
+    root,
+    '!',
+    `'${pageName}' loaded but cannot mount.`,
+    `<p class="eq-status-page__detail">The component was created but exposes no <code>mount()</code> or <code>render()</code> method.</p>`,
+  );
 }
 
 function escapeHtml(unsafe: string): string {
