@@ -75,6 +75,43 @@ public class RecordTypeEmitter
         return imports.Append("\nexport ").Append(body).Append('\n').ToString();
     }
 
+    /// <summary>
+    /// The OTHER constructors — `CodeRange(CodePosition caret) : this(caret, caret)`. JavaScript has
+    /// one constructor, so each alternate becomes a branch on how many arguments actually arrived:
+    /// bind its own parameters from the slots they landed in, evaluate the `: this(…)` arguments,
+    /// and land those in the primary's.
+    /// <para>
+    /// Dropping them is what used to happen, and it was silent: `new CodeRange(caret)` left the
+    /// second member NULL, so every read of it threw somewhere far away from the constructor.
+    /// </para>
+    /// </summary>
+    private string ChainedOverloads(TypeDeclarationSyntax type, IReadOnlyList<ValueMember> members)
+    {
+        var sb = new StringBuilder();
+        foreach (var ctor in type.Members.OfType<ConstructorDeclarationSyntax>())
+        {
+            if (ctor.Initializer is not { } chain
+                || !chain.ThisOrBaseKeyword.IsKind(SyntaxKind.ThisKeyword)) continue;
+            var arity = ctor.ParameterList.Parameters.Count;
+            if (arity == 0 || arity > members.Count) continue;
+
+            _converter.SetCurrentClass(type.Identifier.Text);
+            sb.Append($"if (arguments.length === {arity}) {{ ");
+            // The alternate's parameters ARE the arguments that arrived, in the primary's slots.
+            for (var i = 0; i < arity; i++)
+                sb.Append($"const {ctor.ParameterList.Parameters[i].Identifier.Text.ToJsIdentifier()} = {members[i].Js}; ");
+            // Evaluate first, assign after: an argument that reads a slot it also writes must see
+            // the value that arrived, not the one this loop just put there.
+            var args = chain.ArgumentList.Arguments;
+            for (var i = 0; i < args.Count && i < members.Count; i++)
+                sb.Append($"const $c{i} = {_converter.ConvertExpression(args[i].Expression)}; ");
+            for (var i = 0; i < args.Count && i < members.Count; i++)
+                sb.Append($"{members[i].Js} = $c{i}; ");
+            sb.Append("} ");
+        }
+        return sb.ToString();
+    }
+
     /// <summary>The TS annotation for a declared type, resolved the way the class emitter does it:
     /// an enum is its member string and an interface has no emitted twin to name.</summary>
     private string TsTypeOf(TypeSyntax? type)
@@ -119,6 +156,7 @@ public class RecordTypeEmitter
             ? $"constructor({string.Join(", ", members.Select(m => $"{m.Js}: any = {m.Default}"))}) {{ "
             : $"constructor({string.Join(", ", members.Select(m => $"{m.Js} = {m.Default}"))}) {{ ");
         if (baseName != null) sb.Append($"super({superArgs}); ");
+        sb.Append(ChainedOverloads(type, members));
         foreach (var m in members)
             if (!passedToBase.Contains(m.Display)) sb.Append($"this.{m.Js} = {m.Js}; ");
         sb.Append("} ");

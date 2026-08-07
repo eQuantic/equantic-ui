@@ -31,15 +31,19 @@ public class TypeScriptCodeBuilder
         Write($"import {{ {string.Join(", ", sortedItems)} }} from \"{from}\";");
     }
 
-    public void Class(string name, string? baseClass, Action<ClassBuilder> buildAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool export = true)
+    public void Class(string name, string? baseClass, Action<ClassBuilder> buildAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool export = true, bool isAbstract = false)
     {
         if (sourceNode != null) RecordMapping(sourceNode);
         var generics = typeParameters != null && typeParameters.Any() ? $"<{string.Join(", ", typeParameters)}>" : "";
         var extendsClause = string.IsNullOrEmpty(baseClass) ? "" : $" extends {baseClass}";
+        // `abstract` is emitted, not erased: a base that declares a member for its subclasses to
+        // supply has to say so, or TypeScript reads the declaration as a real property and refuses
+        // the accessor that implements it.
+        var abstractKeyword = isAbstract ? "abstract " : "";
 
         // The closing brace travels with the scope: a class body that opens and never closes is the
         // one bug generated code reliably ships, and a `using` makes it unrepresentable.
-        using (_writer.BeginBlock($"{(export ? "export " : "")}class {name}{generics}{extendsClause} {{"))
+        using (_writer.BeginBlock($"{(export ? "export " : "")}{abstractKeyword}class {name}{generics}{extendsClause} {{"))
         {
             buildAction(new ClassBuilder(this));
         }

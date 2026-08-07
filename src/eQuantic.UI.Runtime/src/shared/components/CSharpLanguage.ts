@@ -1,6 +1,7 @@
 import { CodeLanguageRules } from "../runtime-exports";
-export class CSharpLanguage {
-    constructor(props?: any) {  if (props && typeof props === 'object') Object.assign(this, props); }
+import { CurlyBraceLanguage } from "./CurlyBraceLanguage";
+export class CSharpLanguage extends CurlyBraceLanguage {
+    constructor(props?: any) { super();  if (props && typeof props === 'object') Object.assign(this, props); }
     get name(): string { return 'C#'; }
     get hasVerbatimStrings(): boolean { return true; }
     get hasBracketAttributes(): boolean { return true; }

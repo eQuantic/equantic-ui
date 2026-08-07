@@ -1,16 +1,16 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken } from "@equantic/runtime";
-export class CurlyBraceLanguage {
+export abstract class CurlyBraceLanguage {
     constructor(props?: any) {  if (props && typeof props === 'object') Object.assign(this, props); }
     static stateNormal: number = 0;
     static stateBlockComment: number = 1;
     static stateMultilineString: number = 2;
     static _punctuation: Set<string> | undefined;
     static get punctuation(): Set<string> { return CurlyBraceLanguage._punctuation ??= new Set(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']); }
-    declare name: string;
+    abstract name: string;
     rules: CodeLanguageRules = CodeLanguageRules.default;
-    declare keywords: Set<string>;
-    declare typeWords: Set<string>;
-    declare constantWords: Set<string>;
+    abstract keywords: Set<string>;
+    abstract typeWords: Set<string>;
+    abstract constantWords: Set<string>;
     get hasVerbatimStrings(): boolean { return false; }
     get hasTemplateStrings(): boolean { return false; }
     get hasBracketAttributes(): boolean { return false; }

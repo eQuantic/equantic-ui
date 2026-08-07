@@ -1124,6 +1124,16 @@ public class TypeScriptEmitter
             }
             foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
             {
+                // An ABSTRACT property is DECLARED, never emitted. The derived class supplies the
+                // getter, and a field here would become an OWN property on the instance — which
+                // shadows the prototype's getter, so the base would answer for every subclass.
+                // `declare` is type-only: it says what the base's own methods may read, and emits
+                // nothing to shadow with.
+                if (p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword))
+                {
+                    c.Raw($"abstract {p.Identifier.Text.ToCamelCase()}: {DeclaredType(p.Type)};", p);
+                    continue;
+                }
                 var pn = p.Identifier.Text.ToCamelCase();
                 // The RETURN type is emitted: a computed property is where a model's types cross
                 // from one member to the next, and an unannotated getter makes every read of it
@@ -1185,6 +1195,9 @@ public class TypeScriptEmitter
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
             {
+                // Same for an abstract METHOD: there is nothing to emit, and TypeScript needs no
+                // stub on the base.
+                if (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword)) continue;
                 var mn = m.Identifier.Text.ToCamelCase();
                 // Optional parameters keep their default here too — a STATIC helper is exactly what
                 // other modules call with the trailing arguments omitted.
@@ -1280,7 +1293,9 @@ public class TypeScriptEmitter
         // a component. A constructor that did not take one made the emitted call arity-wrong.
         var config = parameters.Length == 0 ? "props?: any" : ", props?: any";
         var assign = " if (props && typeof props === 'object') Object.assign(this, props);";
-        c.Raw($"constructor({parameters}{config}) {{ {initialisers}{body}{assign} }}",
+        // A derived class must call super() before it touches `this`.
+        var superCall = HasEmittedBase(cls) ? "super(); " : "";
+        c.Raw($"constructor({parameters}{config}) {{ {superCall}{initialisers}{body}{assign} }}",
             ctor ?? (SyntaxNode)cls);
     }
 
@@ -1362,6 +1377,26 @@ public class TypeScriptEmitter
     private static bool IsFlags(ITypeSymbol type) =>
         type.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute");
 
+    /// <summary>The base CLASS of a declaration, or null. An interface in the base list is not one,
+    /// and a generic base loses its arguments — TypeScript needs none of them to extend.</summary>
+    private string? BaseClassOf(ClassDeclarationSyntax cls)
+    {
+        if (cls.BaseList is null) return null;
+        foreach (var entry in cls.BaseList.Types)
+        {
+            var candidate = entry.Type.ToString();
+            if (candidate.Contains('<')) candidate = candidate[..candidate.IndexOf('<')];
+            var resolved = _semanticModel?.GetSymbolInfo(entry.Type).Symbol as INamedTypeSymbol;
+            if (resolved is not null ? resolved.TypeKind == TypeKind.Class : Resolvable(candidate))
+                return candidate;
+        }
+        return null;
+    }
+
+    /// <summary>Whether the class extends one this compilation EMITS — an interface in the base
+    /// list is not a base class, and calling super() for one would call Object's.</summary>
+    private bool HasEmittedBase(ClassDeclarationSyntax cls) => BaseClassOf(cls) is not null;
+
     /// <summary>Whether a bare NAME is something the emitted module can actually name: a type this
     /// compilation emits, or one the runtime provides.</summary>
     /// <summary>
@@ -1396,8 +1431,12 @@ public class TypeScriptEmitter
         _converter.UsedAppTypes.Clear();
         var name = cls.Identifier.Text;
 
+        // The BASE class travels. Dropping it is how `CSharpLanguage : CurlyBraceLanguage` came out
+        // as an empty class that answered "tokenize is not a function" — from very far away from the
+        // declaration that lost it.
         var builder = new TypeScriptCodeBuilder();
-        builder.Class(name, null, c => EmitStaticMembers(cls, c, asStatic));
+        builder.Class(name, BaseClassOf(cls), c => EmitStaticMembers(cls, c, asStatic),
+            isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();
 
         // Imports: $eq (if used) + runtime-provided references (the same semantic routing components
@@ -1410,6 +1449,12 @@ public class TypeScriptEmitter
         if (semanticModel != null)
             Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, runtimeProvided, referencedEnums);
         runtimeProvided.Remove(name);
+        // The BASE class never comes through the aggregator. `extends` dereferences while the module
+        // is EVALUATING, and the library's modules import each other through one barrel — so the
+        // aggregator's binding is still undefined and the class fails to define at all. A method
+        // body is fine through it (it dereferences when called); a base class is not.
+        var baseName = BaseClassOf(cls);
+        if (baseName is not null) runtimeProvided.Remove(baseName);
         // Only what the emitted text NAMES. A type the C# mentions and the emission erases (an
         // interface, an enum) would otherwise import a name nothing uses — which the runtime's own
         // build rejects. Lookarounds rather than `\b`: `$eq` starts with a non-word character.
@@ -1421,6 +1466,9 @@ public class TypeScriptEmitter
         var knownRec = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
         var knownHelp = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
         var knownPlainClasses = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
+        // The base class is imported whether or not the syntax scanner noticed it: `extends` is the
+        // one reference that must resolve before this module's first statement runs.
+        if (baseName is not null) ib.Import(new[] { baseName }, $"./{baseName}");
         foreach (var t in CollectComponentTypesFromNode(cls, new HashSet<string> { name })
                      .Concat(_converter.UsedAppTypes) // conversion-introduced names (reduced extension calls)
                      .Distinct().OrderBy(x => x))
@@ -1428,7 +1476,8 @@ public class TypeScriptEmitter
             var ct = t.Trim().TrimEnd('?');
             if (ct.Contains('<')) ct = ct.Split('<')[0];
             if (ct.Contains('.')) ct = ct.Substring(ct.LastIndexOf('.') + 1);
-            if (string.IsNullOrEmpty(ct) || ct == name || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
+            if (string.IsNullOrEmpty(ct) || ct == name || ct == baseName
+                || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
             if (knownComp.Contains(ct) || knownRec.Contains(ct) || knownHelp.Contains(ct)
                 || knownPlainClasses.Contains(ct))

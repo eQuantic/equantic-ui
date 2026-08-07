@@ -16,6 +16,7 @@ import { installDraggableController } from '../dom/draggable';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
+import { CodeKeymap } from './components/CodeKeymap';
 import {
   atomizeEntries,
   atomizePseudo,
@@ -436,12 +437,31 @@ function positionIn(node: CodeSurfaceNode, x: number, y: number): CodePositionLi
   return node.editor.document.clamp({ line: Math.max(0, line), column: Math.max(0, column) });
 }
 
-/** The transpiled keymap, resolved lazily so this module does not import the shared library. */
+/**
+ * The transpiled keymap — the SAME function the native host calls. Imported directly: the module
+ * cycle it closes (lowering → CodeKeymap → runtime-exports → components) is the benign kind,
+ * because a keydown handler dereferences the binding when a key is pressed, not while the module
+ * is evaluating. Reading it off a global instead looked safer and was simply dead: nothing ever
+ * assigned one, so the web editor took no keys at all.
+ */
 function handleCodeKey(editor: unknown, key: string, modifiers: number): boolean {
-  const keymap = (globalThis as unknown as {
-    CodeKeymap?: { handle(e: unknown, k: string, m: number): boolean };
-  }).CodeKeymap;
-  return keymap ? keymap.handle(editor, key, modifiers) : false;
+  return CodeKeymap.handle(editor as never, key, modifiers, webClipboard());
+}
+
+/**
+ * ⌘C/⌘X/⌘V inside the editor. The browser's async clipboard cannot answer a keydown in time, so
+ * this is the SYNCHRONOUS half — the copy it does works, and a paste falls back to the browser's
+ * own `paste` event on the surface.
+ */
+let clipboardText: string | null = null;
+function webClipboard() {
+  return {
+    read: () => clipboardText,
+    write: (text: string) => {
+      clipboardText = text;
+      void navigator?.clipboard?.writeText?.(text)?.catch(() => {});
+    },
+  };
 }
 
 function lowerLink(node: LinkNode, context: LoweringContext, path: string): HtmlNode {

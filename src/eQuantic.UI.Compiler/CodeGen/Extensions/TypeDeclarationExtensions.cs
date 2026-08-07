@@ -115,8 +115,25 @@ public static class TypeDeclarationExtensions
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.NumericLiteralExpression) =>
             literal.Token.ValueText,
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.NullLiteralExpression) => "null",
-        // A collection expression default (`= []`) is an empty array on both sides.
-        CollectionExpressionSyntax { Elements.Count: 0 } => "[]",
+        // A char is a one-character STRING on the other side — the same thing `text[i]` gives back.
+        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.CharacterLiteralExpression) =>
+            "'" + literal.Token.ValueText.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
+        // A collection expression default. `= []` is an empty array on both sides — and one WITH
+        // elements is an array of them, which used to come out `null`: a member declared as a list
+        // of bracket pairs arrived as nothing, and the first `foreach` over it threw "not iterable"
+        // somewhere with no clue where the value was supposed to come from.
+        CollectionExpressionSyntax collection =>
+            "[" + string.Join(", ", collection.Elements.Select(ElementOf)) + "]",
+        _ => "null",
+    };
+
+    /// <summary>One element of a collection-expression default. A tuple is an ARRAY on the other
+    /// side, which is what the deconstruction strategies already bank on.</summary>
+    private static string ElementOf(CollectionElementSyntax element) => element switch
+    {
+        ExpressionElementSyntax { Expression: TupleExpressionSyntax tuple } =>
+            "[" + string.Join(", ", tuple.Arguments.Select(a => LiteralOf(a.Expression))) + "]",
+        ExpressionElementSyntax expression => LiteralOf(expression.Expression),
         _ => "null",
     };
 
