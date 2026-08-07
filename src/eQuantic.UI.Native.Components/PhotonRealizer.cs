@@ -71,9 +71,11 @@ public sealed class RealizeResult
         IReadOnlyList<HoverRegion>? hoverRegions = null, IReadOnlyList<ScrollRegion>? scrollRegions = null,
         IReadOnlyList<DragRegion>? dragRegions = null, IReadOnlyList<LinkRegion>? linkRegions = null,
         IReadOnlyList<ShortcutBinding>? shortcuts = null, IReadOnlyList<TextRegion>? textRegions = null,
-        IReadOnlyList<FocusStop>? focusStops = null, IReadOnlyList<CodeRegion>? codeRegions = null)
+        IReadOnlyList<FocusStop>? focusStops = null, IReadOnlyList<CodeRegion>? codeRegions = null,
+        IReadOnlyList<LayoutNode>? overlayRoots = null)
     {
         Root = root;
+        OverlayRoots = overlayRoots ?? Array.Empty<LayoutNode>();
         HitRegions = hitRegions;
         HasActiveMotion = hasActiveMotion;
         HoverRegions = hoverRegions ?? Array.Empty<HoverRegion>();
@@ -88,6 +90,10 @@ public sealed class RealizeResult
 
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
+
+    /// <summary>The overlay layers' laid-out trees, in paint order — retained so the semantics
+    /// walk sees what a dialog shows, not just the page beneath it.</summary>
+    public IReadOnlyList<LayoutNode> OverlayRoots { get; }
 
     /// <summary>Everything Tab visits, in tree order: buttons and fields in one sequence.</summary>
     public IReadOnlyList<FocusStop> FocusStops { get; }
@@ -230,10 +236,12 @@ public static class PhotonRealizer
         // the page (painter's order); its hit regions register after the page's, so the topmost-
         // last-wins dispatch routes taps to the layer — a full-viewport scrim Pressable in the
         // layer blocks (and optionally handles) everything behind it.
+        var overlayRoots = new List<LayoutNode>();
         for (var i = 0; i < overlays.Count; i++)
         {
             var overlayLayout = LayoutEngine.Layout(overlays[i].Child, viewportWidth, viewportHeight,
                 context, rootPath: $"ov{i}");
+            overlayRoots.Add(overlayLayout);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
             Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset }, motion, overlays);
@@ -264,7 +272,7 @@ public static class PhotonRealizer
         return new RealizeResult(layout, hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes);
+            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots);
     }
 
     /// <summary>The frame clock for loop motion: offsets resolve as a PURE function of

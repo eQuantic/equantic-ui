@@ -824,6 +824,34 @@ public sealed class PhotonHost
         return false;
     }
 
+    /// <summary>
+    /// The frame's semantics tree, in reading order — what a platform accessibility bridge hands
+    /// to VoiceOver/TalkBack. Derived from the last realized frame; empty before the first render.
+    /// </summary>
+    public IReadOnlyList<SemanticNode> Semantics() =>
+        _lastFrame is null ? Array.Empty<SemanticNode>() : SemanticsTree.Collect(_lastFrame);
+
+    /// <summary>
+    /// Runs the control at <paramref name="path"/>, the way a screen reader's activate action
+    /// does. Resolved out of THIS frame's regions — same reason as every press: the handler on a
+    /// node from an old rebuild closes over dead state. Answers false when the path holds nothing
+    /// pressable.
+    /// </summary>
+    public bool ActivatePath(string path)
+    {
+        var regions = _lastFrame?.HitRegions;
+        if (regions is null) return false;
+        for (var i = 0; i < regions.Count; i++)
+        {
+            var region = regions[i];
+            if (region.Path != path || region.Node.Disabled) continue;
+            region.Node.OnPressed?.Invoke();
+            NeedsRender = true;
+            return true;
+        }
+        return false;
+    }
+
     /// <summary>The Pressable currently held down (pressed visuals render while set).</summary>
     public Pressable? Pressed => _pressed;
 

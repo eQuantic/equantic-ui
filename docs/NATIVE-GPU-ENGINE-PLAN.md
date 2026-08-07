@@ -782,6 +782,20 @@ Bun and the JS bundling chain, the TypeScript runtime.
   their sets. The backdrop splits churn targets hard enough that a 20-iteration soak now covers
   what the old tests never exercised.
 
+- **2026-08-07 — M4 accessibility bridge v1: the semantics tree, and VoiceOver's first answer.**
+  Photon draws its own pixels, so the OS saw one opaque view. `SemanticsTree.Collect` (shared,
+  target-neutral) now derives reading-order semantics from the realized frame — page AND overlay
+  layouts (`RealizeResult.OverlayRoots`, retained so dialogs are seen) — with the path as identity,
+  a control's inner text as its name, and scrolled-out content included (the FocusStop rule, not
+  the pointer's). `PhotonHost.Semantics()` + `ActivatePath(path)` are the bridge surface; the
+  macOS bridge (`PhotonAccessibility`) answers the content view's `accessibilityChildren` with
+  pressable `EQAXElement`s (role/label/value/enabled/frame y-flipped/identifier=path,
+  `accessibilityPerformPress` → the same handler a tap runs). Proof: 8 `SemanticsTests` including
+  the `SemanticsMatchFocusStops` PARITY GATE (the semantics walk and the input walk can never
+  drift apart silently), and the window self-test now prints the live AX answer — the Studio
+  gallery reports `accessibility elements: 100 — first: AXButton "Back"` through the real ObjC
+  dispatch. iOS/Android bridges consume this same tree when their shells gain them.
+
 ## Definition of done (v1 preview)
 
 Photon v1 is "real" when: the golden suite (≥ 400 cases) is green on Metal + Vulkan + Reference across
