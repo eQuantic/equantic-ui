@@ -80,9 +80,6 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Install mobile workloads (iOS/Android shells)
-        run: dotnet workload install ios android
-
       - name: Download Runtime Build
         uses: actions/download-artifact@v4
         with:
@@ -138,6 +135,9 @@ jobs:
         with:
           name: runtime-build
           path: src/eQuantic.UI.Runtime/dist/
+
+      - name: Install mobile workloads (iOS/Android shells)
+        run: dotnet workload install ios android
 
       - name: Download Platform Runtime Packages
         uses: actions/download-artifact@v4
