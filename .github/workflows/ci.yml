@@ -157,8 +157,9 @@ jobs:
       - name: Create artifacts directory for NuGet
         run: |
           mkdir -p artifacts/packages
-          # Copy platform runtime packages to artifacts for NuGet resolution
-          cp .local-packages/*.nupkg artifacts/packages/
+          # Copy platform runtime packages to artifacts for NuGet resolution. find, not a glob:
+          # multi-path artifact uploads preserve their directory structure on download.
+          find .local-packages -name "*.nupkg" -exec cp {} artifacts/packages/ \;
 
       - name: Determine Version
         id: version
@@ -252,8 +253,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p nupkgs
-          # Copy platform runtime packages
-          cp .local-packages/*.nupkg nupkgs/
+          # Copy platform runtime packages (find: the artifact keeps its directory structure)
+          find .local-packages -name "*.nupkg" -exec cp {} nupkgs/ \;
           # Copy core packages
           find src -name "*.nupkg" -path "*/bin/Release/*" -exec cp {} nupkgs/ \;
 
