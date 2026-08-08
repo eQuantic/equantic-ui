@@ -225,7 +225,17 @@ public class InvocationStrategy : IConversionStrategy
             && symbol.MethodKind != MethodKind.LocalFunction
             && symbol.ContainingType != null)
         {
-            return $"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({args})";
+            // The declaring class never appears in the SOURCE (the call is unqualified), so the
+            // syntax-walking import collector cannot see it — register the name we introduce, in
+            // the bucket its NAMESPACE decides. The declarative factory surface lives in the
+            // shared library, so `UI.column(…)` must import UI from the runtime.
+            var declaring = symbol.ContainingType;
+            var declaringNamespace = declaring.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+            if (RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(declaringNamespace))
+                context.UsedRuntimeTypes.Add(declaring.Name);
+            else
+                context.UsedAppTypes.Add(declaring.Name);
+            return $"{declaring.Name}.{methodName.ToCamelCase()}({args})";
         }
 
         // STANDALONE factory calls (no semantic model — the playground's mode): nothing can RESOLVE
@@ -239,7 +249,7 @@ public class InvocationStrategy : IConversionStrategy
             && HasFactoryUsingStatic(invocation)
             && !EnclosingTypeDeclares(invocation, methodName))
         {
-            context.UsedAppTypes.Add("UI");
+            context.UsedRuntimeTypes.Add("UI");
             return $"UI.{methodName.ToCamelCase()}({args})";
         }
 

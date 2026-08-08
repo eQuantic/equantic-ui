@@ -34,19 +34,19 @@ public static class ConsoleShell
     public const float SidebarWidth = 224;
     public const float ToolbarHeight = 56;
 
+    // Every destination is a screen this sample actually declares. A demo whose sidebar advertises
+    // routes that 404 teaches the wrong thing about the router — and it left /rows, /sheet and
+    // /declarative reachable only by typing the address.
     public static readonly NavEntry[] Operate =
     [
-        new(Icons.CheckCircle, "Overview", "/"),
-        new(Icons.Mail, "Payments", "/payments", 7),
-        new(Icons.Person, "Customers", "/customers"),
-        new(Icons.Info, "Invoices", "/invoices"),
+        new(Icons.Mail, "Payments", "/", 7),
+        new(Icons.Table, "Rows", "/rows"),
+        new(Icons.Copy, "Spreadsheet", "/sheet"),
     ];
 
-    public static readonly NavEntry[] Configure =
+    public static readonly NavEntry[] Explore =
     [
-        new(Icons.Notifications, "Webhooks", "/webhooks"),
-        new(Icons.Search, "API keys", "/api-keys"),
-        new(Icons.ChevronRight, "Settings", "/settings"),
+        new(Icons.Plus, "Declarative", "/declarative"),
     ];
 
     /// <summary>Wraps a page in the frame. <paramref name="activeHref"/> lights one destination.</summary>
@@ -87,8 +87,8 @@ public static class ConsoleShell
         column.Add(SearchAffordance(theme, actions.OnOpenPalette));
         column.Add(GroupLabel(theme, "Operate"));
         foreach (var entry in Operate) column.Add(NavItem(theme, entry, activeHref));
-        column.Add(GroupLabel(theme, "Configure"));
-        foreach (var entry in Configure) column.Add(NavItem(theme, entry, activeHref));
+        column.Add(GroupLabel(theme, "Explore"));
+        foreach (var entry in Explore) column.Add(NavItem(theme, entry, activeHref));
         column.Add(new Spacer(1));
         column.Add(SandboxCard(theme, actions.Sandbox, actions.OnToggleSandbox));
         column.Add(new Divider());

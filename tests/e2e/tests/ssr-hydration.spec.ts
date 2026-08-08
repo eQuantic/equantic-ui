@@ -62,16 +62,24 @@ test.describe('Write-once SSR + hydration', () => {
     expect(csrClasses).toEqual(ssrClasses);
   });
 
-  test('adopted DOM is interactive: the shared counter increments', async ({ page }) => {
-    await page.goto('/shared');
+  test('adopted DOM is interactive: the showroom segmented control switches', async ({ page }) => {
+    // The flagship screen, not a toy counter: a SegmentedControl from the shared library, rendered
+    // by the server and then adopted. Selection is asserted through `aria-pressed` — the semantic
+    // the component promises assistive tech — so a control that merely repaints the active pill
+    // without moving selection still fails here.
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const count = page.getByText(/Count: \d+/).first();
-    const before = Number((await count.textContent())!.match(/\d+/)![0]);
+    const sevenDays = page.getByRole('button', { name: '7d', exact: true }).first();
+    const ninetyDays = page.getByRole('button', { name: '90d', exact: true }).first();
 
-    await page.getByRole('button', { name: 'Increment' }).first().click();
+    await expect(sevenDays).toHaveAttribute('aria-pressed', 'false');
+    await expect(ninetyDays).toHaveAttribute('aria-pressed', 'false');
 
-    await expect(count).toHaveText(new RegExp(`Count: ${before + 1}`));
+    await ninetyDays.click();
+
+    await expect(ninetyDays).toHaveAttribute('aria-pressed', 'true');
+    await expect(sevenDays).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('the declarative (no-new) page hydrates by identity and stays alive', async ({ page }) => {
@@ -117,8 +125,11 @@ test.describe('Write-once SSR + hydration', () => {
   });
 
   test('Link navigation is SPA (no full reload)', async ({ page }) => {
-    // The nav ShellBar renders on SampleShell pages (the showroom '/' deliberately has none).
-    await page.goto('/counter');
+    // The console shell's sidebar renders real <a href> Links; the showroom '/' is the one screen
+    // that carries it. Every destination it advertises is a screen this sample declares — a link
+    // to a route with no page is a legitimate SERVER round-trip (the 404 needs a real status), so
+    // pointing this test at one would assert the opposite of what it is named for.
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // A full document reload would wipe this marker; SPA navigation keeps it.
@@ -126,13 +137,25 @@ test.describe('Write-once SSR + hydration', () => {
       (window as unknown as { __eqNavProbe: number }).__eqNavProbe = 42;
     });
 
-    await page.getByRole('link', { name: 'Users' }).first().click();
-    await page.waitForURL('**/users');
+    await page.getByRole('link', { name: 'Spreadsheet' }).first().click();
+    await page.waitForURL('**/sheet');
 
     const probe = await page.evaluate(
       () => (window as unknown as { __eqNavProbe?: number }).__eqNavProbe,
     );
     expect(probe).toBe(42);
-    await expect(page.getByText('Users', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('Spreadsheet', { exact: false }).first()).toBeVisible();
+  });
+
+  test('a link to an undeclared route still lands on the 404 screen', async ({ page }) => {
+    // The other half of the routing contract, and the reason the test above had to move: a route
+    // with no page is served by the SERVER with a true 404 status, not painted client-side. This
+    // pins that the fallback screen is reached and the status is honest.
+    const response = await page.request.get('/no-such-screen');
+    expect(response.status()).toBe(404);
+
+    await page.goto('/no-such-screen');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('This console has no such screen.').first()).toBeVisible();
   });
 });

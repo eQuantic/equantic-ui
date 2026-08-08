@@ -88,6 +88,7 @@ public class TypeScriptEmitter
         // Clear UsedHelpers from previous compilations
         component.UsedHelpers.Clear();
         _converter.UsedAppTypes.Clear();
+        _converter.UsedRuntimeTypes.Clear();
 
         // Note: We'll emit imports AFTER generating component code
         // to ensure UsedHelpers is populated
@@ -500,6 +501,14 @@ public class TypeScriptEmitter
         // Types the CONVERSION introduced into the output (extension calls reduced to
         // `Class.method(...)`) — invisible to every syntax walk above by construction.
         foreach (var t in _converter.UsedAppTypes) componentTypes.Add(t);
+        // Names the conversion introduced that the RUNTIME provides (the factory surface): they
+        // join the referenced set AND the runtime-provided classification, so the import router
+        // sends them to @equantic/runtime instead of inventing a ./UI module.
+        foreach (var t in _converter.UsedRuntimeTypes)
+        {
+            componentTypes.Add(t);
+            component.RuntimeProvidedTypes.Add(t);
+        }
 
         // Scan helper-method and property-accessor BODIES too — a type constructed ONLY inside a helper
         // (e.g. `Money Make() => new Money(..)`) or inside a property body must still be imported, or the
@@ -1434,6 +1443,7 @@ public class TypeScriptEmitter
         _converter.SetCurrentClass(cls.Identifier.Text);
         _converter.UsedHelpers.Clear();
         _converter.UsedAppTypes.Clear();
+        _converter.UsedRuntimeTypes.Clear();
         var name = cls.Identifier.Text;
 
         // The BASE class travels. Dropping it is how `CSharpLanguage : CurlyBraceLanguage` came out

@@ -95,6 +95,10 @@ public class CSharpToJsConverter
     /// <summary>See <see cref="ConversionContext.UsedAppTypes"/> — output-introduced app-type names.</summary>
     public HashSet<string> UsedAppTypes => _context.UsedAppTypes;
 
+    /// <summary>See <see cref="ConversionContext.UsedRuntimeTypes"/> — output-introduced names the
+    /// RUNTIME provides (the declarative factory surface).</summary>
+    public HashSet<string> UsedRuntimeTypes => _context.UsedRuntimeTypes;
+
     /// <summary>Diagnostics raised during the most recent conversion(s); call <see cref="ClearDiagnostics"/> between components.</summary>
     public IReadOnlyList<ConversionDiagnostic> Diagnostics => _context.Diagnostics;
 

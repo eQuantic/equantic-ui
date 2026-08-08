@@ -29,6 +29,15 @@ public class ConversionContext
     /// per-module import set.</summary>
     public HashSet<string> UsedAppTypes { get; } = new();
 
+    /// <summary>
+    /// RUNTIME-PROVIDED names the conversion introduced into the output — same problem as
+    /// <see cref="UsedAppTypes"/>, opposite destination. The declarative factory surface is the
+    /// case that needs it: `Column(gap: …)` names nothing, and the emitted `UI.column(…)` must
+    /// import UI from <c>@equantic/runtime</c>, never from a <c>./UI</c> module that exists in no
+    /// project.
+    /// </summary>
+    public HashSet<string> UsedRuntimeTypes { get; } = new();
+
     /// <summary>Diagnostics raised during this conversion (unconverted or impossible constructs).</summary>
     public List<ConversionDiagnostic> Diagnostics { get; } = new();
 
