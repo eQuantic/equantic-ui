@@ -80,6 +80,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Install mobile workloads (iOS/Android shells)
+        run: dotnet workload install ios android
+
       - name: Download Runtime Build
         uses: actions/download-artifact@v4
         with:
@@ -117,7 +120,10 @@ jobs:
   # Build core packages (platform-agnostic)
   build-packages:
     needs: build-platform-runtimes
-    runs-on: ubuntu-latest
+    # macOS: the package set includes the iOS/Android shells, whose target frameworks need
+    # platform workloads that only install on a Mac (and the full native test suite runs here
+    # instead of skipping its Apple-framework facts).
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
