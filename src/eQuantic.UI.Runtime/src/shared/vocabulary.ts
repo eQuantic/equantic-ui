@@ -1012,6 +1012,37 @@ export class CameraPreview extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `WebFrame` node: an embedded, isolated web document. `sandbox` carries the
+ * [Flags] NUMBER (1 scripts · 2 same-origin · 4 forms · 8 popups) exactly as the C# enum crosses;
+ * scripts-only until told otherwise, filling the parent unless given explicit dp.
+ */
+export class WebFrame extends VisualNode {
+  readonly nodeKind = 'webFrame';
+  source: string | null = null;
+  document: string | null = null;
+  sandbox = 1;
+  title = '';
+  width: SizeValue | number = SizeValue.fill;
+  height: SizeValue | number = SizeValue.fill;
+  cornerRadius?: CornerRadii;
+
+  constructor(config?: {
+    source?: string | null;
+    document?: string | null;
+    sandbox?: number;
+    title?: string;
+    width?: SizeValue | number;
+    height?: SizeValue | number;
+    cornerRadius?: CornerRadii;
+  }) {
+    super();
+    if (config) Object.assign(this, config);
+    this.width = SizeValue.from(this.width)!;
+    this.height = SizeValue.from(this.height)!;
+  }
+}
+
 /** Mirror of the C# `IconGlyph` record: target-neutral glyph data (write-once icon packs). */
 export class IconGlyph {
   name: string;

@@ -60,6 +60,7 @@ public static class WebRealizer
         Spinner spinner => LowerSpinner(spinner, context),
         Primitives.Image image => LowerImage(image),
         CameraPreview camera => LowerCameraPreview(camera),
+        WebFrame frame => LowerWebFrame(frame),
         Pressable pressable => LowerPressable(pressable, context),
         Hoverable hoverable => LowerHoverable(hoverable, context),
         Adjustable adjustable => LowerAdjustable(adjustable, context),
@@ -662,6 +663,49 @@ public static class WebRealizer
                 ["playsinline"] = "",
                 ["aria-label"] = camera.Alt,
             },
+        };
+    }
+
+    /// <summary>
+    /// A sandboxed <c>iframe</c>. <c>sandbox</c> is ALWAYS present — an empty value is the locked
+    /// frame, and each <see cref="WebSandbox"/> flag appends its <c>allow-</c> token. Inline
+    /// <see cref="WebFrame.Document"/> wins over <see cref="WebFrame.Source"/>; the border is the
+    /// frame's own 1990s default, so it goes.
+    /// </summary>
+    private static HtmlElement LowerWebFrame(WebFrame frame)
+    {
+        var tokens = new List<string>(4);
+        if (frame.Sandbox.HasFlag(WebSandbox.Scripts)) tokens.Add("allow-scripts");
+        if (frame.Sandbox.HasFlag(WebSandbox.SameOrigin)) tokens.Add("allow-same-origin");
+        if (frame.Sandbox.HasFlag(WebSandbox.Forms)) tokens.Add("allow-forms");
+        if (frame.Sandbox.HasFlag(WebSandbox.Popups)) tokens.Add("allow-popups");
+
+        var attributes = new Dictionary<string, string>
+        {
+            ["sandbox"] = string.Join(' ', tokens),
+            ["title"] = frame.Title,
+        };
+        if (frame.Document is { Length: > 0 } document) attributes["srcdoc"] = document;
+        else if (frame.Source is { Length: > 0 } source) attributes["src"] = source;
+
+        return new RealizedElement("iframe")
+        {
+            Style = new HtmlStyle
+            {
+                Width = SizeCss(frame.Width),
+                Height = SizeCss(frame.Height),
+                Border = "0",
+                Display = Display.Block,
+                BorderRadius = frame.CornerRadius.IsZero ? null : TokenCss.Radius(frame.CornerRadius),
+            },
+            RawAttributes = attributes,
+        };
+
+        static string? SizeCss(SizeValue size) => size.Kind switch
+        {
+            SizeKind.Fixed => TokenCss.Px(size.Value),
+            SizeKind.Fill => "100%",
+            _ => null, // hug = the element's own default
         };
     }
 

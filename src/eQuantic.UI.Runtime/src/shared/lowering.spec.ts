@@ -211,6 +211,36 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     );
   });
 
+  it('WebFrame lowers to a sandboxed iframe — srcdoc wins, sandbox always present', () => {
+    const frame: VisualNodeValue = {
+      nodeKind: 'webFrame',
+      document: '<!doctype html><p>hello</p>',
+      source: '/ignored',
+      sandbox: 3, // Scripts | SameOrigin — the [Flags] number as it crosses the bridge
+      title: 'Live preview',
+      width: { kind: 'fill', value: 0 },
+      height: { kind: 'fixed', value: 360 },
+    } as unknown as VisualNodeValue;
+
+    const node = lowerVisualNode(frame, ctx);
+    expect(node.tag).toBe('iframe');
+    expect(node.attributes['srcdoc']).toBe('<!doctype html><p>hello</p>');
+    expect(node.attributes['src']).toBeUndefined();
+    expect(node.attributes['sandbox']).toBe('allow-scripts allow-same-origin');
+    expect(node.attributes['title']).toBe('Live preview');
+    expect(effectiveStyle(node)).toContain('width: 100%');
+    expect(effectiveStyle(node)).toContain('height: 360px');
+    expect(effectiveStyle(node)).toContain('border: 0');
+
+    // Locked frame: the attribute stays, EMPTY — omitting it would be no isolation at all.
+    const locked = lowerVisualNode(
+      { nodeKind: 'webFrame', source: '/x', sandbox: 0 } as unknown as VisualNodeValue,
+      ctx,
+    );
+    expect(locked.attributes['sandbox']).toBe('');
+    expect(locked.attributes['src']).toBe('/x');
+  });
+
   it('Components expand via build(context) — the write-once client path', () => {
     const component: VisualNodeValue = {
       nodeKind: 'component',

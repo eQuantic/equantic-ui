@@ -40,6 +40,7 @@ import type {
   IconNode,
   AdjustableNode,
   CameraPreviewNode,
+  WebFrameNode,
   CodeSurfaceNode,
   CodePositionLike,
   ImageNode,
@@ -223,6 +224,8 @@ function lowerNode(
       return lowerLink(node as LinkNode, context, path);
     case 'cameraPreview':
       return lowerCameraPreview(node as unknown as CameraPreviewNode);
+    case 'webFrame':
+      return lowerWebFrame(node as unknown as WebFrameNode);
     case 'codeSurface':
       return lowerCodeSurface(node as unknown as CodeSurfaceNode, context, path);
     case 'image':
@@ -977,6 +980,40 @@ function lowerCameraPreview(node: CameraPreviewNode): HtmlNode {
     events: {},
     children: [],
   };
+}
+
+/**
+ * A sandboxed iframe (C# twin: WebRealizer.LowerWebFrame). `sandbox` is ALWAYS emitted — empty
+ * means fully locked — with one `allow-` token per set flag. Inline document wins over source;
+ * the border is the frame's own 1990s default, so it goes.
+ */
+function lowerWebFrame(node: WebFrameNode): HtmlNode {
+  const tokens: string[] = [];
+  if (node.sandbox & 1) tokens.push('allow-scripts');
+  if (node.sandbox & 2) tokens.push('allow-same-origin');
+  if (node.sandbox & 4) tokens.push('allow-forms');
+  if (node.sandbox & 8) tokens.push('allow-popups');
+
+  const radius = node.cornerRadius;
+  const hasRadius =
+    !!radius &&
+    (radius.topLeft > 0 || radius.topRight > 0 || radius.bottomRight > 0 || radius.bottomLeft > 0);
+
+  const attributes: Record<string, string> = {
+    ...atomicAttrs({
+      width: sizeValue(node.width),
+      height: sizeValue(node.height),
+      border: '0',
+      display: 'block',
+      'border-radius': hasRadius && radius ? radiusValue(radius) : undefined,
+    }),
+    sandbox: tokens.join(' '),
+    title: node.title ?? '',
+  };
+  if (node.document) attributes['srcdoc'] = node.document;
+  else if (node.source) attributes['src'] = node.source;
+
+  return { tag: 'iframe', attributes, events: {}, children: [] };
 }
 
 function lowerImage(node: ImageNode): HtmlNode {
