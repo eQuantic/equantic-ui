@@ -10,6 +10,10 @@ namespace eQuantic.UI.Compiler.Services;
 /// </summary>
 public class TypeScriptCodeBuilder
 {
+    /// <summary>Emit TypeScript annotations (default) or plain JavaScript. Mirrors
+    /// <c>TypeScriptEmitter.TypeAnnotations</c> — the emitter forwards its mode here.</summary>
+    public bool TypeAnnotations { get; set; } = true;
+
     private readonly CodeWriter _writer = new();
     private readonly List<SourceMapping> _mappings = new();
 
@@ -97,14 +101,18 @@ public class TypeScriptCodeBuilder
         /// JavaScript, and a C# type name (<c>Func&lt;T, bool&gt;</c>) would be neither.</summary>
         public void Field(string name, string? type, string? defaultValue = null, SyntaxNode? sourceNode = null, bool isStatic = false, bool isDeclare = false)
         {
+            // Plain-JavaScript mode: `declare` does not exist, and a declare field carries no
+            // initializer — the whole line has nothing to say.
+            if (!_builder.TypeAnnotations && isDeclare) return;
             var init = defaultValue != null ? $" = {defaultValue}" : "";
             var prefix = (isDeclare ? "declare " : "") + (isStatic ? "static " : "");
-            var annotation = string.IsNullOrEmpty(type) ? "" : $": {type}";
+            var annotation = !_builder.TypeAnnotations || string.IsNullOrEmpty(type) ? "" : $": {type}";
             _builder.Line($"{prefix}{name}{annotation}{init};", sourceNode);
         }
 
         public void Property(string name, string type, bool isPublic = true, SyntaxNode? sourceNode = null)
         {
+            if (!_builder.TypeAnnotations) return;   // a bare interface-style property is TypeScript-only
             var access = isPublic ? "" : "private ";
             _builder.Line($"{access}{name}: {type};", sourceNode);
         }

@@ -89,6 +89,13 @@ public class ComponentCompiler
     /// <summary>
     /// Compile from source code
     /// </summary>
+    /// <summary>Emit TypeScript annotations (default) or plain browser-ready JavaScript.</summary>
+    public bool TypeAnnotations
+    {
+        get => _tsEmitter.TypeAnnotations;
+        set => _tsEmitter.TypeAnnotations = value;
+    }
+
     public IEnumerable<CompilationResult> CompileSource(string sourceCode, string sourcePath = "")
     {
         var components = _parser.ParseSource(sourceCode, sourcePath);

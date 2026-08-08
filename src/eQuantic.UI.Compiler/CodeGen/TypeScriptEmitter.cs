@@ -13,7 +13,16 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// </summary>
 public class TypeScriptEmitter
 {
+    /// <summary>Emit TypeScript type annotations (the default). False emits plain JavaScript —
+    /// what a browser can run directly off an import map, no bundler in the path (the playground's
+    /// mode). The OUTPUT language is the only thing that changes; every strategy stays the same.</summary>
+    public bool TypeAnnotations { get; set; } = true;
+
     private TypeScriptCodeBuilder _builder = new();
+
+    /// <summary>One parameter in a hand-written signature: annotated in TypeScript mode, bare in
+    /// plain-JavaScript mode. Every literal signature the emitter writes goes through here.</summary>
+    private string Param(string name, string type) => TypeAnnotations ? $"{name}: {type}" : name;
     public TypeScriptCodeBuilder.ClassBuilder? ClassBuilder { get; set; }
 
     private void WriteLn(string line = "") => _builder.Line(line);
@@ -59,8 +68,8 @@ public class TypeScriptEmitter
     /// </summary>
     public string Emit(ComponentDefinition component, SemanticModel? semanticModel = null)
     {
-        _converter.EmitTypeAnnotations(true);
-        _builder = new TypeScriptCodeBuilder();
+        _converter.EmitTypeAnnotations(TypeAnnotations);
+        _builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations };
         _semanticModel = semanticModel;
         _converter.SetSemanticModel(semanticModel);
         _converter.ClearDiagnostics();
@@ -312,7 +321,7 @@ public class TypeScriptEmitter
                     // (noUnusedParameters-clean output; the override contract ignores names).
                     var buildParamName = component.BuildMethodNode?.Body?.ToString().Contains("context") == false
                         ? "_context" : "context";
-                    c.Method("build", $"{buildParamName}: BuildContext", false, () =>
+                    c.Method("build", Param(buildParamName, "BuildContext"), false, () =>
                     {
                          if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
                          {
@@ -355,7 +364,7 @@ public class TypeScriptEmitter
                 foreach (var action in component.ServerActions)
                 {
                     ClassBuilder = c;
-                    var paramsList = string.Join(", ", action.Parameters.Select(p => $"{p.Name}: {CSharpTypeToTypeScript(p.Type)}"));
+                    var paramsList = string.Join(", ", action.Parameters.Select(p => Param(p.Name, CSharpTypeToTypeScript(p.Type))));
                     var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
                     var returnType = CSharpTypeToTypeScript(action.ReturnType);
 
@@ -389,7 +398,7 @@ public class TypeScriptEmitter
         var nestedCode = string.Empty;
         if (component.BuildMethodNode?.Parent is ClassDeclarationSyntax ownerClass)
         {
-            var nb = new TypeScriptCodeBuilder();
+            var nb = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations };
             foreach (var nested in ownerClass.Members.OfType<ClassDeclarationSyntax>()
                          .Where(n => n.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
             {
@@ -822,7 +831,7 @@ public class TypeScriptEmitter
             });
             
             // SetState
-            c.Method("setState", "fn: () => void", false, () => 
+            c.Method("setState", Param("fn", "() => void"), false, () => 
             {
                 c.Raw("fn();");
                 c.Raw("this._needsRender = true;");
@@ -836,7 +845,7 @@ public class TypeScriptEmitter
             }
             
             // Build method
-            c.Method("build", "context: BuildContext", false, () =>
+            c.Method("build", Param("context", "BuildContext"), false, () =>
             {
                 if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
                 {
@@ -1248,7 +1257,7 @@ public class TypeScriptEmitter
             ? ""
             : string.Join(", ", ctor.ParameterList.Parameters.Select(p =>
             {
-                var declared = $"{p.Identifier.Text.ToJsIdentifier()}: {DeclaredType(p.Type)}";
+                var declared = Param(p.Identifier.Text.ToJsIdentifier(), DeclaredType(p.Type));
                 return p.Default is null ? declared : $"{declared} = {_converter.ConvertExpression(p.Default.Value)}";
             }));
 
@@ -1393,7 +1402,7 @@ public class TypeScriptEmitter
     private string EmitClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel, bool asStatic)
     {
         if (semanticModel != null) { _semanticModel = semanticModel; _converter.SetSemanticModel(semanticModel); }
-        _converter.EmitTypeAnnotations(true);
+        _converter.EmitTypeAnnotations(TypeAnnotations);
         _converter.SetCurrentClass(cls.Identifier.Text);
         _converter.UsedHelpers.Clear();
         _converter.UsedAppTypes.Clear();
@@ -1402,7 +1411,7 @@ public class TypeScriptEmitter
         // The BASE class travels. Dropping it is how `CSharpLanguage : CurlyBraceLanguage` came out
         // as an empty class that answered "tokenize is not a function" — from very far away from the
         // declaration that lost it.
-        var builder = new TypeScriptCodeBuilder();
+        var builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations };
         builder.Class(name, BaseClassOf(cls), c => EmitStaticMembers(cls, c, asStatic),
             isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();
@@ -1487,7 +1496,7 @@ public class TypeScriptEmitter
         {
             var (p, index) = entry;
             var name = bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name;
-            var declared = $"{name}: {DeclarationType(component, p.Type)}";
+            var declared = Param(name, DeclarationType(component, p.Type));
             var defaultValue = syntaxParameters is { } list && index < list.Count
                 ? list[index].Default?.Value
                 : null;
