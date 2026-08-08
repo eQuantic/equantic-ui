@@ -20,6 +20,14 @@ public static class RuntimeProvidedTypeScanner
     private static readonly HashSet<string> ComponentModelBaseNames =
         new() { "UiComponent", "StatelessComponent", "StatefulComponent" };
 
+    /// <summary>
+    /// Members the COMPONENT MODEL gives every component, inherited from a base the standalone
+    /// parse cannot see. They read exactly like an unqualified factory call — Capitalized, no
+    /// receiver, not declared by the enclosing type — so without this fence `SetState(…)` was
+    /// emitted as `UI.setState(…)`: the page mounted and no press ever changed anything.
+    /// </summary>
+    public static readonly HashSet<string> ComponentModelMemberNames = new() { "SetState" };
+
     public static bool IsRuntimeProvidedNamespace(string ns) =>
         ns == "eQuantic.UI.Primitives"
         || ns.StartsWith("eQuantic.UI.Primitives.")

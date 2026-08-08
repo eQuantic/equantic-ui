@@ -140,11 +140,15 @@ test.describe('Write-once SSR + hydration', () => {
     await page.getByRole('link', { name: 'Spreadsheet' }).first().click();
     await page.waitForURL('**/sheet');
 
+    // Assert on copy that ONLY the destination has. "Spreadsheet" is also the label of the nav item
+    // just clicked, so matching it passes on the outgoing sidebar while the swap is still in flight
+    // — green whether or not the page ever arrives.
+    await expect(page.getByText('Click a cell, type, Enter').first()).toBeVisible();
+
     const probe = await page.evaluate(
       () => (window as unknown as { __eqNavProbe?: number }).__eqNavProbe,
     );
     expect(probe).toBe(42);
-    await expect(page.getByText('Spreadsheet', { exact: false }).first()).toBeVisible();
   });
 
   test('a link to an undeclared route still lands on the 404 screen', async ({ page }) => {
