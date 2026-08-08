@@ -234,8 +234,8 @@ jobs:
           EQ_REQUIRE_JS: "1"
         run: |
           set -euo pipefail
-          shopt -s globstar
-          for test_project in tests/**/*.csproj; do
+          # find, not globstar: macOS ships bash 3.2, which has no globstar.
+          find tests -name "*.csproj" | while read -r test_project; do
             echo "Testing $test_project..."
             dotnet test "$test_project" --configuration Release --verbosity normal
           done
