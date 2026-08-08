@@ -753,8 +753,13 @@ public static class WebRealizer
                 BoxSizing = "border-box",
                 Width = Size(style.Width),
                 Height = Size(style.Height),
-                MinWidth = style.MinWidth > 0 ? TokenCss.Px(style.MinWidth) : null,
-                MinHeight = style.MinHeight > 0 ? TokenCss.Px(style.MinHeight) : null,
+                // FILL is a CEILING: a flex/grid item's automatic minimum size overrides width,
+                // so a Fill box grew past its parent to fit its longest content. An explicit
+                // MinWidth still wins — the author asked for it.
+                MinWidth = style.MinWidth > 0 ? TokenCss.Px(style.MinWidth)
+                    : style.Width.Kind == SizeKind.Fill ? "0" : null,
+                MinHeight = style.MinHeight > 0 ? TokenCss.Px(style.MinHeight)
+                    : style.Height.Kind == SizeKind.Fill ? "0" : null,
                 MaxWidth = style.MaxWidth > 0 ? TokenCss.Px(style.MaxWidth) : null,
                 MaxHeight = style.MaxHeight > 0 ? TokenCss.Px(style.MaxHeight) : null,
                 Padding = style.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(style.Padding),
