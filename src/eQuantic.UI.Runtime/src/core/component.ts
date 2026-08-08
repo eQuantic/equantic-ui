@@ -175,10 +175,6 @@ export abstract class StatefulComponent extends Component {
           `State object for ${this.constructor.name} missing setComponent method.`,
           this._state,
         );
-        // Fallback legacy name check
-        if (typeof (this._state as any)._setComponent === 'function') {
-          (this._state as any)._setComponent(this);
-        }
       }
 
       // Hydrate state from SSR if available
@@ -346,7 +342,7 @@ export abstract class SharedStatefulComponent extends Component {
 
   /**
    * The shared-vocabulary discriminator: nested inside an abstract tree this IS a component node —
-   * the lowering expands it through the positional store (retention) instead of the legacy mixing
+   * the lowering expands it through the positional store (retention) instead of the plain mixing
    * seam (an embedded self-render with a dead render manager). As a page ROOT the field is inert.
    */
   readonly nodeKind = 'component';

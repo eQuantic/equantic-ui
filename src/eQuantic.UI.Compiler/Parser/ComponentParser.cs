@@ -52,7 +52,7 @@ public class ComponentParser
     }
 
     /// <summary>
-    /// Parse a .eqx file and extract component definitions
+    /// Parse a source file and extract component definitions
     /// </summary>
     public IEnumerable<ComponentDefinition> Parse(string filePath)
     {
@@ -310,15 +310,6 @@ public class ComponentParser
                 if (buildMethod != null)
                 {
                     definition.BuildMethodNode = buildMethod;
-
-                    var returnStatement = buildMethod.DescendantNodes()
-                        .OfType<ReturnStatementSyntax>()
-                        .FirstOrDefault();
-
-                    if (returnStatement?.Expression != null)
-                    {
-                        definition.BuildTree = ParseComponentExpression(returnStatement.Expression);
-                    }
                 }
 
                 // Parse constructors (for components with positional args like Text, Heading)
@@ -351,15 +342,6 @@ public class ComponentParser
                 if (buildMethod != null)
                 {
                     definition.BuildMethodNode = buildMethod;
-
-                    var returnStatement = buildMethod.DescendantNodes()
-                        .OfType<ReturnStatementSyntax>()
-                        .FirstOrDefault();
-
-                    if (returnStatement?.Expression != null)
-                    {
-                        definition.BuildTree = ParseComponentExpression(returnStatement.Expression);
-                    }
                 }
                 else
                 {
@@ -773,188 +755,8 @@ public class ComponentParser
         
         if (buildMethod != null)
         {
-            // Capture full method node for robust conversion (Phase 2)
             definition.BuildMethodNode = buildMethod;
-
-            var returnStatement = buildMethod.DescendantNodes()
-                .OfType<ReturnStatementSyntax>()
-                .FirstOrDefault();
-            
-            if (returnStatement?.Expression != null)
-            {
-                definition.BuildTree = ParseComponentExpression(returnStatement.Expression);
-            }
         }
     }
     
-    private ComponentTree? ParseComponentExpression(ExpressionSyntax expression)
-    {
-        // Handle object initializer: new Container { ... }
-        if (expression is ObjectCreationExpressionSyntax objectCreation)
-        {
-            return ParseObjectCreation(objectCreation);
-        }
-        
-        // Handle implicit object creation: new() { ... } - treat as Component
-        if (expression is ImplicitObjectCreationExpressionSyntax implicitCreation)
-        {
-            return ParseImplicitObjectCreation(implicitCreation);
-        }
-        
-        // Handle constructor with args: new Text("content")
-        if (expression is InvocationExpressionSyntax invocation)
-        {
-            // Could be a factory method
-            return new ComponentTree
-            {
-                ComponentType = invocation.Expression.ToString()
-            };
-        }
-        
-        return null;
-    }
-    
-    private ComponentTree ParseObjectCreation(ObjectCreationExpressionSyntax objectCreation)
-    {
-        var tree = new ComponentTree
-        {
-            ComponentType = objectCreation.Type.ToString()
-        };
-        
-        // Parse constructor arguments
-        if (objectCreation.ArgumentList?.Arguments.Count > 0)
-        {
-            var firstArg = objectCreation.ArgumentList.Arguments[0];
-            // For Text("content"), store as Content property
-            tree.Properties["Content"] = ParsePropertyValue(firstArg.Expression, "Content");
-        }
-        
-        // Parse initializer properties
-        if (objectCreation.Initializer != null)
-        {
-            ParseInitializer(objectCreation.Initializer, tree);
-        }
-        
-        return tree;
-    }
-    
-    private ComponentTree ParseImplicitObjectCreation(ImplicitObjectCreationExpressionSyntax implicitCreation)
-    {
-        var tree = new ComponentTree
-        {
-            ComponentType = "Unknown" // Will be inferred from context
-        };
-        
-        if (implicitCreation.Initializer != null)
-        {
-            ParseInitializer(implicitCreation.Initializer, tree);
-        }
-        
-        return tree;
-    }
-    
-    private void ParseInitializer(InitializerExpressionSyntax initializer, ComponentTree tree)
-    {
-        foreach (var expr in initializer.Expressions)
-        {
-            if (expr is AssignmentExpressionSyntax assignment)
-            {
-                var propName = assignment.Left.ToString();
-                var propValue = ParsePropertyValue(assignment.Right, propName);
-                tree.Properties[propName] = propValue;
-                
-                // Handle Children specially
-                if (propName == "Children" && assignment.Right is InitializerExpressionSyntax childInit)
-                {
-                    foreach (var childExpr in childInit.Expressions)
-                    {
-                        var childTree = ParseComponentExpression(childExpr);
-                        if (childTree != null)
-                        {
-                            tree.Children.Add(childTree);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    private PropertyValue ParsePropertyValue(ExpressionSyntax expression, string? propName = null)
-    {
-        var value = expression switch
-        {
-            LiteralExpressionSyntax literal => new PropertyValue
-            {
-                Type = literal.Kind() switch
-                {
-                    SyntaxKind.StringLiteralExpression => PropertyValueType.String,
-                    SyntaxKind.NumericLiteralExpression => PropertyValueType.Number,
-                    SyntaxKind.TrueLiteralExpression or SyntaxKind.FalseLiteralExpression => PropertyValueType.Boolean,
-                    _ => PropertyValueType.String
-                },
-                StringValue = literal.Token.ValueText
-            },
-            
-            InterpolatedStringExpressionSyntax interpolated => new PropertyValue
-            {
-                Type = PropertyValueType.Expression,
-                Expression = interpolated.ToString(),
-                ExpressionNode = interpolated
-            },
-            
-            // Lambda expression: (v) => SetState(() => _message = v)
-            ParenthesizedLambdaExpressionSyntax or SimpleLambdaExpressionSyntax => new PropertyValue
-            {
-                Type = PropertyValueType.EventHandler,
-                Expression = expression.ToString(),
-                ExpressionNode = expression
-            },
-            
-            // Member access: AppStyles.Button
-            MemberAccessExpressionSyntax memberAccess => new PropertyValue
-            {
-                Type = memberAccess.Name.ToString() switch
-                {
-                    _ when memberAccess.Expression.ToString().Contains("Styles") => PropertyValueType.StyleClass,
-                    _ => PropertyValueType.Expression
-                },
-                Expression = memberAccess.ToString(),
-                ExpressionNode = memberAccess
-            },
-            
-            // Object creation: new Container { ... }
-            ObjectCreationExpressionSyntax objCreation => new PropertyValue
-            {
-                Type = PropertyValueType.Component,
-                ComponentValue = ParseObjectCreation(objCreation)
-            },
-            
-            // Initializer expression { ... }
-            InitializerExpressionSyntax initExpr => new PropertyValue
-            {
-                Type = PropertyValueType.ComponentList,
-                ListValue = initExpr.Expressions
-                    .Select(e => ParseComponentExpression(e))
-                    .Where(c => c != null)
-                    .Cast<ComponentTree>()
-                    .ToList()
-            },
-            
-            // Default: treat as expression
-            _ => new PropertyValue
-            {
-                Type = PropertyValueType.Expression,
-                Expression = expression.ToString(),
-                ExpressionNode = expression
-            }
-        };
-
-        // Heuristic: automatically treat "On*" properties as handlers if they ended up as expressions
-        if (propName != null && propName.StartsWith("On") && value.Type == PropertyValueType.Expression)
-        {
-            value.Type = PropertyValueType.EventHandler;
-        }
-
-        return value;
-    }
 }

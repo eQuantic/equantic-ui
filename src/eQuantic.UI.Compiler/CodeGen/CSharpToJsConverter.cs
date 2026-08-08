@@ -237,7 +237,7 @@ public class CSharpToJsConverter
         // StringStaticStrategy is registered in primitives block? Checking order logic.
         // It's a Primitive strategy, so lets check where StringMethodStrategy is.
 
-        // Legacy Expression Strategies
+        // Expression strategies
         // Inlines external IconGlyph constants (pack glyphs) at the use site — must beat the fallback
         // member access, which would emit a broken `LucideIcons.camera`.
         _strategyRegistry.Register<InlinedConstantStrategy>();
@@ -293,7 +293,7 @@ public class CSharpToJsConverter
     /// </summary>
     public string Convert(string code)
     {
-        // Legacy/Fallback string conversion (compiles new tree)
+        // String conversion fallback
         var parsed = CSharpSyntaxTree.ParseText(code).GetRoot();
         
         // Check for Global Statements (Top Level)

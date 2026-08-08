@@ -196,15 +196,14 @@ dependencyResolver.ScanSourceDirectories(componentDirectories);
 compiler.SetDependencyResolver(dependencyResolver);
 
 var hasBun = !string.IsNullOrEmpty(bunPath) && File.Exists(bunPath);
-var mode = hasBun ? "Bun (Bundled)" : "Legacy (1:1)";
 
 if (isWatchMode)
 {
-    Console.WriteLine($"👀 eQuantic.UI: Watching {sourceDirs.Length} directories... [{mode}]");
+    Console.WriteLine($"👀 eQuantic.UI: Watching {sourceDirs.Length} directories...");
 }
 else
 {
-    Console.WriteLine($"🔨 eQuantic.UI: Compiling components from {sourceDirs.Length} directories [{mode}]");
+    Console.WriteLine($"🔨 eQuantic.UI: Compiling components from {sourceDirs.Length} directories");
 }
 
 Console.WriteLine($"   Intermediate: {intermediateDir}");
@@ -380,6 +379,15 @@ bool CompileAndBundle()
         }
         
         if (hasErrors) return true;
+
+        if (!hasBun && entryPoints.Count > 0)
+        {
+            // The embedded Bun is a hard requirement — bundling is what produces the page JS. A
+            // missing binary must fail the build loudly, never "succeed" without output.
+            Console.Error.WriteLine("❌ Embedded Bun not found — the eQuantic.UI build requires the " +
+                "bundled Bun (restore the platform Runtime package, e.g. eQuantic.UI.Runtime.Osx64).");
+            return true;
+        }
 
         if (hasBun && entryPoints.Count > 0)
         {

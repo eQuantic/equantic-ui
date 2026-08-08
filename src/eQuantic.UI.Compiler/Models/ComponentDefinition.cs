@@ -76,11 +76,6 @@ public class ComponentDefinition
     public List<MethodDefinition> Constructors { get; set; } = new();
     
     /// <summary>
-    /// The Build method's component tree (Legacy/Fallback)
-    /// </summary>
-    public ComponentTree? BuildTree { get; set; }
-
-    /// <summary>
     /// The full Build method syntax node (Preferred)
     /// </summary>
     public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? BuildMethodNode { get; set; }
@@ -273,40 +268,6 @@ public class ParameterDefinition
     public string? ServiceKey { get; set; }
 }
 
-/// <summary>
-/// Represents the component tree from Build method
-/// </summary>
-public class ComponentTree
-{
-    public string ComponentType { get; set; } = string.Empty;
-    public Dictionary<string, PropertyValue> Properties { get; set; } = new();
-    public List<ComponentTree> Children { get; set; } = new();
-}
-
-/// <summary>
-/// Represents a property value in component tree
-/// </summary>
-public class PropertyValue
-{
-    public PropertyValueType Type { get; set; }
-    public string? StringValue { get; set; }
-    public string? Expression { get; set; }
-    public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? ExpressionNode { get; set; }
-    public ComponentTree? ComponentValue { get; set; }
-    public List<ComponentTree>? ListValue { get; set; }
-}
-
-public enum PropertyValueType
-{
-    String,
-    Number,
-    Boolean,
-    Expression, // C# expression like _count++
-    Component,
-    ComponentList,
-    StyleClass,
-    EventHandler
-}
 
 /// <summary>
 /// Represents a StyleClass usage

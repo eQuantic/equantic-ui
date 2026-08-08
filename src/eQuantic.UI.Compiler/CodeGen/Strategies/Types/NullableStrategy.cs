@@ -30,14 +30,14 @@ public class NullableStrategy : IConversionStrategy
             {
                 var name = member.Name.Identifier.Text;
                 if (name != "HasValue" && name != "Value") return false;
-                return IsNullableReceiver(member.Expression, context, allowLegacyHeuristic: true);
+                return IsNullableReceiver(member.Expression, context, allowShapeHeuristic: true);
             }
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
             {
                 if (ma.Name.Identifier.Text != "GetValueOrDefault") return false;
-                // Precise gate only (no legacy heuristic): otherwise we'd steal Dictionary.GetValueOrDefault.
-                return IsNullableReceiver(ma.Expression, context, allowLegacyHeuristic: false);
+                // Precise gate only (no shape heuristic): otherwise we'd steal Dictionary.GetValueOrDefault.
+                return IsNullableReceiver(ma.Expression, context, allowShapeHeuristic: false);
             }
 
             default:
@@ -82,15 +82,15 @@ public class NullableStrategy : IConversionStrategy
         }
     }
 
-    private static bool IsNullableReceiver(ExpressionSyntax receiver, ConversionContext context, bool allowLegacyHeuristic)
+    private static bool IsNullableReceiver(ExpressionSyntax receiver, ConversionContext context, bool allowShapeHeuristic)
     {
         var type = context.SemanticHelper.GetType(receiver);
         if (type != null && type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
             return true;
 
-        // Legacy fallback (no semantic model): trust the .HasValue/.Value shape. Deliberately NOT used
+        // Shape fallback (no semantic model): trust the .HasValue/.Value shape. Deliberately NOT used
         // for GetValueOrDefault, so Dictionary.GetValueOrDefault keeps working without a semantic model.
-        return allowLegacyHeuristic && context.SemanticModel == null;
+        return allowShapeHeuristic && context.SemanticModel == null;
     }
 
     private static ITypeSymbol? UnderlyingType(ITypeSymbol? nullableType)

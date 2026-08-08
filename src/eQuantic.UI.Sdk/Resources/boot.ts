@@ -170,9 +170,7 @@ function resolvePageName(config: EqConfig): string | null {
     return config.page;
   }
 
-  // 2. Query string (debug/legacy)
-  const params = new URLSearchParams(window.location.search);
-  return params.get('page');
+  return null;
 }
 
 /**
@@ -464,7 +462,7 @@ function initHotReload(): void {
     source.onmessage = () => {
       // The marker is written UNCONDITIONALLY: it is what tells the next boot to render with the
       // NEW code instead of hydrating the stale SSR. Gating it on captured state left every
-      // write-once page (which keeps no legacy _state bag) hydrating old HTML after the reload —
+      // write-once page (which keeps no _state bag) hydrating old HTML after the reload —
       // the pixels never changed, and the whole feature read as broken.
       const data: Record<string, unknown> = {};
       try {
