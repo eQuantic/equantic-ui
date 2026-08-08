@@ -114,6 +114,19 @@
         <Using Include="eQuantic.UI.Components.UI" Static="true" />
     </ItemGroup>
 
+    <!--
+        WRITE-ONCE is the architecture, so the component bases mean the Primitives ones. Both
+        namespaces are imported by every page (Core carries [Page] and [ServerAction], Primitives
+        the vocabulary) and both declare these names, so without an alias the base type is
+        AMBIGUOUS: the class binds to nothing, SetState stops existing, and every call around it
+        fails to resolve — a page that looks perfectly ordinary stops being translatable. Each app
+        wrote the alias by hand; it belongs here, once.
+    -->
+    <ItemGroup Condition="'$(EQuanticImplicitComponentAliases)' != 'false'">
+        <Using Include="eQuantic.UI.Primitives.StatefulComponent" Alias="StatefulComponent" />
+        <Using Include="eQuantic.UI.Primitives.StatelessComponent" Alias="StatelessComponent" />
+    </ItemGroup>
+
     <ItemGroup>
         <!-- Include all .cs files in Pages/ as UIComponents -->
         <UIComponent Include="Pages/**/*.cs" Exclude="obj/**;bin/**" />

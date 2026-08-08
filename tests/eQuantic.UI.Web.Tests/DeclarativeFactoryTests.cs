@@ -14,8 +14,11 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class DeclarativeFactoryTests
 {
+    // What the SDK puts in every file (Sdk.props): the factory surface and the write-once
+    // component aliases. A page written against them names no namespace twice.
     private const string Page = """
         using static eQuantic.UI.Components.UI;
+        using StatefulComponent = eQuantic.UI.Primitives.StatefulComponent;
         using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
@@ -40,9 +43,23 @@ public class DeclarativeFactoryTests
         var compiler = new ComponentCompiler { TypeAnnotations = false };
         if (withReferences)
         {
-            var references = AppDomain.CurrentDomain.GetAssemblies()
+            // Anchored on TYPES, never on AppDomain.GetAssemblies(): .NET loads assemblies
+            // lazily, so a scan can miss the very assembly the code under test needs (the
+            // factory surface) and every symbol comes back null — which looks exactly like a
+            // compiler bug and is not one.
+            var anchors = new[]
+            {
+                typeof(object).Assembly,
+                typeof(Enumerable).Assembly,
+                typeof(eQuantic.UI.Components.UI).Assembly,
+                typeof(eQuantic.UI.Primitives.VisualNode).Assembly,
+                typeof(eQuantic.UI.Core.PageAttribute).Assembly,
+            };
+            var references = anchors.Concat(AppDomain.CurrentDomain.GetAssemblies())
                 .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-                .Select(a => (MetadataReference)MetadataReference.CreateFromFile(a.Location));
+                .Select(a => a.Location)
+                .Distinct()
+                .Select(location => (MetadataReference)MetadataReference.CreateFromFile(location));
             compiler.SetProjectCompilation(CSharpCompilation.Create("Probe",
                 [CSharpSyntaxTree.ParseText(Page, path: "HomePage.cs")], references,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)));
@@ -74,4 +91,14 @@ public class DeclarativeFactoryTests
     {
         Compile(withReferences).Should().MatchRegex(@"import \{[^}]*\bUI\b[^}]*\} from ""@equantic/runtime""");
     }
+
+    [Fact]
+    public void WithReferences_ANamedArgumentLandsInItsOwnSlot()
+    {
+        // `Button("Count", onPressed: …)` skips variant and size. JS has only positions, so the
+        // skipped ones must be filled from their defaults — emitted positionally, the handler
+        // lands in the VARIANT slot and the button does nothing at all.
+        Compile(withReferences: true).Should().Contain("UI.button('Count', 'primary', 'medium', () =>");
+    }
+
 }
