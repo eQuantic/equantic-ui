@@ -376,6 +376,14 @@ public static class WebRealizer
                 Height = Size(scroll.Height) ?? "100%",
                 OverflowY = scroll.Axis is ScrollAxis.Vertical or ScrollAxis.Both ? "auto" : "hidden",
                 OverflowX = scroll.Axis is ScrollAxis.Horizontal or ScrollAxis.Both ? "auto" : "hidden",
+                // …and it must never be PUSHED wider than that window either. A flex item's
+                // min-width is `auto` by default, so one long line of code (the playground's
+                // generated module) grew the scroller, its ancestors, and the whole 1440px page
+                // to 3134px instead of scrolling. min-width:0 + max-width:100% break the chain
+                // exactly where the promise lives; native gets it from layout for free.
+                MinWidth = "0",
+                MinHeight = "0",
+                MaxWidth = "100%",
             },
         };
         var child = LowerNode(scroll.Child, context, horizontalAxis: null);

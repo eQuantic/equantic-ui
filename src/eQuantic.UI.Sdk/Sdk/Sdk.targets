@@ -144,8 +144,11 @@
             IgnoreExitCode="true" />
     </Target>
 
+    <!-- GenerateGlobalUsings must have run before eqc: eqc reads the generated GlobalUsings.g.cs
+         into its own compilation (that is how the implicit factory `using static` reaches it), and
+         on a FIRST build the file does not exist until the target writes it. -->
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
-        DependsOnTargets="ResolveReferences"
+        DependsOnTargets="ResolveReferences;GenerateGlobalUsings"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' != ''">
         <PropertyGroup>
             <!-- Standard components source files are packaged in eQuantic.UI.Components package -->

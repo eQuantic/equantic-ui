@@ -296,12 +296,14 @@ public class ObjectCreationStrategy : IConversionStrategy
             return converted;
 
         var slots = new string?[ctor.Parameters.Length];
-        var positional = 0;
         for (var i = 0; i < args.Count; i++)
         {
             var name = args[i].NameColon?.Name.Identifier.Text;
+            // A positional argument's slot is its LIST position — C# only allows positionals after
+            // a named argument when the named one sits IN its own position, so the list index IS
+            // the parameter index (an independent counter clobbered slot 0 in that mixed form).
             var ordinal = name == null
-                ? positional++
+                ? i
                 : ctor.Parameters.FirstOrDefault(p => p.Name == name)?.Ordinal ?? -1;
             if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = converted[i];
         }

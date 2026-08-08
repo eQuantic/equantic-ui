@@ -920,6 +920,11 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       // realizer hands it layout bounds and clips always). Auto height would grow with content
       // and scroll nothing.
       height: sizeValue(node.height) ?? '100%',
+      // …and never PUSHED wider than it either: a flex item's min-width defaults to auto, so one
+      // long line grew the scroller and every ancestor instead of scrolling (C# twin).
+      'min-width': '0',
+      'min-height': '0',
+      'max-width': '100%',
       'overflow-y': horizontal ? 'hidden' : 'auto',
       'overflow-x': node.axis === 'vertical' ? 'hidden' : 'auto',
     },

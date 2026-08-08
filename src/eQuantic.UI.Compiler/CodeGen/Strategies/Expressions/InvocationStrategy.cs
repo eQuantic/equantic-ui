@@ -119,13 +119,16 @@ public class InvocationStrategy : IConversionStrategy
         if (symbol != null && invocation.ArgumentList.Arguments.Any(a => a.NameColon != null))
         {
             var slots = new string?[symbol.Parameters.Length];
-            var positional = 0;
             var arguments = invocation.ArgumentList.Arguments;
             for (var i = 0; i < arguments.Count && i < argsList.Count; i++)
             {
                 var name = arguments[i].NameColon?.Name.Identifier.Text;
+                // A positional argument's slot is its LIST position — C# only allows positionals
+                // after a named argument when that named argument sits IN its own position
+                // (`Column(gap: Space.S3, [children])`), so the list index is the parameter index.
+                // An independent counter restarted at 0 after the named ones and CLOBBERED slot 0.
                 var ordinal = name == null
-                    ? positional++
+                    ? i
                     : symbol.Parameters.FirstOrDefault(p => p.Name == name)?.Ordinal ?? -1;
                 if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = argsList[i];
             }
@@ -225,6 +228,21 @@ public class InvocationStrategy : IConversionStrategy
             return $"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({args})";
         }
 
+        // STANDALONE factory calls (no semantic model — the playground's mode): nothing can RESOLVE
+        // `Column(...)` to the declarative surface, but the SOURCE names it — a
+        // `using static …eQuantic.UI.Components.UI;` directive, a Capitalized call, and an
+        // enclosing type that declares no such member can only be the factory class. Emit it
+        // through the class exactly as the semantic path does, and register the introduced name
+        // for the import scanner (the standalone fallback routes it to the runtime).
+        if (symbol == null && methodExpression is IdentifierNameSyntax
+            && methodName.Length > 0 && char.IsUpper(methodName[0])
+            && HasFactoryUsingStatic(invocation)
+            && !EnclosingTypeDeclares(invocation, methodName))
+        {
+            context.UsedAppTypes.Add("UI");
+            return $"UI.{methodName.ToCamelCase()}({args})";
+        }
+
         // Use semantic resolution if available. Local functions are NOT members of `this` even
         // though they have a containing type — they compile to a plain `function` in the same scope.
         if (symbol != null && !symbol.IsStatic && symbol.MethodKind != MethodKind.LocalFunction)
@@ -282,6 +300,30 @@ public class InvocationStrategy : IConversionStrategy
             $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation. "
             + "The transpiler only knows the constructs it maps explicitly; add a strategy for it, "
             + "or move the call behind a [ServerAction].");
+    }
+
+    /// <summary>Does the file import the declarative factory surface with `using static`? Matched on
+    /// the directive's own text — in standalone mode the directive is the only evidence there is.</summary>
+    private static bool HasFactoryUsingStatic(SyntaxNode node) =>
+        node.SyntaxTree.GetRoot().DescendantNodes().OfType<UsingDirectiveSyntax>()
+            .Any(directive => directive.StaticKeyword.IsKind(SyntaxKind.StaticKeyword)
+                && directive.Name?.ToString().EndsWith("eQuantic.UI.Components.UI") == true);
+
+    /// <summary>Does the enclosing type declare a method — or any enclosing block a local function —
+    /// with this name? Then the bare call is THEIRS, and the local/`this` paths keep owning it.</summary>
+    private static bool EnclosingTypeDeclares(SyntaxNode node, string methodName)
+    {
+        foreach (var ancestor in node.Ancestors())
+        {
+            if (ancestor is BlockSyntax block
+                && block.Statements.OfType<LocalFunctionStatementSyntax>()
+                    .Any(local => local.Identifier.Text == methodName))
+                return true;
+            if (ancestor is TypeDeclarationSyntax type)
+                return type.Members.OfType<MethodDeclarationSyntax>()
+                    .Any(method => method.Identifier.Text == methodName);
+        }
+        return false;
     }
 
     /// <summary>Namespaces whose twins the runtime ships — the framework itself, and its icon packs.</summary>
