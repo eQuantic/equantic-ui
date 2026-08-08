@@ -68,7 +68,30 @@ export type ServiceProvider = {
 /**
  * Base class for all components
  */
+/**
+ * How a node is CENTRED, registered by the vocabulary at import time. Inverted rather than
+ * imported: a static import here would close a module cycle (types → vocabulary → types) at
+ * evaluation, and a lazy `require` does not exist in ESM. The vocabulary owns the wrapper's
+ * shape; this module only owns the seam.
+ */
+type CenterWrapper = (child: unknown) => unknown;
+let centerWrapper: CenterWrapper | null = null;
+export function setCenterWrapper(wrapper: CenterWrapper): void {
+  centerWrapper = wrapper;
+}
+
 export abstract class Component implements IComponent {
+  /**
+   * C# twin of `VisualNodeExtensions.Centered()`. It lives on the vocabulary's VisualNode AND
+   * here, because in C# it is an EXTENSION on VisualNode — and a component IS one, so
+   * `Card(…).Centered()` compiles there and called nothing here: the page mounted with
+   * "centered is not a function" and a blank frame. The wrapper is built through the ambient
+   * lowering rather than imported, so this base keeps no dependency on the vocabulary module.
+   */
+  centered(): unknown {
+    return centerWrapper ? centerWrapper(this) : this;
+  }
+
   id?: string;
   className?: string;
   style?: Record<string, string>;

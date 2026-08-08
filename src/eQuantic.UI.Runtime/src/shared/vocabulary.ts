@@ -10,6 +10,7 @@
 
 import type { AnchorPlacementValue, ComponentChild } from './nodes';
 import type { HtmlNode } from '../core/types';
+import { setCenterWrapper } from '../core/types';
 import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
@@ -1245,3 +1246,12 @@ export class Spacer extends VisualNode {
     return spacer;
   }
 }
+
+// A COMPONENT centres like any other node: in C# `Centered()` is an extension on VisualNode and a
+// component is one, so the same call has to mean the same thing here. The vocabulary hands the
+// core the wrapper's shape at import time rather than being imported by it (no evaluation cycle).
+setCenterWrapper(child => {
+  const row = new Row(0, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
+  row.add(child as never);
+  return row;
+});
