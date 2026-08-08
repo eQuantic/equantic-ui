@@ -296,6 +296,8 @@ jobs:
         run: |
           set -euo pipefail
           FEED="$PWD/nupkgs"
+          # git-bash reports POSIX paths; NuGet on Windows needs the native form.
+          if [ "$RUNNER_OS" = "Windows" ]; then FEED="$(cygpath -w "$FEED")"; fi
 
           mkdir -p gate && cd gate
           printf '%s\n' \
