@@ -14,6 +14,11 @@
 import type { EventHandler, HtmlNode } from '../core/types';
 import { installDraggableController } from '../dom/draggable';
 import { installDragDismissController } from '../dom/drag-dismiss';
+import {
+  describeComponentFailure,
+  reportComponentFailure,
+  setFailureRenderer,
+} from './component-boundary';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
 import { CodeKeymap } from './components/CodeKeymap';
@@ -91,6 +96,19 @@ export interface LoweringContext {
   textPrimary: ColorTokenValue;
   /** Passed verbatim to `component.build(...)` when expanding shared components. */
   componentContext?: unknown;
+}
+
+/**
+ * The contained failure as DOM — for the seams that own a whole tree rather than a node inside one:
+ * a PAGE whose own build throws has no parent to contain it, and without this the mount throws and
+ * the root is never written, which is the white screen itself.
+ */
+export function renderContainedFailure(componentName: string, error: unknown): HtmlNode {
+  reportComponentFailure(componentName, error);
+  const theme = getPhotonTheme();
+  return lowerVisualNode(describeComponentFailure(componentName, error, theme), {
+    textPrimary: theme.textPrimary,
+  });
 }
 
 /** Lowers an abstract node tree to an HtmlNode the reconciler renders. */
@@ -253,8 +271,6 @@ function lowerNode(
       return lowerAnchored(node as unknown as AnchoredNode, context, path);
     case 'adjustable':
       return lowerAdjustable(node as unknown as AdjustableNode, context, path);
-    case 'adjustable':
-      return lowerAdjustable(node as unknown as AdjustableNode, context, path);
     case 'hoverable':
       return lowerHoverable(node as unknown as HoverableNode, context, path);
     case 'positioned':
@@ -268,12 +284,17 @@ function lowerNode(
       const resolved = (
         pass ? pass.store.reconcile(path, node, pass.invalidator) : node
       ) as ComponentNode;
-      return lowerNode(
-        resolved.build(context.componentContext),
-        context,
-        horizontalAxis,
-        path + '/0',
-      );
+      // The BOUNDARY (C# ComponentBoundary twin): a component's throw costs its own subtree and
+      // nothing else. Without this the mount threw, nothing reached the root, and the page was white.
+      let built: unknown;
+      try {
+        built = resolved.build(context.componentContext);
+      } catch (error) {
+        const name = (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
+        reportComponentFailure(name, error);
+        built = describeComponentFailure(name, error, getPhotonTheme());
+      }
+      return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/0');
     }
     default: {
       // Mixing seam: a WEB component (transpiled shared component or low-level HtmlElement) composed
@@ -2003,3 +2024,8 @@ function isZeroRadii(radii: CornerRadiiValue): boolean {
     radii.topLeft === 0 && radii.topRight === 0 && radii.bottomRight === 0 && radii.bottomLeft === 0
   );
 }
+
+// The page-level seam lives in core/component.ts, which cannot import this module (components →
+// runtime exports → component base = a cycle, and a cycle means an undefined base class). So the
+// lowering hands its renderer DOWN to the leaf module instead. See component-boundary.ts.
+setFailureRenderer(renderContainedFailure);

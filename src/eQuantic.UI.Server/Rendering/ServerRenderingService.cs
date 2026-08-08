@@ -37,6 +37,12 @@ public class ServerRenderingService : IServerRenderingService
         ScanPageTypes();
     }
 
+    /// <summary>Whether a DEVELOPER is on the other end of this request — what decides if a
+    /// contained failure quotes its exception or stays generic.</summary>
+    private static bool IsDevelopment(HttpContext context) =>
+        context.RequestServices.GetService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>()
+            ?.EnvironmentName == "Development";
+
     private void ScanPageTypes()
     {
         foreach (var assembly in _options.AssembliesToScan)
@@ -152,6 +158,13 @@ public class ServerRenderingService : IServerRenderingService
                 var styles = new Web.StyleSink();
                 string html;
                 Web.StyleSink.Ambient = styles;
+                // Armed the same way and for the same reason: a component that throws is contained
+                // to its own subtree instead of turning this request into a 500. Development quotes
+                // the exception in the panel; production says only that a section is missing, and
+                // either way the failure reaches the log rather than dying in the boundary.
+                Primitives.ComponentBoundary.Diagnostics = IsDevelopment(context);
+                Primitives.ComponentBoundary.Report = (failed, error) => _logger.LogError(error,
+                    "Component {Component} failed to render and was contained", failed.GetType().Name);
                 try
                 {
                     html = RenderComponent(component);
@@ -159,6 +172,7 @@ public class ServerRenderingService : IServerRenderingService
                 finally
                 {
                     Web.StyleSink.Ambient = null;
+                    Primitives.ComponentBoundary.Report = null;
                 }
 
                 // Inject exactly the rules this markup references, so hydration matches by class
