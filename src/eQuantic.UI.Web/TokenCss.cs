@@ -320,6 +320,16 @@ public static class PhotonCssGenerator
         // contract). display:block keeps flex/stack sizing natural.
         css.AppendLine(".eq-link { display: block; text-decoration: none; color: inherit; }");
 
+        // A themed IMAGE pair (Image.DarkSource): both artworks ship, CSS shows one. The OS
+        // preference decides by default; an app that forces a mode stamps data-theme on the root
+        // (IThemeController) and that wins, exactly as `color-scheme` wins for light-dark colors.
+        css.AppendLine(".eq-themed-dark { display: none; }");
+        css.AppendLine("@media (prefers-color-scheme: dark) { .eq-themed-light { display: none; } .eq-themed-dark { display: block; } }");
+        css.AppendLine(":root[data-theme=\"dark\"] .eq-themed-light { display: none; }");
+        css.AppendLine(":root[data-theme=\"dark\"] .eq-themed-dark { display: block; }");
+        css.AppendLine(":root[data-theme=\"light\"] .eq-themed-light { display: block; }");
+        css.AppendLine(":root[data-theme=\"light\"] .eq-themed-dark { display: none; }");
+
         // Enter motion (spec §06 — Presence): a mount-playing animation on the subtree's own root
         // element (no wrapper — the class rides the lowered child, so flex/stack layout is
         // untouched). Reduce Motion replaces movement with the spec's short crossfade.

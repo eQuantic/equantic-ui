@@ -18,6 +18,10 @@ export class WebThemeController {
   }
 
   apply(mode: string): void {
-    document.documentElement.style.colorScheme = mode === 'dark' ? 'dark' : 'light';
+    const resolved = mode === 'dark' ? 'dark' : 'light';
+    document.documentElement.style.colorScheme = resolved;
+    // …and the flag anything CSS cannot express through color-scheme reads: a themed image PAIR
+    // (Image.DarkSource) picks its artwork from this, because no CSS function switches a URL.
+    document.documentElement.setAttribute('data-theme', resolved);
   }
 }

@@ -739,7 +739,29 @@ public static class WebRealizer
                 ["alt"] = image.Alt,
             },
         };
-        return element;
+        if (image.DarkSource is not { Length: > 0 } darkSource) return element;
+
+        // A PAIR of artworks, resolved the way a ColorToken is: both ship, CSS shows one. The
+        // generated .eq-themed-* rules follow the OS preference AND the app's own forced mode
+        // (the theme controller stamps data-theme), so nothing decides this at paint time.
+        element.ClassName = "eq-themed-light";
+        var dark = new RealizedElement("img")
+        {
+            ClassName = "eq-themed-dark",
+            Style = element.Style,
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["src"] = darkSource,
+                ["alt"] = image.Alt,
+            },
+        };
+        var pair = new RealizedElement("span")
+        {
+            Style = new HtmlStyle { Display = Display.Contents },
+        };
+        pair.Children.Add(element);
+        pair.Children.Add(dark);
+        return pair;
     }
 
     private static HtmlElement LowerBox(Box box, ComponentContext context)
