@@ -151,6 +151,8 @@ public sealed class CodeEditor : StatefulComponent
             GutterMarkers = GutterMarkers,
             OnGutterPressed = OnGutterPressed,
             Highlighter = highlighter,
+            // THE grid — the same numbers the surface places the caret and the band on.
+            Metrics = metrics,
             // The window the block builds. Both numbers come back from layout, so the first frame
             // builds everything and every frame after builds what you can see.
             ViewportOffset = _offset,
@@ -178,6 +180,9 @@ public sealed class CodeEditor : StatefulComponent
             ColumnWidth = metrics.ColumnWidth,
             Autofocus = Autofocus,
             Label = Caption ?? "Code editor",
+            // The marks write with the BLOCK's ink, not the page's — see CodeBlock.InkFor.
+            CaretColor = CodeBlock.InkFor(Inverse, context.Theme),
+            SelectionColor = CodeBlock.SelectionFor(Inverse, context.Theme),
             // The controller mutates outside the tree, so the rebuild has to be asked for. This is
             // the seam: everything the surface does ends here, and here is where the app hears it.
             OnChanged = () => SetState(() =>

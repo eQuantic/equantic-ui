@@ -1498,6 +1498,13 @@ public sealed class ScrollView : VisualNode
 /// </summary>
 public sealed class CodeSurface : VisualNode
 {
+    /// <summary>
+    /// How long the caret holds each phase, in ms — 500 on, 500 off. Normative for BOTH targets: a
+    /// window blinks it from the host's clock (which is also what paces its frames), a page from a
+    /// CSS animation over twice this period.
+    /// </summary>
+    public const int CaretBlinkMs = 500;
+
     public override string NodeKind => "codeSurface";
 
     public CodeSurface(VisualNode child, CodeEditorController editor)
@@ -1529,6 +1536,15 @@ public sealed class CodeSurface : VisualNode
 
     /// <summary>Takes the caret when it first appears — a panel that opens ready to type.</summary>
     public bool Autofocus { get; init; }
+
+    /// <summary>
+    /// The two marks' ink, carried HERE rather than decided by each realizer: an editor on an
+    /// inverse slab writes with an ink of its own, and a caret painted from the page's theme is
+    /// invisible on exactly the surface people type into. Null falls back to the theme
+    /// (<c>TextPrimary</c> for the caret, <c>FocusRing</c> for the band).
+    /// </summary>
+    public ColorToken? CaretColor { get; init; }
+    public ColorToken? SelectionColor { get; init; }
 }
 
 /// <summary>

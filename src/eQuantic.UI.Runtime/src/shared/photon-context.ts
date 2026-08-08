@@ -5,7 +5,7 @@
  */
 
 import type { LoweringContext } from './lowering';
-import type { AppTheme } from './value-types';
+import { cssFontWeight, type AppTheme } from './value-types';
 import type { TypeStyleValue } from './nodes';
 import { photonTheme } from './design-system.generated';
 
@@ -42,7 +42,9 @@ export function measurePhotonText(text: string, style: TypeStyleValue, typeScale
   const context = measuringContext();
   if (!context) return 0;
   const family = style.mono ? MONO_STACK : SANS_STACK;
-  context.font = `${style.weight ?? 400} ${style.size * typeScale}px ${family}`;
+  // NUMERIC weight: the enum arrives as a member name, and a name makes the whole shorthand
+  // invalid — see cssFontWeight for what that cost.
+  context.font = `${cssFontWeight(style.weight)} ${style.size * typeScale}px ${family}`;
   return context.measureText(text).width;
 }
 
@@ -99,6 +101,11 @@ export function setPhotonTheme(theme: AppTheme, typeScale = 1): void {
 
 export function getPhotonTheme(): AppTheme {
   return activeTheme;
+}
+
+/** The active type scale — a page's context has to carry the SAME one its subtree is lowered with. */
+export function getPhotonTypeScale(): number {
+  return activeTypeScale;
 }
 
 /** The context handed to shared components' `build(context)` (directly or via lowering expansion). */

@@ -62,9 +62,28 @@ public class WebRealizerTests
         });
 
         Render(box).Attributes["style"].Should().Be(
-            "width: 120px; height: 40px; padding: 0 16px 0 16px; " +
+            "flex-shrink: 0; width: 120px; height: 40px; padding: 0 16px 0 16px; " +
             "background-color: light-dark(#0050a0, #5ca2e8); " +
             "border: 1px solid light-dark(#c9ced6, #3d4754); border-radius: 10px; box-sizing: border-box");
+    }
+
+    /// <summary>
+    /// FIXED means fixed. A flex item's <c>flex-shrink</c> is 1 by default, so a box with an
+    /// explicit width beside an overflowing sibling was quietly squeezed — the code editor's gutter
+    /// lost width on exactly the lines whose code ran past the viewport, and every number in it slid
+    /// left. Photon never shrinks a fixed box; the web mirror must not either.
+    /// </summary>
+    [Fact]
+    public void AFixedSize_DoesNotShrink()
+    {
+        var gutter = new Primitives.Box(new BoxStyle { Width = 68, Height = SizeValue.Fill });
+        Render(gutter).Attributes["style"].Should().Contain("flex-shrink: 0");
+
+        // HUG and FILL still shrink, by design: that is how a long label ellipsizes instead of
+        // pushing its row wider than the window.
+        Render(new Primitives.Box(new BoxStyle())).Attributes["style"].Should().NotContain("flex-shrink");
+        Render(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill }))
+            .Attributes["style"].Should().NotContain("flex-shrink");
     }
 
     [Fact]

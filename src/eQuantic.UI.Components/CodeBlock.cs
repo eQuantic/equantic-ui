@@ -67,6 +67,14 @@ public sealed class CodeBlock : StatelessComponent
     /// <summary>A press on a gutter row — where an IDE toggles a breakpoint.</summary>
     public Action<int>? OnGutterPressed { get; init; }
 
+    /// <summary>
+    /// The grid to draw on, when a caller has already measured it. An editor places its caret at
+    /// <c>contentTop + line × lineHeight</c>; if this block measures a different line height —
+    /// which it will the moment the two are built with contexts of different density — the caret
+    /// sits between lines and drifts further with every line down the file.
+    /// </summary>
+    public CodeMetrics? Metrics { get; init; }
+
     /// <summary>Reused across frames by an editor, so colouring stays incremental. Null = the
     /// block makes its own, which is right for a snippet that never changes.</summary>
     public CodeHighlighter? Highlighter { get; init; }
@@ -118,7 +126,10 @@ public sealed class CodeBlock : StatelessComponent
     {
         var theme = context.Theme;
         var highlighter = Highlighter ?? new CodeHighlighter(Language);
-        var metrics = MetricsFor(context, Size, ShowLineNumbers,
+        // The EDITOR's numbers when it has them: it already measured to place a caret, and a caret
+        // measured against one grid over lines drawn on another is a caret that drifts down the
+        // file. One measurement, one grid, whatever the two contexts happen to say.
+        var metrics = Metrics ?? MetricsFor(context, Size, ShowLineNumbers,
             FirstLineNumber + Document.LineCount - 1);
         var style = metrics.Style;
         var lineHeight = metrics.LineHeight;
@@ -403,6 +414,19 @@ public sealed class CodeBlock : StatelessComponent
 
     /// <summary>The slab, one shade lighter — the caret's line.</summary>
     private static readonly ColorToken CodeSlabActive = new(new Color(0x1B, 0x22, 0x2B, 0xFF));
+
+    /// <summary>
+    /// The ink this block writes with. The CARET has to be the same ink — on an inverse slab the
+    /// theme's text colour is the slab's own darkness, and a caret painted with it is invisible on
+    /// exactly the surface people type into. So the editor asks here instead of asking the theme.
+    /// </summary>
+    public static ColorToken InkFor(bool inverse, IAppTheme theme) =>
+        inverse ? CodeInk : theme.TextPrimary;
+
+    /// <summary>The selection band's colour, by the same rule: on the dark slab the DARK half of
+    /// the focus ring is used in both modes (see <see cref="InverseCode"/>).</summary>
+    public static ColorToken SelectionFor(bool inverse, IAppTheme theme) =>
+        inverse ? new ColorToken(theme.FocusRing.Dark, theme.FocusRing.Dark) : theme.FocusRing;
 
     /// <summary>On the dark slab the theme's light-mode colours would vanish, so the DARK half of
     /// each token is used in both modes.</summary>

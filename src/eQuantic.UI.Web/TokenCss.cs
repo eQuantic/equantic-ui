@@ -355,6 +355,17 @@ public static class PhotonCssGenerator
         css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
         css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-spinner rect { animation-delay: 0ms !important; } }");
 
+        // Code editor marks. Only MECHANICS live here: where the caret and the band are is
+        // arithmetic the realizers do, and their ink rides the node (an inverse slab writes with an
+        // ink of its own). What is left is what a window gets from its host — the blink, and the
+        // fact that neither mark shows while the surface does not hold the caret.
+        css.AppendLine("@keyframes eq-caret-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }");
+        css.AppendLine($".eq-code-surface:focus .eq-code-caret {{ animation: eq-caret-blink {CodeSurface.CaretBlinkMs * 2}ms step-end infinite; }}");
+        css.AppendLine(".eq-code-surface:not(:focus) .eq-code-caret { opacity: 0; }");
+        // A steady caret for anyone who asked the OS to stop things moving — it still says where
+        // you are, which is the whole point of it.
+        css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-code-surface:focus .eq-code-caret { animation: none; } }");
+
         // Text entry mechanics (spec B9): the input is chrome-less — the container shows focus —
         // and the placeholder rides TextMuted. Values are tokens; only mechanics live here.
         css.AppendLine(".eq-entry { outline: none; }");

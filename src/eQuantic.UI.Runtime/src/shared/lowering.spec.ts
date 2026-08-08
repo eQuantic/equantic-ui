@@ -65,7 +65,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(node.tag).toBe('div');
     // CROSS-PIN: this literal is asserted verbatim by WebRealizerTests.Box_ExactStyleString_CrossPin.
     expect(effectiveStyle(node)).toBe(
-      'background-color: light-dark(#0050a0, #5ca2e8); border-radius: 10px; border: 1px solid light-dark(#c9ced6, #3d4754); box-sizing: border-box; height: 40px; padding: 0 16px 0 16px; width: 120px',
+      'background-color: light-dark(#0050a0, #5ca2e8); border-radius: 10px; border: 1px solid light-dark(#c9ced6, #3d4754); box-sizing: border-box; flex-shrink: 0; height: 40px; padding: 0 16px 0 16px; width: 120px',
     );
   });
 
@@ -270,5 +270,39 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(node.tag).toBe('div');
     expect(effectiveStyle(node)).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
     expect(node.children[0].tag).toBe('span');
+  });
+});
+
+/**
+ * FIXED means fixed. A flex item's `flex-shrink` is 1 by default, so a box with an explicit width
+ * beside an overflowing sibling was quietly squeezed — the code editor's gutter lost width on
+ * exactly the lines whose code ran past the viewport, and every line number in it slid left.
+ * Photon never shrinks a fixed box; the web mirror must not either.
+ */
+describe('a fixed size does not shrink', () => {
+  const fixed = (value: number) => ({ kind: 'fixed' as const, value });
+
+  it('a fixed-width box refuses to shrink beside an overflowing sibling', () => {
+    const gutter = box({ width: fixed(68) }, undefined);
+    expect(effectiveStyle(lowerVisualNode(gutter as VisualNodeValue, ctx))).toContain('flex-shrink: 0');
+  });
+
+  it('a fixed-height row refuses to shrink in a column', () => {
+    const row = {
+      nodeKind: 'row',
+      gap: 0,
+      main: 'start',
+      cross: 'center',
+      height: fixed(18),
+      children: [],
+    } as unknown as VisualNodeValue;
+    expect(effectiveStyle(lowerVisualNode(row, ctx))).toContain('flex-shrink: 0');
+  });
+
+  it('leaves HUG and FILL alone — those shrink by design (a long label ellipsizes)', () => {
+    const hug = box({}, undefined);
+    const fill = box({ width: { kind: 'fill' as const, value: 0 } }, undefined);
+    expect(effectiveStyle(lowerVisualNode(hug as VisualNodeValue, ctx))).not.toContain('flex-shrink');
+    expect(effectiveStyle(lowerVisualNode(fill as VisualNodeValue, ctx))).not.toContain('flex-shrink');
   });
 });

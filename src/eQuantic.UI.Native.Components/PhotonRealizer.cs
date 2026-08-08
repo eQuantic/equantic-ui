@@ -1262,7 +1262,7 @@ public static class PhotonRealizer
         // over a multi-line range would cover the indentation of lines the range never touched.
         if (!selection.IsEmpty)
         {
-            var paint = Paint.Solid(theme.FocusRing.Resolve(mode).WithOpacity(0.28f));
+            var paint = Paint.Solid((surface.SelectionColor ?? theme.FocusRing).Resolve(mode).WithOpacity(SelectionAlpha));
             var start = selection.Start;
             var end = selection.End;
             for (var line = start.Line; line <= end.Line; line++)
@@ -1288,7 +1288,7 @@ public static class PhotonRealizer
                 left + caret.Column * surface.ColumnWidth,
                 top + caret.Line * surface.LineHeight,
                 CaretWidth, surface.LineHeight),
-            new CornerRadii(0)), Paint.Solid(theme.TextPrimary.Resolve(mode)));
+            new CornerRadii(0)), Paint.Solid((surface.CaretColor ?? theme.TextPrimary).Resolve(mode)));
     }
 
     /// <summary>The width of the first <paramref name="count"/> characters — the caret's x.</summary>
@@ -1303,6 +1303,10 @@ public static class PhotonRealizer
 
     /// <summary>2dp: thin enough to sit between glyphs, thick enough to see on a scaled display.</summary>
     private const float CaretWidth = 2f;
+
+    /// <summary>How much of the band shows through — normative for BOTH targets (the web mirror
+    /// paints the same number).</summary>
+    internal const float SelectionAlpha = 0.28f;
 
     /// <summary>How close to the right edge the caret may ride before the text slides: enough to
     /// see the caret itself plus a sliver of what comes next.</summary>

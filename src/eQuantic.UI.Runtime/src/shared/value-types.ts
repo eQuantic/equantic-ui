@@ -263,3 +263,26 @@ export function codeTokenColor(theme: AppTheme, kind: string): ColorToken {
       return theme.textPrimary;
   }
 }
+
+/**
+ * A `FontWeight` as CSS writes it. The enum lowers to its camelCase MEMBER NAME (`'semiBold'`), and
+ * a name is not a weight anywhere CSS parses one: `ctx.font = "regular 11.5px ui-monospace"` is an
+ * invalid shorthand, which a canvas answers by silently keeping `10px sans-serif` — so a code
+ * editor measuring its column width got the advance of a proportional face at the wrong size, and
+ * placed its caret four characters from where the text actually was.
+ */
+export function cssFontWeight(weight: string | number | undefined): number {
+  if (typeof weight === 'number') return weight;
+  switch (weight) {
+    case 'medium':
+      return 500;
+    case 'semiBold':
+      return 600;
+    case 'bold':
+      return 700;
+    case 'extraBold':
+      return 800;
+    default:
+      return 400;
+  }
+}

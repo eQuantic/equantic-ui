@@ -94,6 +94,7 @@ public static class WebRealizer
                 Position = Core.Position.Relative,
                 Width = Size(stack.Width),
                 Height = Size(stack.Height),
+                FlexShrink = Rigid(stack.Width, stack.Height),
             },
         };
 
@@ -777,6 +778,7 @@ public static class WebRealizer
                 BoxSizing = "border-box",
                 Width = Size(style.Width),
                 Height = Size(style.Height),
+                FlexShrink = Rigid(style.Width, style.Height),
                 // FILL is a CEILING: a flex/grid item's automatic minimum size overrides width,
                 // so a Fill box grew past its parent to fit its longest content. An explicit
                 // MinWidth still wins — the author asked for it.
@@ -919,6 +921,7 @@ public static class WebRealizer
                 },
                 Width = Size(flex.Width),
                 Height = Size(flex.Height),
+                FlexShrink = Rigid(flex.Width, flex.Height),
                 // FILL means "the parent's extent, never more" — and a flex ITEM's automatic
                 // minimum size OVERRIDES width, so one long line of content grew a Fill row past
                 // its parent (the playground's panes laid out at 3134px inside a 1440px page).
@@ -1005,6 +1008,7 @@ public static class WebRealizer
                     : grid.Gap > 0 ? TokenCss.Px(grid.Gap) : null,
                 Width = Size(grid.Width),
                 Height = Size(grid.Height),
+                FlexShrink = Rigid(grid.Width, grid.Height),
                 Padding = grid.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(grid.Padding),
             },
         };
@@ -1418,6 +1422,16 @@ public static class WebRealizer
                 : new HtmlStyle { Height = TokenCss.Px(spacer.FixedLength), FlexShrink = "0" };
         return new RealizedElement("div") { Style = style, AriaHidden = true };
     }
+
+    /// <summary>
+    /// A FIXED size does not shrink. CSS disagrees by default — a flex item's `flex-shrink` is 1,
+    /// so a box with `width: 68px` next to an overflowing sibling is quietly squeezed, and
+    /// everything inside it moves. Photon never does that: fixed is fixed, on both targets.
+    /// (The code editor's gutter was the symptom — line numbers slid left on exactly the lines whose
+    /// code ran past the viewport, and slid back when a scroll took those lines out of the window.)
+    /// </summary>
+    private static string? Rigid(SizeValue width, SizeValue height) =>
+        width.Kind == SizeKind.Fixed || height.Kind == SizeKind.Fixed ? "0" : null;
 
     private static string? Size(SizeValue value) => value.Kind switch
     {

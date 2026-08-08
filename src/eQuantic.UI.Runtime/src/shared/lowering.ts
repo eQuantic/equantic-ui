@@ -21,6 +21,7 @@ import {
 } from './component-boundary';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme } from './photon-context';
+import { cssFontWeight } from './value-types';
 import { CodeKeymap } from './components/CodeKeymap';
 import {
   atomizeEntries,
@@ -134,6 +135,15 @@ function hex(color: ColorValue): string {
   return color.a === 255 ? base : base + channel(color.a);
 }
 
+/** The same token at a fraction of its alpha — the C# `Color.WithOpacity` twin. */
+function withAlpha(token: ColorTokenValue, alpha: number): ColorTokenValue {
+  const fade = (color: ColorValue): ColorValue => ({
+    ...color,
+    a: Math.round(color.a * alpha),
+  });
+  return { light: fade(token.light), dark: fade(token.dark) };
+}
+
 export function tokenValue(token: ColorTokenValue): string {
   const light = hex(token.light);
   const dark = hex(token.dark);
@@ -176,6 +186,20 @@ function paddingValue(insets: EdgeInsetsValue): string {
   return `${px(insets.top)} ${px(insets.end)} ${px(insets.bottom)} ${px(insets.start)}`;
 }
 
+/**
+ * A FIXED size does not shrink — the C# `WebRealizer.Rigid` twin. CSS disagrees by default: a flex
+ * item's `flex-shrink` is 1, so a box with `width: 68px` beside an overflowing sibling is quietly
+ * squeezed and everything inside it moves. Photon never does that, so neither does the web.
+ * (The code editor's gutter was the symptom: line numbers slid left on exactly the lines whose code
+ * ran past the viewport, and slid back when a scroll took those lines out of the window.)
+ */
+function rigid(
+  width: SizeValueValue | undefined,
+  height: SizeValueValue | undefined,
+): string | undefined {
+  return width?.kind === 'fixed' || height?.kind === 'fixed' ? '0' : undefined;
+}
+
 function sizeValue(size: SizeValueValue | undefined): string | undefined {
   if (!size) return undefined;
   switch (size.kind) {
@@ -188,13 +212,6 @@ function sizeValue(size: SizeValueValue | undefined): string | undefined {
   }
 }
 
-const fontWeights: Record<string, number> = {
-  regular: 400,
-  medium: 500,
-  semiBold: 600,
-  bold: 700,
-  extraBold: 800,
-};
 
 // ---- style string assembly — the C# HtmlStyle.ToCssString property ORDER, subset used -------------
 
@@ -392,7 +409,11 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   if (child) surface.children.push(child);
 
   // The marks, under the code: a band is translucent so the text reads through it, and a caret sits
-  // between glyphs where nothing covers it.
+  // between glyphs where nothing covers it. Their ink comes from the NODE — an editor on an inverse
+  // slab writes with an ink of its own, and the page theme's would vanish into the slab.
+  const theme = getPhotonTheme();
+  const caretInk = tokenValue(node.caretColor ?? theme.textPrimary);
+  const selectionInk = tokenValue(withAlpha(node.selectionColor ?? theme.focusRing, SELECTION_ALPHA));
   const selection = editor.selection;
   if (!selection.isEmpty) {
     for (let line = selection.start.line; line <= selection.end.line; line++) {
@@ -404,14 +425,14 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
         node.contentLeft + from * node.columnWidth,
         node.contentTop + line * node.lineHeight,
         (to - from) * node.columnWidth, node.lineHeight,
-        'eq-code-selection'));
+        'eq-code-selection', selectionInk, 1));
     }
   }
   const caret = selection.focus;
   surface.children.push(mark(
     node.contentLeft + caret.column * node.columnWidth,
     node.contentTop + caret.line * node.lineHeight,
-    2, node.lineHeight, 'eq-code-caret'));
+    CARET_WIDTH, node.lineHeight, 'eq-code-caret', caretInk, 0));
 
   if (typeof document === 'undefined') return surface;   // SSR: the marks are enough
 
@@ -448,13 +469,36 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   return surface;
 }
 
-/** One absolutely-positioned rectangle: a caret, or one line's band. */
-function mark(left: number, top: number, width: number, height: number, className: string): HtmlNode {
+/** The caret's width in px — the C# `PhotonRealizer.CaretWidth` twin. */
+const CARET_WIDTH = 2;
+
+/** How much of the selection band shows through — the C# `PhotonRealizer.SelectionAlpha` twin. */
+const SELECTION_ALPHA = 0.28;
+
+/**
+ * One absolutely-positioned rectangle: a caret, or one line's band.
+ *
+ * The ink is painted HERE, from the node's own colours. It used to be left to a stylesheet class
+ * that nobody ever wrote, so both marks were rendered — correct geometry, correct size — and filled
+ * with nothing: the caret existed at the right place in the DOM and was invisible, which is the
+ * worst of both worlds, because you cannot see where you are typing and nothing looks broken.
+ */
+function mark(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+  className: string,
+  ink: string,
+  radius: number,
+): HtmlNode {
   return {
     tag: 'div',
     attributes: {
       class: className,
       style: `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;`
+        + `background-color:${ink};`
+        + (radius > 0 ? `border-radius:${radius}px;` : '')
         + 'pointer-events:none;',
     },
     events: {},
@@ -1031,6 +1075,7 @@ function lowerWebFrame(node: WebFrameNode): HtmlNode {
     ...atomicAttrs({
       width: sizeValue(node.width),
       height: sizeValue(node.height),
+      'flex-shrink': rigid(node.width, node.height),
       border: '0',
       display: 'block',
       'border-radius': hasRadius && radius ? radiusValue(radius) : undefined,
@@ -1231,6 +1276,7 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
       top: undefined,
       width: sizeValue(node.width),
       height: sizeValue(node.height),
+      'flex-shrink': rigid(node.width, node.height),
     },
     children,
   );
@@ -1260,6 +1306,7 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     'box-sizing': 'border-box',
     width: sizeValue(style.width),
     height: sizeValue(style.height),
+    'flex-shrink': rigid(style.width, style.height),
     // FILL is a CEILING (C# twin): an item's automatic minimum size overrides width, so a Fill
     // box grew past its parent to fit its longest content. An explicit minWidth still wins.
     'min-width': style.minWidth && style.minWidth > 0
@@ -1373,6 +1420,7 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string):
     'align-items': crossAlign(flex.cross),
     width: sizeValue(flex.width),
     height: sizeValue(flex.height),
+    'flex-shrink': rigid(flex.width, flex.height),
     // FILL means "the parent's extent, never more" — and a flex item's automatic minimum size
     // OVERRIDES width, so long content grew a Fill row past its parent (C# twin).
     'min-width': flex.width?.kind === 'fill' ? '0' : undefined,
@@ -1499,7 +1547,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     style['font-size'] = px(override.size);
     style['line-height'] = px(override.lineHeight);
     const weight =
-      typeof override.weight === 'number' ? override.weight : (fontWeights[override.weight] ?? 400);
+      cssFontWeight(override.weight);
     style['font-weight'] = String(weight);
     style['letter-spacing'] = px(override.tracking);
   }
@@ -1514,7 +1562,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
             {
               color: run.color ? tokenValue(run.color) : undefined,
               'font-family': run.mono === true ? MONO_STACK : undefined,
-              'font-weight': run.weight ? String(fontWeights[run.weight] ?? run.weight) : undefined,
+              'font-weight': run.weight ? String(cssFontWeight(run.weight)) : undefined,
             },
             [textLeaf(run.content)],
           ),
@@ -1982,6 +2030,7 @@ function lowerGrid(grid: GridNode, context: LoweringContext, path: string): Html
     gap: rowGap !== grid.gap ? `${px(rowGap)} ${px(grid.gap)}` : grid.gap > 0 ? px(grid.gap) : undefined,
     width: sizeValue(grid.width),
     height: sizeValue(grid.height),
+    'flex-shrink': rigid(grid.width, grid.height),
     padding: grid.padding && !isZeroInsets(grid.padding) ? paddingValue(grid.padding) : undefined,
   });
   for (let i = 0; i < grid.children.length; i++) {
