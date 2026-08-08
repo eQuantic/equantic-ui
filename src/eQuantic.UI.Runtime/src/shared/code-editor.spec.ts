@@ -251,3 +251,18 @@ describe('code editor (the component, end to end)', () => {
     expect(editor.editor.highlighter.language.name).toBe('C#');
   });
 });
+
+/**
+ * A COMPONENT centres like any other node. In C# `Centered()` is an extension on VisualNode, and
+ * a component is one — so `Card(…).Centered()` compiled there and called nothing here: the page
+ * mounted with "centered is not a function" and the frame went blank.
+ */
+describe('components centre like nodes', () => {
+  it('a component exposes centered() the way the vocabulary does', async () => {
+    const { Card } = await import('./components/Card');
+    const { Text } = await import('./vocabulary');
+    const centred = new Card(new Text('hi') as never).centered() as { nodeKind: string; children: unknown[] };
+    expect(centred.nodeKind).toBe('row');
+    expect(centred.children).toHaveLength(1);
+  });
+});
