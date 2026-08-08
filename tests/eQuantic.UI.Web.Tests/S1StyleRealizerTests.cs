@@ -130,4 +130,20 @@ public class S1StyleRealizerTests
             .And.Contain("min-width: 0")
             .And.Contain("max-width: 100%");
     }
+
+    [Fact]
+    public void FillMeansTheParentsExtent_NeverMore()
+    {
+        // A flex item's automatic minimum size overrides width, so a Fill row grew past its
+        // parent to fit one long line — the playground's panes laid out at 3134px inside a
+        // 1440px page. Fill only means what it says with the minimum pinned to zero.
+        var row = WebRealizer.Lower(
+            new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill }, PhotonTheme.Instance).Render();
+
+        row.Attributes["style"].Should().Contain("min-width: 0").And.Contain("min-height: 0");
+
+        // A HUG row keeps its content-driven minimum — nothing changes for it.
+        WebRealizer.Lower(new Row(gap: 0), PhotonTheme.Instance).Render()
+            .Attributes["style"].Should().NotContain("min-width: 0");
+    }
 }

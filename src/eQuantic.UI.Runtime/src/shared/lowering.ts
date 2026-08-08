@@ -1330,6 +1330,10 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string):
     'align-items': crossAlign(flex.cross),
     width: sizeValue(flex.width),
     height: sizeValue(flex.height),
+    // FILL means "the parent's extent, never more" — and a flex item's automatic minimum size
+    // OVERRIDES width, so long content grew a Fill row past its parent (C# twin).
+    'min-width': flex.width?.kind === 'fill' ? '0' : undefined,
+    'min-height': flex.height?.kind === 'fill' ? '0' : undefined,
     padding: flex.padding && !isZeroInsets(flex.padding) ? paddingValue(flex.padding) : undefined,
     'background-color': flex.background ? tokenValue(flex.background) : undefined,
     'border-radius':
