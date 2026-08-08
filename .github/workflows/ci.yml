@@ -269,12 +269,16 @@ jobs:
               --skip-duplicate
           done
 
-  # Release to nuget.org — runs ONLY on a v* tag, after the full pipeline is green. macOS runner:
-  # the template gate builds a real Photon app, whose icon pipeline needs CoreGraphics.
-  publish-nuget:
+  # Release gate — runs ONLY on a v* tag: on every desktop OS, a fresh consumer must be able to
+  # scaffold and BUILD (and on the web template, PUBLISH) against the exact packages being
+  # released. The native template gates on macOS only (its icon pipeline needs CoreGraphics).
+  gate-templates:
     needs: build-packages
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -287,14 +291,13 @@ jobs:
           name: nupkgs
           path: nupkgs/
 
-      - name: Gate — the templates must consume the exact packages being released
+      - name: Gate — templates against the release feed
         shell: bash
         run: |
           set -euo pipefail
           FEED="$PWD/nupkgs"
-          VERSION="${GITHUB_REF#refs/tags/v}"
 
-          mkdir -p /tmp/gate && cd /tmp/gate
+          mkdir -p gate && cd gate
           printf '%s\n' \
             '<?xml version="1.0" encoding="utf-8"?>' \
             '<configuration>' \
@@ -308,12 +311,31 @@ jobs:
           dotnet new install "$FEED"/eQuantic.UI.Templates.*.nupkg
 
           dotnet new equantic-app -n GateWeb
-          (cd GateWeb && cp ../nuget.config . && dotnet build -c Release)
+          (cd GateWeb && cp ../nuget.config . && dotnet build -c Release && dotnet publish -c Release -o publish)
+          test -f GateWeb/publish/wwwroot/_equantic/runtime.js
 
-          dotnet new equantic-native -n GateNative
-          (cd GateNative && cp ../nuget.config . && dotnet build -c Release)
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            dotnet new equantic-native -n GateNative
+            (cd GateNative && cp ../nuget.config . && dotnet build -c Release)
+          fi
 
-          echo "Both templates build against the release feed ($VERSION)."
+          echo "Template gate green on $RUNNER_OS."
+
+  publish-nuget:
+    needs: gate-templates
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download NuGet Packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nupkgs
+          path: nupkgs/
 
       - name: Publish to nuget.org
         shell: bash
