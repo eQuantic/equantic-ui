@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: ["main"]
+    tags: ["v*"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
@@ -89,7 +90,10 @@ jobs:
         id: version
         shell: bash
         run: |
-          if [ "${{ github.event.inputs.version }}" != "" ]; then
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # A release tag IS the version: v0.2.0-preview.1 -> 0.2.0-preview.1
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.version }}" != "" ]; then
             echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
             # Read version from Directory.Build.props (single source of truth)
@@ -146,7 +150,10 @@ jobs:
         id: version
         shell: bash
         run: |
-          if [ "${{ github.event.inputs.version }}" != "" ]; then
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # A release tag IS the version: v0.2.0-preview.1 -> 0.2.0-preview.1
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.version }}" != "" ]; then
             echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
             # Read version from Directory.Build.props (single source of truth)
@@ -160,22 +167,59 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
 
-          # Build core packages
-          dotnet build src/eQuantic.UI.Core/eQuantic.UI.Core.csproj -c Release -p:Version=$VERSION
-          dotnet build src/eQuantic.UI.Components/eQuantic.UI.Components.csproj -c Release -p:Version=$VERSION
-          dotnet build src/eQuantic.UI.Compiler/eQuantic.UI.Compiler.csproj -c Release -p:Version=$VERSION
-          dotnet build src/eQuantic.UI.Server/eQuantic.UI.Server.csproj -c Release -p:Version=$VERSION
-          dotnet build src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj -c Release -p:Version=$VERSION
+          # The complete public package set — every ID the two SDKs (and their templates)
+          # resolve, plus the extras. eQuantic.Build and eQuantic.UI.Native.Build are embedded
+          # into the SDK packages as tools and are deliberately NOT here.
+          PACKAGES=(
+            eQuantic.UI.Core
+            eQuantic.UI.Primitives
+            eQuantic.UI.Codegen
+            eQuantic.UI.Compiler
+            eQuantic.UI.Components
+            eQuantic.UI.Server
+            eQuantic.UI.Web
+            eQuantic.UI.Native.Components
+            eQuantic.UI.Native.Engine
+            eQuantic.UI.Native.Engine.Metal
+            eQuantic.UI.Native.Engine.Reference
+            eQuantic.UI.Native.Engine.Vulkan
+            eQuantic.UI.Native.Framework
+            eQuantic.UI.Native.Generators
+            eQuantic.UI.Native.Hosting
+            eQuantic.UI.Native.Shell.Apple
+            eQuantic.UI.Native.Shell.MacOS
+            eQuantic.UI.Native.Shell.iOS
+            eQuantic.UI.Native.Shell.Android
+            eQuantic.UI.BootstrapIcons
+            eQuantic.UI.FontAwesome6.Brands
+            eQuantic.UI.FontAwesome6.Regular
+            eQuantic.UI.FontAwesome6.Solid
+            eQuantic.UI.Heroicons
+            eQuantic.UI.Iconoir
+            eQuantic.UI.Lucide
+            eQuantic.UI.Material
+            eQuantic.UI.Phosphor
+            eQuantic.UI.RadixIcons
+            eQuantic.UI.SimpleIcons
+            eQuantic.UI.TablerIcons
+            eQuantic.UI.Images
+            eQuantic.UI.Lottie
+            eQuantic.UI.Charts
+            eQuantic.UI.Charts.ApexCharts
+            eQuantic.UI.Charts.ChartJs
+          )
+          for pkg in "${PACKAGES[@]}"; do
+            # Glob, not name convention: a few folders and their csproj names diverge.
+            dotnet build src/"$pkg"/*.csproj -c Release -p:Version=$VERSION
+            dotnet pack  src/"$pkg"/*.csproj -c Release --no-build -p:Version=$VERSION
+          done
 
-          # Pack meta-package Runtime (references platform-specific packages)
+          # The Runtime meta-package and the SDKs pack WITHOUT --no-build: their pack targets
+          # stage tools (eqc, eQuantic.Build, eqicon) and stamp versions.
           dotnet pack src/eQuantic.UI.Runtime/eQuantic.UI.Runtime.csproj -c Release -p:Version=$VERSION
-
-          # Pack core packages
-          dotnet pack src/eQuantic.UI.Core/eQuantic.UI.Core.csproj -c Release --no-build -p:Version=$VERSION
-          dotnet pack src/eQuantic.UI.Components/eQuantic.UI.Components.csproj -c Release --no-build -p:Version=$VERSION
-          dotnet pack src/eQuantic.UI.Compiler/eQuantic.UI.Compiler.csproj -c Release --no-build -p:Version=$VERSION
-          dotnet pack src/eQuantic.UI.Server/eQuantic.UI.Server.csproj -c Release --no-build -p:Version=$VERSION
           dotnet pack src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj -c Release -p:Version=$VERSION
+          dotnet pack src/eQuantic.UI.Sdk.Native/eQuantic.UI.Sdk.Native.csproj -c Release -p:Version=$VERSION
+          dotnet pack src/eQuantic.UI.Templates/eQuantic.UI.Templates.csproj -c Release -p:Version=$VERSION
 
       - name: Test
         shell: bash
@@ -216,5 +260,69 @@ jobs:
             dotnet nuget push "$package" \
               --source "https://nuget.pkg.github.com/eQuantic/index.json" \
               --api-key "$GITHUB_TOKEN" \
+              --skip-duplicate
+          done
+
+  # Release to nuget.org — runs ONLY on a v* tag, after the full pipeline is green. macOS runner:
+  # the template gate builds a real Photon app, whose icon pipeline needs CoreGraphics.
+  publish-nuget:
+    needs: build-packages
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download NuGet Packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nupkgs
+          path: nupkgs/
+
+      - name: Gate — the templates must consume the exact packages being released
+        shell: bash
+        run: |
+          set -euo pipefail
+          FEED="$PWD/nupkgs"
+          VERSION="${GITHUB_REF#refs/tags/v}"
+
+          mkdir -p /tmp/gate && cd /tmp/gate
+          printf '%s\n' \
+            '<?xml version="1.0" encoding="utf-8"?>' \
+            '<configuration>' \
+            '  <packageSources>' \
+            '    <clear />' \
+            "    <add key=\"release-feed\" value=\"$FEED\" />" \
+            '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />' \
+            '  </packageSources>' \
+            '</configuration>' > nuget.config
+
+          dotnet new install "$FEED"/eQuantic.UI.Templates.*.nupkg
+
+          dotnet new equantic-app -n GateWeb
+          (cd GateWeb && cp ../nuget.config . && dotnet build -c Release)
+
+          dotnet new equantic-native -n GateNative
+          (cd GateNative && cp ../nuget.config . && dotnet build -c Release)
+
+          echo "Both templates build against the release feed ($VERSION)."
+
+      - name: Publish to nuget.org
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "::error::NUGET_API_KEY secret is not configured."
+            exit 1
+          fi
+          for package in nupkgs/*.nupkg; do
+            echo "Publishing $package to nuget.org..."
+            dotnet nuget push "$package" \
+              --source "https://api.nuget.org/v3/index.json" \
+              --api-key "$NUGET_API_KEY" \
               --skip-duplicate
           done
