@@ -890,6 +890,12 @@ public static class WebRealizer
                 },
                 Width = Size(flex.Width),
                 Height = Size(flex.Height),
+                // FILL means "the parent's extent, never more" — and a flex ITEM's automatic
+                // minimum size OVERRIDES width, so one long line of content grew a Fill row past
+                // its parent (the playground's panes laid out at 3134px inside a 1440px page).
+                // min-width/min-height 0 is what makes Fill mean what it says on the axis it fills.
+                MinWidth = flex.Width.Kind == SizeKind.Fill ? "0" : null,
+                MinHeight = flex.Height.Kind == SizeKind.Fill ? "0" : null,
                 Padding = flex.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(flex.Padding),
                 BackgroundColor = flex.Background is { } bg ? TokenCss.Value(bg) : null,
                 BorderRadius = flex.CornerRadius.IsZero ? null : TokenCss.Radius(flex.CornerRadius),
