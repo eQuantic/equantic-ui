@@ -16,8 +16,8 @@
     {
       "name": "equantic-ui-web",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "../equantic-ui-web/eQuantic.UI.WebSite.csproj", "--no-launch-profile", "--urls", "http://localhost:5220"],
-      "port": 5220
+      "runtimeArgs": ["run", "--project", "../equantic-ui-web/eQuantic.UI.WebSite.csproj", "--no-launch-profile", "--urls", "http://localhost:5221"],
+      "port": 5221
     }
   ]
 }

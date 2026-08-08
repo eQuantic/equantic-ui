@@ -4,7 +4,7 @@
  * (DesignSystemTsGeneratorTests pins this file byte-for-byte against the generator).
  */
 
-import { ColorToken, TypeStyle, VariantColors } from './value-types';
+import { ColorToken, TypeStyle, VariantColors, codeTokenColor } from './value-types';
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 
@@ -335,6 +335,9 @@ export const photonTheme: AppTheme = {
   },
   shape(scale: string): number {
     return shapeScale[scale] ?? shapeScale.medium;
+  },
+  code(kind: string): ColorToken {
+    return codeTokenColor(this, kind);
   },
 };
 

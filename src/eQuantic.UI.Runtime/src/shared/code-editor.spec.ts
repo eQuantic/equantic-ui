@@ -219,3 +219,35 @@ describe('the tokenizers, running in the browser', () => {
     expect(CodeDocument.fromText('a\r\nb\rc\nd').lines).toEqual(['a', 'b', 'c', 'd']);
   });
 });
+
+/**
+ * The COMPONENT, not just its parts: CodeEditor.build hands its live document and resolved
+ * language to a CodeBlock, and the transpiled twin has ONE constructor whose positional body is
+ * the string shape. The C# overload that took (document, language) positionally compiled fine,
+ * passed every parts-level test here, and died in the first browser that mounted an editor —
+ * so the whole component now builds and lowers in this suite.
+ */
+describe('code editor (the component, end to end)', () => {
+  it('builds and lowers with a real document and language', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const { setPhotonTheme } = await import('./photon-context');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    // The SAME theme path boot runs: the wire fixture through materializeTheme, installed as the
+    // active theme (lowering reads the singleton, not the context passed here).
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const editor = new CodeEditor('var x = 1;', 'csharp');
+    const context = {
+      theme,
+      density: 'comfortable',
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const tree = editor.build(context as never);
+    const node = lowerVisualNode(tree as never, context as never);
+    expect(node.tag).toBeTruthy();
+    expect(editor.editor.document.text).toBe('var x = 1;');
+    expect(editor.editor.highlighter.language.name).toBe('C#');
+  });
+});

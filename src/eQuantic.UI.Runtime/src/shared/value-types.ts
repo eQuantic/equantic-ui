@@ -225,4 +225,41 @@ export interface AppTheme {
   type(role: string): TypeStyle;
   elevation(level: number): ShadowSpec;
   shape(scale: string): number;
+  /** Syntax ink for one code token kind (C# `IAppTheme.Code`). */
+  code(kind: string): ColorToken;
+}
+
+/**
+ * C# `IAppTheme.Code`'s default derivation, twin for twin: the mapping is chosen for READING —
+ * comments recede to the muted tier, strings and numbers take the two calm variants, keywords take
+ * the primary accent, and separating punctuation stays quieter than the code it separates. Every
+ * AppTheme producer (the generated default and the SSR bridge) implements `code` through this one
+ * function, so a custom palette crossing the bridge inherits it for free.
+ */
+export function codeTokenColor(theme: AppTheme, kind: string): ColorToken {
+  switch (kind) {
+    case 'keyword':
+      return theme.colors('primary').base;
+    case 'type':
+      return theme.colors('info').base;
+    case 'string':
+      return theme.colors('success').base;
+    case 'number':
+      return theme.colors('warning').base;
+    case 'comment':
+      return theme.textMuted;
+    case 'function':
+      return theme.colors('tertiary').base;
+    case 'attribute':
+      return theme.colors('warning').onSubtle;
+    case 'property':
+      return theme.colors('info').onSubtle;
+    case 'constant':
+      return theme.colors('destructive').base;
+    case 'operator':
+    case 'punctuation':
+      return theme.textSecondary;
+    default:
+      return theme.textPrimary;
+  }
 }
