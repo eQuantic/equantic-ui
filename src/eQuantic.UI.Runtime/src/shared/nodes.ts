@@ -454,6 +454,8 @@ export interface TextEntryNode extends VisualNodeValue {
   value: string;
   onChanged?: ((value: string) => void) | null;
   placeholder?: string | null;
+  /** The accessible name (aria-label web / AX label native) — a placeholder is only a hint. */
+  label?: string | null;
   onSubmit?: (() => void) | null;
   onFocusChanged?: ((focused: boolean) => void) | null;
   disabled?: boolean;

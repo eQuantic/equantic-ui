@@ -697,6 +697,8 @@ export class TextEntry extends VisualNode {
   value: string;
   onChanged: ((value: string) => void) | null;
   placeholder: string | null = null;
+  /** The accessible name (aria-label web / AX label native) — a placeholder is only a hint. */
+  label: string | null = null;
   onSubmit: (() => void) | null = null;
   onFocusChanged: ((focused: boolean) => void) | null = null;
   disabled = false;

@@ -161,4 +161,49 @@ public class SemanticsTests
 
         host.Semantics().Should().BeEmpty();
     }
+
+    private sealed class AxPage : Primitives.StatefulComponent
+    {
+        public int Volume = 5;
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            column.Add(new TextEntry("", null) { Label = "Recipient", Placeholder = "name@host" });
+            column.Add(new Adjustable(new Box(new BoxStyle { Width = 120, Height = 24 }),
+                d => SetState(() => Volume += d)) { Label = "Volume" });
+            return column;
+        }
+    }
+
+    [Fact]
+    public void ATextEntry_AnnouncesItsLabel_OverThePlaceholder()
+    {
+        var (host, _) = Open();
+        var withLabel = new PhotonHost(new AxPage(), PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        withLabel.RenderFrame(new DisplayListBuilder());
+
+        withLabel.Semantics().Single(s => s.Role == SemanticRole.TextField).Label
+            .Should().Be("Recipient", "the explicit Label names the field");
+        host.Semantics().Single(s => s.Role == SemanticRole.TextField).Label
+            .Should().Be("Search payments", "the placeholder is only the fallback name");
+    }
+
+    [Fact]
+    public void AdjustPath_DrivesTheAdjustable_BothWays()
+    {
+        var page = new AxPage();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        host.RenderFrame(new DisplayListBuilder());
+        var slider = host.Semantics().Single(s => s.Role == SemanticRole.Slider);
+
+        host.AdjustPath(slider.Path, +1).Should().BeTrue("VoiceOver's swipe up increments");
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        host.AdjustPath(slider.Path, -1).Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.AdjustPath(slider.Path, -1).Should().BeTrue();
+
+        page.Volume.Should().Be(4, "+1 then −1 then −1");
+        host.AdjustPath("nowhere", 1).Should().BeFalse("a stale path answers false, never throws");
+    }
 }

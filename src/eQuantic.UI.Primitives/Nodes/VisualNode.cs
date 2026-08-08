@@ -769,6 +769,11 @@ public sealed class TextEntry : VisualNode
     /// <summary>Shown in TextMuted while <see cref="Value"/> is empty — never a label substitute.</summary>
     public string? Placeholder { get; init; }
 
+    /// <summary>The accessible NAME assistive tech announces (aria-label on web, the AX label on
+    /// native). A placeholder disappears the moment the field holds text — it is a hint, not a
+    /// name — so a field without a visible label states one here.</summary>
+    public string? Label { get; init; }
+
     /// <summary>Keyboard submit (Enter / the keyboard's return action).</summary>
     public Action? OnSubmit { get; init; }
 

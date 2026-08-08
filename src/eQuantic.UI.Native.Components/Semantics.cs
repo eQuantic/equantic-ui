@@ -73,10 +73,10 @@ public static class SemanticsTree
                 return;
 
             case TextEntry entry:
-                // v1 name: the placeholder (never a label substitute visually, but the only name
-                // the node carries today); the VALUE is what the field holds.
+                // The explicit Label names the field; the placeholder is only the fallback name
+                // (visually it vanishes under text). The VALUE is what the field holds.
                 nodes.Add(new(SemanticRole.TextField, node.Path ?? "", node.Bounds,
-                    entry.Placeholder ?? "", entry.Value, entry.Disabled));
+                    entry.Label ?? entry.Placeholder ?? "", entry.Value, entry.Disabled));
                 return;
 
             // v1: a grid announces as an editable region with its label; per-cell semantics (the

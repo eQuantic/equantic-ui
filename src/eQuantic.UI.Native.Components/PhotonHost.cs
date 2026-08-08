@@ -1088,6 +1088,24 @@ public sealed class PhotonHost
         return false;
     }
 
+    /// <summary>
+    /// Assistive tech adjusts a slider-role element (VoiceOver's swipe up/down): +1 increments,
+    /// −1 decrements — the same OnAdjust the keyboard's arrows drive, resolved by path.
+    /// </summary>
+    public bool AdjustPath(string path, int direction)
+    {
+        var stops = _lastFrame?.FocusStops;
+        if (stops is null) return false;
+        for (var i = 0; i < stops.Count; i++)
+        {
+            if (stops[i].Path != path || stops[i].Adjustable is not { } adjustable) continue;
+            adjustable.OnAdjust(direction);
+            NeedsRender = true;
+            return true;
+        }
+        return false;
+    }
+
     /// <summary>The Pressable currently held down (pressed visuals render while set).</summary>
     public Pressable? Pressed => _pressed;
 

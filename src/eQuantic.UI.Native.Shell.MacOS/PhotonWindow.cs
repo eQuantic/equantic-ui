@@ -230,6 +230,12 @@ public sealed class PhotonWindow
             if (handled) Present();
             return handled;
         };
+        PhotonAccessibility.OnAdjust = (path, direction) =>
+        {
+            var handled = host.AdjustPath(path, direction);
+            if (handled) Present();
+            return handled;
+        };
 
         // A LIVE RESIZE never returns to the loop below: AppKit runs its own, inside sendEvent:,
         // until the button comes up. The window keeps growing and the last frame is stretched to
