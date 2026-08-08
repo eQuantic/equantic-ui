@@ -1039,6 +1039,7 @@ public static class WebRealizer
                     {
                         Color = run.Color is { } runColor ? TokenCss.Value(runColor) : null,
                         FontFamily = run.Mono ? TokenCss.MonoStack : null,
+                        FontWeight = run.Weight is { } runWeight ? ((int)runWeight).ToString() : null,
                     },
                 });
             }

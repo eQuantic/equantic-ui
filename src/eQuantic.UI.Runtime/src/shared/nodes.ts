@@ -345,6 +345,8 @@ export interface TextRunValue {
   content: string;
   color?: ColorTokenValue | null;
   mono?: boolean;
+  /** Inline emphasis (C# `TextRun.Weight`) — the camelCased FontWeight name. */
+  weight?: string | null;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
