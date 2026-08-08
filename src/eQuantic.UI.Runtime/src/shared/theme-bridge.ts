@@ -6,7 +6,7 @@
  * markup. The wire shape mirrors the generated `photonTheme`; the round-trip is pinned in vitest.
  */
 
-import { ColorToken, TypeStyle, VariantColors } from './value-types';
+import { ColorToken, TypeStyle, VariantColors, codeTokenColor } from './value-types';
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 
@@ -71,6 +71,9 @@ export function materializeTheme(data: ThemeData): AppTheme {
     },
     elevation(level: number): ShadowSpec {
       return elevations[Math.max(0, Math.min(5, Math.trunc(level)))];
+    },
+    code(kind: string): ColorToken {
+      return codeTokenColor(this as unknown as AppTheme, kind);
     },
     shape(scale: string): number {
       return data.shape[scale] ?? data.shape.medium;

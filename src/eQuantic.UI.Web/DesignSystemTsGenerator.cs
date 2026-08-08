@@ -25,7 +25,7 @@ public static class DesignSystemTsGenerator
         ts.AppendLine(" * (DesignSystemTsGeneratorTests pins this file byte-for-byte against the generator).");
         ts.AppendLine(" */");
         ts.AppendLine();
-        ts.AppendLine("import { ColorToken, TypeStyle, VariantColors } from './value-types';");
+        ts.AppendLine("import { ColorToken, TypeStyle, VariantColors, codeTokenColor } from './value-types';");
         ts.AppendLine("import type { AppTheme, ShadowSpec } from './value-types';");
         ts.AppendLine("import type { ColorValue } from './nodes';");
         ts.AppendLine();
@@ -283,6 +283,9 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("  },");
         ts.AppendLine("  shape(scale: string): number {");
         ts.AppendLine("    return shapeScale[scale] ?? shapeScale.medium;");
+        ts.AppendLine("  },");
+        ts.AppendLine("  code(kind: string): ColorToken {");
+        ts.AppendLine("    return codeTokenColor(this, kind);");
         ts.AppendLine("  },");
         ts.AppendLine("};");
         ts.AppendLine();

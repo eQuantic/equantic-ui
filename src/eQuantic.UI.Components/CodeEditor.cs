@@ -134,8 +134,13 @@ public sealed class CodeEditor : StatefulComponent
         var metrics = CodeBlock.MetricsFor(context, Size, ShowLineNumbers,
             FirstLineNumber + editor.Document.LineCount - 1);
 
-        var block = new CodeBlock(editor.Document, highlighter.Language)
+        // The empty-string constructor + inits, NOT the (document, language) pair as arguments:
+        // the transpiled twin has one constructor whose body is the string shape, and the property
+        // assignment lands after it on both sides. CodeBlock.Of is this same move, packaged.
+        var block = new CodeBlock("")
         {
+            Document = editor.Document,
+            Language = highlighter.Language,
             Decorations = Marks(editor),
             ShowLineNumbers = ShowLineNumbers,
             FirstLineNumber = FirstLineNumber,

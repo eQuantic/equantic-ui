@@ -20,11 +20,15 @@ public sealed class CodeBlock : StatelessComponent
         Language = CodeLanguages.For(language);
     }
 
-    public CodeBlock(CodeDocument document, ICodeLanguage language)
-    {
-        Document = document;
-        Language = language;
-    }
+    /// <summary>
+    /// The advanced pair — an existing document and an already-resolved language (what
+    /// <c>CodeEditor</c> hands over every rebuild). A FACTORY rather than a second constructor:
+    /// the transpiled twin keeps ONE constructor shape, and a C# overload picked at compile time
+    /// has no runtime discriminator on the other side — the string body ran against a document
+    /// and died in the first browser that mounted an editor.
+    /// </summary>
+    public static CodeBlock Of(CodeDocument document, ICodeLanguage language) =>
+        new("") { Document = document, Language = language };
 
     public CodeDocument Document { get; init; }
     public ICodeLanguage Language { get; init; }
