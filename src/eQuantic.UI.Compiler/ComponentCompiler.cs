@@ -3,6 +3,7 @@ using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.Models;
 using eQuantic.UI.Compiler.Services;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace eQuantic.UI.Compiler;
 
@@ -94,6 +95,34 @@ public class ComponentCompiler
     {
         get => _tsEmitter.TypeAnnotations;
         set => _tsEmitter.TypeAnnotations = value;
+    }
+
+    /// <summary>
+    /// The C# errors in this source, as the language itself sees them — CS1002, CS0103, CS0246 —
+    /// anchored to their line. Roslyn parses leniently, so eqc will happily transpile a file with
+    /// a syntax error and emit a component built from a tree it only half understood; the result
+    /// is JavaScript that mounts and throws, which reads as "it just went blank".
+    ///
+    /// A host that compiles C# on its own (the SDK, where csc runs right after) can ignore this.
+    /// A host where eqc IS the whole build — the playground — must ask before it emits.
+    /// </summary>
+    public IReadOnlyList<CompilationError> GetLanguageErrors(string sourceCode, string sourcePath = "")
+    {
+        var tree = CSharpSyntaxTree.ParseText(sourceCode, path: sourcePath);
+        return _semanticModelProvider.GetLanguageDiagnostics(tree)
+            .Select(diagnostic =>
+            {
+                var position = diagnostic.Location.GetLineSpan().StartLinePosition;
+                return new CompilationError
+                {
+                    Message = diagnostic.GetMessage(),
+                    Code = diagnostic.Id,
+                    SourcePath = sourcePath,
+                    Line = position.Line + 1,
+                    Column = position.Character + 1,
+                };
+            })
+            .ToArray();
     }
 
     public IEnumerable<CompilationResult> CompileSource(string sourceCode, string sourcePath = "")
