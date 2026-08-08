@@ -70,6 +70,15 @@ public class ConstructorInjectionTests
     }
 
     [Fact]
+    public void TheResolvedModule_ImportsTheRuntimeNamespaceItUses()
+    {
+        // Emitting any `$eq.*` requires the module to import `$eq`. This one emitted the resolve
+        // line and no import: every page taking a dependency died on "$eq is not defined" the
+        // moment it was constructed — the whole feature, dead in a browser, green in the suite.
+        Transpile(PageSource).Should().Contain("$eq").And.MatchRegex(@"import \{[^}]*\$eq[^}]*\} from ""@equantic/runtime""");
+    }
+
+    [Fact]
     public void DataParameters_StayExactlyWhereTheyWere()
     {
         Transpile(PageSource).Should().Contain("title: any = 'Pick'");

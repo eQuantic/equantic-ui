@@ -284,6 +284,11 @@ public class TypeScriptEmitter
                             // whole point of taking a dependency through a constructor.
                             foreach (var service in services)
                             {
+                                // Emitting any `$eq.*` REQUIRES the module to import `$eq` — the
+                                // strategies signal that through UsedHelpers, and this one did not:
+                                // the resolve line shipped, the import did not, and the page died on
+                                // "$eq is not defined" the moment it constructed.
+                                component.UsedHelpers.Add(Eq.Import);
                                 c.Raw($"const {service.Name.ToCamelCase()} = "
                                     + $"{Eq.ResolveService}('{service.ServiceKey}');");
                             }
