@@ -165,7 +165,7 @@ public class CompileTimeEvaluator
         if (syntaxRef == null)
         {
 
-            // For TailwindClass fields, try to invoke the implicit string operator via reflection
+            // For [CompileTimeEvaluate] value types, try to invoke the implicit string operator via reflection
             var result = TryExtractFromExternalAssembly(fieldSymbol);
             return result;
         }
@@ -418,8 +418,8 @@ public class CompileTimeEvaluator
             }
 
             // Get the type containing the field
-            // Roslyn gives us: "eQuantic.UI.Tailwind.TW.Display"
-            // Reflection needs: "eQuantic.UI.Tailwind.TW+Display"
+            // Roslyn gives us the nested type with dots: "Some.Namespace.Outer.Nested"
+            // Reflection needs the + separator: "Some.Namespace.Outer+Nested"
             var typeName = fieldSymbol.ContainingType.ToDisplayString();
 
             // Try with the display string first (in case it's not nested)
@@ -429,7 +429,7 @@ public class CompileTimeEvaluator
             if (type == null)
             {
                 // Split into namespace and class parts
-                // For "eQuantic.UI.Tailwind.TW.Display", we need "eQuantic.UI.Tailwind.TW+Display"
+                // Walk outward until the assembly resolves the outer type, then re-join with +
                 var parts = typeName.Split('.');
 
                 // Try different combinations to find where the class nesting starts
@@ -494,7 +494,7 @@ public class CompileTimeEvaluator
         var propertyDecl = syntaxRef.GetSyntax() as PropertyDeclarationSyntax;
         if (propertyDecl == null) return null;
 
-        // Handle expression-bodied property: public static TailwindClass Flex => new("flex");
+        // Handle expression-bodied property: public static AtomicClass Flex => new("flex");
         if (propertyDecl.ExpressionBody != null)
         {
             return TryEvaluate(propertyDecl.ExpressionBody.Expression);
