@@ -57,8 +57,7 @@
             <BunExeName Condition="$([MSBuild]::IsOSPlatform('Linux'))">bun-linux</BunExeName>
             <BunExeName Condition="$([MSBuild]::IsOSPlatform('OSX'))">bun-darwin</BunExeName>
 
-            <BunZipDir Condition="'$(BunZipPath)' != ''">
-                $([System.IO.Path]::GetDirectoryName('$(BunZipPath)'))</BunZipDir>
+            <BunZipDir Condition="'$(BunZipPath)' != ''">$([System.IO.Path]::GetDirectoryName('$(BunZipPath)'))</BunZipDir>
         </PropertyGroup>
         <PropertyGroup>
             <BunExePath Condition="'$(BunZipDir)' != ''">$(BunZipDir)/$(BunExeName)</BunExePath>
@@ -151,14 +150,12 @@
         <PropertyGroup>
             <!-- Standard components source files are packaged in eQuantic.UI.Components package -->
             <!-- Try NuGet cache first (consumer scenario) -->
-            <_StandardComponentsDir Condition="'$(PkgeQuantic_UI_Components)' != ''">
-                $(PkgeQuantic_UI_Components)/tools/source</_StandardComponentsDir>
+            <_StandardComponentsDir Condition="'$(PkgeQuantic_UI_Components)' != ''">$(PkgeQuantic_UI_Components)/tools/source</_StandardComponentsDir>
 
             <!-- Fallback to source tree (development scenario) -->
             <_DevComponentsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Components</_DevComponentsDir>
             <_StandardComponentsDir
-                Condition="'$(_StandardComponentsDir)' == '' And Exists('$(_DevComponentsDir)')">
-                $(_DevComponentsDir)</_StandardComponentsDir>
+                Condition="'$(_StandardComponentsDir)' == '' And Exists('$(_DevComponentsDir)')">$(_DevComponentsDir)</_StandardComponentsDir>
 
             <!-- The SHARED (write-once) component LIBRARY is RUNTIME-PROVIDED: its transpiled modules
                  ship inside runtime.js and eqc routes `using eQuantic.UI.Components` imports
@@ -234,10 +231,8 @@
         <PropertyGroup>
             <!-- Runtime.js is packaged in eQuantic.UI.Runtime package -->
             <!-- Try NuGet cache first (consumer scenario) -->
-            <_RuntimeSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">
-                $(PkgeQuantic_UI_Runtime)/tools/runtime/runtime.js</_RuntimeSourcePath>
-            <_CssSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">
-                $(PkgeQuantic_UI_Runtime)/tools/runtime/equantic.css</_CssSourcePath>
+            <_RuntimeSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">$(PkgeQuantic_UI_Runtime)/tools/runtime/runtime.js</_RuntimeSourcePath>
+            <_CssSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">$(PkgeQuantic_UI_Runtime)/tools/runtime/equantic.css</_CssSourcePath>
 
             <!-- Fallback to source tree (development scenario) -->
             <_RuntimeSourcePath
