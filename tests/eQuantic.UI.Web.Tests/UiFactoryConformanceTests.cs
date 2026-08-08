@@ -16,8 +16,24 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class UiFactoryConformanceTests
 {
-    private static readonly MethodInfo[] Factories =
+    private static readonly MethodInfo[] AllFactories =
         typeof(FactorySurface).GetMethods(BindingFlags.Public | BindingFlags.Static);
+
+    /// <summary>
+    /// Factories that deliberately do NOT mirror a constructor, each for a stated reason. The rule
+    /// below is the contract; this is its one documented exception, kept as a list of names so a
+    /// second one cannot slip in unnoticed.
+    /// <list type="bullet">
+    /// <item><c>Gap</c> — wraps the STATIC factory <c>Spacer.Fixed</c>, and cannot be called
+    /// <c>Spacer</c> because that name is already the flex factory (no overloads here). Without a
+    /// name of its own the rigid spacer is unreachable in any file importing this surface: the
+    /// mirrored method shadows the type, so <c>Spacer.Fixed(34)</c> stops compiling.</item>
+    /// </list>
+    /// </summary>
+    private static readonly HashSet<string> NamedFactories = new() { "Gap" };
+
+    private static readonly MethodInfo[] Factories =
+        AllFactories.Where(m => !NamedFactories.Contains(m.Name)).ToArray();
 
     [Fact]
     public void EveryFactory_IsNamedExactlyLikeItsReturnType()
@@ -28,9 +44,24 @@ public class UiFactoryConformanceTests
     }
 
     [Fact]
+    public void ANamedFactory_StillReturnsAVocabularyNode()
+    {
+        // The exception is about the NAME, never about what comes back: every factory — mirrored
+        // or named — hands back a node the vocabulary already knows.
+        foreach (var name in NamedFactories)
+        {
+            var factory = AllFactories.Single(m => m.Name == name);
+            typeof(eQuantic.UI.Primitives.VisualNode).IsAssignableFrom(factory.ReturnType)
+                .Should().BeTrue($"{name} must return a vocabulary node");
+        }
+    }
+
+    [Fact]
     public void NoFactoryOverloads_TheTwinIsJavaScript()
     {
-        Factories.GroupBy(m => m.Name).Where(g => g.Count() > 1).Select(g => g.Key)
+        // Overloads are checked across EVERY factory, exception or not: the JS twin has one method
+        // per name whatever the C# name rule says.
+        AllFactories.GroupBy(m => m.Name).Where(g => g.Count() > 1).Select(g => g.Key)
             .Should().BeEmpty("JS class methods cannot overload — one canonical signature per node");
     }
 
