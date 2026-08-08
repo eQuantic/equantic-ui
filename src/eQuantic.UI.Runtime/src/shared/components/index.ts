@@ -85,4 +85,5 @@ export { Toast } from './Toast';
 export { Tooltip } from './Tooltip';
 export { TsvCodec } from './TsvCodec';
 export { TypeScriptLanguage } from './TypeScriptLanguage';
+export { UI } from './UI';
 export { XmlLanguage } from './XmlLanguage';

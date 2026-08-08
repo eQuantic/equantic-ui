@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
 
@@ -94,6 +95,17 @@ public class ObjectCreationStrategy : IConversionStrategy
             var ordered = OrderedArguments(creation, context);
             emittedSlots = ordered.Count;
             arguments = string.Join(", ", ordered);
+        }
+
+        // A COLLECTION initializer (`new Column(gap) { a, b }`) is Add-per-element in C# — it must
+        // go through the twin's add(), never ride the trailing CONFIG slot: an array Object.assigns
+        // its INDICES onto the node, `children` stays empty, and nothing says so at build time.
+        // Collections themselves (List/Dictionary/…) keep their literal lowering below.
+        if (creation.Initializer?.Kind() == SyntaxKind.CollectionInitializerExpression
+            && !IsCollectionLikeTypeName(typeName))
+        {
+            return AddPerElementConstruction(
+                creation.Initializer, $"new {genericTypeName ?? typeName}({arguments})", context);
         }
 
         var initializer = "";
@@ -204,6 +216,30 @@ public class ObjectCreationStrategy : IConversionStrategy
         return $"new {genericTypeName ?? typeName}({arguments})";
     }
 
+    /// <summary>Type names whose creations lower to JS literals (array/object/Set) — a collection
+    /// initializer on THESE is the literal itself, never Add-per-element on a constructed node.</summary>
+    private static bool IsCollectionLikeTypeName(string typeName) =>
+        typeName.StartsWith("List<") || typeName.Contains(".List<")
+        || typeName.StartsWith("IEnumerable<") || typeName.Contains(".IEnumerable<")
+        || typeName.StartsWith("Dictionary<") || typeName.Contains(".Dictionary<")
+        || typeName.StartsWith("HashSet<") || typeName.Contains(".HashSet<")
+        || typeName.Contains("Collection<");
+
+    /// <summary>
+    /// C# collection-initializer semantics, exactly: construct, then one <c>add(…)</c> per element —
+    /// <c>($n =&gt; { $n.add(a); $n.add(b); return $n; })(new Column(12))</c>. A two-expression
+    /// element (<c>{ key, value }</c>) is the two-argument Add overload. Works for every class with
+    /// an Add: the vocabulary twins ship <c>add()</c>, and a user class transpiles its own.
+    /// </summary>
+    private static string AddPerElementConstruction(
+        InitializerExpressionSyntax initializer, string construction, ConversionContext context)
+    {
+        var adds = initializer.Expressions.Select(element => element is InitializerExpressionSyntax pair
+            ? $"$n.add({string.Join(", ", pair.Expressions.Select(e => context.Converter.ConvertExpression(e)))}); "
+            : $"$n.add({context.Converter.ConvertExpression(element)}); ");
+        return $"($n => {{ {string.Concat(adds)}return $n; }})({construction})";
+    }
+
     /// <summary>The converted argument bound to the exception constructor's <c>message</c> parameter
     /// (semantic when resolvable, else the LAST argument of a multi-arg call — every BCL exception
     /// with a paramName overload puts the message beside it); null = keep whatever was converted.</summary>
@@ -284,6 +320,14 @@ public class ObjectCreationStrategy : IConversionStrategy
 
     private static string ParameterDefaultLiteral(IParameterSymbol parameter)
     {
+        // A non-nullable STRUCT parameter defaulted with `= default` (BoxStyle, EdgeInsets…) must
+        // fill as `undefined`, never `null`: the hand-written twin declares its own default
+        // (`style: BoxStyle = new BoxStyle()`), which `undefined` triggers and an explicit `null`
+        // silently bypasses — the null then walks into the lowering as a style.
+        if (parameter.HasExplicitDefaultValue && parameter.ExplicitDefaultValue is null
+            && parameter.Type is { IsValueType: true }
+            && parameter.Type.OriginalDefinition?.SpecialType != SpecialType.System_Nullable_T)
+            return "undefined";
         if (!parameter.HasExplicitDefaultValue || parameter.ExplicitDefaultValue is null) return "null";
         var value = parameter.ExplicitDefaultValue;
 
@@ -543,6 +587,13 @@ public class ObjectCreationStrategy : IConversionStrategy
                 var ctorArgs = creation.ArgumentList is { Arguments.Count: > 0 }
                     ? OrderedArguments(creation, context).ToList()
                     : new List<string>();
+                // Target-typed `new(gap) { a, b }` on a node class: Add-per-element, exactly like
+                // the explicit form — the trailing config slot is for OBJECT initializers only.
+                if (creation.Initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
+                {
+                    return AddPerElementConstruction(creation.Initializer,
+                        $"new {target.Name}({string.Join(", ", ctorArgs)})", context);
+                }
                 if (ms != null && ctorArgs.Count < ms.Parameters.Length)
                     ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(ParameterDefaultLiteral));
                 ctorArgs.Add(context.Converter.ConvertExpression(creation.Initializer));

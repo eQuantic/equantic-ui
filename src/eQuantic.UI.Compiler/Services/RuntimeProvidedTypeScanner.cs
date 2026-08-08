@@ -67,9 +67,20 @@ public static class RuntimeProvidedTypeScanner
             catch { continue; }
 
             // `new Text(...)` resolves the identifier to the CONSTRUCTOR — take its containing type.
+            // An UNQUALIFIED static call (`Column(...)` through `using static UI`) resolves to the
+            // METHOD — the class the emission introduces (`UI.column(...)`) appears nowhere in the
+            // source, so the method symbol is the only trail back to it. Reduced EXTENSION calls
+            // stay excluded: they emit as instance calls (`node.centered()`), and importing their
+            // C#-side static home would name an export the runtime never ships.
             var type = symbol as INamedTypeSymbol
                        ?? (symbol is IMethodSymbol { MethodKind: MethodKind.Constructor } ctorSymbol
                            ? ctorSymbol.ContainingType
+                           : null)
+                       ?? (symbol is IMethodSymbol
+                           {
+                               IsStatic: true, MethodKind: MethodKind.Ordinary, IsExtensionMethod: false,
+                           } staticMethod
+                           ? staticMethod.ContainingType
                            : null);
             if (type is null) continue;
 

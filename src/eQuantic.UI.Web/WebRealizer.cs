@@ -1058,7 +1058,11 @@ public static class WebRealizer
         // Single line → shaping-style ellipsis (spec A8).
         if (text.MaxLines == 1)
         {
-            element.Style!.WhiteSpace = "nowrap";
+            // MONO keeps `pre`: nowrap COLLAPSES runs of spaces, and in code the spaces ARE the
+            // content — every indented line of the playground's editor started at column zero
+            // while Photon (which draws literal glyph runs) indented it correctly. `pre` refuses
+            // to wrap exactly like nowrap, so the ellipsis contract is untouched.
+            element.Style!.WhiteSpace = mono ? "pre" : "nowrap";
             element.Style.Overflow = "hidden";
             element.Style.TextOverflow = "ellipsis";
         }
