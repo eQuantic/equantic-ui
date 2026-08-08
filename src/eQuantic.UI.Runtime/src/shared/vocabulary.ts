@@ -100,6 +100,8 @@ export class TextRun {
   content: string;
   color: ColorTokenValue | null;
   mono: boolean;
+  /** Inline emphasis (C# `TextRun.Weight`) — the camelCased FontWeight name. */
+  weight: string | null = null;
 
   constructor(content: string, color: ColorTokenValue | null = null, mono = false, config?: EqConfig) {
     this.content = content;
@@ -263,6 +265,12 @@ abstract class FlexNode extends VisualNode {
 
   add(child: VisualChild): void {
     this.children.push(child);
+  }
+
+  /** C# twin of `VisualNodeExtensions.With` — add a child and hand the container back. */
+  with(child: VisualChild): this {
+    this.children.push(child);
+    return this;
   }
 }
 
@@ -460,6 +468,12 @@ export class Grid extends VisualNode {
 
   add(child: VisualChild): void {
     this.children.push(child);
+  }
+
+  /** C# twin of `VisualNodeExtensions.With` — add a child and hand the container back. */
+  with(child: VisualChild): this {
+    this.children.push(child);
+    return this;
   }
 }
 
@@ -1134,6 +1148,12 @@ export class Stack extends VisualNode {
 
   add(child: VisualChild): void {
     this.children.push(child);
+  }
+
+  /** C# twin of `VisualNodeExtensions.With` — add a child and hand the container back. */
+  with(child: VisualChild): this {
+    this.children.push(child);
+    return this;
   }
 }
 

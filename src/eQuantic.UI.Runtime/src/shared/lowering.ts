@@ -1460,6 +1460,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
             {
               color: run.color ? tokenValue(run.color) : undefined,
               'font-family': run.mono === true ? MONO_STACK : undefined,
+              'font-weight': run.weight ? String(fontWeights[run.weight] ?? run.weight) : undefined,
             },
             [textLeaf(run.content)],
           ),

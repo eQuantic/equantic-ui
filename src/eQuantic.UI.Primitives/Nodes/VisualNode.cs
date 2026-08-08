@@ -954,7 +954,11 @@ public sealed class Pressable : VisualNode
 
 /// <summary>One inline run of a rich <see cref="Text"/> (see <see cref="Text.Spans"/>): its own
 /// color and/or mono face, flowing inside the paragraph. Null color = the paragraph's color.</summary>
-public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono = false);
+public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono = false)
+{
+    /// <summary>Inline emphasis — one bold word inside a sentence, without splitting the Text.</summary>
+    public FontWeight? Weight { get; init; }
+}
 
 /// <summary>Line alignment within a <see cref="Text"/> paragraph (CSS <c>text-align</c> twin).</summary>
 public enum TextAlignment : byte

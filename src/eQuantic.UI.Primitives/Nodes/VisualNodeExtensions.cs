@@ -15,6 +15,14 @@ public static class VisualNodeExtensions
     /// site where it is easy to write two thirds of it and see a glyph sitting in a corner.
     /// </para>
     /// </summary>
+    /// <summary>Add a child and hand the container back — the fluent form of <c>Add</c>, for
+    /// building a Row/Column inline where a statement list would break the expression.</summary>
+    public static T With<T>(this T node, VisualNode child) where T : FlexNode
+    {
+        node.Add(child);
+        return node;
+    }
+
     public static VisualNode Centered(this VisualNode node)
     {
         var row = new Row(gap: 0)
