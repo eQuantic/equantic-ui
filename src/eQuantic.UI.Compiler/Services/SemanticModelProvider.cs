@@ -112,6 +112,37 @@ public class SemanticModelProvider
     }
 
     /// <summary>
+    /// What the C# LANGUAGE says about this file — the CS#### errors, before eqc translates a
+    /// single node. eqc already holds the compilation it needs to answer this; it simply never
+    /// asked, so a file with a syntax error was parsed leniently by Roslyn and transpiled anyway,
+    /// emitting a component built from a half-understood tree.
+    ///
+    /// This REPORTS, it does not gate: in an SDK build csc is the authority on C# and runs right
+    /// after, and eqc's own compilation can legitimately be poorer than csc's (source generators
+    /// contribute types eqc never sees), so failing the build here would reject code that
+    /// compiles. A host with no csc of its own — the playground — is the one that must gate,
+    /// because there nothing else ever will.
+    /// </summary>
+    public IReadOnlyList<Diagnostic> GetLanguageDiagnostics(SyntaxTree tree)
+    {
+        var compilation = _projectCompilation is null
+            ? CSharpCompilation.Create(
+                "eQuantic.UI.DynamicAssembly",
+                new[] { tree },
+                _references,
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                    nullableContextOptions: NullableContextOptions.Enable))
+            : _projectCompilation.SyntaxTrees.FirstOrDefault(t => AreSameFile(t.FilePath, tree.FilePath)) is { } existing
+                ? _projectCompilation.ReplaceSyntaxTree(existing, tree)
+                : _projectCompilation.AddSyntaxTrees(tree);
+
+        return compilation.GetSemanticModel(tree)
+            .GetDiagnostics()
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .ToArray();
+    }
+
+    /// <summary>
     /// Compares two file paths to see if they reference the same file.
     /// Handles relative vs absolute paths, different separators, etc.
     /// </summary>
