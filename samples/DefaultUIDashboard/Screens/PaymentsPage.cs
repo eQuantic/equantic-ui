@@ -53,7 +53,9 @@ public sealed class PaymentsPage : StatefulComponent
         content.Add(TableCard(theme));
         content.Add(Footer(theme));
 
-        var frame = ConsoleShell.Wrap(theme, "/payments",
+        // The payments screen IS the root route, so that is what the sidebar lights — pointing the
+        // active item at "/payments" highlighted an entry whose own link went nowhere.
+        var frame = ConsoleShell.Wrap(theme, "/",
             [new Crumb("Workspace", "/"), new Crumb("Payments")],
             content,
             new ShellActions(
@@ -310,7 +312,8 @@ public sealed class PaymentsPage : StatefulComponent
     {
         var head = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
         head.Add(new Flexible(new Text("Activity", TypeRole.Label, theme.TextPrimary, maxLines: 1), 1));
-        head.Add(new Link("/log", new Text("View log", TypeRole.Caption, theme.LinkColor, maxLines: 1)));
+        // The ledger screen IS the log this card summarises — 10 000 entries, virtualized.
+        head.Add(new Link("/rows", new Text("View log", TypeRole.Caption, theme.LinkColor, maxLines: 1)));
 
         var feed = new Column(gap: Space.S3) { Width = SizeValue.Fill };
         foreach (var entry in ConsoleData.Activity) feed.Add(ActivityRow(theme, entry));
