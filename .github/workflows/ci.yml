@@ -65,12 +65,17 @@ jobs:
     strategy:
       matrix:
         include:
+          # Each OS leg packs BOTH architectures of its platform — packing only zips the right
+          # Bun binary, it does not depend on the host arch. The SDK references all six.
           - os: ubuntu-latest
             runtime: Linux64
+            runtime2: LinuxArm64
           - os: windows-latest
             runtime: Win64
+            runtime2: WinArm64
           - os: macos-latest
             runtime: Osx64
+            runtime2: OsxArm64
 
     steps:
       - uses: actions/checkout@v4
@@ -102,17 +107,20 @@ jobs:
             echo "Using version from Directory.Build.props: $VERSION"
           fi
 
-      - name: Build and Pack Runtime.${{ matrix.runtime }}
+      - name: Build and Pack Runtime.${{ matrix.runtime }} + ${{ matrix.runtime2 }}
         shell: bash
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           dotnet pack src/eQuantic.UI.Runtime.${{ matrix.runtime }}/eQuantic.UI.Runtime.${{ matrix.runtime }}.csproj -c Release -p:Version=$VERSION
+          dotnet pack src/eQuantic.UI.Runtime.${{ matrix.runtime2 }}/eQuantic.UI.Runtime.${{ matrix.runtime2 }}.csproj -c Release -p:Version=$VERSION
 
-      - name: Upload Runtime.${{ matrix.runtime }} Package
+      - name: Upload Runtime.${{ matrix.runtime }} + ${{ matrix.runtime2 }} Packages
         uses: actions/upload-artifact@v4
         with:
           name: runtime-${{ matrix.runtime }}-package
-          path: src/eQuantic.UI.Runtime.${{ matrix.runtime }}/bin/Release/*.nupkg
+          path: |
+            src/eQuantic.UI.Runtime.${{ matrix.runtime }}/bin/Release/*.nupkg
+            src/eQuantic.UI.Runtime.${{ matrix.runtime2 }}/bin/Release/*.nupkg
 
   # Build core packages (platform-agnostic)
   build-packages:
