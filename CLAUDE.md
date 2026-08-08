@@ -302,13 +302,8 @@ on Photon. Theming is providing a `Primitives.IAppTheme` (select it with `AddUI(
 through `IAppTheme.Colors(variant)`.
 
 - **Escape hatch**: raw HTML/CSS via `HtmlElement`/`DynamicElement` and `ClassBuilder` — web-only,
-  for pages that need hand-written markup.
-
-### Tailwind Integration (optional utility CSS)
-
-The `eQuantic.UI.Tailwind` package generates CSS automatically at build time through the
-EMBEDDED Bun (`bun x @tailwindcss/cli@<pinned>` — zero Node, zero manual targets). Consumers only
-reference the package; no build configuration is required.
+  for pages that need hand-written markup. Any external CSS a consumer brings is their own build
+  concern; the framework ships exactly one styling engine.
 
 ## Server Integration
 

@@ -165,7 +165,6 @@ jobs:
           dotnet build src/eQuantic.UI.Components/eQuantic.UI.Components.csproj -c Release -p:Version=$VERSION
           dotnet build src/eQuantic.UI.Compiler/eQuantic.UI.Compiler.csproj -c Release -p:Version=$VERSION
           dotnet build src/eQuantic.UI.Server/eQuantic.UI.Server.csproj -c Release -p:Version=$VERSION
-          dotnet build src/eQuantic.UI.Tailwind/eQuantic.UI.Tailwind.csproj -c Release -p:Version=$VERSION
           dotnet build src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj -c Release -p:Version=$VERSION
 
           # Pack meta-package Runtime (references platform-specific packages)
@@ -176,7 +175,6 @@ jobs:
           dotnet pack src/eQuantic.UI.Components/eQuantic.UI.Components.csproj -c Release --no-build -p:Version=$VERSION
           dotnet pack src/eQuantic.UI.Compiler/eQuantic.UI.Compiler.csproj -c Release --no-build -p:Version=$VERSION
           dotnet pack src/eQuantic.UI.Server/eQuantic.UI.Server.csproj -c Release --no-build -p:Version=$VERSION
-          dotnet pack src/eQuantic.UI.Tailwind/eQuantic.UI.Tailwind.csproj -c Release --no-build -p:Version=$VERSION
           dotnet pack src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj -c Release -p:Version=$VERSION
 
       - name: Test

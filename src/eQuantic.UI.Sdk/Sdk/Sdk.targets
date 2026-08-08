@@ -96,7 +96,7 @@
 
     <!--
         BunPackage: Declare npm packages directly in .csproj (zero package.json).
-        Usage: <BunPackage Include="tailwindcss-animate" Version="1.0.7" />
+        Usage: <BunPackage Include="dayjs" Version="1.11.13" />
         Packages are installed to obj/eQuantic/npm/ and symlinked for tool resolution.
     -->
     <Target Name="InstallBunPackages" AfterTargets="ResolveBunPath"

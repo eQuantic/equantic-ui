@@ -12,7 +12,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\eQuantic.UI.Compiler\eQuantic.UI.Compiler.csproj" />
-        <ProjectReference Include="..\eQuantic.UI.Tailwind\eQuantic.UI.Tailwind.csproj" />
     </ItemGroup>
 
     <!-- Automatically update the SDK tools folder whenever the compiler is built -->

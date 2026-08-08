@@ -21,15 +21,15 @@ namespace eQuantic.UI.Core.Styling;
 /// <example>
 /// <code>
 /// [CompileTimeEvaluate]
-/// public readonly struct TailwindClass
+/// public readonly struct AtomicClass
 /// {
 ///     private readonly string _value;
 ///
-///     public TailwindClass(string value) => _value = value;
+///     public AtomicClass(string value) => _value = value;
 ///
-///     public static implicit operator string(TailwindClass tw) => tw._value;
+///     public static implicit operator string(AtomicClass tw) => tw._value;
 ///
-///     public static TailwindClass operator +(TailwindClass left, TailwindClass right)
+///     public static AtomicClass operator +(AtomicClass left, AtomicClass right)
 ///         => new($"{left._value} {right._value}");
 /// }
 ///

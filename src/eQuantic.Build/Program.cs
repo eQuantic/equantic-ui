@@ -37,10 +37,6 @@ var intermediateDir = Path.Combine(primarySourceDir, "obj", "eQuantic", "ts");
 
 var compiler = new ComponentCompiler();
 
-// Explicitly register Tailwind style provider to ensure it's available
-// (Assembly discovery may not find it if assembly isn't loaded yet)
-compiler.StyleProviders.Register(new eQuantic.UI.Tailwind.Build.TailwindStyleProvider());
-
 // Create full project compilation for better type resolution
 // This enables the compiler to resolve types defined in external files
 Compilation? projectCompilation = null;
@@ -296,7 +292,6 @@ bool CompileAndBundle()
     {
         var hasErrors = false;
         var entryPoints = new List<string>();
-        var safelist = new HashSet<string>();
         
         if (!Directory.Exists(intermediateDir)) Directory.CreateDirectory(intermediateDir);
         if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
@@ -350,14 +345,6 @@ bool CompileAndBundle()
                         {
                             entryPoints.Add(tsPath);
                         }
-
-                        // Collect Extracted Styles
-                        if (result.ExtractedStyles != null && result.ExtractedStyles.Count > 0)
-                        {
-                             foreach(var cls in result.ExtractedStyles) {
-                                 safelist.Add(cls);
-                             }
-                        }
                     }
                     else
                     {
@@ -370,14 +357,7 @@ bool CompileAndBundle()
                 }
             }
         }
-        
-        // Write Safelist
-        if (safelist.Count > 0)
-        {
-            var safelistPath = Path.Combine(intermediateDir, "tailwind-safelist.txt");
-            File.WriteAllText(safelistPath, string.Join("\n", safelist));
-        }
-        
+
         if (hasErrors) return true;
 
         if (!hasBun && entryPoints.Count > 0)
