@@ -243,6 +243,7 @@ public class ComponentParser
                 definition.IsSharedStateful = true;
                 definition.BaseClassName = "SharedStatefulComponent";
                 ParsePageAttributes(classDecl, definition);
+                ParseServerActions(classDecl, definition);
 
                 var sharedBuild = classDecl.DescendantNodes()
                     .OfType<MethodDeclarationSyntax>()
@@ -491,6 +492,11 @@ public class ComponentParser
         foreach (var method in methods)
         {
             if (IsServerOnly(method)) continue;
+            // A [ServerAction] body runs on the SERVER; the client twin is the RPC stub the
+            // emitter writes from definition.ServerActions. Transpiling the body here shipped
+            // server code (DbContexts, Stopwatches, the compiler itself) into the browser.
+            if (method.AttributeLists.SelectMany(a => a.Attributes)
+                .Any(a => a.Name.ToString() is "ServerAction" or "ServerActionAttribute")) continue;
 
             var methodName = method.Identifier.Text;
             if (methodName == "Render" || methodName == "Build" || methodName == "CreateState")
