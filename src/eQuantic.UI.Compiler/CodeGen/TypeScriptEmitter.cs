@@ -1049,6 +1049,20 @@ public class TypeScriptEmitter
                 if (getterHasBody || setterHasBody)
                 {
                     _converter.SetCurrentClass(component.Name);
+
+                    // C# 14 `field`: the property guards its own store, so the twin needs the store
+                    // (type-only — the setter is what creates it, and a real field would be defined
+                    // as undefined after super() under useDefineForClassFields) and, when the getter
+                    // is the compiler's, a getter that reads it. Without that getter the property is
+                    // WRITE-ONLY in JavaScript: every read of it answers undefined.
+                    if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(node))
+                    {
+                        var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(node);
+                        c.Field(slot, DeclarationType(component, prop.Type), null, node, isDeclare: true);
+                        if (!getterHasBody && getter != null)
+                            c.Raw($"{stat}get {name}() {{ return this.{slot}; }}", getter);
+                    }
+
                     if (getterHasBody)
                     {
                         var body = getter!.ExpressionBody != null
@@ -1163,6 +1177,19 @@ public class TypeScriptEmitter
                 }
                 else if (p.AccessorList != null)
                 {
+                    // C# 14 `field`: the property keeps its own store and the accessors guard it.
+                    // The slot has to exist before the getter names it — see FieldExpressionStrategy
+                    // for why it is called `$name` (a name no C# field can take).
+                    if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(p))
+                    {
+                        var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
+                        var slotDefault = TypeDeclarationExtensions.DefaultFor(p.Type);
+                        if (slotDefault == "null")
+                            c.Raw($"declare {slot}: {DeclaredType(p.Type)};", p);
+                        else
+                            c.Field(slot, DeclaredType(p.Type), slotDefault, p);
+                    }
+
                     var g = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
                     if (g?.ExpressionBody != null)
                         c.Raw($"{qualifier}get {pn}(): {propertyType} {{ return {_converter.ConvertExpression(g.ExpressionBody.Expression)}; }}", g);
@@ -1194,7 +1221,12 @@ public class TypeScriptEmitter
                     // (`set { if (value == _x) return; _x = value; Raise(); }`) — is where a model
                     // keeps its invariants. Emitting only the getter made every assignment to it a
                     // type error, and would have dropped the invariant if it had compiled.
-                    var setter = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "set");
+                    // `init` too, and not only `set`: an init accessor is where a component states
+                    // what its configuration may be (`init => field = value.Count > 3 ? throw …`),
+                    // and looking only for "set" dropped that guard silently — the invariant simply
+                    // did not exist in the twin.
+                    var setter = p.AccessorList.Accessors
+                        .FirstOrDefault(a => a.Keyword.Text is "set" or "init");
                     if (setter?.ExpressionBody != null)
                         c.Raw($"{qualifier}set {pn}(value: {DeclaredType(p.Type)}) {{ {_converter.ConvertExpression(setter.ExpressionBody.Expression)}; }}", setter);
                     else if (setter?.Body != null)
