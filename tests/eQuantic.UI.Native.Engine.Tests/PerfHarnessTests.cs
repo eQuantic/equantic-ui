@@ -68,10 +68,13 @@ public class PerfHarnessTests
         return page;
     }
 
-    private static PhotonHost Open()
+    private static PhotonHost Open(bool recycleFrames = false)
     {
         var host = new PhotonHost(DenseScene(PhotonTheme.Instance), PhotonTheme.Instance,
-            ThemeMode.Light, 1280, 900);
+            ThemeMode.Light, 1280, 900)
+        {
+            RecycleFrames = recycleFrames,
+        };
         host.RenderFrame(new DisplayListBuilder());
         return host;
     }
@@ -95,6 +98,35 @@ public class PerfHarnessTests
     /// survives a noisy CI box, not a benchmark. Baseline 2026-08-07 (M-series): p50 0.23 ms,
     /// p95 0.32 ms.</summary>
     private const double RealizeP95CeilingMs = 33.0;
+
+    /// <summary>The same steady state with the SHELLS' configuration (RecycleFrames on): the
+    /// LayoutNode tree feeds itself forward, and what remains per frame is scratch. Measured
+    /// 2026-08-08 at 67.5 KB/frame on landing (from 106 KB without the pool) — what remains
+    /// is the frame's region lists and scratch, the pool's next candidates.</summary>
+    private const long PooledAllocationCeilingBytesPerFrame = 72 * 1024;
+
+    [Fact]
+    public void SteadyMotion_WithRecycledFrames_AllocatesFarLess()
+    {
+        var host = Open(recycleFrames: true);
+        for (var frame = 0; frame < 10; frame++)
+            host.RenderFrame(new DisplayListBuilder(), frame * 8f);
+
+        const int measured = 60;
+        var builder = new DisplayListBuilder();
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var frame = 0; frame < measured; frame++)
+        {
+            builder.Reset();
+            host.RenderFrame(builder, 80f + frame * 8f);
+        }
+        var perFrame = (GC.GetAllocatedBytesForCurrentThread() - before) / measured;
+
+        _output.WriteLine($"pooled steady-state allocation: {perFrame / 1024.0:F1} KB/frame " +
+                          $"(ceiling {PooledAllocationCeilingBytesPerFrame / 1024.0:F0} KB)");
+        perFrame.Should().BeLessThan(PooledAllocationCeilingBytesPerFrame,
+            "the shells run with RecycleFrames on — this is the allocation profile production sees");
+    }
 
     [Fact]
     public void SteadyMotion_AllocationsPerFrame_StayUnderTheCeiling()

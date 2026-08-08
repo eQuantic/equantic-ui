@@ -147,6 +147,9 @@ public sealed class PhotonWindow
         var frameBuilder = new DisplayListBuilder();
         var host = new PhotonHost(root, theme, mode, _width, _height, textService)
         {
+            // Production owns its frames: nothing retains a RealizeResult past the next render,
+            // so each replaced tree feeds the next (LayoutNodePool).
+            RecycleFrames = true,
             RenderScale = scale,
             // A Mac is driven by a POINTER: the controls tighten, exactly as every native desktop
             // app's do. The same tree on a phone stays comfortable, and no page chose either.

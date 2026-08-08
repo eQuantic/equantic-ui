@@ -27,11 +27,12 @@ public sealed class LayoutContext
     /// </summary>
     public Dictionary<(string Parent, int Index), string>? PathCache { get; init; }
 
-    // The single factory every laid-out node passes through. A LayoutNode recycler wants to live
-    // here — but a recycled tree needs an OWNERSHIP story first: tests (and any holder) retain
-    // RealizeResults across many frames, and a double-buffer quietly rewrote trees under 155 of
-    // them. Until results carry an explicit lifetime, every node is fresh.
-    internal LayoutNode Node(VisualNode source) => new(source);
+    /// <summary>The node pool the OWNING host lends for this pass — null (tests, one-shot
+    /// layouts) allocates fresh. The ownership story lives on <see cref="LayoutNodePool"/>.</summary>
+    public LayoutNodePool? Pool { get; init; }
+
+    // The single factory every laid-out node passes through.
+    internal LayoutNode Node(VisualNode source) => Pool?.Rent(source) ?? new(source);
 
     internal LayoutNode Node(VisualNode source, Rect bounds)
     {
@@ -140,7 +141,7 @@ public sealed class LayoutNode
 {
     public LayoutNode(VisualNode source) => Source = source;
 
-    public VisualNode Source { get; }
+    public VisualNode Source { get; private set; }
     public Rect Bounds { get; internal set; }
     public List<LayoutNode> Children { get; } = new();
     public TextMeasurement? Text { get; internal set; }
@@ -169,6 +170,51 @@ public sealed class LayoutNode
     /// <summary>The stable layout path of a <see cref="DragDismiss"/> node — the host routes drag
     /// input by it (registered with the frame's drag regions at emit).</summary>
     public string? DragPath { get; internal set; }
+
+    /// <summary>Back to factory state for the POOL: every field a layout pass stamps, cleared —
+    /// the child list is kept (emptied), which is the allocation the pool exists to save.</summary>
+    internal void Reset(VisualNode source)
+    {
+        Source = source;
+        Bounds = default;
+        Children.Clear();
+        Text = null;
+        Presence = 1f;
+        PresencePath = null;
+        Path = null;
+        DragOffset = 0f;
+        DragPath = null;
+    }
+}
+
+/// <summary>
+/// Recycler for <see cref="LayoutNode"/>s — the frame's dominant allocation. Ownership is the
+/// whole design (a double-buffer once rewrote trees under 155 retained results): nodes come back
+/// ONLY through <see cref="RecycleTree"/>, and the only caller is a host that OWNS the frame it
+/// is discarding — opt-in via <c>PhotonHost.RecycleFrames</c>, default off, so anything that
+/// retains a <c>RealizeResult</c> (tests, tools) keeps a tree nobody rewrites.
+/// </summary>
+public sealed class LayoutNodePool
+{
+    private readonly Stack<LayoutNode> _free = new();
+
+    /// <summary>How many nodes are parked — the reuse assertion's window into the pool.</summary>
+    public int FreeCount => _free.Count;
+
+    internal LayoutNode Rent(VisualNode source)
+    {
+        if (_free.Count == 0) return new LayoutNode(source);
+        var node = _free.Pop();
+        node.Reset(source);
+        return node;
+    }
+
+    /// <summary>Returns a whole laid-out tree. The caller asserts nobody else holds it.</summary>
+    public void RecycleTree(LayoutNode root)
+    {
+        for (var i = 0; i < root.Children.Count; i++) RecycleTree(root.Children[i]);
+        _free.Push(root);
+    }
 }
 
 /// <summary>

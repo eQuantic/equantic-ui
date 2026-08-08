@@ -95,6 +95,7 @@ public sealed class PhotonViewController : UIViewController
         _text = new CoreTextService();
         _host = new PhotonHost(_root, _theme, Mode(), (float)view.Bounds.Width, (float)view.Bounds.Height, _text)
         {
+            RecycleFrames = true,   // production owns its frames (LayoutNodePool)
             RenderScale = scale,
             TextRasterizer = _text,
             ImageLoader = new CoreGraphicsImageLoader(),
