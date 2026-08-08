@@ -1,12 +1,12 @@
 <h1 align="center">eQuantic.UI</h1>
 
 <p align="center">
-  <strong>Build fast web apps with C# — No WASM, No Compromise</strong>
+  <strong>One C# codebase. Real web. Real native.</strong>
 </p>
 
 <p align="center">
-  A Flutter-inspired UI framework that compiles C# directly to optimized JavaScript.<br/>
-  Type-safe. Lightweight. Zero external dependencies.
+  Write components once in C#: on the web they compile to optimized JavaScript at build time (no WASM),<br/>
+  and natively they render through <strong>Photon</strong>, a proprietary GPU engine (Metal/Vulkan — no WebView, no Skia).
 </p>
 
 <p align="center">
@@ -19,14 +19,14 @@
   <a href="#why-equanticui">Why eQuantic.UI</a> •
   <a href="#features">Features</a> •
   <a href="#how-it-works">How It Works</a> •
-  <a href="#roadmap">Roadmap</a>
+  <a href="#documentation">Documentation</a>
 </p>
 
 ---
 
 > **⚠️ Development Preview**
 >
-> eQuantic.UI is currently in active development. The NuGet packages are **not yet published** to nuget.org.
+> eQuantic.UI is in active development. The NuGet packages are **not yet published** to nuget.org.
 > To try it out, clone the repository and build from source (see [Contributing](#contributing)).
 > We welcome early adopters and feedback!
 
@@ -34,16 +34,18 @@
 
 ## Why eQuantic.UI?
 
-| Challenge | Blazor WASM | JavaScript Frameworks | **eQuantic.UI** |
+| Challenge | Blazor WASM | JavaScript frameworks | **eQuantic.UI** |
 |-----------|-------------|----------------------|-----------------|
-| **Bundle size** | ~2MB+ (runtime) | Varies (~100KB-500KB) | **~57KB** runtime |
-| **Language** | C# | JavaScript/TypeScript | **C#** |
-| **Type safety** | At runtime | Optional (TS) | **Compile-time** |
-| **Server actions** | SignalR setup | REST/GraphQL setup | **Built-in RPC** |
-| **Learning curve** | Razor syntax | New ecosystem | **.NET familiar** |
-| **External deps** | None | Node.js, npm | **None** |
+| **Language** | C# | JavaScript/TypeScript | **C#, end to end** |
+| **Web payload** | ~2 MB+ runtime | varies | **~85 KB** gzipped runtime, per-page code splitting |
+| **Native apps** | separate MAUI codebase | separate React Native/Electron | **the same components**, GPU-rendered |
+| **Styling** | CSS/Razor | CSS-in-JS / utility classes | **typed C# — no CSS authored**, atomic classes generated |
+| **Server calls** | SignalR setup | REST/GraphQL setup | **built-in RPC** (`[ServerAction]`) |
+| **Toolchain** | .NET | Node.js, npm, bundlers | **only the .NET SDK** — everything else is embedded |
 
-**eQuantic.UI** gives you the best of both worlds: write in C#, deploy optimized JavaScript.
+Components are authored **once** against an abstract visual vocabulary and realized per target:
+DOM + CSS on the web, GPU pixels on macOS/iOS/Android. Not "write once, run in a WebView" —
+each target gets its real rendering path.
 
 ---
 
@@ -51,501 +53,187 @@
 
 ### Prerequisites
 
-- .NET 10.0 SDK (that's it — no Node.js, no npm, nothing else)
+- .NET 10.0 SDK — that's it. No Node.js, no npm; the TypeScript/bundling toolchain ships embedded.
 
-### 1. Create a new project
+### Web app in three commands
 
 ```bash
-dotnet new web -n MyApp
-cd MyApp
+dotnet new install eQuantic.UI.Templates
+dotnet new equantic-app -n MyApp
+cd MyApp && dotnet run
 ```
 
-### 2. Add eQuantic.UI SDK
+### Native app (a real GPU window) in three commands
 
-Update your `.csproj`:
-
-```xml
-<Project Sdk="eQuantic.UI.Sdk/0.1.6">
-
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-  </PropertyGroup>
-
-  <!-- No manual package references needed - SDK includes everything automatically -->
-
-</Project>
+```bash
+dotnet new install eQuantic.UI.Templates
+dotnet new equantic-native -n MyNativeApp
+cd MyNativeApp && dotnet run
 ```
 
-> The SDK automatically includes `eQuantic.UI.Core`, `eQuantic.UI.Components`, `eQuantic.UI.Server`, and `eQuantic.UI.Runtime` packages.
+### Your first component
 
-### 3. Create your first component
+The template scaffolds this page — a component, a state field and a handler. No JavaScript,
+no CSS, no markup:
 
 ```csharp
-// Pages/Counter.cs
-using eQuantic.UI.Core;
-using eQuantic.UI.Components;
-using eQuantic.UI.Core.Theme.Types;
-
-[Page("/")]
-public class Counter : StatefulComponent
+[Page("/", Title = "MyApp")]
+public sealed class HomePage : StatefulComponent
 {
-    public override ComponentState CreateState() => new CounterState();
-}
+    private int _count;
 
-public class CounterState : ComponentState<Counter>
-{
-    private int _count = 0;
-
-    public override IComponent Build(RenderContext context)
+    public override VisualNode Build(ComponentContext context)
     {
-        return new Container
+        var theme = context.Theme;
+
+        var body = new Column(gap: Space.S4)
         {
-            ClassName = "p-8 max-w-md mx-auto",
-            Children =
-            {
-                new Heading($"Count: {_count}", 1),
-                new Row
-                {
-                    Gap = "8px",
-                    Children =
-                    {
-                        new Button
-                        {
-                            Text = "-",
-                            Variant = Variant.Secondary,
-                            OnClick = () => SetState(() => _count--)
-                        },
-                        new Button
-                        {
-                            Text = "+",
-                            Variant = Variant.Primary,
-                            OnClick = () => SetState(() => _count++)
-                        }
-                    }
-                }
-            }
+            Width = SizeValue.Fill, Height = SizeValue.Fill,
+            Main = MainAlign.Center, Cross = CrossAlign.Center,
         };
+        body.Add(new Text("MyApp", TypeRole.Display, theme.TextPrimary, maxLines: 1));
+        body.Add(new Text($"{_count}", TypeRole.Display, theme.TextPrimary, maxLines: 1) { Tabular = true });
+
+        var actions = new Row(gap: Space.S3);
+        actions.Add(new Button("Count", Variant.Primary, SizeVariant.Medium,
+            onPressed: () => SetState(() => _count++)));
+        actions.Add(new Button("Reset", Variant.Outline, SizeVariant.Medium,
+            onPressed: () => SetState(() => _count = 0)) { Disabled = _count == 0 });
+        body.Add(actions);
+
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill, Height = SizeValue.Fill,
+            Background = theme.Background,
+        }, body);
     }
 }
 ```
 
-### 4. Configure and run
-
-```csharp
-// Program.cs
-using eQuantic.UI.Server;
-
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddUI(options =>
-{
-    options.ScanAssembly(typeof(Program).Assembly);
-});
-
-var app = builder.Build();
-app.UseStaticFiles();
-app.UseServerActions();
-app.MapUI();
-app.Run();
-```
-
-```bash
-dotnet run
-```
-
-Your app is now running with a fully reactive counter — no JavaScript written.
+The **same class** serves as a server-rendered, hydrated web page and as a native screen — the
+target is a project setting, not a rewrite.
 
 ---
 
 ## Features
 
-### Component Model
+### Write-once components
 
-Build UIs using familiar patterns inspired by Flutter and React:
+One abstract vocabulary (`Box`, `Row`, `Column`, `Text`, `Button`, `TextEntry`, `ScrollView`,
+`Stack`, `Overlay`, …) with two realizers. Layout, selection marks, focus rings and editing
+carets are computed in shared C#, so both targets are identical **by construction** — parity is
+enforced by a cross-target test harness and a pixel golden suite.
 
-```csharp
-// Stateless - Pure functions of props
-public class Greeting : StatelessComponent
-{
-    public string? Name { get; set; }
+### Styling without CSS
 
-    public override IComponent Build(RenderContext context)
-        => new Text($"Hello, {Name}!");
-}
+Components declare typed values — `BoxStyle`, `ColorToken`, `Space`, `TypeRole`, `EdgeInsets` —
+and the engine does the rest:
 
-// Stateful - Internal state with reactive updates
-public class Counter : StatefulComponent
-{
-    public override ComponentState CreateState() => new CounterState();
-}
+- **Web**: every declaration becomes one **atomic CSS rule**, deduplicated app-wide (the 100th
+  card adds zero bytes of CSS). SSR and the client hash declarations identically, so hydration
+  never repaints; new styles appearing at runtime insert their rule exactly once.
+- **Native**: the same values resolve to dp and GPU paint. No CSS exists on this path at all.
+- Hover/focus become real CSS pseudo-classes on the web — interaction visuals with zero JS.
+- Theming is one line: provide an `IAppTheme` (`MaterialTheme.FromSeed(...)` rebrands the whole
+  app, light and dark, from a single seed color).
 
-public class CounterState : ComponentState<Counter>
-{
-    private int _count = 0;
-
-    public override IComponent Build(RenderContext context)
-        => new Button
-        {
-            Text = $"Clicked {_count} times",
-            OnClick = () => SetState(() => _count++)
-        };
-}
-```
-
-### Server Actions
-
-Call server-side C# methods directly from your components — no REST endpoints, no serialization boilerplate:
+### Server Actions — RPC without ceremony
 
 ```csharp
 [Page("/todos")]
 public class TodoList : StatefulComponent
 {
-    private readonly ITodoService _todoService;
-
-    public TodoList(ITodoService todoService)
-    {
-        _todoService = todoService;
-    }
-
     [ServerAction]
-    public async Task<List<Todo>> GetTodos()
+    public async Task<List<Todo>> LoadTodos()
     {
-        // Runs on the server with full .NET capabilities (DI, EF Core, etc.)
-        return await _todoService.GetTodosAsync();
-    }
-
-    [ServerAction]
-    [Authorize(Roles = "Admin")]
-    public async Task DeleteTodo(Guid id)
-    {
-        // Authorization is enforced server-side
-        await _todoService.DeleteTodoAsync(id);
+        using var db = new AppDbContext();
+        return await db.Todos.ToListAsync();
     }
 }
 ```
 
-### Type-Safe Enum Operations
+Only `[ServerAction]` methods are callable from the client (allowlist), with `[Authorize]` RBAC
+enforced before execution, payload limits and type allowlisting.
 
-Full support for enum parsing, validation, and enumeration — perfect for dropdowns, filters, and status management:
+### The Photon engine (native track)
 
-```csharp
-public enum OrderStatus { Pending, Processing, Shipped, Delivered, Cancelled }
+- **Metal and Vulkan backends** over a shared RHI, with a CPU reference backend as the normative
+  core — backends are held to ±1 LSB parity against it.
+- Shells for **macOS, iOS and Android**; real text (CoreText), real input: keyboard with a single
+  focus order, IME composition (dead keys, CJK), per-path gestures, mouse cursors, clipboard.
+- **Accessibility**: a shared semantics tree drives the native bridges (VoiceOver on macOS —
+  labels, activation, slider adjustment).
+- Steady-state frames allocate under **72 KB** with frame recycling on, pinned by a perf harness
+  with regression ceilings.
 
-[Page("/orders")]
-public class OrderFilter : StatefulComponent
-{
-    private OrderStatus? _selectedStatus;
+### Component library
 
-    public override IComponent Build(RenderContext context)
-    {
-        // Get all enum values for dropdown options
-        var statusOptions = Enum.GetValues<OrderStatus>()
-            .Select(s => new { Value = s, Label = s.ToString() });
+Buttons, inputs, selection controls, cards, lists, tabs, dialogs, drawers, menus, toasts — plus
+heavyweights authored once and running on both targets:
 
-        return new Container
-        {
-            Children =
-            {
-                new Select
-                {
-                    Options = statusOptions,
-                    Value = _selectedStatus,
-                    OnChange = (string value) =>
-                    {
-                        // Type-safe parsing with TryParse
-                        if (Enum.TryParse<OrderStatus>(value, out var status))
-                        {
-                            SetState(() => _selectedStatus = status);
-                        }
-                    }
-                },
+- **Spreadsheet**: Excel-grade interaction — cell/range/row/column selection, in-cell editing,
+  fill handle with directional pour, ⌘D/⌘R, TSV clipboard that round-trips with Excel, drag
+  resize, sparse undo/redo.
+- **Code editor**: line-based document model, incremental highlighting for six languages,
+  word-aware undo, find, bracket matching, virtualization.
+- **ListView**: windowed recycling — a thousand rows emit the draw commands of a screenful.
 
-                // Validate enum from user input
-                new Input
-                {
-                    Placeholder = "Enter status",
-                    OnBlur = (string input) =>
-                    {
-                        if (Enum.IsDefined(typeof(OrderStatus), input))
-                        {
-                            var status = Enum.Parse<OrderStatus>(input);
-                            Console.WriteLine($"Valid status: {status}");
-                        }
-                    }
-                }
-            }
-        };
-    }
-}
-```
+### Developer experience
 
-### Dictionary Operations
-
-Full Dictionary support for state management, caching, and lookup tables:
-
-```csharp
-[Page("/settings")]
-public class UserSettings : StatefulComponent
-{
-    private Dictionary<string, object> _settings = new();
-
-    public override IComponent Build(RenderContext context)
-    {
-        return new Container
-        {
-            Children =
-            {
-                new Button
-                {
-                    Text = "Load Settings",
-                    OnClick = async () =>
-                    {
-                        // Add settings
-                        _settings.Add("theme", "dark");
-                        _settings.Add("notifications", true);
-                        _settings.Add("maxItems", 50);
-
-                        // Check if key exists
-                        if (_settings.ContainsKey("theme"))
-                        {
-                            var theme = _settings["theme"];
-                            Console.WriteLine($"Current theme: {theme}");
-                        }
-
-                        // Safe retrieval with TryGetValue
-                        if (_settings.TryGetValue("maxItems", out var max))
-                        {
-                            Console.WriteLine($"Max items: {max}");
-                        }
-
-                        // Iterate keys and values
-                        foreach (var key in _settings.Keys)
-                        {
-                            Console.WriteLine($"{key} = {_settings[key]}");
-                        }
-
-                        SetState(() => { }); // Trigger re-render
-                    }
-                },
-
-                new Button
-                {
-                    Text = "Clear Settings",
-                    OnClick = () => SetState(() => _settings.Clear())
-                }
-            }
-        };
-    }
-}
-```
-
-### Production-Ready Components
-
-Components with enterprise-grade robustness matching shadcn/ui:
-
-#### Compound Components Pattern
-
-```csharp
-new Card {
-    Variant = CardVariant.Elevated,
-    Children = {
-        new CardHeader {
-            Children = {
-                new CardTitle { Text = "Q1 2026 Roadmap" },
-                new CardDescription { Text = "Key initiatives" }
-            }
-        },
-        new CardBody {
-            Children = { new Text("Launch mobile app...") }
-        },
-        new CardFooter {
-            Children = { new Button { Text = "View Details" } }
-        }
-    }
-}
-```
-
-#### Loading States
-
-```csharp
-new Button {
-    Text = "Save Changes",
-    Loading = isSaving,  // Automatic spinner + disabled state
-    OnClick = HandleSave
-}
-```
-
-#### Form Validation
-
-```csharp
-new FormField {
-    Label = "Email",
-    Required = true,
-    Error = validationError,
-    HelperText = "We'll never share your email",
-    Children = {
-        new TextInput { Type = "email", DefaultValue = "" }
-    }
-}
-```
-
-#### Input Groups
-
-```csharp
-new InputGroup {
-    Children = {
-        new InputAddon { Text = "https://" },
-        new TextInput { Placeholder = "example.com" },
-        new Button { Text = "Go" }
-    }
-}
-```
-
-**Features:**
-
-- ✅ 6 Card variants (Default, Outline, Elevated, Subtle, Ghost, and custom via theme)
-- ✅ Controlled/Uncontrolled inputs (DefaultValue, DefaultChecked)
-- ✅ FormField with error messages and helper text
-- ✅ Loading spinners on buttons
-- ✅ Input groups for composite inputs
-- ✅ Data & ARIA attributes support
-- ✅ Complete XML documentation
-
-[Learn more about Component Robustness →](https://github.com/equantic/equantic-ui/wiki/ComponentRobustness)
-
-### Theming System
-
-Consistent styling with type-safe variants:
-
-```csharp
-new Button
-{
-    Text = "Submit",
-    Variant = Variant.Primary,        // Primary, Secondary, Destructive, Outline, Ghost, Link...
-    Size = SizeVariant.Large          // Small, Medium, Large, XLarge
-}
-```
-
-### Tailwind CSS Integration (Optional)
-
-First-class Tailwind support with three approaches for maximum flexibility:
-
-```xml
-<PackageReference Include="eQuantic.UI.Tailwind" Version="0.1.6" />
-```
-
-#### 1. Type-Safe Typed Objects with + Operator (Recommended)
-
-```csharp
-using eQuantic.UI.Tailwind;
-
-new Container
-{
-    // Clean syntax with compile-time safety and IntelliSense
-    ClassName = TW.Display.Flex + TW.Flex.ItemsCenter + TW.Gap(4) + TW.P(6) +
-                TW.Bg.White + TW.Rounded.Lg + TW.Shadow.Md +
-                TW.Hover(TW.Bg.Gray100) +
-                TW.Dark(TW.Bg.Zinc900)
-}
-```
-
-#### 2. Fluent Builder API
-
-```csharp
-new Container
-{
-    ClassName = TW.Build()
-        .Add(TW.Display.Flex, TW.Flex.ItemsCenter, TW.Gap(4), TW.P(6))
-        .Add(TW.Bg.White, TW.Rounded.Lg, TW.Shadow.Md)
-        .Hover(TW.Bg.Gray100)
-        .Dark(TW.Bg.Zinc900)
-        .Build()
-}
-```
-
-#### 3. Raw Strings (when needed)
-
-```csharp
-new Container
-{
-    ClassName = "flex items-center gap-4 p-6 bg-white rounded-lg shadow-md"
-}
-```
-
-#### Key Benefits
-
-- ✅ Full IntelliSense autocomplete
-- ✅ Compile-time type checking
-- ✅ Refactoring support (rename, find usages)
-- ✅ Zero runtime overhead (value types)
-- ✅ Mix typed objects with raw strings for arbitrary values
-- ✅ Generic `ClassBuilder` in Core for any CSS framework
+- **Hot reload on both targets** — edit C#, the browser page and the native window update in place.
+- Next.js-style **error overlay with the C# stack trace**, mapped through source maps.
+- True 404/500 pages, SEO metadata (`IHandleMetadata`), per-route lazy loading.
+- `dotnet watch` is the dev loop; the embedded toolchain does the rest.
 
 ---
 
 ## How It Works
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                        BUILD TIME                               │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   Counter.cs ──► Roslyn Parser ──► TypeScript ──► JavaScript    │
-│                                                                 │
-│   • Type checking at compile time                               │
-│   • Tree-shaking removes unused code                            │
-│   • Code splitting per page/route                               │
-│   • Source maps for C# debugging in browser                     │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        RUNTIME (~57KB)                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   • Virtual DOM with keyed reconciliation                       │
-│   • Event delegation and state management                       │
-│   • Server Actions RPC bridge                                   │
-│   • SSR hydration support                                       │
-│   • Development tools (logger, error overlay)                   │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+### Web pipeline
+
+```
+dotnet build
+    ↓
+Roslyn parses your components (.cs)
+    ↓
+eqc transpiles C# → TypeScript (two-layer type checking)
+    ↓
+embedded Bun bundles → wwwroot/_equantic/*.js (per-page splitting)
+    ↓
+ASP.NET Core serves SSR pages; the client hydrates and takes over
 ```
 
-### Zero External Dependencies
+### Native pipeline
 
-The entire toolchain is embedded in NuGet packages:
+```
+dotnet build
+    ↓
+the same components compile as .NET
+    ↓
+PhotonHost lays out (own C# flex engine) and realizes a display list
+    ↓
+Metal / Vulkan present GPU frames in a real window (macOS/iOS/Android shells)
+```
 
-- **No Node.js** required on dev machine or CI
-- **No npm** packages to manage
-- **No global tools** to install
-- Just `dotnet build` — everything works
+Static structure resolves at build time; event handlers, state and lifecycle run client-side;
+data access stays server-side behind Server Actions.
 
-### Self-Contained Package Architecture
+### Zero external dependencies
 
-eQuantic.UI uses a **self-contained package architecture** where each package manages its own artifacts:
+The platform Runtime packages embed the Bun binary; the SDK orchestrates everything through
+MSBuild. `dotnet build` is the entire toolchain — no Node.js, no npm, no bundler configuration.
 
-- **Runtime Package** (`eQuantic.UI.Runtime`) contains `runtime.js` (~57KB)
-- **Components Package** (`eQuantic.UI.Components`) contains C# source for type resolution
-- **SDK Package** (`eQuantic.UI.Sdk`) orchestrates build via NuGet references
+### Self-contained package architecture
 
-This design ensures:
-
-- ✅ **No tight coupling** between packages
-- ✅ **Independent versioning** (e.g. use Runtime 0.1.7 with SDK 0.1.6)
-- ✅ **No artifact duplication** across packages
-- ✅ **Flexible updates** without republishing all packages
-
-[Learn more about the package architecture →](https://github.com/equantic/equantic-ui/wiki/PackageArchitecture)
+Each package owns its artifacts and the SDK wires them together through NuGet-generated
+`$(Pkg*)` properties — independent versioning, no artifact duplication. See
+[Package Architecture](https://github.com/equantic/equantic-ui/wiki/PackageArchitecture).
 
 ---
 
 ## Supported C# Features
 
-The compiler supports modern C# constructs:
-
-Fidelity is enforced by a **conformance harness** (460+ cases) that runs each C# construct as both
+Fidelity is enforced by a **conformance harness** (500+ cases) that runs each C# construct as both
 transpiled JS and real .NET and asserts identical results. Every construct resolves to one of three
 mechanisms: a native JS strategy, a faithful `$eq.*` compat helper, or a build error when it's
 genuinely impossible.
@@ -578,73 +266,36 @@ genuinely impossible.
 
 ## Project Structure
 
-```text
+```
 src/
-├── eQuantic.UI.Core/        # Core abstractions (IComponent, HtmlElement)
-├── eQuantic.UI.Components/  # Standard components (Button, Input, Container...)
-├── eQuantic.UI.Compiler/    # Roslyn-based C# → JavaScript transpiler
-├── eQuantic.UI.Sdk/         # MSBuild SDK for project integration
-├── eQuantic.UI.Server/      # ASP.NET Core integration & Server Actions
-├── eQuantic.UI.Runtime/     # Browser runtime (TypeScript)
-├── eQuantic.UI.Tailwind/    # Tailwind CSS integration
-└── eQuantic.UI.CLI/         # Developer tools
+├── eQuantic.UI.Core/           # Core abstractions (IComponent, HtmlElement — the web escape hatch)
+├── eQuantic.UI.Primitives/     # The abstract visual vocabulary + design tokens (zero deps)
+├── eQuantic.UI.Components/     # WRITE-ONCE component library (one source, both targets)
+├── eQuantic.UI.Compiler/       # Roslyn-based C# → TypeScript transpiler (eqc)
+├── eQuantic.UI.Sdk/            # MSBuild SDK for web projects
+├── eQuantic.UI.Sdk.Native/     # MSBuild SDK for Photon projects
+├── eQuantic.UI.Server/         # ASP.NET Core SSR + Server Actions
+├── eQuantic.UI.Runtime/        # TypeScript browser runtime (reconciler, state, atomizer)
+├── eQuantic.UI.Runtime.*/      # Platform Bun bundles (Osx64, Win64, Linux64)
+├── eQuantic.UI.Native.*        # Photon: engine (RHI, Metal, Vulkan), framework, shells
+├── eQuantic.UI.Templates/      # dotnet new equantic-app / equantic-native
+└── eQuantic.Build/             # MSBuild build tasks
 ```
 
 ---
 
 ## Documentation
 
-- [📚 Wiki Home](https://github.com/equantic/equantic-ui/wiki) - Complete documentation
-- [🏗️ Architecture](https://github.com/equantic/equantic-ui/wiki/Architecture) - DDD, CQRS, and Clean Architecture
-- [📦 Package Architecture](https://github.com/equantic/equantic-ui/wiki/PackageArchitecture) - Self-contained package design
-- [🧩 Core Components](https://github.com/equantic/equantic-ui/wiki/CoreComponents) - HtmlNode, HtmlElement, component types
-- [💪 Component Robustness](https://github.com/equantic/equantic-ui/wiki/ComponentRobustness) - Production-ready components
-- [🎨 Styling](https://github.com/equantic/equantic-ui/wiki/Styling) - Theme system and CSS integration
-- [🔨 Build Flow](https://github.com/equantic/equantic-ui/wiki/BuildFlow) - How the compilation pipeline works
-- [⚙️ Compiler](https://github.com/equantic/equantic-ui/wiki/Compiler) - C# to JavaScript transpilation
-- [⚡ Runtime](https://github.com/equantic/equantic-ui/wiki/Runtime) - Virtual DOM and browser runtime
-- [🐛 Debugging Tools](https://github.com/equantic/equantic-ui/wiki/Debug) - Professional debugging with logger and error overlay
-- [🗺️ Roadmap](https://github.com/equantic/equantic-ui/wiki/Roadmap) - Project progress and future plans
-- [CLAUDE.md](CLAUDE.md) - Technical reference for contributors
-
----
-
-## Roadmap
-
-### Completed
-
-| Phase | Description |
-|-------|-------------|
-| ✅ Core Architecture | Component model, Virtual DOM, HtmlNode abstraction |
-| ✅ Compiler & SDK | Roslyn-based C# → TypeScript → JavaScript transpilation |
-| ✅ Runtime & State | Keyed reconciliation, WeakMap event tracking, state management |
-| ✅ Server Actions | RPC bridge with `[Authorize]` and payload validation |
-| ✅ SSR & Hydration | Server-side rendering with client hydration |
-| ✅ Theming System | `StyleBuilder` (CVA pattern), `Variant`/`SizeVariant` enums, `IAppTheme` |
-| ✅ .NET Surface Coverage | Conformance-validated compat for value types, decimal/long, date-time family, Nullable, StringBuilder, collections (incl. record-keyed dictionaries) |
-| ✅ Component Robustness | Compound components, variants, loading states, validation, input groups |
-| ✅ Developer Experience | Source Maps for C# debugging, HMR support |
-
-### In Progress
-
-| Feature | Description |
-|---------|-------------|
-| 🚧 E2E Testing | Playwright tests for `TodoListApp` sample |
-| 🚧 Component Playground | Interactive showcase of all components |
-| 🚧 Documentation | Comprehensive guides and API reference |
-
-### Planned
-
-| Feature | Description |
-|---------|-------------|
-| 📋 NuGet Publishing | Publish packages to nuget.org |
-| 📋 DataGrid Pro | Enterprise-grade data grid with pagination and editing |
-| 📋 Dynamic Themes | Runtime Dark Mode switching |
-| 📋 eQuantic DevTools | Browser extension to inspect component tree and state |
-| 📋 Material Components | Expand the `eQuantic.UI.Material` package (theme + components available in preview) |
-| 📋 Online Playground | WASM-based online editor |
-
-See the [full roadmap](https://github.com/equantic/equantic-ui/wiki/Roadmap) for more details.
+- [📚 Wiki Home](https://github.com/equantic/equantic-ui/wiki) — complete documentation
+- [🚀 Getting Started](https://github.com/equantic/equantic-ui/wiki/GettingStarted)
+- [🧬 Write-Once Components](https://github.com/equantic/equantic-ui/wiki/WriteOnceComponents) — the architecture
+- [🎇 Photon Engine](https://github.com/equantic/equantic-ui/wiki/Photon) — the native GPU track
+- [🧩 Components](https://github.com/equantic/equantic-ui/wiki/Components) — the catalog
+- [🎨 Styling](https://github.com/equantic/equantic-ui/wiki/Styling) — typed styles, atomic CSS, theming
+- [⚙️ Compiler](https://github.com/equantic/equantic-ui/wiki/Compiler) — C# → JavaScript
+- [🔨 Build Flow](https://github.com/equantic/equantic-ui/wiki/BuildFlow) • [⚡ Runtime](https://github.com/equantic/equantic-ui/wiki/Runtime) • [🐛 Debugging](https://github.com/equantic/equantic-ui/wiki/Debug)
+- [🗺️ Roadmap](https://github.com/equantic/equantic-ui/wiki/Roadmap) — what's ahead
+- [CLAUDE.md](CLAUDE.md) — technical reference for contributors
 
 ---
 

@@ -18,7 +18,7 @@ All commits must be authored solely by the repository owner without any co-autho
 
 ## Project Overview
 
-**eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a minimal runtime (~49KB).
+**eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a minimal runtime (~85 KB gzipped).
 
 ### Core Principles
 
@@ -145,7 +145,7 @@ eQuantic.UI follows a **self-contained package architecture** where each package
 
 **Key Packages:**
 
-- **eQuantic.UI.Runtime** - Packages `runtime.js` (~49KB) at `tools/runtime/runtime.js`
+- **eQuantic.UI.Runtime** - Packages `runtime.js` at `tools/runtime/runtime.js`
 - **eQuantic.UI.Components** - Packages C# source files at `tools/source/*.cs` for compiler type resolution
 - **eQuantic.UI.Sdk** - Orchestrates build, references other packages via `$(PkgeQuantic_UI_*)` NuGet properties
 
