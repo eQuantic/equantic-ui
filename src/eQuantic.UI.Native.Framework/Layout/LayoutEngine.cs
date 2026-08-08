@@ -387,7 +387,7 @@ public static class LayoutEngine
         Shortcut shortcut => MinContentWidth(shortcut.Child, ctx),
         Flexible flexible => MinContentWidth(flexible.Child, ctx),
         Presence presence => MinContentWidth(presence.Child, ctx),
-        UiComponent component => MinContentWidth(component.Build(ctx.Components), ctx),
+        UiComponent component => MinContentWidth(component.BuildContained(ctx.Components), ctx),
         _ => 0,
     };
 
@@ -466,7 +466,9 @@ public static class LayoutEngine
         StretchKind stretchW = StretchKind.None, StretchKind stretchH = StretchKind.None)
     {
         var resolved = ctx.Instances?.Reconcile(path, component) ?? component;
-        return MeasureWrapper(resolved, resolved.Build(ctx.Components), maxW, maxH, ctx, path, stretchW, stretchH);
+        // BuildContained, never Build: a throw here used to reach the host and cost the FRAME — the
+        // window stops presenting and the app is gone, for one component's null reference.
+        return MeasureWrapper(resolved, resolved.BuildContained(ctx.Components), maxW, maxH, ctx, path, stretchW, stretchH);
     }
 
     /// <summary>A transparent wrapper that also resolves the ENTRANCE progress against the host's

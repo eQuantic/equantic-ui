@@ -26,7 +26,19 @@ public sealed class BottomNavigation : StatelessComponent
         OnSelect = onSelect;
     }
 
-    public IReadOnlyList<NavItem> Items { get; init; }
+    /// <summary>
+    /// The 3-5 destinations of spec B4, checked HERE rather than inside Build: a contract enforced
+    /// mid-render throws once per frame, far from the line that got it wrong, and the boundary that
+    /// keeps one component's failure off the rest of the page would (correctly) contain it into a
+    /// red panel instead of naming the mistake. Dialog and TextInput already validate this way.
+    /// </summary>
+    public IReadOnlyList<NavItem> Items
+    {
+        get;
+        init => field = value.Count is < 3 or > 5
+            ? throw new ArgumentException("BottomNavigation takes 3-5 destinations (spec B4): 2 → Tabs, 6+ → Drawer.", nameof(Items))
+            : value;
+    }
     public int Selected { get; init; }
     public Action<int>? OnSelect { get; init; }
 
@@ -34,9 +46,6 @@ public sealed class BottomNavigation : StatelessComponent
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
-        if (Items.Count is < 3 or > 5)
-            throw new ArgumentException("BottomNavigation takes 3-5 destinations (spec B4): 2 → Tabs, 6+ → Drawer.");
-
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         for (var i = 0; i < Items.Count; i++)
         {

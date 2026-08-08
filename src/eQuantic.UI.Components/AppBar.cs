@@ -22,8 +22,20 @@ public sealed class AppBar : StatelessComponent
     /// <summary>Leading slot — a back IconButton by convention (48×48).</summary>
     public VisualNode? Leading { get; init; }
 
-    /// <summary>Up to three Standard IconButtons (spec) — more must overflow to an ActionSheet.</summary>
-    public IReadOnlyList<IconButton>? Actions { get; init; }
+    /// <summary>
+    /// Up to three Standard IconButtons (spec) — more must overflow to an ActionSheet. Checked
+    /// HERE, where the fourth one is written, and not inside Build: a contract enforced mid-render
+    /// throws once per frame, on a thread far from the mistake, and the boundary that keeps a
+    /// component's failure from taking the page down would (correctly) contain it into a red panel
+    /// instead of telling the author what they typed. Dialog and TextInput already validate this way.
+    /// </summary>
+    public IReadOnlyList<IconButton>? Actions
+    {
+        get;
+        init => field = value is { Count: > 3 }
+            ? throw new ArgumentException("AppBar takes at most 3 actions (spec B3) — overflow belongs in an ActionSheet.", nameof(Actions))
+            : value;
+    }
 
     /// <summary>Scrolled state (owner-driven until scroll linking): Surface fill under the content.</summary>
     public bool Scrolled { get; init; }
@@ -31,9 +43,6 @@ public sealed class AppBar : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        if (Actions is { Count: > 3 })
-            throw new ArgumentException("AppBar takes at most 3 actions (spec B3) — overflow belongs in an ActionSheet.");
-
         var row = new Row(gap: 0)
         {
             Width = SizeValue.Fill,

@@ -10,6 +10,7 @@ import { hydrateValue } from '../utils/hydrate-value';
 import { getCurrentRoute } from '../router/current-route';
 import { ComponentInstanceStore, enterPass, exitPass } from '../shared/instance-store';
 import { getPhotonTheme, measurePhotonText, photonMonoAdvance } from '../shared/photon-context';
+import { renderComponentFailure } from '../shared/component-boundary';
 import { scheduleRenderFlush } from './render-scheduler';
 
 /**
@@ -78,6 +79,10 @@ export abstract class StatelessComponent extends Component {
     try {
       const component = this.build(context) as Component;
       return component.render();
+    } catch (error) {
+      // A PAGE has no parent to contain it. Its own throw used to leave the root unwritten, which
+      // is the white screen the boundary exists to end.
+      return renderComponentFailure(this.constructor.name, error);
     } finally {
       exitPass();
     }
@@ -225,6 +230,8 @@ export abstract class StatefulComponent extends Component {
     try {
       const component = this.state.build(context) as Component;
       return component.render();
+    } catch (error) {
+      return renderComponentFailure(this.constructor.name, error);
     } finally {
       exitPass();
     }
@@ -392,6 +399,8 @@ export abstract class SharedStatefulComponent extends Component {
     enterPass(this._instances, () => this._scheduleRender());
     try {
       return (this.build(context) as Component).render();
+    } catch (error) {
+      return renderComponentFailure(this.constructor.name, error);
     } finally {
       exitPass();
     }

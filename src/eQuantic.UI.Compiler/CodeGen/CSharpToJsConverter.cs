@@ -212,6 +212,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<WithExpressionStrategy>();
         _strategyRegistry.Register<TypeofExpressionStrategy>();
         _strategyRegistry.Register<BaseExpressionStrategy>();
+        _strategyRegistry.Register<FieldExpressionStrategy>();
         _strategyRegistry.Register<CastExpressionStrategy>();
         _strategyRegistry.Register<AsExpressionStrategy>();
         _strategyRegistry.Register<ParenthesizedExpressionStrategy>();

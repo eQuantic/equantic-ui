@@ -72,7 +72,9 @@ public static class WebRealizer
         Draggable draggable => LowerDraggable(draggable, context, horizontalAxis),
         Flexible flexible => LowerFlexible(flexible, context, horizontalAxis),
         Spacer spacer => LowerSpacer(spacer, horizontalAxis),
-        UiComponent component => LowerNode(component.Build(context), context, horizontalAxis),
+        // BuildContained, never Build: one component's throw must cost that component's subtree and
+        // nothing else — on the server it used to cost the whole request (a 500 for a card).
+        UiComponent component => LowerNode(component.BuildContained(context), context, horizontalAxis),
         _ => null,
     };
 
