@@ -19,8 +19,20 @@
         <_EqPlatform>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</_EqPlatform>
     </PropertyGroup>
 
+    <!--
+        The framework packages this SDK pulls resolve at the SDK's OWN version, read from the
+        installed package's nuspec (the same mechanism eQuantic.UI.Sdk uses). A wildcard fallback
+        would exclude prereleases — a preview SDK could never restore its own preview packages.
+    -->
     <PropertyGroup Condition="'$(EQuanticUIVersion)' == ''">
-        <EQuanticUIVersion>*</EQuanticUIVersion>
+        <_EQuanticNativeSdkNuspecPath>$(MSBuildThisFileDirectory)../equantic.ui.sdk.native.nuspec</_EQuanticNativeSdkNuspecPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(EQuanticUIVersion)' == '' AND Exists('$(_EQuanticNativeSdkNuspecPath)')">
+        <EQuanticUIVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_EQuanticNativeSdkNuspecPath)')),
+            '&lt;version&gt;(.+?)&lt;/version&gt;').Groups[1].Value)</EQuanticUIVersion>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(EQuanticUIVersion)' == ''">
+        <EQuanticUIVersion>*-*</EQuanticUIVersion>
     </PropertyGroup>
 
     <!-- 15.0 is where CAMetalLayer, safe-area insets and MTLBinaryArchive are all present. -->
