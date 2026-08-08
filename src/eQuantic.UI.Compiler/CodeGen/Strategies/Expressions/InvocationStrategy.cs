@@ -246,6 +246,7 @@ public class InvocationStrategy : IConversionStrategy
         // for the import scanner (the standalone fallback routes it to the runtime).
         if (symbol == null && methodExpression is IdentifierNameSyntax
             && methodName.Length > 0 && char.IsUpper(methodName[0])
+            && !RuntimeProvidedTypeScanner.ComponentModelMemberNames.Contains(methodName)
             && HasFactoryUsingStatic(invocation)
             && !EnclosingTypeDeclares(invocation, methodName))
         {

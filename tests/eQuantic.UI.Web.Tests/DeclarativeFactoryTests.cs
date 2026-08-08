@@ -61,6 +61,10 @@ public class DeclarativeFactoryTests
             .And.Contain("UI.button(");
         js.Should().NotContain("this.column(").And.NotContain("this.text(")
             .And.NotContain("this.row(").And.NotContain("this.button(");
+        // …and the component model's own contract stays the component's: SetState reads exactly
+        // like a factory call (Capitalized, unqualified, inherited), and routed through UI it
+        // mounted a page whose buttons changed nothing.
+        js.Should().Contain("this.setState(").And.NotContain("UI.setState(");
     }
 
     [Theory]
