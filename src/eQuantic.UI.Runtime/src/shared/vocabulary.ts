@@ -680,6 +680,8 @@ export class DragDismiss extends VisualNode {
 
 interface TextEntryConfig {
   placeholder?: string | null;
+  /** The accessible name (aria-label) — the C# initializer `{ Label = … }` lands here. */
+  label?: string | null;
   onSubmit?: (() => void) | null;
   onFocusChanged?: ((focused: boolean) => void) | null;
   disabled?: boolean;
