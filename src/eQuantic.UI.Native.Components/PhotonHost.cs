@@ -173,11 +173,21 @@ public sealed class PhotonHost
         // point, and it always wins.
         _scrolls.Smooth = SmoothScroll && !ReducedMotion;
         var gliding = _scrolls.Advance(timeMs);
+        var previousFrame = _lastFrame;
         _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets, _pressedPath,
             _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible,
             Selection.Start, Selection.End, density: Density,
-            scrollOffset: path => _scrolls.Get(path), markedText: _marked, pathCache: _pathCache);
+            scrollOffset: path => _scrolls.Get(path), markedText: _marked, pathCache: _pathCache,
+            nodePool: RecycleFrames ? _nodePool : null);
         if (RenderScale != 1f) builder.Pop();
+        // The frame we just replaced is OURS to discard — nobody else holds production frames.
+        // (Opt-in: anything that retains RealizeResults — tests, tooling — leaves this off and
+        // every tree stays untouched forever.)
+        if (RecycleFrames && previousFrame is not null)
+        {
+            _nodePool.RecycleTree(previousFrame.Root);
+            foreach (var overlay in previousFrame.OverlayRoots) _nodePool.RecycleTree(overlay);
+        }
         AdoptAutofocus();
         NeedsRender = _lastFrame.HasActiveMotion || gliding;
 
@@ -562,6 +572,16 @@ public sealed class PhotonHost
             return null;
         }
     }
+
+    /// <summary>
+    /// Recycle each frame's LayoutNodes into the next (the frame's dominant allocation). OPT-IN:
+    /// when on, a replaced RealizeResult's tree is rewritten by later frames — production shells
+    /// turn this on because nothing retains their frames; tests and tooling that hold results
+    /// across frames leave it off and every tree stays immutable.
+    /// </summary>
+    public bool RecycleFrames { get; init; }
+
+    private readonly LayoutNodePool _nodePool = new();
 
     /// <summary>A press that began in a sheet is dragging a range until it lifts.</summary>
     private bool _sheetDragging;

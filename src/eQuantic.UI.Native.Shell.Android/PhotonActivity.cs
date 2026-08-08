@@ -175,6 +175,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         _host = new PhotonHost(app.Root(), app.Options.Theme, Mode(), metrics.WidthPixels / scale,
             metrics.HeightPixels / scale, text)
         {
+            RecycleFrames = true,   // production owns its frames (LayoutNodePool)
             RenderScale = scale,
             TextRasterizer = text,
             IconRasterizer = new AndroidIconRasterizer(),

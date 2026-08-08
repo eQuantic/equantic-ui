@@ -198,12 +198,15 @@ public static class PhotonRealizer
         // underlined, without the value changing (the value only changes on commit).
         string markedText = "",
         // The host's cross-frame path-string cache (see LayoutContext.PathCache).
-        Dictionary<(string Parent, int Index), string>? pathCache = null)
+        Dictionary<(string Parent, int Index), string>? pathCache = null,
+        // The owning host's node recycler (see LayoutNodePool) — null allocates fresh.
+        LayoutNodePool? nodePool = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
             density)
         {
             PathCache = pathCache,
+            Pool = nodePool,
             // The HOST's cutouts. Zero on a desktop window, and the shell's real numbers on a phone
             // — the tree is the same either way, which is the point of the node.
             SafeAreaInsets = safeAreaInsets,
