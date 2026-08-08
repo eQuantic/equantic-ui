@@ -255,8 +255,28 @@ jobs:
           name: nupkgs
           path: nupkgs/*.nupkg
 
+
+  # GitHub Packages is a convenience feed for every main push — a light ubuntu job so the heavy
+  # macOS build job never dies on the upload (exit 137).
+  publish-github:
+    needs: build-packages
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download NuGet Packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nupkgs
+          path: nupkgs/
+
       - name: Publish to GitHub Packages
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
