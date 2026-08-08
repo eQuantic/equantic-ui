@@ -357,7 +357,9 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       tabindex: '0',
       role: 'textbox',
       'aria-multiline': 'true',
-      style: 'position:relative;outline:none;',
+      // pre: token runs carry REAL spaces between words — HTML would collapse them. The
+      // horizontal scroller also stops long lines from widening every flex ancestor (min-content).
+      style: 'position:relative;outline:none;white-space:pre;overflow-x:auto;',
     },
     events: {},
     children: [],
