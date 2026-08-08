@@ -672,7 +672,8 @@ public sealed class PhotonHost
     public bool CaretVisible => _textPath is null || _dragSelecting || _codeDragging
         || (int)((_lastTimeMs - _caretPhaseMs) / CaretBlinkMs) % 2 == 0;
 
-    private const float CaretBlinkMs = 500f;
+    /// <summary>The normative phase — shared with the web mirror (CSS animates twice this).</summary>
+    private const float CaretBlinkMs = CodeSurface.CaretBlinkMs;
 
     /// <summary>
     /// A field that asked for the caret gets it — the search box in a palette that just opened, the

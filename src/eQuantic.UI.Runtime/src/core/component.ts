@@ -9,7 +9,13 @@ import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
 import { getCurrentRoute } from '../router/current-route';
 import { ComponentInstanceStore, enterPass, exitPass } from '../shared/instance-store';
-import { getPhotonTheme, measurePhotonText, photonMonoAdvance } from '../shared/photon-context';
+import {
+  getPhotonDensity,
+  getPhotonTheme,
+  getPhotonTypeScale,
+  measurePhotonText,
+  photonMonoAdvance,
+} from '../shared/photon-context';
 import { renderComponentFailure } from '../shared/component-boundary';
 import { scheduleRenderFlush } from './render-scheduler';
 
@@ -66,6 +72,13 @@ export abstract class StatelessComponent extends Component {
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
+      // The SAME density and scale the lowering hands every component it expands. Without these two
+      // a page and its own subtree render at different sizes: the page's context defaulted to
+      // comfortable while everything the lowering expanded took the ambient (compact on a pointer
+      // device), so a code editor drew 19dp lines and placed its caret on a 17dp grid — a caret
+      // that drifts a line and a half down a screenful of code, for no reason anyone can see.
+      density: getPhotonDensity(),
+      typeScale: getPhotonTypeScale(),
       measureText: measurePhotonText,
       monoAdvance: photonMonoAdvance,
     };
@@ -218,6 +231,13 @@ export abstract class StatefulComponent extends Component {
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
+      // The SAME density and scale the lowering hands every component it expands. Without these two
+      // a page and its own subtree render at different sizes: the page's context defaulted to
+      // comfortable while everything the lowering expanded took the ambient (compact on a pointer
+      // device), so a code editor drew 19dp lines and placed its caret on a 17dp grid — a caret
+      // that drifts a line and a half down a screenful of code, for no reason anyone can see.
+      density: getPhotonDensity(),
+      typeScale: getPhotonTypeScale(),
       measureText: measurePhotonText,
       monoAdvance: photonMonoAdvance,
     };
@@ -389,6 +409,13 @@ export abstract class SharedStatefulComponent extends Component {
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
       theme: getPhotonTheme(),
+      // The SAME density and scale the lowering hands every component it expands. Without these two
+      // a page and its own subtree render at different sizes: the page's context defaulted to
+      // comfortable while everything the lowering expanded took the ambient (compact on a pointer
+      // device), so a code editor drew 19dp lines and placed its caret on a 17dp grid — a caret
+      // that drifts a line and a half down a screenful of code, for no reason anyone can see.
+      density: getPhotonDensity(),
+      typeScale: getPhotonTypeScale(),
       measureText: measurePhotonText,
       monoAdvance: photonMonoAdvance,
     };

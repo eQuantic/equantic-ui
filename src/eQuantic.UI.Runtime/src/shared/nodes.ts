@@ -522,6 +522,10 @@ export interface CodeSurfaceNode extends VisualNodeValue {
   onChanged?: (() => void) | null;
   label?: string | null;
   autofocus?: boolean;
+  /** The two marks' ink (C# `CodeSurface.CaretColor` / `SelectionColor`) — an editor on an inverse
+   * slab writes with an ink of its own, and the page theme's would vanish into the slab. */
+  caretColor?: ColorTokenValue | null;
+  selectionColor?: ColorTokenValue | null;
 }
 
 /** What the surface needs from the controller — the transpiled class satisfies it structurally. */

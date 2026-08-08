@@ -266,3 +266,49 @@ describe('components centre like nodes', () => {
     expect(centred.children).toHaveLength(1);
   });
 });
+
+/**
+ * A caret you cannot see is a caret you do not have. Both marks were rendered with the right
+ * geometry and filled with NOTHING — the class they carry was never defined anywhere, so the DOM
+ * looked correct and the screen said nothing about where you were typing.
+ */
+describe('the marks are painted, not merely placed', () => {
+  const surfaceWith = (caretColor?: unknown, selectionColor?: unknown) => {
+    const editor = new CodeEditorController('let x = 1;\nlet y = 2;', CodeLanguages.for('csharp'));
+    editor.selectAll();
+    return lowerVisualNode(
+      new CodeSurface(new Text('', 'labelSmall'), editor, {
+        contentTop: 12,
+        contentLeft: 12,
+        lineHeight: LINE,
+        columnWidth: COLUMN,
+        caretColor,
+        selectionColor,
+      }) as never,
+      { textPrimary: photonTheme.textPrimary, componentContext: { theme: photonTheme, typeScale: 1 } },
+    );
+  };
+
+  const styleOf = (node: HtmlNode, className: string) =>
+    node.children.find((c) => c.attributes['class'] === className)!.attributes['style']!;
+
+  it('paints the caret with the theme ink when the node names none', () => {
+    expect(styleOf(surfaceWith(), 'eq-code-caret')).toContain('background-color:');
+  });
+
+  it('paints the caret with the NODE ink — an inverse slab writes with its own', () => {
+    const ink = { light: { r: 0xc9, g: 0xd4, b: 0xde, a: 255 }, dark: { r: 0xc9, g: 0xd4, b: 0xde, a: 255 } };
+
+    // A page theme's TextPrimary is nearly black; on the playground's dark slab that caret is the
+    // slab. The colour has to ride the node, which is what makes it right on both targets.
+    expect(styleOf(surfaceWith(ink), 'eq-code-caret')).toContain('background-color:#c9d4de');
+  });
+
+  it('washes the selection band to 28% — the C# SelectionAlpha twin', () => {
+    const blue = { light: { r: 0x00, g: 0x50, b: 0xa0, a: 255 }, dark: { r: 0x00, g: 0x50, b: 0xa0, a: 255 } };
+
+    // 255 × 0.28 = 71.4 → 71 = 0x47. The text reads THROUGH the band; an opaque one hides the line
+    // you just selected.
+    expect(styleOf(surfaceWith(undefined, blue), 'eq-code-selection')).toContain('background-color:#0050a047');
+  });
+});

@@ -74,7 +74,7 @@ describe('vocabulary self-lowering (render)', () => {
     const node = box.render();
     expect(node.tag).toBe('div');
     expect(effectiveStyle(node)).toBe(
-      'background-color: light-dark(#0050a0, #5ca2e8); border-radius: 10px; border: 1px solid light-dark(#c9ced6, #3d4754); box-sizing: border-box; height: 40px; padding: 0 16px 0 16px; width: 120px',
+      'background-color: light-dark(#0050a0, #5ca2e8); border-radius: 10px; border: 1px solid light-dark(#c9ced6, #3d4754); box-sizing: border-box; flex-shrink: 0; height: 40px; padding: 0 16px 0 16px; width: 120px',
     );
   });
 
