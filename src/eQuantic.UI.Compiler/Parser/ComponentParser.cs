@@ -679,8 +679,20 @@ public class ComponentParser
     /// </summary>
     private void CollectRuntimeProvidedTypes(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
+        // Standalone or not, the emitter needs the source's own universe: every type DECLARED in
+        // this tree. Without a semantic model it is the only ground truth left — a referenced name
+        // outside this set cannot be user code, so it must be the runtime vocabulary.
+        foreach (var declared in classDecl.SyntaxTree.GetRoot().DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
+            definition.DeclaredInSource.Add(declared.Identifier.Text);
+
         var model = TryGetSemanticModel(classDecl.SyntaxTree);
         if (model == null) return;
+        // A model is only AUTHORITATIVE when the framework's references are actually in the
+        // compilation. A partial CompileSource model resolves local symbols and ERRORS on every
+        // external one — it classifies nothing, and must not silence the declared-in-source
+        // fallback, or the whole vocabulary becomes imports of modules that exist nowhere.
+        definition.ResolvedSemantically =
+            model.Compilation.GetTypeByMetadataName("eQuantic.UI.Primitives.VisualNode") is not null;
         RuntimeProvidedTypeScanner.Collect(classDecl, model, definition.RuntimeProvidedTypes,
             definition.EnumTypes, definition.AppTypes);
     }

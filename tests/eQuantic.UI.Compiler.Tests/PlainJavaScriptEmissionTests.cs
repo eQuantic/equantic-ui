@@ -43,6 +43,8 @@ public class PlainJavaScriptEmissionTests
         Assert.DoesNotContain(": string", result.TypeScript);
         Assert.DoesNotContain(": number", result.TypeScript);
         Assert.DoesNotContain(" as ", result.TypeScript);
+        // Standalone mode must never invent ./X modules — the vocabulary lives in the runtime.
+        Assert.DoesNotContain("from \"./", result.TypeScript);
     }
 
     [Fact]
