@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Git Commit Guidelines
 
-**CRITICAL — commit language**: ALL commit messages in this repository MUST be written in
-ENGLISH. Never write commit messages in Portuguese or any other language. This applies to the
-subject line and the body.
+**CRITICAL — commit format**: `emoji type: description` — the emoji comes FIRST, always
+(✨ feat / 🐛 fix / 📝 docs / ♻️ refactor / ✅ test / 🔧 chore / 👷 ci / ⚡ perf / 💄 style;
+merges: `🔀 merge: description`). ALL commit messages MUST be written in ENGLISH — subject and
+body. The two rules compose: English text, emoji prefix, no exceptions.
 
 **CRITICAL**: NEVER add co-authorship lines to commit messages. Do NOT include:
 
