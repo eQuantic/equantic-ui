@@ -93,4 +93,32 @@ public class StandaloneImportResolutionTests
         Assert.True(result.Success);
         Assert.DoesNotContain("from \"./Text\"", result.TypeScript);
     }
+
+    [Fact]
+    public void ObjectInitializer_WithoutArity_BecomesAssignAfterConstruction()
+    {
+        // `new Text(content, role) { Tabular = true }` must NOT land the config in the color
+        // parameter — without references the arity is unknowable, so the initializer becomes
+        // Object.assign, which is its exact C# semantics.
+        var compiler = new ComponentCompiler { TypeAnnotations = false };
+        var result = compiler.CompileSource("""
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            public sealed class Probe : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var column = new Column(gap: 4);
+                    column.Add(new Text("42", TypeRole.Display) { Tabular = true });
+                    return column;
+                }
+            }
+            """, "Probe.cs").Single();
+
+        Assert.True(result.Success);
+        Assert.Contains("Object.assign(new Text(", result.TypeScript);
+        Assert.Contains("{ tabular: true }", result.TypeScript);
+        Assert.DoesNotContain("\"display\", { tabular", result.TypeScript);
+    }
 }
