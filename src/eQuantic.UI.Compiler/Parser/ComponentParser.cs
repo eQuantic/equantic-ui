@@ -644,6 +644,21 @@ public class ComponentParser
     /// (direct <c>SetState</c>) differs from the Core <c>CreateState</c> split.</summary>
     private bool BaseResolvesToPrimitives(ClassDeclarationSyntax classDecl)
     {
+        // The SHAPE decides first — syntactic, cheap, and unambiguous when it matches: only the
+        // write-once page declares `VisualNode Build(ComponentContext …)` on the class itself
+        // (the Core split declares CreateState() and builds on a ComponentState). This must not
+        // depend on a semantic model: in-memory CompileSource without references (the
+        // playground's mode) resolves the base to an ERROR symbol, and defaulting to the Core
+        // shape miscompiled the page SILENTLY — a nameless state class, the Build body dropped
+        // for an empty Container.
+        var buildsVisualNode = classDecl.Members.OfType<MethodDeclarationSyntax>().Any(m =>
+            m.Identifier.Text == "Build"
+            && m.ReturnType.ToString().EndsWith("VisualNode")
+            && m.ParameterList.Parameters.Count == 1
+            && m.ParameterList.Parameters[0].Type?.ToString().EndsWith("ComponentContext") == true);
+        if (buildsVisualNode) return true;
+
+        // The semantic model settles everything the shape cannot (aliases, indirect bases).
         var baseSyntax = classDecl.BaseList?.Types.FirstOrDefault()?.Type;
         if (baseSyntax == null) return false;
         var model = TryGetSemanticModel(classDecl.SyntaxTree);
