@@ -37,6 +37,7 @@ export {
   IconGlyph,
   Adjustable,
   CameraPreview,
+  WebFrame,
   Image,
   ScrollView,
   LoopMotion,

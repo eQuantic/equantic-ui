@@ -550,6 +550,21 @@ export interface CameraPreviewNode extends VisualNodeValue {
   alt?: string;
 }
 
+/**
+ * An embedded, isolated web document (C# twin: `WebFrame`). `sandbox` crosses as the [Flags]
+ * NUMBER — bit 1 scripts, 2 same-origin, 4 forms, 8 popups — and the lowering spells the tokens.
+ */
+export interface WebFrameNode extends VisualNodeValue {
+  nodeKind: 'webFrame';
+  source?: string | null;
+  document?: string | null;
+  sandbox: number;
+  title?: string;
+  width?: SizeValueValue;
+  height?: SizeValueValue;
+  cornerRadius?: CornerRadiiValue | null;
+}
+
 export interface ImageNode extends VisualNodeValue {
   nodeKind: 'image';
   source: string;
