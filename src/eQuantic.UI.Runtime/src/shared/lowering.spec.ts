@@ -241,6 +241,21 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(locked.attributes['src']).toBe('/x');
   });
 
+  it('single-line MONO text keeps its spaces (nowrap would collapse the indentation)', () => {
+    const code: VisualNodeValue = {
+      nodeKind: 'text',
+      content: '    private int _count;',
+      role: 'bodyM',
+      mono: true,
+      maxLines: 1,
+    } as VisualNodeValue;
+    expect(effectiveStyle(lowerVisualNode(code, ctx))).toContain('white-space: pre');
+    expect(effectiveStyle(lowerVisualNode(code, ctx))).not.toContain('white-space: nowrap');
+
+    const label = { ...code, mono: false, content: 'a long label' } as unknown as VisualNodeValue;
+    expect(effectiveStyle(lowerVisualNode(label, ctx))).toContain('white-space: nowrap');
+  });
+
   it('Components expand via build(context) — the write-once client path', () => {
     const component: VisualNodeValue = {
       nodeKind: 'component',

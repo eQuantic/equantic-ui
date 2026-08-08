@@ -26,11 +26,15 @@ public static class StringExtensions
     };
 
     /// <summary>
-    /// A C# LOCAL/PARAMETER name as a legal JS identifier: a reserved word takes a trailing
-    /// underscore (`package` → `package_`). Renaming must be applied at BOTH the declaration and
-    /// every reference — which is why it lives here, on the one path both go through. Anything else
-    /// passes back unchanged, so ordinary names read exactly as authored.
+    /// A C# LOCAL/PARAMETER name as a legal JS identifier: the verbatim escape comes off first
+    /// (`@checked` → `checked` — the `@` is C#'s keyword escape and a syntax error in JS), then a
+    /// reserved word takes a trailing underscore (`package` → `package_`). Renaming must be applied
+    /// at BOTH the declaration and every reference — which is why it lives here, on the one path
+    /// both go through. Anything else passes back unchanged, so ordinary names read as authored.
     /// </summary>
-    public static string ToJsIdentifier(this string name) =>
-        JsReserved.Contains(name) ? name + "_" : name;
+    public static string ToJsIdentifier(this string name)
+    {
+        if (name.StartsWith('@')) name = name[1..];
+        return JsReserved.Contains(name) ? name + "_" : name;
+    }
 }

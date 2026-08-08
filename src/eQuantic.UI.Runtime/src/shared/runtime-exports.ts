@@ -62,6 +62,9 @@ export {
   CuratedIcons,
   Draggable,
   SafeArea,
+  Sticky,
+  AdaptiveNode,
+  Vector,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';
 export { Navigator } from '../router/navigator';

@@ -89,4 +89,28 @@ public class S1StyleRealizerTests
 
         node.Attributes["style"].Should().Contain("white-space: pre-wrap");
     }
+
+    [Fact]
+    public void SingleLineMonoText_KeepsItsSpaces()
+    {
+        // In code the SPACES are content. `nowrap` collapses runs of them, so every indented line
+        // of an editor drew at column zero on web while Photon — which paints literal glyph runs —
+        // indented it correctly. `pre` refuses to wrap exactly like nowrap.
+        var node = WebRealizer.Lower(
+            new Text("    private int _count;", TypeRole.BodyM, maxLines: 1) { Mono = true },
+            PhotonTheme.Instance).Render();
+
+        node.Attributes["style"].Should().Contain("white-space: pre")
+            .And.NotContain("white-space: nowrap");
+    }
+
+    [Fact]
+    public void SingleLinePlainText_StillTruncates()
+    {
+        var node = WebRealizer.Lower(
+            new Text("a very long label", TypeRole.BodyM, maxLines: 1), PhotonTheme.Instance).Render();
+
+        node.Attributes["style"].Should().Contain("white-space: nowrap")
+            .And.Contain("text-overflow: ellipsis");
+    }
 }

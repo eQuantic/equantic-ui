@@ -23,6 +23,17 @@ public class TypeScriptEmitter
     /// <summary>One parameter in a hand-written signature: annotated in TypeScript mode, bare in
     /// plain-JavaScript mode. Every literal signature the emitter writes goes through here.</summary>
     private string Param(string name, string type) => TypeAnnotations ? $"{name}: {type}" : name;
+
+    /// <summary>
+    /// A parameter WITH its converted default. `= default` on a twin-backed struct converts to
+    /// `undefined`, and in annotated mode that must emit as an OPTIONAL parameter
+    /// (<c>style?: BoxStyle</c>) — identical call-site semantics, but it typechecks where
+    /// <c>style: BoxStyle = undefined</c> is a TS2322 in the runtime's own build.
+    /// </summary>
+    private string ParamWithDefault(string name, string type, string? convertedDefault) =>
+        convertedDefault is null ? Param(name, type)
+        : convertedDefault == "undefined" && TypeAnnotations ? $"{name}?: {type}"
+        : $"{Param(name, type)} = {convertedDefault}";
     public TypeScriptCodeBuilder.ClassBuilder? ClassBuilder { get; set; }
 
     private void WriteLn(string line = "") => _builder.Line(line);
@@ -1213,10 +1224,8 @@ public class TypeScriptEmitter
                     var parameterName = body.Contains(pp.Identifier.Text)
                         ? pp.Identifier.Text.ToJsIdentifier()
                         : "_" + pp.Identifier.Text.ToJsIdentifier();
-                    var declared = $"{parameterName}: {DeclaredType(pp.Type)}";
-                    return pp.Default is null
-                        ? declared
-                        : $"{declared} = {_converter.ConvertExpression(pp.Default.Value)}";
+                    return ParamWithDefault(parameterName, DeclaredType(pp.Type),
+                        pp.Default is null ? null : _converter.ConvertExpression(pp.Default.Value));
                 }));
                 var isAsync = m.ReturnType.ToString().StartsWith("Task")
                     || m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
@@ -1277,10 +1286,8 @@ public class TypeScriptEmitter
         var parameters = ctor is null
             ? ""
             : string.Join(", ", ctor.ParameterList.Parameters.Select(p =>
-            {
-                var declared = Param(p.Identifier.Text.ToJsIdentifier(), DeclaredType(p.Type));
-                return p.Default is null ? declared : $"{declared} = {_converter.ConvertExpression(p.Default.Value)}";
-            }));
+                ParamWithDefault(p.Identifier.Text.ToJsIdentifier(), DeclaredType(p.Type),
+                    p.Default is null ? null : _converter.ConvertExpression(p.Default.Value))));
 
         var body = ctor?.Body is { } block ? StripJsBraces(_converter.Convert(block))
             : ctor?.ExpressionBody is { } expression ? $"{_converter.ConvertExpression(expression.Expression)};"
@@ -1517,11 +1524,11 @@ public class TypeScriptEmitter
         {
             var (p, index) = entry;
             var name = bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name;
-            var declared = Param(name, DeclarationType(component, p.Type));
             var defaultValue = syntaxParameters is { } list && index < list.Count
                 ? list[index].Default?.Value
                 : null;
-            return defaultValue is null ? declared : $"{declared} = {_converter.ConvertExpression(defaultValue)}";
+            return ParamWithDefault(name, DeclarationType(component, p.Type),
+                defaultValue is null ? null : _converter.ConvertExpression(defaultValue));
         }));
         var methodName = method.Name.ToCamelCase();
         
