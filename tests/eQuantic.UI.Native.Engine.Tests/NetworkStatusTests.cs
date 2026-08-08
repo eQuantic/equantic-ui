@@ -17,7 +17,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </summary>
 public class NetworkStatusTests
 {
-    [Fact]
+    [MacFact]
     public void TheMonitorAnswersAndTheAnswerIsCoherent()
     {
         var network = new AppleNetworkStatus();
@@ -35,7 +35,7 @@ public class NetworkStatusTests
         else state.Kind.Should().Be(NetworkKind.None);
     }
 
-    [Fact]
+    [MacFact]
     public void SubscribingAndDisposing_NeitherThrowsNorLeaksIntoTheDeadListener()
     {
         var network = new AppleNetworkStatus();
@@ -58,7 +58,7 @@ public class NetworkStatusTests
 /// </summary>
 public class MotionSensorTests
 {
-    [Fact]
+    [MacFact]
     public void ADeskHonestlySaysItCannotFeelItselfMove()
     {
         var sensor = new AppleMotionSensor();
@@ -66,7 +66,7 @@ public class MotionSensorTests
             + "would hand tilt UIs a stream that never speaks");
     }
 
-    [Fact]
+    [MacFact]
     public void SubscribingAnywayIsSafe_AndDisposingTwiceToo()
     {
         var sensor = new AppleMotionSensor();
@@ -75,7 +75,7 @@ public class MotionSensorTests
         subscription.Dispose();
     }
 
-    [Fact]
+    [MacFact]
     public void TheAbsentSensorIsTheSameContract()
     {
         var sensor = new AbsentMotionSensor();
@@ -92,7 +92,7 @@ public class MotionSensorTests
 /// </summary>
 public class LocationTests
 {
-    [Fact]
+    [MacFact]
     public void CoreLocationIsThere_AndAnswersWithoutPrompting()
     {
         var location = new AppleLocation();
@@ -105,7 +105,7 @@ public class LocationTests
             PermissionState.Denied);
     }
 
-    [Fact]
+    [MacFact]
     public void SubscribeAndDispose_AreSafeWhateverThePermission()
     {
         var location = new AppleLocation();

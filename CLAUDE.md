@@ -4,6 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Git Commit Guidelines
 
+**CRITICAL — commit language**: ALL commit messages in this repository MUST be written in
+ENGLISH. Never write commit messages in Portuguese or any other language. This applies to the
+subject line and the body.
+
 **CRITICAL**: NEVER add co-authorship lines to commit messages. Do NOT include:
 
 ```text

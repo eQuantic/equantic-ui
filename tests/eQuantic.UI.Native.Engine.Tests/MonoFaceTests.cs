@@ -22,14 +22,14 @@ public class MonoFaceTests
         Service.Measure(content, new TypeStyle(13, 16, FontWeight.Regular, 0f, 1.3f, mono),
             1f, float.PositiveInfinity, 1).Width;
 
-    [Fact]
+    [MacFact]
     public void EveryCharacterTakesTheSameAdvance()
     {
         Width("iiiiiiii", mono: true).Should().BeApproximately(Width("MMMMMMMM", mono: true), 0.5f,
             "a monospaced face gives every glyph one advance");
     }
 
-    [Fact]
+    [MacFact]
     public void TheProportionalFaceStillFitsToTheGlyphs()
     {
         Width("iiiiiiii", mono: false).Should().BeLessThan(Width("MMMMMMMM", mono: false) - 5,
@@ -40,7 +40,7 @@ public class MonoFaceTests
     /// The style is what the measurer, the rasterizer and the raster cache all key on — so the
     /// two faces are two cache entries, and neither can serve the other's pixels.
     /// </summary>
-    [Fact]
+    [MacFact]
     public void TheFaceTravelsOnTheStyle()
     {
         var proportional = new TypeStyle(13, 16, FontWeight.Regular, 0f, 1.3f);

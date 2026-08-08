@@ -25,7 +25,7 @@ public class TextInkTests
         return max;
     }
 
-    [Theory]
+    [MacTheory]
     [InlineData(SizeVariant.Small)]
     [InlineData(SizeVariant.Medium)]
     [InlineData(SizeVariant.Large)]
@@ -49,7 +49,7 @@ public class TextInkTests
     /// Even when the line box is deliberately too small for the glyphs, the bitmap holds them and
     /// reports the overshoot — the guarantee that no style anyone writes can cut a letter.
     /// </summary>
-    [Fact]
+    [MacFact]
     public void ATooSmallLineBoxGrowsTheBitmapInsteadOfCuttingTheGlyphs()
     {
         var service = new CoreTextService();
@@ -67,7 +67,7 @@ public class TextInkTests
     }
 
     /// <summary>The common case pays nothing: text that fits its line reports no padding.</summary>
-    [Fact]
+    [MacFact]
     public void TextThatFitsItsLineReportsNoPaddingWorthMentioning()
     {
         var service = new CoreTextService();

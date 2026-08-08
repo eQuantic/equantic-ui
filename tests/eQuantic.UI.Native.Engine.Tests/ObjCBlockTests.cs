@@ -28,7 +28,7 @@ public class ObjCBlockTests
     [DllImport("/usr/lib/libSystem.B.dylib", EntryPoint = "_Block_release")]
     private static extern void BlockRelease(IntPtr block);
 
-    [Fact]
+    [MacFact]
     public void ABlock_IsActuallyCalled_ByTheRuntime()
     {
         var array = Send(objc_getClass("NSMutableArray"), Sel("array"));
@@ -45,7 +45,7 @@ public class ObjCBlockTests
         seen.Should().Equal([(nuint)0, 1, 2], "the runtime called back once per item");
     }
 
-    [Fact]
+    [MacFact]
     public void ItReceivesTheARGUMENTS_NotJustTheCall()
     {
         // A block whose layout is right but whose function pointer is read at the wrong offset can
@@ -63,7 +63,7 @@ public class ObjCBlockTests
         received.Should().Be("hello");
     }
 
-    [Fact]
+    [MacFact]
     public void ItSurvivesTheCOPY_AND_RELEASE_AnAsyncFrameworkDoes()
     {
         // What LocalAuthentication does with a reply block, in the open: retain it, call it long

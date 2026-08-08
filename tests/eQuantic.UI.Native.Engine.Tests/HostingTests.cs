@@ -65,7 +65,7 @@ public class HostingTests
     /// background service). It used to be an uncatchable ObjC exception that took the whole
     /// process with it, which told nobody anything.
     /// </summary>
-    [Fact]
+    [MacFact]
     public void RunningOffTheMainThreadSaysSo_InsteadOfKillingTheProcess()
     {
         var app = PhotonApplication.CreateBuilder().Build();
