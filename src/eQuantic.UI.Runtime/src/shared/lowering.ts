@@ -273,7 +273,7 @@ function lowerNode(
       );
     }
     default: {
-      // Mixing seam: a WEB component (transpiled shared component or legacy HtmlElement) composed
+      // Mixing seam: a WEB component (transpiled shared component or low-level HtmlElement) composed
       // inside an abstract tree has no nodeKind but renders itself — embed its HtmlNode directly.
       const renderable = node as { render?: () => HtmlNode };
       if (typeof renderable.render === 'function') return renderable.render();

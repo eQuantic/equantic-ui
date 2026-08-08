@@ -13,11 +13,9 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// </summary>
 public class TypeScriptEmitter
 {
-    private readonly StringBuilder _output = new(); // Legacy, to be removed
-    private TypeScriptCodeBuilder _builder = new(); // New builder
+    private TypeScriptCodeBuilder _builder = new();
     public TypeScriptCodeBuilder.ClassBuilder? ClassBuilder { get; set; }
 
-    // Legacy helper to bridge during refactor
     private void WriteLn(string line = "") => _builder.Line(line);
     private void Indent() => _builder.Indent();
     private void Dedent() => _builder.Dedent();
@@ -66,7 +64,6 @@ public class TypeScriptEmitter
         _semanticModel = semanticModel;
         _converter.SetSemanticModel(semanticModel);
         _converter.ClearDiagnostics();
-        _output.Clear();
 
         // Clear UsedHelpers from previous compilations
         component.UsedHelpers.Clear();
@@ -338,12 +335,6 @@ public class TypeScriptEmitter
                             var expr = _converter.ConvertExpression(component.BuildMethodNode.ExpressionBody.Expression);
                             c.Raw($"return {expr};", component.BuildMethodNode.ExpressionBody.Expression);
                          }
-                         else if (component.BuildTree != null)
-                         {
-                             c.Raw("return (");
-                             EmitComponentTree(component.BuildTree);
-                             c.Raw(");");
-                         }
                          else
                          {
                              // Fallback for components without explicit Build method
@@ -453,10 +444,9 @@ public class TypeScriptEmitter
             coreImports.Add("getServerActionsClient");
         }
 
-        // Component imports based on what's used in the component
-        var componentTypes = CollectComponentTypes(component.BuildTree);
+        // Component imports: scan the Build method's syntax for the types it uses
+        var componentTypes = new HashSet<string>();
 
-        // Also scan procedural code in BuildMethodNode
         if (component.BuildMethodNode != null)
         {
              var localNames = new HashSet<string>(component.Properties.Select(p => p.Name));
@@ -718,22 +708,6 @@ public class TypeScriptEmitter
                 .Any(c => c.FormatClause != null || c.AlignmentClause != null));
     }
 
-    private HashSet<string> CollectComponentTypes(ComponentTree? tree)
-    {
-        var types = new HashSet<string>();
-        if (tree == null) return types;
-
-        types.Add(tree.ComponentType);
-        foreach (var child in tree.Children)
-        {
-            foreach (var t in CollectComponentTypes(child))
-            {
-                types.Add(t);
-            }
-        }
-        return types;
-    }
-
     private HashSet<string> CollectComponentTypesFromNode(SyntaxNode? node, HashSet<string>? localNames = null)
     {
         var types = new HashSet<string>();
@@ -893,12 +867,6 @@ public class TypeScriptEmitter
                     _converter.SetCurrentClass(component.StateClassName);
                     var expression = component.BuildMethodNode.ExpressionBody.Expression;
                     c.Raw($"return {_converter.ConvertExpression(expression)};", expression);
-                }
-                else if (component.BuildTree != null)
-                {
-                    c.Raw("return (");
-                    EmitComponentTree(component.BuildTree);
-                    c.Raw(");");
                 }
                 else
                 {
@@ -1595,112 +1563,6 @@ public class TypeScriptEmitter
         }
     }
     
-    // Helper to access ClassBuilder from TypeScriptEmitter for EmitMethod
-    // Actually, I can just pass the ClassBuilder to EmitMethod or store it.
-    // Let's refactor EmitMethod to take ClassBuilder.
-    
-    private void EmitComponentTree(ComponentTree tree)
-    {
-        Write($"new {tree.ComponentType}({{");
-        
-        // Extract Key if present. Keys are special and should be top-level in React-like systems,
-        // but here we are passing props object to constructor.
-        // We need to ensure that if "Key" is in Properties, it is emitted as "key".
-        
-        var props = tree.Properties.Where(p => p.Key != "Children").ToList();
-        
-        if (props.Count > 0 || tree.Children.Count > 0)
-        {
-            WriteLn();
-            Indent();
-            
-            foreach (var (propName, propValue) in props)
-            {
-                var tsPropName = propName.ToCamelCase();
-                if (propName == "Key") tsPropName = "key"; // Special casing for Key
-
-                var tsValue = EmitPropertyValue(propValue);
-                WriteLn($"{tsPropName}: {tsValue},");
-            }
-            
-            if (tree.Children.Count > 0)
-            {
-                Write("children: [");
-                WriteLn();
-                Indent();
-                foreach (var child in tree.Children)
-                {
-                    EmitComponentTree(child);
-                    WriteLn(",");
-                }
-                Dedent();
-                Write("]");
-                WriteLn();
-            }
-            
-            Dedent();
-            Write("}");
-        }
-        else
-        {
-            Write("}");
-        }
-        
-        Write(")");
-    }
-    
-    private string EmitPropertyValue(PropertyValue value)
-    {
-        return value.Type switch
-        {
-            PropertyValueType.String => $"'{EscapeString(value.StringValue ?? "")}'",
-            PropertyValueType.Number => value.StringValue ?? "0",
-            PropertyValueType.Boolean => value.StringValue?.ToLower() ?? "false",
-            PropertyValueType.Expression => value.ExpressionNode != null ? _converter.Convert(value.ExpressionNode) : _converter.Convert(value.Expression ?? ""),
-            PropertyValueType.EventHandler => ConvertEventHandler(value),
-            PropertyValueType.StyleClass => value.Expression ?? "null",
-            PropertyValueType.Component when value.ComponentValue != null => EmitComponentToString(value.ComponentValue),
-            _ => "null"
-        };
-    }
-
-    private string ConvertEventHandler(PropertyValue value)
-    {
-        var expr = value.ExpressionNode != null ? _converter.Convert(value.ExpressionNode) : _converter.Convert(value.Expression ?? "");
-        
-        // Automatically bind method groups on 'this' (e.g. this.handleClick -> this.handleClick.bind(this))
-        if (expr.StartsWith("this.") && !expr.Contains("(") && !expr.Contains("=>") && !expr.Contains(".bind("))
-        {
-            return $"{expr}.bind(this)";
-        }
-        return expr;
-    }
-    
-    private string EmitComponentToString(ComponentTree tree)
-    {
-        var sb = new StringBuilder();
-        sb.Append($"new {tree.ComponentType}({{");
-        
-        var props = tree.Properties.Where(p => p.Key != "Children").ToList();
-        foreach (var (propName, propValue) in props)
-        {
-            var tsPropName = propName.ToCamelCase();
-            if (propName == "Key") tsPropName = "key";
-            
-            sb.Append($" {tsPropName}: {EmitPropertyValue(propValue)},");
-        }
-        
-        if (tree.Children.Count > 0)
-        {
-            sb.Append(" children: [");
-            sb.Append(string.Join(", ", tree.Children.Select(EmitComponentToString)));
-            sb.Append("]");
-        }
-        
-        sb.Append(" })");
-        return sb.ToString();
-    }
-    
     internal static string CSharpTypeToTypeScript(string? csharpType)
     {
         if (string.IsNullOrEmpty(csharpType)) return "any";
@@ -1886,12 +1748,4 @@ public class TypeScriptEmitter
             .Replace("\t", "\\t");
     }
     
-    #region Output Helpers
-    
-    private void Write(string text)
-    {
-        _builder.Line(text); // Basic mapping for Write, though Builder prefers structured calls
-    }
-    
-    #endregion
 }

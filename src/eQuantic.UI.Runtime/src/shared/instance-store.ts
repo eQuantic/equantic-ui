@@ -87,7 +87,7 @@ let activePass: ActivePass | null = null;
 
 /**
  * Opens a reconciler pass owned by `owner` (a page instance's store), or JOINS the pass already in
- * flight — the outermost owner's store and invalidator stay in charge, so bridges and legacy
+ * flight — the outermost owner's store and invalidator stay in charge, so bridges and low-level
  * components rendering inside a page all reconcile into the page's retention. Pair with `exitPass`
  * in a try/finally.
  */

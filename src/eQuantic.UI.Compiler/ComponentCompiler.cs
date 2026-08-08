@@ -82,7 +82,7 @@ public class ComponentCompiler
     }
 
     /// <summary>
-    /// Compile a single .eqx file
+    /// Compile a single source file
     /// </summary>
     public IEnumerable<CompilationResult> CompileFile(string filePath)
     {
@@ -239,14 +239,12 @@ public class ComponentCompiler
     }
     
     /// <summary>
-    /// Compile all .cs and .eqx files in a directory
+    /// Compile every .cs file in a directory
     /// </summary>
     public IEnumerable<CompilationResult> CompileDirectory(string directoryPath, bool recursive = true)
     {
         var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        // Search for both .eqx (legacy) and .cs (new)
-        var files = Directory.GetFiles(directoryPath, "*.cs", searchOption)
-            .Concat(Directory.GetFiles(directoryPath, "*.eqx", searchOption));
+        var files = Directory.GetFiles(directoryPath, "*.cs", searchOption);
         
         foreach (var file in files)
         {

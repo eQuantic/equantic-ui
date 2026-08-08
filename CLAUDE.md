@@ -294,24 +294,17 @@ async loadTodos() {
 
 ## Styling System
 
-Built on three pillars: Abstraction, Flexibility (Tailwind as "Happy Path"), Performance.
+Styling is TYPED C#, CSS-free at the authoring level: components declare `BoxStyle`
+values (colors as `ColorToken`, spacing via `Space`/`EdgeInsets`, type via `TypeRole`) and each
+realizer turns them into its native form — deduplicated atomic CSS classes on the web, GPU paint
+on Photon. Theming is providing a `Primitives.IAppTheme` (select it with `AddUI(...).UseTheme(...)`;
+`MaterialTheme.FromSeed(...)` rebrands in one line). Variants (`Primitives.Variant`) resolve
+through `IAppTheme.Colors(variant)`.
 
-### StyleBuilder (CVA-inspired)
+- **Escape hatch**: raw HTML/CSS via `HtmlElement`/`DynamicElement` and `ClassBuilder` — web-only,
+  for pages that need hand-written markup.
 
-```csharp
-["class"] = StyleBuilder.Create(theme?.Base)
-    .Add(theme?.GetVariant(Variant))
-    .Add(theme?.GetSize(Size))
-    .Add(ClassName)
-    .Build()
-```
-
-### Theme Types
-
-- **Variant**: `Primary`, `Secondary`, `Destructive`, `Outline`, `Ghost`, `Link`, `Success`, `Warning`, `Info`
-- **Size**: `Small`, `Medium`, `Large`, `XLarge`
-
-### Tailwind Integration
+### Tailwind Integration (optional utility CSS)
 
 The `eQuantic.UI.Tailwind` package generates CSS automatically at build time through the
 EMBEDDED Bun (`bun x @tailwindcss/cli@<pinned>` — zero Node, zero manual targets). Consumers only
