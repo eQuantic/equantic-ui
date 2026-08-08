@@ -101,4 +101,31 @@ public class DeclarativeFactoryTests
         Compile(withReferences: true).Should().Contain("UI.button('Count', 'primary', 'medium', () =>");
     }
 
+
+    [Fact]
+    public void TheRigidGap_IsReachableFromTheFactorySurface()
+    {
+        // A mirrored factory SHADOWS its own type inside any file that imports the surface, so
+        // `Spacer.Fixed(34)` stops compiling there — the rigid spacer needs a name of its own or
+        // it becomes unreachable in exactly the files the surface is meant for.
+        var compiler = new ComponentCompiler { TypeAnnotations = false };
+        var js = compiler.CompileSource("""
+            using static eQuantic.UI.Components.UI;
+            using StatelessComponent = eQuantic.UI.Primitives.StatelessComponent;
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            public sealed class HomePage : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    Column(gap: 0, children: [
+                        Text("Title", TypeRole.Display),
+                        Gap(34),
+                        Text("Body", TypeRole.BodyM),
+                    ]);
+            }
+            """, "HomePage.cs").Single().TypeScript;
+
+        js.Should().Contain("UI.gap(34)").And.NotContain("this.gap(");
+    }
 }

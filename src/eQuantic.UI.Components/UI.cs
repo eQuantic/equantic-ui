@@ -116,6 +116,19 @@ public static class UI
     public static Spacer Spacer(int flex = 1) =>
         new Spacer(flex);
 
+    /// <summary>
+    /// A RIGID gap of <paramref name="dp"/> — the one-off rhythm break a container's own
+    /// <c>gap</c> cannot express (a heading that needs 34dp under it while its siblings sit at
+    /// 16). Named rather than mirrored, for two reasons: it wraps a static factory
+    /// (<c>Spacer.Fixed</c>) instead of a constructor, and the mirrored <c>Spacer(flex)</c> above
+    /// SHADOWS the type — inside a file that imports this surface, <c>Spacer.Fixed(34)</c> stops
+    /// compiling, so the rigid form needs a name of its own to stay reachable at all.
+    /// </summary>
+    public static Spacer Gap(float dp) =>
+        // Fully qualified deliberately: the shadowing this method exists to work around bites
+        // INSIDE this class too — `Spacer.Fixed(dp)` here binds `Spacer` to the method above.
+        eQuantic.UI.Primitives.Spacer.Fixed(dp);
+
     /// <summary>Anchors a Stack child to the stack's edges with signed offsets (spec A3).</summary>
     public static Positioned Positioned(VisualNode child, float? top = null, float? end = null,
         float? bottom = null, float? start = null) =>

@@ -15,6 +15,7 @@ export class UI {
     static spinner(size: number = 20, color: ColorToken | null = null) { return new Spinner(size, color); }
     static flexible(child: VisualNode, flex: number = 1) { return new Flexible(child, flex); }
     static spacer(flex: number = 1) { return new Spacer(flex); }
+    static gap(dp: number) { return Spacer.fixed(dp); }
     static positioned(child: VisualNode, top: number | null = null, end: number | null = null, bottom: number | null = null, start: number | null = null) { return new Positioned(child, top, end, bottom, start); }
     static scrollView(child: VisualNode, axis: string = 'vertical') { return new ScrollView(child, axis); }
     static safeArea(child: VisualNode, edges: number = 15) { return new SafeArea(child, edges); }
