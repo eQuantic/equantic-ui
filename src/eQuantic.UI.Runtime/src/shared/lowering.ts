@@ -599,6 +599,8 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
     input.attributes['value'] = node.value;
   }
   if (node.placeholder != null) input.attributes['placeholder'] = node.placeholder;
+  // The accessible NAME — a placeholder vanishes under text, so it never substitutes for one.
+  if (node.label) input.attributes['aria-label'] = node.label;
   // C# twin: the attribute marks intent; the client also FOCUSES on mount — a dialog opened later
   // never gets the browser's parse-time autofocus.
   if (node.autofocus === true) {

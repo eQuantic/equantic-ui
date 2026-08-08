@@ -27,10 +27,15 @@ internal static class PhotonAccessibility
     /// <summary>Runs the control at a path — the AX press action. Answers whether anything ran.</summary>
     internal static Func<string, bool>? OnActivate { get; set; }
 
+    /// <summary>VoiceOver's adjust gesture on a slider-role element: +1 up, −1 down.</summary>
+    internal static Func<string, int, bool>? OnAdjust { get; set; }
+
     private delegate bool PerformPress(IntPtr self, IntPtr selector);
 
     private static readonly Dictionary<IntPtr, string> Paths = new();
     private static PerformPress? _performPress;   // kept alive for the runtime's sake
+    private static PerformPress? _performIncrement;
+    private static PerformPress? _performDecrement;
     private static IntPtr _elementClass;
     private static IntPtr _children;              // the NSMutableArray we own until the next build
 
@@ -43,12 +48,25 @@ internal static class PhotonAccessibility
         _performPress = OnPerformPress;
         class_addMethod(_elementClass, sel_registerName("accessibilityPerformPress"),
             Marshal.GetFunctionPointerForDelegate(_performPress), "B@:");
+        // The adjust pair — VoiceOver's swipe up/down on anything with the slider role.
+        _performIncrement = OnPerformIncrement;
+        class_addMethod(_elementClass, sel_registerName("accessibilityPerformIncrement"),
+            Marshal.GetFunctionPointerForDelegate(_performIncrement), "B@:");
+        _performDecrement = OnPerformDecrement;
+        class_addMethod(_elementClass, sel_registerName("accessibilityPerformDecrement"),
+            Marshal.GetFunctionPointerForDelegate(_performDecrement), "B@:");
         objc_registerClassPair(_elementClass);
         return _elementClass;
     }
 
     private static bool OnPerformPress(IntPtr self, IntPtr selector) =>
         Paths.TryGetValue(self, out var path) && OnActivate?.Invoke(path) == true;
+
+    private static bool OnPerformIncrement(IntPtr self, IntPtr selector) =>
+        Paths.TryGetValue(self, out var path) && OnAdjust?.Invoke(path, 1) == true;
+
+    private static bool OnPerformDecrement(IntPtr self, IntPtr selector) =>
+        Paths.TryGetValue(self, out var path) && OnAdjust?.Invoke(path, -1) == true;
 
     /// <summary>Builds the view's accessibility children from the CURRENT frame's semantics.</summary>
     internal static IntPtr BuildChildren(IntPtr view)

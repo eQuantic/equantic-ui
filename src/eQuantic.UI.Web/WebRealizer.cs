@@ -597,6 +597,8 @@ public static class WebRealizer
         };
         if (multiline) element.InnerHtml = entry.Value;
         if (entry.Placeholder is { } placeholder) element.RawAttributes["placeholder"] = placeholder;
+        // The accessible NAME — a placeholder vanishes under text, so it never substitutes for one.
+        if (entry.Label is { Length: > 0 } accessibleName) element.RawAttributes["aria-label"] = accessibleName;
         if (entry.Disabled) element.RawAttributes["disabled"] = "";
         // The attribute alone only acts on the initial parse; the client lowering also focuses on
         // mount, which is what a dialog opened later needs.

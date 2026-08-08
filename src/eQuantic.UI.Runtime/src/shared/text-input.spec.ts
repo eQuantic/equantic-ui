@@ -30,6 +30,17 @@ const lower = (node: unknown) =>
   });
 
 describe('text entry primitive (C# cross-pin)', () => {
+  it('the accessible name is the Label, never the placeholder', () => {
+    const entry = new TextEntry('', null, { label: 'Recipient', placeholder: 'name@host' });
+    const node = lower(entry) as { attributes: Record<string, string> };
+    expect(node.attributes['aria-label']).toBe('Recipient');
+
+    const hintOnly = new TextEntry('', null, { placeholder: 'Search' });
+    const bare = lower(hintOnly) as { attributes: Record<string, string> };
+    expect(bare.attributes['aria-label']).toBeUndefined();
+    expect(bare.attributes['placeholder']).toBe('Search');
+  });
+
   it('lowers to the real chrome-less input', () => {
     const node = lower(new TextEntry('ana@equantic', null, { placeholder: 'you@company.com' }));
 
