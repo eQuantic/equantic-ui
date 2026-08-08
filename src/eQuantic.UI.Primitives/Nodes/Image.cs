@@ -32,6 +32,15 @@ public sealed class Image : VisualNode
     }
 
     public string Source { get; }
+
+    /// <summary>
+    /// The artwork for DARK mode, when one image cannot serve both — a wordmark drawn in ink for
+    /// light surfaces and in white for dark ones. Colors solve this with a
+    /// <see cref="ColorToken"/> pair; artwork cannot, so the pair lives here and the realizer
+    /// resolves it the same way: no branch in app code, no mode question asked.
+    /// <para>Null = one image serves both, which is the common case (photos, avatars).</para>
+    /// </summary>
+    public string? DarkSource { get; init; }
     public float Width { get; }
     public float Height { get; }
     public ImageFit Fit { get; init; }

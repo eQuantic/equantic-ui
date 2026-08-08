@@ -570,6 +570,8 @@ export interface WebFrameNode extends VisualNodeValue {
 export interface ImageNode extends VisualNodeValue {
   nodeKind: 'image';
   source: string;
+  /** The DARK-mode artwork (C# `Image.DarkSource`); null = one image serves both. */
+  darkSource?: string | null;
   width: number;
   height: number;
   /** ImageFit as camelCase member string ('contain' | 'cover' | 'stretch'). */

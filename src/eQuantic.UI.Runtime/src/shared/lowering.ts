@@ -1029,20 +1029,36 @@ function lowerImage(node: ImageNode): HtmlNode {
   const hasRadius =
     !!radius &&
     (radius.topLeft > 0 || radius.topRight > 0 || radius.bottomRight > 0 || radius.bottomLeft > 0);
-  return {
+  const sizing = atomicAttrs({
+    width: px(node.width),
+    height: px(node.height),
+    'border-radius': hasRadius && radius ? radiusValue(radius) : undefined,
+    'object-fit': fit,
+  });
+  const light: HtmlNode = {
     tag: 'img',
-    attributes: {
-      ...atomicAttrs({
-        width: px(node.width),
-        height: px(node.height),
-        'border-radius': hasRadius && radius ? radiusValue(radius) : undefined,
-        'object-fit': fit,
-      }),
-      src: node.source,
-      alt: node.alt ?? '',
-    },
+    attributes: { ...sizing, src: node.source, alt: node.alt ?? '' },
     events: {},
     children: [],
+  };
+  if (!node.darkSource) return light;
+
+  // A PAIR of artworks (C# twin): both ship, the generated .eq-themed-* rules show one — the OS
+  // preference by default, the app's forced data-theme when it set one.
+  light.attributes['class'] = light.attributes['class']
+    ? `${light.attributes['class']} eq-themed-light`
+    : 'eq-themed-light';
+  const dark: HtmlNode = {
+    tag: 'img',
+    attributes: { ...sizing, class: 'eq-themed-dark', src: node.darkSource, alt: node.alt ?? '' },
+    events: {},
+    children: [],
+  };
+  return {
+    tag: 'span',
+    attributes: { ...atomicAttrs({ display: 'contents' }) },
+    events: {},
+    children: [light, dark],
   };
 }
 
