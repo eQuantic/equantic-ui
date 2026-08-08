@@ -1223,8 +1223,14 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     'box-sizing': 'border-box',
     width: sizeValue(style.width),
     height: sizeValue(style.height),
-    'min-width': style.minWidth && style.minWidth > 0 ? px(style.minWidth) : undefined,
-    'min-height': style.minHeight && style.minHeight > 0 ? px(style.minHeight) : undefined,
+    // FILL is a CEILING (C# twin): an item's automatic minimum size overrides width, so a Fill
+    // box grew past its parent to fit its longest content. An explicit minWidth still wins.
+    'min-width': style.minWidth && style.minWidth > 0
+      ? px(style.minWidth)
+      : style.width?.kind === 'fill' ? '0' : undefined,
+    'min-height': style.minHeight && style.minHeight > 0
+      ? px(style.minHeight)
+      : style.height?.kind === 'fill' ? '0' : undefined,
     'max-width': style.maxWidth && style.maxWidth > 0 ? px(style.maxWidth) : undefined,
     'max-height': style.maxHeight && style.maxHeight > 0 ? px(style.maxHeight) : undefined,
     padding:

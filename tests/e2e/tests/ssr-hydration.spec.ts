@@ -74,6 +74,48 @@ test.describe('Write-once SSR + hydration', () => {
     await expect(count).toHaveText(new RegExp(`Count: ${before + 1}`));
   });
 
+  test('the declarative (no-new) page hydrates by identity and stays alive', async ({ page }) => {
+    // The factory surface has TWO independent implementations that must agree: SSR runs the real
+    // C# `UI.Column(gap, [children])` through the WebRealizer, the client runs the TRANSPILED
+    // `UI.column(12, [...])` twin. A divergence in either (the children landing as config instead
+    // of add() calls, a default filled as null instead of the twin's own) shows up here as a class
+    // mismatch or a dead button — nowhere earlier.
+    const response = await page.request.get('/declarative');
+    expect(response.status()).toBe(200);
+    const ssrHtml = await response.text();
+    const appStart = ssrHtml.indexOf('<div id="app"');
+    expect(appStart).toBeGreaterThan(-1);
+    // The children the collection reached SSR at all — an empty container is the old silent bug.
+    expect(ssrHtml).toContain('Count: 0');
+    const ssrClasses = classFingerprint(ssrHtml.slice(appStart));
+
+    await page.goto('/declarative');
+    await page.waitForLoadState('networkidle');
+
+    const csrClasses = await page.evaluate(() => {
+      const out: string[] = [];
+      const app = document.querySelector('#app');
+      if (!app) return out;
+      if ((app as HTMLElement).className) {
+        out.push((app as HTMLElement).className.split(/\s+/).filter(Boolean).sort().join(' '));
+      }
+      for (const el of app.querySelectorAll('*')) {
+        if (el.getAttribute('class')) {
+          out.push(el.getAttribute('class')!.split(/\s+/).filter(Boolean).sort().join(' '));
+        }
+      }
+      return out;
+    });
+    expect(csrClasses).toEqual(ssrClasses);
+
+    const count = page.getByText(/Count: -?\d+/).first();
+    await page.getByRole('button', { name: 'Up' }).first().click();
+    await expect(count).toHaveText('Count: 1');
+    await page.getByRole('button', { name: 'Down' }).first().click();
+    await page.getByRole('button', { name: 'Down' }).first().click();
+    await expect(count).toHaveText('Count: -1');
+  });
+
   test('Link navigation is SPA (no full reload)', async ({ page }) => {
     // The nav ShellBar renders on SampleShell pages (the showroom '/' deliberately has none).
     await page.goto('/counter');
