@@ -123,6 +123,7 @@ export {
   SheetSurface,
   Adjustable,
   CameraPreview,
+  WebFrame,
   Hoverable,
   Flexible,
   Spacer,
