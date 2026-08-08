@@ -105,6 +105,15 @@
             Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_EqOsArch)' != 'Arm64'" />
     </ItemGroup>
 
+    <!-- The DECLARATIVE factory surface, available in every file without an import:
+         Column(gap: Space.S3, children: [ Text("…"), Button("Up") ]) instead of `new` — the
+         methods of eQuantic.UI.Components.UI arrive through a generated global `using static`
+         (csc and eqc both read the generated GlobalUsings.g.cs, so the two compilations agree).
+         Opt out with <EQuanticImplicitFactoryUsing>false</EQuanticImplicitFactoryUsing>. -->
+    <ItemGroup Condition="'$(EQuanticImplicitFactoryUsing)' != 'false'">
+        <Using Include="eQuantic.UI.Components.UI" Static="true" />
+    </ItemGroup>
+
     <ItemGroup>
         <!-- Include all .cs files in Pages/ as UIComponents -->
         <UIComponent Include="Pages/**/*.cs" Exclude="obj/**;bin/**" />

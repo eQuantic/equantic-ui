@@ -113,4 +113,21 @@ public class S1StyleRealizerTests
         node.Attributes["style"].Should().Contain("white-space: nowrap")
             .And.Contain("text-overflow: ellipsis");
     }
+
+    [Fact]
+    public void AScrollView_CannotBePushedWiderThanItsWindow()
+    {
+        // The node's whole promise: it IS the window its parent gives it. A flex item's min-width
+        // defaults to auto, so one long line of code grew the scroller and every ancestor — the
+        // playground's 1440px page laid out at 3134px instead of scrolling.
+        var node = WebRealizer.Lower(
+            new ScrollView(new Text("a very long single line", TypeRole.BodyM) { Mono = true },
+                ScrollAxis.Horizontal) { Width = SizeValue.Fill },
+            PhotonTheme.Instance).Render();
+
+        var style = node.Attributes["style"]!;
+        style.Should().Contain("overflow-x: auto")
+            .And.Contain("min-width: 0")
+            .And.Contain("max-width: 100%");
+    }
 }
