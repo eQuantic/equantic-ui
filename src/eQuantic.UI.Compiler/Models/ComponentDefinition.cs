@@ -155,6 +155,21 @@ public class ComponentDefinition
     public HashSet<string> EnumTypes { get; set; } = new();
 
     /// <summary>
+    /// Whether <see cref="RuntimeProvidedTypes"/> was actually populated by a semantic model. When
+    /// FALSE (standalone <c>CompileSource</c>, no references — the playground's mode), the emitter
+    /// cannot trust that an unlisted type is user code: it falls back to <see cref="DeclaredInSource"/>
+    /// as the user universe.
+    /// </summary>
+    public bool ResolvedSemantically { get; set; }
+
+    /// <summary>
+    /// Simple names of every type DECLARED in the same source text (classes, records, structs,
+    /// enums, interfaces). In a standalone compilation the source is the user's whole universe —
+    /// a referenced type that is not in here can only come from the runtime vocabulary.
+    /// </summary>
+    public HashSet<string> DeclaredInSource { get; set; } = new();
+
+    /// <summary>
     /// Simple names of referenced APP-LEVEL types — declared in this compilation's own source
     /// (semantic-model discovered), as opposed to framework/BCL types that arrive as metadata.
     /// Needed because a type reached only through a STATIC MEMBER (<c>Brand.Violet</c>) is invisible

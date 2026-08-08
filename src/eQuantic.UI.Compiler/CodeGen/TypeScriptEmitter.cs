@@ -581,6 +581,16 @@ public class TypeScriptEmitter
 
         var userComponents = new List<string>();
 
+        // The user universe, discovered by scanning — components, records, helpers, plain classes.
+        // Consulted twice: by the standalone fallback below, and by the authoritative filter at the
+        // end. No fixed lists on either path.
+        var knownComponents = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
+        var knownRecords = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
+        var knownStaticHelpers = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
+        var knownPlain = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
+        bool KnownUserType(string name) => knownComponents.Contains(name) || knownRecords.Contains(name)
+                                           || knownStaticHelpers.Contains(name) || knownPlain.Contains(name);
+
         foreach (var type in componentTypes)
         {
             var cleanType = type.Trim().Replace("?", "");
@@ -634,6 +644,17 @@ public class TypeScriptEmitter
             {
                 coreImports.Add(cleanType);
             }
+            // No AUTHORITATIVE semantic model ran (standalone CompileSource without the framework
+            // references — the playground's mode): the user universe is what the source declares
+            // plus what the scan discovered, so a referenced type outside BOTH can only be the
+            // runtime vocabulary. Without this, Button/Text/Column become imports of ./Button —
+            // modules that exist nowhere.
+            else if (!component.ResolvedSemantically
+                     && !component.DeclaredInSource.Contains(cleanType)
+                     && !KnownUserType(cleanType))
+            {
+                coreImports.Add(cleanType);
+            }
             else
             {
                 userComponents.Add(cleanType);
@@ -656,15 +677,10 @@ public class TypeScriptEmitter
         // Import user types that we actually emit as their own module: UI components AND data records
         // (each gets a generated .ts file). The set is discovered by scanning the project — no fixed
         // skip-list — so any referenced type that we emit is imported, and anything else is left alone.
-        var knownComponents = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
-        var knownRecords = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
-        var knownStaticHelpers = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
-        var knownPlain = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
             if (userComp == component.Name) continue;
-            var isEmittedType = knownComponents.Contains(userComp) || knownRecords.Contains(userComp)
-                                || knownStaticHelpers.Contains(userComp) || knownPlain.Contains(userComp);
+            var isEmittedType = KnownUserType(userComp);
             // When a resolver is present it is authoritative: import ONLY types we actually emit
             // (records/components it discovered). This drops references that aren't modules — primitives,
             // static-field names read as ClassName.X, helper-class names, etc. — instead of inventing a
