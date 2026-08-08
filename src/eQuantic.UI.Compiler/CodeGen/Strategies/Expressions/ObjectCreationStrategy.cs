@@ -97,6 +97,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         }
 
         var initializer = "";
+        var assignInitializerAfterConstruction = false;
         if (creation.Initializer != null)
         {
             initializer = context.Converter.ConvertExpression(creation.Initializer);
@@ -109,21 +110,31 @@ public class ObjectCreationStrategy : IConversionStrategy
             // already emitted the skipped defaults, and counting the call site again would append
             // them twice — pushing the config past the constructor's arity, where it is silently
             // dropped.
-            if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor
-                && emittedSlots < ctor.Parameters.Length)
+            if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
             {
-                var defaults = ctor.Parameters.Skip(emittedSlots).Select(ParameterDefaultLiteral);
-                var filler = string.Join(", ", defaults);
-                arguments = string.IsNullOrEmpty(arguments) ? filler : arguments + ", " + filler;
+                if (emittedSlots < ctor.Parameters.Length)
+                {
+                    var defaults = ctor.Parameters.Skip(emittedSlots).Select(ParameterDefaultLiteral);
+                    var filler = string.Join(", ", defaults);
+                    arguments = string.IsNullOrEmpty(arguments) ? filler : arguments + ", " + filler;
+                }
+                arguments = string.IsNullOrEmpty(arguments) ? initializer : arguments + ", " + initializer;
             }
-            // Append initializer to arguments if likely a UI component
-            if (string.IsNullOrEmpty(arguments))
+            else if (emittedSlots > 0)
             {
-                arguments = initializer;
+                // No resolvable constructor (standalone CompileSource, no references — the
+                // playground's mode): the arity is unknowable, so the trailing slot is a trap —
+                // `new Text(content, role) { Tabular = true }` landed the config in the COLOR
+                // parameter. Object.assign after construction is the C# initializer's exact
+                // semantics and needs no arity. (Constructor-side normalization of config values
+                // does not run for these — acceptable next to a guaranteed mis-slot.)
+                assignInitializerAfterConstruction = true;
             }
             else
             {
-                arguments += ", " + initializer;
+                // No positional arguments: the config as the sole argument is the dominant
+                // constructor contract (`Component(props)`), and correct regardless of arity.
+                arguments = initializer;
             }
         }
 
@@ -188,6 +199,8 @@ public class ObjectCreationStrategy : IConversionStrategy
             return $"new Error({ExceptionMessageArgument(creation, context) ?? arguments})";
         }
 
+        if (assignInitializerAfterConstruction)
+            return $"Object.assign(new {genericTypeName ?? typeName}({arguments}), {initializer})";
         return $"new {genericTypeName ?? typeName}({arguments})";
     }
 
@@ -439,8 +452,17 @@ public class ObjectCreationStrategy : IConversionStrategy
                     var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
                     for (var i = supplied; i < ctor.Parameters.Length; i++)
                         parts.Add(ParameterDefaultLiteral(ctor.Parameters[i]));
+                    parts.Add(context.Converter.ConvertExpression(creation.Initializer));
+                    return $"new {type.Name}({string.Join(", ", parts)})";
                 }
-                parts.Add(context.Converter.ConvertExpression(creation.Initializer));
+
+                // No resolvable constructor (standalone CompileSource, no references — the
+                // playground's mode): the arity is unknowable, so the trailing slot is a trap —
+                // `new Text(content, role) { Tabular = true }` landed the config in the COLOR
+                // parameter. Object.assign after construction is the C# initializer's exact
+                // semantics and needs no arity at all.
+                var config = context.Converter.ConvertExpression(creation.Initializer);
+                return $"Object.assign(new {type.Name}({string.Join(", ", parts)}), {config})";
             }
             return $"new {type.Name}({string.Join(", ", parts)})";
         }
