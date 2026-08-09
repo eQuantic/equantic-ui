@@ -1,7 +1,6 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Core;
 using eQuantic.UI.Primitives;
-using StatefulComponent = eQuantic.UI.Primitives.StatefulComponent;
 
 namespace eQuantic.Console;
 

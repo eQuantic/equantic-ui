@@ -35,6 +35,19 @@ describe('UI factories (no-new authoring twin)', () => {
     expect(box.style).not.toBeNull();
   });
 
+  it('the named factories reach the statics the mirrored names shadow', () => {
+    // Gap and DotBadge exist because `Spacer.Fixed` / `Badge.AsDot` stop compiling in C# wherever
+    // the surface is imported. The twin has no such shadowing, so nothing here would notice if the
+    // named factory quietly stopped wrapping the right static — these assert the RESULT.
+    const gap = UI.gap(34);
+    expect(gap.flex).toBe(0);
+    expect(gap.fixedLength).toBe(34);
+
+    const dot = UI.dotBadge('destructive');
+    expect(dot.dot).toBe(true);
+    expect(dot.count).toBe(0);
+  });
+
   it('the factory tree renders through the same lowering as constructed nodes', () => {
     const factoryNode = UI.column(8, [UI.text('hello', 'bodyM')]).render();
     const constructed = (() => {

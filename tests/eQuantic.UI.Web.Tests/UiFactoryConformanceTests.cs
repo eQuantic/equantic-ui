@@ -28,9 +28,13 @@ public class UiFactoryConformanceTests
     /// <c>Spacer</c> because that name is already the flex factory (no overloads here). Without a
     /// name of its own the rigid spacer is unreachable in any file importing this surface: the
     /// mirrored method shadows the type, so <c>Spacer.Fixed(34)</c> stops compiling.</item>
+    /// <item><c>DotBadge</c> — the same shape, for <c>Badge.AsDot</c>. The rule below is what
+    /// FINDS these: any type whose static factory sits behind a mirrored name needs one of
+    /// these, and <see cref="AStaticFactoryBehindAMirroredName_HasANamedFactory"/> fails until
+    /// it gets one.</item>
     /// </list>
     /// </summary>
-    private static readonly HashSet<string> NamedFactories = new() { "Gap" };
+    private static readonly HashSet<string> NamedFactories = new() { "Gap", "DotBadge" };
 
     private static readonly MethodInfo[] Factories =
         AllFactories.Where(m => !NamedFactories.Contains(m.Name)).ToArray();
@@ -54,6 +58,50 @@ public class UiFactoryConformanceTests
             typeof(eQuantic.UI.Primitives.VisualNode).IsAssignableFrom(factory.ReturnType)
                 .Should().BeTrue($"{name} must return a vocabulary node");
         }
+    }
+
+    /// <summary>
+    /// The trap this whole surface carries, stated as a rule instead of a memory: a mirrored
+    /// factory SHADOWS its own type, so any <c>Type.StaticFactory(…)</c> on that type stops
+    /// compiling wherever the surface is imported — and the SDK imports it into every file of a
+    /// consumer's project, so "wherever" means everywhere. Each one therefore needs a factory
+    /// under a name of its own, or it is simply unreachable. <c>Spacer.Fixed</c> was found by a
+    /// person writing a page; <c>Badge.AsDot</c> was found by a release review. This finds the
+    /// third one on the push that introduces it.
+    /// </summary>
+    [Fact]
+    public void AStaticFactoryBehindAMirroredName_HasANamedFactory()
+    {
+        var reachableByName = AllFactories
+            .Where(m => NamedFactories.Contains(m.Name))
+            .Select(m => m.ReturnType)
+            .ToHashSet();
+
+        var stranded = new List<string>();
+        foreach (var factory in Factories)
+        {
+            var shadowed = factory.ReturnType;
+            // A static member of the type that HANDS BACK the type is a construction path — the
+            // exact thing the shadowing puts out of reach.
+            var staticFactories = shadowed
+                .GetMembers(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Where(member => member switch
+                {
+                    MethodInfo method => method.ReturnType == shadowed && !method.IsSpecialName,
+                    PropertyInfo property => property.PropertyType == shadowed,
+                    FieldInfo field => field.FieldType == shadowed,
+                    _ => false,
+                })
+                .Select(member => $"{shadowed.Name}.{member.Name}");
+
+            foreach (var member in staticFactories)
+                if (!reachableByName.Contains(shadowed))
+                    stranded.Add(member);
+        }
+
+        stranded.Should().BeEmpty(
+            "each of these is unreachable while this surface is imported — give it a named factory "
+            + "(the Gap/DotBadge shape) and list it in NamedFactories");
     }
 
     [Fact]
