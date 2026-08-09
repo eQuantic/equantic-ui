@@ -30,6 +30,11 @@ var refsFile = args.ToList().Contains("--refs") ? args[args.ToList().IndexOf("--
 // constants at the use site — an icon pack's `static readonly IconGlyph` needs its INITIALIZER,
 // which metadata (via --refs) does not carry; the pack's tools/source supplies it here.
 var refSourcesFile = args.ToList().Contains("--ref-sources") ? args[args.ToList().IndexOf("--ref-sources") + 1] : null;
+// --generated <dir>: the SOURCE-GENERATOR output directory for the configuration being built. The
+// SDK knows which one that is and eqc cannot: a project built in both configurations has a
+// generated tree under obj/Debug AND obj/Release, and sweeping obj would take every generated type
+// twice — which resolves to neither, while the C# build stays perfectly happy.
+var generatedDir = args.ToList().Contains("--generated") ? args[args.ToList().IndexOf("--generated") + 1].Trim() : null;
 
 // Determine intermediate directory based on primary source dir
 var primarySourceDir = sourceDirs[0];
@@ -68,6 +73,15 @@ try
         {
             Console.WriteLine($"   Including {globalUsings.Count} generated global-usings file(s)");
             allSourceFiles.AddRange(globalUsings);
+        }
+
+        // SOURCE-GENERATOR output: part of the program csc compiled, so a page calling into it
+        // must resolve here too — see GetCompilerGeneratedFiles.
+        var generated = ProjectCompilationHelper.GetCompilerGeneratedFiles(primarySourceDir, generatedDir).ToList();
+        if (generated.Count > 0)
+        {
+            Console.WriteLine($"   Including {generated.Count} compiler-generated file(s)");
+            allSourceFiles.AddRange(generated);
         }
     }
 
@@ -188,6 +202,7 @@ if (Directory.Exists(standardComponentsPath))
     componentDirectories.Add(standardComponentsPath);
 }
 
+dependencyResolver.GeneratedDirectory = generatedDir;
 dependencyResolver.ScanSourceDirectories(componentDirectories);
 compiler.SetDependencyResolver(dependencyResolver);
 
@@ -296,15 +311,31 @@ bool CompileAndBundle()
         if (!Directory.Exists(intermediateDir)) Directory.CreateDirectory(intermediateDir);
         if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
 
-        foreach (var dir in sourceDirs)
+        // GENERATED sources are compiled alongside the app's own: a generator that writes something
+        // a page CALLS (a factory surface built from the app's components) has to become a module,
+        // or the page names a binding the bundle never defines. They are paired with the project
+        // dir so their entry-point rule is the project's own; nothing here is an entry point unless
+        // it is a page. Files a generator wrote for other purposes (ASP.NET's public Program, say)
+        // pass through the parser and come back empty, exactly as a non-component always has.
+        var compileUnits = sourceDirs
+            .Where(Directory.Exists)
+            .SelectMany(dir => Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories)
+                .Select(file => (Dir: dir, File: file)))
+            .Concat(ProjectCompilationHelper.GetCompilerGeneratedFiles(primarySourceDir, generatedDir)
+                .Select(file => (Dir: primarySourceDir, File: file)))
+            .GroupBy(unit => unit.Dir);
+
+        foreach (var group in compileUnits)
         {
-            if (!Directory.Exists(dir)) continue;
-            var files = Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories);
-            
+            var dir = group.Key;
+            var files = group.Select(unit => unit.File);
+
             foreach (var file in files)
             {
-                if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
-                    file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+                var isGenerated = file.Contains($"{Path.DirectorySeparatorChar}generated{Path.DirectorySeparatorChar}");
+                if (!isGenerated &&
+                    (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
+                     file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")))
                     continue;
 
                 // Try to compile - parser will return empty if not a component
@@ -338,7 +369,7 @@ bool CompileAndBundle()
                         // mentioned. The positional rule stays as well — a project laid out the
                         // conventional way keeps every module it had before.
                         var isEntryPoint = result.IsPage
-                            || (dir == sourceDirs[0]
+                            || (!isGenerated && dir == sourceDirs[0]
                                 && (relativePath.StartsWith("Pages")
                                     || !relativePath.Contains(Path.DirectorySeparatorChar)));
                         if (isEntryPoint)

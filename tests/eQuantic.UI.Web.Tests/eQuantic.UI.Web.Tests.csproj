@@ -27,6 +27,9 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Compiler\eQuantic.UI.Compiler.csproj" />
+    <!-- Referenced as a LIBRARY, not an analyzer: these tests RUN the generator through a driver
+         and read what it produced, rather than letting it rewrite this project. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Generators\eQuantic.UI.Generators.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Material\eQuantic.UI.Material.csproj" />
   </ItemGroup>
 

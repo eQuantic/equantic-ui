@@ -191,6 +191,7 @@ jobs:
             eQuantic.UI.Codegen
             eQuantic.UI.Compiler
             eQuantic.UI.Components
+            eQuantic.UI.Generators
             eQuantic.UI.Server
             eQuantic.UI.Web
             eQuantic.UI.Native.Components

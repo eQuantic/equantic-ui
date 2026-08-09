@@ -1391,8 +1391,12 @@ public class TypeScriptEmitter
         // the name, so nothing downstream could tell an echoed name from a translated one.
         var nullable = type is NullableTypeSyntax;
         var asked = nullable ? ((NullableTypeSyntax)type).ElementType : type;
-        var mapped = CSharpTypeToTypeScript(asked.ToString());
-        var echoed = mapped == asked.ToString();
+        // Compare against the NORMALISED spelling: a generated signature writes
+        // `global::Ns.Thing`, and comparing the mapper's output to the raw text would call every
+        // qualified name "translated" and skip the enum/interface handling below.
+        var askedName = NormalizeQualification(asked.ToString());
+        var mapped = CSharpTypeToTypeScript(askedName);
+        var echoed = mapped == askedName;
 
         var resolvedRaw = (_semanticModel?.GetSymbolInfo(asked).Symbol as ITypeSymbol)
             ?? _semanticModel?.GetTypeInfo(asked).Type;
@@ -1642,9 +1646,35 @@ public class TypeScriptEmitter
         }
     }
     
+    /// <summary>
+    /// Drops NAMESPACE qualification from a type name, keeping generics and arrays intact:
+    /// <c>global::eQuantic.UI.Primitives.VisualNode</c> → <c>VisualNode</c>,
+    /// <c>System.Collections.Generic.List&lt;A.B.Foo&gt;</c> → <c>List&lt;Foo&gt;</c>.
+    /// <para>
+    /// A TypeScript module binds SIMPLE names — the import is `import { VisualNode }`, and there is
+    /// no namespace object to reach through — so a qualified name echoed into an annotation is not
+    /// merely ugly, it does not parse: `global::` is a syntax error the bundler dies on, and it is
+    /// exactly how a SOURCE GENERATOR writes types, since qualifying is how generated code avoids
+    /// ambiguity. The name-based special cases below (List, Dictionary, Action…) also only ever
+    /// matched unqualified spellings, so this is what makes `System.Action&lt;T&gt;` map at all.
+    /// </para>
+    /// </summary>
+    internal static string NormalizeQualification(string? typeName)
+    {
+        if (string.IsNullOrEmpty(typeName)) return typeName ?? "";
+        if (!typeName!.Contains('.') && !typeName.Contains("::")) return typeName;
+
+        // Each run of `Namespace.` (optionally behind `global::`) that PRECEDES an identifier is
+        // qualification; the identifier that survives is the type's own name. Applied everywhere in
+        // the string, so generic arguments normalise with the same pass.
+        return System.Text.RegularExpressions.Regex.Replace(
+            typeName, @"(?:global::)?(?:[A-Za-z_][A-Za-z0-9_]*\.)+", "");
+    }
+
     internal static string CSharpTypeToTypeScript(string? csharpType)
     {
         if (string.IsNullOrEmpty(csharpType)) return "any";
+        csharpType = NormalizeQualification(csharpType);
 
         // Handle Nullable<T> or T?
         var isNullable = csharpType.EndsWith("?");

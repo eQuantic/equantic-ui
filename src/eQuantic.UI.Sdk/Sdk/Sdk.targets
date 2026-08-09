@@ -144,6 +144,15 @@
             IgnoreExitCode="true" />
     </Target>
 
+    <!--
+        NOTE on generated sources: they are written to disk for eqc to read, and the compiler never
+        removes what a generator STOPPED producing. Renaming or dropping a generator therefore
+        leaves its last output in obj, where eqc still reads it — a phantom type, or a second copy
+        of a live one. `dotnet clean` is the cure, and it is the only one: a target that wiped the
+        directory first broke every INCREMENTAL build instead, because the compile is skipped then
+        and nothing rewrites what was deleted, leaving eqc with no generated surface at all.
+    -->
+
     <!-- GenerateGlobalUsings must have run before eqc: eqc reads the generated GlobalUsings.g.cs
          into its own compilation (that is how the implicit factory `using static` reaches it), and
          on a FIRST build the file does not exist until the target writes it. -->
@@ -220,10 +229,16 @@
             Condition="'@(_EqcRefSourceFinal)' != ''" />
         <PropertyGroup>
             <_RefSourcesArg Condition="'@(_EqcRefSourceFinal)' != ''"> --ref-sources &quot;$(_EqcRefSourcesFile)&quot;</_RefSourcesArg>
+            <!-- The generated tree for THIS configuration. eqc cannot infer it: a project built
+                 Debug and Release has one under each, and sweeping obj would take every generated
+                 type twice, resolving to neither while the C# build stays happy. Single line —
+                 a multi-line property value carries its newline into the command (see the release
+                 notes on Windows: cmd.exe cuts the command there). -->
+            <_GeneratedArg Condition="'$(CompilerGeneratedFilesOutputPath)' != ''"> --generated &quot;$(MSBuildProjectDirectory)/$(CompilerGeneratedFilesOutputPath)&quot;</_GeneratedArg>
         </PropertyGroup>
 
         <Exec
-            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_RefSourcesArg)$(_BunArg)"
+            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_RefSourcesArg)$(_GeneratedArg)$(_BunArg)"
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
     </Target>
