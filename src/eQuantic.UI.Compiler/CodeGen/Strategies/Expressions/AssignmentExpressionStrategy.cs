@@ -55,6 +55,18 @@ public class AssignmentExpressionStrategy : IConversionStrategy
             return $"let {left} {op} {right}";
         }
 
+        // COMPOUND assignment on a decimal is arithmetic, and a decimal crosses as a runtime
+        // Decimal rather than a JS number — so `total += amount` concatenates their text. A running
+        // money total read "R$ 01240.5089.90640.00": the seed, then each amount, glued end to end.
+        // The binary form already routes here; this is the same operation spelled shorter.
+        if (op.Length == 2 && op[1] == '=' && "+-*/".Contains(op[0])
+            && context.SemanticHelper.GetType(assignment.Left).IsDecimal())
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var method = op[0] switch { '+' => "add", '-' => "sub", '*' => "mul", _ => "div" };
+            return $"{left} = {Eq.Dec}({left}).{method}({Eq.Dec}({right}))";
+        }
+
         return $"{left} {op} {right}";
     }
 

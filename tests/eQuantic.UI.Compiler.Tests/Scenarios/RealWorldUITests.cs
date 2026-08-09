@@ -65,7 +65,12 @@ public class RealWorldUITests
         result.Should().Contain("filter");
         result.Should().Contain("map");
         result.Should().Contain("reduce");
-        result.Should().Contain("=> _a + _b");
+        // `Price` is a DECIMAL, and a decimal crosses as a runtime Decimal rather than a JS number,
+        // so `_a + _b` here would concatenate their text instead of adding them. This assertion
+        // used to demand exactly that, which is how a payments total reached the browser reading
+        // "R$ 01240.50640.00".
+        result.Should().Contain("$eq.num.dec(_a).add($eq.num.dec(_b))");
+        result.Should().Contain("$eq.num.dec(0)");
     }
 
     [Fact]

@@ -39,6 +39,19 @@ public class SumStrategy : IConversionStrategy
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments;
 
+        // WHAT is being added decides how. A decimal crosses as a runtime Decimal, not a JS number,
+        // so `_sum + amount` concatenates their text: a payments total read
+        // "R$ 01240.50640.00" — the seed, then each amount, glued end to end. The result type of
+        // the call answers for both forms, with and without a selector.
+        var summed = context.SemanticHelper.GetType(invocation);
+        var exact = summed.IsDecimal();
+
+        string Add(string left, string right) => exact
+            ? $"{Eq.Dec}({left}).add({Eq.Dec}({right}))"
+            : $"{left} + {right}";
+        var seed = exact ? $"{Eq.Dec}(0)" : "0";
+        if (exact) context.UsedHelpers.Add(Eq.Import);
+
         if (args.Count > 0)
         {
             // Sum(x => x.Amount) -> reduce((sum, x) => sum + x.amount, 0)
@@ -49,16 +62,16 @@ public class SumStrategy : IConversionStrategy
             {
                 var param = lambda.Parameter.Identifier.Text;
                 var body = context.Converter.ConvertExpression(lambda.Body as ExpressionSyntax ?? lambda.ExpressionBody!);
-                return $"{caller}.reduce((_sum, {param}) => _sum + {body}, 0)";
+                return $"{caller}.reduce((_sum, {param}) => {Add("_sum", body)}, {seed})";
             }
 
             // Fallback for other expression types
             var selectorConverted = context.Converter.ConvertExpression(selector);
-            return $"{caller}.reduce((_sum, _x) => _sum + {selectorConverted}(_x), 0)";
+            return $"{caller}.reduce((_sum, _x) => {Add("_sum", $"{selectorConverted}(_x)")}, {seed})";
         }
 
-        // Sum() without selector - assume array of numbers
-        return $"{caller}.reduce((_a, _b) => _a + _b, 0)";
+        // Sum() without selector - the elements themselves.
+        return $"{caller}.reduce((_a, _b) => {Add("_a", "_b")}, {seed})";
     }
 
     public int Priority => 10;
