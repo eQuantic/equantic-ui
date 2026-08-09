@@ -151,7 +151,10 @@ public class ComponentCompiler
                 var recordConverter = new CSharpToJsConverter();
                 if (component.SyntaxTree != null)
                     recordConverter.SetSemanticModel(_semanticModelProvider.GetSemanticModel(component.SyntaxTree));
-                result.TypeScript = new RecordTypeEmitter(recordConverter).EmitModule(component.ValueTypeSyntax);
+                // TypeAnnotations flows here too: a record emitted as TypeScript is a parse error
+                // for a consumer that runs the module directly, and nothing upstream would notice.
+                result.TypeScript = new RecordTypeEmitter(recordConverter)
+                    .EmitModule(component.ValueTypeSyntax, TypeAnnotations);
                 result.Success = true;
                 return result;
             }

@@ -45,7 +45,13 @@ public class RecordTypeEmitter
     /// Emits the type as a standalone TypeScript module — the structural <c>equals</c>/<c>with</c> use
     /// <c>$eq</c>, imported from the runtime, and the class is exported so components can import it.
     /// </summary>
-    public string EmitModule(TypeDeclarationSyntax type)
+    /// <param name="tsTypeDeclarations">TypeScript output. FALSE is plain JavaScript, and it has to
+    /// reach here: a record emitted with `declare x: string` and `constructor(x: any = null)` is a
+    /// TypeScript file, so a consumer that runs the module directly — the playground, which asks
+    /// the compiler for plain JS — gets "Unexpected identifier" at import time. That failure is
+    /// invisible from the outside: compilation reports success, and the page renders a blank
+    /// frame.</param>
+    public string EmitModule(TypeDeclarationSyntax type, bool tsTypeDeclarations = true)
     {
         // What the BODIES reference, not just what the members declare: a computed property
         // (`InsertedRange => new CodeRange(new CodePosition(…))`) names types the positional
@@ -55,7 +61,7 @@ public class RecordTypeEmitter
             Services.RuntimeProvidedTypeScanner.Collect(type, model, runtimeProvided, new HashSet<string>());
         runtimeProvided.Remove(type.Identifier.Text);
 
-        var body = Emit(type, tsTypeDeclarations: true);
+        var body = Emit(type, tsTypeDeclarations);
         // Only what the emitted text actually NAMES: a type mentioned in the C# and erased on the
         // way out (an interface, an enum) would otherwise import a name nothing uses, which the
         // runtime's own build rejects.
