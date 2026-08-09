@@ -25,6 +25,11 @@ public class ComponentDependencyResolver
     /// <summary>
     /// Scans source code directories to build dependency map
     /// </summary>
+    /// <summary>The generated-sources directory for the configuration being built; null lets the
+    /// scan find it. Set from the SDK, for the reason <see cref="ProjectCompilationHelper"/> gives:
+    /// a project built Debug AND Release otherwise contributes every generated type twice.</summary>
+    public string? GeneratedDirectory { get; set; }
+
     public void ScanSourceDirectories(IEnumerable<string> directories)
     {
         foreach (var directory in directories)
@@ -40,6 +45,13 @@ public class ComponentDependencyResolver
 
                 AnalyzeFile(file);
             }
+
+            // GENERATED sources become modules like any other (eqc transpiles them), so the scan
+            // has to know their types too: this map is what decides whether a referenced name is
+            // imported as `./AppUI`. Without it the page names a binding nothing imports and the
+            // bundle leaves it undefined — a build that succeeds and a page that throws.
+            foreach (var file in ProjectCompilationHelper.GetCompilerGeneratedFiles(directory, GeneratedDirectory))
+                AnalyzeFile(file);
         }
     }
 

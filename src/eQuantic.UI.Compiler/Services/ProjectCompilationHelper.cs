@@ -153,6 +153,52 @@ public static class ProjectCompilationHelper
     }
 
     /// <summary>
+    /// SOURCE-GENERATOR output (<c>obj/**/generated/**/*.cs</c>), written to disk by
+    /// <c>EmitCompilerGeneratedFiles</c>. A generator's code is part of the program csc compiles,
+    /// so anything an app WRITES against it — a factory surface generated from the app's own
+    /// components — must reach eqc's semantic model too, or the call binds to nothing and the
+    /// fallback emits <c>this.panel(…)</c>: a build that succeeds and a page that throws.
+    /// <para>
+    /// eqc runs AFTER the C# compile (the targets <c>Build</c> depends on complete before any
+    /// <c>BeforeTargets="Build"</c> step), so these files are already on disk when this is asked.
+    /// They join the compilation for RESOLUTION only — they are not in
+    /// <see cref="GetProjectSourceFiles"/>, so nothing here is transpiled into a module of its own.
+    /// </para>
+    /// </summary>
+    public static IEnumerable<string> GetCompilerGeneratedFiles(string projectDirectory) =>
+        GetCompilerGeneratedFiles(projectDirectory, generatedDirectory: null);
+
+    /// <param name="generatedDirectory">
+    /// The generated-sources directory for the configuration BEING BUILT, which the SDK knows and
+    /// this does not. Without it the fallback sweeps all of <c>obj</c> — and a project built in
+    /// both configurations then has <c>obj/Debug/…/generated</c> AND <c>obj/Release/…/generated</c>,
+    /// so every generated type arrives TWICE and resolves to neither. That failure looks like the
+    /// generator being broken while the C# build is perfectly happy.
+    /// </param>
+    public static IEnumerable<string> GetCompilerGeneratedFiles(
+        string projectDirectory, string? generatedDirectory)
+    {
+        var roots = new List<string>();
+        if (!string.IsNullOrEmpty(generatedDirectory) && Directory.Exists(generatedDirectory))
+        {
+            roots.Add(generatedDirectory!);
+        }
+        else if (string.IsNullOrEmpty(generatedDirectory))
+        {
+            var objDir = Path.Combine(projectDirectory, "obj");
+            if (Directory.Exists(objDir))
+                roots.AddRange(Directory.GetDirectories(objDir, "generated", SearchOption.AllDirectories));
+        }
+
+        return roots
+            .SelectMany(dir => Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories))
+            // The implicit-usings file is collected separately; taking it twice would declare the
+            // same global usings in two trees, which Roslyn reports as a duplicate.
+            .Where(file => !file.EndsWith(".GlobalUsings.g.cs", StringComparison.Ordinal))
+            .Distinct();
+    }
+
+    /// <summary>
     /// Gets all .cs source files from a project directory.
     /// Excludes obj/ and bin/ directories.
     /// </summary>

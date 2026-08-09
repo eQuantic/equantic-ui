@@ -82,33 +82,33 @@ public sealed class HomePage : StatefulComponent
 {
     private int _count;
 
-    public override VisualNode Build(ComponentContext context)
-    {
-        var theme = context.Theme;
-
-        var body = new Column(gap: Space.S4)
+    public override VisualNode Build(ComponentContext context) =>
+        Box(new BoxStyle
         {
-            Width = SizeValue.Fill, Height = SizeValue.Fill,
-            Main = MainAlign.Center, Cross = CrossAlign.Center,
-        };
-        body.Add(new Text("MyApp", TypeRole.Display, theme.TextPrimary, maxLines: 1));
-        body.Add(new Text($"{_count}", TypeRole.Display, theme.TextPrimary, maxLines: 1) { Tabular = true });
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = context.Theme.Background,
+            Padding = EdgeInsets.All(Space.S6),
+        },
+        Column(gap: Space.S4, children: [
+            Text("MyApp", TypeRole.Display, context.Theme.TextPrimary),
 
-        var actions = new Row(gap: Space.S3);
-        actions.Add(new Button("Count", Variant.Primary, SizeVariant.Medium,
-            onPressed: () => SetState(() => _count++)));
-        actions.Add(new Button("Reset", Variant.Outline, SizeVariant.Medium,
-            onPressed: () => SetState(() => _count = 0)) { Disabled = _count == 0 });
-        body.Add(actions);
+            // Your own component. Its factory is generated from the component itself,
+            // so it composes exactly like the framework's.
+            StatTile("Count", $"{_count}"),
 
-        return new Box(new BoxStyle
-        {
-            Width = SizeValue.Fill, Height = SizeValue.Fill,
-            Background = theme.Background,
-        }, body);
-    }
+            Row(gap: Space.S3, children: [
+                Button("Count", onPressed: () => SetState(() => _count++)),
+                Button("Reset", Variant.Outline, onPressed: () => SetState(() => _count = 0)),
+            ]),
+        ]));
 }
 ```
+
+No markup language, no builder ceremony, and no `new` — just C# expressions. Every name there is a
+factory in scope everywhere: the framework's, and your own components'. Because styles are typed
+values instead of CSS strings, the compiler checks the whole interface, layout and styling
+included.
 
 The **same class** serves as a server-rendered, hydrated web page and as a native screen — the
 target is a project setting, not a rewrite.

@@ -105,6 +105,28 @@
             Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_EqOsArch)' != 'Arm64'" />
     </ItemGroup>
 
+    <!--
+        The app's OWN components join the declarative surface, generated from the compilation:
+        define a component, get a factory named after it. A generator rather than a convention
+        because it SEES the components — it stays in step with them, and says at compile time when
+        two share a name or a component elects two constructors.
+
+        EmitCompilerGeneratedFiles is not a debugging nicety here, it is load-bearing: eqc reads
+        FILES, not the csc compilation, so the generated surface reaches the transpiler only by
+        being written to disk. Without it the page compiles in C# and eqc emits `this.panel(…)`.
+    -->
+    <PropertyGroup Condition="'$(EQuanticGenerateFactorySurface)' != 'false'">
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(EQuanticGenerateFactorySurface)' != 'false' And '$(IsEQuanticDevMode)' == 'true'">
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Generators\eQuantic.UI.Generators.csproj"
+                          OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(EQuanticGenerateFactorySurface)' != 'false' And '$(IsEQuanticDevMode)' != 'true'">
+        <PackageReference Include="eQuantic.UI.Generators" Version="$(EQuanticUIVersion)"
+                          PrivateAssets="all" />
+    </ItemGroup>
+
     <!-- The DECLARATIVE factory surface, available in every file without an import:
          Column(gap: Space.S3, children: [ Text("…"), Button("Up") ]) instead of `new` — the
          methods of eQuantic.UI.Components.UI arrive through a generated global `using static`

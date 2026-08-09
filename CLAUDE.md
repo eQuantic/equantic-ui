@@ -258,6 +258,24 @@ src/
 - `[Authorize(Roles = "Admin")]` - RBAC authorization on server actions
 - `[AllowAnonymous]` - Bypasses authorization
 
+## Authoring: the declarative surface
+
+Trees are written with FACTORIES, never `new`: `Column(gap: Space.S3, children: [ Text(…),
+Button(…) ])`. The SDK puts `eQuantic.UI.Components.UI` in scope in every file, and a source
+generator (`eQuantic.UI.Generators`) writes the same surface for the APP's own components, so a
+screen composes both identically.
+
+- A factory is named EXACTLY like its type and mirrors a constructor parameter-for-parameter; no
+  overloads (the twin is JavaScript). Containers take a trailing `children`.
+- The generator mirrors the WIDEST constructor — the rule the emitter already applies to
+  overloads — unless one is elected with `[UiFactory]`. Diagnostics: EQ3101 (two elected), EQ3102
+  (two components share a name).
+- A factory SHADOWS its type for types reached by `using` (the framework's, not the app's own):
+  `Spacer.Fixed(34)` → use `Gap(34)`, `Badge.AsDot(v)` → `DotBadge(v)`. A conformance test fails
+  naming any new one.
+- eqc reads FILES, so generated sources must be on disk (`EmitCompilerGeneratedFiles`) and scoped
+  to the configuration being built (`--generated`), or types arrive twice and resolve to neither.
+
 ## Component Types
 
 1. **StatelessComponent** - Functional components depending only on props

@@ -1,4 +1,3 @@
-using eQuantic.UI.Components;
 using eQuantic.UI.Core;
 using eQuantic.UI.Primitives;
 
@@ -7,6 +6,11 @@ namespace EQuanticApp.Pages;
 /// <summary>
 /// Your first write-once page: this C# renders on the server, compiles to JavaScript at build
 /// time, and the SAME source realizes natively when you add a Photon shell. No JS was written.
+/// <para>
+/// The interface is plain C# expressions — no markup language, no builder ceremony. Every name
+/// below is a factory in scope everywhere: the framework's, and your own components' (StatTile is
+/// in Components/, and its factory is generated from the component itself).
+/// </para>
 /// </summary>
 [Page("/", Title = "EQuanticApp")]
 public sealed class HomePage : StatefulComponent
@@ -17,31 +21,28 @@ public sealed class HomePage : StatefulComponent
     {
         var theme = context.Theme;
 
-        var body = new Column(gap: Space.S4)
-        {
-            Width = SizeValue.Fill,
-            Height = SizeValue.Fill,
-            Main = MainAlign.Center,
-            Cross = CrossAlign.Center,
-        };
-        body.Add(new Text("EQuanticApp", TypeRole.Display, theme.TextPrimary, maxLines: 1));
-        body.Add(new Text("C# in, pixels out — the counter below is a component, a state field and a handler.",
-            TypeRole.BodyM, theme.TextSecondary, maxLines: 2));
-        body.Add(new Text($"{_count}", TypeRole.Display, theme.TextPrimary, maxLines: 1) { Tabular = true });
-
-        var actions = new Row(gap: Space.S3);
-        actions.Add(new Button("Count", Variant.Primary, SizeVariant.Medium,
-            onPressed: () => SetState(() => _count++)));
-        actions.Add(new Button("Reset", Variant.Outline, SizeVariant.Medium,
-            onPressed: () => SetState(() => _count = 0)) { Disabled = _count == 0 });
-        body.Add(actions);
-
-        return new Box(new BoxStyle
+        return Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
             Background = theme.Background,
             Padding = EdgeInsets.All(Space.S6),
-        }, body);
+        },
+        Column(gap: Space.S4, children: [
+            Text("EQuanticApp", TypeRole.Display, theme.TextPrimary, maxLines: 1),
+            Text("C# in, pixels out — the counter below is a component, a state field and a handler.",
+                TypeRole.BodyM, theme.TextSecondary, maxLines: 2),
+
+            // Your own component, composed exactly like the framework's.
+            Row(gap: Space.S3, children: [
+                StatTile("Count", $"{_count}"),
+                StatTile("Doubled", $"{_count * 2}"),
+            ]),
+
+            Row(gap: Space.S3, children: [
+                Button("Count", onPressed: () => SetState(() => _count++)),
+                Button("Reset", Variant.Outline, onPressed: () => SetState(() => _count = 0)),
+            ]),
+        ]));
     }
 }
