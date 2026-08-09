@@ -46,7 +46,7 @@ describe('spinner lowering (C# cross-pin)', () => {
 describe('B14 value transition (transpiled stateful ProgressBar)', () => {
   it('an animated Flexible carries the token transition', () => {
     const row = new Row(0);
-    row.add(new Flexible(new Box(new BoxStyle({ height: 4 })), 640, { animateChanges: true }));
+    row.add(new Flexible(new Box(new BoxStyle({ height: 4 })), 640, 0, 1, { animateChanges: true }));
     row.add(new Spacer(360));
 
     const node = lower(row);

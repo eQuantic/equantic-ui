@@ -108,9 +108,10 @@ public static class UI
     public static Spinner Spinner(float size = IconSize.Dense, ColorToken? color = null) =>
         new Spinner(size, color);
 
-    /// <summary>Flex child sharing LEFTOVER main-axis space by weight (spec A2).</summary>
-    public static Flexible Flexible(VisualNode child, int flex = 1) =>
-        new Flexible(child, flex);
+    /// <summary>Flex child sharing LEFTOVER main-axis space by weight (spec A2). A non-zero
+    /// <paramref name="basis"/> is the size a WRAPPING parent breaks lines against.</summary>
+    public static Flexible Flexible(VisualNode child, int flex = 1, float basis = 0, int shrink = 1) =>
+        new Flexible(child, flex, basis, shrink);
 
     /// <summary>Layout-only space that collapses when siblings need it (spec A4).</summary>
     public static Spacer Spacer(int flex = 1) =>

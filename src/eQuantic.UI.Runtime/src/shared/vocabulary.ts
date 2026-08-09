@@ -1201,12 +1201,18 @@ export class Flexible extends VisualNode {
   readonly nodeKind = 'flexible';
   child: VisualChild;
   flex: number;
+  /** CSS flex-basis in dp — the size the line breaker measures against when the parent wraps. */
+  basis: number;
+  /** CSS flex-shrink. 1 matches what this realizer has always emitted. */
+  shrink: number;
   animateChanges = false;
 
-  constructor(child: VisualChild, flex = 1, config?: FlexibleConfig) {
+  constructor(child: VisualChild, flex = 1, basis = 0, shrink = 1, config?: FlexibleConfig) {
     super();
     this.child = child;
     this.flex = flex;
+    this.basis = basis;
+    this.shrink = shrink;
     if (config) Object.assign(this, config);
   }
 }

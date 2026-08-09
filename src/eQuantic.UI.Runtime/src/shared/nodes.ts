@@ -373,6 +373,10 @@ export interface FlexibleNode extends VisualNodeValue {
   nodeKind: 'flexible';
   child: VisualNodeValue;
   flex: number; /** Spec B14: weight changes animate Base/standard; omitted on a regression (snap). */
+  /** CSS flex-basis in dp. Absent or 0 = sized purely from the weight (the historical shape). */
+  basis?: number;
+  /** CSS flex-shrink. Absent = 1, which is what this realizer has always emitted. */
+  shrink?: number;
   animateChanges?: boolean;
 }
 

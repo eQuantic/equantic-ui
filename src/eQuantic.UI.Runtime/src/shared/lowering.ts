@@ -1671,10 +1671,16 @@ function lowerFlexible(
   horizontalAxis: boolean | null,
   path: string,
 ): HtmlNode {
-  // flex: n 1 0% — basis 0 matches the native leftover-by-weight distribution; min-size 0 lets text
-  // shrink to ellipsis instead of pushing siblings (the truncation contract).
+  // flex: grow shrink basis. A basis of 0 stays `0%` — the historical output, and the one that
+  // matches the native leftover-by-weight distribution. A non-zero basis is the size the line
+  // breaker measures against in a WRAPPING container, which is what lets two panes sit side by
+  // side while there is room and take a line each when there is not. min-size 0 lets text shrink to
+  // ellipsis instead of pushing siblings (the truncation contract).
+  const basis =
+    flexible.basis !== undefined && flexible.basis > 0 ? `${flexible.basis}px` : '0%';
+  const shrink = flexible.shrink ?? 1;
   const node = element('div', {
-    flex: `${flexible.flex} 1 0%`,
+    flex: `${flexible.flex} ${shrink} ${basis}`,
     // Spec B14: weight changes animate; the component omits the flag on a regression (snap).
     transition:
       flexible.animateChanges === true

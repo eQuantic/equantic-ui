@@ -13,7 +13,7 @@ export class UI {
     static vector(glyph: IconGlyph, size: number, color: ColorToken | null = null, label: string | null = null) { return new Vector(glyph, size, color, label); }
     static image(source: string, width: number, height: number, fit: string = 'cover', alt: string = '') { return new Image(source, width, height, fit, alt); }
     static spinner(size: number = 20, color: ColorToken | null = null) { return new Spinner(size, color); }
-    static flexible(child: VisualNode, flex: number = 1) { return new Flexible(child, flex); }
+    static flexible(child: VisualNode, flex: number = 1, basis: number = 0, shrink: number = 1) { return new Flexible(child, flex, basis, shrink); }
     static spacer(flex: number = 1) { return new Spacer(flex); }
     static gap(dp: number) { return Spacer.fixed(dp); }
     static positioned(child: VisualNode, top: number | null = null, end: number | null = null, bottom: number | null = null, start: number | null = null) { return new Positioned(child, top, end, bottom, start); }

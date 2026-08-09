@@ -1166,27 +1166,45 @@ public static class LayoutEngine
             : !float.IsPositiveInfinity(mainMax) ? mainMax - padMain
             : float.PositiveInfinity;
 
-        // Measure every child at natural size (wrap v1: Flexible/Spacer weights don't distribute —
-        // a Flexible degrades to its child, a flexible Spacer to nothing).
+        // Measure every child at its HYPOTHETICAL main size — its basis when it declares one, its
+        // natural size otherwise. This is the number the line breaker works from, exactly as CSS
+        // does: a pane with a basis of 440 asks for 440 whatever its content happens to measure, so
+        // two of them share a line while there is room for both and take a line each when there is
+        // not. A basis of 0 (the default) reproduces the old behaviour, where a Flexible simply
+        // degraded to its child.
         var measured = new List<LayoutNode>(flex.Children.Count);
         var sources = new List<VisualNode>(flex.Children.Count);
+        var hypothetical = new List<float>(flex.Children.Count);
+        var grow = new List<int>(flex.Children.Count);
+        var shrink = new List<int>(flex.Children.Count);
         for (var i = 0; i < flex.Children.Count; i++)
         {
-            var child = flex.Children[i] is Flexible flexible ? flexible.Child : flex.Children[i];
+            var source = flex.Children[i];
+            var flexible = source as Flexible;
+            var child = flexible?.Child ?? source;
             if (child is Spacer) continue;
-            var node = Measure(child, mainAvail, crossMax - padCross, ctx, ctx.ChildPath(path, i));
+
+            // A declared basis also BOUNDS the measure, so text inside wraps at the width the item
+            // is going to get rather than at the whole line's.
+            var basis = flexible is { Basis: > 0 } ? flexible.Basis : 0f;
+            var constraint = basis > 0 ? MathF.Min(basis, mainAvail) : mainAvail;
+            var node = Measure(child, constraint, crossMax - padCross, ctx, ctx.ChildPath(path, i));
+
             measured.Add(node);
-            sources.Add(flex.Children[i]);
+            sources.Add(source);
+            hypothetical.Add(basis > 0 ? basis : horizontal ? node.Bounds.Width : node.Bounds.Height);
+            grow.Add(flexible?.Flex ?? 0);
+            shrink.Add(flexible?.Shrink ?? 0);
         }
 
-        // Break into lines.
+        // Break into lines, measuring against the hypothetical sizes.
         var lines = new List<(int Start, int Count, float Main, float Cross)>();
         var lineStart = 0;
         var lineMain = 0f;
         var lineCross = 0f;
         for (var i = 0; i < measured.Count; i++)
         {
-            var childMain = horizontal ? measured[i].Bounds.Width : measured[i].Bounds.Height;
+            var childMain = hypothetical[i];
             var childCross = horizontal ? measured[i].Bounds.Height : measured[i].Bounds.Width;
             var withGap = lineMain > 0 ? lineMain + flex.Gap + childMain : childMain;
             if (lineMain > 0 && withGap > mainAvail)
@@ -1204,6 +1222,65 @@ public static class LayoutEngine
         }
         if (measured.Count > lineStart)
             lines.Add((lineStart, measured.Count - lineStart, lineMain, lineCross));
+
+        // Resolve each LINE on its own — the second pass CSS makes, and the piece that was missing.
+        // Leftover goes to the growers by weight; an overflowing line is taken back from the
+        // shrinkers weighted by basis (as CSS scales it) and never past the min-content floor the
+        // engine already computes. A child whose main size actually moved is measured again, so its
+        // text re-wraps and its cross size is the one it will really occupy.
+        if (!float.IsPositiveInfinity(mainAvail))
+        {
+            for (var l = 0; l < lines.Count; l++)
+            {
+                var line = lines[l];
+                var slack = mainAvail - line.Main;
+                var totalGrow = 0;
+                var scaledShrink = 0f;
+                for (var i = line.Start; i < line.Start + line.Count; i++)
+                {
+                    totalGrow += grow[i];
+                    scaledShrink += shrink[i] * hypothetical[i];
+                }
+
+                var growing = slack > 0.01f && totalGrow > 0;
+                var shrinking = slack < -0.01f && scaledShrink > 0;
+                if (!growing && !shrinking) continue;
+
+                var resolvedMain = 0f;
+                var resolvedCross = 0f;
+                for (var i = line.Start; i < line.Start + line.Count; i++)
+                {
+                    var size = hypothetical[i];
+                    if (growing && grow[i] > 0)
+                        size += slack * grow[i] / totalGrow;
+                    else if (shrinking && shrink[i] > 0)
+                    {
+                        size += slack * (shrink[i] * hypothetical[i]) / scaledShrink;
+                        size = MathF.Max(size, horizontal ? MinContentWidth(sources[i], ctx) : 0);
+                    }
+
+                    if (MathF.Abs(size - hypothetical[i]) > 0.01f)
+                    {
+                        var child = sources[i] is Flexible f ? f.Child : sources[i];
+                        var remeasured = Measure(child, horizontal ? size : crossMax - padCross,
+                            horizontal ? crossMax - padCross : size, ctx, ctx.ChildPath(path, i));
+                        // A flex item OCCUPIES the size it resolved to, even when its content is
+                        // shorter — otherwise the ones after it slide left and the line no longer
+                        // fills what it was given.
+                        remeasured.Bounds = horizontal
+                            ? remeasured.Bounds with { Width = size }
+                            : remeasured.Bounds with { Height = size };
+                        measured[i] = remeasured;
+                    }
+
+                    resolvedMain += size + (i > line.Start ? flex.Gap : 0);
+                    resolvedCross = MathF.Max(resolvedCross,
+                        horizontal ? measured[i].Bounds.Height : measured[i].Bounds.Width);
+                }
+
+                lines[l] = (line.Start, line.Count, resolvedMain, resolvedCross);
+            }
+        }
 
         // Container extents.
         var contentMain = 0f;
