@@ -39,6 +39,20 @@ public class AverageStrategy : IConversionStrategy
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments;
 
+        // Same rule as Sum: a decimal crosses as a runtime Decimal, so `+` concatenates. Averaging
+        // then divided that text by a count and produced NaN — visibly broken rather than quietly
+        // wrong, which is the only mercy in it.
+        var exact = context.SemanticHelper.GetType(invocation).IsDecimal();
+        if (exact) context.UsedHelpers.Add(Eq.Import);
+
+        string Add(string left, string right) => exact
+            ? $"{Eq.Dec}({left}).add({Eq.Dec}({right}))"
+            : $"{left} + {right}";
+        var seed = exact ? $"{Eq.Dec}(0)" : "0";
+        string Divide(string sum) => exact
+            ? $"{Eq.Dec}({sum}).div({Eq.Dec}({caller}.length))"
+            : $"({sum} / {caller}.length)";
+
         if (args.Count > 0)
         {
             // Average(x => x.Value) -> reduce then divide
@@ -48,15 +62,15 @@ public class AverageStrategy : IConversionStrategy
             {
                 var param = lambda.Parameter.Identifier.Text;
                 var body = context.Converter.ConvertExpression(lambda.Body as ExpressionSyntax ?? lambda.ExpressionBody!);
-                return $"({caller}.reduce((_sum, {param}) => _sum + {body}, 0) / {caller}.length)";
+                return Divide($"{caller}.reduce((_sum, {param}) => {Add("_sum", body)}, {seed})");
             }
 
             var selectorConverted = context.Converter.ConvertExpression(selector);
-            return $"({caller}.reduce((_sum, _x) => _sum + {selectorConverted}(_x), 0) / {caller}.length)";
+            return Divide($"{caller}.reduce((_sum, _x) => {Add("_sum", $"{selectorConverted}(_x)")}, {seed})");
         }
 
         // Average() without selector
-        return $"({caller}.reduce((_a, _b) => _a + _b, 0) / {caller}.length)";
+        return Divide($"{caller}.reduce((_a, _b) => {Add("_a", "_b")}, {seed})");
     }
 
     public int Priority => 10;

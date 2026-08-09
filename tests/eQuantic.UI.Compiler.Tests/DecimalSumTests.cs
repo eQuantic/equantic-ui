@@ -167,3 +167,84 @@ public class DecimalCompoundAssignmentTests
         Assert.Contains("count += 2", js);
     }
 }
+
+/// <summary>
+/// <c>Average()</c> over decimals is the third member of the same family: it reduced with `+`
+/// (concatenating the numbers' text) and then divided that string by a count, so a decimal average
+/// came back <c>NaN</c>. Visibly broken rather than quietly wrong, which is the only mercy in it.
+/// </summary>
+public class DecimalAverageTests
+{
+    private static string Compile(string body)
+    {
+        var source = $$"""
+            using System.Collections.Generic;
+            using System.Linq;
+            using eQuantic.UI.Primitives;
+
+            public sealed class Probe : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+            {{body}}
+                }
+            }
+            """;
+        var tree = CSharpSyntaxTree.ParseText(source, path: "Probe.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
+            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+        var compilation = CSharpCompilation.Create("Avg", [tree], references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+        Assert.Empty(compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error));
+
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        var result = compiler.CompileSource(source, "Probe.cs").Single();
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        return result.TypeScript;
+    }
+
+    [Fact]
+    public void AverageOfDecimals_AddsAndDividesExactly()
+    {
+        var js = Compile("""
+                    var v = new List<decimal> { 1.5m, 2.25m };
+                    var x = v.Average();
+                    return new Text($"{x}", TypeRole.BodyM);
+            """);
+
+        Assert.Contains(".add(", js);
+        Assert.Contains(".div(", js);
+        Assert.DoesNotContain("(_a, _b) => _a + _b", js);
+    }
+
+    [Fact]
+    public void AverageWithASelector_AlsoExact()
+    {
+        var js = Compile("""
+                    var v = new List<decimal> { 1.5m, 2.25m };
+                    var x = v.Average(n => n);
+                    return new Text($"{x}", TypeRole.BodyM);
+            """);
+
+        Assert.Contains(".add(", js);
+        Assert.Contains(".div(", js);
+    }
+
+    [Fact]
+    public void AverageOfNumbers_StaysPlainArithmetic()
+    {
+        var js = Compile("""
+                    var v = new List<int> { 1, 2 };
+                    var x = v.Average();
+                    return new Text($"{x}", TypeRole.BodyM);
+            """);
+
+        Assert.Contains("/ v.length", js);
+        Assert.DoesNotContain(".div(", js);
+    }
+}
