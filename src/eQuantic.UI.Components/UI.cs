@@ -203,6 +203,17 @@ public static class UI
     public static Badge Badge(int count = 0, int max = 99, Variant variant = Variant.Destructive) =>
         new Badge(count, max, variant);
 
+    /// <summary>
+    /// The COUNTLESS badge (spec A11) — a bare dot that says "something changed here" without
+    /// saying how much. Named rather than mirrored for the same reason <see cref="Gap"/> is: it
+    /// wraps a static factory (<c>Badge.AsDot</c>), and the mirrored <c>Badge(count, …)</c> above
+    /// shadows the type, so <c>Badge.AsDot()</c> stops compiling in any file importing this
+    /// surface — which is every file of a consumer's project.
+    /// </summary>
+    public static Badge DotBadge(Variant variant = Variant.Destructive) =>
+        // Fully qualified deliberately: the shadowing bites INSIDE this class too.
+        eQuantic.UI.Components.Badge.AsDot(variant);
+
     /// <summary>Initials avatar.</summary>
     public static Avatar Avatar(string initials, SizeVariant size = SizeVariant.Medium,
         string? name = null) =>

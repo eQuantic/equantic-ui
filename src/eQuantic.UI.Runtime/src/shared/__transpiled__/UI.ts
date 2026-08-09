@@ -33,6 +33,7 @@ export class UI {
     static card(child: VisualNode, kind: string = 'elevated') { return new Card(child, kind); }
     static chip(label: string, kind: string = 'filter', selected: boolean = false, onPressed: (() => void) | null = null, onRemove: (() => void) | null = null) { return new Chip(label, kind, selected, onPressed, onRemove); }
     static badge(count: number = 0, max: number = 99, variant: string = 'destructive') { return new Badge(count, max, variant); }
+    static dotBadge(variant: string = 'destructive') { return Badge.asDot(variant); }
     static avatar(initials: string, size: string = 'medium', name: string | null = null) { return new Avatar(initials, size, name); }
     static banner(status: string, title: string, body: string | null = null) { return new Banner(status, title, body); }
     static checkbox(checked: boolean, onChanged: (() => void) | null = null, label: string | null = null) { return new Checkbox(checked, onChanged, label); }
