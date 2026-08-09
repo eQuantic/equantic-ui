@@ -28,7 +28,39 @@ export function format(value: any, format: string | null, alignment?: number): s
   return result;
 }
 
+/**
+ * A CUSTOM numeric format is a picture of the number — `0.0`, `#,##0.00`, `000` — rather than one
+ * of the single-letter standard specifiers. `0` is a digit that is always shown (padded), `#` is
+ * one shown only if it is there, and a `,` among them asks for group separators.
+ *
+ * It used to fall through to `value.toString()`, so `$"{bytes / 1024.0:0.0} KB"` — ordinary C# —
+ * reached the browser as `0.72265625 KB`. The C# side had already done its part: eqc emits the
+ * specifier faithfully, and this is where it was dropped.
+ */
+function formatCustomNumber(value: number, format: string): string {
+  const point = format.indexOf('.');
+  const wholePart = point < 0 ? format : format.slice(0, point);
+  const fractionPart = point < 0 ? '' : format.slice(point + 1);
+
+  const minimumFractionDigits = (fractionPart.match(/0/g) ?? []).length;
+  const maximumFractionDigits = (fractionPart.match(/[0#]/g) ?? []).length;
+  const minimumIntegerDigits = Math.max(1, (wholePart.match(/0/g) ?? []).length);
+
+  return value.toLocaleString(undefined, {
+    minimumIntegerDigits,
+    minimumFractionDigits,
+    maximumFractionDigits: Math.max(minimumFractionDigits, maximumFractionDigits),
+    useGrouping: wholePart.includes(','),
+  });
+}
+
 function formatNumber(value: number, format: string): string {
+  // A standard specifier is a LETTER (optionally followed by a precision); anything drawn with
+  // digit placeholders is a custom picture and is read as one.
+  if (!/^[A-Za-z]/.test(format)) {
+    return /[0#]/.test(format) ? formatCustomNumber(value, format) : value.toString();
+  }
+
   const specifier = format[0].toUpperCase();
   const precision = format.length > 1 ? parseInt(format.slice(1)) : 2;
 

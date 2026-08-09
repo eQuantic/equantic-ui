@@ -138,3 +138,36 @@ describe('stringFormat (string.Format)', () => {
     expect(stringFormat('[{0}]', undefined)).toBe('[]');
   });
 });
+
+describe('custom numeric formats (digit pictures)', () => {
+  // `$"{x:0.0}"` is ordinary C#, and it used to fall through to value.toString(): a size printed
+  // as "0.72265625 KB" in a panel meant to read like a terminal. eqc emitted the specifier
+  // faithfully all along — it was dropped here.
+  it('honours a fixed decimal picture', () => {
+    expect(format(0.72265625, '0.0')).toBe('0.7');
+    expect(format(0.72265625, '0.00')).toBe('0.72');
+    expect(format(3, '0.0')).toBe('3.0');
+  });
+
+  it('treats # as an optional digit and 0 as a required one', () => {
+    expect(format(1.5, '0.##')).toBe('1.5');
+    expect(format(1.0, '0.##')).toBe('1');
+    expect(format(1.0, '0.00')).toBe('1.00');
+  });
+
+  it('pads the integer side to the zeros asked for', () => {
+    expect(format(7, '000')).toBe('007');
+    expect(format(1234, '000')).toBe('1234');
+  });
+
+  it('groups only when the picture asks', () => {
+    expect(format(1234567, '#,##0')).toBe('1,234,567');
+    expect(format(1234567, '0')).toBe('1234567');
+  });
+
+  it('leaves the standard specifiers alone', () => {
+    expect(format(3.14159, 'F2')).toBe('3.14');
+    expect(format(7, 'D3')).toBe('007');
+    expect(format(1234.5, 'N2')).toBe('1,234.50');
+  });
+});
