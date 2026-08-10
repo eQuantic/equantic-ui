@@ -177,6 +177,45 @@ public static class UIExtensions
     /// <summary>
     /// Maps page routes based on [Page] attributes found in scanned assemblies.
     /// </summary>
+    /// <summary>
+    /// Declares a page's route HERE, beside every other endpoint, instead of on the page itself:
+    /// <c>app.MapPage&lt;HomePage&gt;("/")</c>.
+    /// <para>
+    /// The attribute stays, and for a page whose route is part of what it IS — a 404, a login — it
+    /// remains the better answer. This is for the rest: routes an app wants to read in one place,
+    /// routes that differ between hosts, a page mounted at a path its own file has no business
+    /// knowing. It is also the only way to route a page from an assembly you do not own.
+    /// </para>
+    /// <para>
+    /// Call it before the request that needs it — which in practice means where every other
+    /// endpoint is declared, in Program.cs. The route registers in all three places a route has to
+    /// exist: the endpoint table, the SSR page index, and the client's table for SPA navigation. A
+    /// route that only half-registers is worse than none, because the page serves and then the
+    /// first client-side link to it reloads the whole document for no visible reason.
+    /// </para>
+    /// </summary>
+    /// <param name="route">The pattern, ASP.NET style: <c>/docs/{slug}</c>.</param>
+    /// <param name="title">The document title, as <c>[Page(Title = …)]</c> would give it.</param>
+    public static IEndpointRouteBuilder MapPage<TPage>(
+        this IEndpointRouteBuilder endpoints, string route, string? title = null)
+        where TPage : class
+    {
+        var pageType = typeof(TPage);
+        if (!typeof(Core.IComponent).IsAssignableFrom(pageType)
+            && !typeof(Primitives.UiComponent).IsAssignableFrom(pageType))
+        {
+            throw new ArgumentException(
+                $"{pageType.Name} is not a page: it has to be a component (StatelessComponent, "
+                + "StatefulComponent, or a write-once UiComponent).", nameof(TPage));
+        }
+
+        var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
+        options.DeclareRoute(route, pageType, title);
+
+        endpoints.MapGet(route, async context => await ServeAppShell(context, pageType.Name));
+        return endpoints;
+    }
+
     public static IEndpointRouteBuilder MapPages(this IEndpointRouteBuilder endpoints)
     {
         var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
@@ -570,6 +609,7 @@ public static class UIExtensions
             .SelectMany(a => a.GetTypes())
             .SelectMany(t => t.GetCustomAttributes<Core.PageAttribute>()
                 .Select(attr => (Pattern: attr.Route, Page: t.Name, attr.Title)))
+            .Concat(options.DeclaredRoutes.Select(r => (Pattern: r.Pattern, Page: r.Page.Name, r.Title)))
             .Distinct()
             .ToList();
         var routesJson = "[" + string.Join(",", routeEntries.Select(r =>
@@ -829,6 +869,26 @@ public class UIOptions
     {
         EndpointConfigurations.Add(configuration);
         return this;
+    }
+
+    /// <summary>
+    /// Routes the app declared in <c>Program.cs</c> with <c>MapPage&lt;T&gt;</c>, rather than on the
+    /// page with <c>[Page]</c>.
+    /// <para>
+    /// Both are read everywhere a route is read — the endpoint table, the client's route table for
+    /// SPA navigation, and the SSR page index — because a route that only half-registers is worse
+    /// than one that does not: the page serves, and then the first client-side link to it reloads
+    /// the whole document for no visible reason.
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<(string Pattern, Type Page, string? Title)> DeclaredRoutes => _declaredRoutes;
+
+    private readonly List<(string Pattern, Type Page, string? Title)> _declaredRoutes = new();
+
+    /// <summary>Records a route declared in Program.cs. Called by <c>MapPage&lt;T&gt;</c>.</summary>
+    internal void DeclareRoute(string pattern, Type page, string? title)
+    {
+        _declaredRoutes.Add((pattern, page, title));
     }
 
     public UIOptions ConfigureHtmlShell(Action<HtmlShellOptions> configure)

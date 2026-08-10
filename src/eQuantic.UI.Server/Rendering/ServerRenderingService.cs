@@ -70,6 +70,14 @@ public class ServerRenderingService : IServerRenderingService
             }
         }
 
+        // Pages routed from Program.cs with MapPage<T> rather than a [Page] attribute. They are
+        // indexed by the same name the endpoint serves, so everything downstream cannot tell the
+        // two ways of declaring a route apart — which is the point.
+        foreach (var (_, page, _) in _options.DeclaredRoutes)
+        {
+            _pageTypes[page.Name] = page;
+        }
+
         _logger.LogInformation("SSR initialized with {Count} page types", _pageTypes.Count);
     }
 
