@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { ComponentInstanceStore } from './instance-store';
+import { Column, Row } from './vocabulary';
 
 class Tracked {
   readonly _sharedStateful = true;
@@ -125,5 +126,41 @@ describe('component lifecycle (instance store)', () => {
     store.endPass();
 
     expect(order).toEqual(['mount:leaving', 'unmount:leaving', 'mount:arriving']);
+  });
+});
+
+/**
+ * The flex constructor takes TWO shapes and has to tell them apart. C# takes the layout knobs as
+ * parameters (a declarative author has no `new`, so no object initializer) and eqc calls them
+ * positionally; hand-written runtime code has always passed a config object. Getting this wrong is
+ * silent — the string lands in Object.assign and nothing happens.
+ */
+describe('flex constructor shapes', () => {
+  it('reads a positional alignment, the way transpiled code calls it', () => {
+    const row = new Row(12, 'spaceBetween', 'start');
+
+    expect(row.main).toBe('spaceBetween');
+    expect(row.cross).toBe('start');
+  });
+
+  it('still reads a config object in the same position', () => {
+    const row = new Row(12, { cross: 'start', wrap: true });
+
+    expect(row.cross).toBe('start');
+    expect(row.wrap).toBe(true);
+    expect(row.main).toBe('start');
+  });
+
+  // `new Row(12, …) { Cross = … }` — the initializer runs after the constructor in C#, and eqc
+  // emits it as the trailing argument, past every constructor parameter.
+  it('lets the trailing initializer win over a constructor parameter', () => {
+    const row = new Row(12, 'start', 'center', false, null, null, { cross: 'end' });
+
+    expect(row.cross).toBe('end');
+  });
+
+  it('keeps each subclass default when nothing is passed', () => {
+    expect(new Row(4).cross).toBe('center');
+    expect(new Column(4).cross).toBe('stretch');
   });
 });

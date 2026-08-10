@@ -28,9 +28,11 @@ public static class UI
     // ---- Layout containers (children as a collection expression) ----------------------------
 
     /// <summary>Vertical flex without <c>new</c> — <c>Column(gap: Space.S3, children: [ … ])</c>.</summary>
-    public static Column Column(float gap = 0, VisualNode[]? children = null)
+    public static Column Column(float gap = 0, MainAlign main = MainAlign.Start,
+        CrossAlign cross = CrossAlign.Stretch, bool wrap = false, float? runGap = null,
+        EdgeInsets? padding = null, VisualNode[]? children = null)
     {
-        var node = new Column(gap);
+        var node = new Column(gap, main, cross, wrap, runGap, padding);
         if (children != null)
             foreach (var child in children)
                 node.Add(child);
@@ -38,9 +40,11 @@ public static class UI
     }
 
     /// <summary>Horizontal flex without <c>new</c> — <c>Row(gap: Space.S2, children: [ … ])</c>.</summary>
-    public static Row Row(float gap = 0, VisualNode[]? children = null)
+    public static Row Row(float gap = 0, MainAlign main = MainAlign.Start,
+        CrossAlign cross = CrossAlign.Center, bool wrap = false, float? runGap = null,
+        EdgeInsets? padding = null, VisualNode[]? children = null)
     {
-        var node = new Row(gap);
+        var node = new Row(gap, main, cross, wrap, runGap, padding);
         if (children != null)
             foreach (var child in children)
                 node.Add(child);

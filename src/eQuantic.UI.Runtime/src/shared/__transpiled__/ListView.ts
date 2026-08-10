@@ -22,7 +22,7 @@ export class ListView extends SharedStatefulComponent {
     }
 
     build(_context: BuildContext) {
-        let viewport = this._viewport > 0 ? this._viewport : this.viewportGuess();[this._first, this._last] = this.windowFor(this._offset, viewport);let rows = new Column(0, { width: SizeValue.fill });if (this._first > 0) rows.add(Spacer.fixed(this._first * this.itemExtent));for (let i = this._first; i <= this._last; i++) rows.add(this.itemBuilder(i));if (this._last < this.count - 1) rows.add(Spacer.fixed((this.count - 1 - this._last) * this.itemExtent));return new ScrollView(rows, 'vertical', { width: this.width, height: this.height, onScrolled: this.onScrolled.bind(this), onViewportChanged: this.onViewportChanged.bind(this) });
+        let viewport = this._viewport > 0 ? this._viewport : this.viewportGuess();[this._first, this._last] = this.windowFor(this._offset, viewport);let rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });if (this._first > 0) rows.add(Spacer.fixed(this._first * this.itemExtent));for (let i = this._first; i <= this._last; i++) rows.add(this.itemBuilder(i));if (this._last < this.count - 1) rows.add(Spacer.fixed((this.count - 1 - this._last) * this.itemExtent));return new ScrollView(rows, 'vertical', { width: this.width, height: this.height, onScrolled: this.onScrolled.bind(this), onViewportChanged: this.onViewportChanged.bind(this) });
     }
 
     adoptConfig(next: UiComponent) {

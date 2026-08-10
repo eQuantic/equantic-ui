@@ -478,19 +478,66 @@ export class Grid extends VisualNode {
   }
 }
 
+/**
+ * Two shapes, on purpose. The C# constructor takes the layout knobs as PARAMETERS (a declarative
+ * author has no `new` and so no object initializer), and transpiled code calls it positionally:
+ * `new Row(12, 'spaceBetween')`. Hand-written runtime code has always passed a config object.
+ * The second argument tells them apart — a string is the main alignment, an object is the config.
+ * Without this the transpiled string landed in `Object.assign` and did nothing at all, which is the
+ * worst way for the two sides to disagree: silently.
+ */
+function flexArgs(
+  mainOrConfig: string | FlexConfig | undefined,
+  cross: string | undefined,
+  wrap: boolean | undefined,
+  runGap: number | null | undefined,
+  padding: EdgeInsetsValue | null | undefined,
+  config: FlexConfig | undefined,
+): FlexConfig | undefined {
+  if (typeof mainOrConfig === 'object' && mainOrConfig !== null) return mainOrConfig;
+  const merged: FlexConfig = {};
+  // `string`, not the literal union, and for the same reason `Stack.align` is: these positions are
+  // fed by transpiled C# enums, which cross as plain strings. Hand-written callers keep their
+  // checking through the config object, whose fields ARE narrow.
+  if (mainOrConfig !== undefined) merged.main = mainOrConfig as MainAlignValue;
+  if (cross !== undefined) merged.cross = cross as CrossAlignValue;
+  if (wrap !== undefined) merged.wrap = wrap;
+  if (runGap !== undefined && runGap !== null) merged.runGap = runGap;
+  if (padding !== undefined && padding !== null) merged.padding = padding;
+  // The object initializer runs AFTER the constructor in C# — `new Row(12) { Cross = … }` — so it
+  // wins here too. eqc emits it as this trailing argument, past every constructor parameter.
+  return config ? { ...merged, ...config } : merged;
+}
+
 export class Row extends FlexNode {
   readonly nodeKind = 'row';
 
-  constructor(gap = 0, config?: FlexConfig) {
-    super(gap, 'center', config);
+  constructor(
+    gap = 0,
+    main?: string | FlexConfig,
+    cross?: string,
+    wrap?: boolean,
+    runGap?: number | null,
+    padding?: EdgeInsetsValue | null,
+    config?: FlexConfig,
+  ) {
+    super(gap, 'center', flexArgs(main, cross, wrap, runGap, padding, config));
   }
 }
 
 export class Column extends FlexNode {
   readonly nodeKind = 'column';
 
-  constructor(gap = 0, config?: FlexConfig) {
-    super(gap, 'stretch', config);
+  constructor(
+    gap = 0,
+    main?: string | FlexConfig,
+    cross?: string,
+    wrap?: boolean,
+    runGap?: number | null,
+    padding?: EdgeInsetsValue | null,
+    config?: FlexConfig,
+  ) {
+    super(gap, 'stretch', flexArgs(main, cross, wrap, runGap, padding, config));
   }
 }
 

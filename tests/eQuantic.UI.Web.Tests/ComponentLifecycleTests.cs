@@ -139,3 +139,59 @@ public class ComponentLifecycleTests
         b.Unmounts.Should().Be(1);
     }
 }
+
+/// <summary>
+/// A flex takes its layout as CONSTRUCTOR PARAMETERS.
+/// <para>
+/// The properties are init-only, so before this the only way to set them was an object initializer
+/// — which means <c>new</c>, and <c>new</c> is exactly what the declarative surface removes.
+/// <c>Row(gap: …)</c> could pass a gap and nothing else, so a row that had to centre or space out
+/// its content dropped out of the surface entirely and had to be written the old way.
+/// </para>
+/// </summary>
+public class FlexConstructorTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    private static string Render(VisualNode node) =>
+        Core.Rendering.HtmlRenderer.RenderNode(WebRealizer.Lower(node, Theme).Render());
+
+    [Fact]
+    public void ARowStatesItsAlignment_WithoutAnObjectInitializer()
+    {
+        var row = new Row(gap: Space.S3, main: MainAlign.SpaceBetween, cross: CrossAlign.Start);
+
+        row.Main.Should().Be(MainAlign.SpaceBetween);
+        row.Cross.Should().Be(CrossAlign.Start);
+        row.Gap.Should().Be(Space.S3);
+    }
+
+    /// <summary>And it reaches the markup — a value the realizer never reads is a value that only
+    /// looks set.</summary>
+    [Fact]
+    public void TheAlignment_ReachesTheRealizedOutput()
+    {
+        var html = Render(new Row(gap: Space.S3, main: MainAlign.SpaceBetween) { new Text("a"), new Text("b") });
+
+        html.Should().Contain("class=\"eq-", "the flex properties become atomic classes");
+        Render(new Row(gap: Space.S3)).Should().NotBe(html, "a different alignment must render differently");
+    }
+
+    /// <summary>Each container keeps its OWN cross default — a Row centres, a Column stretches, and
+    /// widening the constructor must not quietly hand both the same one.</summary>
+    [Fact]
+    public void EachContainer_KeepsItsOwnCrossDefault()
+    {
+        new Row().Cross.Should().Be(CrossAlign.Center);
+        new Column().Cross.Should().Be(CrossAlign.Stretch);
+    }
+
+    [Fact]
+    public void WrappingAndItsRunGap_AreParametersToo()
+    {
+        var column = new Column(gap: Space.S2, wrap: true, runGap: Space.S4);
+
+        column.Wrap.Should().BeTrue();
+        column.RunGap.Should().Be(Space.S4);
+    }
+}

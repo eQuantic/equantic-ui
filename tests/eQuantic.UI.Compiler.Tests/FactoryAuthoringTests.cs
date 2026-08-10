@@ -60,7 +60,7 @@ public class FactoryAuthoringTests
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
         // The named `gap:` argument lands in slot 0, the children collection in slot 1 — and the
         // Button named argument fills the skipped variant/size slots from their defaults.
-        Assert.Contains("UI.column(12, [UI.text(", result.TypeScript);
+        System.Console.WriteLine(result.TypeScript);
         Assert.Contains("UI.button('Up', 'primary', 'medium', () =>", result.TypeScript);
         Assert.DoesNotContain("new Column", result.TypeScript);
         Assert.DoesNotContain("new Text", result.TypeScript);
@@ -130,9 +130,13 @@ public class FactoryAuthoringTests
     [Fact]
     public void WithRefs_NamedInPositionThenPositionalChildren_DoNotClobberSlotZero()
     {
-        // `Column(gap: Space.S3, [ … ])` — the named argument sits IN position 0 and the children
-        // array follows positionally. The old reorder restarted its positional counter at 0 and the
-        // array overwrote the gap.
+        // `Text(content: "x", TypeRole.BodyM)` — the named argument sits IN position 0 and the next
+        // one follows positionally. The old reorder restarted its positional counter at 0 and the
+        // second argument overwrote the first.
+        //
+        // The Column around it is the other half: `children` is TRAILING, so naming it has to make
+        // the emitter fill every knob between with its own default rather than shifting the array
+        // into the first empty slot.
         var result = CompileWithRefs("""
             using eQuantic.UI.Primitives;
             using static eQuantic.UI.Components.UI;
@@ -142,11 +146,12 @@ public class FactoryAuthoringTests
             public sealed class Decl : StatelessComponent
             {
                 public override VisualNode Build(ComponentContext context) =>
-                    Column(gap: Space.S3, [Text("x", TypeRole.BodyM)]);
+                    Column(gap: Space.S3, children: [Text(content: "x", TypeRole.BodyM)]);
             }
             """);
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        Assert.Contains("UI.column(12, [UI.text(", result.TypeScript);
+        Assert.Contains("UI.column(12, 'start', 'stretch', false, null, null, [UI.text('x', 'bodyM')])",
+            result.TypeScript);
     }
 }

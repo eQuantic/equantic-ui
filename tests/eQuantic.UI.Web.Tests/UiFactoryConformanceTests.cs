@@ -161,7 +161,9 @@ public class UiFactoryConformanceTests
     public void ContainerFactories_ActuallyCollectTheirChildren()
     {
         // Written exactly as a consumer writes it: `using static eQuantic.UI.Components.UI`.
-        var column = Column(Space.S3, [Text("a"), Spacer()]);
+        // children is TRAILING (the container contract), so it is named once a container takes more
+        // than a gap — the alignment knobs sit between them.
+        var column = Column(Space.S3, children: [Text("a"), Spacer()]);
         column.Gap.Should().Be(Space.S3);
         column.Children.Should().HaveCount(2);
 

@@ -26,7 +26,7 @@ export class DataTable extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let tracks = this.tracks();let table = new Column(0, { width: SizeValue.fill });table.add(this.header(theme, tracks));let empty: any; if (this.rows.length === 0 && this.pendingRows === 0 && ((this.empty != null) && (empty = this.empty, true))) {table.add(empty);return table;}for (const row of this.rows) table.add(this.body(theme, tracks, row));for (let i = 0; i < this.pendingRows; i++) table.add(this.pending(theme, tracks, i));return table;
+        let theme = context.theme;let tracks = this.tracks();let table = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });table.add(this.header(theme, tracks));let empty: any; if (this.rows.length === 0 && this.pendingRows === 0 && ((this.empty != null) && (empty = this.empty, true))) {table.add(empty);return table;}for (const row of this.rows) table.add(this.body(theme, tracks, row));for (let i = 0; i < this.pendingRows; i++) table.add(this.pending(theme, tracks, i));return table;
     }
 
     tracks() {
@@ -34,7 +34,7 @@ export class DataTable extends StatelessComponent {
     }
 
     header(theme: any, tracks: GridTrack[]) {
-        let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });if (this.selectable) {let anySelected = $eq.collections.count(this.selection!) > 0;grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(anySelected, this.onToggleAll, null, { indeterminate: anySelected && $eq.collections.count(this.selection) < this.rows.length })), 'center'));}for (let i = 0; i < this.columns.length; i++) {let column = this.columns[i];let sorted = i === this.sortColumn && this.sortDirection !== 'none';let label = new Row(4, { width: SizeValue.fill, cross: 'center', main: column.align === 'start' ? 'start' : 'end' });label.add(new Text(column.header.toUpperCase(), 'caption', sorted ? theme.textPrimary : theme.textMuted, 1));if (sorted) {label.add(new Icon(this.sortDirection === 'ascending' ? 'chevronUp' : 'chevronDown', 16, theme.textPrimary));}let index = i;grid.add(column.sortable && !(this.onSort == null) ? new Pressable(DataTable.cell(label, column.align), () => this.onSort(index), { label: `Sort by ${column.header}` }) : DataTable.cell(label, column.align));}return new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surfaceSubtle, borderWidth: 1, borderColor: theme.border }), grid);
+        let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });if (this.selectable) {let anySelected = $eq.collections.count(this.selection!) > 0;grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(anySelected, this.onToggleAll, null, { indeterminate: anySelected && $eq.collections.count(this.selection) < this.rows.length })), 'center'));}for (let i = 0; i < this.columns.length; i++) {let column = this.columns[i];let sorted = i === this.sortColumn && this.sortDirection !== 'none';let label = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center', main: column.align === 'start' ? 'start' : 'end' });label.add(new Text(column.header.toUpperCase(), 'caption', sorted ? theme.textPrimary : theme.textMuted, 1));if (sorted) {label.add(new Icon(this.sortDirection === 'ascending' ? 'chevronUp' : 'chevronDown', 16, theme.textPrimary));}let index = i;grid.add(column.sortable && !(this.onSort == null) ? new Pressable(DataTable.cell(label, column.align), () => this.onSort(index), { label: `Sort by ${column.header}` }) : DataTable.cell(label, column.align));}return new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surfaceSubtle, borderWidth: 1, borderColor: theme.border }), grid);
     }
 
     body(theme: any, tracks: GridTrack[], row: DataRow) {
@@ -46,7 +46,7 @@ export class DataTable extends StatelessComponent {
     }
 
     static cell(child: VisualNode, align: string) {
-        let row = new Row(0, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: (() => { const _s = align; if (_s === 'center') return 'center'; if (_s === 'end') return 'end'; return 'start'; })() });row.add(child);return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), row);
+        let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: (() => { const _s = align; if (_s === 'center') return 'center'; if (_s === 'end') return 'end'; return 'start'; })() });row.add(child);return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), row);
     }
 
 }

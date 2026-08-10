@@ -12,7 +12,7 @@ export class List extends StatelessComponent {
     }
 
     build(_context: BuildContext) {
-        let column = new Column(0, { width: SizeValue.fill });for (let i = 0; i < this.items.length; i++) {column.add(this.items[i]);if (this.dividers && i < this.items.length - 1) column.add(new Divider('leading'));}return column;
+        let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });for (let i = 0; i < this.items.length; i++) {column.add(this.items[i]);if (this.dividers && i < this.items.length - 1) column.add(new Divider('leading'));}return column;
     }
 
 }
