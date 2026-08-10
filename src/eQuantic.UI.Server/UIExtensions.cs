@@ -101,6 +101,21 @@ public static class UIExtensions
                 provider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>(),
                 options.InitialThemeMode));
 
+        // What a device capability IS during server rendering: absent — see AbsentCapabilities.
+        // A page that takes a camera or the app's storage has to be CONSTRUCTIBLE here, or the one
+        // page that does something is the one page a crawler never sees. TryAdd throughout, so an
+        // app with a genuine server-side answer for any of them registers it and wins.
+
+        services.TryAddSingleton<eQuantic.UI.Primitives.IAppStorage, AbsentCapabilities.Storage>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.ISecretStore, AbsentCapabilities.Storage>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.ITextClipboard, AbsentCapabilities.Clipboard>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IPhotoLibrary, AbsentCapabilities.PhotoLibrary>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.ICamera, AbsentCapabilities.Camera>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.ILocation, AbsentCapabilities.Location>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IMotionSensor, AbsentCapabilities.MotionSensor>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IBiometrics, AbsentCapabilities.Biometrics>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.INetworkStatus, AbsentCapabilities.NetworkStatus>();
+
         // Add response compression (Brotli + Gzip for JS, CSS, HTML)
         services.AddResponseCompression(opts =>
         {

@@ -51,6 +51,46 @@ public class RequestScopedDependencyTests
         public override VisualNode Build(ComponentContext context) => new Text("x", TypeRole.BodyM);
     }
 
+    /// <summary>The page that made this necessary: it takes a browser capability, and it has to be
+    /// server-renderable anyway.</summary>
+    [Page("/capability-test")]
+    private sealed class StoragePage(IAppStorage storage) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Text(storage.Get("greeting") ?? "(nothing stored)", TypeRole.Heading);
+    }
+
+    /// <summary>
+    /// A page taking a DEVICE capability renders on the server. Without a registration there is no
+    /// constructor the container can satisfy, so the request ends in a 500 — meaning the one page
+    /// that does something is the one page a crawler never sees, and the visitor waits for
+    /// JavaScript just to be told the page exists.
+    /// <para>
+    /// It resolves to an ABSENT one, not a simulated one: there is no camera in a datacenter and
+    /// the visitor's localStorage is on the visitor's machine. So the page takes the branch it
+    /// already has to have, and the client boot's real capability replaces it on the first client
+    /// render.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task APageTakingADeviceCapability_StillRendersOnTheServer()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddUI(o => o.ScanAssembly(typeof(RequestScopedDependencyTests).Assembly));
+        var root = services.BuildServiceProvider(validateScopes: true);
+
+        using var scope = root.CreateScope();
+        var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+        var service = scope.ServiceProvider.GetRequiredService<IServerRenderingService>();
+
+        var result = await service.RenderPageAsync(nameof(StoragePage), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("(nothing stored)",
+            "the server has nothing to hand back, and says so instead of pretending");
+    }
+
     private static ServerRenderingService CreateService(out ServiceProvider root)
     {
         var options = new UIOptions();
