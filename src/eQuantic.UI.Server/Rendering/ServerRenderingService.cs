@@ -98,7 +98,7 @@ public class ServerRenderingService : IServerRenderingService
             }
 
             // Create the component instance with DI
-            var component = CreateComponentInstance(pageType);
+            var component = CreateComponentInstance(pageType, context.RequestServices);
 
             object metadataSource = component is Web.VisualNodeComponent bridge ? bridge.Node : component;
 
@@ -240,7 +240,11 @@ public class ServerRenderingService : IServerRenderingService
         catch (Exception ex)
         {
             _logger.LogError(ex, "SSR failed for page: {PageType}", pageTypeName);
-            return ServerRenderResult.Fail(ex.Message);
+            // Reflection wraps whatever a constructor threw in "Exception has been thrown by the
+            // target of an invocation", which names nothing. The developer needs the message the
+            // page's own code wrote, so unwrap to it.
+            var reported = ex is TargetInvocationException { InnerException: { } inner } ? inner : ex;
+            return ServerRenderResult.Fail(reported.Message);
         }
     }
 
@@ -311,31 +315,36 @@ public class ServerRenderingService : IServerRenderingService
         }
     }
 
-    private IComponent CreateComponentInstance(Type componentType)
+    /// <summary>
+    /// Builds the page, taking its constructor dependencies from THIS REQUEST's services.
+    /// <para>
+    /// The request's container, not the application's: a page whose constructor takes anything
+    /// registered scoped — a DbContext, a unit of work, the current tenant, which is most of what a
+    /// page actually depends on — cannot be built from the root provider at all. .NET refuses it by
+    /// design, because a scoped service resolved from the root outlives the request and is then
+    /// shared by every later one.
+    /// </para>
+    /// </summary>
+    private IComponent CreateComponentInstance(Type componentType, IServiceProvider services)
     {
-        // Try to create using DI first
+        object? instance;
         try
         {
-            var component = ActivatorUtilities.CreateInstance(_serviceProvider, componentType);
-            if (component is IComponent ic)
-            {
-                return ic;
-            }
-            if (component is Primitives.UiComponent visualFromDi)
-            {
-                return new Web.VisualNodeComponent(visualFromDi, _options.Theme);
-            }
+            instance = ActivatorUtilities.CreateInstance(services, componentType);
         }
-        catch
+        catch (InvalidOperationException) when (componentType.GetConstructor(Type.EmptyTypes) is not null)
         {
-            // Fallback to parameterless constructor
+            // No constructor could be satisfied AND the page declares it needs nothing: build it.
+            // Narrow on purpose — the catch here used to be bare, so a page whose own constructor
+            // threw was quietly rebuilt with nothing injected and rendered as if it had asked for
+            // nothing. The dependency was null, the page drew its empty state, and the exception
+            // that explained it was gone.
+            instance = Activator.CreateInstance(componentType);
         }
 
-        // Try parameterless constructor
-        var instance = Activator.CreateInstance(componentType);
-        if (instance is IComponent component2)
+        if (instance is IComponent component)
         {
-            return component2;
+            return component;
         }
 
         // A WRITE-ONCE page (eQuantic.UI.Primitives.UiComponent) is not an IComponent — bridge it

@@ -171,8 +171,11 @@ public class ServerActionsMiddleware
 
         try
         {
-            // Create component instance with DI
-            var component = ActivatorUtilities.CreateInstance(_serviceProvider, descriptor.ComponentType);
+            // Built from THIS REQUEST's services. A middleware is a singleton, so the provider it
+            // was constructed with is the ROOT one — and a server action is exactly where the
+            // scoped things live: the DbContext the action queries, the unit of work it commits,
+            // the tenant it belongs to. .NET refuses to resolve those from the root by design.
+            var component = ActivatorUtilities.CreateInstance(context.RequestServices, descriptor.ComponentType);
 
             // Deserialize and validate arguments
             var args = DeserializeArguments(request.Arguments, descriptor.ParameterTypes);
