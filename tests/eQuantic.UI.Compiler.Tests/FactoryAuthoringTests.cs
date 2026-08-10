@@ -484,4 +484,44 @@ public class FactoryAuthoringTests
         Assert.DoesNotContain("'constructor' in m", result.TypeScript);
         Assert.Contains("Object.prototype.hasOwnProperty.call(m, 'toString')", result.TypeScript);
     }
+
+    /// <summary>
+    /// EVERY concise body declares the pattern variables it binds — not just the one emission path
+    /// someone happened to look at.
+    /// <para>
+    /// `x is { } y` converts to an assignment inside the converted condition, and an expression body
+    /// reaches none of the statement strategies that hoist it. Fixing the COMPONENT method path left
+    /// static helpers, property getters and an expression-bodied Build still emitting an undeclared
+    /// name — four hand-written copies of the same two lines, and the report came back naming the
+    /// one that was missed. They share a helper now.
+    /// </para>
+    /// </summary>
+    [Theory]
+    // A static helper class — its own module, its own emitter. The one that came back.
+    [InlineData("""
+        public static class Probe
+        {
+            public static string Maybe(string v) => v;
+            public static string ArrowBody(string v) => Maybe(v) is { } bound ? bound : "";
+        }
+        """)]
+    // A property getter with a concise body.
+    [InlineData("""
+        public static class Probe
+        {
+            public static string Maybe(string v) => v;
+            public static string Value => Maybe("v") is { } bound ? bound : "";
+        }
+        """)]
+    public void WithRefs_EveryConciseBody_DeclaresWhatItBinds(string source)
+    {
+        var modules = new eQuantic.UI.Compiler.ComponentCompiler().CompileSource(source, "Decl.cs");
+        var typescript = string.Join("\n", modules.Select(m => m.TypeScript));
+
+        // It is BOUND …
+        Assert.Contains("bound = ", typescript);
+        // … so it must be DECLARED, exactly once.
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(typescript, @"let bound: any;").Count);
+    }
+
 }

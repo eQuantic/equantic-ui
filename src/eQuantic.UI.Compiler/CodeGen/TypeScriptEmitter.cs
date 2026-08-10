@@ -30,6 +30,24 @@ public class TypeScriptEmitter
     /// (<c>style?: BoxStyle</c>) — identical call-site semantics, but it typechecks where
     /// <c>style: BoxStyle = undefined</c> is a TS2322 in the runtime's own build.
     /// </summary>
+    /// <summary>
+    /// A concise body converted to <c>return …;</c>, with the <c>let</c> for any pattern variable it
+    /// binds already hoisted in front.
+    /// <para>
+    /// `x is { } y` converts to an assignment of `y` inside the converted condition, and an
+    /// expression body reaches none of the statement strategies that hoist it — so the name was
+    /// assigned and never declared, which in a module (strict mode) throws the first time that code
+    /// runs. It shipped in FOUR emission paths before this existed, one per place someone wrote the
+    /// same two lines by hand.
+    /// </para>
+    /// </summary>
+    private string ExpressionBodyReturn(ExpressionSyntax expression) =>
+        $"{PatternVariableScanner.Declarations(expression)}return {_converter.ConvertExpression(expression)};";
+
+    /// <summary>The same, in STATEMENT position (a setter) — no return to give it.</summary>
+    private string ExpressionBodyStatement(ExpressionSyntax expression) =>
+        $"{PatternVariableScanner.Declarations(expression)}{_converter.ConvertExpression(expression)};";
+
     private string ParamWithDefault(string name, string type, string? convertedDefault,
         bool rest = false) =>
         // `params xs` is a REST parameter. Emitted as a plain one it bound only the FIRST argument
@@ -366,8 +384,8 @@ public class TypeScriptEmitter
                             // whole expression (handles trees, ternaries, switch-expressions, method calls,
                             // interpolation — anything the converter knows) and return it.
                             _converter.SetCurrentClass(component.Name);
-                            var expr = _converter.ConvertExpression(component.BuildMethodNode.ExpressionBody.Expression);
-                            c.Raw($"return {expr};", component.BuildMethodNode.ExpressionBody.Expression);
+                            c.Raw(ExpressionBodyReturn(component.BuildMethodNode.ExpressionBody.Expression),
+                                component.BuildMethodNode.ExpressionBody.Expression);
                          }
                          else
                          {
@@ -927,7 +945,7 @@ public class TypeScriptEmitter
                     // through to the empty-Container fallback, discarding the page's whole tree.
                     _converter.SetCurrentClass(component.StateClassName);
                     var expression = component.BuildMethodNode.ExpressionBody.Expression;
-                    c.Raw($"return {_converter.ConvertExpression(expression)};", expression);
+                    c.Raw(ExpressionBodyReturn(expression), expression);
                 }
                 else
                 {
@@ -1044,8 +1062,7 @@ public class TypeScriptEmitter
             if (node.ExpressionBody != null)
             {
                 _converter.SetCurrentClass(component.Name);
-                var expr = _converter.ConvertExpression(node.ExpressionBody.Expression);
-                c.Raw($"{stat}get {name}() {{ return {expr}; }}", node);
+                c.Raw($"{stat}get {name}() {{ {ExpressionBodyReturn(node.ExpressionBody.Expression)} }}", node);
                 continue;
             }
 
@@ -1077,7 +1094,7 @@ public class TypeScriptEmitter
                     if (getterHasBody)
                     {
                         var body = getter!.ExpressionBody != null
-                            ? $"return {_converter.ConvertExpression(getter.ExpressionBody.Expression)};"
+                            ? ExpressionBodyReturn(getter.ExpressionBody.Expression)
                             : StripJsBraces(_converter.Convert(getter.Body!));
                         c.Raw($"{stat}get {name}() {{ {body} }}", getter);
                     }
@@ -1085,7 +1102,7 @@ public class TypeScriptEmitter
                     {
                         // C# setters use the implicit `value` parameter, which survives conversion as-is.
                         var body = setter!.ExpressionBody != null
-                            ? $"{_converter.ConvertExpression(setter.ExpressionBody.Expression)};"
+                            ? ExpressionBodyStatement(setter.ExpressionBody.Expression)
                             : StripJsBraces(_converter.Convert(setter.Body!));
                         c.Raw($"{stat}set {name}(value) {{ {body} }}", setter);
                     }
@@ -1184,7 +1201,7 @@ public class TypeScriptEmitter
                 var propertyType = DeclaredType(p.Type);
                 if (p.ExpressionBody != null)
                 {
-                    c.Raw($"{qualifier}get {pn}(): {propertyType} {{ return {_converter.ConvertExpression(p.ExpressionBody.Expression)}; }}", p);
+                    c.Raw($"{qualifier}get {pn}(): {propertyType} {{ {ExpressionBodyReturn(p.ExpressionBody.Expression)} }}", p);
                 }
                 else if (p.AccessorList != null)
                 {
@@ -1203,7 +1220,7 @@ public class TypeScriptEmitter
 
                     var g = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
                     if (g?.ExpressionBody != null)
-                        c.Raw($"{qualifier}get {pn}(): {propertyType} {{ return {_converter.ConvertExpression(g.ExpressionBody.Expression)}; }}", g);
+                        c.Raw($"{qualifier}get {pn}(): {propertyType} {{ {ExpressionBodyReturn(g.ExpressionBody.Expression)} }}", g);
                     else if (g?.Body != null)
                         c.Raw($"{qualifier}get {pn}(): {propertyType} {{ {StripJsBraces(_converter.Convert(g.Body))} }}", g);
                     else if (p.Initializer != null)
@@ -1239,7 +1256,7 @@ public class TypeScriptEmitter
                     var setter = p.AccessorList.Accessors
                         .FirstOrDefault(a => a.Keyword.Text is "set" or "init");
                     if (setter?.ExpressionBody != null)
-                        c.Raw($"{qualifier}set {pn}(value: {DeclaredType(p.Type)}) {{ {_converter.ConvertExpression(setter.ExpressionBody.Expression)}; }}", setter);
+                        c.Raw($"{qualifier}set {pn}(value: {DeclaredType(p.Type)}) {{ {ExpressionBodyStatement(setter.ExpressionBody.Expression)} }}", setter);
                     else if (setter?.Body != null)
                         c.Raw($"{qualifier}set {pn}(value: {DeclaredType(p.Type)}) {{ {StripJsBraces(_converter.Convert(setter.Body))} }}", setter);
                 }
@@ -1297,7 +1314,7 @@ public class TypeScriptEmitter
                     _converter.SetIteratorBuffer(null);
                     if (isIterator) mbody = StripJsBraces(WrapIterator($"{{ {mbody} }}"));
                 }
-                else if (m.ExpressionBody != null) mbody = $"return {_converter.ConvertExpression(m.ExpressionBody.Expression)};";
+                else if (m.ExpressionBody != null) mbody = ExpressionBodyReturn(m.ExpressionBody.Expression);
                 else continue;
                 // `out var x` at a CALL SITE inside this body needs `x` to exist before the call.
                 mbody = OutParameters.HoistedLocals(m.Body ?? (SyntaxNode?)m.ExpressionBody) + mbody;
@@ -1632,9 +1649,7 @@ public class TypeScriptEmitter
                 // An expression body never reaches ReturnStatementStrategy, so nothing hoisted the
                 // `let` for a pattern variable bound in it — the converted condition assigned an
                 // undeclared name, which in a module (strict mode) throws ReferenceError.
-                var hoisted = PatternVariableScanner.Declarations(method.SyntaxNode.ExpressionBody.Expression);
-                var expr = _converter.Convert(method.SyntaxNode.ExpressionBody.Expression);
-                jsBody = $"{{ {hoisted}return {expr}; }}";
+                jsBody = $"{{ {ExpressionBodyReturn(method.SyntaxNode.ExpressionBody.Expression)} }}";
             }
             else
             {
