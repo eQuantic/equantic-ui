@@ -85,6 +85,17 @@ export { RouteValues } from './route-values';
 // these, and eqc routes every Primitives name here.
 export { Transform2D } from './value-types';
 export { GridPattern, InFlow, RadialGradient, Simulated } from './vocabulary';
+// The Primitives VALUE types a page can name — same implicit promise, see primitive-values.ts.
+export {
+  GeoLocation,
+  ImageData,
+  MotionReading,
+  MotionSpec,
+  MotionVector,
+  NetworkState,
+  SpringSpec,
+  WindowSizeClasses,
+} from './primitive-values';
 export {
   Space,
   Radius,

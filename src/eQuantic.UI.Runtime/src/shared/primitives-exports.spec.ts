@@ -17,36 +17,24 @@
 import { describe, expect, it } from 'vitest';
 import * as runtimeExports from './runtime-exports';
 import primitivesTypes from './primitives-types.fixture.json';
+import pinnedValues from './primitive-values.fixture.json';
+import { ImageData, NetworkState, SpringSpec, WindowSizeClasses } from './primitive-values';
 
 /**
- * Types with NO TypeScript twin at all, so no export can be owed yet — a list of names, so the next
- * one cannot slip in unnoticed and so this reads as a to-do rather than a decision.
- *
- * Host and server plumbing (`AbsentMotionSensor`, `ComponentBoundary`, `ComponentInstanceStore`,
- * `FlexNode`, `VisualNodeExtensions`) belongs here for good: it is never named from a page bundle.
- *
- * The REST are latent instances of the bug this file was written for. A page that names
- * `ImageData` after picking a photo, or `NetworkState` from a network subscription, dies at
- * hydration exactly the way a page reading its route did. Closing them means writing the twin, not
- * adding an export line, which is why they are listed rather than fixed in passing.
+ * Types that owe no export, each for a stated reason — a list of names, so the next one cannot slip
+ * in unnoticed and so this reads as a decision rather than a backlog.
  */
 const NO_TWIN_OWED = new Set([
-  // Never in a page bundle.
+  // Never in a page bundle: host and server plumbing, or an abstract base.
   'AbsentMotionSensor',
   'ComponentBoundary',
   'ComponentInstanceStore',
   'FlexNode',
   'VisualNodeExtensions',
-  // No twin yet — each of these is the same bug waiting for the page that names it.
+  // DEAD C#: ButtonStyles.Resolve and ButtonRenderer.Draw have no callers — the resolved-style
+  // path was superseded by the Box/StyleDiff one the realizers actually use. A twin here would be
+  // mirroring code nobody runs; if that path ever comes back, so does its export.
   'ButtonStyle',
-  'GeoLocation',
-  'ImageData',
-  'MotionReading',
-  'MotionSpec',
-  'MotionVector',
-  'NetworkState',
-  'SpringSpec',
-  'WindowSizeClasses',
 ]);
 
 describe('Primitives ⇄ runtime export parity', () => {
@@ -69,5 +57,43 @@ describe('Primitives ⇄ runtime export parity', () => {
   // The one this whole file exists for.
   it('exports RouteValues, so a page can read its route', () => {
     expect('RouteValues' in runtimeExports).toBe(true);
+  });
+});
+
+/**
+ * The type-level check above proves the export EXISTS. This proves it says the same thing: a twin
+ * is a mirror, and nothing else compares a mirror to its subject. `SpringSpec.Default` could change
+ * in C# and the client would keep animating with the old numbers, silently, on the half of the
+ * framework nobody runs in a debugger.
+ *
+ * The C# side writes the fixture (it is the source of these values); this asks the twin.
+ */
+describe('Primitives value twins carry the C# values', () => {
+  it('SpringSpec.default is the C# SpringSpec.Default', () => {
+    expect({
+      stiffness: SpringSpec.default.stiffness,
+      damping: SpringSpec.default.damping,
+      mass: SpringSpec.default.mass,
+    }).toEqual(pinnedValues.springDefault);
+  });
+
+  it('NetworkState.offline is the C# NetworkState.Offline', () => {
+    expect({ online: NetworkState.offline.online, kind: NetworkState.offline.kind })
+      .toEqual(pinnedValues.networkOffline);
+  });
+
+  // The BOUNDARIES, which is where an off-by-one between the two would live.
+  it('WindowSizeClasses classifies the way C# does, thresholds included', () => {
+    const w = pinnedValues.windowSizeClasses;
+    expect(WindowSizeClasses.mediumMinDp).toBe(w.mediumMinDp);
+    expect(WindowSizeClasses.expandedMinDp).toBe(w.expandedMinDp);
+    expect(WindowSizeClasses.fromWidth(599)).toBe(w.atCompact);
+    expect(WindowSizeClasses.fromWidth(600)).toBe(w.atMedium);
+    expect(WindowSizeClasses.fromWidth(839)).toBe(w.belowExpanded);
+    expect(WindowSizeClasses.fromWidth(840)).toBe(w.atExpanded);
+  });
+
+  it('ImageData reports its own size', () => {
+    expect(new ImageData(new Uint8Array([1, 2, 3]), 'image/png').byteCount).toBe(3);
   });
 });

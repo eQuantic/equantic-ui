@@ -1,0 +1,19 @@
+{
+  "springDefault": {
+    "stiffness": 380,
+    "damping": 34,
+    "mass": 1
+  },
+  "networkOffline": {
+    "online": false,
+    "kind": "none"
+  },
+  "windowSizeClasses": {
+    "mediumMinDp": 600,
+    "expandedMinDp": 840,
+    "atCompact": "compact",
+    "atMedium": "medium",
+    "belowExpanded": "medium",
+    "atExpanded": "expanded"
+  }
+}
