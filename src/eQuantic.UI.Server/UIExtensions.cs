@@ -395,6 +395,9 @@ public static class UIExtensions
 
         // Initialize Metadata
         var metadata = new MetadataCollection { Title = shell.Title };
+        // The app's defaults FIRST, so the page's own (merged below) overrides them by key instead
+        // of landing beside them as a duplicate tag.
+        foreach (var tag in shell.DefaultMetadata.Tags) metadata.AddOrUpdate(tag);
         var seo = new SeoBuilder(metadata);
 
         // Attempt SSR if page name is provided and SSR is enabled
@@ -799,9 +802,35 @@ public class HtmlShellOptions
         return this;
     }
 
-    /// <summary>The page's <c>&lt;meta name="description"&gt;</c>.</summary>
+    /// <summary>
+    /// App-wide metadata DEFAULTS — a description, a fallback share image, a Twitter card type:
+    /// whatever every page should say unless it says otherwise.
+    /// <para>
+    /// These seed the same collection a page's <c>IHandleMetadata</c> writes into, so a page
+    /// overrides them BY KEY rather than adding a second tag. That is the whole point: these used
+    /// to be raw head HTML, which shares no key with anything, so an app that set a description
+    /// here and a page that set its own shipped two <c>&lt;meta name="description"&gt;</c> — a
+    /// crawler being told the page cannot make up its mind — and there was no way for a page to
+    /// win. The only way out was to leave the global empty, which made it useless for exactly the
+    /// things a global is for.
+    /// </para>
+    /// </summary>
+    public HtmlShellOptions ConfigureMetadata(Action<Core.Metadata.SeoBuilder> configure)
+    {
+        configure(new Core.Metadata.SeoBuilder(DefaultMetadata));
+        return this;
+    }
+
+    /// <summary>
+    /// The metadata every page starts from; a page's own overrides it BY KEY. Public because it is
+    /// what the merge reads and what a test has to be able to assert on — the seeding order is the
+    /// whole contract, and a contract nothing can observe is one nothing can hold you to.
+    /// </summary>
+    public Core.Metadata.MetadataCollection DefaultMetadata { get; } = new();
+
+    /// <summary>The default <c>&lt;meta name="description"&gt;</c> — a page's own replaces it.</summary>
     public HtmlShellOptions AddDescription(string description) =>
-        AddHeadTag(HtmlTag.Meta("description", description));
+        ConfigureMetadata(seo => seo.Description(description));
 
     /// <summary>A <c>&lt;link rel="preconnect"&gt;</c> to an origin the page will fetch from.
     /// <paramref name="crossOrigin"/> matters for font/CORS fetches (fonts.gstatic.com wants it).</summary>

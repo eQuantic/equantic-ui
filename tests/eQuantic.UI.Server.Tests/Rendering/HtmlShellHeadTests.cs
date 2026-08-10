@@ -56,10 +56,17 @@ public class HtmlShellHeadTests
             .AddStylesheet(new Uri("https://fonts.googleapis.com/css2?family=Geist&display=swap"));
 
         shell.HeadTags.Should().Equal(
-            "<meta name=\"description\" content=\"Products, libraries &amp; consulting\">",
             "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com/\">",
             "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com/\" crossorigin>",
             "<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Geist&amp;display=swap\">");
+
+        // The description is deliberately NOT among them any more. As raw head HTML it shared no
+        // key with anything, so a page that set its own shipped a SECOND meta description and had
+        // no way to win; as metadata it is a default the page overrides. See
+        // ShellMetadataDefaultsTests.
+        shell.DefaultMetadata.RenderTags()
+            .Should().Contain("name=\"description\"")
+            .And.Contain("Products, libraries &amp; consulting");
     }
 
     [Fact]
