@@ -96,6 +96,23 @@ public readonly record struct BoxStyle
     public float BorderWidth { get; init; }
     public ColorToken BorderColor { get; init; }
 
+    /// <summary>
+    /// WHICH edges the border draws on. All by default, so nothing written before this changes.
+    /// <para>
+    /// A rule above a section, an accent bar down the side of a callout, a table cell that shares
+    /// its neighbour's line — none of those is a Divider (a Divider is a sibling BETWEEN two things,
+    /// and these belong to the box itself), and the only way to draw one was a Row wrapping a
+    /// one-dp Box, which is a layout lie about what the design meant.
+    /// </para>
+    /// <para>
+    /// FENCE: with a corner radius, a partial border differs slightly between targets at the corner
+    /// where a present edge meets an absent one — the web mitres it, Photon squares it. At radius 0,
+    /// which is what a rule or an accent bar has, the two are identical. Use
+    /// <see cref="BorderSides.All"/> for a rounded outline.
+    /// </para>
+    /// </summary>
+    public BorderSides BorderSides { get; init; } = BorderSides.All;
+
     /// <summary>Elevation level 0–5 (spec §05) — the theme resolves it to the analytic ShadowSpec;
     /// exactly ONE shadow per node. Dark E1–E2 additionally want a 1dp border (component-level).</summary>
     public int Elevation { get; init; }
@@ -1009,12 +1026,30 @@ public sealed class Text : VisualNode
 {
     public override string NodeKind => "text";
 
-    public Text(string content, TypeRole role = TypeRole.BodyL, ColorToken? color = null, int maxLines = 0)
+    /// <summary>
+    /// Alignment, face and the style ESCAPE HATCH as parameters, for the same reason the flex
+    /// containers take their layout: these are init-only, so setting one meant an object
+    /// initializer, which means <c>new</c> — and a declarative author has neither.
+    /// <para>
+    /// <paramref name="styleOverride"/> is the answer to a scale that does not have the rung you
+    /// need. The rungs are the right default and a design that reaches past them everywhere has
+    /// stopped having a scale, but a closed scale with no way out is a scale that eventually gets
+    /// worked around by nesting a raw HtmlElement — which is worse, because it only works on one
+    /// target.
+    /// </para>
+    /// </summary>
+    public Text(string content, TypeRole role = TypeRole.BodyL, ColorToken? color = null,
+        int maxLines = 0, TextAlignment align = TextAlignment.Start, bool mono = false,
+        bool tabular = false, TypeStyle? styleOverride = null)
     {
         Content = content;
         Role = role;
         Color = color;
         MaxLines = maxLines;
+        Align = align;
+        Mono = mono;
+        Tabular = tabular;
+        StyleOverride = styleOverride;
     }
 
     public string Content { get; init; }

@@ -140,6 +140,8 @@ interface BoxStyleConfig {
   cornerRadius?: CornerRadii;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
+  /** Which edges the border draws on — the C# `BorderSides` flags, as their numeric value. */
+  borderSides?: number;
   elevation?: number;
   clip?: boolean;
   gradient?: LinearGradient | null;
@@ -174,6 +176,8 @@ export class BoxStyle {
   cornerRadius: CornerRadii = new CornerRadii();
   borderWidth = 0;
   borderColor?: ColorTokenValue;
+  /** Every edge (C# `BorderSides.All` = 15) — so nothing written before this changes. */
+  borderSides = 15;
   elevation = 0;
   clip = false;
   gradient: LinearGradient | null = null;
@@ -571,11 +575,20 @@ export class Text extends VisualNode {
   /** Spec S6: animates color changes (the design's transition-colors). */
   transition: TransitionSpec | null = null;
 
+  /**
+   * Two shapes, like the flex containers: transpiled C# passes the knobs positionally, hand-written
+   * runtime code passes a config object, and the object initializer arrives LAST because that is
+   * where C# runs it — so it wins over any parameter it repeats.
+   */
   constructor(
     content: string,
     role = 'bodyL',
     color: ColorTokenValue | null = null,
     maxLines = 0,
+    align?: string | TextConfig,
+    mono?: boolean,
+    tabular?: boolean,
+    styleOverride?: TypeStyleValue | null,
     config?: TextConfig,
   ) {
     super();
@@ -583,6 +596,14 @@ export class Text extends VisualNode {
     this.role = role;
     this.color = color;
     this.maxLines = maxLines;
+    if (typeof align === 'object' && align !== null) {
+      Object.assign(this, align);
+      return;
+    }
+    if (align !== undefined) this.align = align;
+    if (mono !== undefined) this.mono = mono;
+    if (tabular !== undefined) this.tabular = tabular;
+    if (styleOverride !== undefined && styleOverride !== null) this.styleOverride = styleOverride;
     if (config) Object.assign(this, config);
   }
 }

@@ -195,3 +195,69 @@ public class FlexConstructorTests
         column.RunGap.Should().Be(Space.S4);
     }
 }
+
+/// <summary>
+/// A border on SOME edges: a rule above a section, an accent bar down the side of a callout, a
+/// table cell that shares its neighbour's line.
+/// <para>
+/// None of those is a Divider — a Divider is a sibling BETWEEN two things, and these belong to the
+/// box itself — and the only way to draw one was a Row wrapping a one-dp Box, which is a layout lie
+/// about what the design meant.
+/// </para>
+/// </summary>
+public class BorderSidesTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    private static string Css(VisualNode node)
+    {
+        var sink = new StyleSink();
+        WebRealizer.Lower(node, Theme, 1f, sink);
+        return sink.Css;
+    }
+
+    private static Primitives.Box Ruled(BorderSides sides) => new(new BoxStyle
+    {
+        BorderWidth = 1,
+        BorderColor = Theme.Border,
+        BorderSides = sides,
+    }, new Text("x", TypeRole.BodyM));
+
+    [Fact]
+    public void ATopRule_DrawsOnlyOnTop()
+    {
+        Css(Ruled(BorderSides.Top)).Should().Contain("border-width:1px 0 0 0");
+    }
+
+    /// <summary>Start and End, not left and right — they mirror in a right-to-left reading, and an
+    /// accent bar that stays on the left when the text flows the other way is on the wrong side of
+    /// it. This is the LTR realization, where Start is the left edge.</summary>
+    [Fact]
+    public void AnAccentBar_DrawsOnTheStartEdge()
+    {
+        Css(Ruled(BorderSides.Start)).Should().Contain("border-width:0 0 0 1px");
+    }
+
+    /// <summary>A full border keeps the SHORTHAND — one declaration, one atomic class. Everything
+    /// written before this renders byte for byte the same.</summary>
+    [Fact]
+    public void AFullBorder_StaysOneShorthandDeclaration()
+    {
+        var css = Css(Ruled(BorderSides.All));
+
+        css.Should().Contain("border:1px solid");
+        css.Should().NotContain("border-width:");
+    }
+
+    [Fact]
+    public void TheDefault_IsEveryEdge()
+    {
+        new BoxStyle().BorderSides.Should().Be(BorderSides.All);
+    }
+
+    [Fact]
+    public void CombinedSides_DrawOnEachOfThem()
+    {
+        Css(Ruled(BorderSides.Top | BorderSides.Bottom)).Should().Contain("border-width:1px 0 1px 0");
+    }
+}

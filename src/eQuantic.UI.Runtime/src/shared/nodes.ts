@@ -180,6 +180,8 @@ export interface BoxStyleValue {
   cornerRadius?: CornerRadiiValue;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
+  /** Which edges the border draws on — the C# `BorderSides` flags as their numeric value. */
+  borderSides?: number;
   /** Elevation level 0-5 (§05) — resolved through the active theme's ShadowSpec. */
   elevation?: number;
   /** Clip children to the rrect (native PushClip / CSS overflow:hidden) — loop-motion container. */

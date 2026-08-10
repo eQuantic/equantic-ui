@@ -807,8 +807,20 @@ public static class WebRealizer
                         ? string.Join(", ", shadows.Select(TokenCss.Shadow))
                         : null,
                     style.InsetHighlight is { } inset ? $"inset 0 1px 0 {TokenCss.Value(inset)}" : null),
-                Border = style.BorderWidth > 0
+                // The shorthand for a full border (one declaration, one atomic class); per-side
+                // widths when the box draws only some edges — a section rule, an accent bar, a
+                // table cell sharing its neighbour's line.
+                Border = style.BorderWidth > 0 && style.BorderSides == BorderSides.All
                     ? $"{TokenCss.Px(style.BorderWidth)} solid {TokenCss.Value(style.BorderColor)}"
+                    : null,
+                BorderWidth = style.BorderWidth > 0 && style.BorderSides != BorderSides.All
+                    ? SideWidths(style.BorderWidth, style.BorderSides)
+                    : null,
+                BorderStyle = style.BorderWidth > 0 && style.BorderSides is not (BorderSides.All or BorderSides.None)
+                    ? "solid"
+                    : null,
+                BorderColor = style.BorderWidth > 0 && style.BorderSides is not (BorderSides.All or BorderSides.None)
+                    ? TokenCss.Value(style.BorderColor)
                     : null,
                 // The container side of loop motion: children clip to the rrect (native PushClip twin).
                 Overflow = style.Clip ? "hidden" : null,
@@ -840,6 +852,18 @@ public static class WebRealizer
     }
 
     /// <summary>One box-shadow list from the optional parts (null when none are set).</summary>
+    /// <summary>
+    /// <c>border-width</c> in CSS's own order — top, right, bottom, left — from the logical sides.
+    /// Start/End map to left/right here because this is the LTR realization; a right-to-left
+    /// document flips them in the same place every other logical property is flipped.
+    /// </summary>
+    private static string SideWidths(float width, BorderSides sides)
+    {
+        var w = TokenCss.Px(width);
+        string Edge(BorderSides side) => sides.HasFlag(side) ? w : "0";
+        return $"{Edge(BorderSides.Top)} {Edge(BorderSides.End)} {Edge(BorderSides.Bottom)} {Edge(BorderSides.Start)}";
+    }
+
     private static string? ComposeShadows(params string?[] parts)
     {
         var present = parts.Where(part => part != null).ToList();

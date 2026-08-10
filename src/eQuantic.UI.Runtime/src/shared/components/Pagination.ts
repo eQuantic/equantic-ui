@@ -25,7 +25,7 @@ export class Pagination extends StatelessComponent {
     }
 
     number(theme: any, page: number, current: boolean) {
-        let centered = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });centered.add(new Text(String(page), 'caption', current ? theme.colors('primary').onBase : theme.textSecondary, 1, { tabular: true }));let box = new Box(new BoxStyle({ width: Pagination.cell, height: Pagination.cell, background: current ? theme.colors('primary').base : null, cornerRadius: new CornerRadii(theme.shape('small')), hover: current ? null : new StyleDiff({ background: theme.surfaceSubtle }), transition: TransitionSpec.of(1, Motion.press) }), centered);return new Pressable(box, current ? null : () => this.onChanged?.(page), { label: `Page ${page}`, selected: current });
+        let centered = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });centered.add(new Text(String(page), 'caption', current ? theme.colors('primary').onBase : theme.textSecondary, 1, 'start', false, false, null, { tabular: true }));let box = new Box(new BoxStyle({ width: Pagination.cell, height: Pagination.cell, background: current ? theme.colors('primary').base : null, cornerRadius: new CornerRadii(theme.shape('small')), hover: current ? null : new StyleDiff({ background: theme.surfaceSubtle }), transition: TransitionSpec.of(1, Motion.press) }), centered);return new Pressable(box, current ? null : () => this.onChanged?.(page), { label: `Page ${page}`, selected: current });
     }
 
     static ellipsis(theme: any) {

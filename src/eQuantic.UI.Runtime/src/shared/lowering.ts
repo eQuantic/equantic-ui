@@ -150,6 +150,28 @@ export function tokenValue(token: ColorTokenValue): string {
   return light === dark ? light : `light-dark(${light}, ${dark})`;
 }
 
+/**
+ * The C# `BorderSides` flags, by value: Top 1, End 2, Bottom 4, Start 8, All 15. They cross as
+ * numbers because that is what a [Flags] enum transpiles to, and both sides read the same bits.
+ */
+const BORDER_ALL = 15;
+
+function sidesAreAll(style: { borderSides?: number }): boolean {
+  return (style.borderSides ?? BORDER_ALL) === BORDER_ALL;
+}
+
+function partialBorder(style: { borderWidth?: number; borderSides?: number }): boolean {
+  const sides = style.borderSides ?? BORDER_ALL;
+  return (style.borderWidth ?? 0) > 0 && sides !== BORDER_ALL && sides !== 0;
+}
+
+/** `border-width` in CSS's own order — top, right, bottom, left — from the logical sides. */
+function sideWidths(width: number, sides: number): string {
+  const w = px(width);
+  const edge = (bit: number) => ((sides & bit) !== 0 ? w : '0');
+  return `${edge(1)} ${edge(2)} ${edge(4)} ${edge(8)}`;
+}
+
 export function px(dp: number): string {
   if (dp === 0) return '0';
   // Matches C# "0.##" formatting (up to 2 decimals, no trailing zeros).
@@ -1350,10 +1372,19 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
       if (style.insetHighlight) parts.push(`inset 0 1px 0 ${tokenValue(style.insetHighlight)}`);
       return parts.length > 0 ? parts.join(', ') : undefined;
     })(),
+    // The shorthand for a full border; per-side widths when the box draws only some edges —
+    // a section rule, an accent bar, a table cell sharing its neighbour's line (C# twin).
     border:
-      style.borderWidth && style.borderWidth > 0 && style.borderColor
+      style.borderWidth && style.borderWidth > 0 && style.borderColor && sidesAreAll(style)
         ? `${px(style.borderWidth)} solid ${tokenValue(style.borderColor)}`
         : undefined,
+    borderWidth:
+      style.borderWidth && style.borderWidth > 0 && !sidesAreAll(style)
+        ? sideWidths(style.borderWidth, style.borderSides ?? BORDER_ALL)
+        : undefined,
+    borderStyle: partialBorder(style) ? 'solid' : undefined,
+    borderColor:
+      partialBorder(style) && style.borderColor ? tokenValue(style.borderColor) : undefined,
     // The container side of loop motion: children clip to the rrect (native PushClip twin).
     overflow: style.clip ? 'hidden' : undefined,
     // Spec S1 — group opacity, center-anchored static transform, one-axis-derives aspect ratio.

@@ -574,7 +574,7 @@ public static class PhotonRealizer
                 }
                 EmitChrome(node.Bounds, fill, box.Style.CornerRadius,
                     borderColor, borderWidth, theme, mode, builder,
-                    box.Style.Gradient, box.Style.Pattern, box.Style.Glow);
+                    box.Style.Gradient, box.Style.Pattern, box.Style.Glow, box.Style.BorderSides);
 
                 // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
                 // following the control's own radius — the first Box under the focused Pressable
@@ -900,7 +900,8 @@ public static class PhotonRealizer
 
     private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,
         ColorToken borderColor, float borderWidth, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder,
-        LinearGradient? gradient = null, GridPattern? pattern = null, RadialGradient? glow = null)
+        LinearGradient? gradient = null, GridPattern? pattern = null, RadialGradient? glow = null,
+        BorderSides sides = BorderSides.All)
     {
         if (bounds.IsEmpty) return;
 
@@ -954,19 +955,51 @@ public static class PhotonRealizer
                 Paint.Linear(start, end, g.From.Resolve(mode), g.To.Resolve(mode)));
         }
 
-        if (borderWidth > 0)
+        if (borderWidth > 0 && sides != BorderSides.None)
         {
             var color = borderColor.Resolve(mode);
             if (color.A > 0)
             {
                 // Borders draw INSIDE the bounds (spec fence). The engine stroke is centered, so a
                 // centered stroke on the half-width-deflated shape covers exactly [0, w] inward.
-                builder.StrokeRRect(
-                    new RRect(bounds.Inflate(-borderWidth / 2), radius.Deflate(borderWidth / 2)),
-                    borderWidth,
-                    Paint.Solid(color));
+                var stroke = new RRect(bounds.Inflate(-borderWidth / 2), radius.Deflate(borderWidth / 2));
+
+                if (sides == BorderSides.All)
+                {
+                    builder.StrokeRRect(stroke, borderWidth, Paint.Solid(color));
+                }
+                else
+                {
+                    // Only SOME edges: stroke the whole outline, clipped to the band each present
+                    // edge occupies. Clipping rather than filling rectangles is what keeps a rounded
+                    // box's partial border curving with its corners instead of cutting across them.
+                    //
+                    // FENCE (stated on BoxStyle.BorderSides): where a present edge meets an absent
+                    // one this squares the corner and CSS mitres it. At radius 0 — a section rule,
+                    // an accent bar, a table cell, which is what partial borders are for — the two
+                    // are identical.
+                    EmitBorderEdge(sides, BorderSides.Top, bounds, borderWidth, stroke, color, builder,
+                        b => new Rect(b.X, b.Y, b.Width, borderWidth));
+                    EmitBorderEdge(sides, BorderSides.Bottom, bounds, borderWidth, stroke, color, builder,
+                        b => new Rect(b.X, b.Y + b.Height - borderWidth, b.Width, borderWidth));
+                    EmitBorderEdge(sides, BorderSides.Start, bounds, borderWidth, stroke, color, builder,
+                        b => new Rect(b.X, b.Y, borderWidth, b.Height));
+                    EmitBorderEdge(sides, BorderSides.End, bounds, borderWidth, stroke, color, builder,
+                        b => new Rect(b.X + b.Width - borderWidth, b.Y, borderWidth, b.Height));
+                }
             }
         }
+    }
+
+    /// <summary>One edge of a partial border: the full outline, clipped to that edge's band.</summary>
+    private static void EmitBorderEdge(BorderSides sides, BorderSides edge, Rect bounds, float width,
+        RRect stroke, Color color, DisplayListBuilder builder, Func<Rect, Rect> band)
+    {
+        if (!sides.HasFlag(edge)) return;
+
+        builder.PushClip(new RRect(band(bounds)));
+        builder.StrokeRRect(stroke, width, Paint.Solid(color));
+        builder.PopClip();
     }
 
     /// <summary>
