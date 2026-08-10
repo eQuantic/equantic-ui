@@ -317,6 +317,10 @@ public static class PhotonCssGenerator
         css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
         css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");
         css.AppendLine(".eq-pressable:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
+        // A SIMULATED press (the Simulated node) reuses the same declaration rather than a copy of
+        // it: a documentation gallery showing a state that drifted from the real one is worse than
+        // showing none, and one selector list cannot drift from itself.
+        css.AppendLine(".eq-pressed > :first-child { background-color: var(--eq-pressed-bg) !important; }");
         // Focus (spec §01): the double ring — 2dp Surface gap + 2dp FocusRing — on keyboard focus only
         // (:focus-visible). The shadow sits on the CHILD so it follows the control's border-radius.
         css.AppendLine(".eq-pressable { outline: none; }");

@@ -63,6 +63,7 @@ import type {
   PositionedNode,
   PressableNode,
   HoverableNode,
+  SimulatedNode,
   ScrollViewNode,
   SizeValueValue,
   StackNode,
@@ -312,6 +313,8 @@ function lowerNode(
       return lowerAdjustable(node as unknown as AdjustableNode, context, path);
     case 'hoverable':
       return lowerHoverable(node as unknown as HoverableNode, context, path);
+    case 'simulated':
+      return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
     case 'positioned':
       // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
       return lowerNode((node as PositionedNode).child, context, horizontalAxis, path + '/0');
@@ -1324,7 +1327,7 @@ function cssCursor(cursor: string): string {
 
 function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
   const style = box.style ?? ({} as BoxStyleValue);
-  const result = element('div', {
+  const entries: Record<string, string | undefined> = {
     'box-sizing': 'border-box',
     width: sizeValue(style.width),
     height: sizeValue(style.height),
@@ -1405,10 +1408,18 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     transition: style.transition ? transitionValue(style.transition) : undefined,
     // The CSS cursor mirror — the C# enum's camelCase member names lower to the CSS keywords.
     cursor: style.cursor && style.cursor !== 'default' ? cssCursor(style.cursor) : undefined,
-  });
+  };
 
-  if (style.hover) appendDiff(result, ':hover', style.hover);
-  if (style.focus) appendDiff(result, ':focus-visible', style.focus);
+  // A SIMULATED state REPLACES the base declarations, before they are atomized. Adding a second
+  // class for the same property instead would leave the winner to stylesheet insertion order —
+  // every atomic class has equal specificity — and would emit a class set the C# side does not.
+  if (style.hover && simulatedState & SIMULATED_HOVERED) applyDiff(entries, style.hover);
+  if (style.focus && simulatedState & SIMULATED_FOCUSED) applyDiff(entries, style.focus);
+
+  const result = element('div', entries);
+
+  if (style.hover && !(simulatedState & SIMULATED_HOVERED)) appendDiff(result, ':hover', style.hover);
+  if (style.focus && !(simulatedState & SIMULATED_FOCUSED)) appendDiff(result, ':focus-visible', style.focus);
 
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');
@@ -1418,7 +1429,22 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
 }
 
 /** Spec S5 mirror of the C# AppendDiff — identical declaration strings, pseudo-hashed classes. */
+/** A StyleDiff's set members, written over the given entries — what a simulated state does. */
+function applyDiff(entries: Record<string, string | undefined>, diff: StyleDiffValue): void {
+  Object.assign(entries, diffEntries(diff));
+}
+
 function appendDiff(node: HtmlNode, pseudo: string, diff: StyleDiffValue): void {
+  const classes = atomizePseudo(pseudo, diffEntries(diff));
+  if (classes) {
+    const existing = node.attributes['class'];
+    node.attributes['class'] = existing ? `${existing} ${classes}` : classes;
+  }
+}
+
+/** The declarations a StyleDiff carries — one builder, so the pseudo path and the simulated path
+ * cannot drift into showing different things for the same diff. */
+function diffEntries(diff: StyleDiffValue): Record<string, string | undefined> {
   const entries: Record<string, string | undefined> = {};
   if (diff.background) entries['background-color'] = tokenValue(diff.background);
   if (diff.borderWidth != null && diff.borderColor) {
@@ -1434,11 +1460,7 @@ function appendDiff(node: HtmlNode, pseudo: string, diff: StyleDiffValue): void 
   }
   if (diff.opacity != null) entries['opacity'] = num(diff.opacity);
   if (diff.gradient) entries['background-image'] = gradientValue(diff.gradient);
-  const classes = atomizePseudo(pseudo, entries);
-  if (classes) {
-    const existing = node.attributes['class'];
-    node.attributes['class'] = existing ? `${existing} ${classes}` : classes;
-  }
+  return entries;
 }
 
 function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string): HtmlNode {
@@ -1648,6 +1670,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as AdjustableNode).child as VisualNodeValue);
     case 'hoverable':
       return fills((node as HoverableNode).child);
+    case 'simulated':
+      return fills((node as SimulatedNode).child);
     case 'flexible':
       return fills((node as FlexibleNode).child);
     case 'loopMotion':
@@ -1700,7 +1724,9 @@ function lowerPressable(
   // pressable carries the class (:focus-visible double ring is an a11y DEFAULT); the pressed swap
   // additionally ships its token value as a custom property at the style TAIL (the C# cross-pin).
   if (!disabled) {
-    prependClass(node, 'eq-pressable');
+    // eq-pressed carries the same declaration :active does (see the generated stylesheet), so a
+    // simulated press cannot drift from a real one — it is the same selector list.
+    prependClass(node, simulatedState & SIMULATED_PRESSED ? 'eq-pressable eq-pressed' : 'eq-pressable');
     if (pressable.pressedBackground) {
       const tail = `--eq-pressed-bg: ${tokenValue(pressable.pressedBackground)}`;
       const existing = node.attributes['style'];
@@ -1904,6 +1930,38 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
+}
+
+/**
+ * The C# `SimulatedState` flags, by value — a [Flags] enum crosses as its number.
+ */
+const SIMULATED_HOVERED = 1;
+const SIMULATED_PRESSED = 2;
+const SIMULATED_FOCUSED = 4;
+
+/** What the subtree being lowered right now is being DRAWN as (the C# WebRealizer ambient twin). */
+let simulatedState = 0;
+
+/**
+ * Draws the subtree in the given states (the C# `LowerSimulated`). `:hover` and `:focus-visible`
+ * cannot be forced from CSS — nothing can, which is the point of a pseudo-class — so the diffs
+ * those rules carry fold into the BASE style instead. Same declarations, so the picture is honest.
+ */
+function lowerSimulated(
+  node: SimulatedNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const previous = simulatedState;
+  // Nested previews COMBINE: a hovered card holding a pressed button is two nodes, and the inner
+  // one must not turn the outer's hover off.
+  simulatedState = previous | node.state;
+  try {
+    return lowerNode(node.child, context, horizontalAxis, path + '/0');
+  } finally {
+    simulatedState = previous;
+  }
 }
 
 function lowerHoverable(node: HoverableNode, context: LoweringContext, path: string): HtmlNode {

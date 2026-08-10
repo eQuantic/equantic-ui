@@ -39,6 +39,36 @@ public static class WebRealizer
         return root;
     }
 
+    /// <summary>
+    /// The states this subtree is being DRAWN as, if any. AsyncLocal like the style sink and for
+    /// the same reason: SSR renders concurrent requests, and a static field would leak one page's
+    /// preview into another's.
+    /// </summary>
+    private static readonly AsyncLocal<SimulatedState> _simulated = new();
+
+    /// <summary>
+    /// Draws the subtree in the given states. The web cannot force <c>:hover</c> or
+    /// <c>:focus-visible</c> from CSS — nothing can, which is the point of the pseudo-class — so
+    /// the diffs those rules carry are folded into the BASE style instead. What the reader sees is
+    /// what a real hover would produce, because it is the same declarations.
+    /// </summary>
+    private static HtmlElement? LowerSimulated(Simulated simulated, ComponentContext context,
+        bool? horizontalAxis)
+    {
+        var previous = _simulated.Value;
+        // Nested previews COMBINE rather than replace: a hovered card containing a pressed button
+        // is two nodes, and the inner one must not turn the outer's hover off.
+        _simulated.Value = previous | simulated.State;
+        try
+        {
+            return LowerNode(simulated.Child, context, horizontalAxis);
+        }
+        finally
+        {
+            _simulated.Value = previous;
+        }
+    }
+
     private static HtmlElement? LowerNode(VisualNode node, ComponentContext context, bool? horizontalAxis) => node switch
     {
         Box box => LowerBox(box, context),
@@ -63,6 +93,7 @@ public static class WebRealizer
         WebFrame frame => LowerWebFrame(frame),
         Pressable pressable => LowerPressable(pressable, context),
         Hoverable hoverable => LowerHoverable(hoverable, context),
+        Simulated simulated => LowerSimulated(simulated, context, horizontalAxis),
         Adjustable adjustable => LowerAdjustable(adjustable, context),
         Shortcut shortcut => LowerShortcut(shortcut, context, horizontalAxis),
         Link link => LowerLink(link, context),
@@ -841,10 +872,22 @@ public static class WebRealizer
             },
         };
 
+        // A SIMULATED state REPLACES the base declarations; otherwise the diff rides the
+        // pseudo-class it belongs to. Replacing rather than adding a second class of the same
+        // property matters: atomic classes all have equal specificity, so two of them on one
+        // element are decided by stylesheet insertion order — which depends on what the rest of
+        // the page happened to emit first.
+        var simulated = _simulated.Value;
         if (box.Style.Hover is { IsEmpty: false } hover)
-            AppendDiff(element, ":hover", hover, context);
+        {
+            if (simulated.HasFlag(SimulatedState.Hovered)) ApplyDiff(element.Style, hover, context);
+            else AppendDiff(element, ":hover", hover, context);
+        }
         if (box.Style.Focus is { IsEmpty: false } focus)
-            AppendDiff(element, ":focus-visible", focus, context);
+        {
+            if (simulated.HasFlag(SimulatedState.Focused)) ApplyDiff(element.Style, focus, context);
+            else AppendDiff(element, ":focus-visible", focus, context);
+        }
 
         if (box.Child is not null && LowerNode(box.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
@@ -868,6 +911,24 @@ public static class WebRealizer
     {
         var present = parts.Where(part => part != null).ToList();
         return present.Count == 0 ? null : string.Join(", ", present);
+    }
+
+    /// <summary>
+    /// The same members, written over the BASE style — what a simulated state does. The pairs here
+    /// mirror <see cref="AppendDiff"/> exactly, so a preview shows the declarations a real hover
+    /// would produce rather than an approximation of them.
+    /// </summary>
+    private static void ApplyDiff(HtmlStyle? style, in StyleDiff diff, ComponentContext context)
+    {
+        if (style is null) return;
+        if (diff.Background is { } bg) style.BackgroundColor = TokenCss.Value(bg);
+        if (diff is { BorderWidth: { } bw, BorderColor: { } bc })
+            style.Border = $"{TokenCss.Px(bw)} solid {TokenCss.Value(bc)}";
+        else if (diff.BorderColor is { } onlyColor) style.BorderColor = TokenCss.Value(onlyColor);
+        if (diff.Elevation is { } level && !context.Theme.Elevation(level).IsNone)
+            style.BoxShadow = TokenCss.Shadow(context.Theme.Elevation(level));
+        if (diff.Opacity is { } alpha) style.Opacity = TokenCss.Number(alpha);
+        if (diff.Gradient is { } gradient) style.BackgroundImage = TokenCss.Gradient(gradient);
     }
 
     /// <summary>Spec S5: a StyleDiff's set members as pseudo-state declarations (base values keep).</summary>
@@ -1259,7 +1320,11 @@ public static class WebRealizer
         // the pressed swap additionally needs its token value as a per-element custom property.
         if (!pressable.Disabled)
         {
-            element.ClassName = "eq-pressable";
+            // eq-pressed carries the same declaration :active does — see TokenCss. It is added, not
+            // substituted, so a simulated control still behaves like the control it is picturing.
+            element.ClassName = _simulated.Value.HasFlag(SimulatedState.Pressed)
+                ? "eq-pressable eq-pressed"
+                : "eq-pressable";
             if (pressable.PressedBackground is { } pressedFill)
             {
                 element.Style!.CustomProperties = new Dictionary<string, string>

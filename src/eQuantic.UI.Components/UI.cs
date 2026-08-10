@@ -40,6 +40,11 @@ public static class UI
     }
 
     /// <summary>Horizontal flex without <c>new</c> — <c>Row(gap: Space.S2, children: [ … ])</c>.</summary>
+    /// <summary>Draws its subtree AS IF it were hovered, pressed or focused — a gallery, a design
+    /// review and a visual-regression suite could otherwise only ever show the rest state.</summary>
+    public static Simulated Simulated(SimulatedState state, VisualNode child) =>
+        new Simulated(state, child);
+
     public static Row Row(float gap = 0, MainAlign main = MainAlign.Start,
         CrossAlign cross = CrossAlign.Center, bool wrap = false, float? runGap = null,
         EdgeInsets? padding = null, VisualNode[]? children = null)

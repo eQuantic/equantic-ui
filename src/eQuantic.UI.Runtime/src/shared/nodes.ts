@@ -365,6 +365,17 @@ export interface HoverableNode extends VisualNodeValue {
   onChanged?: (entered: boolean) => void;
 }
 
+/**
+ * Wire shape of the C# `Simulated` — draws its subtree AS IF it were in these states. The flags are
+ * the C# `SimulatedState` by VALUE (Hovered 1, Pressed 2, Focused 4), because that is what a
+ * [Flags] enum transpiles to.
+ */
+export interface SimulatedNode extends VisualNodeValue {
+  nodeKind: 'simulated';
+  state: number;
+  child: VisualNodeValue;
+}
+
 export interface PressableNode extends VisualNodeValue {
   nodeKind: 'pressable';
   child: VisualNodeValue;

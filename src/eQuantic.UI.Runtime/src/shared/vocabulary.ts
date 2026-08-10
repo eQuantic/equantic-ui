@@ -681,6 +681,25 @@ export class SheetSurface extends VisualNode {
   }
 }
 
+/**
+ * Draws its subtree AS IF it were hovered, pressed or focused (the C# `Simulated`).
+ *
+ * The states are the C# `SimulatedState` flags by value: Hovered 1, Pressed 2, Focused 4. Nothing
+ * is invoked and no state is entered — a simulated press is a picture of a press.
+ */
+export class Simulated extends VisualNode {
+  readonly nodeKind = 'simulated';
+  state: number;
+  child: VisualChild;
+
+  constructor(state: number, child: VisualChild, config?: EqConfig) {
+    super();
+    this.state = state;
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 export class Hoverable extends VisualNode {
   readonly nodeKind = 'hoverable';
   child: VisualChild;

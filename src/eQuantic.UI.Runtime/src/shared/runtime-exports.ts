@@ -84,7 +84,7 @@ export { RouteValues } from './route-values';
 // Same promise, same failure shape: a page writing BoxStyle.Transform / .Pattern / .Glow names
 // these, and eqc routes every Primitives name here.
 export { Transform2D } from './value-types';
-export { GridPattern, RadialGradient } from './vocabulary';
+export { GridPattern, RadialGradient, Simulated } from './vocabulary';
 export {
   Space,
   Radius,

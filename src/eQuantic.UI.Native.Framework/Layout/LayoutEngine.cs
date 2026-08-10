@@ -303,6 +303,8 @@ public static class LayoutEngine
         SheetSurface sheet => MeasureWrapper(sheet, sheet.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // Pointer presence is layout-transparent (S5 programmable hover — the child owns visuals).
         Hoverable hoverable => MeasureWrapper(hoverable, hoverable.Child, maxW, maxH, ctx, path, stretchW, stretchH),
+        // A simulated state changes only what is DRAWN, so it takes no space of its own.
+        Simulated simulated => MeasureWrapper(simulated, simulated.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // Spec S8: a Shortcut is layout-transparent — the binding rides the realizer's walk.
         Shortcut shortcut => MeasureWrapper(shortcut, shortcut.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         Adjustable adjustable => MeasureWrapper(adjustable, adjustable.Child, maxW, maxH, ctx, path, Inline(stretchW), Inline(stretchH)),
@@ -384,6 +386,7 @@ public static class LayoutEngine
         Link link => MinContentWidth(link.Child, ctx),
         Adjustable adjustable => MinContentWidth(adjustable.Child, ctx),
         Hoverable hoverable => MinContentWidth(hoverable.Child, ctx),
+        Simulated simulated => MinContentWidth(simulated.Child, ctx),
         Shortcut shortcut => MinContentWidth(shortcut.Child, ctx),
         Flexible flexible => MinContentWidth(flexible.Child, ctx),
         Presence presence => MinContentWidth(presence.Child, ctx),

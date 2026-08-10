@@ -403,6 +403,13 @@ public static class PhotonRealizer
         /// <summary>Spec S5: the node the pointer is over — its Box applies its Hover diff. Fed by
         /// the host's pointer tracking (the gesture slice); tests pass it directly.</summary>
         public VisualNode? Hovered { get; }
+        /// <summary>
+        /// The states this subtree is being DRAWN as, set by a <see cref="Simulated"/> node while
+        /// its child is emitted and restored after. Not part of the host's tracking: nothing was
+        /// pressed, the picture just says it was.
+        /// </summary>
+        public SimulatedState Simulated { get; set; }
+
         public ColorToken? PendingFill { get; set; }
         public bool PendingFocusRing { get; set; }
     }
@@ -510,8 +517,15 @@ public static class PhotonRealizer
     {
         if (press.IsTracked(node, press.Pressed, press.PressedPath) && press.Pressed?.PressedBackground is { } pressedFill)
             press.PendingFill = pressedFill;
+        // A SIMULATED press takes the fill from the Pressable being pictured — the host is tracking
+        // nothing, so there is no tracked node to read it from.
+        else if ((press.Simulated & SimulatedState.Pressed) != 0
+            && node.Source is Pressable { PressedBackground: { } simulatedFill })
+            press.PendingFill = simulatedFill;
         if ((press.Focused is not null || press.FocusedPath is not null)
             && press.IsTracked(node, press.Focused, press.FocusedPath))
+            press.PendingFocusRing = true;
+        else if ((press.Simulated & SimulatedState.Focused) != 0 && node.Source is Pressable)
             press.PendingFocusRing = true;
 
         switch (node.Source)
@@ -566,7 +580,9 @@ public static class PhotonRealizer
                     input.Add(new HoverRegion(node.Bounds, box));
 
                 // Spec S5: the hovered Box applies its Hover diff (pressed still wins on fill).
-                if (ReferenceEquals(node.Source, press.Hovered) && box.Style.Hover is { IsEmpty: false } hover)
+                if ((ReferenceEquals(node.Source, press.Hovered)
+                        || (press.Simulated & SimulatedState.Hovered) != 0)
+                    && box.Style.Hover is { IsEmpty: false } hover)
                 {
                     if (press.PendingFill is null && hover.Background is { } hoverFill) fill = hoverFill;
                     if (hover.BorderColor is { } hoverBorder) borderColor = hoverBorder;
@@ -671,6 +687,26 @@ public static class PhotonRealizer
             case Pressable pressable:
                 input.Add(new HitRegion(ExpandHitRect(node.Bounds, press.Density), pressable, node.Path ?? ""));
                 break;
+
+            // Draws its subtree AS IF it were in these states. Nothing is tracked and no handler
+            // runs — the states are pushed for the child's emission and restored after, so a
+            // preview cannot leak into the sibling beside it.
+            case Simulated simulated:
+            {
+                var previous = press.Simulated;
+                // Nested previews COMBINE: a hovered card holding a pressed button is two nodes.
+                press.Simulated = previous | simulated.State;
+                try
+                {
+                    foreach (var child in node.Children)
+                        Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
+                }
+                finally
+                {
+                    press.Simulated = previous;
+                }
+                return;
+            }
 
             // S5 programmable hover: the region rides the SAME pointer pipeline Style.Hover uses;
             // the host fires OnChanged on the transitions (PhotonHost.PointerMove).
