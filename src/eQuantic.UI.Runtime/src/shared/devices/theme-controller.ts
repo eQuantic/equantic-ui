@@ -24,10 +24,29 @@ const THEME_COOKIE = 'eq-theme';
 const DEFAULT_DAYS = 365;
 
 export class WebThemeController {
-  /** 'light' | 'dark' — the forced mode if one is set, else what the OS prefers. */
+  /**
+   * 'light' | 'dark' — what the page is ACTUALLY painting in.
+   *
+   * Three sources, in the order they outrank each other:
+   *
+   * 1. The inline style, which this controller writes on a toggle — a live choice beats everything.
+   * 2. The COMPUTED value, which is how a server-declared mode arrives: `UseInitialThemeMode` (or a
+   *    remembered cookie) emits `color-scheme` as a STYLESHEET rule, and a stylesheet rule never
+   *    shows up in `element.style`. Reading only the inline one made this report the OS while the
+   *    page painted something else — so on a dark desktop with a light-declared app, the first click
+   *    on the toggle applied `light`, which the page already was, and nothing happened. The visitor
+   *    clicked twice.
+   * 3. The OS. Reached only when nobody has decided: with `color-scheme: light dark` the computed
+   *    value is both keywords, matches neither, and falls through to here — which is correct, since
+   *    that declaration means "follow the system".
+   */
   get mode(): string {
-    const forced = document.documentElement.style.colorScheme;
-    if (forced === 'dark' || forced === 'light') return forced;
+    const inline = document.documentElement.style.colorScheme;
+    if (inline === 'dark' || inline === 'light') return inline;
+
+    const used = getComputedStyle(document.documentElement).colorScheme;
+    if (used === 'dark' || used === 'light') return used;
+
     return typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-color-scheme: dark)').matches
       ? 'dark'

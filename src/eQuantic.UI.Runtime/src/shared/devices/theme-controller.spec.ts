@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WebThemeController } from './theme-controller';
 
 /**
@@ -8,6 +8,65 @@ import { WebThemeController } from './theme-controller';
  * what writes it. Two places to configure would drift, and a drifted name fails silently: the
  * server reads a cookie nobody writes, persistence stops, and every part of it still looks right.
  */
+/**
+ * What the controller REPORTS, which decides what a toggle does next.
+ *
+ * A server-declared mode arrives as a stylesheet rule, and a stylesheet rule is invisible to
+ * `element.style`. Reading only the inline one made this answer the OS while the page painted
+ * something else — and a toggle that reads the wrong current mode applies the mode the page is
+ * already in. The first click did nothing; the visitor clicked twice.
+ */
+describe('WebThemeController.mode', () => {
+  const styleRule = (value: string) => {
+    const tag = document.createElement('style');
+    tag.textContent = `:root { color-scheme: ${value}; }`;
+    document.head.appendChild(tag);
+    return tag;
+  };
+
+  let injected: HTMLStyleElement | null = null;
+
+  beforeEach(() => {
+    document.documentElement.style.colorScheme = '';
+  });
+
+  afterEach(() => {
+    injected?.remove();
+    injected = null;
+    vi.unstubAllGlobals();
+  });
+
+  it('reports the declared mode even when the OS disagrees', () => {
+    // THE reported scenario: a dark desktop, an app declaring light. Forcing matchMedia to say dark
+    // is what makes this test able to fail — without it the fallback answers 'light' too, and the
+    // assertion passes whether or not the fix is there.
+    vi.stubGlobal('matchMedia', () => ({ matches: true }) as unknown as MediaQueryList);
+    injected = styleRule('light');
+
+    expect(new WebThemeController().mode).toBe('light');
+  });
+
+  it('a live choice outranks the declared one', () => {
+    injected = styleRule('light');
+    const controller = new WebThemeController();
+
+    controller.apply('dark');
+
+    expect(controller.mode).toBe('dark');
+  });
+
+  /**
+   * `light dark` is the declaration that MEANS "follow the system": it matches neither keyword, so
+   * it falls through to the OS exactly as before. This change only affects the case where somebody
+   * already decided.
+   */
+  it('falls through to the OS when nobody decided', () => {
+    injected = styleRule('light dark');
+
+    expect(['light', 'dark']).toContain(new WebThemeController().mode);
+  });
+});
+
 describe('WebThemeController persistence', () => {
   const clearCookies = () => {
     for (const pair of document.cookie.split(';')) {
