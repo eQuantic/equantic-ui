@@ -1569,17 +1569,22 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   // paragraph-level. When absent the plain content is the single leaf.
   const children =
     text.spans && text.spans.length > 0
-      ? text.spans.map((run) =>
-          element(
-            'span',
+      ? text.spans.map((run) => {
+          // An <a> when the run links, a <span> otherwise — both inline, so the paragraph still
+          // wraps between WORDS. Mirrors the C# realizer exactly: a server emitting an anchor and a
+          // client emitting a span is a hydration mismatch on every linked sentence.
+          const runNode = element(
+            run.href ? 'a' : 'span',
             {
               color: run.color ? tokenValue(run.color) : undefined,
               'font-family': run.mono === true ? MONO_STACK : undefined,
               'font-weight': run.weight ? String(cssFontWeight(run.weight)) : undefined,
             },
             [textLeaf(run.content)],
-          ),
-        )
+          );
+          if (run.href) runNode.attributes = { ...runNode.attributes, href: run.href };
+          return runNode;
+        })
       : [textLeaf(text.content)];
   const node = element('span', style, children);
   prependClass(node, `eq-type-${text.role.toLowerCase()}`);

@@ -347,6 +347,12 @@ export interface TextRunValue {
   mono?: boolean;
   /** Inline emphasis (C# `TextRun.Weight`) — the camelCased FontWeight name. */
   weight?: string | null;
+  /**
+   * Where the run LINKS to (C# `TextRun.Href`). A link inside a sentence has to live on a run: a
+   * Link around the Text makes the whole paragraph one link, and a Row of Texts breaks between RUNS
+   * instead of between words.
+   */
+  href?: string | null;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */

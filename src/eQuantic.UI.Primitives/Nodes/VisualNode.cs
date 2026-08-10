@@ -958,6 +958,31 @@ public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono
 {
     /// <summary>Inline emphasis — one bold word inside a sentence, without splitting the Text.</summary>
     public FontWeight? Weight { get; init; }
+
+    /// <summary>
+    /// Where this run LINKS to — a link inside a sentence, which nothing else here can express.
+    /// <para>
+    /// A <see cref="Link"/> around a <see cref="Text"/> makes the whole paragraph one link, and a
+    /// Row of Texts breaks between RUNS instead of between words: a sentence with three code spans
+    /// wraps at the spans. So mixed emphasis has to be one Text with <see cref="Text.Spans"/> — and
+    /// without this, a link in the middle of a sentence was inexpressible. For anything that reads
+    /// like prose, that is most paragraphs.
+    /// </para>
+    /// <para>
+    /// A link is a TARGET-NEUTRAL idea — a run of text that goes somewhere when you touch it, which
+    /// every platform has. What is missing is realization, not meaning: the native realizer reads
+    /// neither this, nor <see cref="Text.Spans"/>, nor even <see cref="Link.Href"/>, so a paragraph
+    /// with links draws on Photon as its text, unlinked. Closing that needs per-run hit testing (the
+    /// engine has to know each run's rect) and a navigation action a shell can answer.
+    /// <para>
+    /// The name follows <see cref="Link.Href"/> rather than inventing a second word for one concept.
+    /// The SHAPE is what the native platforms use too, not HTML leaking in: an Apple
+    /// <c>NSAttributedString</c> carries a <c>.link</c> attribute on a range, and an Android
+    /// <c>Spannable</c> carries a <c>URLSpan</c>. An inline link is a RUN with an attribute
+    /// everywhere — it cannot be a separate node, because a separate node is what breaks the line.
+    /// </para>
+    /// </summary>
+    public string? Href { get; init; }
 }
 
 /// <summary>Line alignment within a <see cref="Text"/> paragraph (CSS <c>text-align</c> twin).</summary>

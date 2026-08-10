@@ -1079,7 +1079,10 @@ public static class WebRealizer
         {
             foreach (var run in spans)
             {
-                element.Children.Add(new RealizedElement("span")
+                // An <a> when the run links, a <span> otherwise. Both are inline, so the paragraph
+                // still wraps between WORDS — which is the whole reason a link has to live in a run
+                // rather than in a Row of Texts.
+                var runElement = new RealizedElement(run.Href is { Length: > 0 } ? "a" : "span")
                 {
                     InnerHtml = run.Content,
                     Style = new HtmlStyle
@@ -1088,7 +1091,10 @@ public static class WebRealizer
                         FontFamily = run.Mono ? TokenCss.MonoStack : null,
                         FontWeight = run.Weight is { } runWeight ? ((int)runWeight).ToString() : null,
                     },
-                });
+                };
+                if (run.Href is { Length: > 0 } href)
+                    runElement.RawAttributes = new Dictionary<string, string> { ["href"] = href };
+                element.Children.Add(runElement);
             }
         }
 
