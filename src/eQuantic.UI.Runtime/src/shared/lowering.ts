@@ -543,7 +543,7 @@ function webClipboard() {
 function lowerLink(node: LinkNode, context: LoweringContext, path: string): HtmlNode {
   const anchor: HtmlNode = {
     tag: 'a',
-    attributes: { class: 'eq-link', href: node.href },
+    attributes: { class: 'eq-link', href: node.destination },
     events: {},
     children: [],
   };
@@ -1574,7 +1574,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
           // wraps between WORDS. Mirrors the C# realizer exactly: a server emitting an anchor and a
           // client emitting a span is a hydration mismatch on every linked sentence.
           const runNode = element(
-            run.href ? 'a' : 'span',
+            run.destination ? 'a' : 'span',
             {
               color: run.color ? tokenValue(run.color) : undefined,
               'font-family': run.mono === true ? MONO_STACK : undefined,
@@ -1582,7 +1582,8 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
             },
             [textLeaf(run.content)],
           );
-          if (run.href) runNode.attributes = { ...runNode.attributes, href: run.href };
+          if (run.destination)
+            runNode.attributes = { ...runNode.attributes, href: run.destination };
           return runNode;
         })
       : [textLeaf(text.content)];

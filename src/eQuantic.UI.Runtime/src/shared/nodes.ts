@@ -352,7 +352,7 @@ export interface TextRunValue {
    * Link around the Text makes the whole paragraph one link, and a Row of Texts breaks between RUNS
    * instead of between words.
    */
-  href?: string | null;
+  destination?: string | null;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
@@ -444,10 +444,10 @@ export interface PresenceNode extends VisualNodeValue {
   enter?: string;
 }
 
-/** Navigation semantics: the child becomes a link to href (web <a>; native host seam). */
+/** Navigation semantics: the child becomes a link to destination (web <a>; native host seam). */
 export interface LinkNode extends VisualNodeValue {
   nodeKind: 'link';
-  href: string;
+  destination: string;
   child: VisualNodeValue;
   label?: string | null;
 }

@@ -8,7 +8,7 @@ export class UI {
     static text(content: string, role: string = 'bodyL', color: ColorToken | null = null, maxLines: number = 0) { return new Text(content, role, color, maxLines); }
     static textEntry(value: string, onChanged: ((string: string) => void) | null = null) { return new TextEntry(value, onChanged); }
     static pressable(child: VisualNode, onPressed: (() => void) | null = null) { return new Pressable(child, onPressed); }
-    static link(href: string, child: VisualNode) { return new Link(href, child); }
+    static link(destination: string, child: VisualNode) { return new Link(destination, child); }
     static glyph(glyph: IconGlyph, size: number = 24, color: ColorToken | null = null, label: string | null = null) { return new Icon(glyph, size, color, label); }
     static icon(glyph: string, size: number = 24, color: ColorToken | null = null, label: string | null = null) { return new Icon(glyph, size, color, label); }
     static vector(glyph: IconGlyph, size: number, color: ColorToken | null = null, label: string | null = null) { return new Vector(glyph, size, color, label); }

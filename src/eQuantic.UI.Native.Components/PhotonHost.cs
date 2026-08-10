@@ -128,7 +128,7 @@ public sealed class PhotonHost
     public EdgeInsets SafeAreaInsets { get; set; }
 
     /// <summary>The NAVIGATION seam (write-once Link): a tap no pressable claims, landing on a link
-    /// region, reports the href here — the platform shell maps it to a page (the native router's
+    /// region, reports the destination here — the platform shell maps it to a page (the native router's
     /// future home). Null = links are inert (visuals only).
     /// <para>Setting it also installs <see cref="Navigator"/>'s handler, so a component that
     /// navigates PROGRAMMATICALLY (a command palette's ↵) reaches the same shell. One surface owns
@@ -1730,7 +1730,7 @@ _codeDragging = false;
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             if (!regions[i].Bounds.Contains(point)) continue;
-            _navigationRequested(regions[i].Node.Href);
+            _navigationRequested(regions[i].Node.Destination);
             return true;
         }
         return false;

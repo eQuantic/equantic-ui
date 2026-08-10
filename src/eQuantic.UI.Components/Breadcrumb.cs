@@ -4,7 +4,7 @@ namespace eQuantic.UI.Components;
 
 /// <summary>One step of a <see cref="Breadcrumb"/>. A crumb with no <see cref="Href"/> is not a link
 /// — the last crumb is where you already are, and a link to here is a lie.</summary>
-public sealed record Crumb(string Label, string? Href = null);
+public sealed record Crumb(string Label, string? Destination = null);
 
 /// <summary>
 /// WHERE you are in a hierarchy, and the way back up (spec B20). It is not navigation between peers
@@ -39,8 +39,8 @@ public sealed class Breadcrumb : StatelessComponent
             var text = new Text(crumb.Label, TypeRole.Caption,
                 last ? theme.TextPrimary : theme.TextSecondary, maxLines: 1);
 
-            row.Add(!last && crumb.Href is { } href
-                ? new Link(href, text) { Label = crumb.Label }
+            row.Add(!last && crumb.Destination is { } destination
+                ? new Link(destination, text) { Label = crumb.Label }
                 : text);
         }
 

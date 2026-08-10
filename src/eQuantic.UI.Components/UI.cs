@@ -87,9 +87,9 @@ public static class UI
     public static Pressable Pressable(VisualNode child, Action? onPressed = null) =>
         new Pressable(child, onPressed);
 
-    /// <summary>Navigation semantics: the child becomes a link to <paramref name="href"/>.</summary>
-    public static Link Link(string href, VisualNode child) =>
-        new Link(href, child);
+    /// <summary>Navigation semantics: the child becomes a link to <paramref name="destination"/>.</summary>
+    public static Link Link(string destination, VisualNode child) =>
+        new Link(destination, child);
 
     /// <summary>
     /// A PACK glyph — what an icon package's catalog hands out (<c>MaterialSymbolsIcons.Home</c>,

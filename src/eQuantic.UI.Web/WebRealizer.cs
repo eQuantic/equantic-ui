@@ -1082,7 +1082,7 @@ public static class WebRealizer
                 // An <a> when the run links, a <span> otherwise. Both are inline, so the paragraph
                 // still wraps between WORDS — which is the whole reason a link has to live in a run
                 // rather than in a Row of Texts.
-                var runElement = new RealizedElement(run.Href is { Length: > 0 } ? "a" : "span")
+                var runElement = new RealizedElement(run.Destination is { Length: > 0 } ? "a" : "span")
                 {
                     InnerHtml = run.Content,
                     Style = new HtmlStyle
@@ -1092,8 +1092,8 @@ public static class WebRealizer
                         FontWeight = run.Weight is { } runWeight ? ((int)runWeight).ToString() : null,
                     },
                 };
-                if (run.Href is { Length: > 0 } href)
-                    runElement.RawAttributes = new Dictionary<string, string> { ["href"] = href };
+                if (run.Destination is { Length: > 0 } destination)
+                    runElement.RawAttributes = new Dictionary<string, string> { ["href"] = destination };
                 element.Children.Add(runElement);
             }
         }
@@ -1277,7 +1277,7 @@ public static class WebRealizer
     }
 
     /// <summary>
-    /// Navigation semantics: a REAL <c>&lt;a href&gt;</c> (SSR-crawlable, router-intercepted) whose
+    /// Navigation semantics: a REAL <c>&lt;a destination&gt;</c> (SSR-crawlable, router-intercepted) whose
     /// UA chrome is neutralized — the child owns all visuals, exactly the Pressable contract. A Fill
     /// child gets the 100% pass-through chain the same way.
     /// </summary>
@@ -1293,7 +1293,7 @@ public static class WebRealizer
                 Height = fills.Height ? "100%" : null,
             },
             AriaLabel = link.Label,
-            RawAttributes = new Dictionary<string, string> { ["href"] = link.Href },
+            RawAttributes = new Dictionary<string, string> { ["href"] = link.Destination },
         };
         if (LowerNode(link.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);

@@ -723,7 +723,7 @@ public sealed class DragDismiss : VisualNode
 /// <summary>
 /// NAVIGATION semantics in the vocabulary: the child becomes a link to <see cref="Href"/>. The child
 /// owns ALL visuals (like Pressable) — Link adds only the semantics and the interaction. Web lowers
-/// to a real <c>&lt;a href&gt;</c> (SSR-crawlable; the SPA router intercepts internal clicks, so
+/// to a real <c>&lt;a destination&gt;</c> (SSR-crawlable; the SPA router intercepts internal clicks, so
 /// guards/prefetch apply); native registers a link region and resolves a tap through the HOST's
 /// navigation seam (<c>PhotonHost.NavigationRequested</c> — the platform shell maps hrefs to pages).
 /// Pressables INSIDE a link win the tap (topmost dispatch), exactly like a button inside an anchor.
@@ -732,13 +732,13 @@ public sealed class Link : VisualNode
 {
     public override string NodeKind => "link";
 
-    public Link(string href, VisualNode child)
+    public Link(string destination, VisualNode child)
     {
-        Href = href;
+        Destination = destination;
         Child = child;
     }
 
-    public string Href { get; init; }
+    public string Destination { get; init; }
     public VisualNode Child { get; init; }
 
     /// <summary>Accessible name when the child carries no text of its own (icon-only links).</summary>
@@ -981,14 +981,14 @@ public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono
     /// the line.
     /// <para>
     /// The NAME is not universal, and it is worth being exact about that. Apple says <c>link</c>,
-    /// Android says <c>URLSpan</c>, and <c>href</c> is HTML's word. It is used here for internal
+    /// Android says <c>URLSpan</c>, and <c>destination</c> is HTML's word. It is used here for internal
     /// consistency with <see cref="Link.Href"/>, which shipped first — one concept with two names
     /// inside one vocabulary would be worse than one borrowed name. That is a consistency argument,
     /// not a neutrality one; the abstract layer otherwise avoids a target's vocabulary on purpose
     /// (<see cref="Pressable"/>, not "Button" or "Clickable").
     /// </para>
     /// </summary>
-    public string? Href { get; init; }
+    public string? Destination { get; init; }
 }
 
 /// <summary>Line alignment within a <see cref="Text"/> paragraph (CSS <c>text-align</c> twin).</summary>

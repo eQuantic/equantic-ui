@@ -27,9 +27,9 @@ public class InlineLinkTests
         Spans =
         [
             new TextRun("Read the "),
-            new TextRun("getting started") { Weight = FontWeight.SemiBold, Href = "/docs/start" },
+            new TextRun("getting started") { Weight = FontWeight.SemiBold, Destination = "/docs/start" },
             new TextRun(" guide, or the "),
-            new TextRun("API", Mono: true) { Href = "/api" },
+            new TextRun("API", Mono: true) { Destination = "/api" },
             new TextRun(" reference."),
         ],
     };

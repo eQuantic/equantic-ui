@@ -662,16 +662,16 @@ export class Presence extends VisualNode {
     }
 }
 
-/** Navigation semantics: the child becomes a link to href — the child owns all visuals. */
+/** Navigation semantics: the child becomes a link to destination — the child owns all visuals. */
 export class Link extends VisualNode {
   readonly nodeKind = 'link';
-  href: string;
+  destination: string;
   child: VisualChild;
   label: string | null = null;
 
-  constructor(href: string, child: VisualChild, config?: { label?: string | null }) {
+  constructor(destination: string, child: VisualChild, config?: { label?: string | null }) {
     super();
-    this.href = href;
+    this.destination = destination;
     this.child = child;
     if (config) Object.assign(this, config);
   }
