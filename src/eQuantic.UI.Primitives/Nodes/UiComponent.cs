@@ -118,9 +118,60 @@ public abstract class StatefulComponent : UiComponent
     /// <summary>Raised after every <see cref="SetState"/> — hosts subscribe to schedule a rebuild.</summary>
     public event Action? StateInvalidated;
 
+    private bool _mounted;
+
     protected void SetState(Action mutate)
     {
         mutate();
         StateInvalidated?.Invoke();
+    }
+
+    /// <summary>
+    /// Runs ONCE, when this instance has entered a live tree — read stored state, subscribe to a
+    /// device, start the request whose answer the next build will show.
+    /// <para>
+    /// A constructor is the wrong place for all three: the reconciler builds fresh instances every
+    /// pass and keeps the RETAINED one, so anything a constructor starts is started again for an
+    /// instance that is then thrown away. This runs on the instance that stays.
+    /// </para>
+    /// <para>
+    /// It does NOT mean "the pixels exist" — Photon has no DOM to read geometry from, so a hook
+    /// promising it could not be write-once. It means: this component is in the tree, its build is
+    /// about to be shown, and a <c>SetState</c> from here schedules the next pass rather than
+    /// fighting the current one.
+    /// </para>
+    /// </summary>
+    protected virtual void OnMount()
+    {
+    }
+
+    /// <summary>
+    /// Runs when this instance's position LEAVES the tree — unsubscribe here whatever
+    /// <see cref="OnMount"/> subscribed to. Without it every mount is a leak, so the pair ships
+    /// together.
+    /// </summary>
+    protected virtual void OnUnmount()
+    {
+    }
+
+    /// <summary>
+    /// Called by the HOST (the instance store, or the surface for a root), never by app code. Idem-
+    /// potent: an instance already in the tree does not mount twice.
+    /// </summary>
+    public void NotifyMounted()
+    {
+        if (_mounted) return;
+        _mounted = true;
+        OnMount();
+    }
+
+    /// <summary>The pair of <see cref="NotifyMounted"/> — also idempotent, and a no-op for an
+    /// instance that never mounted (a fresh one the reconciler discarded in favour of a retained
+    /// twin never entered the tree, so it never left it either).</summary>
+    public void NotifyUnmounted()
+    {
+        if (!_mounted) return;
+        _mounted = false;
+        OnUnmount();
     }
 }

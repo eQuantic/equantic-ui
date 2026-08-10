@@ -25,6 +25,9 @@ interface SharedStatefulLike {
   _invalidationHook?: (() => void) | null;
   key?: string | null;
   adoptConfig?(next: unknown): void;
+  /** Idempotent lifecycle delivery — the C# `NotifyMounted`/`NotifyUnmounted` twins. */
+  notifyMounted?(): void;
+  notifyUnmounted?(): void;
   build(context: unknown): unknown;
 }
 
@@ -32,18 +35,45 @@ export class ComponentInstanceStore {
   private retained = new Map<string, SharedStatefulLike>();
   private visited = new Map<string, SharedStatefulLike>();
   private rootCounter = 0;
+  // Mounts are QUEUED and delivered when the pass closes, never mid-build: a hook running inside
+  // reconcile() runs while its own parent is still building, so a setState from it would mutate a
+  // tree half-way through being produced.
+  private mounting: SharedStatefulLike[] = [];
 
   /** Starts a pass: root prefixes restart so bridge N maps to the same identity space every render. */
   beginPass(): void {
     this.rootCounter = 0;
   }
 
-  /** Ends the pass: entries not visited are DROPPED — their position left the tree. */
+  /**
+   * Ends the pass: entries not visited are DROPPED — their position left the tree, which is exactly
+   * when `onUnmount` is owed. The instances that ENTERED this pass mount here, once the tree they
+   * belong to is finished (C# `ComponentInstanceStore.EndPass` twin).
+   */
   endPass(): void {
     const previous = this.retained;
     this.retained = this.visited;
     this.visited = previous;
+
+    // `previous` is the PREVIOUS pass: anything in it this pass did not keep is gone.
+    for (const [identity, instance] of previous) {
+      if (this.retained.get(identity) !== instance) instance.notifyUnmounted?.();
+    }
+
     this.visited.clear();
+
+    // Mounted LAST, so a component's onMount sees a tree in which everything that left has already
+    // unsubscribed — the order that lets two components share one exclusive resource across a swap.
+    for (const instance of this.mounting) instance.notifyMounted?.();
+    this.mounting.length = 0;
+  }
+
+  /** Tears the store down — every retained instance leaves the tree at once (a surface closing). */
+  unmountAll(): void {
+    for (const instance of this.retained.values()) instance.notifyUnmounted?.();
+    this.retained.clear();
+    this.visited.clear();
+    this.mounting.length = 0;
   }
 
   /** The unique path root for the next `lowerVisualNode` of this pass. */
@@ -71,6 +101,7 @@ export class ComponentInstanceStore {
 
     candidate._invalidationHook = invalidator;
     this.visited.set(identity, candidate);
+    this.mounting.push(candidate);
     return candidate;
   }
 }

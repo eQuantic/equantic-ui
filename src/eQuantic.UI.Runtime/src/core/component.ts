@@ -402,6 +402,34 @@ export abstract class SharedStatefulComponent extends Component {
     this._scheduleRender();
   }
 
+  /**
+   * Runs ONCE, when this instance has entered a live tree (C# `OnMount`) — the transpiled subclass
+   * overrides it. NOT "the pixels exist": Photon has no DOM to read geometry from, so a hook
+   * promising it could not be write-once.
+   */
+  onMount(): void {}
+
+  /** Runs when this instance's position LEAVES the tree (C# `OnUnmount`) — unsubscribe here. */
+  onUnmount(): void {}
+
+  /** Called by the HOST — the instance store, or `mount`/`hydrate` for a page root. Idempotent. */
+  notifyMounted(): void {
+    if (this._lifecycleMounted) return;
+    this._lifecycleMounted = true;
+    this.onMount();
+  }
+
+  /** The pair — also idempotent, and a no-op for an instance that never entered the tree. */
+  notifyUnmounted(): void {
+    if (!this._lifecycleMounted) return;
+    this._lifecycleMounted = false;
+    this.onUnmount();
+  }
+
+  // Separate from `_mounted`, which is the RENDER MANAGER's flag (whether a queued re-render may
+  // flush). This one is the lifecycle's, and a nested instance has the second without the first.
+  private _lifecycleMounted = false;
+
   render(): HtmlNode {
     const context: RenderContext = {
       getService: <T>(key: import('./types').ServiceKey<T>) =>
@@ -441,17 +469,23 @@ export abstract class SharedStatefulComponent extends Component {
       this._renderManager.mount(node, container);
     }
     this._mounted = true;
+    // The root has no parent to mount it — see notifyMounted.
+    this.notifyMounted();
   }
 
   hydrate(container: HTMLElement): void {
     this._renderManager.hydrate(this.render(), container);
     this._mounted = true;
+    // The root has no parent to mount it — see notifyMounted.
+    this.notifyMounted();
   }
 
   mountReconcile(container: HTMLElement, previousNode: HtmlNode | null): HtmlNode {
     const node = this.render();
     this._renderManager.adopt(node, container, previousNode);
     this._mounted = true;
+    // The root has no parent to mount it — see notifyMounted.
+    this.notifyMounted();
     return node;
   }
 
@@ -463,6 +497,10 @@ export abstract class SharedStatefulComponent extends Component {
   /** Marking `_mounted=false` makes any queued re-render flush a no-op (see StatefulComponent). */
   disposeQuietly(): void {
     this._mounted = false;
+    // Navigating away is this page leaving the tree — whatever onMount subscribed to unsubscribes
+    // here, and its nested components leave with the store that held them.
+    this.notifyUnmounted();
+    this._instances.unmountAll();
   }
 
   _scheduleRender(): void {

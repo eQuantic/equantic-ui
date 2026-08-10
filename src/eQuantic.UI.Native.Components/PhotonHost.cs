@@ -189,6 +189,14 @@ public sealed class PhotonHost
             foreach (var overlay in previousFrame.OverlayRoots) _nodePool.RecycleTree(overlay);
         }
         AdoptAutofocus();
+        // The ROOT is not in the instance store (nothing reconciles it — it IS the tree), so the
+        // surface owes it the mount its children get from the store. After the first frame realized:
+        // the same "the tree exists" moment, for the one component that has no parent to give it.
+        if (!_rootMounted && _root is StatefulComponent rootStateful)
+        {
+            _rootMounted = true;
+            rootStateful.NotifyMounted();
+        }
         NeedsRender = _lastFrame.HasActiveMotion || gliding;
 
         // The caret is 2Hz motion, not vsync motion. Holding NeedsRender for it pinned the whole
@@ -212,6 +220,9 @@ public sealed class PhotonHost
     /// <summary>The positional reconciler: nested stateful components retain identity (and state)
     /// across parent rebuilds — see ComponentInstanceStore.</summary>
     private readonly ComponentInstanceStore _instances = new();
+
+    /// <summary>Whether the root has been told it is in the tree — see RenderFrame.</summary>
+    private bool _rootMounted;
 
     private Pressable? _pressed;
 
