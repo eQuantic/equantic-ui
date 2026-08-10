@@ -40,6 +40,10 @@ public static class UI
     }
 
     /// <summary>Horizontal flex without <c>new</c> — <c>Row(gap: Space.S2, children: [ … ])</c>.</summary>
+    /// <summary>Draws an overlay WHERE IT STANDS — the surface without the scrim, the viewport and
+    /// the portal that normally carry it. Five components rendered blank on a page without it.</summary>
+    public static InFlow InFlow(VisualNode child) => new InFlow(child);
+
     /// <summary>Draws its subtree AS IF it were hovered, pressed or focused — a gallery, a design
     /// review and a visual-regression suite could otherwise only ever show the rest state.</summary>
     public static Simulated Simulated(SimulatedState state, VisualNode child) =>

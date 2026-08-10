@@ -83,6 +83,11 @@ public sealed class Dialog : StatelessComponent
             Elevation = 5,
             Padding = EdgeInsets.All(Space.S5),
         }, body);
+        // ASKED TO DRAW IN THE FLOW: the card is the dialog; the scrim, the viewport-sized centring,
+        // the portal and the Escape binding are the LAYER that carries it. A page showing a dialog
+        // wants the first and none of the second — see InFlow.
+        if (context.InFlow) return elevated;
+
         var centering = new Column(gap: 0)
         {
             Width = SizeValue.Fill,

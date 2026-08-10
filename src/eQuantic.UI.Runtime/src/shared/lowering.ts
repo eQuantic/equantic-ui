@@ -20,7 +20,7 @@ import {
   setFailureRenderer,
 } from './component-boundary';
 import { getActivePass } from './instance-store';
-import { getPhotonTheme } from './photon-context';
+import { getPhotonTheme, setInFlow } from './photon-context';
 import { cssFontWeight } from './value-types';
 import { CodeKeymap } from './components/CodeKeymap';
 import {
@@ -63,6 +63,7 @@ import type {
   PositionedNode,
   PressableNode,
   HoverableNode,
+  InFlowNode,
   SimulatedNode,
   ScrollViewNode,
   SizeValueValue,
@@ -315,6 +316,8 @@ function lowerNode(
       return lowerHoverable(node as unknown as HoverableNode, context, path);
     case 'simulated':
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
+    case 'inFlow':
+      return lowerInFlow(node as unknown as InFlowNode, context, horizontalAxis, path);
     case 'positioned':
       // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
       return lowerNode((node as PositionedNode).child, context, horizontalAxis, path + '/0');
@@ -1672,6 +1675,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as HoverableNode).child);
     case 'simulated':
       return fills((node as SimulatedNode).child);
+    case 'inFlow':
+      return fills((node as InFlowNode).child);
     case 'flexible':
       return fills((node as FlexibleNode).child);
     case 'loopMotion':
@@ -1961,6 +1966,25 @@ function lowerSimulated(
     return lowerNode(node.child, context, horizontalAxis, path + '/0');
   } finally {
     simulatedState = previous;
+  }
+}
+
+/**
+ * Arms the in-flow intent while the child BUILDS (the C# `LowerInFlow`). The overlay reads it in
+ * its own build — the only moment the answer can change anything, because by the time a tree exists
+ * the scrim and the layer are already in it.
+ */
+function lowerInFlow(
+  node: InFlowNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const previous = setInFlow(true);
+  try {
+    return lowerNode(node.child, context, horizontalAxis, path + '/0');
+  } finally {
+    setInFlow(previous);
   }
 }
 

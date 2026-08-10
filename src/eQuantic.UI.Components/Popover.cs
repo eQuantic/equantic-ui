@@ -40,6 +40,10 @@ public sealed class Popover : StatelessComponent
             Padding = EdgeInsets.All(Space.S3),
         }, Content);
 
+        // ASKED TO DRAW IN THE FLOW: the panel is the popover; the ANCHORING to a trigger — and
+        // the trigger itself — is how it is normally presented, not what it is (see InFlow).
+        if (context.InFlow) return panel;
+
         return new Anchored(Trigger, panel)
         {
             Placement = Placement,

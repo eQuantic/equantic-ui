@@ -14,7 +14,7 @@ export class PullToRefresh extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let indicator = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: PullToRefresh.threshold, main: 'center', cross: 'center' });indicator.add(new Spinner(20, theme.colors('primary').base));let content = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.background }), this.child);let stack = new Stack();stack.add(new Positioned(indicator, 0, 0, null, 0));stack.add(new Draggable(content, this.onReleased.bind(this), { axis: 'vertical', min: 0, max: PullToRefresh.threshold, restOffset: this.refreshing ? PullToRefresh.threshold : 0 }));return new Box(new BoxStyle({ width: SizeValue.fill, clip: true }), stack);
+        let theme = context.theme;let indicator = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: PullToRefresh.threshold, main: 'center', cross: 'center' });indicator.add(new Spinner(20, theme.colors('primary').base));let content = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.background }), this.child);let stack = new Stack();stack.add(new Positioned(indicator, 0, 0, null, 0));stack.add(new Draggable(content, this.onReleased.bind(this), { axis: 'vertical', min: 0, max: PullToRefresh.threshold, restOffset: this.refreshing || context.inFlow ? PullToRefresh.threshold : 0 }));return new Box(new BoxStyle({ width: SizeValue.fill, clip: true }), stack);
     }
 
     onReleased(offset: number) {

@@ -59,6 +59,11 @@ public sealed class BottomSheet : StatelessComponent
             Padding = new EdgeInsets(Space.S5, Space.S3, Space.S5, Space.S6),
         }, body);
 
+        // ASKED TO DRAW IN THE FLOW: the sheet is the sheet; the scrim, the viewport-tall anchor
+        // that pins it to the bottom, the portal and the Escape binding are the LAYER (see InFlow).
+        // The drag-to-dismiss goes with them — there is nothing to dismiss it from.
+        if (context.InFlow) return sheet;
+
         var anchor = new Column(gap: 0)
         {
             Width = SizeValue.Fill,

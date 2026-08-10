@@ -31,6 +31,11 @@ export interface StyleClass {
 export interface RenderContext {
   getService<T>(key: ServiceKey<T>): T | undefined;
   serviceProvider?: ServiceProvider;
+  /**
+   * Whether this component was asked to draw WHERE IT STANDS rather than over everything (C#
+   * `context.InFlow`). Only the overlays answer it.
+   */
+  inFlow?: boolean;
   /** Active route data — parameters + query string (C# `context.Route`). */
   route?: import('../router/current-route').RouteData;
   /** The active Photon theme (C# `context.Theme`) — what transpiled SHARED components read. The import

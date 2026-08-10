@@ -305,6 +305,9 @@ public static class LayoutEngine
         Hoverable hoverable => MeasureWrapper(hoverable, hoverable.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // A simulated state changes only what is DRAWN, so it takes no space of its own.
         Simulated simulated => MeasureWrapper(simulated, simulated.Child, maxW, maxH, ctx, path, stretchW, stretchH),
+        // The intent has to be armed while the child BUILDS — by layout time the tree already has
+        // the scrim in it, and there is nothing left to decide.
+        InFlow inFlow => MeasureInFlow(inFlow, maxW, maxH, ctx, path, stretchW, stretchH),
         // Spec S8: a Shortcut is layout-transparent — the binding rides the realizer's walk.
         Shortcut shortcut => MeasureWrapper(shortcut, shortcut.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         Adjustable adjustable => MeasureWrapper(adjustable, adjustable.Child, maxW, maxH, ctx, path, Inline(stretchW), Inline(stretchH)),
@@ -387,6 +390,7 @@ public static class LayoutEngine
         Adjustable adjustable => MinContentWidth(adjustable.Child, ctx),
         Hoverable hoverable => MinContentWidth(hoverable.Child, ctx),
         Simulated simulated => MinContentWidth(simulated.Child, ctx),
+        InFlow inFlow => MinContentWidth(inFlow.Child, ctx),
         Shortcut shortcut => MinContentWidth(shortcut.Child, ctx),
         Flexible flexible => MinContentWidth(flexible.Child, ctx),
         Presence presence => MinContentWidth(presence.Child, ctx),
@@ -448,6 +452,26 @@ public static class LayoutEngine
         ctx.StretchWidth = stretchW;
         ctx.StretchHeight = stretchH;
         return Measure(node, maxW, maxH, ctx, path);
+    }
+
+    /// <summary>
+    /// Measures an <see cref="InFlow"/> with the intent armed, so the overlay inside it builds its
+    /// panel rather than its layer. Restored after — a sibling dialog opened for real must still
+    /// take the viewport.
+    /// </summary>
+    private static LayoutNode MeasureInFlow(InFlow inFlow, float maxW, float maxH, LayoutContext ctx,
+        string path, StretchKind stretchW, StretchKind stretchH)
+    {
+        var previous = InFlow.Current;
+        InFlow.Current = true;
+        try
+        {
+            return MeasureWrapper(inFlow, inFlow.Child, maxW, maxH, ctx, path, stretchW, stretchH);
+        }
+        finally
+        {
+            InFlow.Current = previous;
+        }
     }
 
     private static LayoutNode MeasureWrapper(VisualNode node, VisualNode child, float maxW, float maxH, LayoutContext ctx, string path,

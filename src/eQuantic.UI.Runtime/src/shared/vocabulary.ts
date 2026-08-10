@@ -700,6 +700,21 @@ export class Simulated extends VisualNode {
   }
 }
 
+/**
+ * Draws an overlay WHERE IT STANDS (the C# `InFlow`): the surface, without the scrim, the
+ * viewport-sized layer, the portal and the Escape binding that normally carry it.
+ */
+export class InFlow extends VisualNode {
+  readonly nodeKind = 'inFlow';
+  child: VisualChild;
+
+  constructor(child: VisualChild, config?: EqConfig) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 export class Hoverable extends VisualNode {
   readonly nodeKind = 'hoverable';
   child: VisualChild;

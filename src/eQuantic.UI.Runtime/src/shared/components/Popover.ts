@@ -18,7 +18,7 @@ export class Popover extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.all(12) }), this.content);return new Anchored(this.trigger, panel, { placement: this.placement, open: this.open, onDismiss: this.onDismiss });
+        let theme = context.theme;let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.all(12) }), this.content);if (context.inFlow) return panel;return new Anchored(this.trigger, panel, { placement: this.placement, open: this.open, onDismiss: this.onDismiss });
     }
 
 }

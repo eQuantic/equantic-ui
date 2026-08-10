@@ -376,6 +376,12 @@ export interface SimulatedNode extends VisualNodeValue {
   child: VisualNodeValue;
 }
 
+/** Wire shape of the C# `InFlow` — draws an overlay where it stands, without its layer. */
+export interface InFlowNode extends VisualNodeValue {
+  nodeKind: 'inFlow';
+  child: VisualNodeValue;
+}
+
 export interface PressableNode extends VisualNodeValue {
   nodeKind: 'pressable';
   child: VisualNodeValue;

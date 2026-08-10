@@ -38,7 +38,9 @@ public sealed class Drawer : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        if (!Open) return new Box();
+        // IN THE FLOW there is no open or closed: the panel is placed, therefore it is there.
+        // `Open` governs whether the LAYER exists, and in the flow there is no layer.
+        if (!Open && !context.InFlow) return new Box();
 
         var layer = new Stack();
         layer.Add(new Pressable(new Box(new BoxStyle
@@ -51,11 +53,15 @@ public sealed class Drawer : StatelessComponent
         var panel = new Box(new BoxStyle
         {
             Width = Width,
-            Height = SizeValue.Fill,
+            // Full height belongs to the EDGE it is pinned to. In the flow it has no edge, so it
+            // hugs its content — a panel stretching a documentation section is not the panel.
+            Height = context.InFlow ? default : SizeValue.Fill,
             Background = theme.Surface,
             Elevation = 3,
             Padding = EdgeInsets.All(Space.S4),
         }, Content);
+
+        if (context.InFlow) return panel;
 
         layer.Add(Edge == DrawerEdge.Start
             ? new Positioned(new Presence(panel), top: 0, bottom: 0, start: 0)

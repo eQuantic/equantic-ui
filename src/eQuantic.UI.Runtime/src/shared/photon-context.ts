@@ -37,6 +37,14 @@ export class ComponentContext {
     return getCurrentRoute();
   }
 
+  /**
+   * Whether this component was asked to draw WHERE IT STANDS rather than over everything (the C#
+   * `ComponentContext.InFlow`). Only the overlays answer it.
+   */
+  get inFlow(): boolean {
+    return inFlowState;
+  }
+
   /** The advance of ONE character in a monospaced style (C# `MonoAdvance`). */
   monoAdvance(style: TypeStyleValue): number {
     return photonMonoAdvance(style, this.typeScale);
@@ -140,6 +148,23 @@ export function getPhotonTheme(): AppTheme {
 /** The active type scale — a page's context has to carry the SAME one its subtree is lowered with. */
 export function getPhotonTypeScale(): number {
   return activeTypeScale;
+}
+
+/**
+ * The ambient in-flow intent, armed while an `InFlow` subtree builds — the C# `InFlow.Current`
+ * twin. Read through `ComponentContext.inFlow`.
+ */
+let inFlowState = false;
+
+/** The ambient in-flow intent — what a RenderContext carries into a transpiled build. */
+export function getInFlow(): boolean {
+  return inFlowState;
+}
+
+export function setInFlow(value: boolean): boolean {
+  const previous = inFlowState;
+  inFlowState = value;
+  return previous;
 }
 
 /** The context handed to shared components' `build(context)` (directly or via lowering expansion). */

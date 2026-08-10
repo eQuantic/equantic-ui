@@ -11,6 +11,7 @@ import { getCurrentRoute } from '../router/current-route';
 import { ComponentInstanceStore, enterPass, exitPass } from '../shared/instance-store';
 import {
   getPhotonDensity,
+  getInFlow,
   getPhotonTheme,
   getPhotonTypeScale,
   measurePhotonText,
@@ -71,6 +72,7 @@ export abstract class StatelessComponent extends Component {
         this.serviceProvider.getService<T>(key),
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
+      inFlow: getInFlow(),
       theme: getPhotonTheme(),
       // The SAME density and scale the lowering hands every component it expands. Without these two
       // a page and its own subtree render at different sizes: the page's context defaulted to
@@ -230,6 +232,7 @@ export abstract class StatefulComponent extends Component {
         this.serviceProvider.getService<T>(key),
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
+      inFlow: getInFlow(),
       theme: getPhotonTheme(),
       // The SAME density and scale the lowering hands every component it expands. Without these two
       // a page and its own subtree render at different sizes: the page's context defaulted to
@@ -436,6 +439,7 @@ export abstract class SharedStatefulComponent extends Component {
         this.serviceProvider.getService<T>(key),
       serviceProvider: this.serviceProvider,
       route: getCurrentRoute(),
+      inFlow: getInFlow(),
       theme: getPhotonTheme(),
       // The SAME density and scale the lowering hands every component it expands. Without these two
       // a page and its own subtree render at different sizes: the page's context defaulted to

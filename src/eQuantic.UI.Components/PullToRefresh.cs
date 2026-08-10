@@ -56,7 +56,9 @@ public sealed class PullToRefresh : StatelessComponent
             Min = 0,
             Max = Threshold,
             // Held down while the work is in flight — the spinner stays uncovered until it lands.
-            RestOffset = Refreshing ? Threshold : 0,
+            // IN THE FLOW nothing can be pulled, so the resting state is the one that SHOWS what
+            // this component is: the indicator, uncovered (see InFlow).
+            RestOffset = Refreshing || context.InFlow ? Threshold : 0,
         });
 
         return new Box(new BoxStyle { Width = SizeValue.Fill, Clip = true }, stack);

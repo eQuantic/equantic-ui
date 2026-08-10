@@ -138,6 +138,7 @@ export {
   GridPattern,
   LinearGradient,
   RadialGradient,
+  InFlow,
   Simulated,
   TextEntry,
   Overlay,

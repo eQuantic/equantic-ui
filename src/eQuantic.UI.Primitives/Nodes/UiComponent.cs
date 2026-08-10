@@ -35,6 +35,13 @@ public sealed class ComponentContext
     public RouteValues Route => RouteValues.Current;
 
     /// <summary>
+    /// Whether this component was asked to draw WHERE IT STANDS rather than over everything — see
+    /// <see cref="Primitives.InFlow"/>. Only the overlays answer it; every other component builds
+    /// the same either way, which is why it is a question rather than an instruction.
+    /// </summary>
+    public bool InFlow => Primitives.InFlow.Current;
+
+    /// <summary>
     /// How tight this TARGET wants its controls — the same reason a Mac's toolbar is not a
     /// phone's. A component reads it where it reads the theme, and never asks which target it is.
     /// </summary>

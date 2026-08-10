@@ -69,6 +69,25 @@ public static class WebRealizer
         }
     }
 
+    /// <summary>
+    /// Arms the in-flow intent while the child BUILDS. The overlay reads it in its own Build — that
+    /// is the only moment the answer can change anything, because by the time a tree exists the
+    /// scrim and the layer are already in it.
+    /// </summary>
+    private static HtmlElement? LowerInFlow(InFlow inFlow, ComponentContext context, bool? horizontalAxis)
+    {
+        var previous = Primitives.InFlow.Current;
+        Primitives.InFlow.Current = true;
+        try
+        {
+            return LowerNode(inFlow.Child, context, horizontalAxis);
+        }
+        finally
+        {
+            Primitives.InFlow.Current = previous;
+        }
+    }
+
     private static HtmlElement? LowerNode(VisualNode node, ComponentContext context, bool? horizontalAxis) => node switch
     {
         Box box => LowerBox(box, context),
@@ -94,6 +113,7 @@ public static class WebRealizer
         Pressable pressable => LowerPressable(pressable, context),
         Hoverable hoverable => LowerHoverable(hoverable, context),
         Simulated simulated => LowerSimulated(simulated, context, horizontalAxis),
+        InFlow inFlow => LowerInFlow(inFlow, context, horizontalAxis),
         Adjustable adjustable => LowerAdjustable(adjustable, context),
         Shortcut shortcut => LowerShortcut(shortcut, context, horizontalAxis),
         Link link => LowerLink(link, context),
