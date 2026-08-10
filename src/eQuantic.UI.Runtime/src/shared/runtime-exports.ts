@@ -78,6 +78,13 @@ export {
   VariantColors,
 } from './value-types';
 export { ComponentContext } from './photon-context';
+// Primitives types route to @equantic/runtime implicitly, so a page reading its route needs this
+// name to resolve here or it dies at hydration on an unresolvable import.
+export { RouteValues } from './route-values';
+// Same promise, same failure shape: a page writing BoxStyle.Transform / .Pattern / .Glow names
+// these, and eqc routes every Primitives name here.
+export { Transform2D } from './value-types';
+export { GridPattern, RadialGradient } from './vocabulary';
 export {
   Space,
   Radius,

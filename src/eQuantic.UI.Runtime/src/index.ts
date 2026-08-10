@@ -273,6 +273,7 @@ declare global {
 
 // What a browser can do, registered under the C# interface names — see shared/devices.
 export { registerDeviceCapabilities } from './shared/devices/register';
+export { RouteValues } from './shared/route-values';
 export { WebPhotoLibrary } from './shared/devices/photo-library';
 export { WebBiometrics } from './shared/devices/biometrics';
 export type { PickedImage } from './shared/devices/photo-library';

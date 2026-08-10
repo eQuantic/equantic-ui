@@ -154,4 +154,36 @@ public class FactoryAuthoringTests
         Assert.Contains("UI.column(12, 'start', 'stretch', false, null, null, [UI.text('x', 'bodyM')])",
             result.TypeScript);
     }
+
+    /// <summary>
+    /// A page reading its ROUTE imports `RouteValues` from the runtime — the emission half of the
+    /// promise the runtime's `primitives-exports.spec.ts` keeps.
+    /// <para>
+    /// eqc routes the whole Primitives namespace to `@equantic/runtime` implicitly, so declaring a
+    /// public type there silently promises an export. `RouteValues` shipped without one and every
+    /// page naming it died at hydration on "does not provide an export named 'RouteValues'" — while
+    /// SSR kept answering 200 with correct markup, so nothing looked wrong until the screen was
+    /// blank. This pins that the import really is emitted; the vitest spec pins that it resolves.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void WithRefs_APageReadingItsRoute_ImportsRouteValuesFromTheRuntime()
+    {
+        var result = CompileWithRefs("""
+            using eQuantic.UI.Primitives;
+            using static eQuantic.UI.Components.UI;
+
+            namespace Demo;
+
+            public sealed class Routed : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    Text(RouteValues.Current.Param("slug") ?? "none", TypeRole.BodyM);
+            }
+            """);
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        Assert.Contains("RouteValues", result.TypeScript);
+        Assert.Matches(@"import \{[^}]*RouteValues[^}]*\} from ""@equantic/runtime""", result.TypeScript);
+    }
 }
