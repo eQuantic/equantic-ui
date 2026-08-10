@@ -14,16 +14,37 @@ namespace eQuantic.UI.Server;
 /// corrects it in front of the reader.
 /// </para>
 /// <para>
-/// This does not guess. It reports the mode the app DECLARED (<see cref="UIOptions.UseInitialThemeMode"/>,
-/// Light unless set), and <see cref="Apply"/> is deliberately inert: there is no document to stamp
-/// on the server, and the client controller takes the switch over the moment the page hydrates.
-/// Remembering a per-request change here would be worse than useless — this is a singleton, so it
-/// would leak one visitor's choice into the next visitor's first paint.
+/// This does not guess. It reports, in order: the mode the VISITOR last chose (a cookie the
+/// browser's own controller writes on a toggle), then the one the app declared
+/// (<see cref="UIOptions.UseInitialThemeMode"/>), then Light.
+/// </para>
+/// <para>
+/// A cookie rather than localStorage because the requirement is not "remember" but "TELL THE
+/// SERVER": localStorage remembers perfectly and the server cannot see a word of it, so the page
+/// would arrive in the default mode and be corrected at hydration — the flash this removes.
+/// </para>
+/// <para>
+/// <see cref="Apply"/> stays inert. There is no document to stamp on the server, the browser's
+/// controller takes the switch over at hydration, and remembering a change HERE would be actively
+/// wrong: this is a singleton, so it would hand one visitor's choice to the next visitor's first
+/// paint.
 /// </para>
 /// </summary>
-public sealed class SsrThemeController(ThemeMode initial = ThemeMode.Light) : IThemeController
+public sealed class SsrThemeController(
+    Microsoft.AspNetCore.Http.IHttpContextAccessor? requests = null,
+    ThemeMode? declared = null) : IThemeController
 {
-    public ThemeMode Mode { get; } = initial;
+    /// <summary>
+    /// What THIS request paints in: the visitor's remembered choice, else the app's declared
+    /// default, else Light.
+    /// <para>
+    /// Read per call rather than captured once, because this is a singleton serving every request
+    /// and a captured value would hand one visitor's choice to the next visitor's first paint. The
+    /// cookie is written by the browser's own controller on a toggle — the server can read it,
+    /// which is the whole reason it is a cookie and not localStorage.
+    /// </para>
+    /// </summary>
+    public ThemeMode Mode => ThemeCookie.Resolve(requests?.HttpContext, declared) ?? ThemeMode.Light;
 
     /// <summary>Intentionally does nothing — see the type's remarks.</summary>
     public void Apply(ThemeMode mode)

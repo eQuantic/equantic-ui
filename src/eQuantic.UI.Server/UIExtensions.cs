@@ -94,10 +94,12 @@ public static class UIExtensions
         // The server half of the light/dark hand. TryAdd, so an app that registers its own — one
         // that reads a cookie, say — keeps it. Without this a toggle resolved nothing during SSR
         // and had to guess the mode it was drawing.
-        services.TryAddSingleton<eQuantic.UI.Primitives.IThemeController>(
-            // Unset means "follow the OS", which a server cannot resolve — it reports Light, and
-            // the browser's controller settles it at hydration.
-            _ => new SsrThemeController(options.InitialThemeMode ?? eQuantic.UI.Primitives.ThemeMode.Light));
+        // The controller reads the request's cookie, so it needs the accessor.
+        services.AddHttpContextAccessor();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IThemeController>(provider =>
+            new SsrThemeController(
+                provider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>(),
+                options.InitialThemeMode));
 
         // Add response compression (Brotli + Gzip for JS, CSS, HTML)
         services.AddResponseCompression(opts =>
@@ -380,10 +382,18 @@ public static class UIExtensions
         // stylesheet, and serialize it into window.__EQ_THEME__ so boot can setPhotonTheme before
         // hydration (SSR markup + client re-renders then resolve the same colors/shape). Absent a
         // selection, nothing is injected — the runtime keeps its baked-in photonTheme default.
+        // The mode THIS request paints in: what the visitor last chose, or the app's declared
+        // default when they have not chosen. The cookie is written by the browser's own controller
+        // on a toggle (see WebThemeController) — no round trip, and the server can read it, which
+        // localStorage would never let it do. This is what removes the flash: the very first byte
+        // already carries the right mode, instead of the default arriving and hydration correcting
+        // it in front of the reader.
+        var requestedMode = ThemeCookie.Resolve(context, options.InitialThemeMode);
+
         string? themeDataJson = null;
         if (options.Theme is { } appTheme)
         {
-            headTags.Add($"<style>{eQuantic.UI.Web.PhotonCssGenerator.Generate(appTheme, options.InitialThemeMode)}</style>");
+            headTags.Add($"<style>{eQuantic.UI.Web.PhotonCssGenerator.Generate(appTheme, requestedMode)}</style>");
             themeDataJson = eQuantic.UI.Web.ThemeBridge.SerializeJson(appTheme);
         }
 
@@ -596,6 +606,31 @@ public static class UIExtensions
 /// <summary>
 /// Configuration options for UI services.
 /// </summary>
+/// <summary>The cookie the browser's theme controller writes, and the only reason the server can
+/// paint a visitor's chosen mode on the first byte.</summary>
+public static class ThemeCookie
+{
+    public const string Name = "eq-theme";
+
+    /// <summary>
+    /// The mode this request should paint in: the visitor's remembered choice, or
+    /// <paramref name="declared"/> when they have not made one (null there means "follow the OS",
+    /// which the server cannot resolve and must leave to CSS).
+    /// <para>
+    /// An unrecognised cookie value is ignored rather than trusted — it is user-supplied text, and
+    /// the only two answers this can have are light and dark.
+    /// </para>
+    /// </summary>
+    public static eQuantic.UI.Primitives.ThemeMode? Resolve(
+        HttpContext? context, eQuantic.UI.Primitives.ThemeMode? declared) =>
+        context?.Request.Cookies[Name] switch
+        {
+            "dark" => eQuantic.UI.Primitives.ThemeMode.Dark,
+            "light" => eQuantic.UI.Primitives.ThemeMode.Light,
+            _ => declared,
+        };
+}
+
 public class UIOptions
 {
     internal List<Assembly> AssembliesToScan { get; } = new();
