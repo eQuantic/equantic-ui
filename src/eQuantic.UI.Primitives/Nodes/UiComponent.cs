@@ -42,6 +42,20 @@ public sealed class ComponentContext
     public bool InFlow => Primitives.InFlow.Current;
 
     /// <summary>
+    /// A capability, for a component in the MIDDLE of a tree — <c>context.GetService&lt;ITextClipboard&gt;()</c>.
+    /// Null when this target does not have it, which is an answer every capability's caller has to
+    /// handle anyway.
+    /// <para>
+    /// A page takes what it needs through its CONSTRUCTOR, and that stays the better answer where
+    /// it fits: explicit, testable, readable in the signature. But everything below the page had to
+    /// be handed the same thing by hand — a card with a "Copy" button needs an ITextClipboard, so
+    /// the article above it carried one it never used. A component that gains a need forced an edit
+    /// in every ancestor between it and the page.
+    /// </para>
+    /// </summary>
+    public T? GetService<T>() where T : class => CapabilityScope.Resolve<T>();
+
+    /// <summary>
     /// How tight this TARGET wants its controls — the same reason a Mac's toolbar is not a
     /// phone's. A component reads it where it reads the theme, and never asks which target it is.
     /// </summary>

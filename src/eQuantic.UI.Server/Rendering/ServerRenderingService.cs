@@ -120,6 +120,9 @@ public class ServerRenderingService : IServerRenderingService
             // The same route in a shape with no target in it — a write-once page reads
             // context.Route.Param("slug") instead of reaching for ASP.NET (and losing Photon).
             Primitives.RouteValues.Current = new Primitives.RouteValues(routeData.Params, routeData.QueryValues);
+            // Where a component in the MIDDLE of the tree finds a capability — the REQUEST's
+            // container, so a scoped one resolves and a page's own registrations win.
+            Primitives.CapabilityScope.Current = context.RequestServices.GetService;
 
             try
             {
@@ -243,6 +246,7 @@ public class ServerRenderingService : IServerRenderingService
                 RenderContext.SetScopedServiceProvider(null);
                 RenderContext.SetScopedRoute(null);
                 Primitives.RouteValues.ClearCurrent();
+                Primitives.CapabilityScope.Current = null;
             }
         }
         catch (Exception ex)

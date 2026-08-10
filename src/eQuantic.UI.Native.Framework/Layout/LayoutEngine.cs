@@ -552,7 +552,7 @@ public static class LayoutEngine
             var child = stack.Children[stackIndex];
             var measured = Measure(child, maxW, maxH, ctx, ctx.ChildPath(path, stackIndex));
             result.Children.Add(measured);
-            if (child is Positioned) continue;
+            if (PositionedOf(child, measured) is not null) continue;
             contentW = MathF.Max(contentW, measured.Bounds.Width);
             contentH = MathF.Max(contentH, measured.Bounds.Height);
         }
@@ -569,7 +569,7 @@ public static class LayoutEngine
             var ch = measured.Bounds.Height;
             var (alignX, alignY) = AlignOffset(stack.Align, width - cw, height - ch);
 
-            if (child is Positioned positioned)
+            if (PositionedOf(child, measured) is { } positioned)
             {
                 var x = positioned.Start ?? (positioned.End is { } end ? width - cw - end : alignX);
                 var y = positioned.Top ?? (positioned.Bottom is { } bottom ? height - ch - bottom : alignY);
@@ -583,10 +583,11 @@ public static class LayoutEngine
 
         // Spec S7 z-order: children paint (and hit-test, topmost-last) in ZIndex order — a stable
         // sort keeps declaration order for equal values (flow order = the painter's default).
-        if (stack.Children.Any(c => c is Positioned { ZIndex: not 0 }))
+        if (result.Children.Where((node, i) => PositionedOf(stack.Children[i], node) is { ZIndex: not 0 }).Any())
         {
             var ordered = result.Children
-                .Select((node, i) => (Node: node, Z: stack.Children[i] is Positioned p ? p.ZIndex : 0, I: i))
+                .Select((node, i) => (Node: node,
+                    Z: PositionedOf(stack.Children[i], node) is { } p ? p.ZIndex : 0, I: i))
                 .OrderBy(e => e.Z).ThenBy(e => e.I)
                 .Select(e => e.Node)
                 .ToList();
@@ -601,6 +602,33 @@ public static class LayoutEngine
     /// natural extent) and is offset by the programmatic scroll position; the viewport itself resolves
     /// explicit &gt; Fill &gt; hug-the-child (capped by the available space). Clipping happens at the
     /// realizer via the engine clip primitive.</summary>
+    /// <summary>
+    /// The <see cref="Positioned"/> a Stack child resolves to, THROUGH any components in between.
+    /// <para>
+    /// `Positioned` is a contract with the parent — like a flex weight, it means nothing anywhere
+    /// else — and asking `child is Positioned` missed the moment one came out of a component. The
+    /// child then took the ordinary aligned path: a corner button laid out at the stack's origin
+    /// instead of its corner, silently, on both targets.
+    /// </para>
+    /// <para>
+    /// Read from the MEASURED tree rather than by rebuilding: the build already happened, through
+    /// the instance store, and building a second time would hand back a different instance.
+    /// </para>
+    /// </summary>
+    private static Positioned? PositionedOf(VisualNode child, LayoutNode measured)
+    {
+        if (child is Positioned direct) return direct;
+
+        var node = measured;
+        // Bounded: a component wrapping a component wrapping one is ordinary; a cycle is not.
+        for (var hops = 0; hops < 8 && node.Source is UiComponent && node.Children.Count == 1; hops++)
+        {
+            node = node.Children[0];
+            if (node.Source is Positioned found) return found;
+        }
+        return null;
+    }
+
     private static LayoutNode MeasureScrollView(ScrollView scroll, float maxW, float maxH, LayoutContext ctx, string path)
     {
         var result = ctx.Node(scroll);

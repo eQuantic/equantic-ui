@@ -5,6 +5,7 @@
  */
 
 import type { LoweringContext } from './lowering';
+import { resolveService } from '../utils/services';
 import { getCurrentRoute, type RouteData } from '../router/current-route';
 import { cssFontWeight, type AppTheme } from './value-types';
 import type { TypeStyleValue } from './nodes';
@@ -43,6 +44,14 @@ export class ComponentContext {
    */
   get inFlow(): boolean {
     return inFlowState;
+  }
+
+  /**
+   * A capability, for a component in the MIDDLE of a tree — the C# `context.GetService<T>()`, which
+   * eqc emits as `getService('IThing')`. Null when this target does not have it.
+   */
+  getService(interfaceName: string): unknown {
+    return resolveService(interfaceName);
   }
 
   /** The advance of ONE character in a monospaced style (C# `MonoAdvance`). */

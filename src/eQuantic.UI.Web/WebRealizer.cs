@@ -135,6 +135,21 @@ public static class WebRealizer
     /// Positioned children wrap in <c>position:absolute</c> against the stack's
     /// <c>position:relative</c> frame, with signed offsets (End→right, Start→left).
     /// </summary>
+    /// <summary>
+    /// A Stack child as the STACK sees it: a component is expanded to what it builds, so a
+    /// `Positioned` returned by one still positions. Only for the positioning decision — the node
+    /// that comes back is lowered normally.
+    /// </summary>
+    private static VisualNode ResolveForPositioning(VisualNode child, ComponentContext context)
+    {
+        // Bounded: a component whose build returns itself would otherwise spin here.
+        for (var hops = 0; hops < 8 && child is UiComponent component; hops++)
+        {
+            child = component.BuildContained(context);
+        }
+        return child;
+    }
+
     private static HtmlElement LowerStack(Stack stack, ComponentContext context)
     {
         var element = new RealizedElement("div")
@@ -154,9 +169,15 @@ public static class WebRealizer
         // paints as if positioned at z-index 0, i.e. ABOVE every plain sibling that follows it in
         // the DOM. (A blurred scrim would otherwise cover the dialog it sits behind.)
         var depth = 0;
-        foreach (var child in stack.Children)
+        foreach (var raw in stack.Children)
         {
             depth++;
+            // Through the COMPONENT to what it builds. `Positioned` is a contract with the parent
+            // — like a flex weight, it means nothing anywhere else — and asking `child is
+            // Positioned` missed the moment one came out of a component. It then degraded to its
+            // child and joined the flow: a corner button rendered ABOVE the slab it belonged to,
+            // silently, which is worse than not rendering at all.
+            var child = ResolveForPositioning(raw, context);
             if (child is Positioned positioned)
             {
                 var lowered = LowerNode(positioned.Child, context, horizontalAxis: null);

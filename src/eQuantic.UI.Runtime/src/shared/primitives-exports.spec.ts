@@ -31,6 +31,9 @@ const NO_TWIN_OWED = new Set([
   'ComponentInstanceStore',
   'FlexNode',
   'VisualNodeExtensions',
+  // The seam a HOST arms so `context.GetService<T>()` can answer. A page names the capability, not
+  // the scope; the client's twin of it is the ComponentContext.getService method.
+  'CapabilityScope',
   // DEAD C#: ButtonStyles.Resolve and ButtonRenderer.Draw have no callers — the resolved-style
   // path was superseded by the Box/StyleDiff one the realizers actually use. A twin here would be
   // mirroring code nobody runs; if that path ever comes back, so does its export.

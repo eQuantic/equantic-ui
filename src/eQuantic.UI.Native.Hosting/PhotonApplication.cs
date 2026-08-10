@@ -91,7 +91,14 @@ public sealed class PhotonApplication
     /// Hands control to the platform. Which platform is not a question the app answers: the SDK
     /// referenced exactly one shell for the framework being built, and that shell says so.
     /// </summary>
-    public void Run() => FindRunner().Run(this);
+    public void Run()
+    {
+        // Where a component in the MIDDLE of the tree finds a capability. Armed for the process,
+        // not per render: a native app has one container and one surface, and the tree is rebuilt
+        // on it from the first frame to the last.
+        eQuantic.UI.Primitives.CapabilityScope.Current = Services.GetService;
+        FindRunner().Run(this);
+    }
 
     /// <summary>
     /// Lets every shell that shipped register what the device can do, before the container is built.
