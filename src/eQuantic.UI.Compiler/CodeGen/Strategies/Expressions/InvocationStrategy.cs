@@ -112,6 +112,20 @@ public class InvocationStrategy : IConversionStrategy
                 : context.Converter.ConvertExpression(arg.Expression));
         }
 
+        // A `params` parameter is a REST parameter on the other side, so the two C# call forms
+        // diverge here. `Count("a", "b")` already lines up; `Count(new[] { "a" })` — passing the
+        // array whole, which C# also allows — would arrive as ONE element rather than the array,
+        // so it spreads. Recognised from the SIGNATURE plus the argument's own type, because that
+        // is the only thing that tells the two forms apart.
+        if (symbol is { Parameters.Length: > 0 } && symbol.Parameters[^1].IsParams
+            && argsList.Count == symbol.Parameters.Length
+            && invocation.ArgumentList.Arguments.Count == symbol.Parameters.Length
+            && context.SemanticHelper.GetType(invocation.ArgumentList.Arguments[^1].Expression)
+                is IArrayTypeSymbol)
+        {
+            argsList[^1] = $"...{argsList[^1]}";
+        }
+
         // NAMED arguments bind by NAME in C# but JS only has positions: reorder into the
         // signature's slots, filling skipped parameters from their defaults — otherwise
         // `Primary(label, compact: true)` lands `true` in the `leading` slot (an 8px ghost

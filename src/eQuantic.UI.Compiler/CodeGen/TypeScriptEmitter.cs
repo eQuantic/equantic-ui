@@ -30,8 +30,13 @@ public class TypeScriptEmitter
     /// (<c>style?: BoxStyle</c>) — identical call-site semantics, but it typechecks where
     /// <c>style: BoxStyle = undefined</c> is a TS2322 in the runtime's own build.
     /// </summary>
-    private string ParamWithDefault(string name, string type, string? convertedDefault) =>
-        convertedDefault is null ? Param(name, type)
+    private string ParamWithDefault(string name, string type, string? convertedDefault,
+        bool rest = false) =>
+        // `params xs` is a REST parameter. Emitted as a plain one it bound only the FIRST argument
+        // (`Count("a", "b")` answered 1) and was undefined when none were passed, which threw on
+        // the first read of `.length`.
+        rest ? $"...{Param(name, type)}"
+        : convertedDefault is null ? Param(name, type)
         : convertedDefault == "undefined" && TypeAnnotations ? $"{name}?: {type}"
         : $"{Param(name, type)} = {convertedDefault}";
     public TypeScriptCodeBuilder.ClassBuilder? ClassBuilder { get; set; }
@@ -1272,7 +1277,8 @@ public class TypeScriptEmitter
                         ? pp.Identifier.Text.ToJsIdentifier()
                         : "_" + pp.Identifier.Text.ToJsIdentifier();
                     return ParamWithDefault(parameterName, DeclaredType(pp.Type),
-                        pp.Default is null ? null : _converter.ConvertExpression(pp.Default.Value));
+                        pp.Default is null ? null : _converter.ConvertExpression(pp.Default.Value),
+                        pp.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword));
                 }));
                 var isAsync = m.ReturnType.ToString().StartsWith("Task")
                     || m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
@@ -1334,7 +1340,8 @@ public class TypeScriptEmitter
             ? ""
             : string.Join(", ", ctor.ParameterList.Parameters.Select(p =>
                 ParamWithDefault(p.Identifier.Text.ToJsIdentifier(), DeclaredType(p.Type),
-                    p.Default is null ? null : _converter.ConvertExpression(p.Default.Value))));
+                    p.Default is null ? null : _converter.ConvertExpression(p.Default.Value),
+                    p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword))));
 
         var body = ctor?.Body is { } block ? StripJsBraces(_converter.Convert(block))
             : ctor?.ExpressionBody is { } expression ? $"{_converter.ConvertExpression(expression.Expression)};"
@@ -1579,8 +1586,10 @@ public class TypeScriptEmitter
             var defaultValue = syntaxParameters is { } list && index < list.Count
                 ? list[index].Default?.Value
                 : null;
+            var isRest = syntaxParameters is { } paramList && index < paramList.Count
+                && paramList[index].Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword);
             return ParamWithDefault(name, DeclarationType(component, p.Type),
-                defaultValue is null ? null : _converter.ConvertExpression(defaultValue));
+                defaultValue is null ? null : _converter.ConvertExpression(defaultValue), isRest);
         }));
         var methodName = method.Name.ToCamelCase();
         

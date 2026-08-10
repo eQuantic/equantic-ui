@@ -35,6 +35,15 @@ public class InterpolatedStringStrategy : IConversionStrategy
                 case InterpolationSyntax interpolation:
                     sb.Append("${");
                     var expr = context.Converter.ConvertExpression(interpolation.Expression);
+                    // An interpolated ENUM is a ToString by another name, and it crosses as the
+                    // lowercase wire value — so `$"{Kind.B}"` printed "b" here and "B" on the
+                    // server. Same lookup, same reason (see ToStringStrategy).
+                    if (context.SemanticHelper.GetType(interpolation.Expression)
+                        is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+                    {
+                        expr = Invocation.ToStringStrategy.EnumNameLookup(
+                            enumType, interpolation.Expression, expr);
+                    }
                     
                     var format = interpolation.FormatClause?.FormatStringToken.ValueText;
                     var alignment = interpolation.AlignmentClause?.Value.ToString();

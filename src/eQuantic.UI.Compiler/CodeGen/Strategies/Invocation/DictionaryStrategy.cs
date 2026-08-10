@@ -110,11 +110,17 @@ public class DictionaryStrategy : IConversionStrategy
 
         var args = invocation.ArgumentList.Arguments;
 
-        // ContainsKey(key) → key in obj
+        // ContainsKey(key) asks for the object's OWN key, never `key in obj`: `in` walks the
+        // prototype chain, so an empty dictionary answers true for "constructor", "toString" and
+        // every other Object.prototype member. A key that comes from user data is exactly where
+        // that bites.
+        //
+        // hasOwnProperty.call, not Object.hasOwn: the runtime targets ES2021, and this is the form
+        // it already uses for the same question (utils/equals, router/current-route).
         if (methodName == "ContainsKey" && args.Count > 0)
         {
             var key = context.Converter.ConvertExpression(args[0].Expression);
-            return $"({key} in {caller})";
+            return $"Object.prototype.hasOwnProperty.call({caller}, {key})";
         }
 
         // TryGetValue(key, out var val) → (val = obj[key]) !== undefined
@@ -141,7 +147,9 @@ public class DictionaryStrategy : IConversionStrategy
                 outVar = context.Converter.ConvertExpression(outArg.Expression);
             }
 
-            return $"({outVar} = {caller}[{key}]) !== undefined";
+            // Guarded by hasOwn for the same reason ContainsKey is: `caller["toString"]` finds a
+            // function on the prototype, so the miss reported a hit and handed back Object's method.
+            return $"(Object.prototype.hasOwnProperty.call({caller}, {key}) ? (({outVar} = {caller}[{key}]), true) : false)";
         }
 
         // GetValueOrDefault(key, defaultValue?) → (caller[key] ?? defaultValue)

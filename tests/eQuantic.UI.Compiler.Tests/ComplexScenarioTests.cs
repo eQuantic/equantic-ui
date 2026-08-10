@@ -70,7 +70,7 @@ public class ComplexScenarioTests
         Assert.Contains("let config = { 'timeout': 1000, 'retries': 3 };", js);
 
         // 3. Dictionary ContainsKey (now with parentheses for safety)
-        Assert.Contains("if (('timeout' in config))", js);
+        Assert.Contains("if (Object.prototype.hasOwnProperty.call(config, 'timeout'))", js);
 
         // 4. Math.Clamp -> Math.min(Math.max(val, min), max)
         Assert.Contains("let safeTimeout = Math.min(Math.max(config['timeout'], 100), 5000);", js);
@@ -91,6 +91,7 @@ public class ComplexScenarioTests
         Assert.Contains("count++;", js);
 
         // 9. Ternary (ContainsKey now wrapped in parentheses)
-        Assert.Contains("let status = ('retries' in config) ? 'Ready' : 'Error';", js);
+        Assert.Contains(
+            "let status = Object.prototype.hasOwnProperty.call(config, 'retries') ? 'Ready' : 'Error';", js);
     }
 }

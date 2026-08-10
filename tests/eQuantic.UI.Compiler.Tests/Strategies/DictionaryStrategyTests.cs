@@ -8,24 +8,28 @@ public class DictionaryStrategyTests
     // ============ Existing Methods (Already Implemented) ============
 
     [Fact]
-    public void ContainsKey_MapsToInOperator()
+    /// <summary>Its OWN key. `in` walks the prototype chain, so an empty dictionary answered true
+    /// for "constructor" and every other Object.prototype member.</summary>
+    public void ContainsKey_AsksForTheObjectsOwnKey()
     {
         var result = TestHelper.ConvertExpression("dict.ContainsKey(\"key\")");
-        result.Should().Be("('key' in this.dict)");
+        result.Should().Be("Object.prototype.hasOwnProperty.call(this.dict, 'key')");
     }
 
     [Fact]
     public void TryGetValue_WithOutVar_MapsToAssignmentCheck()
     {
         var result = TestHelper.ConvertExpression("dict.TryGetValue(\"key\", out var value)");
-        result.Should().Be("(value = this.dict['key']) !== undefined");
+        result.Should().Be(
+            "(Object.prototype.hasOwnProperty.call(this.dict, 'key') ? ((value = this.dict['key']), true) : false)");
     }
 
     [Fact]
     public void TryGetValue_WithVariable_MapsToAssignmentCheck()
     {
         var result = TestHelper.ConvertExpression("dict.TryGetValue(str, out var result)");
-        result.Should().Be("(result = this.dict[this.str]) !== undefined");
+        result.Should().Be(
+            "(Object.prototype.hasOwnProperty.call(this.dict, this.str) ? ((result = this.dict[this.str]), true) : false)");
     }
 
     // ============ New Methods ============

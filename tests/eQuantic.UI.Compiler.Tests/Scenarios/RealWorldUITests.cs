@@ -239,9 +239,11 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("!(this.key in");
+        // The object's OWN key, never `in`: `in` walks the prototype chain, so a cache with
+        // nothing in it answered true for "constructor" and handed Object's method back as a hit.
+        result.Should().Contain("!Object.prototype.hasOwnProperty.call(this.cache, this.key)");
         result.Should().Contain("this.cache[");
-        result.Should().Contain("(result = this.cache[this.key]) !== undefined");
+        result.Should().Contain("((result = this.cache[this.key]), true)");
     }
 
     // ============ Array Static Methods in Loops ============

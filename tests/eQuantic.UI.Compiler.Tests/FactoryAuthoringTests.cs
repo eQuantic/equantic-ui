@@ -385,4 +385,103 @@ public class FactoryAuthoringTests
         Assert.Contains("typeof", result.TypeScript);
         Assert.DoesNotContain("(bound = Typed.maybe(v)) != null", result.TypeScript);
     }
+
+    private static string Emit(string body) => """
+        using System.Collections.Generic;
+        using eQuantic.UI.Primitives;
+        using static eQuantic.UI.Components.UI;
+
+        namespace Demo;
+
+        public enum Kind { A, B }
+
+        public sealed class P : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context) => Text(All(), TypeRole.BodyM);
+
+            private static int Count(params string[] xs) => xs.Length;
+
+            private static string All()
+            {
+        """ + body + """
+            }
+        }
+        """;
+
+    /// <summary>
+    /// `params` is a REST parameter. Emitted as a plain one it bound only the FIRST argument —
+    /// `Count("a", "b")` answered 1 — and was undefined when none were passed, so the first read of
+    /// `.length` threw. It looked correct only when the caller passed an array whole.
+    /// </summary>
+    [Fact]
+    public void WithRefs_AParamsParameter_IsARestParameter()
+    {
+        var result = CompileWithRefs(Emit("""return $"{Count("a", "b")}{Count()}";"""));
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        Assert.Contains("count(...xs", result.TypeScript);
+        Assert.Contains("P.count('a', 'b')", result.TypeScript);
+        Assert.Contains("P.count()", result.TypeScript);
+    }
+
+    /// <summary>C# lets the array be passed WHOLE as well, and that form has to spread — otherwise
+    /// the fix above just moves the wrongness to the other call shape.</summary>
+    [Fact]
+    public void WithRefs_AnArrayPassedWholeToParams_Spreads()
+    {
+        var result = CompileWithRefs(Emit("""return $"{Count(new[] { "a" })}";"""));
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        Assert.Contains("P.count(...", result.TypeScript);
+    }
+
+    /// <summary>
+    /// An enum crosses as a lowercase wire string, so ToString handed back 'b' where the server
+    /// says "B". Any text printing an enum read one way in the SSR markup and another after
+    /// hydration — a word that changes by itself, which nobody attributes to the compiler.
+    /// </summary>
+    [Theory]
+    [InlineData("""return Kind.B.ToString();""", "'B'")]
+    [InlineData("""return $"{Kind.B}";""", "'B'")]
+    public void WithRefs_AnEnumPrintsItsCSharpName(string body, string expected)
+    {
+        var result = CompileWithRefs(Emit(body));
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        Assert.Contains(expected, result.TypeScript);
+        Assert.DoesNotContain("String('b')", result.TypeScript);
+    }
+
+    /// <summary>A VARIABLE has no name to fold to, so it carries the wire→name map with it — no
+    /// enum object is emitted to hold one.</summary>
+    [Fact]
+    public void WithRefs_AnEnumVariable_LooksUpItsName()
+    {
+        var result = CompileWithRefs(Emit("""var k = Kind.B; return k.ToString();"""));
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        Assert.Contains("'a': 'A'", result.TypeScript);
+        Assert.Contains("'b': 'B'", result.TypeScript);
+    }
+
+    /// <summary>
+    /// `in` walks the PROTOTYPE chain, so an empty dictionary answered true for "constructor",
+    /// "toString" and every other Object.prototype member — and TryGetValue handed back Object's
+    /// method as the value. A key that comes from user data is exactly where that bites.
+    /// </summary>
+    [Fact]
+    public void WithRefs_ADictionaryLookup_AsksForItsOwnKeys()
+    {
+        var result = CompileWithRefs(Emit("""
+            var m = new Dictionary<string, int>();
+            var has = m.ContainsKey("constructor");
+            var found = m.TryGetValue("toString", out var v);
+            return $"{has}{found}{v}";
+            """));
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        Assert.Contains("Object.prototype.hasOwnProperty.call(m, 'constructor')", result.TypeScript);
+        Assert.DoesNotContain("'constructor' in m", result.TypeScript);
+        Assert.Contains("Object.prototype.hasOwnProperty.call(m, 'toString')", result.TypeScript);
+    }
 }

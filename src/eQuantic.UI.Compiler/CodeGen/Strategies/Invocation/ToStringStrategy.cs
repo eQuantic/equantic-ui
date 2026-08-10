@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -38,8 +39,49 @@ public class ToStringStrategy : IConversionStrategy
             return $"{Eq.Format}({caller}, {fmt})";
         }
 
+        // An ENUM crosses as a lowercase string (`Kind.B` → 'b'), so String() hands back the WIRE
+        // value while the server hands back the C# member name. Any text printing an enum then
+        // reads one way in the SSR markup and another after hydration — a word that changes by
+        // itself, which nobody attributes to the compiler.
+        if (context.SemanticHelper.GetType(memberAccess.Expression) is INamedTypeSymbol
+            { TypeKind: TypeKind.Enum } enumType)
+        {
+            return EnumNameLookup(enumType, memberAccess.Expression, caller);
+        }
+
         return $"String({caller})";
     }
+
+    /// <summary>
+    /// The C# member NAME for an enum value. A literal member folds to its name; anything else gets
+    /// the wire→name map inline, because no enum object is emitted to hold one — the members are
+    /// converted to string literals at their use sites and nothing survives to look up.
+    /// </summary>
+    internal static string EnumNameLookup(INamedTypeSymbol enumType, ExpressionSyntax expression,
+        string caller)
+    {
+        var members = enumType.GetMembers()
+            .OfType<IFieldSymbol>()
+            .Where(f => f.ConstantValue is not null)
+            .Select(f => f.Name)
+            .ToList();
+        if (members.Count == 0) return $"String({caller})";
+
+        // `Kind.B.ToString()` — the value is known here, so say it.
+        if (expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: var literal }
+            && members.Contains(literal))
+        {
+            return $"'{literal}'";
+        }
+
+        var map = string.Join(", ", members.Select(m => $"{Wire(m)}: '{m}'"));
+        return $"({{{map}}})[{caller}]";
+    }
+
+    /// <summary>The wire spelling of a member — the same camelCase the member access converts to,
+    /// so the map's keys match the values that will be looked up in it.</summary>
+    private static string Wire(string member) =>
+        $"'{char.ToLowerInvariant(member[0])}{member[1..]}'";
 
     public int Priority => 10;
 }

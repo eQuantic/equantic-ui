@@ -32,11 +32,11 @@ public class InvocationStrategyTests
     }
 
     [Fact]
-    public void DictionaryContainsKey_ConvertsToInOperator()
+    public void DictionaryContainsKey_AsksForTheObjectsOwnKey()
     {
         var code = "dict.ContainsKey(\"key\")";
         var js = ConvertExpression(code);
-        Assert.Equal("('key' in dict)", js);
+        Assert.Equal("Object.prototype.hasOwnProperty.call(dict, 'key')", js);
     }
     
     [Fact]
