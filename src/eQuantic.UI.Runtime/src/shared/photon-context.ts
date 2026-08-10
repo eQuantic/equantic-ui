@@ -5,6 +5,7 @@
  */
 
 import type { LoweringContext } from './lowering';
+import { getCurrentRoute, type RouteData } from '../router/current-route';
 import { cssFontWeight, type AppTheme } from './value-types';
 import type { TypeStyleValue } from './nodes';
 import { photonTheme } from './design-system.generated';
@@ -25,6 +26,15 @@ export class ComponentContext {
    */
   measureText(text: string, style: TypeStyleValue): number {
     return measurePhotonText(text, style, this.typeScale);
+  }
+
+  /**
+   * What the ROUTE said — `context.Route.Param("slug")` transpiles to `context.route.param("slug")`.
+   * Reads the ambient current route, which the router updates before mounting a page and boot seeds
+   * from the initial URL: the same values the server built with, so a param page hydrates matching.
+   */
+  get route(): RouteData {
+    return getCurrentRoute();
   }
 
   /** The advance of ONE character in a monospaced style (C# `MonoAdvance`). */

@@ -33,4 +33,7 @@ public class RouteData
 
     /// <summary>All route parameters, by name.</summary>
     public IReadOnlyDictionary<string, string> Params => _params;
+
+    /// <summary>All query-string fields, by name — the pair of <see cref="Params"/>.</summary>
+    public IReadOnlyDictionary<string, string> QueryValues => _query;
 }

@@ -160,6 +160,97 @@ public class WriteOncePageSsrTests
         result.StatusCode.Should().Be(200);
     }
 
+    /// <summary>
+    /// The page ONE route serves many documents through — the shape the whole feature exists for.
+    /// It reads the slug from its own context, and the prefetch loads BY that slug: nothing here
+    /// mentions HTTP, which is the point, because the same page has to build on Photon.
+    /// </summary>
+    [Page("/docs/{slug}")]
+    private sealed class RoutedDocPage : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private string _loaded = "(nothing)";
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            // The route is ambient by now, so a loader can key off it without being handed one.
+            _loaded = $"document:{RouteValues.Current.Param("slug")}";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Text($"{_loaded} page={context.Route.Query("page")}", TypeRole.Heading);
+    }
+
+    private static DefaultHttpContext RequestFor(string slug, string page)
+    {
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().BuildServiceProvider(),
+        };
+        context.Request.RouteValues["slug"] = slug;
+        context.Request.QueryString = new QueryString($"?page={page}");
+        return context;
+    }
+
+    /// <summary>
+    /// A write-once page reads its own route. Before this the only way there was
+    /// <c>IHttpContextAccessor</c>, which works and costs the page everything that makes it
+    /// write-once: a component that knows ASP.NET is a component that cannot run on Photon.
+    /// </summary>
+    [Fact]
+    public async Task AWriteOncePage_ReadsItsRoute_WithoutKnowingTheWeb()
+    {
+        var result = await CreateService().RenderPageAsync(
+            nameof(RoutedDocPage), RequestFor("getting-started", "2"));
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("page=2", "the query reached Build through the context");
+    }
+
+    /// <summary>
+    /// And the PREFETCH sees it too, which is the ordering that matters: a page on /docs/{slug}
+    /// loads by the slug, so a route arriving after the prefetch arrives after the only question it
+    /// was there to answer.
+    /// </summary>
+    [Fact]
+    public async Task ThePrefetch_AlreadyKnowsTheRoute_WhenItRuns()
+    {
+        var result = await CreateService().RenderPageAsync(
+            nameof(RoutedDocPage), RequestFor("getting-started", "1"));
+
+        result.Html.Should().Contain("document:getting-started",
+            "the loader keyed off the slug — a null there loads the wrong document, or none");
+    }
+
+    /// <summary>
+    /// The ambient route does not OUTLIVE its request. SSR renders concurrent requests on shared
+    /// state, and a slug left behind is one visitor's document served to the next one.
+    /// </summary>
+    [Fact]
+    public async Task TheRoute_DoesNotSurviveTheRequest()
+    {
+        await CreateService().RenderPageAsync(nameof(RoutedDocPage), RequestFor("first", "1"));
+
+        RouteValues.Current.Param("slug").Should().BeNull();
+    }
+
+    /// <summary>A page rendered with no route at all reads null rather than throwing — every page
+    /// written before this one renders unchanged.</summary>
+    [Fact]
+    public async Task APageWithNoRouteValues_ReadsNull()
+    {
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().BuildServiceProvider(),
+        };
+
+        var result = await CreateService().RenderPageAsync(nameof(RoutedDocPage), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("document: page=");
+    }
+
     private static ServerRenderingService CreateService(IAppTheme? theme = null)
     {
         var options = new UIOptions();

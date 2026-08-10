@@ -23,6 +23,18 @@ public sealed class ComponentContext
     public float TypeScale { get; }
 
     /// <summary>
+    /// What the ROUTE said — <c>context.Route.Param("slug")</c>, <c>context.Route.Query("page")</c>.
+    /// Never null; an unmatched name answers null.
+    /// <para>
+    /// Reads the ambient per-request route, which is why a page does not have to be handed one and
+    /// does not have to reach for <c>IHttpContextAccessor</c> to find it. Asking ASP.NET for the
+    /// route works and costs the page its write-once-ness: a component that knows the web is a
+    /// component that cannot run on Photon.
+    /// </para>
+    /// </summary>
+    public RouteValues Route => RouteValues.Current;
+
+    /// <summary>
     /// How tight this TARGET wants its controls — the same reason a Mac's toolbar is not a
     /// phone's. A component reads it where it reads the theme, and never asks which target it is.
     /// </summary>

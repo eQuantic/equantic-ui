@@ -102,60 +102,67 @@ public class ServerRenderingService : IServerRenderingService
 
             object metadataSource = component is Web.VisualNodeComponent bridge ? bridge.Node : component;
 
-            // SERVER DATA FIRST (IServerPrefetch): load before the tree is built, with the REQUEST's
-            // services, so the markup carries real values (crawlers see them) and the hydration
-            // payload below hands the client the same ones.
-            if (metadataSource is Primitives.IServerPrefetch prefetch)
-            {
-                await prefetch.PrefetchAsync(context.RequestServices, context.RequestAborted);
-            }
-
-            // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
-            // so a page could only state what it knew before seeing the request — which for one page
-            // serving many documents means every one of them emitting the SAME canonical, title and
-            // description. Duplicate canonicals across seventy URLs are worse for a crawler than no
-            // canonical at all: it is the page asserting they are one document.
-            //
-            // Running after the prefetch lets metadata be built from what the prefetch loaded, which
-            // is the only order in which a data-driven page can describe itself.
-            MetadataCollection? metadata = null;
-            if (metadataSource is IHandleMetadata metadataHandler)
-            {
-                metadata = new MetadataCollection();
-                metadataHandler.ConfigureMetadata(new SeoBuilder(metadata));
-            }
-
-            // For stateful components, we need to initialize state
-            if (component is StatefulComponent stateful)
-            {
-                // Initialize state synchronously for SSR
-                // The state's OnInit will be called
-                var state = stateful.GetType()
-                    .GetProperty("State", BindingFlags.Instance | BindingFlags.NonPublic)?
-                    .GetValue(stateful);
-
-                // If there's an async initialization, we should await it
-                if (state is ComponentState cs)
-                {
-                    // Call OnMount if it exists and is async
-                    var onMountMethod = cs.GetType().GetMethod("OnMount");
-                    if (onMountMethod != null)
-                    {
-                        var result = onMountMethod.Invoke(cs, null);
-                        if (result is Task task)
-                        {
-                            await task;
-                        }
-                    }
-                }
-            }
-
-            // Set scoped provider + route data for this async context (thread-safe via AsyncLocal)
+            // Scoped provider + route for this async context (thread-safe via AsyncLocal), armed
+            // BEFORE anything the page runs. The prefetch is the first thing that needs the route:
+            // a page on /docs/{slug} loads BY the slug, so a route arriving after it would be a
+            // route arriving after the only question it was there to answer.
             RenderContext.SetScopedServiceProvider(context.RequestServices);
-            RenderContext.SetScopedRoute(BuildRouteData(context));
+            var routeData = BuildRouteData(context);
+            RenderContext.SetScopedRoute(routeData);
+            // The same route in a shape with no target in it — a write-once page reads
+            // context.Route.Param("slug") instead of reaching for ASP.NET (and losing Photon).
+            Primitives.RouteValues.Current = new Primitives.RouteValues(routeData.Params, routeData.QueryValues);
 
             try
             {
+                // SERVER DATA FIRST (IServerPrefetch): load before the tree is built, with the REQUEST's
+                // services, so the markup carries real values (crawlers see them) and the hydration
+                // payload below hands the client the same ones.
+                if (metadataSource is Primitives.IServerPrefetch prefetch)
+                {
+                    await prefetch.PrefetchAsync(context.RequestServices, context.RequestAborted);
+                }
+
+                // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
+                // so a page could only state what it knew before seeing the request — which for one page
+                // serving many documents means every one of them emitting the SAME canonical, title and
+                // description. Duplicate canonicals across seventy URLs are worse for a crawler than no
+                // canonical at all: it is the page asserting they are one document.
+                //
+                // Running after the prefetch lets metadata be built from what the prefetch loaded, which
+                // is the only order in which a data-driven page can describe itself.
+                MetadataCollection? metadata = null;
+                if (metadataSource is IHandleMetadata metadataHandler)
+                {
+                    metadata = new MetadataCollection();
+                    metadataHandler.ConfigureMetadata(new SeoBuilder(metadata));
+                }
+
+                // For stateful components, we need to initialize state
+                if (component is StatefulComponent stateful)
+                {
+                    // Initialize state synchronously for SSR
+                    // The state's OnInit will be called
+                    var state = stateful.GetType()
+                        .GetProperty("State", BindingFlags.Instance | BindingFlags.NonPublic)?
+                        .GetValue(stateful);
+
+                    // If there's an async initialization, we should await it
+                    if (state is ComponentState cs)
+                    {
+                        // Call OnMount if it exists and is async
+                        var onMountMethod = cs.GetType().GetMethod("OnMount");
+                        if (onMountMethod != null)
+                        {
+                            var result = onMountMethod.Invoke(cs, null);
+                            if (result is Task task)
+                            {
+                                await task;
+                            }
+                        }
+                    }
+                }
+
                 // Collect asset dependencies before rendering
                 var assets = new AssetCollection();
                 CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
@@ -227,6 +234,7 @@ public class ServerRenderingService : IServerRenderingService
             {
                 RenderContext.SetScopedServiceProvider(null);
                 RenderContext.SetScopedRoute(null);
+                Primitives.RouteValues.ClearCurrent();
             }
         }
         catch (Exception ex)
