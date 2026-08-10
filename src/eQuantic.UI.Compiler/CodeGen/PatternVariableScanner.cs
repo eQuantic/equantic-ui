@@ -18,7 +18,15 @@ public static class PatternVariableScanner
     public static string Declarations(ExpressionSyntax? expression)
     {
         if (expression is null) return "";
+        // A lambda is its OWN scope, and Walk only skips lambdas it finds as children — handed one
+        // directly it walked straight into the body and hoisted a binding out of the lambda that
+        // owns it, into the enclosing method.
+        if (expression is LambdaExpressionSyntax or AnonymousFunctionExpressionSyntax) return "";
         var vars = new List<string>();
+        // The expression ITSELF, then its children: Walk only inspects children, so a condition
+        // that IS the pattern (`if (next is Accordion fresh)`) bound a name nobody declared. The
+        // three original callers always passed something with the `is` nested inside it.
+        if (expression is IsPatternExpressionSyntax top) Collect(top.Pattern, vars);
         Walk(expression, vars);
         // `: any`, not a bare `let`: these are assigned inside the CONDITION they are hoisted out
         // of, and TypeScript cannot see through that — an untyped slot reads as "implicitly any in
@@ -32,6 +40,9 @@ public static class PatternVariableScanner
         {
             if (child is LambdaExpressionSyntax or AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
                 continue;
+            // A switch expression's ARMS are the IIFE's scope and it declares them itself; its
+            // GOVERNING expression is not, so the arm is skipped rather than the whole switch.
+            if (child is SwitchExpressionArmSyntax) continue;
             if (child is IsPatternExpressionSyntax isPattern)
                 Collect(isPattern.Pattern, vars);
             Walk(child, vars);

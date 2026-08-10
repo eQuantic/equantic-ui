@@ -1378,12 +1378,15 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
       style.borderWidth && style.borderWidth > 0 && style.borderColor && sidesAreAll(style)
         ? `${px(style.borderWidth)} solid ${tokenValue(style.borderColor)}`
         : undefined,
-    borderWidth:
+    // KEBAB, quoted, like every other multi-word property in this object: the key IS the CSS
+    // property name. camelCase here made the browser drop the rule AND made the class hash differ
+    // from the C# one, so a hydrated box got a different class than the server had given it.
+    'border-width':
       style.borderWidth && style.borderWidth > 0 && !sidesAreAll(style)
         ? sideWidths(style.borderWidth, style.borderSides ?? BORDER_ALL)
         : undefined,
-    borderStyle: partialBorder(style) ? 'solid' : undefined,
-    borderColor:
+    'border-style': partialBorder(style) ? 'solid' : undefined,
+    'border-color':
       partialBorder(style) && style.borderColor ? tokenValue(style.borderColor) : undefined,
     // The container side of loop motion: children clip to the rrect (native PushClip twin).
     overflow: style.clip ? 'hidden' : undefined,

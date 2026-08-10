@@ -27,6 +27,15 @@ public class SwitchExpressionStrategy : IConversionStrategy
 
         var sb = new StringBuilder();
         sb.Append("(() => {");
+        // Pattern variables bound inside an ARM'S OWN expression (`… => Maybe(v) is { } bound ? …`)
+        // are ASSIGNED by the converted condition and were never declared, so the arm threw
+        // ReferenceError the moment it matched — in a module, which is strict mode. The IIFE this
+        // strategy already emits is exactly the scope they belong to.
+        foreach (var arm in switchExpr.Arms)
+        {
+            sb.Append(PatternVariableScanner.Declarations(arm.Expression));
+            if (arm.WhenClause != null) sb.Append(PatternVariableScanner.Declarations(arm.WhenClause.Condition));
+        }
         sb.Append($" const _s = {governingExpr};");
 
         foreach (var arm in switchExpr.Arms)

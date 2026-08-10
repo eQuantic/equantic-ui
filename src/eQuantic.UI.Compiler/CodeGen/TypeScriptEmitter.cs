@@ -1620,8 +1620,12 @@ public class TypeScriptEmitter
             else if (method.SyntaxNode.ExpressionBody != null)
             {
                 _converter.SetCurrentClass(className);
+                // An expression body never reaches ReturnStatementStrategy, so nothing hoisted the
+                // `let` for a pattern variable bound in it — the converted condition assigned an
+                // undeclared name, which in a module (strict mode) throws ReferenceError.
+                var hoisted = PatternVariableScanner.Declarations(method.SyntaxNode.ExpressionBody.Expression);
                 var expr = _converter.Convert(method.SyntaxNode.ExpressionBody.Expression);
-                jsBody = $"{{ return {expr}; }}";
+                jsBody = $"{{ {hoisted}return {expr}; }}";
             }
             else
             {

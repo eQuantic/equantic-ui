@@ -26,22 +26,39 @@ public class LambdaExpressionStrategy : IConversionStrategy
             // the runtime's own build rather than merely a missing type.
             var parameters = string.Join(", ", parenthesized.ParameterList.Parameters
                 .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
-            var body = parenthesized.Block != null 
-                ? context.Converter.ConvertBlock(parenthesized.Block) 
-                : context.Converter.ConvertExpression(parenthesized.ExpressionBody!);
+            var body = parenthesized.Block != null
+                ? context.Converter.ConvertBlock(parenthesized.Block)
+                : ExpressionBody(parenthesized.ExpressionBody!, context);
             return $"({parameters}) => {body}";
         }
         
         if (node is SimpleLambdaExpressionSyntax simple)
         {
             var param = Typed(simple.Parameter.Identifier.Text.ToJsIdentifier(), simple.Parameter, context);
-            var body = simple.Block != null 
-                ? context.Converter.ConvertBlock(simple.Block) 
-                : context.Converter.ConvertExpression(simple.ExpressionBody!);
+            var body = simple.Block != null
+                ? context.Converter.ConvertBlock(simple.Block)
+                : ExpressionBody(simple.ExpressionBody!, context);
             return $"({param}) => {body}";
         }
         
         return "() => {}";
+    }
+
+    /// <summary>
+    /// A concise lambda body, given a BLOCK when it binds pattern variables.
+    /// <para>
+    /// `x => Maybe(x) is { } y ? y : ""` converts to an assignment of `y` inside the condition, and
+    /// a concise body has nowhere to declare it — so the name was assigned and never declared,
+    /// which in a module (strict mode) is a ReferenceError the first time the lambda runs. The
+    /// block is added only when there is something to declare, so every other lambda emits
+    /// unchanged.
+    /// </para>
+    /// </summary>
+    private static string ExpressionBody(ExpressionSyntax expression, ConversionContext context)
+    {
+        var hoisted = PatternVariableScanner.Declarations(expression);
+        var converted = context.Converter.ConvertExpression(expression);
+        return hoisted.Length == 0 ? converted : $"{{ {hoisted}return {converted}; }}";
     }
 
     /// <summary>A parameter with its TS type, resolved through the model. Falls back to the bare

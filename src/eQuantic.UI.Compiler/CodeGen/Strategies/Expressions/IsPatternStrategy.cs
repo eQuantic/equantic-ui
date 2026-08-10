@@ -54,8 +54,11 @@ public class IsPatternStrategy : IConversionStrategy
             // Assigning inside the test runs it once, and gives TypeScript the narrowing too.
             // Only the NULL test: `x is string s` must not assign when the type does not match, and
             // `x is { } y` has nothing to check but presence, so assigning IS the test.
-            if (bindings.Count == 1 && bindings[0].Access == expr
-                && condition == $"{expr} != null")
+            // Asked of the PATTERN, not of the condition's text. The string comparison this
+            // replaces expected `x != null` and BuildCondition produces `(x != null)`, so the
+            // optimisation never once ran — the call kept being evaluated twice, which is wasted
+            // work when it is pure and a different answer when it is not.
+            if (bindings.Count == 1 && bindings[0].Access == expr && IsPresenceOnly(pattern))
             {
                 var once = $"({bindings[0].Name} = {expr}) != null";
                 return negated ? $"!({once})" : once;
@@ -91,4 +94,18 @@ public class IsPatternStrategy : IConversionStrategy
     }
 
     public int Priority => 10;
+
+    /// <summary>
+    /// Whether the pattern is `{ } name` — no type, no positional or property subpatterns, one
+    /// binding. Presence is the whole test, so assigning IS the test. `x is string s` is not this:
+    /// it must not assign when the type does not match.
+    /// </summary>
+    private static bool IsPresenceOnly(PatternSyntax pattern) =>
+        pattern is RecursivePatternSyntax
+        {
+            Type: null,
+            PositionalPatternClause: null,
+            Designation: SingleVariableDesignationSyntax,
+        } recursive
+        && (recursive.PropertyPatternClause is null || recursive.PropertyPatternClause.Subpatterns.Count == 0);
 }

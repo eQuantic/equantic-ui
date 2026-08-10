@@ -4,19 +4,40 @@
     {
       "name": "default-ui-dashboard",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "samples/DefaultUIDashboard/DefaultUIDashboard.csproj", "--no-build", "--launch-profile", "http"],
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "samples/DefaultUIDashboard/DefaultUIDashboard.csproj",
+        "--no-build",
+        "--launch-profile",
+        "http"
+      ],
       "port": 5201
     },
     {
       "name": "equantic-web",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "../equantic-web/src/eQuantic.Web/eQuantic.Web.csproj", "--no-launch-profile", "--urls", "http://localhost:5210"],
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "../equantic-web/src/eQuantic.Web/eQuantic.Web.csproj",
+        "--no-launch-profile",
+        "--urls",
+        "http://localhost:5210"
+      ],
       "port": 5210
     },
     {
       "name": "equantic-ui-web",
       "runtimeExecutable": "dotnet",
-      "runtimeArgs": ["run", "--project", "../equantic-ui-web/eQuantic.UI.WebSite.csproj", "--no-launch-profile", "--urls", "http://localhost:5221"],
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "../equantic-ui-web/src/eQuantic.UI.WebSite/eQuantic.UI.WebSite.csproj",
+        "--no-launch-profile",
+        "--urls",
+        "http://localhost:5221"
+      ],
       "port": 5221
     }
   ]

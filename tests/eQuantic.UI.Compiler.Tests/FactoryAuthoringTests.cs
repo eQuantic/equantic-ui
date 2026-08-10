@@ -260,4 +260,129 @@ public class FactoryAuthoringTests
         Assert.Contains("static build(label", result.TypeScript);
     }
 
+
+    /// <summary>
+    /// A pattern variable is DECLARED wherever it is bound, not only in the three statement
+    /// positions that happened to ask for it.
+    /// <para>
+    /// `x is { } y` converts to an assignment of `y` inside the converted condition, so the `let`
+    /// has to be hoisted. Only Return, ExpressionStatement, LocalDeclaration and If did that; a
+    /// switch-expression arm, an expression-bodied member, a lambda body and a while condition
+    /// assigned a name that was never declared — a ReferenceError in a module, which is strict
+    /// mode, the first time that code ran.
+    /// </para>
+    /// <para>
+    /// SSR never saw it: the server runs the C#. The browser threw on hydration and the boundary
+    /// swapped the subtree for its failure message, so the page looked right until it did not.
+    /// </para>
+    /// </summary>
+    [Theory]
+    // The minimal repro, and the shape that found it: a switch expression inside an expression body.
+    [InlineData("private static string Broken(string v) => Maybe(v) is { } bound ? bound : \"\";")]
+    [InlineData("""
+        private static string Arm(string k, string v) => k switch
+        {
+            "a" => Maybe(v) is { } bound ? bound : "",
+            _ => "",
+        };
+        """)]
+    [InlineData("""
+        private static Func<string, string> Lambda() => (v) => Maybe(v) is { } bound ? bound : "";
+        """)]
+    [InlineData("""
+        private static string Loop(string v)
+        {
+            var n = 0;
+            var last = "";
+            while (Maybe(v) is { } bound && n < 1) { last = bound; n++; }
+            return last;
+        }
+        """)]
+    public void WithRefs_EveryPatternVariable_IsDeclaredWhereItIsBound(string member)
+    {
+        var result = CompileWithRefs($$"""
+            using System;
+            using eQuantic.UI.Primitives;
+            using static eQuantic.UI.Components.UI;
+
+            namespace Demo;
+
+            public sealed class Probe : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => Text("x", TypeRole.BodyM);
+
+                private static string Maybe(string v) => v;
+
+                {{member}}
+            }
+            """);
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+
+        // It is BOUND (the converted condition assigns it) …
+        Assert.Contains("bound = ", result.TypeScript);
+        // … so it must be DECLARED. Exactly once: a second `let` in an enclosing scope means the
+        // scanner leaked the binding out of the scope that owns it.
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(result.TypeScript, @"let bound: any;").Count);
+    }
+
+
+    /// <summary>
+    /// `x is { } y` over a CALL evaluates the call ONCE.
+    /// <para>
+    /// The subject appears in the condition and again in the binding, so it ran twice — wasted
+    /// work when the call is pure, and a different answer when it is not. The optimisation for it
+    /// was written but gated on a string comparison against `x != null`, while the condition
+    /// builder produces `(x != null)`: it had never once run.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void WithRefs_APresencePatternOverACall_EvaluatesItOnce()
+    {
+        var result = CompileWithRefs("""
+            using eQuantic.UI.Primitives;
+            using static eQuantic.UI.Components.UI;
+
+            namespace Demo;
+
+            public sealed class Once : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => Text(Pick("v"), TypeRole.BodyM);
+
+                private static string Maybe(string v) => v;
+
+                private static string Pick(string v) => Maybe(v) is { } bound ? bound : "";
+            }
+            """);
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        Assert.Contains("(bound = Once.maybe(v)) != null", result.TypeScript);
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(result.TypeScript, @"Once\.maybe\(v\)").Count);
+    }
+
+    /// <summary>A TYPE test must still check before it assigns — the optimisation applies to
+    /// presence only, and `x is string s` assigning on a non-string would bind the wrong value.</summary>
+    [Fact]
+    public void WithRefs_ATypePattern_StillTestsBeforeItBinds()
+    {
+        var result = CompileWithRefs("""
+            using eQuantic.UI.Primitives;
+            using static eQuantic.UI.Components.UI;
+
+            namespace Demo;
+
+            public sealed class Typed : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => Text(Pick("v"), TypeRole.BodyM);
+
+                private static object Maybe(string v) => v;
+
+                private static string Pick(string v) => Maybe(v) is string bound ? bound : "";
+            }
+            """);
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        Assert.Contains("typeof", result.TypeScript);
+        Assert.DoesNotContain("(bound = Typed.maybe(v)) != null", result.TypeScript);
+    }
 }
