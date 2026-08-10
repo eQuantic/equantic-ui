@@ -388,7 +388,7 @@ public static class UIExtensions
         // localStorage would never let it do. This is what removes the flash: the very first byte
         // already carries the right mode, instead of the default arriving and hydration correcting
         // it in front of the reader.
-        var requestedMode = ThemeCookie.Resolve(context, options.InitialThemeMode);
+        var requestedMode = ThemeCookie.Resolve(context, options.InitialThemeMode, options.ThemeCookie?.Name);
 
         string? themeDataJson = null;
         if (options.Theme is { } appTheme)
@@ -557,10 +557,19 @@ public static class UIExtensions
         })) + "]";
 
         // Inject configuration object
+        // The cookie config crosses to the browser because the browser is what WRITES it while the
+        // server READS it. Two places to configure would drift, and a drifted name fails silently:
+        // the server reads a cookie nobody writes, so persistence stops while everything still
+        // looks right. `false` is the app having turned it off.
+        var themeCookieJson = options.ThemeCookie is { } cookie
+            ? $"{{ name: '{cookie.Name}', days: {cookie.Days} }}"
+            : "false";
+
         var configJson = $@"{{
             page: {pageValue},
             version: '{BuildId}',
             ssr: {ssrEnabled.ToString().ToLowerInvariant()},
+            themeCookie: {themeCookieJson},
             routes: {routesJson}
         }}";
 
@@ -606,6 +615,13 @@ public static class UIExtensions
 /// <summary>
 /// Configuration options for UI services.
 /// </summary>
+/// <summary>How the theme is remembered — see <see cref="UIOptions.UseThemeCookie"/>.</summary>
+public sealed class ThemeCookieOptions
+{
+    public string Name { get; init; } = "eq-theme";
+    public int Days { get; init; } = 365;
+}
+
 /// <summary>The cookie the browser's theme controller writes, and the only reason the server can
 /// paint a visitor's chosen mode on the first byte.</summary>
 public static class ThemeCookie
@@ -622,8 +638,8 @@ public static class ThemeCookie
     /// </para>
     /// </summary>
     public static eQuantic.UI.Primitives.ThemeMode? Resolve(
-        HttpContext? context, eQuantic.UI.Primitives.ThemeMode? declared) =>
-        context?.Request.Cookies[Name] switch
+        HttpContext? context, eQuantic.UI.Primitives.ThemeMode? declared, string? cookieName = null) =>
+        context?.Request.Cookies[cookieName ?? Name] switch
         {
             "dark" => eQuantic.UI.Primitives.ThemeMode.Dark,
             "light" => eQuantic.UI.Primitives.ThemeMode.Light,
@@ -686,6 +702,43 @@ public class UIOptions
 
     /// <summary>The mode the app DECLARED, or null to follow the operating system (the default).</summary>
     internal eQuantic.UI.Primitives.ThemeMode? InitialThemeMode { get; private set; }
+
+    /// <summary>The cookie the theme is remembered in, or null when the app has turned it off.</summary>
+    internal ThemeCookieOptions? ThemeCookie { get; private set; } = new();
+
+    /// <summary>
+    /// Name and lifetime of the cookie the visitor's theme choice is remembered in.
+    /// <para>
+    /// It is ONE setting because both halves must agree: the browser's controller writes this
+    /// cookie and the server reads it. Configure them separately and they drift, at which point the
+    /// server reads a name nobody writes — persistence stops working while every part of it still
+    /// looks correct.
+    /// </para>
+    /// <para>
+    /// Worth naming when two eQuantic apps share a domain and should not inherit each other's
+    /// theme, or when an existing site already has a cookie convention.
+    /// </para>
+    /// </summary>
+    public UIOptions UseThemeCookie(string name = "eq-theme", int days = 365)
+    {
+        ThemeCookie = new ThemeCookieOptions { Name = name, Days = days };
+        return this;
+    }
+
+    /// <summary>
+    /// Do not remember the theme at all — no cookie is written, and every visit starts from
+    /// <see cref="UseInitialThemeMode"/> or the operating system.
+    /// <para>
+    /// For a site that must not set a cookie before consent. It is a build-time switch, so an app
+    /// that wants to start persisting the moment a visitor accepts a banner needs its own hand on
+    /// the writing rather than this.
+    /// </para>
+    /// </summary>
+    public UIOptions WithoutThemeCookie()
+    {
+        ThemeCookie = null;
+        return this;
+    }
 
     /// <summary>
     /// Pin the app to one light/dark mode instead of following the operating system.

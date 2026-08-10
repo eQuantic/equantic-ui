@@ -250,6 +250,15 @@ export interface EqConfig {
   page?: string | null;
   version?: string;
   ssr?: boolean;
+  /**
+   * How the theme is remembered — `false` when the app turned it off (a consent banner, a policy
+   * that forbids a cookie before it is granted). Absent means the defaults.
+   *
+   * It arrives from the SERVER because the server is what READS this cookie while the browser is
+   * what writes it: configure the two separately and a drifted name fails silently, with the server
+   * reading a cookie nobody writes.
+   */
+  themeCookie?: { name: string; days: number } | false;
   /** Client route table (generated from `[Page]` attributes) — enables SPA navigation. */
   routes?: import('./router/route-table').RouteEntry[];
 }

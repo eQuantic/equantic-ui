@@ -21,7 +21,7 @@
  * another site, and it has to work on http://localhost during development.
  */
 const THEME_COOKIE = 'eq-theme';
-const ONE_YEAR_SECONDS = 31_536_000;
+const DEFAULT_DAYS = 365;
 
 export class WebThemeController {
   /** 'light' | 'dark' — the forced mode if one is set, else what the OS prefers. */
@@ -43,11 +43,17 @@ export class WebThemeController {
 
     // Remembering is this controller's job, not every app's. Without it each app reimplements the
     // same cookie, and the ones that do not have a site that forgets on every reload.
+    const cookie = window.__EQ_CONFIG?.themeCookie;
+    // `false` is the app having said not to — a consent banner, or a policy that forbids a cookie
+    // before it is granted. The mode still applies to THIS page; it simply does not outlive it.
+    if (cookie === false) return;
+
+    const name = cookie?.name ?? THEME_COOKIE;
+    const maxAge = (cookie?.days ?? DEFAULT_DAYS) * 86_400;
     try {
-      document.cookie =
-        `${THEME_COOKIE}=${resolved}; path=/; max-age=${ONE_YEAR_SECONDS}; samesite=lax`;
+      document.cookie = `${name}=${resolved}; path=/; max-age=${maxAge}; samesite=lax`;
     } catch {
-      /* cookies blocked — the mode still applies to this page, it just does not outlive it */
+      /* cookies blocked by the browser — same outcome, and not ours to report */
     }
   }
 }
