@@ -60,6 +60,51 @@ public class WriteOncePageSsrTests
             new Text($"Downloads: {_downloads}", TypeRole.Heading);
     }
 
+    /// <summary>
+    /// A page that serves MANY documents from one route — a docs slug, a product id — and describes
+    /// itself from what it loaded. This is the shape that made the ordering matter.
+    /// </summary>
+    [Page("/prefetch-metadata-test")]
+    private sealed class MetadataFromPrefetchPage
+        : Primitives.StatelessComponent, IServerPrefetch, Core.Metadata.IHandleMetadata
+    {
+        private string _slug = "(not loaded)";
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _slug = "getting-started";
+            return Task.CompletedTask;
+        }
+
+        public void ConfigureMetadata(Core.Metadata.SeoBuilder seo) =>
+            seo.Title($"Docs — {_slug}").Canonical($"https://example.test/docs/{_slug}");
+
+        public override VisualNode Build(ComponentContext context) => new Text(_slug, TypeRole.Heading);
+    }
+
+    /// <summary>
+    /// Metadata is built AFTER the prefetch, and the order is the whole point: a page that serves
+    /// many documents can only describe itself from what it loaded. Running ConfigureMetadata first
+    /// left every one of them emitting the same canonical — seventy URLs asserting they are one
+    /// document, which is worse for a crawler than no canonical at all.
+    /// </summary>
+    [Fact]
+    public async Task Metadata_IsBuiltFromWhatThePrefetchLoaded()
+    {
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().BuildServiceProvider(),
+        };
+
+        var result = await CreateService().RenderPageAsync(nameof(MetadataFromPrefetchPage), context);
+
+        result.Success.Should().BeTrue();
+        result.Metadata!.Title.Should().Be("Docs — getting-started");
+        result.Metadata.RenderTags().Should().Contain("https://example.test/docs/getting-started",
+            "the canonical has to describe the document this request served, not the one the page "
+            + "knew about before it loaded anything");
+    }
+
     private static ServerRenderingService CreateService(IAppTheme? theme = null)
     {
         var options = new UIOptions();

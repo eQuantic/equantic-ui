@@ -100,21 +100,29 @@ public class ServerRenderingService : IServerRenderingService
             // Create the component instance with DI
             var component = CreateComponentInstance(pageType);
 
-            // Handle Metadata (for write-once pages the real page instance sits inside the bridge)
-            MetadataCollection? metadata = null;
             object metadataSource = component is Web.VisualNodeComponent bridge ? bridge.Node : component;
-            if (metadataSource is IHandleMetadata metadataHandler)
-            {
-                metadata = new MetadataCollection();
-                metadataHandler.ConfigureMetadata(new SeoBuilder(metadata));
-            }
 
-            // SERVER DATA (IServerPrefetch): load before the tree is built, with the REQUEST's
+            // SERVER DATA FIRST (IServerPrefetch): load before the tree is built, with the REQUEST's
             // services, so the markup carries real values (crawlers see them) and the hydration
             // payload below hands the client the same ones.
             if (metadataSource is Primitives.IServerPrefetch prefetch)
             {
                 await prefetch.PrefetchAsync(context.RequestServices, context.RequestAborted);
+            }
+
+            // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
+            // so a page could only state what it knew before seeing the request — which for one page
+            // serving many documents means every one of them emitting the SAME canonical, title and
+            // description. Duplicate canonicals across seventy URLs are worse for a crawler than no
+            // canonical at all: it is the page asserting they are one document.
+            //
+            // Running after the prefetch lets metadata be built from what the prefetch loaded, which
+            // is the only order in which a data-driven page can describe itself.
+            MetadataCollection? metadata = null;
+            if (metadataSource is IHandleMetadata metadataHandler)
+            {
+                metadata = new MetadataCollection();
+                metadataHandler.ConfigureMetadata(new SeoBuilder(metadata));
             }
 
             // For stateful components, we need to initialize state
