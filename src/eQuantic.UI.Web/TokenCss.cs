@@ -358,11 +358,25 @@ public static class PhotonCssGenerator
         // contract). display:block keeps flex/stack sizing natural.
         css.AppendLine(".eq-link { display: block; text-decoration: none; color: inherit; }");
 
-        // A themed IMAGE pair (Image.DarkSource): both artworks ship, CSS shows one. The OS
-        // preference decides by default; an app that forces a mode stamps data-theme on the root
-        // (IThemeController) and that wins, exactly as `color-scheme` wins for light-dark colors.
+        // A themed IMAGE pair (Image.DarkSource): both artworks ship, CSS shows one.
+        //
+        // It has to follow the SAME decision the palette follows, and it did not: the colours
+        // resolve through `light-dark()` (which reads `color-scheme`) while this pair read
+        // `prefers-color-scheme` — the OS, and only the OS. So an app that declared a mode got a
+        // dark palette carrying the light logo, and no amount of app-side code could fix it: the
+        // theme switch deliberately does NOT re-render (it flips one declaration), so choosing the
+        // artwork in C# would freeze it at the first paint instead.
+        //
+        // A declared mode therefore decides outright, with no media query to disagree with it. The
+        // data-theme rules below stay in every case: the browser's controller stamps it on a
+        // toggle, and a live choice outranks a build-time default.
         css.AppendLine(".eq-themed-dark { display: none; }");
-        css.AppendLine("@media (prefers-color-scheme: dark) { .eq-themed-light { display: none; } .eq-themed-dark { display: block; } }");
+        css.AppendLine(mode switch
+        {
+            ThemeMode.Light => ".eq-themed-light { display: block; }",
+            ThemeMode.Dark => ".eq-themed-light { display: none; } .eq-themed-dark { display: block; }",
+            _ => "@media (prefers-color-scheme: dark) { .eq-themed-light { display: none; } .eq-themed-dark { display: block; } }",
+        });
         css.AppendLine(":root[data-theme=\"dark\"] .eq-themed-light { display: none; }");
         css.AppendLine(":root[data-theme=\"dark\"] .eq-themed-dark { display: block; }");
         css.AppendLine(":root[data-theme=\"light\"] .eq-themed-light { display: block; }");

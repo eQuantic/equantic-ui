@@ -53,11 +53,48 @@ public class PhotonCssGeneratorTests
         PhotonCssGenerator.Generate(PhotonTheme.Instance, mode).Should().Contain(expected);
     }
 
+    /// <summary>
+    /// The themed image pair has to follow the SAME decision the palette follows. It read
+    /// `prefers-color-scheme` — the OS, and only the OS — while colours resolve through
+    /// `light-dark()`, which reads `color-scheme`. So a declared mode gave a dark palette carrying
+    /// the light logo, and the app could not fix it: the theme switch deliberately does not
+    /// re-render, so picking the artwork in C# would freeze it at the first paint instead.
+    /// </summary>
+    [Theory]
+    [InlineData(ThemeMode.Dark, ".eq-themed-light { display: none; } .eq-themed-dark { display: block; }")]
+    [InlineData(ThemeMode.Light, ".eq-themed-light { display: block; }")]
+    public void ADeclaredMode_DecidesTheThemedImagePair(ThemeMode mode, string expected)
+    {
+        var css = PhotonCssGenerator.Generate(PhotonTheme.Instance, mode);
+
+        css.Should().Contain(expected);
+        css.Should().NotContain("@media (prefers-color-scheme: dark) { .eq-themed-light",
+            "a declared mode leaves nothing for the OS to disagree with");
+    }
+
+    /// <summary>A live toggle outranks a build-time default in every case — the browser's
+    /// controller stamps data-theme, and those rules must survive a declared mode.</summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData(ThemeMode.Light)]
+    [InlineData(ThemeMode.Dark)]
+    public void TheRuntimeToggle_AlwaysOutranksTheDefault(ThemeMode? mode)
+    {
+        var css = PhotonCssGenerator.Generate(PhotonTheme.Instance, mode);
+
+        css.Should().Contain(":root[data-theme=\"dark\"] .eq-themed-dark { display: block; }");
+        css.Should().Contain(":root[data-theme=\"light\"] .eq-themed-light { display: block; }");
+    }
+
     /// <summary>Unset stays "follow the OS" — the default every app built before this relied on.</summary>
     [Fact]
     public void WithoutADeclaredMode_TheOsDecides()
     {
-        PhotonCssGenerator.Generate(PhotonTheme.Instance).Should().Contain("color-scheme: light dark;");
+        var css = PhotonCssGenerator.Generate(PhotonTheme.Instance);
+
+        css.Should().Contain("color-scheme: light dark;");
+        css.Should().Contain("@media (prefers-color-scheme: dark) { .eq-themed-light",
+            "with nothing declared, the artwork follows the OS like the palette does");
     }
 
     [Fact]
