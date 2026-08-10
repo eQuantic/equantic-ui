@@ -33,20 +33,20 @@ miscompilations (integer division producing floats, `Math.Truncate` crashing at 
 representing as a number in one path and a string in another, `.ToString("F2")` dropping its format,
 `Text` dropping its content, SVG created in the wrong DOM namespace, source-map columns all wrong,
 hydration mis-aligning on whitespace). These have been fixed, and their *nature* was the real signal —
-so the correctness net has since been built (Phase 1): a 492-case conformance harness, fail-on-unsupported
+so the correctness net has since been built (Phase 1): a 530-case conformance harness, fail-on-unsupported
 diagnostics, and a documented supported subset. That was the linchpin; it is now in place.
 
 ### Evidence snapshot
 
 | Area | State |
 |------|-------|
-| Transpiler | 120+ strategies; **correctness net in place** — 492-case Bun-vs-.NET conformance harness, fail-on-unsupported diagnostics (`EQ2001/2002/21xx/1001/1002`), documented supported subset; the silent fallbacks are resolved to support or explicit diagnostics |
+| Transpiler | 120+ strategies; **correctness net in place** — 530-case Bun-vs-.NET conformance harness, fail-on-unsupported diagnostics (`EQ2001/2002/21xx/1001/1002`), documented supported subset; the silent fallbacks are resolved to support or explicit diagnostics |
 | Components | **77** component files (Inputs 14, Overlays 11, Display 11, Navigation 8, Layout 8, Surfaces 6, Feedback 5, Forms 3 + primitives); some were half-implemented |
-| Client routing | **None found** — no client-side router/navigation |
+| Client routing | **Shipped** — link-driven client router (`src/router`), layout preserved across navigation by reconcile-on-navigate. A typed programmatic `Navigator` API is still ahead |
 | Forms & validation | `FormField` exists (displays errors) but **no validation engine** |
 | State management | Component-local `SetState` only; **no global state / signals / context** |
-| Hot reload | "HMR" is actually **full-page live-reload** (`BroadcastUpdateAsync("reload")`) |
-| CSS engine pluggability | `IStyleProvider` + `StyleProviderRegistry` **scaffolded**; only Tailwind is real today |
+| Hot reload | Reload-based, but the runtime **captures live page state and replays it** through the ordinary SSR-hydration mechanic — save a file, the UI updates, the state survives. Module hot-swap without a reload is the v2 fence |
+| CSS engine pluggability | The framework now ships **one** styling engine: typed C# lowered to deduplicated atomic classes, byte-identical between SSR (C#) and hydration (TS) and cross-pinned by a shared fixture. Authoring is CSS-free; external CSS a consumer brings is their own build concern |
 | Bun | Embedded per-platform; build works without Node/npm ✅ |
 | Debugging | Source maps were broken (now fixed); error overlay exists |
 
@@ -104,7 +104,7 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
 > missing SPA primitives (routing, forms, state), then DX (hot reload) and component/CSS polish.
 
 - **Phase 1 — Transpiler correctness & conformance** *(linchpin)* — **✅ essentially complete**:
-  supported-subset spec, fail-on-unsupported diagnostics, conformance harness (492 cases, emitted JS via
+  supported-subset spec, fail-on-unsupported diagnostics, conformance harness (530 cases, emitted JS via
   Bun vs .NET) all in place; remaining polish is the in-browser source-map smoke test.
   → see `docs/IMPLEMENTATION-PLAN.md`.
 - **Phase 2 — Client router** — **✅ complete**: navigation without reload, typed route params, persistent
@@ -123,6 +123,35 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
   source of truth; no hand-maintained CSS values, parity tested). Tailwind/other engines remain
   interop options, never the design-system source. → `docs/SHARED-COMPONENTS-PLAN.md`.
 - **Phase 7 — Global state** (signals/context) + performance budgets & benchmarks.
+
+## Track I — Editor intelligence (`CodeEditor`)
+
+The framework ships a real code editor — document model, selection, history, highlighting, bracket
+matching, find, and squiggle decorations — and it is currently a good editor that cannot help you
+write. The missing half is intelligence, and the piece that makes it possible is already proven:
+Roslyn answers **semantic** completions over the very compilation the playground builds
+(`context.` offers `Theme`; `Col` offers `Column`, because the `using static` surface is part of
+the compilation). A keyword list would be easy and worthless; this is the real thing.
+
+Three layers, in the order they have to land:
+
+- **I1 — the completion model**, in `Primitives` beside `CodeEditorController`: items, selection,
+  the span a commit replaces, and open/filter/move/accept/dismiss. Write-once, and testable without
+  a browser.
+- **I2 — keys and the list**, in `Components`. The hard part is already solved: the find bar proves
+  the `Stack` + `Positioned` overlay pattern, and `metrics` gives `ContentTop`/`LineHeight`/
+  `ContentLeft`/`ColumnWidth`, so the list is placed at the caret from numbers the editor already
+  has rather than invented geometry.
+- **I3 — signature help**: the parameter panel on `(`, reusing I1's plumbing and I2's placement.
+
+**The real problem is latency, not completions.** A round trip per keystroke is unusable, so the
+shape is: fetch on a trigger (`.` or Ctrl+Space), filter locally while typing continues, and cancel
+stale requests. The source is per-host — a server action on the web; whatever the host offers on
+native.
+
+Live diagnostics — squiggles as you type, without pressing Run — are the same shape and are already
+proven end to end in the playground: the decoration kind existed, and nothing had ever handed it
+anything to draw.
 
 ## Track N — Native mobile via proprietary GPU engine ("Photon")
 
