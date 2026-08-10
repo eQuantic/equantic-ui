@@ -20,5 +20,8 @@ public sealed class AndroidCapabilities : IPhotonCapabilities
         // The app's own durable key/value store — SharedPreferences, in the app's sandbox,
         // removed with the app like every other preference on the platform.
         services.TryAddSingleton<IAppStorage, AndroidAppStorage>();
+        // The vault, for what IAppStorage must never hold: a hardware-backed KeyStore key
+        // encrypts the value and only the ciphertext reaches a preferences file.
+        services.TryAddSingleton<ISecretStore, AndroidSecretStore>();
     }
 }

@@ -29,5 +29,8 @@ public sealed class MacOSCapabilities : IPhotonCapabilities
         // backs up, migrates and deletes along with the app. One realization for both
         // Apple platforms because it is one API on both.
         services.TryAddSingleton<IAppStorage, AppleAppStorage>();
+        // The platform's vault, for what IAppStorage must never hold. Keychain on both Apple
+        // platforms — one realization, because SecItem* is one API on both.
+        services.TryAddSingleton<ISecretStore, AppleSecretStore>();
     }
 }
