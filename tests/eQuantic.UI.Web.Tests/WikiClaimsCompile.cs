@@ -74,6 +74,13 @@ public class WikiClaimsCompile
             BorderSides = BorderSides.Start,
         };
 
+        // The claims added for preview.15–18.
+        _ = new TextRun("Build()", Mono: true) { StyleOverride = TypeStyle.OfSize(13.5f, FontWeight.Regular) };
+        _ = Simulated(SimulatedState.Hovered | SimulatedState.Pressed, Text("x", TypeRole.BodyM));
+        _ = InFlow(Text("x", TypeRole.BodyM));
+        var corner = new Stack();
+        corner.Add(new Positioned(Text("x", TypeRole.BodyM), top: 0, end: 0));
+
         _ = new DocPage();
         _ = new LiveRates(null!);
         _ = new ProfilePage(null!);
