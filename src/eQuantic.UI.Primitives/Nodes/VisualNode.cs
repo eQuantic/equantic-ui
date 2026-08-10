@@ -977,6 +977,19 @@ public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono
     public FontWeight? Weight { get; init; }
 
     /// <summary>
+    /// A SIZE of its own, for a run that is not the size of the prose around it — inline code at
+    /// 13.5 inside a 16 paragraph is the case, and a run inherited the paragraph's size with no way
+    /// to say otherwise.
+    /// <para>
+    /// The same escape hatch <see cref="Text.StyleOverride"/> is, for the same reason: the rungs
+    /// are the right default and a run that has to sit between two of them has nowhere else to go.
+    /// Only the SIZE is taken — the run keeps the paragraph's line box, which is what makes it a
+    /// run rather than a line of its own.
+    /// </para>
+    /// </summary>
+    public TypeStyle? StyleOverride { get; init; }
+
+    /// <summary>
     /// Where this run LINKS to — a link inside a sentence, which nothing else here can express.
     /// <para>
     /// A <see cref="Link"/> around a <see cref="Text"/> makes the whole paragraph one link, and a

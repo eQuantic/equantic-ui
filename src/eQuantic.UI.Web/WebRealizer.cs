@@ -1114,6 +1114,11 @@ public static class WebRealizer
                         Color = run.Color is { } runColor ? TokenCss.Value(runColor) : null,
                         FontFamily = run.Mono ? TokenCss.MonoStack : null,
                         FontWeight = run.Weight is { } runWeight ? ((int)runWeight).ToString() : null,
+                        // SIZE only — no line-height. A run keeps the paragraph's line box, which
+                        // is what makes it a run rather than a line of its own.
+                        FontSize = run.StyleOverride is { } runStyle
+                            ? TokenCss.Px(runStyle.ScaledSize(context.TypeScale))
+                            : null,
                     },
                 };
                 if (run.Destination is { Length: > 0 } destination)

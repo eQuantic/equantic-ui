@@ -79,4 +79,39 @@ public class InlineLinkTests
 
         html.Should().StartWith("<span").And.EndWith("</span>");
     }
+
+    /// <summary>
+    /// A run can be a different SIZE from the prose around it — inline code at 13.5 inside a 16
+    /// paragraph, which is what every documentation handoff asks for and what a run could not say.
+    /// </summary>
+    [Fact]
+    public void ARunCanBeSmallerThanTheProseAroundIt()
+    {
+        var html = Render(new Text("", TypeRole.BodyM)
+        {
+            Spans =
+            [
+                new TextRun("Call "),
+                new TextRun("Build()", Mono: true) { StyleOverride = TypeStyle.OfSize(13.5f, FontWeight.Regular) },
+                new TextRun(" first."),
+            ],
+        });
+
+        html.Should().Contain("font-size: 13.5px");
+    }
+
+    /// <summary>It keeps the paragraph's LINE BOX — a run that set its own line-height would open a
+    /// gap above and below itself, which is a line, not a run.</summary>
+    [Fact]
+    public void ASizedRun_DoesNotSetItsOwnLineHeight()
+    {
+        var html = Render(new Text("", TypeRole.BodyM)
+        {
+            Spans = [new TextRun("x") { StyleOverride = TypeStyle.OfSize(13.5f, FontWeight.Regular) }],
+        });
+
+        // The run's own style is inline (that is where font-size landed); the paragraph's
+        // line-height rides an atomic class, so its absence HERE is the run staying silent about it.
+        html.Should().Contain("font-size: 13.5px").And.NotContain("line-height");
+    }
 }
