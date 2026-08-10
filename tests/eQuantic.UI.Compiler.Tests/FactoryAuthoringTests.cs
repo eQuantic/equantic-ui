@@ -186,4 +186,78 @@ public class FactoryAuthoringTests
         Assert.Contains("RouteValues", result.TypeScript);
         Assert.Matches(@"import \{[^}]*RouteValues[^}]*\} from ""@equantic/runtime""", result.TypeScript);
     }
+    /// <summary>
+    /// A private helper called <c>Render</c> is a HELPER, not the component's entry point.
+    /// <para>
+    /// The parser matched the entry point by NAME, so any method called <c>Render</c> became the
+    /// build method — and the last one in the file won. A page with a
+    /// <c>private static VisualNode Render(DocBlock block, IAppTheme theme)</c> had its Build body
+    /// REPLACED by the helper's and the helper dropped entirely, so the emitted
+    /// <c>build(_context)</c> referenced parameters that do not exist in that scope.
+    /// </para>
+    /// <para>
+    /// The page then died at hydration on "block is not defined" while SSR rendered correct HTML
+    /// and answered 200 — a curl saw a perfect page and only a browser saw the failure, which is
+    /// exactly the shape a smoke test cannot catch.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void WithRefs_APrivateHelperNamedRender_IsAHelper_NotTheBuildMethod()
+    {
+        var result = CompileWithRefs("""
+            using eQuantic.UI.Primitives;
+            using static eQuantic.UI.Components.UI;
+
+            namespace Demo;
+
+            public sealed class Doc : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    Render("heading", context.Theme);
+
+                private static VisualNode Render(string kind, IAppTheme theme)
+                {
+                    switch (kind)
+                    {
+                        case "heading": return Text("H", TypeRole.Heading);
+                        default: return Text("P", TypeRole.BodyM);
+                    }
+                }
+            }
+            """);
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+
+        // build keeps its OWN body — the call, not the helper's switch.
+        Assert.Contains("build(context", result.TypeScript);
+        Assert.Contains("return Doc.render(", result.TypeScript);
+
+        // And the helper survives, with its own parameters in its own scope.
+        Assert.Contains("static render(kind", result.TypeScript);
+        Assert.DoesNotContain("build(_context: BuildContext) {\n        switch", result.TypeScript);
+    }
+
+    /// <summary>The same shape one step further: a helper called <c>Build</c>. Both names were
+    /// matched, so both could steal the entry point.</summary>
+    [Fact]
+    public void WithRefs_APrivateHelperNamedBuild_IsAHelperToo()
+    {
+        var result = CompileWithRefs("""
+            using eQuantic.UI.Primitives;
+            using static eQuantic.UI.Components.UI;
+
+            namespace Demo;
+
+            public sealed class Panel : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => Build("x");
+
+                private static VisualNode Build(string label) => Text(label, TypeRole.BodyM);
+            }
+            """);
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        Assert.Contains("static build(label", result.TypeScript);
+    }
+
 }

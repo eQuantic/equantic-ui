@@ -237,7 +237,10 @@ public class TypeScriptEmitter
                     // Emit helper methods
                     foreach (var method in component.Methods)
                     {
-                        if (method.Name == "Build" || method.Name == "Render") continue;
+                        // By IDENTITY, not by name: a private static helper called Render is a
+                        // helper, and skipping it by name dropped it from the output entirely.
+                        if (method.SyntaxNode is not null
+                            && ReferenceEquals(method.SyntaxNode, component.BuildMethodNode)) continue;
                         EmitMethod(method, c, component, component.Name);
                     }
                 }
@@ -371,7 +374,10 @@ public class TypeScriptEmitter
                     // Emit helper methods
                     foreach (var method in component.Methods)
                     {
-                        if (method.Name == "Build" || method.Name == "Render") continue;
+                        // By IDENTITY, not by name: a private static helper called Render is a
+                        // helper, and skipping it by name dropped it from the output entirely.
+                        if (method.SyntaxNode is not null
+                            && ReferenceEquals(method.SyntaxNode, component.BuildMethodNode)) continue;
                         EmitMethod(method, c, component, component.Name);
                     }
                 }

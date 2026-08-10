@@ -156,7 +156,7 @@ public class ComponentParser
             if (c.Modifiers.Any(SyntaxKind.StaticKeyword)) continue;
 
             var bn = BaseName(c);
-            var hasBR = c.Members.OfType<MethodDeclarationSyntax>().Any(m => m.Identifier.Text is "Render" or "Build");
+            var hasBR = c.Members.OfType<MethodDeclarationSyntax>().Any(m => IsBuildEntryPoint(m, "Render", "Build"));
             bool direct = model?.GetDeclaredSymbol(c) is INamedTypeSymbol s
                 ? (s.IsUiComponent() || hasBR)
                 : (bn is "StatefulComponent" or "StatelessComponent" or "HtmlElement" or "Flex" or "Container" or "Stack" || hasBR);
@@ -218,7 +218,7 @@ public class ComponentParser
         {
             var baseType = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ToString();
             var hasBuildOrRender = classDecl.Members.OfType<MethodDeclarationSyntax>()
-                .Any(m => m.Identifier.Text is "Render" or "Build");
+                .Any(m => IsBuildEntryPoint(m, "Render", "Build"));
 
             if (!componentNames.Contains(classDecl.Identifier.Text)) continue;
 
@@ -247,7 +247,7 @@ public class ComponentParser
 
                 var sharedBuild = classDecl.DescendantNodes()
                     .OfType<MethodDeclarationSyntax>()
-                    .FirstOrDefault(m => m.Identifier.Text == "Build");
+                    .FirstOrDefault(m => IsBuildEntryPoint(m, "Build"));
                 if (sharedBuild != null)
                 {
                     definition.BuildMethodNode = sharedBuild;
@@ -306,7 +306,7 @@ public class ComponentParser
                 // Parse Build method for stateless component
                 var buildMethod = classDecl.DescendantNodes()
                     .OfType<MethodDeclarationSyntax>()
-                    .FirstOrDefault(m => m.Identifier.Text == "Build");
+                    .FirstOrDefault(m => IsBuildEntryPoint(m, "Build"));
 
                 if (buildMethod != null)
                 {
@@ -338,7 +338,7 @@ public class ComponentParser
 
                 var buildMethod = classDecl.Members
                     .OfType<MethodDeclarationSyntax>()
-                    .FirstOrDefault(m => m.Identifier.Text == "Build");
+                    .FirstOrDefault(m => IsBuildEntryPoint(m, "Build"));
 
                 if (buildMethod != null)
                 {
@@ -499,9 +499,14 @@ public class ComponentParser
                 .Any(a => a.Name.ToString() is "ServerAction" or "ServerActionAttribute")) continue;
 
             var methodName = method.Identifier.Text;
-            if (methodName == "Render" || methodName == "Build" || methodName == "CreateState")
+            if (methodName == "CreateState") continue;
+            if (IsBuildEntryPoint(method, "Render", "Build"))
             {
-                if (methodName == "Render" || methodName == "Build")
+                // Build WINS over Render: a write-once component's contract is Build, and letting a
+                // later Render overwrite it is how the last method in the file decided the page.
+                if (definition.BuildMethodNode is null
+                    || definition.BuildMethodNode.Identifier.Text != "Build"
+                    || methodName == "Build")
                 {
                     definition.BuildMethodNode = method;
                 }
@@ -532,6 +537,26 @@ public class ComponentParser
             definition.Methods.Add(methodDef);
         }
     }
+
+    /// <summary>
+    /// Whether this method IS the component's entry point, rather than merely sharing its name.
+    /// <para>
+    /// Matching on the name alone made any method called <c>Render</c> the build method — so a page
+    /// with a <c>private static VisualNode Render(DocBlock block, IAppTheme theme)</c> helper had its
+    /// Build body REPLACED by the helper's, and the helper itself dropped. The emitted
+    /// <c>build(_context)</c> then referenced the helper's parameters, which do not exist in that
+    /// scope, and the page died at hydration on "block is not defined" — while SSR rendered
+    /// correct HTML and answered 200, so a smoke test saw a perfect page.
+    /// </para>
+    /// <para>
+    /// The entry point overrides a public abstract, so it is never static and never private. A
+    /// helper is one or the other, which is exactly what tells them apart without a semantic model.
+    /// </para>
+    /// </summary>
+    private static bool IsBuildEntryPoint(MethodDeclarationSyntax method, params string[] names) =>
+        names.Contains(method.Identifier.Text)
+        && !method.Modifiers.Any(SyntaxKind.StaticKeyword)
+        && !method.Modifiers.Any(SyntaxKind.PrivateKeyword);
 
     private void ParsePrimitiveClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
@@ -784,7 +809,7 @@ public class ComponentParser
         // Parse Build method for component tree
         var buildMethod = classDecl.DescendantNodes()
             .OfType<MethodDeclarationSyntax>()
-            .FirstOrDefault(m => m.Identifier.Text == "Build");
+            .FirstOrDefault(m => IsBuildEntryPoint(m, "Build"));
         
         if (buildMethod != null)
         {
