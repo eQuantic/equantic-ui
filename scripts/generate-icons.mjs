@@ -275,6 +275,9 @@ const SETS = [
     { prefix: 'simple-icons', projectName: 'eQuantic.UI.SimpleIcons', className: 'SimpleIcons' },
     { prefix: 'bi', projectName: 'eQuantic.UI.BootstrapIcons', className: 'BootstrapIcons' },
     { prefix: 'iconoir', projectName: 'eQuantic.UI.Iconoir', className: 'Iconoir' },
+    // Material Symbols carries the rounded/sharp/outlined cuts as separate icon NAMES rather than
+    // separate sets, so one pack covers what the Google font exposes through a `FILL`/`wght` axis.
+    { prefix: 'material-symbols', projectName: 'eQuantic.UI.MaterialSymbols', className: 'MaterialSymbols' },
 ];
 
 async function main() {

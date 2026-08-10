@@ -91,6 +91,11 @@ public static class UIExtensions
 
         // Add SSR rendering service
         services.TryAddSingleton<IServerRenderingService, ServerRenderingService>();
+        // The server half of the light/dark hand. TryAdd, so an app that registers its own — one
+        // that reads a cookie, say — keeps it. Without this a toggle resolved nothing during SSR
+        // and had to guess the mode it was drawing.
+        services.TryAddSingleton<eQuantic.UI.Primitives.IThemeController>(
+            _ => new SsrThemeController(options.InitialThemeMode));
 
         // Add response compression (Brotli + Gzip for JS, CSS, HTML)
         services.AddResponseCompression(opts =>
@@ -638,6 +643,21 @@ public class UIOptions
     /// calls <c>setPhotonTheme</c>) so hydration + client re-renders match the server.
     /// </summary>
     internal eQuantic.UI.Primitives.IAppTheme? Theme { get; private set; }
+
+    /// <summary>The mode SSR renders in, and what a toggle reports before the page hydrates.
+    /// Light unless set.</summary>
+    internal eQuantic.UI.Primitives.ThemeMode InitialThemeMode { get; private set; } =
+        eQuantic.UI.Primitives.ThemeMode.Light;
+
+    /// <summary>
+    /// The light/dark mode the SERVER renders in. It is what the browser paints first, so it is
+    /// stated rather than guessed; the client controller takes the switch over at hydration.
+    /// </summary>
+    public UIOptions UseInitialThemeMode(eQuantic.UI.Primitives.ThemeMode mode)
+    {
+        InitialThemeMode = mode;
+        return this;
+    }
 
     /// <summary>Select the write-once theme for the whole app (SSR + client). See <see cref="Theme"/>.</summary>
     public UIOptions UseTheme(eQuantic.UI.Primitives.IAppTheme theme)

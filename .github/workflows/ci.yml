@@ -212,6 +212,7 @@ jobs:
             eQuantic.UI.FontAwesome6.Solid
             eQuantic.UI.Heroicons
             eQuantic.UI.Iconoir
+            eQuantic.UI.MaterialSymbols
             eQuantic.UI.Lucide
             eQuantic.UI.Material
             eQuantic.UI.Phosphor

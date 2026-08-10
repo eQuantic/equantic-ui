@@ -32,6 +32,11 @@ public class StyleAtomizerTests
         ("color", TokenCss.Value(PhotonTheme.Instance.TextPrimary)),
         ("border", $"1px solid {TokenCss.Value(PhotonTheme.Instance.BorderStrong)}"),
         ("background-color", TokenCss.Value(PhotonTheme.Instance.Colors(Variant.Primary).Base)),
+        // The mono stack, which the SERVER writes here and the CLIENT writes in lowering.ts. Its
+        // atomic class is a hash of the declaration, so the two spellings have to be identical to
+        // the character or a page mints two classes for one style and re-paints on hydration.
+        // Pinning it through the shared fixture is what makes a drift on either side fail a build.
+        ("font-family", TokenCss.MonoStack),
     ];
 
     [Fact]

@@ -41,7 +41,7 @@ export function measurePhotonText(text: string, style: TypeStyleValue, typeScale
   if (!text) return 0;
   const context = measuringContext();
   if (!context) return 0;
-  const family = style.mono ? MONO_STACK : SANS_STACK;
+  const family = style.mono ? monoStack() : SANS_STACK;
   // NUMERIC weight: the enum arrives as a member name, and a name makes the whole shorthand
   // invalid — see cssFontWeight for what that cost.
   context.font = `${cssFontWeight(style.weight)} ${style.size * typeScale}px ${family}`;
@@ -59,6 +59,30 @@ const SANS_STACK =
   'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 const MONO_STACK =
   'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
+
+/**
+ * The mono face as the page will actually DRAW it: the lowering emits
+ * `var(--eq-font-mono, …)`, so an app that set that variable is drawing in a face this measurer
+ * would otherwise know nothing about — and a code editor places its caret from a measured column
+ * advance. Different face, different advance, caret beside the character rather than on it.
+ *
+ * Resolved once and cached, like the canvas: the variable's VALUE is static CSS. (A web font that
+ * loads late changes metrics without changing this string, which is the pre-existing hazard for
+ * every stack here, not one this introduces.)
+ */
+let monoResolved: string | undefined;
+
+function monoStack(): string {
+  if (monoResolved !== undefined) return monoResolved;
+  monoResolved = MONO_STACK;
+  if (typeof document !== 'undefined' && document.documentElement) {
+    const declared = getComputedStyle(document.documentElement)
+      .getPropertyValue('--eq-font-mono')
+      .trim();
+    if (declared) monoResolved = declared;
+  }
+  return monoResolved;
+}
 
 let measuring: CanvasRenderingContext2D | null | undefined;
 

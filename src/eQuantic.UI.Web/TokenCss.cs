@@ -25,9 +25,24 @@ public static class TokenCss
         : $"light-dark({Hex(token.Light)}, {Hex(token.Dark)})";
 
     /// <summary>dp → px (1:1 on web; density is the platform's concern).</summary>
-    /// <summary>The platform monospace stack (Text.Mono / rich runs) — ui-monospace first, so
-    /// each OS uses its native mono face before the generic fallback.</summary>
-    public const string MonoStack = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace";
+    /// <summary>
+    /// The monospace stack (Text.Mono / rich runs) with an APP-SETTABLE hook in front of it —
+    /// ui-monospace first inside the fallback, so each OS uses its native mono face.
+    /// <para>
+    /// A mono run lands on an atomic class, and an atomic class beats a <c>body</c> rule, so an app
+    /// that wanted its own code face had nowhere to put it: the class name is a content hash that
+    /// moves between builds, which is no hook at all. Setting <c>--eq-font-mono</c> on <c>:root</c>
+    /// is the hook.
+    /// </para>
+    /// <para>
+    /// This string must stay CHARACTER-IDENTICAL to the runtime's MONO_STACK (lowering.ts): the
+    /// atomic class name is a hash of the declaration, so a server that emits one spelling and a
+    /// client that emits another mint two classes for one style and the page re-paints on
+    /// hydration.
+    /// </para>
+    /// </summary>
+    public const string MonoStack =
+        "var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)";
 
     public static string Px(float dp) => dp switch
     {

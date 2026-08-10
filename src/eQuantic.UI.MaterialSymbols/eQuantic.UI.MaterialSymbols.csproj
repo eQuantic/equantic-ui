@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <PackageId>eQuantic.UI.MaterialSymbols</PackageId>
+    <Description>Material Symbols icon catalog for eQuantic.UI — write-once IconGlyph data (web + native) generated from the Iconify 'material-symbols' set.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Primitives ONLY: glyph data is target-neutral by construction. -->
+    <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Sources ship for the eqc transpiler (client-side inlining — see the plan's icon-pack notes). -->
+    <Content Include="**\*.cs" Exclude="obj\**;bin\**" PackagePath="tools\source\" />
+    <!-- Marker: identifies this as an inlinable source pack so the SDK feeds it to eqc as ref-sources. -->
+    <Content Include="EQuanticIconPack.marker" PackagePath="tools\source\" />
+  </ItemGroup>
+
+</Project>

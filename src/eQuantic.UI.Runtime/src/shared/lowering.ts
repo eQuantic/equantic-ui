@@ -1498,7 +1498,20 @@ function backgroundLayerSizes(style: BoxStyleValue): string | undefined {
   return sizes.join(', ');
 }
 
-const MONO_STACK = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace";
+/**
+ * The monospaced face, with an APP-SETTABLE hook in front of it.
+ *
+ * A mono Text lands on an atomic class, and an atomic class beats a `body { font-family }` rule —
+ * so an app that wanted its own code face had nowhere to put it: the class name is a content hash
+ * that moves between builds, which is no hook at all. The variable is the hook. Set
+ * `--eq-font-mono` on `:root` and every mono run follows, with this stack as the fallback when
+ * nothing does.
+ *
+ * The measurer reads the SAME variable (see photon-context) — measuring with a different face than
+ * the one that draws is how a code editor's caret ends up beside the character it is on.
+ */
+const MONO_STACK =
+  "var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)";
 
 function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   const style: StyleEntries = {
