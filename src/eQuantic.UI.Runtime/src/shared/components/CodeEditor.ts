@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, IconButton, KeyChord, Positioned, Row, SharedStatefulComponent, Shortcut, SizeValue, Stack, Text, TextEntry, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, IconButton, KeyChord, Positioned, Row, SharedStatefulComponent, Shortcut, SizeValue, Stack, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends SharedStatefulComponent {
     _editor: any;
@@ -47,6 +47,10 @@ export class CodeEditor extends SharedStatefulComponent {
 
     marks(editor: CodeEditorController) {
         let needle = this._findOpen && this._findText.length > 0 ? this._findText : this.search;if (!((needle != null && needle.length > 0)) && !this.matchBrackets) return this.decorations;let marks: CodeDecoration[] = [...this.decorations];let search: any; if (((needle != null && needle.length > 0) && (search = needle, true))) {let current = editor.selection;for (const match of editor.findAll(search, this.searchMatchCase)) {marks.push(new CodeDecoration(match, $eq.equals(match.start, current.start) && $eq.equals(match.end, current.end) ? 'outline' : 'highlight'));}}let pair: any; if (this.matchBrackets && ((editor.bracketAtCaret() != null) && (pair = editor.bracketAtCaret(), true))) {marks.push(new CodeDecoration(new CodeRange(pair[0], $eq.withPatch(pair[0], { column: pair[0].column + 1 })), 'outline'));marks.push(new CodeDecoration(new CodeRange(pair[1], $eq.withPatch(pair[1], { column: pair[1].column + 1 })), 'outline'));}return marks;
+    }
+
+    adoptConfig(next: UiComponent) {
+        let fresh: any; if (!((next instanceof CodeEditor && (fresh = next, true)))) return;this.languageName = fresh.languageName;this.onChanged = fresh.onChanged;this.onSelectionChanged = fresh.onSelectionChanged;this.showLineNumbers = fresh.showLineNumbers;this.firstLineNumber = fresh.firstLineNumber;this.maxHeight = fresh.maxHeight;this.size = fresh.size;this.inverse = fresh.inverse;this.readOnly = fresh.readOnly;this.autofocus = fresh.autofocus;this.caption = fresh.caption;this.gutterMarkers = fresh.gutterMarkers;this.decorations = fresh.decorations;this.matchBrackets = fresh.matchBrackets;this.search = fresh.search;this.searchMatchCase = fresh.searchMatchCase;this.onGutterPressed = fresh.onGutterPressed;
     }
 
     findBar(context: any, editor: CodeEditorController) {

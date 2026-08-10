@@ -36,42 +36,42 @@ public sealed class CodeEditor : StatefulComponent
     public string InitialCode { get; init; }
 
     /// <summary>Which language colours it — a name or an extension ("csharp", ".ts", "python").</summary>
-    public string? LanguageName { get; init; }
+    public string? LanguageName { get; set; }
 
     /// <summary>Raised after every edit, with the whole document. Null = the app is not tracking it.</summary>
-    public Action<string>? OnChanged { get; init; }
+    public Action<string>? OnChanged { get; set; }
 
     /// <summary>Raised when the caret or the selection moves — a status bar's cue.</summary>
-    public Action<CodeRange>? OnSelectionChanged { get; init; }
+    public Action<CodeRange>? OnSelectionChanged { get; set; }
 
-    public bool ShowLineNumbers { get; init; } = true;
-    public int FirstLineNumber { get; init; } = 1;
-    public float MaxHeight { get; init; }
-    public SizeVariant Size { get; init; } = SizeVariant.Small;
-    public bool Inverse { get; init; }
-    public bool ReadOnly { get; init; }
-    public bool Autofocus { get; init; }
-    public string? Caption { get; init; }
+    public bool ShowLineNumbers { get; set; } = true;
+    public int FirstLineNumber { get; set; } = 1;
+    public float MaxHeight { get; set; }
+    public SizeVariant Size { get; set; } = SizeVariant.Small;
+    public bool Inverse { get; set; }
+    public bool ReadOnly { get; set; }
+    public bool Autofocus { get; set; }
+    public string? Caption { get; set; }
 
     /// <summary>Lines to point at — an error's line, a breakpoint, a diff hunk.</summary>
-    public IReadOnlyList<CodeGutterMarker> GutterMarkers { get; init; } = [];
+    public IReadOnlyList<CodeGutterMarker> GutterMarkers { get; set; } = [];
 
     /// <summary>Ranges to mark — search matches, a squiggle. The editor ADDS to these: the bracket
     /// under the caret, and the matches of whatever is being searched for.</summary>
-    public IReadOnlyList<CodeDecoration> Decorations { get; init; } = [];
+    public IReadOnlyList<CodeDecoration> Decorations { get; set; } = [];
 
     /// <summary>Outlines the bracket the caret is against and the one it pairs with. On by default:
     /// it is how you find the end of a block without counting.</summary>
-    public bool MatchBrackets { get; init; } = true;
+    public bool MatchBrackets { get; set; } = true;
 
     /// <summary>What FIND is looking for. Every match is washed and the current one outlined; null
     /// or empty means the find bar is closed and nothing is marked.</summary>
-    public string? Search { get; init; }
+    public string? Search { get; set; }
 
-    public bool SearchMatchCase { get; init; }
+    public bool SearchMatchCase { get; set; }
 
     /// <summary>A press on a gutter row — where an IDE toggles a breakpoint.</summary>
-    public Action<int>? OnGutterPressed { get; init; }
+    public Action<int>? OnGutterPressed { get; set; }
 
     /// <summary>The live editor: the document, the selection, and every command. An IDE reaches for
     /// this to run its own — a formatter, a refactor, a language server's edit — and they undo like
@@ -121,6 +121,45 @@ public sealed class CodeEditor : StatefulComponent
                 CodeDecorationKind.Outline));
         }
         return marks;
+    }
+
+    /// <summary>
+    /// Adopt the fresh configuration when the reconciler retains this instance across a parent
+    /// rebuild — the hook every stateful component needs and this one did not have.
+    /// <para>
+    /// The base implementation does nothing, which is right for a component whose props never
+    /// change, and silently wrong for one whose props do: a page that recomputed
+    /// <see cref="Decorations"/> (diagnostics as you type), <see cref="Search"/> or
+    /// <see cref="GutterMarkers"/> handed them to a NEW node the reconciler then threw away in
+    /// favour of the retained one. The parent rebuilt, its own text updated, and the editor kept
+    /// drawing the first frame's configuration forever — with nothing anywhere to say so.
+    /// </para>
+    /// <para>
+    /// <see cref="InitialCode"/> is deliberately NOT adopted: the editor takes its text when it
+    /// opens and the document is its own from then on, which is the whole reason it is called
+    /// <em>initial</em>. Adopting it would overwrite what someone is typing on every parent build.
+    /// </para>
+    /// </summary>
+    public override void AdoptConfig(UiComponent next)
+    {
+        if (next is not CodeEditor fresh) return;
+        LanguageName = fresh.LanguageName;
+        OnChanged = fresh.OnChanged;
+        OnSelectionChanged = fresh.OnSelectionChanged;
+        ShowLineNumbers = fresh.ShowLineNumbers;
+        FirstLineNumber = fresh.FirstLineNumber;
+        MaxHeight = fresh.MaxHeight;
+        Size = fresh.Size;
+        Inverse = fresh.Inverse;
+        ReadOnly = fresh.ReadOnly;
+        Autofocus = fresh.Autofocus;
+        Caption = fresh.Caption;
+        GutterMarkers = fresh.GutterMarkers;
+        Decorations = fresh.Decorations;
+        MatchBrackets = fresh.MatchBrackets;
+        Search = fresh.Search;
+        SearchMatchCase = fresh.SearchMatchCase;
+        OnGutterPressed = fresh.OnGutterPressed;
     }
 
     public override VisualNode Build(ComponentContext context)
