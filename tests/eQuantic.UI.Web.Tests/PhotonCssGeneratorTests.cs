@@ -14,6 +14,52 @@ public class PhotonCssGeneratorTests
 {
     private static readonly string Css = PhotonCssGenerator.Generate(PhotonTheme.Instance);
 
+    /// <summary>
+    /// EVERY role gets a rule. The emitter used a hand-written list of seven, and the scale later
+    /// grew its dense end — so `.eq-type-titlesmall`, `.eq-type-labelsmall` and `.eq-type-overline`
+    /// were stamped onto elements with nothing behind them and silently inherited the body's
+    /// 16px/400: a fifth too large, in exactly the toolbars and status rails those rungs exist for.
+    /// Nothing failed. The type was just wrong, and only a ruler would tell you.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EveryTypeRole))]
+    public void EveryTypeRole_HasAGeneratedRule(TypeRole role)
+    {
+        var expected = PhotonTheme.Instance.Type(role);
+
+        Css.Should().Contain($".eq-type-{role.ToString().ToLowerInvariant()} {{",
+            $"{role} is a role a component can ask for, so it must have a rule");
+        // Not merely present — carrying the token's own size, or the class is decoration.
+        Css.Should().Contain($"  font-size: {TokenCss.Px(expected.Size)};");
+    }
+
+    public static TheoryData<TypeRole> EveryTypeRole()
+    {
+        var data = new TheoryData<TypeRole>();
+        foreach (var role in Enum.GetValues<TypeRole>()) data.Add(role);
+        return data;
+    }
+
+    /// <summary>
+    /// A declared mode has to reach `color-scheme`, because that is the only thing `light-dark()`
+    /// reads. When it did not, the page painted what the OS wanted while a toggle reported what the
+    /// app had declared — a dark desktop got a dark page offering to "switch to dark".
+    /// </summary>
+    [Theory]
+    [InlineData(ThemeMode.Light, "color-scheme: light;")]
+    [InlineData(ThemeMode.Dark, "color-scheme: dark;")]
+    public void ADeclaredMode_PinsTheColorScheme(ThemeMode mode, string expected)
+    {
+        PhotonCssGenerator.Generate(PhotonTheme.Instance, mode).Should().Contain(expected);
+    }
+
+    /// <summary>Unset stays "follow the OS" — the default every app built before this relied on.</summary>
+    [Fact]
+    public void WithoutADeclaredMode_TheOsDecides()
+    {
+        PhotonCssGenerator.Generate(PhotonTheme.Instance).Should().Contain("color-scheme: light dark;");
+    }
+
     [Fact]
     public void Root_UsesColorSchemeAndLightDarkPairs()
     {

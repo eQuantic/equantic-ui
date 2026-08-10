@@ -204,12 +204,33 @@ public static class TokenCss
 /// </summary>
 public static class PhotonCssGenerator
 {
-    public static string Generate(IAppTheme theme)
+    /// <param name="mode">
+    /// The mode the app DECLARED, or <c>null</c> to follow the operating system.
+    /// <para>
+    /// This drives <c>color-scheme</c>, and it has to: every token resolves through
+    /// <c>light-dark()</c>, which reads <c>color-scheme</c> and nothing else. Declaring a mode
+    /// anywhere else — on a controller, in an option — while this said <c>light dark</c> left two
+    /// answers to one question: the page painted whatever the OS wanted while the toggle reported
+    /// what the app had asked for, so with a dark desktop the site came up dark and offered to
+    /// "switch to dark".
+    /// </para>
+    /// <para>
+    /// Null stays the default and stays honest: the page follows the OS, which is what most apps
+    /// want, and the toggle's label is only settled once the browser's own controller resolves it
+    /// at hydration — a server cannot know a preference it was never sent.
+    /// </para>
+    /// </param>
+    public static string Generate(IAppTheme theme, ThemeMode? mode = null)
     {
         var css = new StringBuilder();
         css.AppendLine("/* GENERATED from eQuantic.UI.Primitives design tokens — do not edit (docs/SHARED-COMPONENTS-PLAN.md). */");
         css.AppendLine(":root {");
-        css.AppendLine("  color-scheme: light dark;");
+        css.AppendLine($"  color-scheme: {mode switch
+        {
+            ThemeMode.Light => "light",
+            ThemeMode.Dark => "dark",
+            _ => "light dark",
+        }};");
 
         // Surfaces, text tiers, interaction chrome (§01).
         AppendColor(css, "background", theme.Background);
@@ -268,11 +289,13 @@ public static class PhotonCssGenerator
         css.AppendLine("}");
 
         // Type roles (§02) — one class per role; components reference the class, never raw sizes.
-        foreach (var role in new[]
-                 {
-                     TypeRole.Display, TypeRole.Heading, TypeRole.Title, TypeRole.BodyL,
-                     TypeRole.BodyM, TypeRole.Label, TypeRole.Caption,
-                 })
+        //
+        // Over the ENUM, never a hand-written list. It was a list, and it stopped at Caption while
+        // the scale grew its dense end (TitleSmall, LabelSmall, Overline) — so the realizer stamped
+        // `.eq-type-labelsmall` on elements that had no such rule behind them and they silently
+        // inherited the body's 16px/400, a fifth too large, in exactly the chrome those rungs exist
+        // for. Nothing failed; the type was just wrong. Enumerating makes the drift impossible.
+        foreach (var role in Enum.GetValues<TypeRole>())
         {
             var style = theme.Type(role);
             css.AppendLine($".eq-type-{role.ToString().ToLowerInvariant()} {{");

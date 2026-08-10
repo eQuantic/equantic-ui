@@ -95,7 +95,9 @@ public static class UIExtensions
         // that reads a cookie, say — keeps it. Without this a toggle resolved nothing during SSR
         // and had to guess the mode it was drawing.
         services.TryAddSingleton<eQuantic.UI.Primitives.IThemeController>(
-            _ => new SsrThemeController(options.InitialThemeMode));
+            // Unset means "follow the OS", which a server cannot resolve — it reports Light, and
+            // the browser's controller settles it at hydration.
+            _ => new SsrThemeController(options.InitialThemeMode ?? eQuantic.UI.Primitives.ThemeMode.Light));
 
         // Add response compression (Brotli + Gzip for JS, CSS, HTML)
         services.AddResponseCompression(opts =>
@@ -381,7 +383,7 @@ public static class UIExtensions
         string? themeDataJson = null;
         if (options.Theme is { } appTheme)
         {
-            headTags.Add($"<style>{eQuantic.UI.Web.PhotonCssGenerator.Generate(appTheme)}</style>");
+            headTags.Add($"<style>{eQuantic.UI.Web.PhotonCssGenerator.Generate(appTheme, options.InitialThemeMode)}</style>");
             themeDataJson = eQuantic.UI.Web.ThemeBridge.SerializeJson(appTheme);
         }
 
@@ -644,14 +646,23 @@ public class UIOptions
     /// </summary>
     internal eQuantic.UI.Primitives.IAppTheme? Theme { get; private set; }
 
-    /// <summary>The mode SSR renders in, and what a toggle reports before the page hydrates.
-    /// Light unless set.</summary>
-    internal eQuantic.UI.Primitives.ThemeMode InitialThemeMode { get; private set; } =
-        eQuantic.UI.Primitives.ThemeMode.Light;
+    /// <summary>The mode the app DECLARED, or null to follow the operating system (the default).</summary>
+    internal eQuantic.UI.Primitives.ThemeMode? InitialThemeMode { get; private set; }
 
     /// <summary>
-    /// The light/dark mode the SERVER renders in. It is what the browser paints first, so it is
-    /// stated rather than guessed; the client controller takes the switch over at hydration.
+    /// Pin the app to one light/dark mode instead of following the operating system.
+    /// <para>
+    /// This drives <c>color-scheme</c>, which is the only thing every token actually reads: they
+    /// resolve through <c>light-dark()</c>. Declaring a mode that did NOT reach
+    /// <c>color-scheme</c> left two answers to one question — the page painted whatever the OS
+    /// wanted while a toggle reported what the app had asked for, so a dark desktop got a dark
+    /// page offering to "switch to dark".
+    /// </para>
+    /// <para>
+    /// Leave it unset to follow the OS, which is what most apps want. Then the first paint is the
+    /// OS's choice and a toggle's label is only settled once the browser's own controller resolves
+    /// it at hydration — a server cannot know a preference it was never sent.
+    /// </para>
     /// </summary>
     public UIOptions UseInitialThemeMode(eQuantic.UI.Primitives.ThemeMode mode)
     {
