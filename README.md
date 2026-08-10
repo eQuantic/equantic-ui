@@ -15,6 +15,12 @@
 </p>
 
 <p align="center">
+  <strong><a href="https://ui.equantic.tech/playground">Try it in your browser →</a></strong><br/>
+  <sub>Write a component in C#, press Run, and watch it render — compiled by the same eqc your build uses. Nothing to install.</sub>
+</p>
+
+<p align="center">
+  <a href="https://ui.equantic.tech/playground">Playground</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#why-equanticui">Why eQuantic.UI</a> •
   <a href="#features">Features</a> •
@@ -26,9 +32,10 @@
 
 > **⚠️ Development Preview**
 >
-> eQuantic.UI is in active development. The NuGet packages are **not yet published** to nuget.org.
-> To try it out, clone the repository and build from source (see [Contributing](#contributing)).
-> We welcome early adopters and feedback!
+> eQuantic.UI is in active development and published to nuget.org as **prereleases**
+> (`0.2.0-preview.*`) — `dotnet new install eQuantic.UI.Templates` and the Quick Start below are
+> the intended way in; you do not need to build from source. Expect the surface to move between
+> previews. We welcome early adopters and feedback!
 
 ---
 

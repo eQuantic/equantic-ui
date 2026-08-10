@@ -129,7 +129,8 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
 The framework ships a real code editor — document model, selection, history, highlighting, bracket
 matching, find, and squiggle decorations — and it is currently a good editor that cannot help you
 write. The missing half is intelligence, and the piece that makes it possible is already proven:
-Roslyn answers **semantic** completions over the very compilation the playground builds
+Roslyn answers **semantic** completions over the very compilation the
+[playground](https://ui.equantic.tech/playground) builds
 (`context.` offers `Theme`; `Col` offers `Column`, because the `using static` surface is part of
 the compilation). A keyword list would be easy and worthless; this is the real thing.
 
