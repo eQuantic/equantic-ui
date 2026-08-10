@@ -9,6 +9,7 @@ export class UI {
     static textEntry(value: string, onChanged: ((string: string) => void) | null = null) { return new TextEntry(value, onChanged); }
     static pressable(child: VisualNode, onPressed: (() => void) | null = null) { return new Pressable(child, onPressed); }
     static link(href: string, child: VisualNode) { return new Link(href, child); }
+    static glyph(glyph: IconGlyph, size: number = 24, color: ColorToken | null = null, label: string | null = null) { return new Icon(glyph, size, color, label); }
     static icon(glyph: string, size: number = 24, color: ColorToken | null = null, label: string | null = null) { return new Icon(glyph, size, color, label); }
     static vector(glyph: IconGlyph, size: number, color: ColorToken | null = null, label: string | null = null) { return new Vector(glyph, size, color, label); }
     static image(source: string, width: number, height: number, fit: string = 'cover', alt: string = '') { return new Image(source, width, height, fit, alt); }

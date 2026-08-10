@@ -91,6 +91,16 @@ public static class UI
     public static Link Link(string href, VisualNode child) =>
         new Link(href, child);
 
+    /// <summary>
+    /// A PACK glyph — what an icon package's catalog hands out (<c>MaterialSymbolsIcons.Home</c>,
+    /// <c>LucideIcons.Check</c>). Named rather than mirrored because <c>Icon</c> is already the
+    /// curated-enum factory and this surface has no overloads: without a name of its own, a pack
+    /// glyph is unreachable in any file importing the surface, which is exactly the hole
+    /// <c>Gap</c> and <c>DotBadge</c> fill for their types.
+    /// </summary>
+    public static Icon Glyph(IconGlyph glyph, float size = 24, ColorToken? color = null, string? label = null) =>
+        new Icon(glyph, size, color, label);
+
     /// <summary>A curated glyph (spec A10) on the §07 size whitelist (16/20/24/32).</summary>
     public static Icon Icon(Icons glyph, float size = 24, ColorToken? color = null, string? label = null) =>
         new Icon(glyph, size, color, label);

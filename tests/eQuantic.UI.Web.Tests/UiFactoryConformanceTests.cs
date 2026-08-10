@@ -32,9 +32,12 @@ public class UiFactoryConformanceTests
     /// FINDS these: any type whose static factory sits behind a mirrored name needs one of
     /// these, and <see cref="AStaticFactoryBehindAMirroredName_HasANamedFactory"/> fails until
     /// it gets one.</item>
+    /// <item><c>Glyph</c> — an icon PACK's glyph. <c>Icon</c> already mirrors the curated-enum
+    /// constructor, and there are no overloads here, so the second constructor (the one every
+    /// icon package feeds) had no way in at all until this.</item>
     /// </list>
     /// </summary>
-    private static readonly HashSet<string> NamedFactories = new() { "Gap", "DotBadge" };
+    private static readonly HashSet<string> NamedFactories = new() { "Gap", "DotBadge", "Glyph" };
 
     private static readonly MethodInfo[] Factories =
         AllFactories.Where(m => !NamedFactories.Contains(m.Name)).ToArray();
