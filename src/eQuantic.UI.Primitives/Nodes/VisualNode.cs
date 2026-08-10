@@ -975,11 +975,17 @@ public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono
     /// with links draws on Photon as its text, unlinked. Closing that needs per-run hit testing (the
     /// engine has to know each run's rect) and a navigation action a shell can answer.
     /// <para>
-    /// The name follows <see cref="Link.Href"/> rather than inventing a second word for one concept.
-    /// The SHAPE is what the native platforms use too, not HTML leaking in: an Apple
-    /// <c>NSAttributedString</c> carries a <c>.link</c> attribute on a range, and an Android
-    /// <c>Spannable</c> carries a <c>URLSpan</c>. An inline link is a RUN with an attribute
-    /// everywhere — it cannot be a separate node, because a separate node is what breaks the line.
+    /// The SHAPE is universal — an Apple <c>NSAttributedString</c> carries a <c>.link</c> attribute on
+    /// a range, an Android <c>Spannable</c> carries a <c>URLSpan</c>: an inline link is a RUN with an
+    /// attribute everywhere, and cannot be a separate node because a separate node is what breaks
+    /// the line.
+    /// <para>
+    /// The NAME is not universal, and it is worth being exact about that. Apple says <c>link</c>,
+    /// Android says <c>URLSpan</c>, and <c>href</c> is HTML's word. It is used here for internal
+    /// consistency with <see cref="Link.Href"/>, which shipped first — one concept with two names
+    /// inside one vocabulary would be worse than one borrowed name. That is a consistency argument,
+    /// not a neutrality one; the abstract layer otherwise avoids a target's vocabulary on purpose
+    /// (<see cref="Pressable"/>, not "Button" or "Clickable").
     /// </para>
     /// </summary>
     public string? Href { get; init; }
