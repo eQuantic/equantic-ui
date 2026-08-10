@@ -429,6 +429,13 @@ public static class UIExtensions
                         ssrEnabled = true;
                         serializedState = result.SerializedState;
 
+                        // What the PAGE asked to answer with (IHandleStatus). A route that matched
+                        // while its content did not exist renders the right thing for a reader and
+                        // must not tell every machine the request succeeded — a crawler would index
+                        // the empty page and a link checker would call the site healthy.
+                        if (result.StatusCode != StatusCodes.Status200OK)
+                            context.Response.StatusCode = result.StatusCode;
+
                         // Merge metadata from SSR
                         if (result.Metadata != null)
                         {

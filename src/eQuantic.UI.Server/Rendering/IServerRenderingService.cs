@@ -95,10 +95,18 @@ public sealed class ServerRenderResult
     public AssetCollection? Assets { get; }
 
     /// <summary>
+    /// What the page asked the server to ANSWER with (<see cref="Primitives.IHandleStatus"/>), or
+    /// 200 when it asked for nothing. A route that matched while its content did not exist renders
+    /// fine and must not answer OK — see the interface for why that is a machine-visible failure.
+    /// </summary>
+    public int StatusCode { get; private init; } = 200;
+
+    /// <summary>
     /// Creates a successful render result.
     /// </summary>
-    public static ServerRenderResult Ok(string html, MetadataCollection? metadata = null, string? serializedState = null, AssetCollection? assets = null) =>
-        new(true, html, metadata, null, serializedState, assets);
+    public static ServerRenderResult Ok(string html, MetadataCollection? metadata = null,
+        string? serializedState = null, AssetCollection? assets = null, int statusCode = 200) =>
+        new(true, html, metadata, null, serializedState, assets) { StatusCode = statusCode };
 
     /// <summary>
     /// Creates a failed render result.

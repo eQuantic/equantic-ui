@@ -213,7 +213,15 @@ public class ServerRenderingService : IServerRenderingService
                 _logger.LogDebug("SSR completed for page: {PageType}, HTML length: {Length}",
                     pageTypeName, html.Length);
 
-                return ServerRenderResult.Ok(html, metadata, serializedState, assets.HasAssets ? assets : null);
+                // The page's own answer, asked AFTER the prefetch — "does this exist" is something
+                // a page usually learns by loading it. A matched route with no content behind it
+                // renders fine and must not answer 200.
+                var status = metadataSource is Primitives.IHandleStatus statusHandler
+                    ? statusHandler.StatusCode
+                    : 200;
+
+                return ServerRenderResult.Ok(html, metadata, serializedState,
+                    assets.HasAssets ? assets : null, status);
             }
             finally
             {

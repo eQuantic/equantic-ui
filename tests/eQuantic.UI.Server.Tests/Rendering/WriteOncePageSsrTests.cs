@@ -105,6 +105,61 @@ public class WriteOncePageSsrTests
             + "knew about before it loaded anything");
     }
 
+    /// <summary>A route that matches every slug, including the ones naming no document.</summary>
+    [Page("/status-test")]
+    private sealed class MissingContentPage
+        : Primitives.StatelessComponent, IServerPrefetch, Primitives.IHandleStatus
+    {
+        private bool _found;
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _found = false;   // the slug named nothing
+            return Task.CompletedTask;
+        }
+
+        public int StatusCode => _found ? 200 : 404;
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Text("Not found", TypeRole.Heading);
+    }
+
+    /// <summary>
+    /// The page renders the right thing for a READER and must not tell every machine the request
+    /// succeeded. A 200 here means a crawler indexes the empty page, a link checker calls the site
+    /// healthy, and an uptime probe never notices — the failure is invisible to exactly the things
+    /// whose job is to notice.
+    /// </summary>
+    [Fact]
+    public async Task APageThatFoundNothing_AnswersItsOwnStatus()
+    {
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().BuildServiceProvider(),
+        };
+
+        var result = await CreateService().RenderPageAsync(nameof(MissingContentPage), context);
+
+        result.Success.Should().BeTrue("it rendered — the content is missing, not the page");
+        result.Html.Should().Contain("Not found");
+        result.StatusCode.Should().Be(404);
+    }
+
+    /// <summary>A page that says nothing about status still answers 200, so this changes nothing
+    /// for every page written before it existed.</summary>
+    [Fact]
+    public async Task APageWithoutAStatus_StillAnswersOk()
+    {
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().BuildServiceProvider(),
+        };
+
+        var result = await CreateService().RenderPageAsync(nameof(WriteOnceTestPage), context);
+
+        result.StatusCode.Should().Be(200);
+    }
+
     private static ServerRenderingService CreateService(IAppTheme? theme = null)
     {
         var options = new UIOptions();
