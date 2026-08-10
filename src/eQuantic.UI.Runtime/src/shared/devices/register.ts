@@ -1,4 +1,5 @@
 import { getRootServiceProvider } from '../../core/service-provider';
+import { WebAppStorage } from './app-storage';
 import { WebBiometrics } from './biometrics';
 import { WebCamera } from './camera';
 import { WebLocation } from './location';
@@ -27,6 +28,10 @@ export function registerDeviceCapabilities(): void {
   services.registerSingleton('IMotionSensor', () => new WebMotionSensor());
   services.registerSingleton('ILocation', () => new WebLocation());
   services.registerSingleton('ICamera', () => new WebCamera());
+  // The app's own durable key/value store. NOT ISecretStore beside it: the browser has no vault,
+  // and registering a store any script on the origin can read under that name would be the
+  // framework helping an app make the mistake the two types exist to prevent.
+  services.registerSingleton('IAppStorage', () => new WebAppStorage());
   // Not a device, but the same contract: a component asks for the light/dark hand by interface
   // name and never learns that on this target it is one color-scheme declaration.
   services.registerSingleton('IThemeController', () => new WebThemeController());

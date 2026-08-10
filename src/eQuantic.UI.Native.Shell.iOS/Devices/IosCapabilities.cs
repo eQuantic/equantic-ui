@@ -19,5 +19,9 @@ public sealed class IosCapabilities : IPhotonCapabilities
         services.TryAddSingleton<IMotionSensor, AppleMotionSensor>();
         services.TryAddSingleton<ILocation, AppleLocation>();
         services.TryAddSingleton<ICamera, AppleCamera>();
+        // The app's own durable key/value store — NSUserDefaults, which the system already
+        // backs up, migrates and deletes along with the app. One realization for both
+        // Apple platforms because it is one API on both.
+        services.TryAddSingleton<IAppStorage, AppleAppStorage>();
     }
 }

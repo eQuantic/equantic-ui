@@ -25,5 +25,9 @@ public sealed class MacOSCapabilities : IPhotonCapabilities
         // The same two-method clipboard the text fields use, offered as a SERVICE — what a page's
         // own "Copy" button asks for.
         services.TryAddSingleton<ITextClipboard, MacClipboard>();
+        // The app's own durable key/value store — NSUserDefaults, which the system already
+        // backs up, migrates and deletes along with the app. One realization for both
+        // Apple platforms because it is one API on both.
+        services.TryAddSingleton<IAppStorage, AppleAppStorage>();
     }
 }
