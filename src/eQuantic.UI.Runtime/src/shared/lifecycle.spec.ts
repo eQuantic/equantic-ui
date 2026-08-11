@@ -7,7 +7,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { ComponentInstanceStore } from './instance-store';
-import { Column, Row } from './vocabulary';
+import { Box, BoxStyle, Column, Positioned, Row, Stack } from './vocabulary';
+import { SizeValue } from './value-types';
+import { lowerVisualNode } from './lowering';
+import { ambientLoweringContext } from './photon-context';
+import { effectiveStyle } from './style-atomizer';
+import type { HtmlNode } from '../core/types';
 
 class Tracked {
   readonly _sharedStateful = true;
@@ -162,5 +167,42 @@ describe('flex constructor shapes', () => {
   it('keeps each subclass default when nothing is passed', () => {
     expect(new Row(4).cross).toBe('center');
     expect(new Column(4).cross).toBe('stretch');
+  });
+});
+
+/**
+ * The client half of the C# `PositionedSpanTests` / `PositionedThroughComponentTests`. It has to
+ * agree with the server to the character: SSR emits the markup and the client re-lowers it on
+ * hydration, so a rule applied on one side only is a mismatch the reconciler repairs by replacing
+ * the subtree — a visible flash, and the bug back after hydration.
+ */
+describe('a positioned child of a stack', () => {
+  const corner = (child: unknown) => {
+    const stack = new Stack('topStart');
+    stack.add(new Box(new BoxStyle({ width: SizeValue.fill, height: 100 })));
+    stack.add(new Positioned(child as never, 0, 0));
+    return lowerVisualNode(stack as never, ambientLoweringContext());
+  };
+
+  const fillingRow = () => {
+    const row = new Row(0, { width: SizeValue.fill });
+    row.add(new Box(new BoxStyle({ width: 32, height: 32 })));
+    return row;
+  };
+
+  const styleOf = (node: HtmlNode, index: number) =>
+    effectiveStyle(node.children[index] as { attributes: Record<string, string | undefined> });
+
+  it('spans between both edges when its child fills', () => {
+    const style = styleOf(corner(fillingRow()), 1);
+
+    expect(style).toContain('left: 0');
+    expect(style).toContain('right: 0');
+  });
+
+  it('stays where it was put when its child hugs', () => {
+    const style = styleOf(corner(new Box(new BoxStyle({ width: 32, height: 32 }))), 1);
+
+    expect(style).not.toContain('left: 0');
   });
 });

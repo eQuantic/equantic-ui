@@ -1250,11 +1250,21 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
   const children: HtmlNode[] = [];
   const stackChildren = node.children ?? [];
   for (let i = 0; i < stackChildren.length; i++) {
-    const child = stackChildren[i];
-    if (child.nodeKind === 'positioned') {
+    // Through the COMPONENT to what it builds, exactly as the C# realizer does — `Positioned` is a
+    // contract with the parent, and one returned by a component was not recognised. Resolved ONCE,
+    // through the store, so the instance that builds here is the instance that stays.
+    const child = resolveStackChild(stackChildren[i], context, path + '/' + i);
+    if (child?.nodeKind === 'positioned') {
       const positioned = child as PositionedNode;
       const lowered = lowerNode(positioned.child, context, null, path + '/' + i + '/0');
       if (!lowered) continue;
+      // An absolutely-positioned box with ONE edge shrink-wraps; with two it spans between them.
+      // Native measures a positioned child against the stack's full extent, so a child that FILLS
+      // is the stack's width there and its own content's width here — the same tree, two
+      // geometries (C# twin).
+      const filling = fills(positioned.child);
+      const spanX = filling.width && (positioned.start == null) !== (positioned.end == null);
+      const spanY = filling.height && (positioned.top == null) !== (positioned.bottom == null);
       children.push(
         element(
           'div',
@@ -1262,15 +1272,15 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
             position: 'absolute',
             // Spec S7 (C# twin): explicit stacking WINS; otherwise the child's own depth.
             'z-index': `${(positioned.zIndex ?? 0) !== 0 ? positioned.zIndex : i + 1}`,
-            top: positioned.top != null ? px(positioned.top) : undefined,
-            right: positioned.end != null ? px(positioned.end) : undefined,
-            bottom: positioned.bottom != null ? px(positioned.bottom) : undefined,
-            left: positioned.start != null ? px(positioned.start) : undefined,
+            top: positioned.top != null ? px(positioned.top) : spanY ? '0' : undefined,
+            right: positioned.end != null ? px(positioned.end) : spanX ? '0' : undefined,
+            bottom: positioned.bottom != null ? px(positioned.bottom) : spanY ? '0' : undefined,
+            left: positioned.start != null ? px(positioned.start) : spanX ? '0' : undefined,
           },
           [lowered],
         ),
       );
-    } else {
+    } else if (child) {
       const lowered = lowerNode(child, context, null, path + '/' + i);
       if (!lowered) continue;
       // The cell IS the stack's available space (native MeasureStack contract): stretched to the
@@ -1974,6 +1984,37 @@ function lowerSimulated(
  * its own build — the only moment the answer can change anything, because by the time a tree exists
  * the scrim and the layer are already in it.
  */
+/**
+ * A Stack child as the STACK sees it: a component is resolved through the store and built ONCE, so
+ * a `Positioned` it returns still positions and the instance that builds is the instance that
+ * stays. Anything else passes through untouched.
+ *
+ * The lowering of the result happens where it always did — this only decides which branch the child
+ * takes, which is the decision `child.nodeKind === 'positioned'` was getting wrong.
+ */
+function resolveStackChild(
+  child: VisualNodeValue,
+  context: LoweringContext,
+  path: string,
+): VisualNodeValue | null {
+  let node = child;
+  // Bounded: a component whose build returns itself would otherwise spin here.
+  for (let hops = 0; hops < 8 && node?.nodeKind === 'component'; hops++) {
+    const pass = getActivePass();
+    const resolved = (
+      pass ? pass.store.reconcile(path, node, pass.invalidator) : node
+    ) as ComponentNode;
+    try {
+      node = resolved.build(context.componentContext) as VisualNodeValue;
+    } catch (error) {
+      const name = (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
+      reportComponentFailure(name, error);
+      return describeComponentFailure(name, error, getPhotonTheme()) as VisualNodeValue;
+    }
+  }
+  return node;
+}
+
 function lowerInFlow(
   node: InFlowNode,
   context: LoweringContext,

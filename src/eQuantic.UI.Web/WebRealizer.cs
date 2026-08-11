@@ -182,15 +182,23 @@ public static class WebRealizer
             {
                 var lowered = LowerNode(positioned.Child, context, horizontalAxis: null);
                 if (lowered is null) continue;
+                // An absolutely-positioned box with ONE edge shrink-wraps its content; with two it
+                // spans between them. Native measures a positioned child against the stack's full
+                // extent, so a child that FILLS gets the stack's width there and 64px of button
+                // here — the same tree, two geometries. Pinning the opposite edge gives the box the
+                // definite width its filling child is asking to be 100% of.
+                var (fillsWidth, fillsHeight) = Fills(positioned.Child);
+                var spanX = fillsWidth && positioned.Start is null != positioned.End is null;
+                var spanY = fillsHeight && positioned.Top is null != positioned.Bottom is null;
                 var anchor = new RealizedElement("div")
                 {
                     Style = new HtmlStyle
                     {
                         Position = Core.Position.Absolute,
-                        Top = positioned.Top is { } top ? TokenCss.Px(top) : null,
-                        Right = positioned.End is { } end ? TokenCss.Px(end) : null,
-                        Bottom = positioned.Bottom is { } bottom ? TokenCss.Px(bottom) : null,
-                        Left = positioned.Start is { } start ? TokenCss.Px(start) : null,
+                        Top = positioned.Top is { } top ? TokenCss.Px(top) : spanY ? "0" : null,
+                        Right = positioned.End is { } end ? TokenCss.Px(end) : spanX ? "0" : null,
+                        Bottom = positioned.Bottom is { } bottom ? TokenCss.Px(bottom) : spanY ? "0" : null,
+                        Left = positioned.Start is { } start ? TokenCss.Px(start) : spanX ? "0" : null,
                         // Spec S7: explicit stacking WINS; otherwise the child's own depth.
                         ZIndex = (positioned.ZIndex != 0 ? positioned.ZIndex : depth).ToString(),
                     },
