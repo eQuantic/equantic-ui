@@ -12,6 +12,8 @@ export class Pagination extends StatelessComponent {
         if (pageCount !== undefined) this.pageCount = pageCount;
         if (currentPage !== undefined) this.currentPage = currentPage;
         if (onChanged !== undefined) this.onChanged = onChanged;
+        if (this.pageCount === undefined) this.pageCount = 0;
+        if (this.currentPage === undefined) this.currentPage = 0;
         this.pageCount = pageCount;this.currentPage = currentPage;this.onChanged = onChanged;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

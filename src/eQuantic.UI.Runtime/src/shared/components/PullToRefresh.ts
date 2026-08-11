@@ -9,6 +9,7 @@ export class PullToRefresh extends StatelessComponent {
         super();
         if (child !== undefined) this.child = child;
         if (onRefresh !== undefined) this.onRefresh = onRefresh;
+        if (this.refreshing === undefined) this.refreshing = false;
         this.child = child;this.onRefresh = onRefresh;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

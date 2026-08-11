@@ -15,7 +15,11 @@ export class Slider extends StatelessComponent {
         super();
         if (value !== undefined) this.value = value;
         if (onChanged !== undefined) this.onChanged = onChanged;
+        if (this.value === undefined) this.value = 0;
+        if (this.min === undefined) this.min = 0;
         if (this.max === undefined) this.max = 1;
+        if (this.step === undefined) this.step = 0;
+        if (this.disabled === undefined) this.disabled = false;
         if (this.variant === undefined) this.variant = 'primary';
         if (this.label === undefined) this.label = '';
         this.value = value;this.onChanged = onChanged;

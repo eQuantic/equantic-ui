@@ -10,6 +10,7 @@ export class AppBar extends StatelessComponent {
     constructor(title?: any, props?: any) {
         super();
         if (title !== undefined) this.title = title;
+        if (this.scrolled === undefined) this.scrolled = false;
         this.title = title;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

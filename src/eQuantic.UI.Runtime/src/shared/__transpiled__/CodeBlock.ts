@@ -31,10 +31,15 @@ export class CodeBlock extends StatelessComponent {
         if (language !== undefined) this.language = language;
         if (this.showLineNumbers === undefined) this.showLineNumbers = true;
         if (this.firstLineNumber === undefined) this.firstLineNumber = 1;
+        if (this.maxHeight === undefined) this.maxHeight = 0;
         if (this.standalone === undefined) this.standalone = true;
         if (this.size === undefined) this.size = 'small';
+        if (this.inverse === undefined) this.inverse = false;
         if (this.gutterMarkers === undefined) this.gutterMarkers = [];
         if (this.decorations === undefined) this.decorations = [];
+        if (this.viewportOffset === undefined) this.viewportOffset = 0;
+        if (this.viewportHeight === undefined) this.viewportHeight = 0;
+        if (this.viewportWidth === undefined) this.viewportWidth = 0;
         this.document = CodeDocument.fromText(code);this.language = CodeLanguages.for(language);
         if (props && typeof props === 'object') Object.assign(this, props);
     }

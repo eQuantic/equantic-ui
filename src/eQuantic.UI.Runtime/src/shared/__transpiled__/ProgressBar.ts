@@ -13,6 +13,7 @@ export class ProgressBar extends SharedStatefulComponent {
         if (value !== undefined) this.value = value;
         if (variant !== undefined) this.variant = variant;
         if (this.variant === undefined) this.variant = 'primary';
+        if (this.prominent === undefined) this.prominent = false;
         this.value = value;this.variant = variant;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

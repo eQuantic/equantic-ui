@@ -30,25 +30,51 @@ public class ComponentParser
         catch { return null; }
     }
     /// <summary>
-    /// The JS literal for an uninitialized ENUM property's C# default — its zero member, lowered exactly
-    /// as <c>EnumStrategy</c> lowers a member access ([Flags] numerically, otherwise the camelCase member
-    /// name as a string). Returns null for every other type, where C#'s default and JS `undefined` behave
-    /// alike. Without this the client leaves the property `undefined`, and a `status === 'none'` test that
-    /// is TRUE on the server silently takes the other branch after hydration.
+    /// The JS literal for an uninitialized VALUE-TYPE property's C# default. A field of a value type
+    /// is zero in C# whether or not anyone wrote <c>= 0</c>; on the client it is <c>undefined</c>
+    /// unless someone writes it, and the two are not the same value.
+    /// <para>
+    /// This started at enums, where the divergence is loud: an unset enum is its zero member, lowered
+    /// as a string, so a <c>status === 'none'</c> test that is TRUE on the server takes the other
+    /// branch after hydration. Numbers were left out because <c>undefined</c> is falsy and reads like
+    /// <c>x > 0</c> behave the same — which is true right up to the first ARITHMETIC:
+    /// <c>Math.max(w, undefined)</c> is NaN, and a NaN width reaches the stylesheet as
+    /// <c>width:NaNpx</c>, a rule the CSS parser drops whole. It showed up on a code block, on a
+    /// client-rendered page only, because SSR computes the same property in C# where it is 0.
+    /// </para>
+    /// <para>Null for reference types, where C#'s default and `undefined` really do behave alike.</para>
     /// </summary>
-    private string? ImplicitEnumDefaultJs(PropertyDeclarationSyntax prop)
+    private string? ImplicitValueDefaultJs(PropertyDeclarationSyntax prop)
     {
         var model = TryGetSemanticModel(prop.SyntaxTree);
-        if (model?.GetTypeInfo(prop.Type).Type is not INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+        var type = model?.GetTypeInfo(prop.Type).Type;
+
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+        {
+            var zero = enumType.GetMembers()
+                .OfType<IFieldSymbol>()
+                .FirstOrDefault(f => f.HasConstantValue
+                    && Convert.ToInt64(f.ConstantValue, CultureInfo.InvariantCulture) == 0);
+            if (zero == null) return null; // no zero member: C# default is an unnamed value — leave it alone
+
+            return enumType.IsFlagsEnum() ? "0" : $"'{zero.Name.ToCamelCase()}'";
+        }
+
+        // A NULLABLE value type really is null when unset — `undefined` is the honest twin there.
+        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T })
             return null;
 
-        var zero = enumType.GetMembers()
-            .OfType<IFieldSymbol>()
-            .FirstOrDefault(f => f.HasConstantValue
-                && Convert.ToInt64(f.ConstantValue, CultureInfo.InvariantCulture) == 0);
-        if (zero == null) return null; // no zero member: C# default is an unnamed value — leave it alone
-
-        return enumType.IsFlagsEnum() ? "0" : $"'{zero.Name.ToCamelCase()}'";
+        return type?.SpecialType switch
+        {
+            SpecialType.System_Boolean => "false",
+            SpecialType.System_SByte or SpecialType.System_Byte
+                or SpecialType.System_Int16 or SpecialType.System_UInt16
+                or SpecialType.System_Int32 or SpecialType.System_UInt32
+                or SpecialType.System_Int64 or SpecialType.System_UInt64
+                or SpecialType.System_Single or SpecialType.System_Double
+                or SpecialType.System_Decimal => "0",
+            _ => null,
+        };
     }
 
     /// <summary>
@@ -478,7 +504,7 @@ public class ComponentParser
                 Type = prop.Type.ToString(),
                 DefaultValue = prop.Initializer?.Value.ToString(),
                 DefaultValueNode = prop.Initializer?.Value,
-                ImplicitDefaultJs = prop.Initializer == null ? ImplicitEnumDefaultJs(prop) : null,
+                ImplicitDefaultJs = prop.Initializer == null ? ImplicitValueDefaultJs(prop) : null,
                 IsPublic = isPublic,
                 IsStatic = prop.Modifiers.Any(SyntaxKind.StaticKeyword),
                 Node = prop

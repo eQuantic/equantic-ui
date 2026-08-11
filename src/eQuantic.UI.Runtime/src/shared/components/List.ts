@@ -7,6 +7,7 @@ export class List extends StatelessComponent {
         super();
         if (items !== undefined) this.items = items;
         if (dividers !== undefined) this.dividers = dividers;
+        if (this.dividers === undefined) this.dividers = false;
         this.items = items;this.dividers = dividers;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

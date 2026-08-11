@@ -8,6 +8,8 @@ export class Switch extends StatelessComponent {
         super();
         if (on !== undefined) this.on = on;
         if (onChanged !== undefined) this.onChanged = onChanged;
+        if (this.on === undefined) this.on = false;
+        if (this.disabled === undefined) this.disabled = false;
         this.on = on;this.onChanged = onChanged;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

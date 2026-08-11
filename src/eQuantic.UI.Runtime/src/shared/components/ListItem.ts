@@ -12,6 +12,7 @@ export class ListItem extends StatelessComponent {
         if (title !== undefined) this.title = title;
         if (subtitle !== undefined) this.subtitle = subtitle;
         if (onPressed !== undefined) this.onPressed = onPressed;
+        if (this.disabled === undefined) this.disabled = false;
         this.title = title;this.subtitle = subtitle;this.onPressed = onPressed;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

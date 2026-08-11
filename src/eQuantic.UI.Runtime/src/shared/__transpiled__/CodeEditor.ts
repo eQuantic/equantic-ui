@@ -30,10 +30,15 @@ export class CodeEditor extends SharedStatefulComponent {
         super();
         if (this.showLineNumbers === undefined) this.showLineNumbers = true;
         if (this.firstLineNumber === undefined) this.firstLineNumber = 1;
+        if (this.maxHeight === undefined) this.maxHeight = 0;
         if (this.size === undefined) this.size = 'small';
+        if (this.inverse === undefined) this.inverse = false;
+        if (this.readOnly === undefined) this.readOnly = false;
+        if (this.autofocus === undefined) this.autofocus = false;
         if (this.gutterMarkers === undefined) this.gutterMarkers = [];
         if (this.decorations === undefined) this.decorations = [];
         if (this.matchBrackets === undefined) this.matchBrackets = true;
+        if (this.searchMatchCase === undefined) this.searchMatchCase = false;
         this.initialCode = code;this.languageName = language;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

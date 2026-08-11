@@ -8,6 +8,7 @@ export class Accordion extends SharedStatefulComponent {
     constructor(items?: any, openIndex: any = -1, props?: any) {
         super();
         if (items !== undefined) this.items = items;
+        if (this.multiple === undefined) this.multiple = false;
         this.items = items;this._openSingle = openIndex;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

@@ -11,6 +11,7 @@ export class Drawer extends StatelessComponent {
         if (content !== undefined) this.content = content;
         if (open !== undefined) this.open = open;
         if (onDismiss !== undefined) this.onDismiss = onDismiss;
+        if (this.open === undefined) this.open = false;
         if (this.edge === undefined) this.edge = 'start';
         if (this.width === undefined) this.width = 320;
         this.content = content;this.open = open;this.onDismiss = onDismiss;

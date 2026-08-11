@@ -17,6 +17,9 @@ export class Button extends StatelessComponent {
         if (onPressed !== undefined) this.onPressed = onPressed;
         if (this.variant === undefined) this.variant = 'primary';
         if (this.size === undefined) this.size = 'small';
+        if (this.disabled === undefined) this.disabled = false;
+        if (this.expand === undefined) this.expand = false;
+        if (this.loading === undefined) this.loading = false;
         this.label = label;this.variant = variant;this.size = size;this.onPressed = onPressed;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

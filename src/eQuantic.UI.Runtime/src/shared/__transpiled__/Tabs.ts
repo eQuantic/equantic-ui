@@ -9,6 +9,7 @@ export class Tabs extends StatelessComponent {
         if (labels !== undefined) this.labels = labels;
         if (selected !== undefined) this.selected = selected;
         if (onSelect !== undefined) this.onSelect = onSelect;
+        if (this.selected === undefined) this.selected = 0;
         this.labels = labels;this.selected = selected;this.onSelect = onSelect;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

@@ -12,6 +12,7 @@ export class Popover extends StatelessComponent {
         if (content !== undefined) this.content = content;
         if (open !== undefined) this.open = open;
         if (onDismiss !== undefined) this.onDismiss = onDismiss;
+        if (this.open === undefined) this.open = false;
         if (this.placement === undefined) this.placement = 'bottomStart';
         this.trigger = trigger;this.content = content;this.open = open;this.onDismiss = onDismiss;
         if (props && typeof props === 'object') Object.assign(this, props);

@@ -24,6 +24,9 @@ export class TextInput extends SharedStatefulComponent {
         if (leading !== undefined) this.leading = leading;
         if (size !== undefined) this.size = size;
         if (this.size === undefined) this.size = 'small';
+        if (this.disabled === undefined) this.disabled = false;
+        if (this.autofocus === undefined) this.autofocus = false;
+        if (this.obscure === undefined) this.obscure = false;
         if (size === 'small') throw new Error('TextInput has no Small size — text + padding can\'t fit 32dp (spec B9).');this.value = value;this.onChanged = onChanged;this.label = label;this.placeholder = placeholder;this.helper = helper;this.error = error;this.leading = leading;this.size = size;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

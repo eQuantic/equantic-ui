@@ -16,6 +16,8 @@ export class ListView extends SharedStatefulComponent {
         if (count !== undefined) this.count = count;
         if (itemExtent !== undefined) this.itemExtent = itemExtent;
         if (itemBuilder !== undefined) this.itemBuilder = itemBuilder;
+        if (this.count === undefined) this.count = 0;
+        if (this.itemExtent === undefined) this.itemExtent = 0;
         if (this.overscan === undefined) this.overscan = 3;
         this.count = count;this.itemExtent = itemExtent;this.itemBuilder = itemBuilder;
         if (props && typeof props === 'object') Object.assign(this, props);

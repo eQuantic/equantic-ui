@@ -12,6 +12,8 @@ export class RadioGroup extends StatelessComponent {
         if (selected !== undefined) this.selected = selected;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (label !== undefined) this.label = label;
+        if (this.selected === undefined) this.selected = 0;
+        if (this.disabled === undefined) this.disabled = false;
         this.options = options;this.selected = selected;this.onChanged = onChanged;this.label = label;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

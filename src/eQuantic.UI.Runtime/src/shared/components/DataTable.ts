@@ -21,6 +21,7 @@ export class DataTable extends StatelessComponent {
         if (rows !== undefined) this.rows = rows;
         if (this.sortColumn === undefined) this.sortColumn = -1;
         if (this.sortDirection === undefined) this.sortDirection = 'none';
+        if (this.pendingRows === undefined) this.pendingRows = 0;
         this.columns = columns;this.rows = rows;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

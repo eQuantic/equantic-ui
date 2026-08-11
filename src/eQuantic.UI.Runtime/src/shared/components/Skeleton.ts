@@ -11,6 +11,8 @@ export class Skeleton extends StatelessComponent {
         if (width !== undefined) this.width = width;
         if (height !== undefined) this.height = height;
         if (this.shape === undefined) this.shape = 'line';
+        if (this.width === undefined) this.width = 0;
+        if (this.height === undefined) this.height = 0;
         this.shape = shape;this.width = width;this.height = height;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

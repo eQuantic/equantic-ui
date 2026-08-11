@@ -14,6 +14,8 @@ export class Select extends SharedStatefulComponent {
         if (selectedIndex !== undefined) this.selectedIndex = selectedIndex;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (placeholder !== undefined) this.placeholder = placeholder;
+        if (this.selectedIndex === undefined) this.selectedIndex = 0;
+        if (this.disabled === undefined) this.disabled = false;
         this.options = options;this.selectedIndex = selectedIndex;this.onChanged = onChanged;this.placeholder = placeholder;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

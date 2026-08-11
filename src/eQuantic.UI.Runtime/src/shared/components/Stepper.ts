@@ -14,10 +14,12 @@ export class Stepper extends StatelessComponent {
         super();
         if (value !== undefined) this.value = value;
         if (onChanged !== undefined) this.onChanged = onChanged;
+        if (this.value === undefined) this.value = 0;
         if (this.min === undefined) this.min = -2147483648;
         if (this.max === undefined) this.max = 2147483647;
         if (this.step === undefined) this.step = 1;
         if (this.size === undefined) this.size = 'medium';
+        if (this.disabled === undefined) this.disabled = false;
         if (this.suffix === undefined) this.suffix = '';
         if (this.label === undefined) this.label = '';
         this.value = value;this.onChanged = onChanged;

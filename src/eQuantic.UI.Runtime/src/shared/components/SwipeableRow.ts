@@ -17,6 +17,7 @@ export class SwipeableRow extends StatelessComponent {
         if (onAction !== undefined) this.onAction = onAction;
         if (this.actionIcon === undefined) this.actionIcon = 'search';
         if (this.actionVariant === undefined) this.actionVariant = 'destructive';
+        if (this.open === undefined) this.open = false;
         this.child = child;this.actionLabel = actionLabel;this.actionIcon = actionIcon;this.onAction = onAction;
         if (props && typeof props === 'object') Object.assign(this, props);
     }

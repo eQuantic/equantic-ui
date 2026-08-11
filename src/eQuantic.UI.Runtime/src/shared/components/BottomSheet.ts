@@ -9,6 +9,7 @@ export class BottomSheet extends StatelessComponent {
         if (content !== undefined) this.content = content;
         if (onDismiss !== undefined) this.onDismiss = onDismiss;
         if (dismissible !== undefined) this.dismissible = dismissible;
+        if (this.dismissible === undefined) this.dismissible = false;
         this.content = content;this.onDismiss = onDismiss;this.dismissible = dismissible;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
