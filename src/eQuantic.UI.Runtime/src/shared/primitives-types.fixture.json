@@ -55,6 +55,7 @@
   "Image",
   "ImageData",
   "InFlow",
+  "InView",
   "IndentationFoldProvider",
   "JsonLanguage",
   "KeyChord",

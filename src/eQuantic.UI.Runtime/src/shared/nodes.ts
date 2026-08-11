@@ -382,6 +382,15 @@ export interface InFlowNode extends VisualNodeValue {
   child: VisualNodeValue;
 }
 
+/** Wire shape of the C# `InView` — reports when its child comes on screen, and when it leaves. */
+export interface InViewNode extends VisualNodeValue {
+  nodeKind: 'inView';
+  child: VisualNodeValue;
+  onChanged?: (visible: boolean) => void;
+  /** How much has to show before it counts, 0–1. */
+  threshold?: number;
+}
+
 export interface PressableNode extends VisualNodeValue {
   nodeKind: 'pressable';
   child: VisualNodeValue;

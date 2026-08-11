@@ -21,6 +21,7 @@ import {
 } from './component-boundary';
 import { getActivePass } from './instance-store';
 import { getPhotonTheme, setInFlow } from './photon-context';
+import { declareInView } from './in-view';
 import { cssFontWeight } from './value-types';
 import { CodeKeymap } from './components/CodeKeymap';
 import {
@@ -64,6 +65,7 @@ import type {
   PressableNode,
   HoverableNode,
   InFlowNode,
+  InViewNode,
   SimulatedNode,
   ScrollViewNode,
   SizeValueValue,
@@ -318,6 +320,8 @@ function lowerNode(
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
     case 'inFlow':
       return lowerInFlow(node as unknown as InFlowNode, context, horizontalAxis, path);
+    case 'inView':
+      return lowerInView(node as unknown as InViewNode, context, horizontalAxis, path);
     case 'positioned':
       // Outside a Stack there is no anchor frame — degrade to the child (parity with the realizers).
       return lowerNode((node as PositionedNode).child, context, horizontalAxis, path + '/0');
@@ -1687,6 +1691,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as SimulatedNode).child);
     case 'inFlow':
       return fills((node as InFlowNode).child);
+    case 'inView':
+      return fills((node as InViewNode).child);
     case 'flexible':
       return fills((node as FlexibleNode).child);
     case 'loopMotion':
@@ -2013,6 +2019,29 @@ function resolveStackChild(
     }
   }
   return node;
+}
+
+/**
+ * The C# `LowerInView` twin: a display:contents wrapper the runtime observes. The server emits the
+ * same element without the marker — it cannot watch anything — so hydration is an attribute diff
+ * rather than a replaced subtree.
+ */
+function lowerInView(
+  node: InViewNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  if (!child) return null;
+
+  const wrapper = element('div', { display: 'contents' }, [child]);
+  wrapper.attributes['data-eq-inview'] = path;
+  declareInView(path, {
+    threshold: node.threshold ?? 0,
+    onChanged: node.onChanged ?? (() => {}),
+  });
+  return wrapper;
 }
 
 function lowerInFlow(

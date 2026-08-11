@@ -305,6 +305,8 @@ public static class LayoutEngine
         Hoverable hoverable => MeasureWrapper(hoverable, hoverable.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // A simulated state changes only what is DRAWN, so it takes no space of its own.
         Simulated simulated => MeasureWrapper(simulated, simulated.Child, maxW, maxH, ctx, path, stretchW, stretchH),
+        // Reports presence; it neither takes space nor draws.
+        InView inView => MeasureWrapper(inView, inView.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // The intent has to be armed while the child BUILDS — by layout time the tree already has
         // the scrim in it, and there is nothing left to decide.
         InFlow inFlow => MeasureInFlow(inFlow, maxW, maxH, ctx, path, stretchW, stretchH),
@@ -390,6 +392,7 @@ public static class LayoutEngine
         Adjustable adjustable => MinContentWidth(adjustable.Child, ctx),
         Hoverable hoverable => MinContentWidth(hoverable.Child, ctx),
         Simulated simulated => MinContentWidth(simulated.Child, ctx),
+        InView inView => MinContentWidth(inView.Child, ctx),
         InFlow inFlow => MinContentWidth(inFlow.Child, ctx),
         Shortcut shortcut => MinContentWidth(shortcut.Child, ctx),
         Flexible flexible => MinContentWidth(flexible.Child, ctx),

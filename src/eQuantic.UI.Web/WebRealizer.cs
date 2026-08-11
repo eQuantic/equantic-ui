@@ -88,6 +88,31 @@ public static class WebRealizer
         }
     }
 
+    /// <summary>
+    /// A layout-transparent wrapper the runtime observes. The declaration rides a stable path the
+    /// client picks up after the pass mounts — the same shape ScrollView's viewport reporting uses,
+    /// because the answer is not knowable until layout has happened.
+    /// </summary>
+    private static HtmlElement? LowerInView(InView inView, ComponentContext context, bool? horizontalAxis)
+    {
+        var child = LowerNode(inView.Child, context, horizontalAxis);
+        if (child is null) return null;
+
+        var wrapper = new RealizedElement("div")
+        {
+            // display:contents — the wrapper reports, it does not lay out. A div in the flow would
+            // break the grid or flex the child was written to sit in.
+            //
+            // The OBSERVER marker is stamped by the client, which is the only side that can watch
+            // anything; the server emits the same element so the two trees have the same shape and
+            // hydration is an attribute diff rather than a replaced subtree (the same split
+            // ScrollView's viewport reporting uses).
+            Style = new HtmlStyle { Display = Core.Display.Contents },
+        };
+        wrapper.Children.Add(child);
+        return wrapper;
+    }
+
     private static HtmlElement? LowerNode(VisualNode node, ComponentContext context, bool? horizontalAxis) => node switch
     {
         Box box => LowerBox(box, context),
@@ -114,6 +139,7 @@ public static class WebRealizer
         Hoverable hoverable => LowerHoverable(hoverable, context),
         Simulated simulated => LowerSimulated(simulated, context, horizontalAxis),
         InFlow inFlow => LowerInFlow(inFlow, context, horizontalAxis),
+        InView inView => LowerInView(inView, context, horizontalAxis),
         Adjustable adjustable => LowerAdjustable(adjustable, context),
         Shortcut shortcut => LowerShortcut(shortcut, context, horizontalAxis),
         Link link => LowerLink(link, context),

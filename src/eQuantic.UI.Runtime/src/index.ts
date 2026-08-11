@@ -139,6 +139,7 @@ export {
   LinearGradient,
   RadialGradient,
   InFlow,
+  InView,
   Simulated,
   TextEntry,
   Overlay,

@@ -715,6 +715,24 @@ export class InFlow extends VisualNode {
   }
 }
 
+/**
+ * Tells you when its child is ON SCREEN (the C# `InView`). An IntersectionObserver, not a scroll
+ * listener — see in-view.ts for why that matters on a page watching thirty headings.
+ */
+export class InView extends VisualNode {
+  readonly nodeKind = 'inView';
+  child: VisualChild;
+  onChanged: (visible: boolean) => void;
+  threshold = 0;
+
+  constructor(child: VisualChild, onChanged: (visible: boolean) => void, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.onChanged = onChanged;
+    if (config) Object.assign(this, config);
+  }
+}
+
 export class Hoverable extends VisualNode {
   readonly nodeKind = 'hoverable';
   child: VisualChild;

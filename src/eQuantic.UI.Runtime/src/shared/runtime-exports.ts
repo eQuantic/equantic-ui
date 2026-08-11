@@ -84,7 +84,7 @@ export { RouteValues } from './route-values';
 // Same promise, same failure shape: a page writing BoxStyle.Transform / .Pattern / .Glow names
 // these, and eqc routes every Primitives name here.
 export { Transform2D } from './value-types';
-export { GridPattern, InFlow, RadialGradient, Simulated } from './vocabulary';
+export { GridPattern, InFlow, InView, RadialGradient, Simulated } from './vocabulary';
 // The Primitives VALUE types a page can name — same implicit promise, see primitive-values.ts.
 export {
   GeoLocation,

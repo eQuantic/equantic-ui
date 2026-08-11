@@ -178,7 +178,7 @@ public sealed class PhotonHost
             _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible,
             Selection.Start, Selection.End, density: Density,
             scrollOffset: path => _scrolls.Get(path), markedText: _marked, pathCache: _pathCache,
-            nodePool: RecycleFrames ? _nodePool : null);
+            nodePool: RecycleFrames ? _nodePool : null, inViewStore: _inView);
         if (RenderScale != 1f) builder.Pop();
         // The frame we just replaced is OURS to discard — nobody else holds production frames.
         // (Opt-in: anything that retains RealizeResults — tests, tooling — leaves this off and
@@ -220,6 +220,9 @@ public sealed class PhotonHost
     /// <summary>The positional reconciler: nested stateful components retain identity (and state)
     /// across parent rebuilds — see ComponentInstanceStore.</summary>
     private readonly ComponentInstanceStore _instances = new();
+
+    /// <summary>Which InView nodes were on screen last frame — see InViewStore.</summary>
+    private readonly InViewStore _inView = new();
 
     /// <summary>Whether the root has been told it is in the tree — see RenderFrame.</summary>
     private bool _rootMounted;

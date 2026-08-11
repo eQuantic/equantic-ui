@@ -200,7 +200,10 @@ public static class PhotonRealizer
         // The host's cross-frame path-string cache (see LayoutContext.PathCache).
         Dictionary<(string Parent, int Index), string>? pathCache = null,
         // The owning host's node recycler (see LayoutNodePool) — null allocates fresh.
-        LayoutNodePool? nodePool = null)
+        LayoutNodePool? nodePool = null,
+        // Which InView nodes were on screen LAST frame — the node is rebuilt every pass and cannot
+        // remember, and the contract is that the callback fires on the transitions.
+        InViewStore? inViewStore = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
             density)
@@ -259,7 +262,7 @@ public static class PhotonRealizer
         var sheets = new List<SheetRegion>();
         var cursors = new List<CursorRegion>();
         var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, sheets, cursors);
-        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset, MarkedText = markedText }, motion, overlays);
+        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore }, motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -273,7 +276,7 @@ public static class PhotonRealizer
             overlayRoots.Add(overlayLayout);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset, MarkedText = markedText }, motion, overlays);
+            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore }, motion, overlays);
         }
 
         // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
@@ -409,6 +412,12 @@ public static class PhotonRealizer
         /// pressed, the picture just says it was.
         /// </summary>
         public SimulatedState Simulated { get; set; }
+
+        /// <summary>The surface an <see cref="Primitives.InView"/> is measured against, and what it
+        /// last answered — the node is rebuilt every frame and cannot remember for itself.</summary>
+        public Rect Surface { get; init; }
+
+        public InViewStore? InView { get; init; }
 
         public ColorToken? PendingFill { get; set; }
         public bool PendingFocusRing { get; set; }
@@ -705,6 +714,25 @@ public static class PhotonRealizer
                 {
                     press.Simulated = previous;
                 }
+                return;
+            }
+
+            // Presence, reported on the TRANSITIONS. The web observes; here the walk already has
+            // the bounds and the surface, so the answer costs a rectangle comparison.
+            case Primitives.InView inView:
+            {
+                var bounds = node.Bounds;
+                var overlapW = MathF.Min(bounds.X + bounds.Width, press.Surface.Width) - MathF.Max(bounds.X, 0);
+                var overlapH = MathF.Min(bounds.Y + bounds.Height, press.Surface.Height) - MathF.Max(bounds.Y, 0);
+                var shown = overlapW > 0 && overlapH > 0
+                    ? overlapW * overlapH / MathF.Max(bounds.Width * bounds.Height, 0.0001f)
+                    : 0f;
+                // A threshold of 0 means ANY sliver, which is not the same as "zero of it".
+                var visible = inView.Threshold <= 0 ? shown > 0 : shown >= inView.Threshold;
+                if (press.InView?.Changed(node.Path ?? "", visible) == true)
+                    inView.OnChanged(visible);
+                foreach (var child in node.Children)
+                    Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
                 return;
             }
 

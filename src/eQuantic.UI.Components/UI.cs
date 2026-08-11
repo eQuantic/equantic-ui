@@ -40,6 +40,10 @@ public static class UI
     }
 
     /// <summary>Horizontal flex without <c>new</c> — <c>Row(gap: Space.S2, children: [ … ])</c>.</summary>
+    /// <summary>Tells you when its child is ON SCREEN, and when it leaves — the question a table of
+    /// contents asks, without wrapping the page in a scroll view to ask it.</summary>
+    public static InView InView(VisualNode child, Action<bool> onChanged) => new InView(child, onChanged);
+
     /// <summary>Draws an overlay WHERE IT STANDS — the surface without the scrim, the viewport and
     /// the portal that normally carry it. Five components rendered blank on a page without it.</summary>
     public static InFlow InFlow(VisualNode child) => new InFlow(child);
