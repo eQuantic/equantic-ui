@@ -442,6 +442,9 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   };
   if (node.label) surface.attributes['aria-label'] = node.label;
   if (node.autofocus) surface.attributes['autofocus'] = '';
+  // The surface's identity across rebuilds — every keystroke hands over a new element, so anything
+  // that has to find it AFTER the render (see revealCaret) resolves by this, never by a reference.
+  surface.attributes['data-eq-code'] = path;
 
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) surface.children.push(child);
@@ -482,6 +485,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     if (handleCodeKey(editor, event.key, modifiers)) {
       event.preventDefault();
       changed();
+      revealCaret(path);
       return;
     }
     // A printable character is TEXT, not a command — and what a keystroke produces is the
@@ -490,6 +494,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       if (editor.type(event.key)) {
         event.preventDefault();
         changed();
+        revealCaret(path);
       }
     }
   }) as unknown as EventHandler;
@@ -505,6 +510,44 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   }) as unknown as EventHandler;
 
   return surface;
+}
+
+/**
+ * Brings the caret back into the viewport after a key moved it.
+ *
+ * Arrowing off the bottom of a long file, or right along a line wider than the box, used to leave
+ * the caret exactly where the arithmetic put it — outside the visible rectangle. You kept typing
+ * into a place you could not see, and the only way back was the scrollbar.
+ *
+ * After the render, not during it: the key mutates the controller, the app re-renders, and only then
+ * is there a caret element at the new position to scroll to. `nearest` on both axes scrolls the
+ * least that works — an editor already fully in view does not drag the page with it.
+ */
+function revealCaret(path: string): void {
+  // Scrolling is a courtesy; a keystroke is not. An environment that cannot schedule skips it.
+  if (typeof document === 'undefined') return;
+
+  const reveal = () => {
+    // By PATH, never by a captured element. The keystroke rebuilds the tree, so the surface the
+    // handler ran on is a corpse by the time this runs — and scrollIntoView on a detached caret
+    // succeeds silently, which is how this looked implemented and did nothing.
+    const caret = document.querySelector(`[data-eq-code="${path}"] .eq-code-caret`);
+    caret?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  };
+
+  // AFTER the render, and the render is scheduled on an animation frame — so a microtask (or this
+  // frame's) would look for a caret that has not moved yet, find the old one, and correctly decide
+  // it is already on screen. The frame after the flush is the first one where the caret is where
+  // the keystroke put it.
+  //
+  // BOTH routes, for the reason the render scheduler itself keeps both: a hidden or throttled tab
+  // stops delivering frames, and the render still happens on the timeout backstop. Scheduling only
+  // on a frame is how this was written first, and in a tab that never painted it simply never ran.
+  // Revealing twice is free — the second call finds the caret already on screen.
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => requestAnimationFrame(reveal));
+  }
+  if (typeof setTimeout === 'function') setTimeout(reveal, 48);
 }
 
 /** The caret's width in px — the C# `PhotonRealizer.CaretWidth` twin. */

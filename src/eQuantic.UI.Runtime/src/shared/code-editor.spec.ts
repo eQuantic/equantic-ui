@@ -72,6 +72,20 @@ describe('code surface (web)', () => {
     expect(lowered.attributes['aria-multiline']).toBe('true');
   });
 
+  /**
+   * …and it says WHICH surface it is, across rebuilds.
+   *
+   * Every keystroke hands over a new element, so anything that has to find the surface AFTER the
+   * render — bringing the caret back into view is the one that needs it — has to resolve by this
+   * and not by the reference the handler ran on. Holding the element instead looked implemented
+   * and did nothing: scrollIntoView on a detached caret succeeds in silence.
+   */
+  it('carries its path, so it can be found again after the render that replaced it', () => {
+    const { lowered } = surfaceFor('var x = 1;');
+
+    expect(lowered.attributes['data-eq-code']).toBeTruthy();
+  });
+
   it('draws a caret where the model says it is', () => {
     const { editor, lowered } = surfaceFor('one\ntwo\nthree');
     editor.selection = { anchor: { line: 2, column: 4 }, focus: { line: 2, column: 4 } } as never;
