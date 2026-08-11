@@ -78,6 +78,8 @@ public class WikiClaimsCompile
         _ = new TextRun("Build()", Mono: true) { StyleOverride = TypeStyle.OfSize(13.5f, FontWeight.Regular) };
         _ = Simulated(SimulatedState.Hovered | SimulatedState.Pressed, Text("x", TypeRole.BodyM));
         _ = InFlow(Text("x", TypeRole.BodyM));
+        _ = InView(Text("Heading", TypeRole.Heading), visible => { _ = visible; });
+        _ = new InView(Text("x", TypeRole.BodyM), _ => { }) { Threshold = 0.9f };
         var corner = new Stack();
         corner.Add(new Positioned(Text("x", TypeRole.BodyM), top: 0, end: 0));
 
