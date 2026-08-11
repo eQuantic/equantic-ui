@@ -415,7 +415,7 @@ public static class PhotonRealizer
 
         /// <summary>The surface an <see cref="Primitives.InView"/> is measured against, and what it
         /// last answered — the node is rebuilt every frame and cannot remember for itself.</summary>
-        public Rect Surface { get; init; }
+        public Rect Surface { get; set; }
 
         public InViewStore? InView { get; init; }
 
@@ -722,15 +722,18 @@ public static class PhotonRealizer
             case Primitives.InView inView:
             {
                 var bounds = node.Bounds;
-                var overlapW = MathF.Min(bounds.X + bounds.Width, press.Surface.Width) - MathF.Max(bounds.X, 0);
-                var overlapH = MathF.Min(bounds.Y + bounds.Height, press.Surface.Height) - MathF.Max(bounds.Y, 0);
+                var visible = press.Surface;
+                var overlapW = MathF.Min(bounds.X + bounds.Width, visible.X + visible.Width)
+                    - MathF.Max(bounds.X, visible.X);
+                var overlapH = MathF.Min(bounds.Y + bounds.Height, visible.Y + visible.Height)
+                    - MathF.Max(bounds.Y, visible.Y);
                 var shown = overlapW > 0 && overlapH > 0
                     ? overlapW * overlapH / MathF.Max(bounds.Width * bounds.Height, 0.0001f)
                     : 0f;
                 // A threshold of 0 means ANY sliver, which is not the same as "zero of it".
-                var visible = inView.Threshold <= 0 ? shown > 0 : shown >= inView.Threshold;
-                if (press.InView?.Changed(node.Path ?? "", visible) == true)
-                    inView.OnChanged(visible);
+                var onScreen = inView.Threshold <= 0 ? shown > 0 : shown >= inView.Threshold;
+                if (press.InView?.Changed(node.Path ?? "", onScreen) == true)
+                    inView.OnChanged(onScreen);
                 foreach (var child in node.Children)
                     Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
                 return;
@@ -778,8 +781,14 @@ public static class PhotonRealizer
             // whatever the app shows there instead, and a fixed toolbar goes dead the moment the
             // list under it moves.
             var scrolled = input.Under(node.Bounds);
+            // …and what counts as ON SCREEN. A row scrolled out of a list is not visible, and an
+            // InView measured against the whole window would have said it was — the same mistake
+            // in a third channel, after paint and input.
+            var outerSurface = press.Surface;
+            press.Surface = Intersect(outerSurface, node.Bounds);
             foreach (var child in node.Children)
                 Emit(child, theme, mode, builder, scrolled, scrollMeta, press, motion, overlays);
+            press.Surface = outerSurface;
             builder.PopClip();
             return;
         }
@@ -790,8 +799,12 @@ public static class PhotonRealizer
         {
             builder.PushClip(new RRect(node.Bounds, clipBox.Style.CornerRadius));
             var confined = input.Under(node.Bounds);
+            // Clipped out is not on screen either — the same three channels as a ScrollView.
+            var outer = press.Surface;
+            press.Surface = Intersect(outer, node.Bounds);
             foreach (var child in node.Children)
                 Emit(child, theme, mode, builder, confined, scrollMeta, press, motion, overlays);
+            press.Surface = outer;
             builder.PopClip();
             return;
         }
@@ -1056,6 +1069,16 @@ public static class PhotonRealizer
     }
 
     /// <summary>One edge of a partial border: the full outline, clipped to that edge's band.</summary>
+    /// <summary>The overlap of two rectangles, or an empty one where they do not meet.</summary>
+    private static Rect Intersect(Rect a, Rect b)
+    {
+        var x = MathF.Max(a.X, b.X);
+        var y = MathF.Max(a.Y, b.Y);
+        var right = MathF.Min(a.X + a.Width, b.X + b.Width);
+        var bottom = MathF.Min(a.Y + a.Height, b.Y + b.Height);
+        return right <= x || bottom <= y ? new Rect(x, y, 0, 0) : new Rect(x, y, right - x, bottom - y);
+    }
+
     private static void EmitBorderEdge(BorderSides sides, BorderSides edge, Rect bounds, float width,
         RRect stroke, Color color, DisplayListBuilder builder, Func<Rect, Rect> band)
     {

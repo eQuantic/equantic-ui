@@ -98,3 +98,89 @@ public class InViewTests
         enough.Should().Equal(true);
     }
 }
+
+/// <summary>
+/// What counts as ON SCREEN narrows through a clip, the same way paint and input already do.
+/// <para>
+/// The comparison used to be against the whole surface, so a row scrolled out of a list still
+/// counted as visible — a windowed list would load every item it had, which is the one job this
+/// node exists to make cheap.
+/// </para>
+/// </summary>
+public class InViewClipTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    private static void Draw(VisualNode node, InViewStore store) =>
+        PhotonRealizer.Realize(node, 200, 100, Theme, ThemeMode.Light, new DisplayListBuilder(),
+            inViewStore: store);
+
+    // Explicit widths, not Fill: a column of all-Fill children inside a scroll view measures zero
+    // wide, and a zero-area node is invisible for reasons that have nothing to do with clipping.
+    private static Box Row(float height) => new(new BoxStyle { Width = 200, Height = height });
+
+    private static VisualNode Watched(Action<bool> onChanged) => new InView(Row(50), onChanged);
+
+    /// <summary>
+    /// The window is 100 tall and the list's viewport is 60: a row at y=70 is INSIDE the window and
+    /// outside the viewport. That gap is the whole test — a row that is off the window too would
+    /// pass without any of this.
+    /// </summary>
+    [Fact]
+    public void ARowScrolledOutOfItsList_IsNotOnScreen()
+    {
+        var seen = new List<bool>();
+        var content = new Column(gap: 0);
+        content.Add(Row(70));
+        content.Add(Watched(seen.Add));
+
+        Draw(new ScrollView(content) { Width = 200, Height = 60 }, new InViewStore());
+
+        seen.Should().BeEmpty("it is inside the window, and outside the list's viewport");
+    }
+
+    /// <summary>And one inside the viewport still is — the narrowing must not answer no to
+    /// everything.</summary>
+    [Fact]
+    public void ARowInsideTheViewport_Is()
+    {
+        var seen = new List<bool>();
+        var content = new Column(gap: 0);
+        content.Add(Watched(seen.Add));
+        content.Add(Row(300));
+
+        Draw(new ScrollView(content) { Width = 200, Height = 60 }, new InViewStore());
+
+        seen.Should().Equal(true);
+    }
+
+    /// <summary>A clipping Box confines its children the same way a ScrollView does.</summary>
+    [Fact]
+    public void AChildClippedOutOfABox_IsNotOnScreen()
+    {
+        var seen = new List<bool>();
+        var inner = new Column(gap: 0);
+        inner.Add(Row(50));
+        inner.Add(Watched(seen.Add));
+
+        // Clipped to 40 but 100 of window below it: the row at y=50 is on screen and out of the box.
+        Draw(new Box(new BoxStyle { Width = 200, Height = 40, Clip = true }, inner), new InViewStore());
+
+        seen.Should().BeEmpty();
+    }
+
+    /// <summary>Without any clip in between, the same row IS on screen — so the three tests above
+    /// are about clipping and not about the row being off the window.</summary>
+    [Fact]
+    public void TheSameRow_WithoutAClip_IsOnScreen()
+    {
+        var seen = new List<bool>();
+        var content = new Column(gap: 0);
+        content.Add(Row(70));
+        content.Add(Watched(seen.Add));
+
+        Draw(content, new InViewStore());
+
+        seen.Should().Equal(true);
+    }
+}
