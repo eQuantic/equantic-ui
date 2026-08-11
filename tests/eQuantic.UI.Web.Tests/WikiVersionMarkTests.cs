@@ -92,6 +92,12 @@ public class WikiVersionMarkTests
         // beside the repo; saying so here beats a green tick that checked nothing.
         if (!Directory.Exists(wiki)) return;
 
+        // Without tags every symbol reads as unreleased and the check passes having compared
+        // nothing — the exact shape of green tick this guard exists to replace. A shallow CI
+        // checkout has none by default.
+        Git(root!, "tag --list v0.2.0-preview.*").Should().NotBeEmpty(
+            "the guard compares against tags; fetch them before running it");
+
         var wrong = new List<string>();
         foreach (var page in Directory.GetFiles(wiki, "*.md"))
         {

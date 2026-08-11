@@ -238,6 +238,22 @@ jobs:
           dotnet pack src/eQuantic.UI.Sdk.Native/eQuantic.UI.Sdk.Native.csproj -c Release -p:Version=$VERSION
           dotnet pack src/eQuantic.UI.Templates/eQuantic.UI.Templates.csproj -c Release -p:Version=$VERSION
 
+      # The wiki is a SEPARATE repository, and the version-mark guard reads it from beside this
+      # one. Without this the guard passes here having checked nothing, and a wrong "Since
+      # 0.2.0-preview.N" reaches the site — which mirrors the wiki — unchallenged.
+      # The version-mark guard asks `git tag --contains`, and a shallow checkout has no tags: it
+      # would answer "unreleased" for everything and pass having checked nothing.
+      - name: Fetch tags (for the version-mark guard)
+        shell: bash
+        run: git fetch --tags --force --depth=1 origin
+
+      - name: Check out the wiki (for the docs guards)
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/eQuantic/equantic-ui.wiki.git ../equantic-ui.wiki
+
       - name: Test
         shell: bash
         env:

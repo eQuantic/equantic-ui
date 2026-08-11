@@ -34,10 +34,6 @@ const NO_TWIN_OWED = new Set([
   // The seam a HOST arms so `context.GetService<T>()` can answer. A page names the capability, not
   // the scope; the client's twin of it is the ComponentContext.getService method.
   'CapabilityScope',
-  // DEAD C#: ButtonStyles.Resolve and ButtonRenderer.Draw have no callers — the resolved-style
-  // path was superseded by the Box/StyleDiff one the realizers actually use. A twin here would be
-  // mirroring code nobody runs; if that path ever comes back, so does its export.
-  'ButtonStyle',
 ]);
 
 describe('Primitives ⇄ runtime export parity', () => {
@@ -55,6 +51,14 @@ describe('Primitives ⇄ runtime export parity', () => {
     const stale = [...NO_TWIN_OWED].filter((name) => name in runtimeExports);
 
     expect(stale).toEqual([]);
+  });
+
+  // …and neither does a name whose C# type is GONE. `ButtonStyle` sat here after the type it
+  // excused was deleted, and nothing noticed: the staleness check above only asks about exports.
+  it('nothing on the exception list has been deleted from C#', () => {
+    const gone = [...NO_TWIN_OWED].filter((name) => !(primitivesTypes as string[]).includes(name));
+
+    expect(gone).toEqual([]);
   });
 
   // The one this whole file exists for.

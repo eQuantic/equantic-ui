@@ -1,0 +1,24 @@
+{
+  "$comment": [
+    "The embedded Bun, pinned. Bun is COMMITTED rather than downloaded on demand (see",
+    "scripts/slang-toolchain.sh for why: every app build needs it, so it ships inside the platform",
+    "runtime packages a consumer restores). What it lacked was a pin and a checksum — the version",
+    "could only be learned by unzipping a binary and running it, and nothing proved the bytes were",
+    "the ones the release published.",
+    "",
+    "BunToolchainTests verifies both: the digests, on every platform, on every run; and the version,",
+    "by extracting and executing the binary for the host platform.",
+    "",
+    "To update: replace the .zip files, run the tests once with EQ_UPDATE_BUN_MANIFEST=1, and read",
+    "the diff — a version that moved and a digest that did not is a mistake, and so is the reverse."
+  ],
+  "version": "1.3.14",
+  "artifacts": {
+    "eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip": "79db9fbe0dc4558d38e4f1097847683d9d3f71265063f1a9e16fa62ad03d44c2",
+    "eQuantic.UI.Runtime.LinuxArm64/tools/bun/bun-linux.zip": "2b59ce553ee64887785889a1ca14d91d1f31e8b6e6614eb2e4c5358529804195",
+    "eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin.zip": "8a6fd640c50e2284cb8876cb8090c090feee6b01df556ea88cd70ed2dc708ec6",
+    "eQuantic.UI.Runtime.OsxArm64/tools/bun/bun-darwin.zip": "fcb10eef6675240e5ea52f661d7366579ef38f13fa27ba66976d3e58504eeeae",
+    "eQuantic.UI.Runtime.Win64/tools/bun/bun.exe.zip": "8b1b47c75bd846c25f0c0e148c8bd6bcb82f96812133d3fababa68297d0d3d9e",
+    "eQuantic.UI.Runtime.WinArm64/tools/bun/bun.exe.zip": "ce0badd43246a2d50df0cd32cf431cf661202204ca688e5a15281efdd9e004ce"
+  }
+}
