@@ -30,11 +30,16 @@ public class ServiceProviderStrategy : IConversionStrategy
         {
             var containingType = symbol.ContainingType.ToDisplayString();
 
-            // Check both the short name and full name
+            // Check both the short name and full name. ComponentContext is the WRITE-ONCE context,
+            // and it was the one missing: the capability API landed there, this list knew only the
+            // older Core RenderContext, so the call fell through to the ordinary invocation path —
+            // which drops type arguments. Every page asked for a capability by no name at all.
             return containingType.Contains("IServiceProvider") ||
                    containingType.Contains("ServiceProvider") ||
                    containingType == "eQuantic.UI.Core.RenderContext" ||
-                   containingType.EndsWith(".RenderContext");
+                   containingType.EndsWith(".RenderContext") ||
+                   containingType == "eQuantic.UI.Primitives.ComponentContext" ||
+                   containingType.EndsWith(".ComponentContext");
         }
 
         // Allow fallback - these method names are specific enough

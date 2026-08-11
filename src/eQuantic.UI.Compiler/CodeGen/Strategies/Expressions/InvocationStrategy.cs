@@ -223,7 +223,10 @@ public class InvocationStrategy : IConversionStrategy
             var delegateTarget = context.SemanticHelper.Knows(delegateIdentifier)
                 ? context.SemanticModel?.GetSymbolInfo(delegateIdentifier).Symbol
                 : null;
-            if (delegateTarget is IParameterSymbol or ILocalSymbol)
+            // …but a PRIMARY-CONSTRUCTOR parameter is neither: Roslyn models it as a parameter and
+            // it behaves like an instance field, so emitting it bare compiles and then throws a
+            // ReferenceError the moment the callback runs — long after the page looked fine.
+            if (delegateTarget.IsInScopeBinding())
                 return $"{delegateIdentifier.Identifier.Text}({args})";
             return $"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}({args})";
         }

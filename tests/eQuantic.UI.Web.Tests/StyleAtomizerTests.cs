@@ -37,6 +37,11 @@ public class StyleAtomizerTests
         // the character or a page mints two classes for one style and re-paints on hydration.
         // Pinning it through the shared fixture is what makes a drift on either side fail a build.
         ("font-family", TokenCss.MonoStack),
+        // A VENDOR PAIR: both spellings are one declaration and must land on ONE class, whose rule
+        // carries both names. Alone, the prefixed one is dropped whole by an engine that only takes
+        // the standard name — the class was on the element and did nothing.
+        ("backdrop-filter", "blur(8px)"),
+        ("-webkit-backdrop-filter", "blur(8px)"),
     ];
 
     [Fact]
@@ -67,6 +72,22 @@ public class StyleAtomizerTests
         File.Exists(path).Should().BeTrue($"run once with EQ_UPDATE_ATOMIC_FIXTURE=1 to create {path}");
         File.ReadAllText(path).Should().Be(json.ToString(),
             "the C# atomizer and the TS twin must hash identically — regenerate with EQ_UPDATE_ATOMIC_FIXTURE=1 and re-run vitest");
+    }
+
+    /// <summary>
+    /// The pair is ONE class, and its rule says both names — with the standard one LAST, so an
+    /// engine that understands both lands on it.
+    /// </summary>
+    [Fact]
+    public void AVendorPrefix_SharesItsClassWithTheStandardProperty()
+    {
+        var sink = new StyleSink();
+
+        var standard = sink.ClassFor("backdrop-filter", "blur(8px)");
+        var prefixed = sink.ClassFor("-webkit-backdrop-filter", "blur(8px)");
+
+        prefixed.Should().Be(standard, "a prefix is the same declaration written for another engine");
+        sink.Css.Should().Contain("-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)");
     }
 
     [Fact]

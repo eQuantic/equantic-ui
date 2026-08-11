@@ -145,7 +145,7 @@ export async function boot(): Promise<void> {
 
       const router = new Router({
         routes: config.routes,
-        onNavigate: (match, _url, isCurrent) => navigateToPage(root, match.page, config, isCurrent),
+        onNavigate: (match, url, isCurrent) => navigateToPage(root, match.page, config, isCurrent, url),
         // Hover/focus prefetch: warm the page bundle so a click navigates instantly. loadPageModule's
         // dynamic import is cached by the browser, so the later navigation resolves without a round-trip.
         onPrefetch: (match) => {
@@ -295,9 +295,15 @@ async function navigateToPage(
   pageName: string,
   config: EqConfig,
   isCurrent?: () => boolean,
+  url?: string,
 ): Promise<void> {
   try {
-    const ComponentClass = await loadPageModule(pageName, config);
+    // The bundle and the page's SERVER DATA at the same time — the fetch is not on the critical
+    // path behind the import, and neither is behind the other.
+    const [ComponentClass, payload] = await Promise.all([
+      loadPageModule(pageName, config),
+      fetchPageState(url),
+    ]);
     // A newer navigation started while this bundle was loading — don't clobber it.
     if (isCurrent && !isCurrent()) return;
     if (!ComponentClass) {
@@ -305,6 +311,11 @@ async function navigateToPage(
       currentComponent = null;
       return;
     }
+
+    // Seeded BEFORE the instance is built: adoptServerState reads this on the first render, which
+    // is the same door the SSR payload comes through on a full load. Without it a navigated-to page
+    // renders the empty state it was written to show while its data loads — and nothing loads it.
+    applyPageState(payload);
 
     const previous = currentComponent;
     const next = new ComponentClass() as MountableComponent;
@@ -327,6 +338,76 @@ async function navigateToPage(
   } catch (error) {
     renderError(root, error as Error);
   }
+}
+
+interface PageStatePayload {
+  title?: string;
+  head?: string;
+  state?: Record<string, unknown>;
+}
+
+/**
+ * The page's server data and metadata, asked of the TARGET URL itself.
+ *
+ * Not a side endpoint: the request goes to the route being navigated to, carrying a header, and the
+ * page route answers with JSON instead of a document. That is what makes the route params, the query
+ * and the page resolution the ones a full load would have — they ARE a full load's, minus the HTML.
+ *
+ * A failure is not fatal. The page then renders exactly what it rendered before this existed.
+ */
+async function fetchPageState(url?: string): Promise<PageStatePayload | null> {
+  if (!url || typeof fetch !== 'function') return null;
+  try {
+    const response = await fetch(url, {
+      headers: { 'X-EQ-Navigate': '1' },
+      credentials: 'same-origin',
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as PageStatePayload;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Hands the payload to the two places that read it: the hydration door the SSR state comes through,
+ * and the document head.
+ *
+ * The head is patched by IDENTITY, not by appending — a canonical is one statement about one
+ * document, and a second one left over from the previous page tells a crawler the two URLs are the
+ * same page. Matching on the attribute that names the tag (`name`, `property`, `rel`) is what lets
+ * the SSR-rendered tags of the FIRST page be replaced rather than duplicated.
+ */
+function applyPageState(payload: PageStatePayload | null): void {
+  if (!payload) return;
+
+  if (payload.state && typeof payload.state === 'object') {
+    (window as unknown as { __INITIAL_STATE__?: Record<string, unknown> }).__INITIAL_STATE__ =
+      payload.state;
+  }
+  if (typeof payload.title === 'string' && payload.title.length > 0) {
+    document.title = payload.title;
+  }
+  if (typeof payload.head !== 'string' || payload.head.length === 0) return;
+
+  const template = document.createElement('template');
+  template.innerHTML = payload.head;
+  for (const incoming of Array.from(template.content.children)) {
+    const selector = headSelectorFor(incoming);
+    const existing = selector ? document.head.querySelector(selector) : null;
+    if (existing) existing.replaceWith(incoming);
+    else document.head.appendChild(incoming);
+  }
+}
+
+/** What makes a head tag THE one it is: the attribute that names it. */
+function headSelectorFor(element: Element): string | null {
+  const tag = element.tagName.toLowerCase();
+  for (const attribute of ['name', 'property', 'rel']) {
+    const value = element.getAttribute(attribute);
+    if (value) return `${tag}[${attribute}="${CSS.escape(value)}"]`;
+  }
+  return null;
 }
 
 // --- UI Renderers ---

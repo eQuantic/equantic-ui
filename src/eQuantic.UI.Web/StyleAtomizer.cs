@@ -160,6 +160,34 @@ public sealed class StyleSink
 
     private readonly Dictionary<string, string> _rules = new();
 
+    /// <summary>
+    /// A vendor prefix is not a declaration of its own — it is the SAME declaration written for
+    /// another engine, and the two belong in one rule.
+    /// <para>
+    /// Alone in an atomic class, <c>-webkit-backdrop-filter</c> is dropped whole by engines that
+    /// only take the standard name (measured: <c>insertRule</c> leaves an empty rule in Chromium),
+    /// so the class existed, was on the element, and did nothing — while the sibling class carrying
+    /// the standard property worked. Written as a pair, whichever name an engine knows survives and
+    /// the rule is never empty. Both spellings hash to the same declaration, so the pair costs one
+    /// class rather than two.
+    /// </para>
+    /// <para>The TS twin pairs the identical text — the classes are cross-pinned by hash.</para>
+    /// </summary>
+    private static readonly Dictionary<string, string> VendorPairs = new()
+    {
+        ["backdrop-filter"] = "-webkit-backdrop-filter",
+        ["-webkit-backdrop-filter"] = "backdrop-filter",
+    };
+
+    private static string Declaration(string property, string value)
+    {
+        if (!VendorPairs.TryGetValue(property, out var twin)) return $"{property}:{value}";
+        // Prefixed FIRST, standard last: an engine that understands both must land on the standard.
+        var prefixed = property.StartsWith('-') ? property : twin;
+        var standard = property.StartsWith('-') ? twin : property;
+        return $"{prefixed}:{value};{standard}:{value}";
+    }
+
     public string ClassFor(string property, string value) => ClassFor(property, value, pseudo: null);
 
     /// <summary>Spec S5: a PSEUDO-VARIANT rule of the same atomic family — the declaration only
@@ -167,7 +195,7 @@ public sealed class StyleSink
     /// the hash, so hover and base variants of the same declaration are distinct classes.</summary>
     public string ClassFor(string property, string value, string? pseudo)
     {
-        var declaration = $"{property}:{value}";
+        var declaration = Declaration(property, value);
         var className = $"eq-{StyleAtomizer.Hash(pseudo is null ? declaration : $"{pseudo}|{declaration}")}";
         _rules.TryAdd(className, pseudo is null ? declaration : $"{pseudo}\u0001{declaration}");
         return className;
@@ -185,7 +213,7 @@ public sealed class StyleSink
     /// selector, same hash family as pseudo variants ("scrolled|" prefix).</summary>
     public string ClassForScrolled(string property, string value)
     {
-        var declaration = $"{property}:{value}";
+        var declaration = Declaration(property, value);
         var className = $"eq-{StyleAtomizer.Hash($"scrolled|{declaration}")}";
         _rules.TryAdd(className, "\u0003" + declaration);
         return className;

@@ -2047,7 +2047,12 @@ function lowerInView(
   if (!child) return null;
 
   const wrapper = element('div', { display: 'contents' }, [child]);
-  wrapper.attributes['data-eq-inview'] = path;
+  // The marker goes on the CHILD, never on the wrapper. display:contents generates no box, so an
+  // IntersectionObserver pointed at the wrapper watches a 0×0 rectangle at the origin — it observes
+  // faithfully and reports about a place the heading never is. The wrapper still exists because the
+  // server emits it and hydration is an attribute diff; it just has nothing to measure.
+  const observed = child.tag ? child : wrapper;
+  observed.attributes['data-eq-inview'] = path;
   declareInView(path, {
     threshold: node.threshold ?? 0,
     onChanged: node.onChanged ?? (() => {}),

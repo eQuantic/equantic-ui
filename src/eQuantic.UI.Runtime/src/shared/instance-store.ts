@@ -18,7 +18,7 @@
 import { commitShortcuts } from '../dom/shortcuts';
 import { attachCameraStreams } from './devices/camera';
 import { commitScrollViewports } from './scroll-viewports';
-import { commitInViewObservers } from './in-view';
+import { scheduleInViewCommit } from './in-view';
 
 /** The duck-typed surface of a transpiled shared-stateful instance (marker set by the base class). */
 interface SharedStatefulLike {
@@ -146,8 +146,10 @@ export function exitPass(): void {
   // Scroll views measure their viewport (and adopt an initial offset) here too — a windowed list
   // is (offset, viewport), and neither is knowable before the pass has mounted.
   commitScrollViewports();
-  // An element cannot be observed before it exists — this is the moment it does.
-  commitInViewObservers();
+  // An element cannot be observed before it exists — and at THIS moment it still does not. The
+  // pass produced a tree; the render manager writes it once the pass has returned. So the commit
+  // waits for the microtask after the write (see scheduleInViewCommit).
+  scheduleInViewCommit();
   activePass = null;
 }
 

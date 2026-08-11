@@ -31,6 +31,27 @@ export function declareInView(path: string, declaration: InViewDeclaration): voi
 }
 
 /**
+ * Commits AFTER the pass's DOM has been written.
+ *
+ * The pass ends while the tree it produced is still a value — the render manager writes it once
+ * `render()` has returned. Committing inside the pass therefore looked for elements that did not
+ * exist yet, found none, and cleared the declarations: a freshly hydrated page carried every
+ * `data-eq-inview` node with no observer on it, and only a LATER re-render (opening a menu,
+ * anything) attached them. On a page where nothing else ever changes, that is never.
+ *
+ * A microtask is the first moment after the write, and it keeps the commit itself synchronous for
+ * tests that drive it directly.
+ */
+export function scheduleInViewCommit(): void {
+  if (declared.size === 0) return;
+  if (typeof queueMicrotask !== 'function') {
+    commitInViewObservers();
+    return;
+  }
+  queueMicrotask(commitInViewObservers);
+}
+
+/**
  * Attaches what the pass declared. Re-running is cheap and idempotent: an element that already has
  * its observer keeps it and only its callback is refreshed, because a rebuilt tree hands over a new
  * closure over new state every pass.

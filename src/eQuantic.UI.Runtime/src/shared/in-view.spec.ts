@@ -8,7 +8,16 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { commitInViewObservers, declareInView, resetInViewForTests } from './in-view';
+import {
+  commitInViewObservers,
+  declareInView,
+  resetInViewForTests,
+  scheduleInViewCommit,
+} from './in-view';
+import { lowerVisualNode } from './lowering';
+import type { LoweringContext } from './lowering';
+import { photonTheme } from './design-system.generated';
+import { effectiveStyle } from './style-atomizer';
 
 interface StubObserver {
   targets: Element[];
@@ -108,5 +117,49 @@ describe('in-view observers', () => {
     commitInViewObservers();
 
     expect(observers).toHaveLength(0);
+  });
+
+  /**
+   * The marker goes on the CHILD. The wrapper is display:contents, which generates no box — an
+   * observer pointed at it watches a 0×0 rectangle at the origin and reports, faithfully, about a
+   * place the heading never is. Five headings on the site were observed exactly that way.
+   */
+  it('marks the child, not the boxless wrapper', () => {
+    const context: LoweringContext = { textPrimary: photonTheme.textPrimary };
+    const lowered = lowerVisualNode(
+      {
+        nodeKind: 'inView',
+        child: { nodeKind: 'text', content: 'Heading', role: 'label' },
+        onChanged: () => {},
+        threshold: 0,
+      } as never,
+      context,
+    );
+
+    expect(effectiveStyle(lowered)).toContain('display: contents');
+    expect(lowered.attributes['data-eq-inview']).toBeUndefined();
+    expect(lowered.children[0].attributes['data-eq-inview']).toBeTruthy();
+  });
+
+  /**
+   * …and the commit waits for the DOM the pass produced. It used to run while the tree was still a
+   * value — it found nothing, cleared the declarations, and a freshly hydrated page carried every
+   * marked node with no observer. Only a later re-render attached them, which on a page where
+   * nothing else changes is never.
+   */
+  it('commits after the pass has been written, not during it', async () => {
+    const seen: boolean[] = [];
+    declareInView('r0/1', { threshold: 0, onChanged: (v) => seen.push(v) });
+    scheduleInViewCommit();
+
+    // The element arrives the way a rendered one does: after the pass returned.
+    const element = anObservedElement('r0/1');
+    expect(observers).toHaveLength(0);
+
+    await Promise.resolve();
+
+    expect(observers).toHaveLength(1);
+    observers[0].deliver(element, true);
+    expect(seen).toEqual([true]);
   });
 });

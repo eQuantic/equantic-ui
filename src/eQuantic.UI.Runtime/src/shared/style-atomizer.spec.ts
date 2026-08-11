@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { atomizeEntries, hashDeclaration } from './style-atomizer';
+import { atomizeEntries, declarationFor, hashDeclaration } from './style-atomizer';
 // The SAME fixture the C# StyleAtomizerTests pins (EQ_UPDATE_ATOMIC_FIXTURE=1): declaration →
 // rewritten value → class. Replaying it here proves the two atomizers hash identically — the
 // guarantee behind hydration-by-class-identity (SSR markup classes == client lowering classes).
@@ -15,7 +15,9 @@ interface FixtureEntry {
 describe('style atomizer: C# ↔ TS twin (fixture cross-pin)', () => {
   it('hashes every canonical declaration to the C# class name', () => {
     for (const entry of fixture as FixtureEntry[]) {
-      expect(`eq-${hashDeclaration(`${entry.prop}:${entry.rewritten}`)}`).toBe(entry.class);
+      // Through declarationFor, not string concatenation: a vendor pair is ONE declaration written
+      // twice, and the C# twin hashes the same paired text.
+      expect(`eq-${hashDeclaration(declarationFor(entry.prop, entry.rewritten))}`).toBe(entry.class);
     }
   });
 

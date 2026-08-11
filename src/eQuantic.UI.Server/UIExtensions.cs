@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using eQuantic.UI.Core.Assets;
 using eQuantic.UI.Core.Metadata;
@@ -423,8 +425,93 @@ public static class UIExtensions
     /// <summary>Computed once: the icon set is a build output and cannot change under a running app.</summary>
     private static IReadOnlyList<string>? _iconTags;
 
+    /// <summary>
+    /// The header a CLIENT NAVIGATION sends. The request goes to the target URL itself rather than
+    /// to some side channel, which is the whole reason this works: route params, query values and
+    /// the page's own resolution are the ones a full load would have, because it IS the same route.
+    /// </summary>
+    internal const string NavigationHeader = "X-EQ-Navigate";
+
+    /// <summary>
+    /// What a client navigation needs and could not get: the page's SERVER DATA and its METADATA.
+    /// <para>
+    /// A link used to swap the component and nothing else — no prefetch ran, so every navigated-to
+    /// page rendered its empty state, and the head kept the previous document's title and canonical.
+    /// Both are the same moment of the lifecycle: the things the server does around a page that the
+    /// client never repeated.
+    /// </para>
+    /// <para>
+    /// It runs the SAME render the shell runs, and throws the HTML away. That costs a tree build per
+    /// navigation and buys the guarantee that matters — prefetch, then metadata, from the request's
+    /// own services, in one order, described in one place.
+    /// </para>
+    /// </summary>
+    private static async Task ServePageState(HttpContext context, string? pageName)
+    {
+        context.Response.ContentType = "application/json; charset=utf-8";
+        // Never cached: this is the page's data, and the next visitor's is not this one's.
+        context.Response.Headers["Cache-Control"] = "no-store";
+
+        var options = context.RequestServices.GetRequiredService<UIOptions>();
+        var rendering = pageName is null || !options.EnableSsr
+            ? null
+            : context.RequestServices.GetService<IServerRenderingService>();
+        if (rendering is null)
+        {
+            await context.Response.WriteAsync("{}");
+            return;
+        }
+
+        ServerRenderResult result;
+        try
+        {
+            result = await rendering.RenderPageAsync(pageName!, context);
+        }
+        catch (Exception)
+        {
+            // A navigation must not be able to 500 the app: without the payload the page renders
+            // its empty state, which is exactly where it was before this endpoint existed.
+            await context.Response.WriteAsync("{}");
+            return;
+        }
+
+        if (!result.Success)
+        {
+            await context.Response.WriteAsync("{}");
+            return;
+        }
+
+        // The page's own answer travels too — a route that matched while its content did not exist
+        // says so to a client navigation the same way it says it to a full load.
+        if (result.StatusCode != StatusCodes.Status200OK)
+            context.Response.StatusCode = result.StatusCode;
+
+        var head = new StringBuilder();
+        var title = options.HtmlShell.Title;
+        if (result.Metadata is { } metadata)
+        {
+            if (!string.IsNullOrEmpty(metadata.Title)) title = metadata.Title;
+            head.Append(metadata.RenderTags());
+        }
+
+        var payload = new StringBuilder("{");
+        payload.Append("\"title\":").Append(JsonSerializer.Serialize(title));
+        payload.Append(",\"head\":").Append(JsonSerializer.Serialize(head.ToString()));
+        if (result.SerializedState is { Length: > 0 } state)
+            payload.Append(",\"state\":").Append(state);
+        payload.Append('}');
+        await context.Response.WriteAsync(payload.ToString());
+    }
+
     private static async Task ServeAppShell(HttpContext context, string? pageName)
     {
+        // A client navigation asks the same route for the page's data instead of a document.
+        if (context.Request.Headers.ContainsKey(NavigationHeader))
+        {
+            await ServePageState(context, pageName);
+            return;
+        }
+
         var options = context.RequestServices.GetRequiredService<UIOptions>();
         var shell = options.HtmlShell;
         // Per-request copy of the head tags. The HtmlShell is a singleton, so mutating

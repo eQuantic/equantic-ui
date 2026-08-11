@@ -184,6 +184,30 @@ public class AuthoringCoverageTests
         ts.Should().Contain("this.label + this.id");
     }
 
+    /// <summary>
+    /// …INCLUDING inside a lambda, which is where it silently was not.
+    /// <para>
+    /// A guard reading the same parameter one line above emitted <c>this.onSeen</c> while the lambda
+    /// body emitted a bare <c>onSeen</c>. Nothing complains at build time and the page renders: the
+    /// ReferenceError arrives whenever the callback finally fires, and surfaces from inside the
+    /// reconciler as a TypeError about something else entirely. Every component that hands a
+    /// parameter to a callback had it.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void PrimaryConstructor_ParamsStayQualified_InsideALambda()
+    {
+        var ts = Ts("public class C(Action<bool> onSeen, string label) : StatelessComponent { " +
+                    "public override IComponent Build(RenderContext ctx) { " +
+                    "  if (onSeen == null) return new Text(label); " +
+                    "  return new Button(label, () => onSeen(true)); } }");
+
+        ts.Should().Contain("this.onSeen(true)",
+            "the lambda captures the same instance state the guard above it reads");
+        ts.Should().NotContain("=> onSeen(",
+            "a bare capture is a ReferenceError the moment the callback runs, far from here");
+    }
+
     [Fact]
     public void ServerOnlyMethod_IsNotEmittedAtAll()
     {

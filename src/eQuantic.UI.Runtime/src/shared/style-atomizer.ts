@@ -335,18 +335,19 @@ export function atomizePseudo(
     const value = entries[name];
     if (value === undefined) continue;
     const rewritten = rewrite(value, vars);
-    const className = `eq-${hashDeclaration(`${pseudo}|${name}:${rewritten}`)}`;
+    const declaration = declarationFor(name, rewritten);
+    const className = `eq-${hashDeclaration(`${pseudo}|${declaration}`)}`;
     if (!known.has(className)) {
       known.add(className);
-      ruleTexts.set(className, `${name}:${rewritten}`);
+      ruleTexts.set(className, declaration);
       const target = registry();
       try {
-        target?.insertRule(`.${className}${pseudo}{${name}:${rewritten}}`, target.cssRules.length);
+        target?.insertRule(`.${className}${pseudo}{${declaration}}`, target.cssRules.length);
       } catch {
         /* unparsable pseudo rules must never take the app down */
       }
     } else {
-      ruleTexts.set(className, `${name}:${rewritten}`);
+      ruleTexts.set(className, declaration);
     }
     classes.push(className);
   }
@@ -365,26 +366,49 @@ export function atomizeScrolled(entries: Record<string, string | undefined>): st
     const value = entries[name];
     if (value === undefined) continue;
     const rewritten = rewrite(value, vars);
-    const className = `eq-${hashDeclaration(`scrolled|${name}:${rewritten}`)}`;
+    const declaration = declarationFor(name, rewritten);
+    const className = `eq-${hashDeclaration(`scrolled|${declaration}`)}`;
     if (!known.has(className)) {
       known.add(className);
-      ruleTexts.set(className, `${name}:${rewritten}`);
+      ruleTexts.set(className, declaration);
       const target = registry();
       try {
-        target?.insertRule(
-          `html.eq-scrolled .${className}{${name}:${rewritten}}`,
-          target.cssRules.length,
-        );
+        target?.insertRule(`html.eq-scrolled .${className}{${declaration}}`, target.cssRules.length);
       } catch {
         /* unparsable rules must never take the app down */
       }
     } else {
-      ruleTexts.set(className, `${name}:${rewritten}`);
+      ruleTexts.set(className, declaration);
     }
     classes.push(className);
   }
   classes.sort();
   return classes.join(' ');
+}
+
+/**
+ * A vendor prefix is not a declaration of its own — it is the SAME declaration written for another
+ * engine, and the two belong in one rule.
+ *
+ * Alone in an atomic class, `-webkit-backdrop-filter` is dropped whole by engines that only take the
+ * standard name (measured: `insertRule` leaves an empty rule in Chromium), so the class existed, sat
+ * on the element and did nothing. Written as a pair, whichever name an engine knows survives and the
+ * rule is never empty. Both spellings produce the same text, so the pair costs ONE class.
+ *
+ * The C# `StyleSink.Declaration` twin pairs the identical text — the classes are cross-pinned by hash.
+ */
+const VENDOR_PAIRS: Record<string, string> = {
+  'backdrop-filter': '-webkit-backdrop-filter',
+  '-webkit-backdrop-filter': 'backdrop-filter',
+};
+
+export function declarationFor(name: string, value: string): string {
+  const twin = VENDOR_PAIRS[name];
+  if (!twin) return `${name}:${value}`;
+  // Prefixed FIRST, standard last: an engine that understands both must land on the standard.
+  const prefixed = name.startsWith('-') ? name : twin;
+  const standard = name.startsWith('-') ? twin : name;
+  return `${prefixed}:${value};${standard}:${value}`;
 }
 
 export function atomizeEntries(entries: Record<string, string | undefined>): AtomizedStyle {
@@ -400,8 +424,9 @@ export function atomizeEntries(entries: Record<string, string | undefined>): Ato
       continue;
     }
     const rewritten = rewrite(value, vars);
-    const className = `eq-${hashDeclaration(`${name}:${rewritten}`)}`;
-    ensureRule(className, `${name}:${rewritten}`);
+    const declaration = declarationFor(name, rewritten);
+    const className = `eq-${hashDeclaration(declaration)}`;
+    ensureRule(className, declaration);
     classes.push(className);
   }
 
