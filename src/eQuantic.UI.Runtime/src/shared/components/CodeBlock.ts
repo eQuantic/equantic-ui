@@ -10,6 +10,7 @@ export class CodeBlock extends StatelessComponent {
     declare showLineNumbers: boolean;
     declare firstLineNumber: number;
     declare maxHeight: number;
+    declare standalone: boolean;
     declare size: string;
     declare inverse: boolean;
     declare gutterMarkers: CodeGutterMarker[];
@@ -22,6 +23,7 @@ export class CodeBlock extends StatelessComponent {
     declare highlighter: any;
     declare viewportOffset: number;
     declare viewportHeight: number;
+    declare viewportWidth: number;
     declare onScrolled: any;
     declare onViewportChanged: any;
     constructor(code?: any, language: any = null, props?: any) {
@@ -29,6 +31,7 @@ export class CodeBlock extends StatelessComponent {
         if (language !== undefined) this.language = language;
         if (this.showLineNumbers === undefined) this.showLineNumbers = true;
         if (this.firstLineNumber === undefined) this.firstLineNumber = 1;
+        if (this.standalone === undefined) this.standalone = true;
         if (this.size === undefined) this.size = 'small';
         if (this.gutterMarkers === undefined) this.gutterMarkers = [];
         if (this.decorations === undefined) this.decorations = [];
@@ -37,7 +40,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let highlighter = this.highlighter ?? new CodeHighlighter(this.language);let metrics = this.metrics ?? CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);let style = metrics.style;let lineHeight = metrics.lineHeight;let gutterWidth = metrics.gutterWidth;let ink = this.inverse ? CodeBlock.codeInk : theme.textPrimary;let surface = this.inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;let [first, last] = this.window(lineHeight);let lines = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });if (first > 0) lines.add(Spacer.fixed(first * lineHeight));for (let index = first; index <= last; index++) {lines.add(this.lineRow(context, highlighter, index, style, lineHeight, gutterWidth, ink, theme));}if (last < this.document.lineCount - 1) lines.add(Spacer.fixed((this.document.lineCount - 1 - last) * lineHeight));let content: VisualNode = lines;if (this.decorations.length > 0) {let decorated = new Stack('topStart', { width: SizeValue.fill });let marks = new Stack('topStart', { width: SizeValue.fill });for (const decoration of this.decorations) {for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);}decorated.add(marks);decorated.add(lines);content = decorated;}let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(0, 12) }), content);body = new ScrollView(body, 'horizontal', { width: SizeValue.fill });if (this.maxHeight > 0) {body = new Box(new BoxStyle({ width: SizeValue.fill, maxHeight: this.maxHeight }), new ScrollView(body, 'vertical', { width: SizeValue.fill, onScrolled: this.onScrolled, onViewportChanged: this.onViewportChanged }));}let slab = new Box(new BoxStyle({ width: SizeValue.fill, background: surface, cornerRadius: new CornerRadii(theme.shape('medium')), clip: true }), body);if (this.caption == null && this.onCopy == null) return slab;let corner = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });corner.add(new Spacer(1));let caption: any; if ((caption = this.caption) != null) {corner.add(new Text(caption, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, { mono: true }));}let copy: any; if ((copy = this.onCopy) != null) {corner.add(new IconButton('copy', 'Copy code', 'standard', 'medium', null, { size: 'small', onPressed: copy }));}let layers = new Stack('topStart', { width: SizeValue.fill });layers.add(slab);layers.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), corner), 0, null, null, 0));return layers;
+        let theme = context.theme;let highlighter = this.highlighter ?? new CodeHighlighter(this.language);let metrics = this.metrics ?? CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);let style = metrics.style;let lineHeight = metrics.lineHeight;let gutterWidth = metrics.gutterWidth;let ink = this.inverse ? CodeBlock.codeInk : theme.textPrimary;let surface = this.inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;let [first, last] = this.window(lineHeight);let widest = 0;for (let index = 0; index < this.document.lineCount; index++) widest = Math.max(widest, this.document.line(index).length);let codeWidth = gutterWidth + widest * metrics.columnWidth + metrics.columnWidth;let lines = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });if (first > 0) lines.add(Spacer.fixed(first * lineHeight));for (let index = first; index <= last; index++) {lines.add(this.lineRow(context, highlighter, index, style, lineHeight, gutterWidth, ink, theme));}if (last < this.document.lineCount - 1) lines.add(Spacer.fixed((this.document.lineCount - 1 - last) * lineHeight));let content: VisualNode = lines;if (this.decorations.length > 0) {let decorated = new Stack('topStart', { width: SizeValue.fill });let marks = new Stack('topStart', { width: SizeValue.fill });for (const decoration of this.decorations) {for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);}decorated.add(marks);decorated.add(lines);content = decorated;}let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(Math.max(codeWidth, this.viewportWidth)), padding: EdgeInsets.symmetric(0, 12) }), content);if (!this.standalone) return body;body = new ScrollView(body, 'horizontal', { width: SizeValue.fill });if (this.maxHeight > 0) {body = new Box(new BoxStyle({ width: SizeValue.fill, maxHeight: this.maxHeight }), new ScrollView(body, 'vertical', { width: SizeValue.fill, onScrolled: this.onScrolled, onViewportChanged: this.onViewportChanged }));}let slab = new Box(new BoxStyle({ width: SizeValue.fill, background: surface, cornerRadius: new CornerRadii(theme.shape('medium')), clip: true }), body);if (this.caption == null && this.onCopy == null) return slab;let corner = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });corner.add(new Spacer(1));let caption: any; if ((caption = this.caption) != null) {corner.add(new Text(caption, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, { mono: true }));}let copy: any; if ((copy = this.onCopy) != null) {corner.add(new IconButton('copy', 'Copy code', 'standard', 'medium', null, { size: 'small', onPressed: copy }));}let layers = new Stack('topStart', { width: SizeValue.fill });layers.add(slab);layers.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), corner), 0, null, null, 0));return layers;
     }
 
     static of(document: CodeDocument, language: any) {
@@ -86,6 +89,10 @@ export class CodeBlock extends StatelessComponent {
 
     static selectionFor(inverse: boolean, theme: any) {
         return inverse ? new ColorToken(theme.focusRing.dark, theme.focusRing.dark) : theme.focusRing;
+    }
+
+    static surfaceFor(inverse: boolean, theme: any) {
+        return inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;
     }
 
     static inverseCode(kind: string, theme: any) {

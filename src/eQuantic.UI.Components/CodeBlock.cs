@@ -42,6 +42,20 @@ public sealed class CodeBlock : StatelessComponent
     /// <summary>Caps the height and scrolls past it; 0 = as tall as the code.</summary>
     public float MaxHeight { get; init; }
 
+    /// <summary>
+    /// Whether the block is the WHOLE widget — its own slab, its own viewport — or bare content
+    /// that something outside frames and scrolls.
+    /// <para>
+    /// True for a snippet. False when an editor wraps it, and the reason is the caret: the marks
+    /// are drawn against the surface that holds them, so a block scrolling INSIDE that surface puts
+    /// the code in one coordinate space and the marks in another. Scroll a long line sideways and
+    /// the text moves while the caret stays behind, and a click is read at the column it would have
+    /// hit had nothing scrolled. Scrolling the surface instead keeps the marks, the code and the
+    /// pointer in one space by construction — no compensation to keep in sync anywhere.
+    /// </para>
+    /// </summary>
+    public bool Standalone { get; init; } = true;
+
     /// <summary>The size of the code itself; the gutter follows it.</summary>
     public SizeVariant Size { get; init; } = SizeVariant.Small;
 
@@ -87,6 +101,14 @@ public sealed class CodeBlock : StatelessComponent
     /// </summary>
     public float ViewportOffset { get; init; }
     public float ViewportHeight { get; init; }
+
+    /// <summary>
+    /// How wide the viewport turned out to be. The content is never NARROWER than this, so a click
+    /// in the empty space to the right of a short line still lands on that line — and never wider
+    /// than it needs to be, so a long line scrolls instead of stretching the pane it sits in.
+    /// Zero = as wide as the code, which is right for the first frame and for a snippet.
+    /// </summary>
+    public float ViewportWidth { get; init; }
 
     /// <summary>Reported when the viewport moves or resizes — an editor feeds these back in.</summary>
     public Action<float>? OnScrolled { get; init; }
@@ -142,6 +164,22 @@ public sealed class CodeBlock : StatelessComponent
         // line does not have to build anything. Above and below it, one spacer each, so the content
         // is as tall as the file and the scrollbar tells the truth.
         var (first, last) = Window(lineHeight);
+
+        // The viewport's width, and NEVER less than the longest line's.
+        //
+        // Filling alone was why the sideways scroll never scrolled: a scroll view whose content is
+        // exactly its own size has nothing to move, so long lines were simply cut off, and a click
+        // past the cut sent the caret somewhere the reader could not see. Sizing to the code alone
+        // is the opposite mistake — a short file would end where its longest line ends, and a click
+        // in the empty space to the right of it would land on nothing at all.
+        //
+        // Measured from the widest line in the FILE rather than the widest one on screen: the width
+        // must not change as the window scrolls, or the content would breathe under the reader.
+        var widest = 0;
+        for (var index = 0; index < Document.LineCount; index++)
+            widest = Math.Max(widest, Document.Line(index).Length);
+        var codeWidth = gutterWidth + widest * metrics.ColumnWidth + metrics.ColumnWidth;
+
         var lines = new Column(gap: 0) { Width = SizeValue.Fill };
         if (first > 0) lines.Add(Spacer.Fixed(first * lineHeight));
         for (var index = first; index <= last; index++)
@@ -169,11 +207,21 @@ public sealed class CodeBlock : StatelessComponent
             content = decorated;
         }
 
+        // A NUMBER, not a Fill: the two targets disagree about what filling means inside a sideways
+        // scroll view. A page resolves 100% against the scroller; Photon measures the content
+        // unbounded on the scroll axis, which is the point of a scroll view — so a Fill there has
+        // nothing to fill and collapses to the code. Taking the width the viewport REPORTED settles
+        // it in one arithmetic both realizers already agree on.
         VisualNode body = new Box(new BoxStyle
         {
-            Width = SizeValue.Fill,
+            Width = SizeValue.Fixed(MathF.Max(codeWidth, ViewportWidth)),
             Padding = EdgeInsets.Symmetric(0, Space.S3),
         }, content);
+
+        // Bare CONTENT, exactly as wide as the code: no slab, no viewport, no corner. An editor
+        // frames and scrolls this from outside, and a block that framed itself here would paint a
+        // second slab inside the first and clip the lines the scroll was there to reach.
+        if (!Standalone) return body;
 
         // Long lines scroll sideways rather than wrapping: a wrapped line of code has lost the one
         // thing its indentation was telling you.
@@ -427,6 +475,12 @@ public sealed class CodeBlock : StatelessComponent
     /// the focus ring is used in both modes (see <see cref="InverseCode"/>).</summary>
     public static ColorToken SelectionFor(bool inverse, IAppTheme theme) =>
         inverse ? new ColorToken(theme.FocusRing.Dark, theme.FocusRing.Dark) : theme.FocusRing;
+
+    /// <summary>The slab under the code — asked for by the same editor that asks for the ink, for
+    /// the same reason: when the block is bare content the frame is built outside it, and a frame
+    /// painted from the page's theme is the wrong colour on exactly the inverse slab.</summary>
+    public static ColorToken SurfaceFor(bool inverse, IAppTheme theme) =>
+        inverse ? CodeSlab : theme.SurfaceSubtle;
 
     /// <summary>On the dark slab the theme's light-mode colours would vanish, so the DARK half of
     /// each token is used in both modes.</summary>

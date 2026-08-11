@@ -47,6 +47,12 @@ public class CodeEditorSurfaceTests
         {
             TextRasterizer = new FixedWidthRasterizer(),
         };
+        // TWO frames. How wide the viewport turned out to be is layout's answer, not the author's,
+        // so it comes back the way its height does — reported from the realized frame and folded in
+        // on the next one. The first frame is as wide as the CODE; from the second the surface is
+        // as wide as the space you can click in, which is what a pointer test is about. A host
+        // renders continuously, so this is the steady state, not a special case.
+        host.RenderFrame(new DisplayListBuilder());
         var frame = host.RenderFrame(new DisplayListBuilder());
         var region = frame.CodeRegions.Single();
         return (host, region.Surface, region.Bounds);
@@ -276,6 +282,52 @@ public class CodeEditorSurfaceTests
         bands[2].Shape.Rect.Y.Should().BeApproximately(
             bounds.Y + surface.ContentTop + 2 * surface.LineHeight, 0.01f);
     }
+
+    /// <summary>
+    /// NOTHING SCROLLS INSIDE THE SURFACE. The caret and the selection are painted against the
+    /// surface's own box, so anything that scrolled beneath it would move the code out from under
+    /// them: scroll a long line sideways and the text travels while the marks stay put, and a
+    /// pointer is read at the column it would have hit had nothing scrolled. It shipped that way —
+    /// the block scrolled itself, and every mark in an editor was a line and a half off once you
+    /// went right. The viewport belongs OUTSIDE the surface, so the surface travels with the code
+    /// and the arithmetic is true wherever the file is scrolled to.
+    /// </summary>
+    [Fact]
+    public void TheViewportIsOutsideTheSurface_SoTheMarksTravelWithTheCode()
+    {
+        var editor = new CodeEditor("short\n" + new string('x', 400), "csharp") { MaxHeight = 200 };
+        var built = editor.Build(new ComponentContext(PhotonTheme.Instance));
+
+        var surface = FindSurface(built);
+        surface.Should().NotBeNull("the editor is built around one");
+        ScrollersUnder(surface!.Child).Should().Be(0,
+            "a scroll view under the surface puts the code in one coordinate space and the marks "
+            + "in another — CodeBlock.Standalone is what keeps it out");
+
+        // …and the scrolling did not simply disappear: both axes are still there, above it.
+        ScrollersUnder(built).Should().BeGreaterThanOrEqualTo(2, "sideways for long lines, down for a long file");
+    }
+
+    private static CodeSurface? FindSurface(VisualNode node) => node switch
+    {
+        CodeSurface surface => surface,
+        _ => Children(node).Select(FindSurface).FirstOrDefault(found => found is not null),
+    };
+
+    private static int ScrollersUnder(VisualNode node) =>
+        (node is ScrollView ? 1 : 0) + Children(node).Sum(ScrollersUnder);
+
+    private static IEnumerable<VisualNode> Children(VisualNode node) => node switch
+    {
+        CodeSurface surface => [surface.Child],
+        ScrollView view => [view.Child],
+        Box box => box.Child is { } child ? [child] : [],
+        Stack stack => stack.Children,
+        Positioned positioned => [positioned.Child],
+        Shortcut shortcut => [shortcut.Child],
+        UiComponent component => [component.Build(new ComponentContext(PhotonTheme.Instance))],
+        _ => [],
+    };
 
     private static void Focus(PhotonHost host, CodeSurface surface, Rect bounds)
     {

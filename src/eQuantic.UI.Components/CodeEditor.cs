@@ -24,6 +24,7 @@ public sealed class CodeEditor : StatefulComponent
     private string _findText = "";
     private float _offset;
     private float _viewport;
+    private float _viewportWidth;
 
     public CodeEditor(string code = "", string? language = null)
     {
@@ -183,7 +184,10 @@ public sealed class CodeEditor : StatefulComponent
             Decorations = Marks(editor),
             ShowLineNumbers = ShowLineNumbers,
             FirstLineNumber = FirstLineNumber,
-            MaxHeight = MaxHeight,
+            // Bare content — see CodeBlock.Standalone. The slab and both scroll views are built
+            // below, OUTSIDE the surface, so the marks travel with the code instead of being
+            // painted against a box the code slid out from under.
+            Standalone = false,
             Size = Size,
             Inverse = Inverse,
             Caption = Caption,
@@ -196,16 +200,7 @@ public sealed class CodeEditor : StatefulComponent
             // builds everything and every frame after builds what you can see.
             ViewportOffset = _offset,
             ViewportHeight = _viewport,
-            OnScrolled = offset =>
-            {
-                if (MathF.Abs(offset - _offset) < 1) return;
-                SetState(() => _offset = offset);
-            },
-            OnViewportChanged = height =>
-            {
-                if (MathF.Abs(height - _viewport) < 1) return;
-                SetState(() => _viewport = height);
-            },
+            ViewportWidth = _viewportWidth,
             // The caret's line is washed while the editor holds it — the one piece of state the
             // read-only block cannot know about.
             ActiveLine = editor.Caret.Line,
@@ -230,6 +225,56 @@ public sealed class CodeEditor : StatefulComponent
                 OnSelectionChanged?.Invoke(editor.Selection);
             }),
         };
+
+        // The viewport lives OUT HERE, around the surface, rather than inside the block. One
+        // coordinate space is the whole point: the surface travels with the code, so the caret and
+        // the selection — which are drawn against it — travel with it too, and a pointer lands on
+        // the column it is pointing at however far the file has been scrolled.
+        //
+        // Note the order: the SCROLLERS fill, the SURFACE hugs the code. That is what keeps a long
+        // line from widening the pane it sits in — the viewport takes the width it is given and the
+        // line overflows INSIDE it, which is the whole reason a scroll view is here at all.
+        VisualNode viewport = new ScrollView(surface, ScrollAxis.Horizontal)
+        {
+            Width = SizeValue.Fill,
+            // How wide it turned out to be, handed back to the block so the code is never narrower
+            // than the space you can click in.
+            OnViewportChanged = width =>
+            {
+                if (MathF.Abs(width - _viewportWidth) < 1) return;
+                SetState(() => _viewportWidth = width);
+            },
+        };
+        if (MaxHeight > 0)
+        {
+            viewport = new Box(new BoxStyle { Width = SizeValue.Fill, MaxHeight = MaxHeight },
+                new ScrollView(viewport)
+                {
+                    Width = SizeValue.Fill,
+                    // The window the block builds, reported from the viewport that actually moves.
+                    OnScrolled = offset =>
+                    {
+                        if (MathF.Abs(offset - _offset) < 1) return;
+                        SetState(() => _offset = offset);
+                    },
+                    OnViewportChanged = height =>
+                    {
+                        if (MathF.Abs(height - _viewport) < 1) return;
+                        SetState(() => _viewport = height);
+                    },
+                });
+        }
+
+        // The slab the block used to paint for itself. It is out here now because it has to be the
+        // VIEWPORT's frame, not the content's: a slab as wide as the file would round its corners
+        // somewhere off screen.
+        surface = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Background = CodeBlock.SurfaceFor(Inverse, context.Theme),
+            CornerRadius = new CornerRadii(context.Theme.Shape(ShapeScale.Medium)),
+            Clip = true,
+        }, viewport);
 
         // ⌘F is UI, not a model command, so it is not in the keymap: it is a chord that is live
         // because this subtree is on screen, which is what Shortcut already means.

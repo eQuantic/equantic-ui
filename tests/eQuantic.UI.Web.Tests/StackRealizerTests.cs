@@ -33,4 +33,31 @@ public class StackRealizerTests
     {
         Render(new Positioned(new Primitives.Text("x", TypeRole.Caption))).Tag.Should().Be("span");
     }
+
+    /// <summary>
+    /// A layer holding a SCROLLER may not stretch the stack to the scroller's content.
+    /// <para>
+    /// A grid item's automatic minimum size is its min-content size, so the auto track grows to the
+    /// widest thing inside it — and a horizontal scroll view is as wide as the longest line in the
+    /// file. The code editor is where this showed: the stack swelled to 689px inside a 482px slab,
+    /// the scrollbar vanished because the scroller was never narrower than its content, and the
+    /// overflow was clipped by an ancestor nobody could scroll. Native measures a layer against the
+    /// STACK's extent; min-0 is what says the same thing in CSS.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AStackCell_CannotGrowPastTheStack()
+    {
+        var stack = new Stack();
+        stack.Add(new ScrollView(new Primitives.Box(new BoxStyle { Width = 4000 }), ScrollAxis.Horizontal)
+        {
+            Width = SizeValue.Fill,
+        });
+
+        var cell = Render(stack).Children[0].Attributes["style"]!;
+
+        // CROSS-PIN: asserted verbatim by the TS lowering spec (hydration parity).
+        cell.Should().Contain("min-width: 0");
+        cell.Should().Contain("min-height: 0");
+    }
 }

@@ -249,6 +249,14 @@ public static class WebRealizer
                         AlignItems = AlignmentAlign(stack.Align),
                         Width = "100%",
                         Height = "100%",
+                        // …and the cell may not grow PAST it. A grid item's automatic minimum size
+                        // is its min-content size, so one layer holding a scroller sizes the track
+                        // to the scroller's content and the whole stack swells to the widest line in
+                        // the file — the scrollbar disappears and the overflow is clipped by
+                        // whatever ancestor happens to be smaller. Native measures a layer against
+                        // the stack's own extent, which is exactly what min-0 restores.
+                        MinWidth = "0",
+                        MinHeight = "0",
                         // A grid item takes z-index without needing `position` — this is what keeps
                         // a filtered child from jumping above the siblings drawn after it.
                         ZIndex = depth.ToString(),

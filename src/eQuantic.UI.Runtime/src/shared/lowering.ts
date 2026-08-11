@@ -427,9 +427,15 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       tabindex: '0',
       role: 'textbox',
       'aria-multiline': 'true',
-      // pre: token runs carry REAL spaces between words — HTML would collapse them. The
-      // horizontal scroller also stops long lines from widening every flex ancestor (min-content).
-      style: 'position:relative;outline:none;white-space:pre;overflow-x:auto;',
+      // pre: token runs carry REAL spaces between words — HTML would collapse them.
+      //
+      // It does NOT scroll. It used to, and that put the code in one coordinate space and the two
+      // marks below in another: the marks are absolute children of this box, so anything that
+      // scrolled INSIDE it moved the text out from under them — scroll a long line sideways and the
+      // caret stays behind, and a click is read at the column it would have hit unscrolled. The
+      // scroll views live outside the surface now (CodeEditor), so this box travels WITH the code
+      // and the arithmetic below is true wherever the file has been scrolled to.
+      style: 'position:relative;outline:none;white-space:pre;',
     },
     events: {},
     children: [],
@@ -1299,6 +1305,11 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
             'align-items': cellAlign,
             width: '100%',
             height: '100%',
+            // …and may not grow PAST it: a grid item's automatic minimum size is min-content, so a
+            // layer holding a scroller would size the track to the scroller's CONTENT and swell the
+            // stack to the widest line in the file.
+            'min-width': '0',
+            'min-height': '0',
             // Spec A3 (C# twin): paint order IS child order — a child with backdrop-filter/filter/
             // opacity creates a stacking context that CSS would otherwise paint above every plain
             // sibling drawn after it (a blurred scrim covering its own dialog).
