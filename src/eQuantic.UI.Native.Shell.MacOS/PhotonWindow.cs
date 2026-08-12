@@ -41,7 +41,14 @@ public sealed class PhotonWindow
     private const ulong EventTypeLeftMouseUp = 2;
     private const ulong EventTypeMouseMoved = 5;
     private const ulong EventTypeLeftMouseDragged = 6;
+    private const ulong EventTypeMouseExited = 9;
     private const ulong EventTypeScrollWheel = 22;
+
+    // NSTrackingArea options — the crossing events, live while the window is key, with AppKit
+    // keeping the rect glued to the view's visible rect so resizes need no re-install.
+    private const ulong TrackingMouseEnteredAndExited = 0x01;
+    private const ulong TrackingActiveInKeyWindow = 0x20;
+    private const ulong TrackingInVisibleRect = 0x200;
 
     private readonly string _title;
     private readonly float _width;
@@ -132,6 +139,16 @@ public sealed class PhotonWindow
         SendVoid(window, Sel("setContentView:"), contentView);
         SendVoid(contentView, Sel("setWantsLayer:"), true);
         SendVoid(contentView, Sel("setLayer:"), layer);
+
+        // Crossing the window edge is the one pointer move AppKit never delivers — without a
+        // tracking area there is no MouseExited event, and the last hovered box keeps its Hover
+        // diff forever. InVisibleRect ignores the rect and tracks the view's own bounds; the
+        // event reaches Route() through the same pump as every other pointer event.
+        var trackingArea = Send(Send(objc_getClass("NSTrackingArea"), Sel("alloc")),
+            Sel("initWithRect:options:owner:userInfo:"), default(CGRect),
+            TrackingMouseEnteredAndExited | TrackingActiveInKeyWindow | TrackingInVisibleRect,
+            contentView, IntPtr.Zero);
+        SendVoid(contentView, Sel("addTrackingArea:"), trackingArea);
 
         SendVoid(window, Sel("makeKeyAndOrderFront:"), IntPtr.Zero);
         SendVoid(app, Sel("activateIgnoringOtherApps:"), true);
@@ -386,10 +403,18 @@ public sealed class PhotonWindow
             case EventTypeLeftMouseUp:
             case EventTypeMouseMoved:
             case EventTypeLeftMouseDragged:
+            case EventTypeMouseExited:
             case EventTypeScrollWheel:
                 break;
             default:
                 return;
+        }
+
+        if (type == EventTypeMouseExited)
+        {
+            // The pointer left the content view — its location is already outside; hover clears.
+            host.PointerLeave();
+            return;
         }
 
         var location = SendPoint(e, Sel("locationInWindow"));

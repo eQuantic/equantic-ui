@@ -165,14 +165,15 @@ public sealed class PhotonViewController : UIViewController
     public override void TouchesMoved(NSSet touches, UIEvent? evt)
     {
         if (Tracked(touches) is not { } point || _host is null) return;
-        _host.PointerMove((float)point.X, (float)point.Y);
+        // A finger, labelled as one: drags and pans run; hover never does (spec S5).
+        _host.PointerMove((float)point.X, (float)point.Y, PointerKind.Touch);
     }
 
     public override void TouchesEnded(NSSet touches, UIEvent? evt)
     {
         if (Tracked(touches) is not { } point || _host is null) return;
         _tracking = null;
-        _host.PressUp((float)point.X, (float)point.Y);
+        _host.PressUp((float)point.X, (float)point.Y, PointerKind.Touch);
     }
 
     /// <summary>
@@ -184,7 +185,7 @@ public sealed class PhotonViewController : UIViewController
     {
         if (Tracked(touches) is null || _host is null) return;
         _tracking = null;
-        _host.PointerCancel();
+        _host.PointerCancel(PointerKind.Touch);
     }
 
     /// <summary>The position of the finger we are tracking, or null when this set is not about it.</summary>

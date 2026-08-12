@@ -69,4 +69,69 @@ public class PointerHoverTests
         host.PointerMove(20, 20);              // inside BOTH — topmost (last painted) must win
         host.Hovered.Should().BeSameAs(((Positioned)stack.Children[1]).Child);
     }
+
+    [Fact]
+    public void TouchMove_NeverHovers()
+    {
+        // Spec S5's contract, verbatim: hover never fires on touch. A finger crossing a
+        // hover-reactive box drives drags and pans exactly like a mouse — and hovers nothing.
+        var hovers = new List<bool>();
+        var column = new Column(gap: 10);
+        column.Add(HoverBox());                                          // y 0–30
+        column.Add(new Hoverable(HoverBox(), hovers.Add));               // y 40–70
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 200, 200);
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+
+        host.PointerMove(30, 15, PointerKind.Touch);   // over the plain hover box
+        host.Hovered.Should().BeNull("a finger rests over nothing");
+        FrameHasHoverFill(host).Should().BeFalse("no frame ever paints a touch 'hover'");
+
+        host.PointerMove(30, 55, PointerKind.Touch);   // over the programmable Hoverable
+        host.Hovered.Should().BeNull();
+        hovers.Should().BeEmpty("Hoverable callbacks are pointer-only too");
+    }
+
+    [Fact]
+    public void TouchGestureEnd_ClearsWhateverHoverWasLeftBehind()
+    {
+        // The mixed-input belt: a mouse parked a hover, then a finger takes over the same
+        // surface. When the FINGER lifts (or the system cancels it), the sequence is over and
+        // no pointer rests anywhere — the stale hover must not survive the gesture.
+        var column = new Column(gap: 10);
+        column.Add(HoverBox());
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 200, 200);
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+
+        host.PointerMove(30, 15);                      // mouse hovers
+        host.Hovered.Should().NotBeNull();
+        host.PressUp(150, 150, PointerKind.Touch);     // a finger lifts elsewhere
+        host.Hovered.Should().BeNull("the touch sequence ended — nothing rests over the box");
+
+        host.PointerMove(30, 15);                      // mouse hovers again
+        host.Hovered.Should().NotBeNull();
+        host.PointerCancel(PointerKind.Touch);         // the system steals the finger
+        host.Hovered.Should().BeNull();
+    }
+
+    [Fact]
+    public void MousePressUp_KeepsTheHover_ItIsStillUnderThePointer()
+    {
+        // The counter-case that keeps the belt honest: after a CLICK the mouse has not moved —
+        // clearing its hover on release would flicker every button on the desktop.
+        var column = new Column(gap: 10);
+        column.Add(HoverBox());
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 200, 200);
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+
+        host.PointerMove(30, 15);
+        host.PressDown(30, 15);
+        host.PressUp(30, 15);
+        host.Hovered.Should().NotBeNull("the mouse is exactly where it was");
+    }
 }

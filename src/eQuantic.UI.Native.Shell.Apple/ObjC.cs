@@ -124,6 +124,10 @@ public static partial class ObjC
         CGRect rect, ulong styleMask, ulong backing, [MarshalAs(UnmanagedType.I1)] bool defer);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial IntPtr Send(IntPtr receiver, IntPtr selector,
+        CGRect rect, ulong options, IntPtr owner, IntPtr userInfo);
+
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial void SendVoid(IntPtr receiver, IntPtr selector);
 
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]

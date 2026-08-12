@@ -313,16 +313,18 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             case MotionEventActions.Down:
                 _host.PressDown(x, y);
                 return true;
+            // OnTouchEvent is fingers by definition (a mouse hover arrives as generic motion,
+            // never here) — labelled Touch so drags and pans run and hover never does (spec S5).
             case MotionEventActions.Move:
-                _host.PointerMove(x, y);
+                _host.PointerMove(x, y, PointerKind.Touch);
                 return true;
             case MotionEventActions.Up:
-                _host.PressUp(x, y);
+                _host.PressUp(x, y, PointerKind.Touch);
                 return true;
             // The system took the gesture away — a scroll view claimed it, a call arrived. Nothing
             // was decided, so nothing is reported and every surface returns to the caller's rest.
             case MotionEventActions.Cancel:
-                _host.PointerCancel();
+                _host.PointerCancel(PointerKind.Touch);
                 return true;
             default:
                 return base.OnTouchEvent(e);

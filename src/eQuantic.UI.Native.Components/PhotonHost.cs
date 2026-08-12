@@ -1155,8 +1155,10 @@ public sealed class PhotonHost
     /// Gestures v1 — pointer tracking: resolves the TOPMOST hover-reactive region under the pointer
     /// (paint order, last-contains wins) and re-renders when the target changes. Feed it from the
     /// platform shell's pointer-move events; it is a no-op until a frame has been rendered.
+    /// A <see cref="PointerKind.Touch"/> move drives drags, pans and selections exactly the same —
+    /// it only skips the hover resolution at the tail (spec S5: hover never fires on touch).
     /// </summary>
-    public void PointerMove(float x, float y)
+    public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
         // A fill drag: the preview follows the pointer, one dominant axis at a time.
         if (_sheetFilling && _lastFrame is not null)
@@ -1306,6 +1308,11 @@ public sealed class PhotonHost
 
             _pan = pan;
         }
+
+        // S5: hover belongs to pointers that can rest over things. A finger cannot — it is
+        // pressing or it is gone — so a touch move ends HERE instead of latching whatever box
+        // it happened to cross last.
+        if (kind == PointerKind.Touch) return;
 
         var regions = _lastFrame?.HoverRegions;
         VisualNode? target = null;
@@ -1587,8 +1594,12 @@ public sealed class PhotonHost
     /// nothing is reported: the press drops and the surface glides back to where the caller last
     /// put it. The web controller answers <c>pointercancel</c> the same way.
     /// </summary>
-    public void PointerCancel()
+    public void PointerCancel(PointerKind kind = PointerKind.Mouse)
     {
+        // The input sequence died with the finger still down — the finger is gone, so nothing
+        // rests over anything. A mouse keeps its position through a cancel, and its hover with it.
+        if (kind == PointerKind.Touch) PointerLeave();
+
         _pan = null;
 
         if (_drag is { Active: true } drag)
@@ -1620,10 +1631,15 @@ public sealed class PhotonHost
     /// Ends a press: fires <c>OnPressed</c> when the release lands inside the pressed node's region
     /// (release outside cancels), clears the pressed visual either way.
     /// </summary>
-    public bool PressUp(float x, float y)
+    public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
+        // A finger that lifts is GONE — no pointer rests over anything, whatever set the hover
+        // during the sequence. A mouse stays where it is, so its hover survives the click
+        // (clearing it would flicker on every press).
+        if (kind == PointerKind.Touch) PointerLeave();
+
         _dragSelecting = false;
-_codeDragging = false;
+        _codeDragging = false;
         _sheetDragging = false;
         if (_sheetFilling && _lastFrame is not null)
         {
