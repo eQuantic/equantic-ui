@@ -80,7 +80,13 @@ export {
 export { liftArith, liftCmp } from './utils/nullable';
 export { equals } from './utils/equals';
 export { $eq } from './eq';
-export { installCulture, activeCulture } from './utils/culture';
+export {
+  installCulture,
+  activeCulture,
+  setCulture,
+  setCultureInvalidator,
+  setCultureCatalogLoader,
+} from './utils/culture';
 
 // Shared abstract vocabulary (write-once components) — client-side lowering to HtmlNode.
 export { lowerVisualNode, tokenValue } from './shared/lowering';

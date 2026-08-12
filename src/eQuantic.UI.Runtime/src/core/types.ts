@@ -29,7 +29,12 @@ export interface StyleClass {
 }
 
 export interface RenderContext {
-  getService<T>(key: ServiceKey<T>): T | undefined;
+  // `T = any`, deliberately: eqc erases the C# type argument (a capability resolves by interface
+  // NAME at runtime), so a string-keyed lookup infers nothing and would land on `{}` — making
+  // every legitimate `getService('IX')?.doThing()` in a transpiled twin a type error with no cast
+  // to escape through. The C# compiler IS the type layer for this call.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getService<T = any>(key: ServiceKey<T>): T | undefined;
   serviceProvider?: ServiceProvider;
   /**
    * Whether this component was asked to draw WHERE IT STANDS rather than over everything (C#
@@ -63,7 +68,12 @@ export interface RenderContext {
  */
 export type ServiceKey<T = unknown> = (new (...args: unknown[]) => T) | string;
 export type ServiceProvider = {
-  getService<T>(key: ServiceKey<T>): T | undefined;
+  // `T = any`, deliberately: eqc erases the C# type argument (a capability resolves by interface
+  // NAME at runtime), so a string-keyed lookup infers nothing and would land on `{}` — making
+  // every legitimate `getService('IX')?.doThing()` in a transpiled twin a type error with no cast
+  // to escape through. The C# compiler IS the type layer for this call.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getService<T = any>(key: ServiceKey<T>): T | undefined;
   getRequiredService<T>(key: ServiceKey<T>): T;
   hasService(key: ServiceKey): boolean;
   createScope(): ServiceProvider;

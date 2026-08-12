@@ -18,7 +18,7 @@ import {
   type NavigationGuard,
   type ThemeData,
 } from '../../eQuantic.UI.Runtime/src/index';
-import { installCulture } from '../../eQuantic.UI.Runtime/src/utils/culture';
+import { installCulture, setCultureInvalidator } from '../../eQuantic.UI.Runtime/src/utils/culture';
 
 // --- Constants ---
 const APP_ROOT_ID = 'app';
@@ -138,6 +138,15 @@ export async function boot(): Promise<void> {
         cultureData.strings ?? {},
       );
     }
+
+    // Track L D6: switching culture RE-RENDERS, it never reloads — and the culture store is a leaf
+    // module that must not reach the component tree itself, so boot hands it the invalidation.
+    // The mounted page re-renders through its own scheduler, which is the same path setState uses:
+    // state survives, the DOM is reconciled, and only the text that changed is touched.
+    setCultureInvalidator(() => {
+      const page = currentComponent as unknown as { _scheduleRender?: () => void } | null;
+      page?._scheduleRender?.();
+    });
 
 
     // Seed the active route from the initial URL before mounting, so SSR hydration sees the same

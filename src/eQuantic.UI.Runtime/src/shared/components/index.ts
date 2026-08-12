@@ -36,6 +36,8 @@ export { CodePosition } from './CodePosition';
 export { CodeRange } from './CodeRange';
 export { CodeToken } from './CodeToken';
 export { Crumb } from './Crumb';
+export { CultureOption } from './CultureOption';
+export { CultureSwitcher } from './CultureSwitcher';
 export { CurlyBraceLanguage } from './CurlyBraceLanguage';
 export { DataColumn } from './DataColumn';
 export { DataRow } from './DataRow';

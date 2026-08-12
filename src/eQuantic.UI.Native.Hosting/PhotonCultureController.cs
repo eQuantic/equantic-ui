@@ -13,7 +13,7 @@ namespace eQuantic.UI.Native.Hosting;
 /// registered TryAdd, attached by the runner once the window's host exists, Apply-before-attach
 /// just records. Track L's write-once culture switch (D6) gets THIS as its native realization.
 /// </summary>
-public sealed class PhotonCultureController
+public sealed class PhotonCultureController : eQuantic.UI.Primitives.ICultureController
 {
     private Action? _repaint;
 
@@ -35,6 +35,21 @@ public sealed class PhotonCultureController
     /// <summary>Called by the runner: the hand that repaints (set once the window's host exists —
     /// services are constructed before any window is, so the sink arrives late by design).</summary>
     public void Attach(Action repaint) => _repaint = repaint;
+
+    // ---- The write-once contract (Track L D6) -------------------------------------------------
+    // A component asks for ICultureController and speaks BCP-47 NAMES, because that is the one
+    // currency the browser also has. Explicit implementations: the shells keep the CultureInfo API
+    // above (they resolve real platform locales), and neither surface has to pretend to be the
+    // other. Materializing the CultureInfo is this side's job precisely because this side can.
+
+    string eQuantic.UI.Primitives.ICultureController.UICulture => UICulture.Name;
+
+    string eQuantic.UI.Primitives.ICultureController.FormatCulture => FormatCulture.Name;
+
+    void eQuantic.UI.Primitives.ICultureController.Apply(string uiCulture, string? formatCulture) =>
+        Apply(
+            CultureInfo.GetCultureInfo(uiCulture),
+            string.IsNullOrEmpty(formatCulture) ? null : CultureInfo.GetCultureInfo(formatCulture));
 
     /// <summary>The statics write alone — for a shell that resolves the platform locale before any
     /// controller instance is reachable (iOS today: <c>PhotonApp.Run</c> does not carry services).

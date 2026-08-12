@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A THIRD culture, so the switcher proves it is a switch and not a toggle. -->
+<root>
+  <data name="Hero.Title" xml:space="preserve">
+    <value>Construye productos, no tuberías.</value>
+  </data>
+  <data name="Greeting" xml:space="preserve">
+    <value>¡Bienvenido, {0}!</value>
+  </data>
+  <data name="Hero.Body" xml:space="preserve">
+    <value>Esta página se escribe una vez en C# — sus textos viven en un .resx corriente, y la misma clase habla el idioma de la petición en el servidor, en el navegador y en una ventana nativa.</value>
+  </data>
+</root>

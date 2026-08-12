@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { activeCulture, installCulture, str } from './culture';
+import {
+  activeCulture,
+  installCulture,
+  setCulture,
+  setCultureCatalogLoader,
+  setCultureInvalidator,
+  str,
+} from './culture';
 import { $eq } from '../eq';
 
 /** Track L W3: the culture atom and the rewritten-accessor lookup (C# twin: the SSR resolves the
@@ -59,6 +66,82 @@ describe('culture atom', () => {
     } finally {
       warn.mockRestore();
     }
+  });
+
+  it('setCulture fetches the catalog, swaps it and invalidates the tree — no reload (D6)', async () => {
+    const asked: string[] = [];
+    setCultureCatalogLoader(async (culture) => {
+      asked.push(culture);
+      return culture === 'es' ? { 'Strings/Hero.Title': 'Construye productos' } : null;
+    });
+    let renders = 0;
+    setCultureInvalidator(() => renders++);
+
+    installCulture('en', 'en', { 'Strings/Hero.Title': 'Build products' });
+    await setCulture('es');
+
+    expect(asked).toEqual(['es']);
+    expect(activeCulture()).toEqual({ ui: 'es', format: 'es' });
+    expect(str('Strings', 'Hero.Title')).toBe('Construye productos');
+    expect(renders).toBe(1);
+  });
+
+  it('a culture already in memory switches back without asking for it again', async () => {
+    const asked: string[] = [];
+    setCultureCatalogLoader(async (culture) => {
+      asked.push(culture);
+      return { 'Strings/Hero.Title': `title-${culture}` };
+    });
+    setCultureInvalidator(() => {});
+
+    // Cultures unique to this test: the catalog cache is module state BY DESIGN (a switch back is
+    // meant to be instant), so a shared name would make these specs order-dependent.
+    installCulture('de-AT', 'de-AT', { 'Strings/Hero.Title': 'Build products' });
+    await setCulture('nl');
+    await setCulture('de-AT');
+    await setCulture('nl');
+
+    expect(asked).toEqual(['nl']);
+    expect(str('Strings', 'Hero.Title')).toBe('title-nl');
+  });
+
+  it('the catalog PICK walks parents then neutral — the server file walk, mirrored', async () => {
+    const asked: string[] = [];
+    setCultureCatalogLoader(async (culture) => {
+      asked.push(culture);
+      return culture === 'neutral' ? { 'Strings/Hero.Title': 'Build products' } : null;
+    });
+    setCultureInvalidator(() => {});
+
+    await setCulture('fr-CA');
+
+    expect(asked).toEqual(['fr-CA', 'fr', 'neutral']);
+    // The NAME still switched even though only the neutral catalog answered: formats follow
+    // immediately, and the strings degrade to neutral rather than to keys.
+    expect(activeCulture().ui).toBe('fr-CA');
+    expect(str('Strings', 'Hero.Title')).toBe('Build products');
+  });
+
+  it('switching to the culture already in force does nothing at all', async () => {
+    let renders = 0;
+    setCultureInvalidator(() => renders++);
+    setCultureCatalogLoader(async () => {
+      throw new Error('must not fetch');
+    });
+
+    installCulture('pt-BR', 'pt-BR', {});
+    await setCulture('pt-BR');
+
+    expect(renders).toBe(0);
+  });
+
+  it('the PAIR can differ — pt-BR strings over en-US formats (D13)', async () => {
+    setCultureCatalogLoader(async () => ({}));
+    setCultureInvalidator(() => {});
+
+    await setCulture('pt-BR', 'en-US');
+
+    expect(activeCulture()).toEqual({ ui: 'pt-BR', format: 'en-US' });
   });
 
   it('installing a new culture swaps the catalog and re-arms the warnings', () => {

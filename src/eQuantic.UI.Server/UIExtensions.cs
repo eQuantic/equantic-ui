@@ -103,6 +103,11 @@ public static class UIExtensions
                 provider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>(),
                 options.InitialThemeMode));
 
+        // The server half of the LANGUAGE hand (Track L D6). It reports the culture ASP.NET's own
+        // middleware negotiated — a switcher rendering server-side must show the language the page
+        // is actually in, and a component that resolves nothing has to guess.
+        services.TryAddSingleton<eQuantic.UI.Primitives.ICultureController, SsrCultureController>();
+
         // What a device capability IS during server rendering: absent — see AbsentCapabilities.
         // A page that takes a camera or the app's storage has to be CONSTRUCTIBLE here, or the one
         // page that does something is the one page a crawler never sees. TryAdd throughout, so an

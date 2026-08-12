@@ -24,6 +24,31 @@ let active: CulturePair = { ui: '', format: '' };
 let activeStrings: Record<string, string> = {};
 const warned = new Set<string>();
 
+/** Catalogs already in memory, by culture name — the one the shell inlined, plus any `setCulture`
+ * fetched. A second switch back is instant and silent. */
+const catalogs = new Map<string, Record<string, string>>();
+
+/** What re-renders the mounted tree after a swap. Registered by boot rather than imported: this
+ * module is a LEAF, and reaching the component tree from here would close an eval-time cycle —
+ * the same inversion the runtime already uses twice. */
+let invalidate: (() => void) | null = null;
+
+/** Where a culture's catalog is fetched from. The SDK's own output convention, overridable so a
+ * host that serves the bundle from elsewhere (or a test) can answer without a network. */
+let loadCatalog: (culture: string) => Promise<Record<string, string> | null> = defaultLoader;
+
+async function defaultLoader(culture: string): Promise<Record<string, string> | null> {
+  if (typeof fetch !== 'function') return null;
+  try {
+    const response = await fetch(`/_equantic/strings/${culture}.json`, { credentials: 'same-origin' });
+    if (!response.ok) return null;
+    return (await response.json()) as Record<string, string>;
+  } catch {
+    // Offline, blocked, or served from a host with no catalogs: the caller falls back.
+    return null;
+  }
+}
+
 /**
  * Installs the ACTIVE culture and its flat catalog (`"Strings/Hero.Title"` → value) — called by
  * boot from `window.__EQ_CULTURE__` BEFORE hydration, so the client resolves exactly the strings
@@ -33,6 +58,61 @@ export function installCulture(ui: string, format: string, strings: Record<strin
   active = { ui, format };
   activeStrings = strings;
   warned.clear();
+  if (ui.length > 0) catalogs.set(ui, strings);
+}
+
+/** Registers the re-render (boot) and the catalog loader (a host with its own transport). */
+export function setCultureInvalidator(onChanged: () => void): void {
+  invalidate = onChanged;
+}
+
+export function setCultureCatalogLoader(
+  loader: (culture: string) => Promise<Record<string, string> | null>,
+): void {
+  loadCatalog = loader;
+}
+
+/**
+ * Switches culture WITHOUT a reload (D6) — the `setPhotonTheme` shape: fetch the catalog if it is
+ * not already in memory, swap it, invalidate the tree. A component reaches this through C#
+ * (`ICultureController`), never through JS.
+ *
+ * The catalog PICK mirrors the server's exactly (exact culture → parents → neutral): the files are
+ * emitted with the .NET fallback chain already flattened (D12), so this walk only chooses a FILE
+ * and the lookup itself stays flat. A culture whose catalog cannot be found keeps the strings it
+ * has and still switches NAMES — formats follow immediately, and the strings degrade to the
+ * neutral values rather than to keys.
+ */
+export async function setCulture(ui: string, format?: string): Promise<void> {
+  const formatName = format ?? ui;
+  if (ui === active.ui && formatName === active.format) return;
+
+  let strings = catalogs.get(ui);
+  if (strings === undefined) {
+    for (const candidate of [...parentChain(ui), 'neutral']) {
+      const loaded = await loadCatalog(candidate);
+      if (loaded !== null) {
+        strings = loaded;
+        break;
+      }
+    }
+  }
+
+  installCulture(ui, formatName, strings ?? activeStrings);
+  invalidate?.();
+}
+
+/** `pt-BR` → [`pt-BR`, `pt`]. The .NET parent walk, by name, with no CultureInfo to consult. */
+function parentChain(culture: string): string[] {
+  const chain: string[] = [];
+  let name = culture;
+  while (name.length > 0) {
+    chain.push(name);
+    const cut = name.lastIndexOf('-');
+    if (cut < 0) break;
+    name = name.slice(0, cut);
+  }
+  return chain;
 }
 
 /** The pair in force — `str` reads ui; the D7 formatters read format when the subset lands. */

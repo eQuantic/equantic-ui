@@ -7,6 +7,7 @@ import { WebMotionSensor } from './motion-sensor';
 import { WebNetworkStatus } from './network-status';
 import { WebPhotoLibrary } from './photo-library';
 import { WebTextClipboard } from './text-clipboard';
+import { WebCultureController } from './culture-controller';
 import { WebThemeController } from './theme-controller';
 
 /**
@@ -35,5 +36,8 @@ export function registerDeviceCapabilities(): void {
   // Not a device, but the same contract: a component asks for the light/dark hand by interface
   // name and never learns that on this target it is one color-scheme declaration.
   services.registerSingleton('IThemeController', () => new WebThemeController());
+  // The same contract for the LANGUAGE: switching culture re-renders this page and tells the
+  // server through its own cookie, and the component asking never learns either half.
+  services.registerSingleton('ICultureController', () => new WebCultureController());
   services.registerSingleton('ITextClipboard', () => new WebTextClipboard());
 }

@@ -31,10 +31,15 @@ var app = builder.Build();
 
 // Track L D5: culture negotiation is ASP.NET's, wired by the APP — the SDK only reads the
 // statics this middleware sets. Try /i18n with Accept-Language: pt-BR.
+//
+// The default providers include the QUERY string, the COOKIE and Accept-Language, in that order.
+// The cookie is what makes the in-page switcher (M1) outlive the page: the browser's culture
+// controller writes ASP.NET's own `.AspNetCore.Culture`, and this middleware reads it back on the
+// next request — the SDK invents no transport of its own.
 app.UseRequestLocalization(options =>
 {
-    options.AddSupportedUICultures("pt-BR");
-    options.AddSupportedCultures("pt-BR");
+    options.AddSupportedUICultures("en", "pt-BR", "es");
+    options.AddSupportedCultures("en", "pt-BR", "es");
 });
 
 // Serve static files (including compiled JS)

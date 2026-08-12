@@ -49,8 +49,15 @@ export class ComponentContext {
   /**
    * A capability, for a component in the MIDDLE of a tree — the C# `context.GetService<T>()`, which
    * eqc emits as `getService('IThing')`. Null when this target does not have it.
+   *
+   * The return type is deliberately open. eqc erases the C# type argument (resolution is by
+   * interface NAME at runtime), so nothing here could check it — and `unknown` would make every
+   * legitimate `getService('IX')?.doThing()` a type error the transpiled twin has no way to cast
+   * away. The C# compiler is the type layer for this call; TypeScript's job is to let the twin
+   * through.
    */
-  getService(interfaceName: string): unknown {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getService(interfaceName: string): any {
     return resolveService(interfaceName);
   }
 

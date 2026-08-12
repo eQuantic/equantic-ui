@@ -1,4 +1,4 @@
-import { AdaptiveNode, Adjustable, Anchored, Avatar, Badge, Banner, Box, BoxStyle, Button, Card, Checkbox, Chip, ColorToken, Column, Dialog, DialogAction, Divider, DragDismiss, Draggable, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, Image, InFlow, InView, KeyChord, Link, Markdown, Mermaid, Overlay, Positioned, Presence, Pressable, ProgressBar, Row, SafeArea, ScrollView, SearchField, Select, Shortcut, Simulated, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextEntry, TextInput, Toast, Tooltip, TypeStyle, Vector, VisualNode } from "@equantic/runtime";
+import { AdaptiveNode, Adjustable, Anchored, Avatar, Badge, Banner, Box, BoxStyle, Button, Card, Checkbox, Chip, ColorToken, Column, CultureOption, CultureSwitcher, Dialog, DialogAction, Divider, DragDismiss, Draggable, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, Image, InFlow, InView, KeyChord, Link, Markdown, Mermaid, Overlay, Positioned, Presence, Pressable, ProgressBar, Row, SafeArea, ScrollView, SearchField, Select, Shortcut, Simulated, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextEntry, TextInput, Toast, Tooltip, TypeStyle, Vector, VisualNode } from "@equantic/runtime";
 export class UI {
     static column(gap: number = 0, main: string = 'start', cross: string = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, children: VisualNode[] | null = null) { let node = new Column(gap, main, cross, wrap, runGap, padding);if (children != null) for (const child of children) node.add(child);return node; }
     static inView(child: VisualNode, onChanged: (bool: boolean) => void) { return new InView(child, onChanged); }
@@ -51,6 +51,7 @@ export class UI {
     static divider(inset: string = 'none', axis: string = 'horizontal') { return new Divider(inset, axis); }
     static markdown(source: string) { return new Markdown(source); }
     static mermaid(source: string) { return new Mermaid(source); }
+    static cultureSwitcher(options: CultureOption[]) { return new CultureSwitcher(options); }
     static iconButton(glyph: string, label: string, kind: string = 'standard', size: string = 'medium', onPressed: (() => void) | null = null) { return new IconButton(glyph, label, kind, size, onPressed); }
     static emptyState(icon: string, title: string, body: string | null = null) { return new EmptyState(icon, title, body); }
     static tabs(labels: string[], selected: number, onSelect: ((int: number) => void) | null = null) { return new Tabs(labels, selected, onSelect); }

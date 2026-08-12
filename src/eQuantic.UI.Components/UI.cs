@@ -301,6 +301,11 @@ public static class UI
     /// as Boxes, Text and Vectors, on web and Photon alike. Unknown grammars show as code.</summary>
     public static Mermaid Mermaid(string source) => new Mermaid(source);
 
+    /// <summary>The language switch — swaps the app's culture through the host's own controller
+    /// (re-render on web, repaint on native), no reload either way.</summary>
+    public static CultureSwitcher CultureSwitcher(IReadOnlyList<CultureOption> options) =>
+        new CultureSwitcher(options);
+
     /// <summary>Icon-only button; the label is what assistive tech announces.</summary>
     public static IconButton IconButton(Icons glyph, string label,
         IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
