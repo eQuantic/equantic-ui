@@ -122,8 +122,18 @@ public sealed class CodeBlock : StatelessComponent
     public readonly record struct CodeMetrics(
         TypeStyle Style, float LineHeight, float ColumnWidth, float GutterWidth)
     {
-        /// <summary>Where column 0 begins: past the gutter and the code's own left padding.</summary>
-        public float ContentLeft => GutterWidth + Space.S3;
+        /// <summary>
+        /// Where column 0 begins, measured from the CODE's own box — the code's left padding, and
+        /// nothing else.
+        /// <para>
+        /// It used to include the gutter, because the gutter used to sit inside the thing that
+        /// scrolls. That is what made a pinned gutter impossible: scrolling sideways slid real code
+        /// under the numbers, and an opaque column hid it. The gutter is a sibling of the code now,
+        /// outside the scroll, so every column sum starts where the code starts — the caret, the
+        /// selection and every decoration at once, which is why this is one property and not three.
+        /// </para>
+        /// </summary>
+        public float ContentLeft => Space.S3;
 
         /// <summary>Where line 0 begins: the slab's vertical padding.</summary>
         public float ContentTop => Space.S3;
@@ -178,7 +188,7 @@ public sealed class CodeBlock : StatelessComponent
         var widest = 0;
         for (var index = 0; index < Document.LineCount; index++)
             widest = Math.Max(widest, Document.Line(index).Length);
-        var codeWidth = gutterWidth + widest * metrics.ColumnWidth + metrics.ColumnWidth;
+        var codeWidth = widest * metrics.ColumnWidth + metrics.ColumnWidth;
 
         var lines = new Column(gap: 0) { Width = SizeValue.Fill };
         if (first > 0) lines.Add(Spacer.Fixed(first * lineHeight));
@@ -226,6 +236,18 @@ public sealed class CodeBlock : StatelessComponent
         // Long lines scroll sideways rather than wrapping: a wrapped line of code has lost the one
         // thing its indentation was telling you.
         body = new ScrollView(body, ScrollAxis.Horizontal) { Width = SizeValue.Fill };
+
+        // THE GUTTER IS A SIBLING of that scroll, never a passenger in it. Inside, the numbers slid
+        // away with the code and a reader lost the number of the line they were reading; overlaid on
+        // top, the code slid UNDER them and the opaque column hid it. Beside it, both stay true and
+        // neither has to compensate for the other.
+        if (ShowLineNumbers)
+        {
+            var withGutter = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Start };
+            withGutter.Add(Gutter(context));
+            withGutter.Add(new Flexible(body));
+            body = withGutter;
+        }
         if (MaxHeight > 0)
         {
             body = new Box(new BoxStyle { Width = SizeValue.Fill, MaxHeight = MaxHeight },
@@ -275,44 +297,94 @@ public sealed class CodeBlock : StatelessComponent
         return layers;
     }
 
+    /// <summary>
+    /// The line numbers, as a column of their OWN — beside the code, outside whatever scrolls it.
+    /// <para>
+    /// It belongs INSIDE whatever scrolls the file down and OUTSIDE whatever scrolls it across, and
+    /// that nesting is the entire feature: the numbers travel down with the code and stay put as it
+    /// slides across. Two shapes were tried before this one and both were wrong in the same way —
+    /// inside the sideways scroll the numbers left with the code, and overlaid on top of it the code
+    /// slid UNDER them and an opaque column hid real characters.
+    /// </para>
+    /// <para>
+    /// Built over the same window and the same spacers as the code, so the two columns stay
+    /// line-for-line together however far the file is scrolled.
+    /// </para>
+    /// </summary>
+    public VisualNode Gutter(ComponentContext context)
+    {
+        var theme = context.Theme;
+        var metrics = Metrics ?? MetricsFor(context, Size, ShowLineNumbers,
+            FirstLineNumber + Document.LineCount - 1);
+        var lineHeight = metrics.LineHeight;
+        var (first, last) = Window(lineHeight);
+
+        var column = new Column(gap: 0) { Width = SizeValue.Fixed(metrics.GutterWidth) };
+        // The code's own top padding, so line 0 starts at the same height in both columns.
+        column.Add(Spacer.Fixed(Space.S3));
+        if (first > 0) column.Add(Spacer.Fixed(first * lineHeight));
+        for (var index = first; index <= last; index++)
+            column.Add(GutterCell(index, metrics, theme));
+        if (last < Document.LineCount - 1)
+            column.Add(Spacer.Fixed((Document.LineCount - 1 - last) * lineHeight));
+        return column;
+    }
+
+    private VisualNode GutterCell(int index, CodeMetrics metrics, IAppTheme theme)
+    {
+        var numbers = new Row(gap: Space.S1)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Main = MainAlign.End,
+            Cross = CrossAlign.Center,
+        };
+        if (MarkerFor(index) is { } mark)
+        {
+            numbers.Add(new Box(new BoxStyle
+            {
+                Width = 7,
+                Height = 7,
+                Background = GutterColor(mark.Kind, theme),
+                CornerRadius = new CornerRadii(Radius.Full),
+            }));
+        }
+        numbers.Add(new Text((FirstLineNumber + index).ToString(), TypeRole.LabelSmall,
+            Inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1)
+        {
+            Mono = true,
+            Tabular = true,
+            StyleOverride = metrics.Style with { Weight = FontWeight.Regular },
+        });
+
+        // The active line's wash crosses the gutter too: a "you are here" stripe that stops at the
+        // first digit reads as a rendering fault rather than as an answer.
+        var cell = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fixed(metrics.GutterWidth),
+            Height = SizeValue.Fixed(metrics.LineHeight),
+            // The GAP between the numbers and the code belongs to the gutter, which does not move.
+            // Leaving it to the code's own left padding worked only until you scrolled: that padding
+            // is inside the thing that scrolls, so it slid away and the digits ended up touching the
+            // first character of every line.
+            Padding = new EdgeInsets(0, 0, Space.S3, 0),
+            Background = ActiveLine == index
+                ? (Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle)
+                : null,
+        }, numbers);
+
+        return OnGutterPressed is { } pressed
+            ? new Pressable(cell, () => pressed(index)) { Label = $"Line {FirstLineNumber + index}" }
+            : cell;
+    }
+
     private VisualNode LineRow(ComponentContext context, CodeHighlighter highlighter, int index,
         TypeStyle style, float lineHeight, float gutterWidth, ColorToken ink, IAppTheme theme)
     {
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = lineHeight, Cross = CrossAlign.Center };
 
-        if (ShowLineNumbers)
-        {
-            var marker = MarkerFor(index);
-            var numbers = new Row(gap: Space.S1)
-            {
-                Width = SizeValue.Fixed(gutterWidth),
-                Height = SizeValue.Fill,
-                Main = MainAlign.End,
-                Cross = CrossAlign.Center,
-            };
-            if (marker is { } mark)
-            {
-                numbers.Add(new Box(new BoxStyle
-                {
-                    Width = 7,
-                    Height = 7,
-                    Background = GutterColor(mark.Kind, theme),
-                    CornerRadius = new CornerRadii(Radius.Full),
-                }));
-            }
-            numbers.Add(new Text((FirstLineNumber + index).ToString(), TypeRole.LabelSmall,
-                Inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1)
-            {
-                Mono = true,
-                Tabular = true,
-                StyleOverride = style with { Weight = FontWeight.Regular },
-            });
-
-            row.Add(OnGutterPressed is { } pressed
-                ? new Pressable(numbers, () => pressed(index)) { Label = $"Line {FirstLineNumber + index}" }
-                : numbers);
-        }
-
+        // No numbers here: the gutter is a sibling of this whole column now (see Gutter), so a row
+        // is CODE, and column zero is where the row begins.
         var code = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
         var text = Document.Line(index);
         var tokens = highlighter.TokensFor(Document, index);

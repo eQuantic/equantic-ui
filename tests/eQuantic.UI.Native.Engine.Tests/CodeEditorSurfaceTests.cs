@@ -308,6 +308,60 @@ public class CodeEditorSurfaceTests
         ScrollersUnder(built).Should().BeGreaterThanOrEqualTo(2, "sideways for long lines, down for a long file");
     }
 
+    /// <summary>
+    /// THE GUTTER IS OUTSIDE THE SIDEWAYS SCROLL, and the code is inside it.
+    /// <para>
+    /// Two arrangements were tried and both were wrong in the same way. Inside the scroll, the
+    /// numbers left with the code and a reader lost the number of the line they were reading.
+    /// Overlaid on top of it, the code slid UNDER an opaque column and real characters disappeared —
+    /// `using` became `eQuantic.UI.Core;`.
+    /// </para>
+    /// <para>
+    /// Beside it, both stay true with nothing compensating for anything, and the price is the one
+    /// paid here: ContentLeft counts from where the CODE begins, so the caret, the selection and
+    /// every decoration all start there. That is why this test and the ones above travel together.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheGutterIsOutsideTheSidewaysScroll_SoTheCodeNeverSlidesUnderIt()
+    {
+        var editor = new CodeEditor("short\n" + new string('x', 400), "csharp");
+        var built = editor.Build(new ComponentContext(PhotonTheme.Instance));
+
+        var sideways = FindScroll(built, ScrollAxis.Horizontal);
+        sideways.Should().NotBeNull("long lines scroll");
+        FindGutter(sideways!).Should().BeNull(
+            "inside the scroll the numbers leave with the code");
+        FindGutter(built).Should().NotBeNull("…but they are somewhere, beside it");
+    }
+
+    /// <summary>Column zero counts from the CODE, not from the gutter — the change that made a
+    /// pinned gutter possible, stated where it can fail.</summary>
+    [Fact]
+    public void ColumnZeroCountsFromTheCode()
+    {
+        var narrow = new CodeBlock.CodeMetrics(TypeStyle.OfSize(12, FontWeight.Regular), 17, 7, GutterWidth: 20);
+        var wide = narrow with { GutterWidth = 200 };
+
+        // A file with a thousand lines has a wider gutter than one with ten, and column zero is in
+        // the same place in both: it counts from the CODE. Were it still measured past the gutter,
+        // ten times the gutter would move every caret, band and decoration ten times as far.
+        wide.ContentLeft.Should().Be(narrow.ContentLeft);
+    }
+
+    private static ScrollView? FindScroll(VisualNode node, ScrollAxis axis) => node switch
+    {
+        ScrollView view when view.Axis == axis => view,
+        _ => Children(node).Select(child => FindScroll(child, axis)).FirstOrDefault(f => f is not null),
+    };
+
+    /// <summary>A gutter cell is the only Text carrying a LINE NUMBER — tabular, and a bare int.</summary>
+    private static Text? FindGutter(VisualNode node) => node switch
+    {
+        Text text when text.Tabular && int.TryParse(text.Content, out _) => text,
+        _ => Children(node).Select(FindGutter).FirstOrDefault(found => found is not null),
+    };
+
     private static CodeSurface? FindSurface(VisualNode node) => node switch
     {
         CodeSurface surface => surface,
@@ -317,6 +371,12 @@ public class CodeEditorSurfaceTests
     private static int ScrollersUnder(VisualNode node) =>
         (node is ScrollView ? 1 : 0) + Children(node).Sum(ScrollersUnder);
 
+    /// <summary>
+    /// Every child, whatever the wrapper. A walker that stops at a node it does not know reports
+    /// "not found" and "none below" with equal confidence — the first shape this test did not know
+    /// (a Row) turned an invariant about scroll views into a test that walked three levels and gave
+    /// up.
+    /// </summary>
     private static IEnumerable<VisualNode> Children(VisualNode node) => node switch
     {
         CodeSurface surface => [surface.Child],
@@ -325,6 +385,8 @@ public class CodeEditorSurfaceTests
         Stack stack => stack.Children,
         Positioned positioned => [positioned.Child],
         Shortcut shortcut => [shortcut.Child],
+        Flexible flexible => [flexible.Child],
+        FlexNode flex => flex,
         UiComponent component => [component.Build(new ComponentContext(PhotonTheme.Instance))],
         _ => [],
     };

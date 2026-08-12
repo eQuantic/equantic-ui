@@ -245,6 +245,20 @@ public sealed class CodeEditor : StatefulComponent
                 SetState(() => _viewportWidth = width);
             },
         };
+
+        // THE GUTTER, beside the sideways scroll and inside the vertical one below: the numbers
+        // travel down the file with the code and stay put as it slides across. The block's own
+        // instance builds them, over the same window, so there is one set of numbers built from one
+        // measurement — and ContentLeft counts from where the CODE begins, not from where the gutter
+        // does, which is what makes this arrangement possible at all.
+        if (ShowLineNumbers)
+        {
+            var withGutter = new Row(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Start };
+            withGutter.Add(block.Gutter(context));
+            withGutter.Add(new Flexible(viewport));
+            viewport = withGutter;
+        }
+
         if (MaxHeight > 0)
         {
             viewport = new Box(new BoxStyle { Width = SizeValue.Fill, MaxHeight = MaxHeight },
