@@ -528,6 +528,11 @@ function revealCaret(path: string): void {
   if (typeof document === 'undefined') return;
 
   const reveal = () => {
+    // Checked again, HERE. The whole point of this callback is that it runs later, and later is
+    // long enough for the document to be gone — a test environment torn down between files, a
+    // frame delivered after teardown. A deferred callback that assumes its world outlived it
+    // throws where nothing can catch it: two unhandled ReferenceErrors, in CI only.
+    if (typeof document === 'undefined') return;
     // By PATH, never by a captured element. The keystroke rebuilds the tree, so the surface the
     // handler ran on is a corpse by the time this runs — and scrollIntoView on a detached caret
     // succeeds silently, which is how this looked implemented and did nothing.
