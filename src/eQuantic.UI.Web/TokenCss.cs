@@ -332,8 +332,12 @@ public static class PhotonCssGenerator
         css.AppendLine(".eq-pressable:focus-visible > :first-child { box-shadow: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
 
         // Overlay layer (Phase C): the viewport-fixed stacking layer — composition (scrim,
-        // centering) belongs to the component; only the layer mechanics live here.
-        css.AppendLine(".eq-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; }");
+        // centering) belongs to the component; only the layer mechanics live here. The single
+        // grid cell hands the child the VIEWPORT'S size: a layer lays out against the viewport
+        // by contract, and without this a child that hugs (Drawer's bare Stack) collapses to its
+        // content while its Fill-sized descendants resolve against zero. Anchored and Positioned
+        // children are absolute, so the stretch changes nothing they do.
+        css.AppendLine(".eq-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; display: grid; }");
         // Non-modal layers (toasts): input passes through except on the layer's own pressables.
         css.AppendLine(".eq-overlay-passthrough { pointer-events: none; }");
         css.AppendLine(".eq-overlay-passthrough .eq-pressable { pointer-events: auto; }");

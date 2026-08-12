@@ -40,6 +40,9 @@ public enum Icons : byte
 
     /// <summary>Tabular data — a spreadsheet or data-grid affordance.</summary>
     Table = 21,
+
+    /// <summary>Three-line navigation trigger — the affordance every compact shell opens with.</summary>
+    Menu = 22,
 }
 
 /// <summary>

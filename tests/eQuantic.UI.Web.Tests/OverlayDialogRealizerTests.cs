@@ -47,8 +47,11 @@ public class OverlayDialogRealizerTests
     [Fact]
     public void GeneratedStylesheet_CarriesTheOverlayLayer()
     {
+        // display:grid is the SIZE HANDOFF: the layer's single cell stretches the child to the
+        // viewport, so a hugging layer root (Drawer's bare Stack) doesn't collapse to content
+        // height and orphan its Fill-sized descendants at zero.
         PhotonCssGenerator.Generate(Theme).Should().Contain(
-            ".eq-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; }");
+            ".eq-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; display: grid; }");
     }
 
     [Fact]
