@@ -15,8 +15,10 @@ public enum DrawerEdge : byte
 /// (the caller owns <see cref="Open"/>; scrim tap fires <see cref="OnDismiss"/>), declarative like
 /// Dialog/BottomSheet: build it open, remove it closed. The panel wraps in <see cref="Presence"/>
 /// so it fades in through the state-transition system.
+/// Focus is trapped in the panel on web while open, and returns to the invoker on close (§10).
 /// v1 fences: lateral slide motion (PresenceMotion gains SlideStart with the motion pack),
-/// drag-to-close (the DragDismiss horizontal axis), focus trap (a11y system).
+/// drag-to-close (the DragDismiss horizontal axis), §10's preferred initial focus (the selected
+/// item — the trap takes the first focusable today).
 /// </summary>
 public sealed class Drawer : StatelessComponent
 {

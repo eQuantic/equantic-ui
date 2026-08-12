@@ -731,6 +731,18 @@ function lowerOverlay(node: OverlayNode, context: LoweringContext, path: string)
     events: {},
     children: [],
   };
+  // §10 dialog semantics + the trap marker (C# twin: LowerOverlay). A modal layer that is OPEN is
+  // a dialog: aria-modal is what tells assistive tech the page behind is inert, tabindex=-1 makes
+  // the container itself the initial-focus fallback, and data-eq-trap is what the client's
+  // focus-trap controller discovers after each pass. A non-modal layer (toasts) is none of this,
+  // and a closed one is not a dialog RIGHT NOW — it is hidden, out of hit-testing and focus.
+  const modalAndOpen = node.modal !== false && node.open !== false;
+  if (modalAndOpen) {
+    layer.attributes['role'] = 'dialog';
+    layer.attributes['aria-modal'] = 'true';
+    layer.attributes['tabindex'] = '-1';
+    layer.attributes['data-eq-trap'] = '';
+  }
   if (node.motion) {
     // Keep-mounted open/close (C# twin): the layer fades both ways; closed is hidden, so it leaves
     // hit-testing and the focus order.

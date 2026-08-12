@@ -8,7 +8,9 @@ namespace eQuantic.UI.Components;
 /// Fully CONTROLLED: the caller owns <see cref="Open"/> (its trigger already toggles state);
 /// outside taps fire <see cref="OnDismiss"/>. The panel carries Radius.Md, 1dp Border, S3 padding;
 /// the caller composes everything inside from the ordinary vocabulary.
-/// v1 fences: arrow/caret pointing at the anchor, focus trap (a11y system).
+/// v1 fences: arrow/caret pointing at the anchor. NOT focus-trapped by design — a popover is a
+/// non-modal surface (WAI-ARIA), so Tab walks out of it; the modal trap belongs to Dialog,
+/// BottomSheet and Drawer (§10). Its own Escape-to-close joins the Anchored dismiss path.
 /// </summary>
 public sealed class Popover : StatelessComponent
 {

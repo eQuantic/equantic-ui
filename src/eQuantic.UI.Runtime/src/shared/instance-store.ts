@@ -16,6 +16,7 @@
  */
 
 import { commitShortcuts } from '../dom/shortcuts';
+import { commitFocusTraps } from '../dom/focus-trap';
 import { attachCameraStreams } from './devices/camera';
 import { commitScrollViewports } from './scroll-viewports';
 import { scheduleInViewCommit } from './in-view';
@@ -140,6 +141,9 @@ export function exitPass(): void {
   // Spec S8: the pass's Shortcut declarations become the live set — bindings whose subtree was not
   // re-lowered drop out, which is how unmounting unsubscribes.
   commitShortcuts();
+  // §10: the same moment reconciles the modal focus traps against the DOM the pass just produced —
+  // a layer that appeared takes focus (recording its invoker), one that vanished gives it back.
+  commitFocusTraps();
   // A CameraPreview lowered this pass has a fresh <video>; the stream re-attaches here, the same
   // after-the-pass moment the shortcut set commits.
   attachCameraStreams();

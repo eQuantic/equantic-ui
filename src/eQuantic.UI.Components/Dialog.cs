@@ -12,8 +12,11 @@ public sealed record DialogAction(string Label, Action? OnPressed = null, Varian
 /// ActionSheet or a screen. DECLARATIVE presence: the app shows it by building it
 /// (`if (_confirming) … new Dialog(…)`) and resolves it through the action callbacks;
 /// <c>Dismissible</c> (default FALSE — destructive confirms) arms the scrim tap with
-/// <c>OnDismiss</c>. v1 fences: enter/exit motion (state-transition system), focus trap and
-/// alertdialog announcements (a11y system), stacked modals are a spec violation — don't.
+/// <c>OnDismiss</c>. The layer is a modal dialog on web (§10): role, aria-modal, Tab trapped
+/// inside, focus restored to the invoker on every close path. v1 fences: enter/exit motion
+/// (state-transition system), alertdialog announcements and aria-labelledby on the title (both
+/// need the shared id machinery), §10's preferred initial focus (the safe Ghost action — the
+/// trap takes the FIRST focusable today), stacked modals are a spec violation — don't.
 /// </summary>
 public sealed class Dialog : StatelessComponent
 {

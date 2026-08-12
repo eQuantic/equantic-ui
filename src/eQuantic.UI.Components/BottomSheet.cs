@@ -6,8 +6,11 @@ namespace eQuantic.UI.Components;
 /// The design system's BottomSheet (spec C4): a MODAL surface anchored to the bottom edge — top
 /// corners at the theme's ExtraLarge shape, E4 over the Scrim, a 32×4 drag handle centered above
 /// the content. Dismissible by DEFAULT (sheets are optional context, unlike destructive dialogs):
-/// the scrim tap fires <see cref="OnDismiss"/>. DECLARATIVE presence like the Dialog. v1 fences:
-/// enter/exit slide (state-transition system), drag-to-dismiss (gesture polish), detents.
+/// the scrim tap fires <see cref="OnDismiss"/>. DECLARATIVE presence like the Dialog. On web the
+/// layer is a modal dialog (§10): role, aria-modal, Tab trapped inside, focus restored to the
+/// invoker on close — and with nothing focusable in the sheet, focus lands on the sheet container
+/// itself, which is what §10 asks for. v1 fences: enter/exit slide (state-transition system),
+/// drag-to-dismiss (gesture polish), detents.
 /// </summary>
 public sealed class BottomSheet : StatelessComponent
 {

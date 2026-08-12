@@ -692,6 +692,19 @@ public static class WebRealizer
         {
             ClassName = overlay.Modal ? "eq-overlay" : "eq-overlay eq-overlay-passthrough",
         };
+        // §10 dialog semantics + the trap marker (TS twin: lowerOverlay). A modal, OPEN layer is a
+        // dialog: aria-modal is what tells assistive tech the page behind is inert, tabindex=-1
+        // makes the container the initial-focus fallback, and data-eq-trap is the marker the
+        // client's controller discovers after each pass — SSR emits no listeners, exactly as
+        // Pressable's click and Shortcut's chord don't. A toast layer is none of this, and a
+        // closed one is not a dialog right now.
+        if (overlay.Modal && overlay.Open)
+        {
+            element.Role = "dialog";
+            element.AriaModal = true;
+            element.TabIndex = -1;
+            element.RawAttributes = new Dictionary<string, string> { ["data-eq-trap"] = "" };
+        }
         if (overlay.Motion is { } motion)
         {
             // Keep-mounted open/close (the Anchored.Motion twin): the layer fades both ways, and a
