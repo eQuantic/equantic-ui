@@ -27,6 +27,11 @@ public class StatementConformanceTests
     [InlineData("var pairs = new[] { (2, 5), (3, 7) }; int total = 0; foreach ((var a, var b) in pairs) { total += a + b; } return total;")] // 17
     // nested deconstruction
     [InlineData("var rows = new[] { (1, (2, 3)) }; int total = 0; foreach (var (a, (b, c)) in rows) { total += a + b + c; } return total;")] // 6
+    // MULTI-DECLARATOR statements — `float x0, y0;` is several variables in one statement, with
+    // and without initializers; only the first used to survive, and `y0 is not defined` waited
+    // at runtime (found by the mermaid layout, the first shared code to write one).
+    [InlineData("float x0, y0, x1, y1; x0 = 1; y0 = 2; x1 = 3; y1 = 4; return x0 + y0 + x1 + y1;")] // 10
+    [InlineData("int a = 2, b = 3, c; c = a * b; return c;")] // 6
     // while
     [InlineData("int i = 0; int count = 0; while (i < 10) { i += 3; count++; } return count;")] // 4
     // do-while (body runs at least once)

@@ -1741,6 +1741,22 @@ public class TypeScriptEmitter
             }
         }
         
+        // A plain ARRAY maps by its element at any depth — `int[]` is `number[]`, `int[][]` is
+        // `number[][]`. Without this the scalar switch below saw `int[]` whole, matched nothing,
+        // and the C# spelling reached TypeScript verbatim (a parameter typed `int[]` broke the
+        // runtime's own build the first time a shared method took one).
+        if (baseType.EndsWith("[]"))
+        {
+            var arrayDepth = 0;
+            var element = baseType;
+            while (element.EndsWith("[]"))
+            {
+                arrayDepth++;
+                element = element[..^2].Trim();
+            }
+            return CSharpTypeToTypeScript(element) + string.Concat(Enumerable.Repeat("[]", arrayDepth));
+        }
+
         if (baseType.StartsWith("Nullable<") && baseType.EndsWith(">"))
         {
             baseType = baseType.Substring(9, baseType.Length - 10);
