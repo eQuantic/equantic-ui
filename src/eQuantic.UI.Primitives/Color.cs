@@ -15,6 +15,15 @@ public readonly record struct Color(byte R, byte G, byte B, byte A)
     public Color WithOpacity(float opacity) =>
         this with { A = (byte)Math.Clamp((int)MathF.Round(A * opacity), 0, 255) };
 
+    /// <summary>Per-channel midpoint with <paramref name="other"/>, alpha included — what
+    /// <c>color-mix(in srgb, this 50%, other)</c> lands on, with .5 rounding up. The §10 hover
+    /// derivation's primitive.</summary>
+    public Color MidpointWith(Color other) => new(
+        (byte)((R + other.R + 1) >> 1),
+        (byte)((G + other.G + 1) >> 1),
+        (byte)((B + other.B + 1) >> 1),
+        (byte)((A + other.A + 1) >> 1));
+
     public static readonly Color Transparent = new(0, 0, 0, 0);
     public static readonly Color Black = new(0, 0, 0, 255);
     public static readonly Color White = new(255, 255, 255, 255);

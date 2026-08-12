@@ -168,13 +168,17 @@ public class WikiVersionMarkTests
             var text = File.ReadAllText(page);
             // At the START of a line: Home.md explains the convention in prose, and an example of
             // a mark is not one.
-            foreach (Match mark in Regex.Matches(text, @"(?m)^\*Since \*\*[^*]+\*\*\*(?<tail>.{0,40})"))
+            foreach (Match mark in Regex.Matches(text, @"(?m)^\*Since \*\*[^*]+\*\*\*(?<tail>.{0,200})"))
             {
                 var tail = mark.Groups["tail"].Value;
-                // Either spelling — see MarkPattern. Both name a symbol; only the punctuation moved.
-                if (!tail.Contains("<!-- since:", StringComparison.Ordinal)
-                    && !tail.Contains("<!-- eq:since", StringComparison.Ordinal))
-                    unannotated.Add($"{Path.GetFileName(page)}: {mark.Value.Split('\n')[0]}");
+                // Either spelling — see MarkPattern — and in BOTH the symbol is the load-bearing
+                // part. The structured one keeps it in an attribute, where it is syntactically
+                // optional: a mark can carry a version, satisfy the site's own reader, and name
+                // nothing this guard can check. That is the opt-out this test exists to close.
+                var named = tail.Contains("<!-- since:", StringComparison.Ordinal)
+                    || (tail.Contains("<!-- eq:since", StringComparison.Ordinal)
+                        && tail.Contains("symbol=\"", StringComparison.Ordinal));
+                if (!named) unannotated.Add($"{Path.GetFileName(page)}: {mark.Value.Split('\n')[0]}");
             }
         }
 

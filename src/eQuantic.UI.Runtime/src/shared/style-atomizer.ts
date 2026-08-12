@@ -190,6 +190,9 @@ export function effectiveStyle(node: { attributes: Record<string, string | undef
   for (const cls of (node.attributes['class'] ?? '').split(' ')) {
     const rule = ruleTexts.get(cls);
     if (!rule) continue;
+    // Pseudo-variant declarations (\u0001-tagged) only apply under their pseudo-class — the
+    // resting style this helper describes does not include them.
+    if (rule.includes('\u0001')) continue;
     const colon = rule.indexOf(':');
     parts.push(`${rule.slice(0, colon)}: ${resolveVars(rule.slice(colon + 1))}`);
   }
@@ -337,17 +340,27 @@ export function atomizePseudo(
     const rewritten = rewrite(value, vars);
     const declaration = declarationFor(name, rewritten);
     const className = `eq-${hashDeclaration(`${pseudo}|${declaration}`)}`;
+    // Stored with the pseudo tag (the C# sink's own \u0001 convention): the class must stay in
+    // the map so mergeAtomicDeclaration classifies it as atomic, but effectiveStyle describes
+    // the RESTING style and skips the tagged family.
     if (!known.has(className)) {
       known.add(className);
-      ruleTexts.set(className, declaration);
+      ruleTexts.set(className, `${pseudo}\u0001${declaration}`);
       const target = registry();
       try {
-        target?.insertRule(`.${className}${pseudo}{${declaration}}`, target.cssRules.length);
+        // C# twin (StyleAtomizer.Css): §10 — hover never fires on touch, and a touch browser's
+        // tap leaves a STICKY emulated :hover behind, so the family only exists for devices that
+        // can hover. The gate wraps the rule, never the hash: the class string stays identical.
+        const rule =
+          pseudo === ':hover'
+            ? `@media (hover: hover){.${className}${pseudo}{${declaration}}}`
+            : `.${className}${pseudo}{${declaration}}`;
+        target?.insertRule(rule, target.cssRules.length);
       } catch {
         /* unparsable pseudo rules must never take the app down */
       }
     } else {
-      ruleTexts.set(className, declaration);
+      ruleTexts.set(className, `${pseudo}\u0001${declaration}`);
     }
     classes.push(className);
   }
@@ -378,7 +391,7 @@ export function atomizeScrolled(entries: Record<string, string | undefined>): st
         /* unparsable rules must never take the app down */
       }
     } else {
-      ruleTexts.set(className, declaration);
+      ruleTexts.set(className, `${pseudo}\u0001${declaration}`);
     }
     classes.push(className);
   }

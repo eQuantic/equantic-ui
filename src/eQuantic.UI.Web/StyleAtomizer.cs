@@ -236,8 +236,18 @@ public sealed class StyleSink
                 }
                 var split = rule.Value.IndexOf('\u0001');
                 if (split >= 0)
-                    css.Append('.').Append(rule.Key).Append(rule.Value[..split])
+                {
+                    // Spec §10: hover never fires on touch — but a touch browser's tap leaves a
+                    // STICKY emulated :hover behind, so the whole family only exists for devices
+                    // that can actually hover. The gate wraps the RULE, never the hash: the class
+                    // string is untouched and hydration compares equal.
+                    var pseudo = rule.Value[..split];
+                    var gated = pseudo == ":hover";
+                    if (gated) css.Append("@media (hover: hover){");
+                    css.Append('.').Append(rule.Key).Append(pseudo)
                        .Append('{').Append(rule.Value[(split + 1)..]).Append('}');
+                    if (gated) css.Append('}');
+                }
                 else
                     css.Append('.').Append(rule.Key).Append('{').Append(rule.Value).Append('}');
             }

@@ -31,6 +31,15 @@ public class S5StateRealizerTests
         // The pseudo classes ride the SAME element, after the base atomic set (TS parity order).
         var classes = element.ClassName!.Split(' ');
         classes.Should().OnlyHaveUniqueItems();
+
+        // §10: hover never fires on touch — a tap's sticky emulated :hover must find no rule, so
+        // EVERY hover rule lives behind the capability gate (focus-visible stays ungated:
+        // keyboard focus exists everywhere).
+        var hoverRules = System.Text.RegularExpressions.Regex.Count(sink.Css, ":hover\\{");
+        var gatedRules = System.Text.RegularExpressions.Regex.Count(
+            sink.Css, "@media \\(hover: hover\\)\\{\\.eq-[0-9a-z]+:hover\\{");
+        hoverRules.Should().BeGreaterThan(0);
+        gatedRules.Should().Be(hoverRules, "every hover rule rides its own gate");
     }
 
     [Fact]

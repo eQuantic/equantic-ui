@@ -58,6 +58,30 @@ public class Wave2ComponentTests
     }
 
     [Fact]
+    public void Button_HoverIsTheDerivedMidpoint_BehindThePointerGate()
+    {
+        // §10 / A12 Desktop & pointer: filled = Base→Pressed midpoint · quiet = SurfaceSubtle ·
+        // Link = underline only (fenced) · inert buttons hover nothing.
+        var sink = new StyleSink();
+        WebRealizer.Lower(new Button("Continue"), Theme, 1f, sink).Render();
+        var midpoint = TokenCss.Value(Theme.Colors(Variant.Primary).Hover);
+        sink.Css.Should().Contain($":hover{{background-color:{midpoint}}}");
+        sink.Css.Should().Contain("@media (hover: hover){.", "hover never fires on touch");
+
+        var outline = new StyleSink();
+        WebRealizer.Lower(new Button("Continue", Variant.Outline), Theme, 1f, outline).Render();
+        outline.Css.Should().Contain(":hover{background-color:var(--eq-color-surface-subtle");
+
+        var link = new StyleSink();
+        WebRealizer.Lower(new Button("Learn more", Variant.Link), Theme, 1f, link).Render();
+        link.Css.Should().NotContain(":hover");
+
+        var disabled = new StyleSink();
+        WebRealizer.Lower(new Button("Continue") { Disabled = true }, Theme, 1f, disabled).Render();
+        disabled.Css.Should().NotContain(":hover");
+    }
+
+    [Fact]
     public void RadioGroup_SelectedRingAndDot()
     {
         // The group now wraps in an Adjustable (role=radiogroup, ONE Tab stop) — the selected

@@ -90,6 +90,25 @@ public sealed class Button : StatelessComponent
         else if (Leading is { } leading) content.Add(new Icon(leading, size: iconSize, color: textColor));
         content.Add(label);
 
+        // Pressed (§01/A12): filled variants swap Base→Pressed on the same rrect; Outline/Ghost gain
+        // a SurfaceSubtle fill while pressed. (Link's pressed TEXT swap joins with rich text.)
+        ColorToken? pressedFill = Variant switch
+        {
+            Variant.Link => null,
+            Variant.Outline or Variant.Ghost => theme.SurfaceSubtle,
+            _ => colors.Pressed,
+        };
+
+        // Hover (§10, pointer-only — both realizers keep it off touch): filled variants sit on
+        // the Base→Pressed midpoint, quiet ones on the fill Pressed already uses. Link's hover is
+        // an underline, which joins when the style diff grows a text channel.
+        ColorToken? hoverFill = Variant switch
+        {
+            Variant.Link => null,
+            Variant.Outline or Variant.Ghost => theme.SurfaceSubtle,
+            _ => colors.Hover,
+        };
+
         var container = new Box(new BoxStyle
         {
             Height = height,
@@ -100,16 +119,8 @@ public sealed class Button : StatelessComponent
             CornerRadius = new CornerRadii(radius),
             BorderWidth = borderWidth,
             BorderColor = borderColor,
+            Hover = inert || hoverFill is null ? null : new StyleDiff { Background = hoverFill },
         }, content);
-
-        // Pressed (§01/A12): filled variants swap Base→Pressed on the same rrect; Outline/Ghost gain
-        // a SurfaceSubtle fill while pressed. (Link's pressed TEXT swap joins with rich text.)
-        ColorToken? pressedFill = Variant switch
-        {
-            Variant.Link => null,
-            Variant.Outline or Variant.Ghost => theme.SurfaceSubtle,
-            _ => colors.Pressed,
-        };
 
         return new Pressable(container, inert ? null : OnPressed)
         {

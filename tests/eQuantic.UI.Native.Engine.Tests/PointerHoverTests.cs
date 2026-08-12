@@ -118,6 +118,40 @@ public class PointerHoverTests
     }
 
     [Fact]
+    public void Button_HoversOnTheDerivedMidpoint_AndPressedStillWins()
+    {
+        // §10 on native: the same derived midpoint the web's :hover rule carries, painted by the
+        // hover region pipeline — and pressed BEATS hover on the very box that consumed the swap.
+        var host = new PhotonHost(
+            new global::eQuantic.UI.Components.Button("Continue", onPressed: () => { }),
+            PhotonTheme.Instance, ThemeMode.Light, 200, 200);
+        var settle = new DisplayListBuilder();
+        host.RenderFrame(settle);
+
+        var colors = PhotonTheme.Instance.Colors(Variant.Primary);
+        var hover = colors.Hover.Resolve(ThemeMode.Light);
+        var pressed = colors.Pressed.Resolve(ThemeMode.Light);
+
+        host.PointerMove(30, 20);
+        host.Hovered.Should().NotBeNull("the button's container registers a hover region");
+        FrameHasFill(host, hover).Should().BeTrue("the hovered button paints the §10 midpoint");
+
+        host.PressDown(30, 20);
+        FrameHasFill(host, pressed).Should().BeTrue("pressed beats hover (§10 precedence)");
+        FrameHasFill(host, hover).Should().BeFalse("the midpoint yields while the press is held");
+    }
+
+    private static bool FrameHasFill(PhotonHost host, Color color)
+    {
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+        foreach (var command in builder.Build().Commands)
+            if (command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == color)
+                return true;
+        return false;
+    }
+
+    [Fact]
     public void MousePressUp_KeepsTheHover_ItIsStillUnderThePointer()
     {
         // The counter-case that keeps the belt honest: after a CLICK the mouse has not moved —

@@ -14,7 +14,7 @@ public readonly record struct HitRegion(Rect Bounds, Pressable Node, string Path
 /// <summary>Spec S5/gestures: a hover-reactive region — a Box carrying a Hover diff. The host's
 /// pointer tracking resolves the TOPMOST region under the pointer (paint order = registration
 /// order, so last-contains wins).</summary>
-public readonly record struct HoverRegion(Rect Bounds, VisualNode Node);
+public readonly record struct HoverRegion(Rect Bounds, VisualNode Node, string Path);
 
 /// <summary>Scroll compositor v1: a scrollable viewport — the host routes wheel/drag input to the
 /// TOPMOST region under the pointer and adjusts its stored offset (clamped to MaxOffset).</summary>
@@ -203,7 +203,11 @@ public static class PhotonRealizer
         LayoutNodePool? nodePool = null,
         // Which InView nodes were on screen LAST frame — the node is rebuilt every pass and cannot
         // remember, and the contract is that the callback fires on the transitions.
-        InViewStore? inViewStore = null)
+        InViewStore? inViewStore = null,
+        // Where the hover LIVES across rebuilds — the press's path rule, applied to the pointer.
+        // A CHAIN, not a single node: CSS :hover matches every ancestor under the pointer, and the
+        // native realizer answers the same question the web twin answers.
+        IReadOnlyList<string>? hoveredPaths = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
             density)
@@ -262,7 +266,7 @@ public static class PhotonRealizer
         var sheets = new List<SheetRegion>();
         var cursors = new List<CursorRegion>();
         var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, sheets, cursors);
-        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore }, motion, overlays);
+        Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore }, motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -276,7 +280,7 @@ public static class PhotonRealizer
             overlayRoots.Add(overlayLayout);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore }, motion, overlays);
+            Emit(overlayLayout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore }, motion, overlays);
         }
 
         // Presence pruning runs AFTER the overlay pass — overlay paths ("ov<i>/…") register there,
@@ -353,7 +357,8 @@ public static class PhotonRealizer
             string? pressedPath = null, string? focusedPath = null,
             string? textPath = null, int caretIndex = 0, bool caretVisible = true,
             int selectionStart = 0, int selectionEnd = 0,
-            Density density = Density.Comfortable)
+            Density density = Density.Comfortable,
+            IReadOnlyList<string>? hoveredPaths = null)
         {
             Density = density;
             SelectionStart = selectionStart;
@@ -361,6 +366,7 @@ public static class PhotonRealizer
             Pressed = pressed;
             Focused = focused;
             Hovered = hovered;
+            HoveredPaths = hoveredPaths;
             PressedPath = pressedPath;
             FocusedPath = focusedPath;
             TextPath = textPath;
@@ -406,6 +412,20 @@ public static class PhotonRealizer
         /// <summary>Spec S5: the node the pointer is over — its Box applies its Hover diff. Fed by
         /// the host's pointer tracking (the gesture slice); tests pass it directly.</summary>
         public VisualNode? Hovered { get; }
+
+        /// <summary>Where the hover LIVES — the rebuild-surviving identities, exactly as
+        /// <see cref="PressedPath"/> is for the press, and a CHAIN because CSS :hover matches every
+        /// ancestor under the pointer (the web twin's semantics). Null = reference-only (tests).</summary>
+        public IReadOnlyList<string>? HoveredPaths { get; }
+
+        /// <summary>True when this node is under the pointer: by path membership in the hover
+        /// chain when the host supplied one, by reference against the topmost otherwise.</summary>
+        public bool IsHovered(LayoutNode node, VisualNode? candidate)
+        {
+            if (HoveredPaths is { Count: > 0 } chain)
+                return node.Path is { } path && chain.Contains(path);
+            return candidate is not null && ReferenceEquals(Hovered, candidate);
+        }
         /// <summary>
         /// The states this subtree is being DRAWN as, set by a <see cref="Simulated"/> node while
         /// its child is emitted and restored after. Not part of the host's tracking: nothing was
@@ -580,20 +600,27 @@ public static class PhotonRealizer
                             entry.OffsetY, entry.Blur, entry.Spread, entry.Color.Resolve(mode));
                 }
 
+                // Whether THIS box consumed the pressed swap must be decided before the consume
+                // nulls it — checking PendingFill afterwards reads null on exactly the box that
+                // took it, and the hover diff below would repaint over the pressed fill (§10:
+                // pressed beats hover).
+                var pressedHere = press.PendingFill is not null;
                 var fill = press.PendingFill ?? box.Style.Background;
                 press.PendingFill = null;
                 var borderColor = box.Style.BorderColor;
                 var borderWidth = box.Style.BorderWidth;
                 // Spec S5: hover-reactive boxes register for the host's pointer tracking.
                 if (box.Style.Hover is { IsEmpty: false })
-                    input.Add(new HoverRegion(node.Bounds, box));
+                    input.Add(new HoverRegion(node.Bounds, box, node.Path ?? ""));
 
                 // Spec S5: the hovered Box applies its Hover diff (pressed still wins on fill).
-                if ((ReferenceEquals(node.Source, press.Hovered)
+                // Tracked BY PATH like the press: a component rebuild replaces every instance,
+                // and a hover that only knew the old reference would paint exactly one frame.
+                if ((press.IsHovered(node, node.Source)
                         || (press.Simulated & SimulatedState.Hovered) != 0)
                     && box.Style.Hover is { IsEmpty: false } hover)
                 {
-                    if (press.PendingFill is null && hover.Background is { } hoverFill) fill = hoverFill;
+                    if (!pressedHere && hover.Background is { } hoverFill) fill = hoverFill;
                     if (hover.BorderColor is { } hoverBorder) borderColor = hoverBorder;
                     if (hover.BorderWidth is { } hoverWidth) borderWidth = hoverWidth;
                 }
@@ -742,7 +769,7 @@ public static class PhotonRealizer
             // S5 programmable hover: the region rides the SAME pointer pipeline Style.Hover uses;
             // the host fires OnChanged on the transitions (PhotonHost.PointerMove).
             case Hoverable hoverable:
-                input.Add(new HoverRegion(node.Bounds, hoverable));
+                input.Add(new HoverRegion(node.Bounds, hoverable, node.Path ?? ""));
                 break;
 
             // ONE Tab stop for the whole control; the press targets inside it stay pointer-only —
@@ -841,8 +868,11 @@ public static class PhotonRealizer
             var hoverOpen = false;
             if (anchored.OpenOnHover)
             {
-                input.Add(new HoverRegion(node.Bounds, anchored));
-                hoverOpen = ReferenceEquals(press.Hovered, anchored);
+                input.Add(new HoverRegion(node.Bounds, anchored, node.Path ?? ""));
+                // By chain like every other hover read: hovering the TRIGGER inside is
+                // hovering the anchored (CSS ancestor semantics), and the path survives the
+                // rebuild its own opening causes.
+                hoverOpen = press.IsHovered(node, anchored);
             }
             if (!anchored.Open && !hoverOpen) return;
 

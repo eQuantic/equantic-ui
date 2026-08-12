@@ -177,7 +177,7 @@ public sealed class PhotonHost
         _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _instances, timeMs, ReducedMotion, _transitions, _scrolls, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, SafeAreaInsets, _pressedPath,
             _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible,
             Selection.Start, Selection.End, density: Density,
-            scrollOffset: path => _scrolls.Get(path), markedText: _marked, pathCache: _pathCache,
+            scrollOffset: path => _scrolls.Get(path), markedText: _marked, pathCache: _pathCache, hoveredPaths: _hoverPaths,
             nodePool: RecycleFrames ? _nodePool : null, inViewStore: _inView);
         if (RenderScale != 1f) builder.Pop();
         // The frame we just replaced is OURS to discard — nobody else holds production frames.
@@ -236,6 +236,11 @@ public sealed class PhotonHost
     /// then. The object itself does not survive a Build; the path does.</summary>
     private string? _pressedPath;
     private VisualNode? _hovered;
+    /// <summary>The hover CHAIN — every region under the pointer, topmost first, tracked by path
+    /// (the press's rebuild-surviving rule) with the node kept for the Hoverable callbacks. CSS
+    /// :hover matches every ancestor, and the native pointer answers the same question.</summary>
+    private readonly List<string> _hoverPaths = new();
+    private readonly List<VisualNode> _hoverNodes = new();
     private readonly TransitionStore _transitions = new();
     private readonly ScrollStore _scrolls = new();
 
@@ -1149,7 +1154,12 @@ public sealed class PhotonHost
     public VisualNode? Hovered => _hovered;
 
     /// <summary>Updates the hover target (pointer-over). Null clears it (pointer left / touch).</summary>
-    public void SetHovered(VisualNode? node) => _hovered = node;
+    public void SetHovered(VisualNode? node)
+    {
+        _hovered = node;
+        _hoverPaths.Clear(); // the test seam tracks by reference — one frame, one tree
+        _hoverNodes.Clear();
+    }
 
     /// <summary>
     /// Gestures v1 — pointer tracking: resolves the TOPMOST hover-reactive region under the pointer
@@ -1314,24 +1324,66 @@ public sealed class PhotonHost
         // it happened to cross last.
         if (kind == PointerKind.Touch) return;
 
+        // The CHAIN of regions under the pointer, topmost first — CSS :hover matches every
+        // ancestor, so a button inside a hover-opened panel hovers BOTH (the web twin's answer).
+        // Identity is the PATH: instances are per-frame, and reference equality only answers
+        // within the frame that made them (the press learned this first).
         var regions = _lastFrame?.HoverRegions;
-        VisualNode? target = null;
+        var chainPaths = new List<string>();
+        var chainNodes = new List<VisualNode>();
         if (regions is not null)
         {
             for (var i = regions.Count - 1; i >= 0; i--)
             {
-                if (regions[i].Bounds.Contains(new Point(x, y))) { target = regions[i].Node; break; }
+                if (!regions[i].Bounds.Contains(new Point(x, y))) continue;
+                chainPaths.Add(regions[i].Path);
+                chainNodes.Add(regions[i].Node);
             }
         }
-        if (!ReferenceEquals(target, _hovered))
+
+        var sameChain = chainPaths.Count == _hoverPaths.Count;
+        if (sameChain)
         {
-            // S5 programmable hover: Hoverable regions get their transition callbacks — leave
+            for (var i = 0; i < chainPaths.Count; i++)
+            {
+                if (chainPaths[i].Length > 0 ? chainPaths[i] == _hoverPaths[i]
+                        : ReferenceEquals(chainNodes[i], _hoverNodes[i])) continue;
+                sameChain = false;
+                break;
+            }
+        }
+
+        if (!sameChain)
+        {
+            // S5 programmable hover: Hoverable callbacks fire on MEMBERSHIP transitions — leave
             // BEFORE enter, the order every pointer model guarantees.
-            if (_hovered is Hoverable left) left.OnChanged(false);
-            _hovered = target;
-            if (target is Hoverable entered) entered.OnChanged(true);
+            foreach (var node in _hoverNodes)
+                if (node is Hoverable left && !chainPaths.Contains(PathOfHover(left)))
+                    left.OnChanged(false);
+            var previousPaths = _hoverPaths.ToList();
+            _hoverPaths.Clear(); _hoverPaths.AddRange(chainPaths);
+            _hoverNodes.Clear(); _hoverNodes.AddRange(chainNodes);
+            _hovered = chainNodes.Count > 0 ? chainNodes[0] : null;
+            for (var i = 0; i < chainNodes.Count; i++)
+                if (chainNodes[i] is Hoverable entered && !previousPaths.Contains(chainPaths[i]))
+                    entered.OnChanged(true);
             NeedsRender = true;
         }
+        else if (chainNodes.Count > 0)
+        {
+            // The pointer sat still through a rebuild: adopt the FRESH instances quietly, so the
+            // eventual leave fires on nodes that are actually mounted — no churn, no repaint.
+            _hoverNodes.Clear(); _hoverNodes.AddRange(chainNodes);
+            _hovered = chainNodes[0];
+        }
+    }
+
+    /// <summary>The chain path recorded for a hover node this frame ("" when unpathed).</summary>
+    private string PathOfHover(VisualNode node)
+    {
+        for (var i = 0; i < _hoverNodes.Count; i++)
+            if (ReferenceEquals(_hoverNodes[i], node)) return _hoverPaths[i];
+        return "";
     }
 
     /// <summary>
@@ -1416,9 +1468,14 @@ public sealed class PhotonHost
     /// <summary>The pointer left the window (or the input is touch) — hover clears.</summary>
     public void PointerLeave()
     {
-        if (_hovered is null) return;
-        if (_hovered is Hoverable left) left.OnChanged(false); // S5 programmable hover
+        if (_hovered is null && _hoverNodes.Count == 0) return;
+        foreach (var node in _hoverNodes)
+            if (node is Hoverable left) left.OnChanged(false); // S5 programmable hover
+        if (_hovered is Hoverable topmost && !_hoverNodes.Contains(topmost))
+            topmost.OnChanged(false); // the SetHovered seam tracks by reference alone
         _hovered = null;
+        _hoverPaths.Clear();
+        _hoverNodes.Clear();
         NeedsRender = true;
     }
 

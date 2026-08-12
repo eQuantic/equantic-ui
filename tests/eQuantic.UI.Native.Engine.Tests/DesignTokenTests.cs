@@ -187,4 +187,20 @@ public class DesignTokenTests
         Curve.Standard.Should().Be(new Curve(0.2f, 0, 0, 1));
         SpringSpec.Default.Should().Be(new SpringSpec(380, 34, 1));
     }
+
+    [Fact]
+    public void HoverDerivation_IsTheChannelMidpoint_PerLeg()
+    {
+        // §10: hover fill = midpoint of Base → Pressed, derived — never a sixth slot. The math is
+        // per-channel with .5 rounding UP, alpha included: what color-mix(in srgb, A 50%, B)
+        // lands on, so the interim handwritten CSS and the SDK paint the identical color.
+        Color.FromRgba(0, 0, 0, 0).MidpointWith(Color.FromRgba(1, 1, 1, 255))
+            .Should().Be(Color.FromRgba(1, 1, 1, 128));
+
+        var primary = Theme.Colors(Variant.Primary);
+        primary.Hover.Light.Should().Be(Color.FromRgb(0x00, 0x49, 0x90),
+            "midpoint of #0050A0 → #00427F");
+        primary.Hover.Dark.Should().Be(Color.FromRgb(0x6C, 0xAC, 0xEB),
+            "midpoint of #5CA2E8 → #7CB5EE");
+    }
 }

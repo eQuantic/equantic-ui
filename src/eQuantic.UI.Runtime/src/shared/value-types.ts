@@ -29,6 +29,16 @@ export const Color = {
   withOpacity(color: ColorValue, opacity: number): ColorValue {
     return { ...color, a: Math.max(0, Math.min(255, Math.round(color.a * opacity))) };
   },
+  /** Per-channel midpoint, alpha included — byte-exact with C# `Color.MidpointWith`
+   * (`(a + b + 1) >> 1`, the §10 hover derivation's primitive). */
+  midpointWith(color: ColorValue, other: ColorValue): ColorValue {
+    return {
+      r: (color.r + other.r + 1) >> 1,
+      g: (color.g + other.g + 1) >> 1,
+      b: (color.b + other.b + 1) >> 1,
+      a: (color.a + other.a + 1) >> 1,
+    };
+  },
 };
 
 /**
@@ -61,6 +71,14 @@ export class ColorToken {
   withOpacity(opacity: number): ColorToken {
     const scale = (c: ColorValue): ColorValue => ({ ...c, a: Math.round(c.a * opacity) });
     return new ColorToken(scale(this.light), scale(this.dark));
+  }
+
+  /** Per-leg channel midpoint — the §10 hover derivation, byte-exact with C# `ColorToken.MidpointWith`. */
+  midpointWith(other: ColorToken): ColorToken {
+    return new ColorToken(
+      Color.midpointWith(this.light, other.light),
+      Color.midpointWith(this.dark, other.dark),
+    );
   }
 }
 
@@ -191,6 +209,12 @@ export class VariantColors {
     readonly subtle: ColorToken,
     readonly onSubtle: ColorToken,
   ) {}
+
+  /** The DERIVED §10 hover fill for a filled control: midpoint of base → pressed. Derived, never
+   * a sixth slot — mirrors C# `VariantColors.Hover`. */
+  get hover(): ColorToken {
+    return this.base.midpointWith(this.pressed);
+  }
 }
 
 /** One analytic rrect shadow (spec §05) — mirrors `ShadowSpec`. */

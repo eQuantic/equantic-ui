@@ -23,6 +23,13 @@ public readonly record struct ColorToken(Color Light, Color Dark)
     /// applied at the token level by components that author mode-free trees.</summary>
     public ColorToken WithOpacity(float opacity) =>
         new(Light.WithOpacity(opacity), Dark.WithOpacity(opacity));
+
+    /// <summary>Per-leg channel midpoint with <paramref name="other"/> — the §10 hover derivation
+    /// ("hover fill = midpoint of Base → Pressed"), the same color the interim
+    /// <c>color-mix(in srgb, A 50%, B)</c> produced, now computed once at the token level so both
+    /// realizers paint the identical value.</summary>
+    public ColorToken MidpointWith(ColorToken other) =>
+        new(Light.MidpointWith(other.Light), Dark.MidpointWith(other.Dark));
 }
 
 /// <summary>
@@ -35,4 +42,11 @@ public readonly record struct VariantColors(
     ColorToken OnBase,
     ColorToken Pressed,
     ColorToken Subtle,
-    ColorToken OnSubtle);
+    ColorToken OnSubtle)
+{
+    /// <summary>The DERIVED pointer-only hover fill for a filled control (spec §10): the midpoint
+    /// of <see cref="Base"/> → <see cref="Pressed"/>, text staying <see cref="OnBase"/>. Derived,
+    /// never a sixth slot — the five-tuple is the contract, and quiet variants (Outline/Ghost)
+    /// hover on SurfaceSubtle instead, per the same section.</summary>
+    public ColorToken Hover => Base.MidpointWith(Pressed);
+}

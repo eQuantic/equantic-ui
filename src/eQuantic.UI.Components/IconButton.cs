@@ -81,6 +81,22 @@ public sealed class IconButton : StatelessComponent
         var glyph = Selected && SelectedGlyph is { } filledGlyph ? filledGlyph : Glyph;
         var content = new Icon(glyph, iconSize, tint).Centered();
 
+        ColorToken? pressedFill = Kind switch
+        {
+            IconButtonKind.Filled => primary.Pressed,
+            IconButtonKind.Tonal => primary.Pressed.WithOpacity(0.24f),
+            _ => theme.SurfaceSubtle,
+        };
+
+        // Hover per kind (A13, §10): the quiet kinds sit on SurfaceSubtle; Tonal/Filled on the
+        // midpoint of their own fill → pressed pair. Pointer-only on both realizers.
+        var hoverFill = Kind switch
+        {
+            IconButtonKind.Filled => primary.Hover,
+            IconButtonKind.Tonal => primary.Subtle.MidpointWith(primary.Pressed.WithOpacity(0.24f)),
+            _ => theme.SurfaceSubtle,
+        };
+
         var box = new Box(new BoxStyle
         {
             Width = side,
@@ -89,14 +105,8 @@ public sealed class IconButton : StatelessComponent
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             BorderWidth = Kind == IconButtonKind.Outline ? 1f : 0f,
             BorderColor = theme.BorderStrong,
+            Hover = Disabled ? null : new StyleDiff { Background = hoverFill },
         }, content);
-
-        ColorToken? pressedFill = Kind switch
-        {
-            IconButtonKind.Filled => primary.Pressed,
-            IconButtonKind.Tonal => primary.Pressed.WithOpacity(0.24f),
-            _ => theme.SurfaceSubtle,
-        };
 
         return new Pressable(box, Disabled ? null : OnPressed)
         {
