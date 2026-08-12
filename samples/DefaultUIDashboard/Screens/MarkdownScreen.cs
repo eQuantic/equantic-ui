@@ -47,6 +47,42 @@ public sealed class MarkdownScreen : StatefulComponent
         "no server round-trip.",
     ]);
 
+    private static readonly string Diagrams = string.Join("\n",
+    [
+        "# Mermaid, natively",
+        "",
+        "The fences below are ```mermaid — parsed and DRAWN by the SDK itself: nodes are Boxes on",
+        "the theme's tokens, the decision diamond is a single-path Vector, edges are orthogonal",
+        "hairlines. No mermaid.js, no SVG document — the same tree Photon renders.",
+        "",
+        "```mermaid",
+        "graph TD",
+        "  A[Charge created] --> B{Risk check}",
+        "  B -->|clear| C(Capture)",
+        "  B -->|flagged| D[Manual review]",
+        "  D --> A",
+        "  C --> E((Settled))",
+        "```",
+        "",
+        "And a sequence, laid out from declaration order alone:",
+        "",
+        "```mermaid",
+        "sequenceDiagram",
+        "  participant U as Checkout",
+        "  participant G as Gateway",
+        "  U->>G: authorize(card)",
+        "  G-->>U: token",
+        "  G->>G: audit trail",
+        "```",
+        "",
+        "A grammar outside the subset falls back to the fence as code:",
+        "",
+        "```mermaid",
+        "gantt",
+        "  title Not yet spoken",
+        "```",
+    ]);
+
     private static readonly string Chat = string.Join("\n",
     [
         "Here's the plan for the payment retry queue:",
@@ -70,7 +106,7 @@ public sealed class MarkdownScreen : StatefulComponent
         column.Add(new Text("Markdown", TypeRole.Heading, theme.TextPrimary, maxLines: 1));
         column.Add(new Text("A document, a chat answer — same component, the app's theme.",
             TypeRole.BodyM, theme.TextMuted, maxLines: 2));
-        column.Add(new SegmentedControl(["Document", "Chat answer"], _document,
+        column.Add(new SegmentedControl(["Document", "Chat answer", "Diagrams"], _document,
             i => SetState(() => _document = i))
         { Size = SizeVariant.Small, Stretch = false });
 
@@ -78,7 +114,7 @@ public sealed class MarkdownScreen : StatefulComponent
         {
             Width = SizeValue.Fill,
             Padding = EdgeInsets.All(Space.S5),
-        }, new Markdown(_document == 0 ? Doc : Chat)
+        }, new Markdown(_document == 0 ? Doc : _document == 1 ? Chat : Diagrams)
         {
             Style = new MarkdownStyle { CodeLineNumbers = _document == 0 },
         }))
