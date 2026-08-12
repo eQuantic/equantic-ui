@@ -145,11 +145,17 @@ export async function boot(): Promise<void> {
 
       const router = new Router({
         routes: config.routes,
-        onNavigate: (match, url, isCurrent) => navigateToPage(root, match.page, config, isCurrent, url),
+        onNavigate: (match, url, isCurrent) =>
+          // The same STRING the hover warmed under, or the click looks in the wrong drawer and
+          // fetches a second time — which made a warmed navigation the slower one.
+          navigateToPage(root, match.page, config, isCurrent, url.pathname + url.search),
         // Hover/focus prefetch: warm the page bundle so a click navigates instantly. loadPageModule's
         // dynamic import is cached by the browser, so the later navigation resolves without a round-trip.
-        onPrefetch: (match) => {
+        onPrefetch: (match, url) => {
           void loadPageModule(match.page, config);
+          // …and the page's server data with it. Both halves of a navigation warm together, or the
+          // click still waits for the half that did not.
+          warmPageState(url.pathname + url.search);
         },
         guards: Array.isArray(guards) ? guards : undefined,
       });
@@ -355,8 +361,29 @@ interface PageStatePayload {
  *
  * A failure is not fatal. The page then renders exactly what it rendered before this existed.
  */
+/**
+ * Payloads already asked for, by href. The router warms a link on hover and dedupes per link, so
+ * this holds at most one entry per link the reader pointed at — and the click that follows finds
+ * the answer already on its way, or already here.
+ *
+ * Consumed ONCE. The data is the page's, not the session's: coming back to a page asks again, which
+ * is the same thing a full load would do.
+ */
+const warmedState = new Map<string, Promise<PageStatePayload | null>>();
+
+/** Starts the fetch a hover suggests is coming. Best-effort, exactly like the bundle beside it. */
+function warmPageState(url: string): void {
+  if (warmedState.has(url)) return;
+  warmedState.set(url, fetchPageState(url));
+}
+
 async function fetchPageState(url?: string): Promise<PageStatePayload | null> {
   if (!url || typeof fetch !== 'function') return null;
+  const warmed = warmedState.get(url);
+  if (warmed) {
+    warmedState.delete(url);
+    return warmed;
+  }
   try {
     const response = await fetch(url, {
       headers: { 'X-EQ-Navigate': '1' },

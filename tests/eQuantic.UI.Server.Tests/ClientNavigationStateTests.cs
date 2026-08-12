@@ -4,7 +4,10 @@ using System.Text.Json;
 using eQuantic.UI.Core.Metadata;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using eQuantic.UI.Server.Rendering;
 using Xunit;
 
 namespace eQuantic.UI.Server.Tests;
@@ -98,6 +101,30 @@ public class ClientNavigationStateTests
             "the title falling back to the app default is what a stale head looks like");
         payload.GetProperty("head").GetString().Should().Contain("https://example.test/probe",
             "a canonical left on the previous page tells a crawler the two URLs are one document");
+    }
+
+    /// <summary>
+    /// It does NOT draw the page. A navigation needs the data and the metadata; the browser already
+    /// has the component and builds the tree itself, so markup rendered here is markup thrown away —
+    /// a whole tree build per navigation, which is what made warming a page on hover unaffordable.
+    /// </summary>
+    [Fact]
+    public async Task ANavigation_DoesNotPayForMarkupNobodyReads()
+    {
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        var rendering = app.Services.GetRequiredService<IServerRenderingService>();
+        using var scope = app.Services.CreateScope();
+        var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+        context.Request.Path = "/probe";
+
+        var prepared = await rendering.PreparePageAsync(nameof(ProbePage), context);
+
+        prepared.Success.Should().BeTrue();
+        prepared.Html.Should().BeEmpty("the drawing is the part a navigation does not need");
+        prepared.SerializedState.Should().Contain("from the server", "…while the data still arrives");
+        prepared.Metadata!.Title.Should().Be("The Probe Page");
     }
 
     /// <summary>Without the header the same route still serves the DOCUMENT — one route, two shapes,

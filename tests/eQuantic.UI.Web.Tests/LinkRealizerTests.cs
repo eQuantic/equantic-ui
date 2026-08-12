@@ -47,6 +47,27 @@ public class LinkRealizerTests
         keeps.Attributes.Should().ContainKey("data-eq-keep-position");
     }
 
+    /// <summary>
+    /// An app-internal link INVITES the router to warm it on hover, and an external one does not.
+    /// <para>
+    /// The router has always had a prefetch seam and nothing ever marked a link for it, so it was
+    /// dead code: every navigation paid the module import in full, which is most of what a click
+    /// costs. The router asks once per link and swallows failures, so the worst case is work the
+    /// click was about to do anyway, done slightly earlier.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AnAppLinkInvitesPrefetch_AnExternalOneDoesNot()
+    {
+        var internalLink = WebRealizer.Lower(new Link("/docs/b", new Text("B", TypeRole.Label)), Theme).Render();
+        var external = WebRealizer.Lower(
+            new Link("https://example.test/x", new Text("X", TypeRole.Label)), Theme).Render();
+
+        internalLink.Attributes.Should().ContainKey("data-prefetch");
+        external.Attributes.Should().NotContainKey("data-prefetch",
+            "an absolute URL belongs to somebody else's server");
+    }
+
     [Fact]
     public void FillChild_GetsThePassThroughChain()
     {

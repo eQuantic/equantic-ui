@@ -641,6 +641,8 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // Read by the router when it decides where the new page starts (C# twin). On the anchor because
   // that is what the router's one delegated click listener meets.
   if (node.keepsPosition) anchor.attributes['data-eq-keep-position'] = '';
+  // WARM ON HOVER (C# twin): app-internal destinations only — an absolute URL is somebody else's.
+  if (node.destination.startsWith('/')) anchor.attributes['data-prefetch'] = '';
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) anchor.children.push(child);
   return anchor;

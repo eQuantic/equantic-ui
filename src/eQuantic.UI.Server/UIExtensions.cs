@@ -441,9 +441,10 @@ public static class UIExtensions
     /// client never repeated.
     /// </para>
     /// <para>
-    /// It runs the SAME render the shell runs, and throws the HTML away. That costs a tree build per
-    /// navigation and buys the guarantee that matters — prefetch, then metadata, from the request's
-    /// own services, in one order, described in one place.
+    /// It runs the same code the shell runs, minus the DRAWING: prefetch, then metadata, from the
+    /// request's own services, in one order and described in one place. Skipping the markup is what
+    /// makes this cheap enough for the router to warm a page on hover — a tree build per hovered
+    /// link would cost more than the round trip it saves.
     /// </para>
     /// </summary>
     private static async Task ServePageState(HttpContext context, string? pageName)
@@ -465,7 +466,7 @@ public static class UIExtensions
         ServerRenderResult result;
         try
         {
-            result = await rendering.RenderPageAsync(pageName!, context);
+            result = await rendering.PreparePageAsync(pageName!, context);
         }
         catch (Exception)
         {

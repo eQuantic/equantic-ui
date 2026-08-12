@@ -1513,6 +1513,13 @@ public static class WebRealizer
         // a side table because the router meets the ANCHOR — a delegated click listener, one for the
         // whole document, which is also what makes server-rendered links work with no wiring.
         if (link.KeepsPosition) element.RawAttributes["data-eq-keep-position"] = "";
+        // WARM ON HOVER. The router has always had a prefetch seam and nothing ever marked a link
+        // for it, so it was dead code and every navigation paid the module import in full — which is
+        // most of what a click costs. The router asks once per link and swallows failures, so the
+        // worst case is the work the click was going to do anyway, done slightly earlier.
+        //
+        // App-internal destinations only: an absolute URL belongs to somebody else's server.
+        if (link.Destination.StartsWith('/')) element.RawAttributes["data-prefetch"] = "";
         if (LowerNode(link.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;

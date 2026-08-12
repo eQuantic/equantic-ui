@@ -31,6 +31,14 @@ describe('link lowering (navigation semantics)', () => {
     ).toBe('');
   });
 
+  // An app-internal link invites the router to warm it on hover; an external one does not (C# twin).
+  it('invites prefetch for app links only', () => {
+    expect(lower(new Link('/docs/b', new Text('b', 'label')))!.attributes['data-prefetch']).toBe('');
+    expect(
+      lower(new Link('https://example.test/x', new Text('x', 'label')))!.attributes['data-prefetch'],
+    ).toBeUndefined();
+  });
+
   it('carries the accessible label for icon-only links', () => {
     const html = lower(new Link('/x', new Box(new BoxStyle({})), { label: 'Home' }))!;
     expect(html.attributes['aria-label']).toBe('Home');

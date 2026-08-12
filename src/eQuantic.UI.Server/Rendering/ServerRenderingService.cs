@@ -82,7 +82,23 @@ public class ServerRenderingService : IServerRenderingService
     }
 
     /// <inheritdoc />
-    public async Task<ServerRenderResult> RenderPageAsync(string pageTypeName, HttpContext context)
+    public Task<ServerRenderResult> RenderPageAsync(string pageTypeName, HttpContext context) =>
+        RunAsync(pageTypeName, context, draw: true);
+
+    /// <inheritdoc />
+    public Task<ServerRenderResult> PreparePageAsync(string pageTypeName, HttpContext context) =>
+        RunAsync(pageTypeName, context, draw: false);
+
+    /// <summary>
+    /// The page's whole server-side moment, with the DRAWING optional.
+    /// <para>
+    /// Both callers need the same three things in the same order — prefetch, then metadata, then
+    /// the status the page answers — from the request's own services. Only one of them needs the
+    /// markup, and building a tree to throw it away is what made a client navigation cost as much
+    /// as a full page.
+    /// </para>
+    /// </summary>
+    private async Task<ServerRenderResult> RunAsync(string pageTypeName, HttpContext context, bool draw)
     {
         if (string.IsNullOrEmpty(pageTypeName))
         {
@@ -174,38 +190,44 @@ public class ServerRenderingService : IServerRenderingService
                     }
                 }
 
-                // Collect asset dependencies before rendering
+                // THE DRAWING, and everything that only the drawing needs. A client navigation asks
+                // for none of it: the browser already has the component and builds the tree itself,
+                // so markup rendered here would be markup thrown away — a whole tree build, plus its
+                // assets and its atomic rules, per navigation.
                 var assets = new AssetCollection();
-                CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
+                var html = string.Empty;
+                if (draw)
+                {
+                    CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
 
-                // Render with an AMBIENT style sink armed (STYLE-SEMANTICS-PLAN §2): every write-once
-                // bridge in the tree — top-level page or composed inside a Core component — collects
-                // its atomic rules into this one per-page set.
-                var styles = new Web.StyleSink();
-                string html;
-                Web.StyleSink.Ambient = styles;
-                // Armed the same way and for the same reason: a component that throws is contained
-                // to its own subtree instead of turning this request into a 500. Development quotes
-                // the exception in the panel; production says only that a section is missing, and
-                // either way the failure reaches the log rather than dying in the boundary.
-                Primitives.ComponentBoundary.Diagnostics = IsDevelopment(context);
-                Primitives.ComponentBoundary.Report = (failed, error) => _logger.LogError(error,
-                    "Component {Component} failed to render and was contained", failed.GetType().Name);
-                try
-                {
-                    html = RenderComponent(component);
-                }
-                finally
-                {
-                    Web.StyleSink.Ambient = null;
-                    Primitives.ComponentBoundary.Report = null;
-                }
+                    // Render with an AMBIENT style sink armed (STYLE-SEMANTICS-PLAN §2): every
+                    // write-once bridge in the tree — top-level page or composed inside a Core
+                    // component — collects its atomic rules into this one per-page set.
+                    var styles = new Web.StyleSink();
+                    Web.StyleSink.Ambient = styles;
+                    // Armed the same way and for the same reason: a component that throws is
+                    // contained to its own subtree instead of turning this request into a 500.
+                    // Development quotes the exception in the panel; production says only that a
+                    // section is missing, and either way the failure reaches the log.
+                    Primitives.ComponentBoundary.Diagnostics = IsDevelopment(context);
+                    Primitives.ComponentBoundary.Report = (failed, error) => _logger.LogError(error,
+                        "Component {Component} failed to render and was contained", failed.GetType().Name);
+                    try
+                    {
+                        html = RenderComponent(component);
+                    }
+                    finally
+                    {
+                        Web.StyleSink.Ambient = null;
+                        Primitives.ComponentBoundary.Report = null;
+                    }
 
-                // Inject exactly the rules this markup references, so hydration matches by class
-                // identity. The id lets the client registry adopt them instead of re-inserting.
-                if (!styles.IsEmpty)
-                {
-                    assets.Add(new InlineStyleAsset(styles.Css, "eq-atomic"));
+                    // Inject exactly the rules this markup references, so hydration matches by class
+                    // identity. The id lets the client registry adopt them instead of re-inserting.
+                    if (!styles.IsEmpty)
+                    {
+                        assets.Add(new InlineStyleAsset(styles.Css, "eq-atomic"));
+                    }
                 }
 
                 // Serialize state for hydration. A WRITE-ONCE page carries its state in its OWN

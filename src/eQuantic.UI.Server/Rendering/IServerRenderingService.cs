@@ -35,6 +35,23 @@ public interface IServerRenderingService
     Task<ServerRenderResult> RenderPageAsync(string pageTypeName, HttpContext context);
 
     /// <summary>
+    /// Everything a page needs to START, without drawing it: the server data its prefetch loads,
+    /// the metadata it describes itself with, and the status it answers.
+    /// <para>
+    /// A CLIENT NAVIGATION needs exactly this and no HTML — the browser already has the component
+    /// and will build the tree itself. Rendering markup to throw away costs a whole tree build per
+    /// navigation, which is affordable once and not affordable at all if the router is to warm the
+    /// page on hover.
+    /// </para>
+    /// <para>
+    /// It runs the same code as <see cref="RenderPageAsync"/>, minus the drawing: prefetch first,
+    /// then metadata, from the request's own services. That order is the contract, and it is
+    /// described in one place so the two paths cannot drift.
+    /// </para>
+    /// </summary>
+    Task<ServerRenderResult> PreparePageAsync(string pageTypeName, HttpContext context);
+
+    /// <summary>
     /// Renders a component instance to HTML string.
     /// </summary>
     /// <param name="component">The component instance to render.</param>
