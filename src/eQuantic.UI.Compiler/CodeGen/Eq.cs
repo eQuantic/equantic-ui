@@ -12,6 +12,11 @@ public static class Eq
     /// <summary>The single symbol imported from <c>@equantic/runtime</c> when any <c>$eq.*</c> is emitted.</summary>
     public const string Import = "$eq";
 
+    /// <summary>A resx accessor, resolved at CALL time against the active UI culture (Track L D2:
+    /// rewritten, never inlined — an inlined accessor bakes the build machine's culture into the
+    /// bundle). Two args: the catalog id and the resx key.</summary>
+    public const string Str = "$eq.str";
+
     public const string Dec = "$eq.num.dec";
     public const string Long = "$eq.num.long";
     public const string Round = "$eq.math.round";

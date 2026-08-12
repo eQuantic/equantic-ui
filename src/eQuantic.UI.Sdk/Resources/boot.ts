@@ -18,6 +18,7 @@ import {
   type NavigationGuard,
   type ThemeData,
 } from '../../eQuantic.UI.Runtime/src/index';
+import { installCulture } from '../../eQuantic.UI.Runtime/src/utils/culture';
 
 // --- Constants ---
 const APP_ROOT_ID = 'app';
@@ -122,6 +123,20 @@ export async function boot(): Promise<void> {
         console.log('[eQuantic.UI] Applying app theme from __EQ_THEME__');
       }
       setPhotonTheme(materializeTheme(themeData));
+    }
+
+    // Track L D4: install the request's culture and its string catalog BEFORE hydration — the
+    // client must resolve exactly the strings the server rendered, or the SSR-identity contract
+    // breaks on any translated page. The server emits window.__EQ_CULTURE__ next to the theme.
+    const cultureData = (window as unknown as {
+      __EQ_CULTURE__?: { name?: string; formatName?: string; strings?: Record<string, string> };
+    }).__EQ_CULTURE__;
+    if (cultureData) {
+      installCulture(
+        cultureData.name ?? '',
+        cultureData.formatName ?? cultureData.name ?? '',
+        cultureData.strings ?? {},
+      );
     }
 
 

@@ -391,6 +391,12 @@ bool CompileAndBundle()
 
         if (hasErrors) return true;
 
+        // Track L D3/D12: the per-culture string catalogs, from exactly the keys the compiled
+        // tree used. The fallback chain is FLATTENED here — a key present only in the neutral
+        // resx appears in every culture's catalog — so the runtime does a flat lookup and never
+        // reimplements .NET's resolution.
+        EmitStringCatalogs(compiler, outputDir);
+
         if (!hasBun && entryPoints.Count > 0)
         {
             // The embedded Bun is a hard requirement — bundling is what produces the page JS. A
@@ -484,6 +490,59 @@ bool CompileAndBundle()
         Console.Error.WriteLine($"eQuantic.UI(1,1): error EQ0001: Compilation crash: {ex.Message}");
         return true;
     }
+}
+
+
+static void EmitStringCatalogs(eQuantic.UI.Compiler.ComponentCompiler compiler, string outputDir)
+{
+    var uses = compiler.ResourceUses;
+    if (uses.Count == 0) return;
+
+    var neutral = new SortedDictionary<string, string>(StringComparer.Ordinal);
+    var cultures = new SortedDictionary<string, SortedDictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+    foreach (var use in uses)
+    {
+        var variants = eQuantic.UI.Compiler.Services.ResxFiles.VariantsFor(use.DesignerPath).ToList();
+        if (variants.Count == 0)
+        {
+            Console.Error.WriteLine($"⚠️  strings: no .resx found beside {use.DesignerPath} — " +
+                $"'{use.Id}' resolves on the server and native, but the web catalog has no values.");
+            continue;
+        }
+        foreach (var (culture, path) in variants)
+        {
+            var values = eQuantic.UI.Compiler.Services.ResxFiles.Read(path);
+            if (values is null) continue;
+            var target = culture.Length == 0
+                ? neutral
+                : cultures.TryGetValue(culture, out var existing)
+                    ? existing
+                    : cultures[culture] = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            foreach (var key in use.Keys)
+            {
+                if (values.TryGetValue(key, out var value)) target[$"{use.Id}/{key}"] = value;
+                else if (culture.Length == 0)
+                    Console.Error.WriteLine($"⚠️  strings: key '{key}' is read by a page but " +
+                        $"missing from {path}.");
+            }
+        }
+    }
+
+    // D12: flatten — named cultures inherit every neutral-only key, so the client lookup is flat.
+    foreach (var strings in cultures.Values)
+        foreach (var (key, value) in neutral)
+            strings.TryAdd(key, value);
+
+    var stringsDir = Path.Combine(outputDir, "strings");
+    Directory.CreateDirectory(stringsDir);
+    var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = false };
+    File.WriteAllText(Path.Combine(stringsDir, "neutral.json"),
+        System.Text.Json.JsonSerializer.Serialize(neutral, options));
+    foreach (var (culture, strings) in cultures)
+        File.WriteAllText(Path.Combine(stringsDir, culture + ".json"),
+            System.Text.Json.JsonSerializer.Serialize(strings, options));
+    Console.WriteLine($"🌐 Strings: {neutral.Count} keys → neutral" +
+        (cultures.Count > 0 ? " + " + string.Join(", ", cultures.Keys) : ""));
 }
 
 class Debouncer

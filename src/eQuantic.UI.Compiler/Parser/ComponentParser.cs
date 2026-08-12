@@ -139,9 +139,17 @@ public class ComponentParser
         // NESTED static classes are excluded: they are their owner's private scope (every section
         // having its own `Copy` is the pattern), so they embed INSIDE the owner's module — as their
         // own module, two same-named nested classes would overwrite each other's file.
+        var helperModel = TryGetSemanticModel(tree);
         foreach (var classDecl in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
         {
             if (classDecl.Parent is ClassDeclarationSyntax) continue;
+            // Track L D2: a resx Designer class is NOT a static-helper module — its accessors
+            // rewrite to $eq.str at the use site, and a module of ResourceManager.GetString calls
+            // cannot run in a browser. Shape-detected, and checked FIRST because the Designer's
+            // class itself is not static (only its members are) — but a PublicResXFileCodeGenerator
+            // variant marked static must not slip through either.
+            if (Services.ResourceClasses.IsResourceClass(
+                    helperModel?.GetDeclaredSymbol(classDecl) as INamedTypeSymbol)) continue;
             if (classDecl.Modifiers.Any(SyntaxKind.StaticKeyword))
             {
                 results.Add(new ComponentDefinition
@@ -228,6 +236,11 @@ public class ComponentParser
             if (componentNames.Contains(classDecl.Identifier.Text)) continue; // component path
             if (stateNames.Contains(classDecl.Identifier.Text)) continue;     // owned by its page
             if (classDecl.Members.Count == 0) continue;
+            // Track L D2: a resx Designer is a plain non-static class by shape, and a module of
+            // ResourceManager.GetString calls cannot run in a browser — its accessors rewrite to
+            // $eq.str at every use site instead.
+            if (Services.ResourceClasses.IsResourceClass(
+                    helperModel?.GetDeclaredSymbol(classDecl) as INamedTypeSymbol)) continue;
 
             results.Add(new ComponentDefinition
             {

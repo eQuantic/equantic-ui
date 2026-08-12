@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="{{HtmlClass}}">
+<html lang="{{HtmlLang}}" class="{{HtmlClass}}">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -68,6 +68,7 @@
             window.__EQ_CONFIG = {{ConfigJson}};
             window.__EQ_DEV__ = {{IsDevelopmentBool}};
             {{?ThemeData}}{{ThemeData}}{{/ThemeData}}
+            {{?CultureData}}{{CultureData}}{{/CultureData}}
             {{?InitialState}}{{InitialState}}{{/InitialState}}
         </script>
         <script type="module">

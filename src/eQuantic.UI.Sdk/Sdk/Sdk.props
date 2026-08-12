@@ -158,5 +158,11 @@
 
         <!-- Include other .cs files as regular compile items -->
         <Compile Include="**/*.cs" Exclude="Pages/**/*.cs;obj/**;bin/**" />
+
+        <!-- Track L: the developer's .resx are first-class. Embedded here (satellite assemblies
+             on the server and on native, no bridge — I18N-PLAN D10), while the VS-convention
+             Designer beside each .resx reaches eqc through the ordinary Compile glob above, which
+             is what lets the web rewrite `Strings.X` to a runtime lookup (D2). -->
+        <EmbeddedResource Include="**/*.resx" Exclude="obj/**;bin/**" />
     </ItemGroup>
 </Project>

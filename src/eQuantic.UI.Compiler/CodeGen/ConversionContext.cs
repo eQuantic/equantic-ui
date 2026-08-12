@@ -41,6 +41,11 @@ public class ConversionContext
     /// <summary>Diagnostics raised during this conversion (unconverted or impossible constructs).</summary>
     public List<ConversionDiagnostic> Diagnostics { get; } = new();
 
+    /// <summary>Track L D3: every resx accessor this conversion rewrote — (id, key, designer
+    /// path) triples the CLI drains into per-culture catalogs. Rides the context exactly as
+    /// diagnostics do, because the semantic model's compilation is ephemeral per file.</summary>
+    public List<Services.ResourceUse> ResourceUses { get; } = new();
+
     /// <summary>Record a diagnostic anchored at <paramref name="node"/>'s source position.</summary>
     public void Report(SyntaxNode node, ConversionSeverity severity, string code, string message)
     {
@@ -48,7 +53,11 @@ public class ConversionContext
         Diagnostics.Add(new ConversionDiagnostic(severity, code, message, pos.Line + 1, pos.Character + 1));
     }
 
-    public void ClearDiagnostics() => Diagnostics.Clear();
+    public void ClearDiagnostics()
+    {
+        Diagnostics.Clear();
+        ResourceUses.Clear();
+    }
 
     // Cache to avoid reprocessing the same node multiple times
     private readonly Dictionary<SyntaxNode, string> _cache = new();

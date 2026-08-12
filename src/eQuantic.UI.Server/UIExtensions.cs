@@ -539,6 +539,16 @@ public static class UIExtensions
             themeDataJson = eQuantic.UI.Web.ThemeBridge.SerializeJson(appTheme);
         }
 
+        // Track L D4/D5: the request's culture rides the shell — <html lang> for assistive tech
+        // (pronunciation follows it), and window.__EQ_CULTURE__ with the ACTIVE catalog inlined so
+        // the client resolves exactly the strings the server rendered, before hydration. The
+        // culture itself is ASP.NET's answer (RequestLocalization when the app wired it, the
+        // process default otherwise) — the SDK only reads the statics, per the plan.
+        var uiCulture = System.Globalization.CultureInfo.CurrentUICulture;
+        var formatCulture = System.Globalization.CultureInfo.CurrentCulture;
+        var htmlLang = uiCulture.Name.Length > 0 ? uiCulture.Name : "en";
+        var cultureDataJson = CultureBridge.BuildCultureData(context, uiCulture, formatCulture);
+
         // The app icon the SDK generated, linked without the app saying so. Stating it once — in
         // Assets/ — and having it appear in the tab, on a pinned home screen and in the install
         // manifest is the whole point; asking an author to also write four <link> tags would be
@@ -737,6 +747,7 @@ public static class UIExtensions
         {
             // Variables
             ctx.Set("HtmlClass", shell.HtmlClass)
+               .Set("HtmlLang", htmlLang)
                .Set("Title", System.Web.HttpUtility.HtmlEncode(metadata.Title))
                .Set("MetadataTags", metadata.RenderTags())
                .Set("BuildId", BuildId)
@@ -747,7 +758,8 @@ public static class UIExtensions
                .Set("ConfigJson", configJson)
                .Set("IsDevelopmentBool", isDevelopment ? "true" : "false")
                .SetOrEmpty("InitialState", serializedState != null ? $"window.__INITIAL_STATE__ = {serializedState};" : null)
-               .SetOrEmpty("ThemeData", themeDataJson != null ? $"window.__EQ_THEME__ = {themeDataJson};" : null);
+               .SetOrEmpty("ThemeData", themeDataJson != null ? $"window.__EQ_THEME__ = {themeDataJson};" : null)
+               .SetOrEmpty("CultureData", cultureDataJson != null ? $"window.__EQ_CULTURE__ = {cultureDataJson};" : null);
 
             // Conditions
             ctx.When("IsDevelopment", isDevelopment)

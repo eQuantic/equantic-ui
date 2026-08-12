@@ -35,6 +35,20 @@ public class ComponentCompiler
         }
     }
 
+    /// <summary>Track L D3: one used resource class, aggregated across every compiled file —
+    /// its catalog id, where its Designer lives (the .resx sits beside it), and every key the
+    /// reachable tree actually reads (unused keys never ship).</summary>
+    public sealed record AggregatedResource(string Id, string DesignerPath)
+    {
+        public SortedSet<string> Keys { get; } = new(StringComparer.Ordinal);
+    }
+
+    private readonly Dictionary<string, AggregatedResource> _resourceUses = new(StringComparer.Ordinal);
+
+    /// <summary>Every resource class the compiled tree read, with the keys it read — the CLI
+    /// drains this into wwwroot/_equantic/strings/{culture}.json after the last file.</summary>
+    public IReadOnlyCollection<AggregatedResource> ResourceUses => _resourceUses.Values;
+
     public ComponentCompiler()
     {
         // The provider must exist BEFORE the parser receives it — the old order handed the parser a
@@ -224,6 +238,15 @@ public class ComponentCompiler
                     result.Errors.Add(entry);
                 else
                     result.Warnings.Add(entry);
+            }
+
+            // Track L D3: aggregate the rewritten resx reads — catalogs are emitted from exactly
+            // this set, so call sites and catalogs cannot disagree.
+            foreach (var use in _tsEmitter.GetLastResourceUses())
+            {
+                if (!_resourceUses.TryGetValue(use.Id, out var aggregated))
+                    _resourceUses.Add(use.Id, aggregated = new AggregatedResource(use.Id, use.DesignerPath));
+                aggregated.Keys.Add(use.Key);
             }
 
             if (result.Errors.Count > 0)

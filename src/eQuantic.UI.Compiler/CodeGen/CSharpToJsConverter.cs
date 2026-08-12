@@ -104,6 +104,10 @@ public class CSharpToJsConverter
 
     public void ClearDiagnostics() => _context.ClearDiagnostics();
 
+    /// <summary>Resx accessor reads the most recent conversion(s) rewrote (Track L D3) — drained
+    /// alongside diagnostics, cleared by the same call.</summary>
+    public IReadOnlyList<Services.ResourceUse> ResourceUses => _context.ResourceUses;
+
     /// <summary>Raises a diagnostic from OUTSIDE a strategy — the emitter's own whole-method checks.</summary>
     /// <summary>Turns TypeScript annotations on — see <see cref="ConversionContext.TypeAnnotations"/>.</summary>
     public void EmitTypeAnnotations(bool enabled) => _context.TypeAnnotations = enabled;
@@ -246,6 +250,9 @@ public class CSharpToJsConverter
         // Inlines external IconGlyph constants (pack glyphs) at the use site — must beat the fallback
         // member access, which would emit a broken `LucideIcons.camera`.
         _strategyRegistry.Register<InlinedConstantStrategy>();
+        // Track L D2: resx accessors REWRITE to $eq.str — registered above the inliner so a
+        // constant-looking accessor can never fall through to a path that bakes a culture in.
+        _strategyRegistry.Register<ResourceAccessorStrategy>();
         // Sequences that come from nothing, and .NET names for what the browser already has.
         _strategyRegistry.Register<Strategies.Linq.EnumerableFactoryStrategy>();
         _strategyRegistry.Register<Strategies.Types.WebPrimitiveStrategy>();

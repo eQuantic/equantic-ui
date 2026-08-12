@@ -185,6 +185,8 @@
         <ItemGroup>
             <_OldGeneratedFiles Include="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)*.js" />
             <_OldGeneratedFiles Include="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)*.js.map" />
+            <!-- Track L: a renamed or removed culture's catalog must not linger. -->
+            <_OldGeneratedFiles Include="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)strings/*.json" />
         </ItemGroup>
         <Delete Files="@(_OldGeneratedFiles)" Condition="'@(_OldGeneratedFiles)' != ''" />
 

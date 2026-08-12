@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Hero.Title" xml:space="preserve">
+    <value>Build products, not plumbing.</value>
+  </data>
+  <data name="Greeting" xml:space="preserve">
+    <value>Welcome, {0}!</value>
+  </data>
+  <data name="Hero.Body" xml:space="preserve">
+    <value>This page is written once in C# — its strings live in an ordinary .resx, and the same class speaks the request's language on the server, in the browser, and in a native window.</value>
+  </data>
+</root>

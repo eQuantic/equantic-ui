@@ -487,6 +487,13 @@ public class CompileTimeEvaluator
     /// </summary>
     private string? ExtractPropertyValue(IPropertySymbol propSymbol)
     {
+        // Track L D2: a resx accessor's getter is EXACTLY the shape this method can read
+        // (`get { return ResourceManager.GetString("Key", resourceCulture); }`), and evaluating
+        // it would bake the build machine's culture into the output. The master gate at
+        // IsCompileTimeEvaluatable already refuses System.String — this is the belt for the day
+        // that gate widens.
+        if (Services.ResourceClasses.IsResourceClass(propSymbol.ContainingType)) return null;
+
         // Get property declaration syntax
         var syntaxRef = propSymbol.DeclaringSyntaxReferences.FirstOrDefault();
         if (syntaxRef == null) return null;

@@ -2,6 +2,7 @@ import { dec } from './utils/decimal';
 import { long } from './utils/long';
 import { round } from './utils/dotnet-math';
 import { format, parseEnum, stringFormat } from './utils/format';
+import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
 import { queue, stack, valueMap, linkedList, contains, count, setAdd, entries } from './utils/collections';
@@ -49,6 +50,9 @@ export const slice = <T extends string | unknown[]>(
 };
 
 export const $eq = {
+  /** A rewritten resx accessor (Track L D2): resolves against the installed culture catalog at
+   * CALL time — the whole reason the compiler never inlines it. */
+  str,
   /** Dictionary enumeration for transpiled foreach/List-copy — see utils/collections. */
   entries,
   /** C# `with` over a runtime value type — prototype preserved. */

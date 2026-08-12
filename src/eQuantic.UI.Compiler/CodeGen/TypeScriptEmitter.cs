@@ -97,6 +97,10 @@ public class TypeScriptEmitter
     /// <summary>Transpilation diagnostics raised during the most recent <see cref="Emit"/> call.</summary>
     public IReadOnlyList<ConversionDiagnostic> GetLastDiagnostics() => _converter.Diagnostics;
 
+    /// <summary>Track L D3: the resx reads the last emit rewrote — the compiler aggregates them
+    /// into the per-culture catalog set.</summary>
+    public IReadOnlyList<Services.ResourceUse> GetLastResourceUses() => _converter.ResourceUses;
+
     /// <summary>
     /// Generate TypeScript code for a component
     /// </summary>

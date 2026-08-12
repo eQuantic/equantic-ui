@@ -58,6 +58,12 @@ public class InlinedConstantStrategy : IConversionStrategy
         {
             return false;
         }
+        // Track L D2: nothing that lives on a resource-shaped class may inline — the value is
+        // per-culture data, and a baked literal is the build machine's language in production.
+        // (The generated accessors are PROPERTIES and never reach this field-only path; this
+        // guard is the belt for a hand-written const inside a Designer-shaped class, and for
+        // whoever widens this strategy to properties one day.)
+        if (Services.ResourceClasses.IsResourceClass(owner)) return false;
         if (owner.TypeKind == TypeKind.Enum) return false;
 
         switch (field.ConstantValue)
@@ -113,6 +119,8 @@ public class InlinedConstantStrategy : IConversionStrategy
         {
             return false;
         }
+        // Track L D2: same belt as TryResolveConstant — resource-shaped owners never inline.
+        if (Services.ResourceClasses.IsResourceClass(field.ContainingType)) return false;
 
         // Scoped to the write-once IconGlyph contract (the concrete, safe case). The type check is
         // by fully-qualified name so only the real Primitives type triggers.

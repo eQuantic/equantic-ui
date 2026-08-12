@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Hero.Title" xml:space="preserve">
+    <value>Construa produtos, não encanamento.</value>
+  </data>
+  <data name="Greeting" xml:space="preserve">
+    <value>Bem-vindo, {0}!</value>
+  </data>
+  <data name="Hero.Body" xml:space="preserve">
+    <value>Esta página é escrita uma vez em C# — as strings vivem num .resx comum, e a mesma classe fala a língua do request no servidor, no navegador e numa janela nativa.</value>
+  </data>
+</root>

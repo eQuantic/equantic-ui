@@ -29,6 +29,14 @@ builder.Services.AddUI(options =>
 
 var app = builder.Build();
 
+// Track L D5: culture negotiation is ASP.NET's, wired by the APP — the SDK only reads the
+// statics this middleware sets. Try /i18n with Accept-Language: pt-BR.
+app.UseRequestLocalization(options =>
+{
+    options.AddSupportedUICultures("pt-BR");
+    options.AddSupportedCultures("pt-BR");
+});
+
 // Serve static files (including compiled JS)
 app.UseStaticFiles();
 
