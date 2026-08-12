@@ -319,6 +319,7 @@ public sealed class CodeEditor : StatefulComponent
             value => SetState(() => _findText = value))
         {
             Placeholder = "Find",
+            Label = "Find",
             Autofocus = true,
             OnSubmit = () => Step(true),
         }));

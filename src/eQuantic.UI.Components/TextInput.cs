@@ -78,6 +78,11 @@ public sealed class TextInput : StatefulComponent
         var borderWidth = _focused ? 2f : 1f;
         var paddingX = _focused ? 13f : 14f; // spec: the 2dp focus border compensates with -1dp padding
 
+        // The caption is both the VISIBLE helper/error line below and the entry's accessible
+        // description — one string, two renderings, so what a screen reader hears is exactly
+        // what the sighted user reads.
+        var caption = hasError ? Error! : Helper ?? "";
+
         // Fill the container's content box so Cross=Center centers within the 48dp frame —
         // a hug-height row would sit at the top of the Box on both targets.
         var row = new Row(gap: 10) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
@@ -88,6 +93,9 @@ public sealed class TextInput : StatefulComponent
         row.Add(new Flexible(new TextEntry(Value, OnChanged)
         {
             Placeholder = Placeholder,
+            Label = Label.Length > 0 ? Label : null,
+            Description = caption.Length > 0 ? caption : null,
+            Invalid = hasError,
             Disabled = Disabled,
             Obscure = Obscure,
             Autofocus = Autofocus,
@@ -110,7 +118,6 @@ public sealed class TextInput : StatefulComponent
         top.Add(container);
 
         // The helper/error line is ALWAYS reserved — swaps never shift the form (spec B9).
-        var caption = hasError ? Error! : Helper ?? "";
         var captionColor = hasError ? theme.Colors(Variant.Destructive).Base : theme.TextMuted;
 
         var column = new Column(gap: 5) { Width = SizeValue.Fill };

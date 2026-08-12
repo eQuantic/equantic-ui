@@ -714,7 +714,9 @@ public static class WebRealizer
     /// IME. The type role rides the generated .eq-type-* class; color/reset styles are inline;
     /// outline and ::placeholder mechanics live in the generated stylesheet (.eq-entry). The
     /// composing component owns the container chrome. Handlers attach on the client (lowering.ts —
-    /// SSR emits no events; hydration wires them).
+    /// SSR emits no events; hydration wires them). The entry lowers inside a STABLE
+    /// .eq-field shell that always carries the sr-only description twin (.eq-desc) — presence
+    /// flipping with the description would REPLACE the input and drop focus mid-edit.
     /// </summary>
     private static HtmlElement LowerTextEntry(TextEntry entry, ComponentContext context)
     {
@@ -750,7 +752,29 @@ public static class WebRealizer
         // The attribute alone only acts on the initial parse; the client lowering also focuses on
         // mount, which is what a dialog opened later needs.
         if (entry.Autofocus) element.RawAttributes["autofocus"] = "";
-        return element;
+        if (entry.Invalid) element.RawAttributes["aria-invalid"] = "true";
+
+        // The description twin: sr-only, and a polite live region — present (empty) from the first
+        // paint so a later error swap ANNOUNCES instead of merely recoloring. The id is the
+        // content's FNV hash, the atomizer's identity rule — deterministic across SSR and client,
+        // no per-render counter (identical captions share one id; the referenced text is the same).
+        var description = new RealizedElement("span")
+        {
+            ClassName = "eq-desc",
+            RawAttributes = new Dictionary<string, string> { ["aria-live"] = "polite" },
+        };
+        if (entry.Description is { Length: > 0 } caption)
+        {
+            var descriptionId = $"eq-desc-{StyleAtomizer.Hash(caption)}";
+            description.RawAttributes["id"] = descriptionId;
+            description.InnerHtml = caption;
+            element.RawAttributes["aria-describedby"] = descriptionId;
+        }
+
+        var host = new RealizedElement("div") { ClassName = "eq-field" };
+        host.Children.Add(element);
+        host.Children.Add(description);
+        return host;
     }
 
     /// <summary>

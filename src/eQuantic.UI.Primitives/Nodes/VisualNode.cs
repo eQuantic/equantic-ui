@@ -806,6 +806,18 @@ public sealed class TextEntry : VisualNode
     /// name — so a field without a visible label states one here.</summary>
     public string? Label { get; init; }
 
+    /// <summary>The accessible DESCRIPTION — the caption text (helper or error) the composing
+    /// component shows beside the field. The web realizer keeps a visually hidden twin of it
+    /// INSIDE the entry (the association target, and a polite live region so swaps announce),
+    /// because the visible caption is a sibling node the entry cannot reference. Native fence:
+    /// joins when the semantics tree carries descriptions.</summary>
+    public string? Description { get; init; }
+
+    /// <summary>The value currently FAILS validation — surfaced as a STATE (web
+    /// <c>aria-invalid</c>), never worded into the name or description. Native fence: the
+    /// semantics tree has no invalid bit yet.</summary>
+    public bool Invalid { get; init; }
+
     /// <summary>Keyboard submit (Enter / the keyboard's return action).</summary>
     public Action? OnSubmit { get; init; }
 

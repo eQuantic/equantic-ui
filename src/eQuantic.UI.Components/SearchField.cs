@@ -36,6 +36,9 @@ public sealed class SearchField : StatelessComponent
         row.Add(new Flexible(new TextEntry(Query, OnChanged)
         {
             Placeholder = Placeholder,
+            // The pill has no visible label, so the placeholder text is PROMOTED to the real
+            // accessible name — a placeholder alone vanishes under text and names nothing.
+            Label = Placeholder.Length > 0 ? Placeholder : null,
             OnSubmit = OnSubmit,
             Role = TypeRole.BodyM,
         }, 1));

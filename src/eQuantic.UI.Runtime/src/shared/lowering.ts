@@ -32,6 +32,7 @@ import {
   gateCompactUntil,
   gateExpandedFrom,
   gateMediumFrom,
+  hashDeclaration,
   mergeAtomicDeclaration,
 } from './style-atomizer';
 import type {
@@ -779,26 +780,44 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
   }
   if (node.disabled === true) {
     input.attributes['disabled'] = '';
-    return input;
+  } else {
+    const onChanged = node.onChanged;
+    if (onChanged) {
+      // The reconciler's input/change convention: the wrapper extracts the element value and calls
+      // the handler with it — exactly the C# Action<string> shape.
+      input.events['input'] = onChanged as unknown as EventHandler;
+    }
+    const onSubmit = node.onSubmit;
+    if (onSubmit) {
+      input.events['keydown'] = ((e: KeyboardEvent) => {
+        if (e.key === 'Enter') onSubmit();
+      }) as unknown as EventHandler;
+    }
+    const onFocusChanged = node.onFocusChanged;
+    if (onFocusChanged) {
+      input.events['focus'] = (() => onFocusChanged(true)) as EventHandler;
+      input.events['blur'] = (() => onFocusChanged(false)) as EventHandler;
+    }
   }
-  const onChanged = node.onChanged;
-  if (onChanged) {
-    // The reconciler's input/change convention: the wrapper extracts the element value and calls
-    // the handler with it — exactly the C# Action<string> shape.
-    input.events['input'] = onChanged as unknown as EventHandler;
+  if (node.invalid === true) input.attributes['aria-invalid'] = 'true';
+
+  // C# twin: the STABLE .eq-field shell — input + the sr-only description twin, present (empty)
+  // from the first paint so a later error swap ANNOUNCES, and so the shape never flips (a
+  // presence-flip would replace the <input> and drop focus mid-edit). The id is the content's
+  // FNV hash — the atomizer's identity rule, deterministic across SSR and client.
+  const description = element('span', {});
+  prependClass(description, 'eq-desc');
+  description.attributes['aria-live'] = 'polite';
+  if (node.description) {
+    const descriptionId = `eq-desc-${hashDeclaration(node.description)}`;
+    description.attributes['id'] = descriptionId;
+    description.children.push(textLeaf(node.description));
+    input.attributes['aria-describedby'] = descriptionId;
   }
-  const onSubmit = node.onSubmit;
-  if (onSubmit) {
-    input.events['keydown'] = ((e: KeyboardEvent) => {
-      if (e.key === 'Enter') onSubmit();
-    }) as unknown as EventHandler;
-  }
-  const onFocusChanged = node.onFocusChanged;
-  if (onFocusChanged) {
-    input.events['focus'] = (() => onFocusChanged(true)) as EventHandler;
-    input.events['blur'] = (() => onFocusChanged(false)) as EventHandler;
-  }
-  return input;
+  const host = element('div', {});
+  prependClass(host, 'eq-field');
+  host.children.push(input, description);
+  return host;
 }
 
 /** Mirror of C# TokenCss.Gradient: linear-gradient with light-dark() stops; a `via` midpoint

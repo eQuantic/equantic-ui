@@ -34,21 +34,61 @@ public class TextInputRealizerTests
         span.Children.FirstOrDefault(c => c.Tag == "#text")?.TextContent ?? "";
 
     [Fact]
-    public void TextEntry_LowersToARealChromelessInput()
+    public void TextEntry_LowersToARealChromelessInput_InsideTheStableFieldShell()
     {
         var node = Render(new TextEntry("ana@equantic")
         {
             Placeholder = "you@company.com",
         });
 
-        node.Tag.Should().Be("input");
-        node.Attributes["class"].Should().Be("eq-entry eq-type-bodyl");
-        node.Attributes["type"].Should().Be("text");
-        node.Attributes["value"].Should().Be("ana@equantic");
-        node.Attributes["placeholder"].Should().Be("you@company.com");
-        node.Attributes["style"].Should().Be(
+        // The .eq-field shell is STABLE: input first, the sr-only description twin second — the
+        // twin exists (empty) even without a description, so an error appearing later swaps
+        // attributes instead of replacing the <input> (which would drop focus mid-edit).
+        node.Tag.Should().Be("div");
+        node.Attributes["class"].Should().Be("eq-field");
+        node.Children.Should().HaveCount(2);
+
+        var input = node.Children[0];
+        input.Tag.Should().Be("input");
+        input.Attributes["class"].Should().Be("eq-entry eq-type-bodyl");
+        input.Attributes["type"].Should().Be("text");
+        input.Attributes["value"].Should().Be("ana@equantic");
+        input.Attributes["placeholder"].Should().Be("you@company.com");
+        input.Attributes["style"].Should().Be(
             $"width: 100%; padding: 0; background: none; border: none; " +
             $"color: {TokenCss.Value(Theme.TextPrimary)}; font-family: inherit");
+
+        var description = node.Children[1];
+        description.Tag.Should().Be("span");
+        description.Attributes["class"].Should().Be("eq-desc");
+        description.Attributes["aria-live"].Should().Be("polite");
+        description.Attributes.Should().NotContainKey("id", "no description was authored");
+        input.Attributes.Should().NotContainKey("aria-describedby");
+    }
+
+    [Fact]
+    public void TextEntry_Description_IsAssociated_AndAnnouncesSwaps()
+    {
+        var node = Render(new TextEntry("") { Description = "We never share it." });
+
+        var input = Find(node, n => n.Tag == "input")!;
+        var description = Find(node, n => n.Tag == "span")!;
+        var id = description.Attributes["id"];
+        id.Should().StartWith("eq-desc-");
+        input.Attributes["aria-describedby"].Should().Be(id);
+        description.Attributes["aria-live"].Should().Be("polite");
+        SpanText(description).Should().Be("We never share it.");
+        input.Attributes.Should().NotContainKey("aria-invalid", "a described field is not thereby invalid");
+    }
+
+    [Fact]
+    public void TextEntry_Invalid_IsAState_NeverWordedIntoTheName()
+    {
+        var node = Render(new TextEntry("nope") { Label = "Email", Invalid = true });
+
+        var input = Find(node, n => n.Tag == "input")!;
+        input.Attributes["aria-invalid"].Should().Be("true");
+        input.Attributes["aria-label"].Should().Be("Email", "the name stays the label — state is a state");
     }
 
     [Fact]
@@ -62,21 +102,22 @@ public class TextInputRealizerTests
             Placeholder = "Describe your request…",
         });
 
-        node.Tag.Should().Be("textarea");
-        node.Attributes["rows"].Should().Be("5");
-        node.Attributes.Should().NotContainKey("value");
-        node.Attributes["placeholder"].Should().Be("Describe your request…");
-        node.Children.Single(c => c.Tag == "#text").TextContent.Should().Be("Tell us about the project");
-        node.Attributes["style"].Should().Contain("resize: vertical");
+        var textarea = node.Children[0];
+        textarea.Tag.Should().Be("textarea");
+        textarea.Attributes["rows"].Should().Be("5");
+        textarea.Attributes.Should().NotContainKey("value");
+        textarea.Attributes["placeholder"].Should().Be("Describe your request…");
+        textarea.Children.Single(c => c.Tag == "#text").TextContent.Should().Be("Tell us about the project");
+        textarea.Attributes["style"].Should().Contain("resize: vertical");
     }
 
     [Fact]
     public void TextEntry_Obscure_And_Disabled_MapToInputSemantics()
     {
-        var password = Render(new TextEntry("secret") { Obscure = true });
+        var password = Find(Render(new TextEntry("secret") { Obscure = true }), n => n.Tag == "input")!;
         password.Attributes["type"].Should().Be("password");
 
-        var disabled = Render(new TextEntry("") { Disabled = true });
+        var disabled = Find(Render(new TextEntry("") { Disabled = true }), n => n.Tag == "input")!;
         disabled.Attributes.Should().ContainKey("disabled");
     }
 
@@ -87,6 +128,9 @@ public class TextInputRealizerTests
         css.Should().Contain(".eq-entry { outline: none; }",
             "the container shows focus — the input itself is chrome-less");
         css.Should().Contain(".eq-entry::placeholder { color: var(--eq-color-text-muted); }");
+        css.Should().Contain(".eq-desc { position: absolute;",
+            "the description twin is clipped, not display:none — hidden targets read for " +
+            "describedby but only a rendered one announces as a live region");
     }
 
     [Fact]
@@ -122,9 +166,42 @@ public class TextInputRealizerTests
             n.Tag == "div" && n.Attributes.TryGetValue("style", out var s) && s!.Contains("border:"))!;
         container.Attributes["style"].Should().Contain($"border: 1px solid {destructive}");
 
+        // Two spans now carry the error text — the VISIBLE caption and the entry's sr-only twin.
+        // The visible one is the one wearing the destructive color.
         var caption = Find(node, n =>
-            n.Tag == "span" && SpanText(n) == "Enter a valid email address.")!;
+            n.Tag == "span" && SpanText(n) == "Enter a valid email address."
+            && n.Attributes.GetValueOrDefault("class") != "eq-desc")!;
         caption.Attributes["style"].Should().Contain($"color: {destructive}");
+    }
+
+    [Fact]
+    public void TextInput_NamesItsInput_AndWiresTheErrorAsInvalidPlusDescription()
+    {
+        var node = Render(new TextInput("", label: "Email", error: "Enter a valid email address."));
+
+        var input = Find(node, n => n.Tag == "input")!;
+        input.Attributes["aria-label"].Should().Be("Email",
+            "the visible label is a sibling span the input cannot reference — the entry restates it");
+        input.Attributes["aria-invalid"].Should().Be("true");
+
+        var descriptionId = input.Attributes["aria-describedby"];
+        var description = Find(node, n =>
+            n.Tag == "span" && n.Attributes.GetValueOrDefault("id") == descriptionId)!;
+        description.Should().NotBeNull();
+        description.Attributes["class"].Should().Be("eq-desc");
+        description.Attributes["aria-live"].Should().Be("polite");
+        SpanText(description).Should().Be("Enter a valid email address.",
+            "what the screen reader hears is exactly what the sighted user reads");
+    }
+
+    [Fact]
+    public void TextInput_Helper_IsDescribed_WithoutClaimingInvalid()
+    {
+        var node = Render(new TextInput("", label: "Email", helper: "We never share it."));
+
+        var input = Find(node, n => n.Tag == "input")!;
+        input.Attributes.Should().ContainKey("aria-describedby");
+        input.Attributes.Should().NotContainKey("aria-invalid", "helper text is not an error");
     }
 
     [Fact]
@@ -147,5 +224,7 @@ public class TextInputRealizerTests
 
         var input = Find(withQuery, n => n.Tag == "input")!;
         input.Attributes["class"].Should().Be("eq-entry eq-type-bodym", "SearchField rides BodyM (15/400)");
+        input.Attributes["aria-label"].Should().Be("Search…",
+            "the pill has no visible label — the placeholder text is promoted to the real name");
     }
 }

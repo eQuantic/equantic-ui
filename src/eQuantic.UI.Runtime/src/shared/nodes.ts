@@ -498,6 +498,11 @@ export interface TextEntryNode extends VisualNodeValue {
   placeholder?: string | null;
   /** The accessible name (aria-label web / AX label native) — a placeholder is only a hint. */
   label?: string | null;
+  /** Helper/error caption text — associated (describedby) and announced (polite live region)
+   * through the entry's sr-only twin; the visible caption is a sibling the entry can't reference. */
+  description?: string | null;
+  /** The value fails validation — surfaced as aria-invalid, never worded into the name. */
+  invalid?: boolean;
   onSubmit?: (() => void) | null;
   onFocusChanged?: ((focused: boolean) => void) | null;
   disabled?: boolean;

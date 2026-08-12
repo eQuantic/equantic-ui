@@ -823,6 +823,10 @@ interface TextEntryConfig {
   placeholder?: string | null;
   /** The accessible name (aria-label) — the C# initializer `{ Label = … }` lands here. */
   label?: string | null;
+  /** The accessible description (helper/error caption) — `{ Description = … }` lands here. */
+  description?: string | null;
+  /** The value fails validation — `{ Invalid = … }` lands here. */
+  invalid?: boolean;
   onSubmit?: (() => void) | null;
   onFocusChanged?: ((focused: boolean) => void) | null;
   disabled?: boolean;
@@ -842,6 +846,10 @@ export class TextEntry extends VisualNode {
   placeholder: string | null = null;
   /** The accessible name (aria-label web / AX label native) — a placeholder is only a hint. */
   label: string | null = null;
+  /** The accessible description (helper/error caption) — associated and announced on web. */
+  description: string | null = null;
+  /** The value fails validation — surfaced as aria-invalid, never worded into the name. */
+  invalid = false;
   onSubmit: (() => void) | null = null;
   onFocusChanged: ((focused: boolean) => void) | null = null;
   disabled = false;

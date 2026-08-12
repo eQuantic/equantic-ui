@@ -78,8 +78,9 @@ public class S8ShortcutRealizerTests
     [Fact]
     public void Autofocus_MarksTheEntry()
     {
+        // The entry lowers inside the stable .eq-field shell — the attribute rides the input.
         var element = Lower(new TextEntry("") { Autofocus = true, Placeholder = "Search…" });
-        element.Attributes.Should().ContainKey("autofocus");
+        element.Children[0].Attributes.Should().ContainKey("autofocus");
     }
 
     [Fact]

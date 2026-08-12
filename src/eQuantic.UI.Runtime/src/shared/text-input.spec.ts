@@ -6,7 +6,8 @@
  * through onChanged. Cross-pins the C# TextInputRealizerTests byte-for-byte on the primitive.
  */
 
-import { effectiveStyle } from './style-atomizer';
+import type { HtmlNode } from '../core/types';
+import { effectiveStyle, hashDeclaration } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import { SharedStatefulComponent } from '../core/component';
 import { photonTheme } from './design-system.generated';
@@ -29,30 +30,67 @@ const lower = (node: unknown) =>
     componentContext: { theme: photonTheme, typeScale: 1 },
   });
 
+/** The entry now lowers inside the stable .eq-field shell \u2014 input first, sr-only twin second. */
+const entryParts = (host: HtmlNode) => ({
+  input: host.children[0]!,
+  description: host.children[1]!,
+});
+
 describe('text entry primitive (C# cross-pin)', () => {
   it('the accessible name is the Label, never the placeholder', () => {
     const entry = new TextEntry('', null, { label: 'Recipient', placeholder: 'name@host' });
-    const node = lower(entry) as { attributes: Record<string, string> };
-    expect(node.attributes['aria-label']).toBe('Recipient');
+    const { input } = entryParts(lower(entry) as HtmlNode);
+    expect(input.attributes['aria-label']).toBe('Recipient');
 
     const hintOnly = new TextEntry('', null, { placeholder: 'Search' });
-    const bare = lower(hintOnly) as { attributes: Record<string, string> };
+    const { input: bare } = entryParts(lower(hintOnly) as HtmlNode);
     expect(bare.attributes['aria-label']).toBeUndefined();
     expect(bare.attributes['placeholder']).toBe('Search');
   });
 
-  it('lowers to the real chrome-less input', () => {
+  it('lowers to the real chrome-less input inside the stable field shell', () => {
     const node = lower(new TextEntry('ana@equantic', null, { placeholder: 'you@company.com' }));
 
-    expect(node.tag).toBe('input');
-    expect(node.attributes['class']).toMatch(/^eq-entry eq-type-bodyl(?: |$)/);
-    expect(node.attributes['type']).toBe('text');
-    expect(node.attributes['value']).toBe('ana@equantic');
-    expect(node.attributes['placeholder']).toBe('you@company.com');
-    expect(effectiveStyle(node)).toBe(
+    expect(node.tag).toBe('div');
+    expect(node.attributes['class']).toMatch(/^eq-field(?: |$)/);
+    expect(node.children).toHaveLength(2);
+
+    const { input, description } = entryParts(node as HtmlNode);
+    expect(input.tag).toBe('input');
+    expect(input.attributes['class']).toMatch(/^eq-entry eq-type-bodyl(?: |$)/);
+    expect(input.attributes['type']).toBe('text');
+    expect(input.attributes['value']).toBe('ana@equantic');
+    expect(input.attributes['placeholder']).toBe('you@company.com');
+    expect(effectiveStyle(input)).toBe(
       `background: none; border: none; color: ${tokenValue(photonTheme.textPrimary)}; ` +
         `font-family: inherit; padding: 0; width: 100%`,
     );
+
+    // The twin is present (and empty) even without a description, so a later error swap
+    // changes attributes instead of replacing the <input> and dropping focus.
+    expect(description.tag).toBe('span');
+    expect(description.attributes['class']).toMatch(/^eq-desc(?: |$)/);
+    expect(description.attributes['aria-live']).toBe('polite');
+    expect(description.attributes['id']).toBeUndefined();
+    expect(input.attributes['aria-describedby']).toBeUndefined();
+  });
+
+  it('a description is associated by hashed id and announces politely (C# twin byte-for-byte)', () => {
+    const node = lower(new TextEntry('', null, { description: 'We never share it.' }));
+    const { input, description } = entryParts(node as HtmlNode);
+
+    const id = `eq-desc-${hashDeclaration('We never share it.')}`;
+    expect(description.attributes['id']).toBe(id);
+    expect(input.attributes['aria-describedby']).toBe(id);
+    expect(description.children[0]?.textContent).toBe('We never share it.');
+    expect(input.attributes['aria-invalid']).toBeUndefined();
+  });
+
+  it('invalid is a state, never worded into the name', () => {
+    const node = lower(new TextEntry('nope', null, { label: 'Email', invalid: true }));
+    const { input } = entryParts(node as HtmlNode);
+    expect(input.attributes['aria-invalid']).toBe('true');
+    expect(input.attributes['aria-label']).toBe('Email');
   });
 
   it('several lines lower to a textarea carrying the value as content', () => {
@@ -63,18 +101,23 @@ describe('text entry primitive (C# cross-pin)', () => {
       }),
     );
 
-    expect(node.tag).toBe('textarea');
-    expect(node.attributes['rows']).toBe('5');
-    expect(node.attributes['value']).toBeUndefined();
-    expect(node.children[0]?.textContent).toBe('Tell us about the project');
-    expect(effectiveStyle(node)).toContain('resize: vertical');
+    const { input: textarea } = entryParts(node as HtmlNode);
+    expect(textarea.tag).toBe('textarea');
+    expect(textarea.attributes['rows']).toBe('5');
+    expect(textarea.attributes['value']).toBeUndefined();
+    expect(textarea.children[0]?.textContent).toBe('Tell us about the project');
+    expect(effectiveStyle(textarea)).toContain('resize: vertical');
   });
 
   it('obscure maps to type=password; disabled drops the handlers', () => {
-    const password = lower(new TextEntry('secret', null, { obscure: true }));
+    const { input: password } = entryParts(
+      lower(new TextEntry('secret', null, { obscure: true })) as HtmlNode,
+    );
     expect(password.attributes['type']).toBe('password');
 
-    const disabled = lower(new TextEntry('x', () => {}, { disabled: true }));
+    const { input: disabled } = entryParts(
+      lower(new TextEntry('x', () => {}, { disabled: true })) as HtmlNode,
+    );
     expect(disabled.attributes['disabled']).toBe('');
     expect(Object.keys(disabled.events)).toHaveLength(0);
   });
@@ -179,6 +222,10 @@ describe('SearchField end to end (transpiled component)', () => {
     new SearchHost().mount(container);
 
     expect(container.textContent).toContain('q:rio|s:0');
+    expect(container.querySelector('input')!.getAttribute('aria-label')).toBe(
+      'Search…',
+      // The pill has no visible label — the placeholder text is promoted to the real name.
+    );
     const clear = container.querySelector('button')!;
     expect(clear.getAttribute('aria-label')).toBe('clear search');
 
