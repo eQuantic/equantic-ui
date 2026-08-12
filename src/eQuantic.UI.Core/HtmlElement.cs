@@ -264,7 +264,10 @@ public abstract class HtmlElement : IComponent
     public Action<KeyboardEventArgs>? OnKeyUp { get; set; }
 
     /// <summary>
-    /// Submit event handler
+    /// Submit event handler. Setting it takes OWNERSHIP of submission: the runtime calls
+    /// <c>preventDefault()</c> before invoking, so the browser's own navigate-away submission
+    /// never runs — this handler validates and calls a server action instead (the declarative
+    /// contract). A form that wants native submission simply sets no handler.
     /// </summary>
     public Action? OnSubmit { get; set; }
 

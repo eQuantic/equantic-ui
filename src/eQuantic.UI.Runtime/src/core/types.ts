@@ -178,8 +178,10 @@ export abstract class Component implements IComponent {
     // Dynamic discovery of events (all props starting with 'on')
     for (const prop of Object.keys(this)) {
       if (prop.startsWith('on') && prop.length > 2) {
-        // e.g. onClick -> click, onMouseEnter -> mouseenter
-        const eventName = prop.substring(2).toLowerCase();
+        // e.g. onClick -> click, onMouseEnter -> mouseenter — with the DOM's own spelling where
+        // lowercasing alone is wrong (C# twin: HtmlElement.EventNameMap).
+        const lowered = prop.substring(2).toLowerCase();
+        const eventName = EVENT_NAME_EXCEPTIONS[lowered] ?? lowered;
 
         const handler = (this as any)[prop];
         if (handler && typeof handler === 'function') {
@@ -208,6 +210,13 @@ export abstract class Component implements IComponent {
 }
 
 type Action<T = void> = (args: T) => void;
+
+/** Where the DOM's event name is not the property name lowercased: the one divergence in the C#
+ * `HtmlElement.EventNameMap` is double-click, which the DOM spells `dblclick` — a listener
+ * registered as "doubleclick" attaches fine and fires never. */
+const EVENT_NAME_EXCEPTIONS: Record<string, string> = {
+  doubleclick: 'dblclick',
+};
 
 export abstract class HtmlElement extends Component {
   protected get htmlNode() {

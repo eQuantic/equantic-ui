@@ -290,3 +290,61 @@ describe('Reconciler hydration', () => {
     expect(clicks).toBe(1);
   });
 });
+
+describe('Reconciler event contracts', () => {
+  it('a submit handler owns submission: default prevented, handler invoked with no args', () => {
+    // OnSubmit is C#'s hand on the form (validate, call a server action) — the browser's own
+    // navigate-away submission never runs. A form wanting native submission has no handler.
+    const reconciler = new Reconciler();
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+
+    let submits = 0;
+    const form: HtmlNode = {
+      tag: 'form',
+      attributes: {},
+      events: {
+        submit: (() => {
+          submits++;
+        }) as unknown as import('../core/types').EventHandler,
+      },
+      children: [],
+    };
+    reconciler.reconcile(parent, null, form);
+
+    const event = new Event('submit', { bubbles: true, cancelable: true });
+    (parent.querySelector('form') as HTMLFormElement).dispatchEvent(event);
+
+    expect(submits).toBe(1);
+    expect(event.defaultPrevented).toBe(true);
+
+    parent.remove();
+  });
+
+  it('a click handler keeps the browser defaults (a checkbox still toggles)', () => {
+    const reconciler = new Reconciler();
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+
+    let clicks = 0;
+    const box: HtmlNode = {
+      tag: 'input',
+      attributes: { type: 'checkbox' },
+      events: {
+        click: (() => {
+          clicks++;
+        }) as unknown as import('../core/types').EventHandler,
+      },
+      children: [],
+    };
+    reconciler.reconcile(parent, null, box);
+
+    const input = parent.querySelector('input') as HTMLInputElement;
+    input.click();
+
+    expect(clicks).toBe(1);
+    expect(input.checked).toBe(true, );
+
+    parent.remove();
+  });
+});

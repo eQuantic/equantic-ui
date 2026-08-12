@@ -18,6 +18,14 @@ describe('Component.buildEvents', () => {
     expect(p.events()).toEqual({ click: fn });
   });
 
+  it('spells double-click the way the DOM does (onDoubleClick -> dblclick)', () => {
+    // Lowercasing alone yields "doubleclick" — a listener that attaches fine and fires never.
+    // The C# side maps OnDoubleClick -> "dblclick" (HtmlElement.EventNameMap); the mirror must too.
+    const fn = () => {};
+    const p = new Probe({ onDoubleClick: fn, onMouseEnter: fn });
+    expect(p.events()).toEqual({ dblclick: fn, mouseenter: fn });
+  });
+
   it('merges forwarded customEvents (composite components forward to a child element)', () => {
     const handler = () => {};
     // Mirrors Button -> Box: the resolved handler set is forwarded via customEvents (already keyed

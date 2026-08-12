@@ -403,19 +403,18 @@ export class Reconciler {
         return;
       }
 
-      // 2. Void Events (Click, Submit) - typically often defined as Action() not Action(e)
-      // We assume if it's a void C# action, we don't pass arguments,
-      // but TypeScript handler might be (e) => ... or () => ...
-      // For safety, generic handlers pass the event.
-      // Specific simplified handlers (like typical button clicks) might just be invoked.
-      if (eventName === 'click' || eventName === 'submit') {
-        // Try to detect if handler expects args? Hard in JS.
-        // Pass event if it's a standard handler, but C# generation usually expects no args for simple Actions.
-        // However, our unified type EventHandler might be Function.
-        // Let's pass 'e' for general correctness, C# wrappers/bridging usually ignore extra args if not mapped.
-        // BUT existing logic used: (handler as () => void)();
-        // Let's keep that pattern for click for now to avoid breaking existing void callbacks.
-        (handler as any)();
+      // 2. Void events — C# declares OnClick/OnSubmit as Action, so no argument crosses. Click
+      // keeps the browser's defaults (a label click must still toggle its checkbox); submit does
+      // NOT: OnSubmit is C#'s hand on the form (validate, call a server action), so the browser's
+      // own navigate-away submission never runs — the declarative-framework norm. A form that
+      // wants native submission simply has no OnSubmit.
+      if (eventName === 'click') {
+        (handler as () => void)();
+        return;
+      }
+      if (eventName === 'submit') {
+        e.preventDefault();
+        (handler as () => void)();
         return;
       }
 
