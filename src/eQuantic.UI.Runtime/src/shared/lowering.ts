@@ -1836,8 +1836,15 @@ function lowerPressable(
   }
   if (pressable.label) node.attributes['aria-label'] = pressable.label;
   // Selection stated, not merely painted — a fill colour says nothing to a screen reader.
-  if (pressable.selected !== undefined && pressable.selected !== null)
+  if (pressable.role === 'radio') {
+    // One choice of an exclusive set: the wrapping Adjustable is the one Tab stop, so the item
+    // leaves the tab order (roving) and states its selection as checked-ness, not pressed-ness.
+    node.attributes['role'] = 'radio';
+    node.attributes['aria-checked'] = pressable.selected === true ? 'true' : 'false';
+    node.attributes['tabindex'] = '-1';
+  } else if (pressable.selected !== undefined && pressable.selected !== null) {
     node.attributes['aria-pressed'] = pressable.selected ? 'true' : 'false';
+  }
   if (disabled && !wrapping) node.attributes['disabled'] = '';
   if (disabled && wrapping) node.attributes['aria-disabled'] = 'true';
   if (!disabled && pressable.onPressed) node.events['click'] = pressable.onPressed as EventHandler;
@@ -2036,14 +2043,21 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
     width: fill.width ? '100%' : undefined,
     height: fill.height ? '100%' : undefined,
   });
-  host.attributes['role'] = node.role ?? 'slider';
+  const role = node.role ?? 'slider';
+  host.attributes['role'] = role;
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
   if (node.onAdjust) {
     const adjust = node.onAdjust;
+    // A slider's vertical axis is VALUE (up increases); a radiogroup's or tablist's is READING
+    // ORDER (down is next) — WAI-ARIA's own split, one mapping per role family.
+    const downIsNext = role !== 'slider';
     host.events['keydown'] = ((event: KeyboardEvent) => {
-      const direction = event.key === 'ArrowRight' || event.key === 'ArrowUp' ? 1
-        : event.key === 'ArrowLeft' || event.key === 'ArrowDown' ? -1 : 0;
+      const direction = event.key === 'ArrowRight' ? 1
+        : event.key === 'ArrowLeft' ? -1
+        : event.key === 'ArrowUp' ? (downIsNext ? -1 : 1)
+        : event.key === 'ArrowDown' ? (downIsNext ? 1 : -1)
+        : 0;
       if (direction === 0) return;
       event.preventDefault();   // an arrow that also scrolls the page is two answers to one key
       adjust(direction);

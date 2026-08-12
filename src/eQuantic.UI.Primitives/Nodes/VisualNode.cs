@@ -989,11 +989,33 @@ public sealed class Pressable : VisualNode
     /// <summary>
     /// SELECTION state for a button that toggles or picks one of a set — a segmented control's
     /// segment, a filter chip, a page dot. Selection that lives only in a fill colour is invisible
-    /// to assistive tech, so this states it: web lowers to <c>aria-pressed</c>, native reports it as
-    /// the node's selected state. <c>null</c> = the button does not carry selection at all, which is
-    /// NOT the same as <c>false</c> ("selectable, currently not selected").
+    /// to assistive tech, so this states it: web lowers to <c>aria-pressed</c> (or
+    /// <c>aria-checked</c> when <see cref="Role"/> says Radio), native reports it as the node's
+    /// selected state. <c>null</c> = the button does not carry selection at all, which is NOT the
+    /// same as <c>false</c> ("selectable, currently not selected").
     /// </summary>
     public bool? Selected { get; init; }
+
+    /// <summary>
+    /// What this pressable IS when it stands inside a composite control. <see cref="PressableRole.Radio"/>
+    /// is one choice of an exclusive set (a RadioGroup row, a SegmentedControl segment): the web
+    /// lowers it as a radio — <c>role="radio"</c>, <see cref="Selected"/> as <c>aria-checked</c> —
+    /// and takes it OUT of the tab order, because the composite's <see cref="Adjustable"/> wrapper
+    /// is the one Tab stop and the arrows do the walking. Still pressable by pointer. Native fence:
+    /// the semantics tree carries no checked bit yet; the role joins its expansion.
+    /// </summary>
+    public PressableRole Role { get; init; }
+}
+
+/// <summary>The composite-item roles a <see cref="Pressable"/> can take. Grows alongside the
+/// composites that need it (tabs join with the Tabs semantics work), never speculatively.</summary>
+public enum PressableRole : byte
+{
+    /// <summary>A standalone button — today's default everywhere.</summary>
+    Button = 0,
+
+    /// <summary>One choice of an exclusive set, inside an <see cref="AdjustableRole.Radiogroup"/>.</summary>
+    Radio = 1,
 }
 
 /// <summary>One inline run of a rich <see cref="Text"/> (see <see cref="Text.Spans"/>): its own

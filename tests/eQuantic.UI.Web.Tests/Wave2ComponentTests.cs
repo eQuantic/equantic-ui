@@ -60,9 +60,17 @@ public class Wave2ComponentTests
     [Fact]
     public void RadioGroup_SelectedRingAndDot()
     {
+        // The group now wraps in an Adjustable (role=radiogroup, ONE Tab stop) — the selected
+        // row is the radio stating aria-checked=true, wherever the wrapper puts it.
         var node = Render(new RadioGroup(["Weekly", "Monthly"], selected: 1, _ => { }));
-        var selectedRow = node.Children[1].Children[0];
-        var circle = selectedRow.Children[0];
+        HtmlNode? selectedRadio = null;
+        void Find(HtmlNode n)
+        {
+            if (n.Attributes.GetValueOrDefault("aria-checked") == "true") selectedRadio = n;
+            foreach (var child in n.Children) Find(child);
+        }
+        Find(node);
+        var circle = selectedRadio!.Children[0].Children[0];
         circle.Attributes["style"].Should().Contain($"border: 2px solid {TokenCss.Value(Theme.Colors(Variant.Primary).Base)}");
         circle.Children[0].Children[0].Attributes["style"].Should().Contain("width: 10px");
     }

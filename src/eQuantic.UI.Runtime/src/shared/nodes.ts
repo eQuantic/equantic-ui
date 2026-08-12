@@ -401,6 +401,9 @@ export interface PressableNode extends VisualNodeValue {
   pressedBackground?: ColorTokenValue | null;
   /** Selection for a toggling/picking button — lowers to aria-pressed. null = not selectable. */
   selected?: boolean | null;
+  /** Composite-item role ('button' | 'radio'): radio lowers as role="radio" + aria-checked and
+   * leaves the tab order — the wrapping Adjustable is the one stop, arrows do the walking. */
+  role?: string;
 }
 
 export interface FlexibleNode extends VisualNodeValue {

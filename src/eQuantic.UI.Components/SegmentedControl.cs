@@ -84,6 +84,7 @@ public sealed class SegmentedControl : StatelessComponent
             {
                 Disabled = Disabled,
                 Label = Segments[index],
+                Role = PressableRole.Radio,
                 Selected = selected,
             };
 

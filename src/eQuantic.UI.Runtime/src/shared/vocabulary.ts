@@ -615,6 +615,8 @@ interface PressableConfig {
   pressedBackground?: ColorTokenValue | null;
   /** Selection for a toggling/picking button — lowers to aria-pressed. */
   selected?: boolean | null;
+  /** Composite-item role — the C# initializer `{ Role = PressableRole.Radio }` lands here. */
+  role?: string;
 }
 
 export class Pressable extends VisualNode {
@@ -625,6 +627,7 @@ export class Pressable extends VisualNode {
   label: string | null = null;
   pressedBackground: ColorTokenValue | null = null;
   selected: boolean | null = null;
+  role = 'button';
 
   constructor(child: VisualChild, onPressed: (() => void) | null = null, config?: PressableConfig) {
     super();

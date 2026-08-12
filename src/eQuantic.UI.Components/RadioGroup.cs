@@ -6,7 +6,11 @@ namespace eQuantic.UI.Components;
 /// The design system's RadioGroup (spec B13), CONTROLLED: a group always has exactly one value —
 /// selection moves, never clears. Radio = 22dp circle: 2dp BorderStrong; selected = 2dp Primary
 /// ring + 10dp Primary dot (two rrect draws). Each row is a full-width target, min 44 tall,
-/// gap 12. v1 fence: the dot scale motion joins the animation system.
+/// gap 12. ONE Tab stop for the whole group — the <see cref="Adjustable"/> wrapper — and the
+/// arrows walk the choice with wrap-around, exactly the native <c>&lt;input type=radio&gt;</c>
+/// contract; each row is a <c>role="radio"</c> with its checked-ness stated, out of the tab
+/// order, still pressable by pointer. v1 fences: the dot scale motion joins the animation
+/// system; <c>aria-activedescendant</c> joins the shared id machinery.
 /// </summary>
 public sealed class RadioGroup : StatelessComponent
 {
@@ -33,10 +37,7 @@ public sealed class RadioGroup : StatelessComponent
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
 
-        var column = new Column(gap: Space.S1) { Width = SizeValue.Fill };
-        if (Label is { } groupLabel)
-            column.Add(new Text(groupLabel, TypeRole.Caption, theme.TextMuted, maxLines: 1));
-
+        var options = new Column(gap: Space.S1) { Width = SizeValue.Fill };
         for (var i = 0; i < Options.Count; i++)
         {
             var isSelected = i == Selected;
@@ -66,13 +67,37 @@ public sealed class RadioGroup : StatelessComponent
             row.Add(new Text(Options[i], TypeRole.BodyM,
                 Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 1));
 
-            column.Add(new Pressable(row, Disabled || OnChanged is null ? null : () => OnChanged(index))
+            // The selected row presses to nothing, exactly as a native radio does — and each row
+            // states what it is: a radio, checked or not, outside the tab order (the group is
+            // the Tab stop).
+            options.Add(new Pressable(row,
+                Disabled || OnChanged is null || isSelected ? null : () => OnChanged(index))
             {
                 Disabled = Disabled,
                 Label = Options[i],
+                Role = PressableRole.Radio,
+                Selected = isSelected,
             });
         }
 
+        // The group is ONE Tab stop and the arrows move the choice, wrapping at the ends — the
+        // native radio group contract, and the same mechanism the SegmentedControl rides.
+        VisualNode group = options;
+        if (!Disabled && OnChanged is not null && Options.Count > 0)
+        {
+            var count = Options.Count;
+            group = new Adjustable(options,
+                direction => OnChanged((Selected + direction + count) % count))
+            {
+                Role = AdjustableRole.Radiogroup,
+                Label = Label,
+            };
+        }
+
+        var column = new Column(gap: Space.S1) { Width = SizeValue.Fill };
+        if (Label is { } groupLabel)
+            column.Add(new Text(groupLabel, TypeRole.Caption, theme.TextMuted, maxLines: 1));
+        column.Add(group);
         return column;
     }
 }

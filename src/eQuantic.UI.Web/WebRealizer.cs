@@ -806,7 +806,7 @@ public static class WebRealizer
                 ["tabindex"] = "0",
             },
         };
-        if (adjustable.Label.Length > 0) element.RawAttributes["aria-label"] = adjustable.Label;
+        if (adjustable.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
         if (LowerNode(adjustable.Child, context, null) is { } child) element.Children.Add(child);
         return element;
     }
@@ -1484,6 +1484,17 @@ public static class WebRealizer
             element.Role = "button";
             if (pressable.Disabled) element.AriaDisabled = true;
             else element.TabIndex = 0;
+        }
+
+        // One choice of an exclusive set (role: radio): the wrapping Adjustable is the one Tab
+        // stop, so the item leaves the tab order (roving) and states its selection as
+        // checked-ness, not pressed-ness. TS twin emits the same three attributes.
+        if (pressable.Role == PressableRole.Radio)
+        {
+            element.Role = "radio";
+            element.AriaChecked = pressable.Selected == true ? "true" : "false";
+            element.AriaPressed = null;
+            element.TabIndex = -1;
         }
 
         if (child is not null) element.Children.Add(child);
