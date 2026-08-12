@@ -150,7 +150,18 @@ public sealed class PaymentsPage : StatefulComponent
 
     private VisualNode Kpis(IAppTheme theme)
     {
-        var grid = new Grid(GridTrack.Repeat(4, GridTrack.Flex()), gap: Space.S3)
+        // Four across only when the window can afford it — 2×2 otherwise. Each branch builds its
+        // own cards: an AdaptiveNode mounts one branch per width, and a shared node instance in
+        // two branches would be one child with two parents.
+        return new AdaptiveNode(KpiGrid(theme, columns: 2), null, KpiGrid(theme, columns: 4))
+        {
+            ExpandedFrom = 1024,
+        };
+    }
+
+    private VisualNode KpiGrid(IAppTheme theme, int columns)
+    {
+        var grid = new Grid(GridTrack.Repeat(columns, GridTrack.Flex()), gap: Space.S3)
         {
             Width = SizeValue.Fill,
         };
@@ -204,13 +215,19 @@ public sealed class PaymentsPage : StatefulComponent
 
     private VisualNode ChartAndActivity(IAppTheme theme)
     {
+        // Side by side needs real width; below the threshold the two cards stack.
+        var stacked = new Column(gap: Space.S3) { Width = SizeValue.Fill };
+        stacked.Add(Chart(theme));
+        stacked.Add(Activity(theme));
+
         var grid = new Grid([GridTrack.Flex(1.55f), GridTrack.Flex()], gap: Space.S3)
         {
             Width = SizeValue.Fill,
         };
         grid.Add(Chart(theme));
         grid.Add(Activity(theme));
-        return grid;
+
+        return new AdaptiveNode(stacked, null, grid) { ExpandedFrom = 1024 };
     }
 
     /// <summary>

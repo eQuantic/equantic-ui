@@ -134,7 +134,15 @@ public static class ConsoleShell
     /// </summary>
     private static VisualNode SearchAffordance(IAppTheme theme, Action onOpen)
     {
-        var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        // Fill the box's content height so Cross=Center truly centers within the 32dp frame —
+        // a hugging row sits at the TOP of a fixed-height Box on both targets (the same contract
+        // SearchField and SegmentedControl state in the library).
+        var row = new Row(gap: Space.S2)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Cross = CrossAlign.Center,
+        };
         row.Add(new Icon(Icons.Search, IconSize.Sm, theme.TextMuted));
         row.Add(new Flexible(new Text("Search", TypeRole.Caption, theme.TextMuted, maxLines: 1), 1));
         row.Add(new Text("⌘K", TypeRole.Caption, theme.TextMuted, maxLines: 1) { Mono = true });
