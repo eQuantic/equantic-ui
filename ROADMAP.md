@@ -210,7 +210,9 @@ applied before hydration so SSR identity holds). Native needs no bridge at all �
 same C# with satellite assemblies, which is the write-once payoff.
 
 Full design (decisions, workstreams, milestones, fences — including the honest hard parts: the
-culture-aware FORMATTING subset and 3+ form plurals) in `docs/I18N-PLAN.md`.
+culture-aware FORMATTING subset and 3+ form plurals) in `docs/I18N-PLAN.md`. 2026-08-12: the plan
+now also covers the SDK's OWN component strings (D14/W8 — a11y announcements were hardcoded
+English), the `CurrentCulture`/`CurrentUICulture` pair, and `<html lang>` from the request culture.
 
 ## Definition of "production-ready" (per pillar)
 - **0 JS**: any unsupported C# fails the build with a clear message; conformance suite green; C#

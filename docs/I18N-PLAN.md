@@ -166,11 +166,33 @@ translation changes as data, not code.
   identically in .NET and in JS.
 
 - **D13 — The client has ONE current-culture atom, and it is runtime state, not a parameter.**
-  `$eq.str`, `$eq.format` and every D7 formatter resolve against `$eq.culture` — set by boot from
-  `__EQ_CULTURE__.name` before hydration, swapped by `setCulture`. It is the client mirror of
-  `CultureInfo.CurrentUICulture`: `DateTime.Now.ToString("d")` with no explicit culture formats
-  against it, exactly as the same C# line does on the server. Naming this atom prevents the drift
-  where each formatter grows its own culture plumbing.
+  The atom is a PAIR, because .NET's is: `CurrentUICulture` picks RESOURCES and `CurrentCulture`
+  picks FORMATS, and an app can legitimately run pt-BR strings over en-US number formats (or the
+  reverse) — collapsing them into one value would be a quiet departure from the exact experience
+  this track exists to reproduce. `$eq.culture = { ui, format }` — set by boot from
+  `__EQ_CULTURE__` (which carries both names; they default equal) before hydration, swapped by
+  `setCulture`. `$eq.str` resolves against `ui`; `$eq.format` and every D7 formatter resolve
+  against `format` — `DateTime.Now.ToString("d")` with no explicit culture formats against
+  `CurrentCulture`, exactly as the same C# line does on the server. Naming this atom prevents the
+  drift where each formatter grows its own culture plumbing — a drift that has ALREADY happened
+  once: `runtime/src/utils/format.ts` calls `toLocaleString(undefined, …)`, which silently formats
+  in the BROWSER's locale instead of the request's culture. W5 sweeps it onto the atom.
+
+- **D14 — The SDK's own strings are localized by the SDK, through the same pipeline.** The
+  components carry built-in UI strings of their own — accessibility announcements above all
+  (2026-08-12 audit: ~14 literals — Checkbox "Checked"/"Unchecked"/"Partly selected", Switch
+  "On"/"Off", SearchField "Search…"/"clear search", CodeEditor "Find"/"Previous match"/"Next
+  match", Banner/Drawer/Dialog/BottomSheet "Dismiss" in two casings, Chip "Remove", Spreadsheet
+  "Spreadsheet"). A 100% Portuguese app announcing "Checked" to VoiceOver fails the founding
+  promise the same way a JS catalog would. The rule, mirrored from WinForms/WPF (which localize
+  their own chrome and never ask the app to): **a component never hardcodes a UI string** — it
+  reads `SdkStrings` (the SDK's own resx-backed accessor in `eQuantic.UI.Components`), which rides
+  D2's rewrite on web exactly like an app resource class (it IS one — same ResXFileCodeGenerator
+  shape, so W1's semantic detection needs nothing special) and plain satellite assemblies on
+  server/native (D10). The SDK's catalog keys join every culture catalog the app emits, always —
+  an app with zero resx of its own still gets localized checkbox announcements. Guarded the way
+  the factory surface is guarded: a conformance test walks the component sources and fails on a
+  string literal in a `Label`/`Placeholder` position, so the fourteen never grow back.
 
 ---
 
@@ -215,14 +237,27 @@ translation changes as data, not code.
 - **W3 — Runtime (TypeScript).** Catalog store, the `$eq.culture` atom (D13), `$eq.str`,
   `$eq.format` (D11), `setCulture`, re-render integration, missing-key policy (return the key,
   warn once — never throw, never blank the UI).
-- **W4 — Server.** `__EQ_CULTURE__` emission next to `__EQ_THEME__`, `RequestLocalizationMiddleware`
-  wiring in `AddUI` (ordered BEFORE the render path), SSR resolution under the request culture,
-  and the caching consequence: the shell is now per-culture — any SSR output caching must include
-  culture in its key.
+- **W4 — Server.** `__EQ_CULTURE__` emission next to `__EQ_THEME__` (both culture names, D13),
+  `RequestLocalizationMiddleware` wiring in `AddUI` (ordered BEFORE the render path), SSR
+  resolution under the request culture, the `<html lang>` attribute from the request's UI culture
+  (the 2026-08-12 a11y audit flagged its absence — screen readers pick pronunciation from it, so
+  it ships with the culture bridge, not as a separate nicety), and the caching consequence: the
+  shell is now per-culture — any SSR output caching must include culture in its key.
 - **W5 — Formatting subset.** The mapped set, `$eq.format` specifier behavior, the shared
-  cross-pin fixture, the EQ2100 diagnostic (alignment `{0,10}` is outside v1).
+  cross-pin fixture, the EQ2100 diagnostic (alignment `{0,10}` is outside v1). Includes the
+  D13 sweep: every existing formatter (`utils/format.ts` first) resolves against `$eq.culture`
+  — no `undefined` locale survives the workstream. Forward rule for components that RENDER
+  culture-shaped data (the C15 DatePicker when it lands, any calendar/number surface): they are
+  born reading `DateTimeFormatInfo`/`NumberFormatInfo` through this subset, never carrying month
+  names or separators of their own.
 - **W6 — Native verification.** Satellite assemblies under NativeAOT/trimming; a Photon sample
   rendering two cultures.
+- **W8 — The SDK's own strings (D14).** First the SEAM: extract the audited literals to
+  `SdkStrings` with the English values as neutral defaults (mechanical, shippable today — it is
+  the standing task chip). Then the resx behind it, the satellite assemblies, the always-included
+  catalog keys on web, translations for the launch set of cultures, and the no-literal conformance
+  guard. The seam lands before the mechanism so every other workstream can proceed against a
+  single choke point.
 - **W7 — Tests.** Conformance (the same key+culture resolves identically in .NET and in the JS
   runtime — the existing conformance harness extended to strings), the D12 flattening pin (a
   neutral-only key resolves identically in .NET and JS), an EQ2101 negative test (a mismatched
@@ -241,6 +276,8 @@ translation changes as data, not code.
   - Exit: `[ ]` the e2e identity test passes on a resx-backed page (including a `{0}` string).
 - **M1 — Two cultures + switching.** Request negotiation, `__EQ_CULTURE__`, `setCulture` re-render.
   - Exit: `[ ]` pt-BR SSR → switch to en → re-render, no reload, no hydration warning.
+  - Exit: `[ ]` a pt-BR page with ZERO app resx announces "Marcado" on a Checkbox (D14: the SDK's
+    own strings localize without the app authoring anything), and `<html lang="pt-BR">` is SSR'd.
 - **M2 — Formatting subset.** The D7 specifier set green in the conformance harness; EQ2100's
   accepted set widens from plain-positional to the full subset; EQ2101 fires on malformed or
   arity-mismatched culture templates.
@@ -262,7 +299,11 @@ translation changes as data, not code.
 - **Formatting outside the D7 subset is refused at build time, not approximated.** A wrong number
   format in a foreign currency is worse than a compile error.
 - **Plural languages with 3+ forms are unsupported in v1 and say so out loud** (D8).
-- **RTL is not in this track** (D9).
+- **RTL is not in this track** (D9) — and neither is SCRIPT COVERAGE: Photon's bundled face has no
+  CJK or Arabic glyphs, and per-script font fallback belongs to the native text stack, not here.
+  Both stated so "we did i18n" is never read as "we render Arabic". The vocabulary already speaks
+  Start/End rather than left/right, so when Track S does the RTL flip, this track's output needs
+  no rework.
 - **Translator workflow is `.resx`/XLIFF** — the framework will not grow a translation UI.
 - **Missing key never throws.** It renders the key and warns once: a missing translation must
   degrade to ugly, never to a blank page or a crashed render.
@@ -299,3 +340,18 @@ translation changes as data, not code.
   reload; M0 gains plain-positional composite format with EQ2100 active from day one. Fences
   gain: per-culture shell/caching, SEO-on-switch (v1), server-produced strings, and the
   resx-editor honesty note.
+- **2026-08-12 — Audit-driven review (Edgar restated the directive: every SDK component must be
+  multi-language ready, with the exact experience .NET itself offers).** The component/a11y audit
+  measured the plan against the shipped code and four gaps entered the design. D13 became the
+  culture PAIR — `CurrentUICulture` picks resources, `CurrentCulture` picks formats, and the old
+  single-atom text formatted against the wrong one; the audit also caught the drift it predicts
+  already live (`utils/format.ts` formats in the browser's locale via `toLocaleString(undefined)`
+  — swept by W5). NEW D14 + W8: the SDK's OWN strings — fourteen hardcoded English literals in
+  the components, accessibility announcements above all — get `SdkStrings` (seam first, resx
+  behind it, keys always in every culture catalog, no-literal conformance guard), because a
+  pt-BR app announcing "Checked" fails the founding promise the same way a JS catalog would.
+  W4 gains `<html lang>` from the request culture (flagged missing by the same audit). Fences
+  gain script-coverage honesty (no CJK/Arabic glyphs in the bundled face; per-script fallback is
+  the native text stack's, not this track's) and W5 gains the forward rule for culture-rendering
+  components (DatePicker is born from `DateTimeFormatInfo`). Still design-only; the W8 seam is
+  the one piece mechanical enough to land ahead of the track (standing task chip).
