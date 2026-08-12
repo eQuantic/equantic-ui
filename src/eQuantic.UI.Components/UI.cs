@@ -293,6 +293,10 @@ public static class UI
         DividerAxis axis = DividerAxis.Horizontal) =>
         new Divider(inset, axis);
 
+    /// <summary>A markdown document, rendered as the design system — themed by the app's own
+    /// <c>IAppTheme</c> like every other component on the page.</summary>
+    public static Markdown Markdown(string source) => new Markdown(source);
+
     /// <summary>Icon-only button; the label is what assistive tech announces.</summary>
     public static IconButton IconButton(Icons glyph, string label,
         IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
