@@ -19,7 +19,12 @@ public sealed record ShellActions(
     Action<int> OnHelp,
     string Query,
     bool Sandbox,
-    Action OnToggleSandbox);
+    Action OnToggleSandbox,
+    // Compact-only: the frame draws a menu trigger and a Drawer, but the PAGE owns whether the
+    // drawer is up — the same controlled contract Drawer itself states. Defaulted so a screen
+    // that never renders compact pays nothing.
+    bool NavOpen = false,
+    Action? OnToggleNav = null);
 
 /// <summary>
 /// The console's persistent frame: a sidebar of destinations on the left, a toolbar across the top,
@@ -49,9 +54,29 @@ public static class ConsoleShell
         new(Icons.Plus, "Declarative", "/declarative"),
     ];
 
-    /// <summary>Wraps a page in the frame. <paramref name="activeHref"/> lights one destination.</summary>
+    /// <summary>
+    /// Wraps a page in the frame. <paramref name="activeHref"/> lights one destination.
+    /// The frame is ADAPTIVE (one AdaptiveNode, two compositions): below the expanded width class
+    /// the 224dp sidebar and the wide toolbar would eat a phone whole, so the compact anatomy is a
+    /// slim bar — menu trigger, breadcrumb, search and the primary action as icons — with the SAME
+    /// sidebar riding a Drawer the page opens. Each branch builds its own nodes: a branch is a
+    /// mount, and a shared instance across branches is the bug AdaptiveNode's contract names.
+    /// </summary>
     public static VisualNode Wrap(IAppTheme theme, string activeHref, IReadOnlyList<Crumb> crumbs,
         VisualNode page, ShellActions actions)
+    {
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Background = theme.Background,
+        }, new AdaptiveNode(
+            CompactFrame(theme, activeHref, crumbs, page, actions),
+            expanded: ExpandedFrame(theme, activeHref, crumbs, page, actions)));
+    }
+
+    private static VisualNode ExpandedFrame(IAppTheme theme, string activeHref,
+        IReadOnlyList<Crumb> crumbs, VisualNode page, ShellActions actions)
     {
         var body = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         body.Add(Toolbar(theme, crumbs, actions));
@@ -69,18 +94,68 @@ public static class ConsoleShell
         };
         frame.Add(Sidebar(theme, activeHref, actions));
         frame.Add(new Flexible(body, 1));
+        return frame;
+    }
+
+    private static VisualNode CompactFrame(IAppTheme theme, string activeHref,
+        IReadOnlyList<Crumb> crumbs, VisualNode page, ShellActions actions)
+    {
+        var body = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        body.Add(CompactBar(theme, crumbs, actions));
+        body.Add(new Flexible(new ScrollView(new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Padding = EdgeInsets.All(Space.S3),
+        }, page)), 1));
+
+        // The drawer is declarative like every layer: built open, removed closed. Same content
+        // the persistent sidebar shows — one nav, two homes.
+        var drawer = new Drawer(SidebarContent(theme, activeHref, actions),
+            actions.NavOpen, actions.OnToggleNav)
+        { Width = 264 };
+
+        var frame = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        frame.Add(body);
+        frame.Add(drawer);
+        return frame;
+    }
+
+    /// <summary>The compact toolbar: everything the wide one says, at icon width — search goes
+    /// through the palette (the fastest way in IS the advertised one), and the primary action
+    /// keeps its place as a filled icon.</summary>
+    private static VisualNode CompactBar(IAppTheme theme, IReadOnlyList<Crumb> crumbs,
+        ShellActions actions)
+    {
+        var row = new Row(gap: Space.S2)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Cross = CrossAlign.Center,
+        };
+        row.Add(new IconButton(Icons.Menu, "Navigation", IconButtonKind.Standard, SizeVariant.Small)
+        { OnPressed = actions.OnToggleNav });
+        row.Add(new Flexible(new Breadcrumb(crumbs), 1));
+        row.Add(new IconButton(Icons.Search, "Search payments", IconButtonKind.Standard, SizeVariant.Small)
+        { OnPressed = actions.OnOpenPalette });
+        row.Add(new IconButton(Icons.Plus, "New payment", IconButtonKind.Filled, SizeVariant.Small)
+        { OnPressed = actions.OnNewPayment });
 
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Height = SizeValue.Fill,
-            Background = theme.Background,
-        }, frame);
+            Height = ToolbarHeight,
+            Padding = EdgeInsets.Symmetric(Space.S3, 0),
+            Background = theme.Surface,
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+        }, row);
     }
 
     // ---- Sidebar ---------------------------------------------------------------------------
 
-    private static VisualNode Sidebar(IAppTheme theme, string activeHref, ShellActions actions)
+    /// <summary>The nav itself, homeless: the persistent rail boxes it, the compact Drawer hosts
+    /// it bare — ONE list of destinations, wherever it lives.</summary>
+    private static VisualNode SidebarContent(IAppTheme theme, string activeHref, ShellActions actions)
     {
         var column = new Column(gap: Space.S2) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         column.Add(Brand(theme));
@@ -93,7 +168,11 @@ public static class ConsoleShell
         column.Add(SandboxCard(theme, actions.Sandbox, actions.OnToggleSandbox));
         column.Add(new Divider());
         column.Add(Account(theme, actions.OnAccountMenu));
+        return column;
+    }
 
+    private static VisualNode Sidebar(IAppTheme theme, string activeHref, ShellActions actions)
+    {
         return new Box(new BoxStyle
         {
             Width = SidebarWidth,
@@ -102,7 +181,7 @@ public static class ConsoleShell
             Background = theme.Surface,
             BorderWidth = 1,
             BorderColor = theme.Border,
-        }, column);
+        }, SidebarContent(theme, activeHref, actions));
     }
 
     private static VisualNode Brand(IAppTheme theme)

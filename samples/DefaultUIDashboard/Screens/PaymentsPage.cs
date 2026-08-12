@@ -36,6 +36,7 @@ public sealed class PaymentsPage : StatefulComponent
     private string _query = "";
     private bool _palette;
     private bool _newPayment;
+    private bool _navOpen;
     private string? _notice;
 
     public override VisualNode Build(ComponentContext context)
@@ -66,7 +67,9 @@ public sealed class PaymentsPage : StatefulComponent
                 OnHelp: index => SetState(() => _notice = $"Opened: {HelpEntries[index]}"),
                 Query: _query,
                 Sandbox: _sandbox,
-                OnToggleSandbox: () => SetState(() => _sandbox = !_sandbox)));
+                OnToggleSandbox: () => SetState(() => _sandbox = !_sandbox),
+                NavOpen: _navOpen,
+                OnToggleNav: () => SetState(() => _navOpen = !_navOpen)));
 
         // A dialog is a LAYER: it lays out against the viewport above the frame, so the tree simply
         // carries it when it is up.
@@ -119,22 +122,52 @@ public sealed class PaymentsPage : StatefulComponent
 
     // ---- Header ----------------------------------------------------------------------------
 
-    private VisualNode Header(IAppTheme theme)
+    // Title, range and export share one line only when the line is wide enough to share — at
+    // compact the title keeps its size and the controls take the next line, instead of everyone
+    // truncating a little (each branch builds its own nodes; AdaptiveNode's contract).
+    private VisualNode Header(IAppTheme theme) =>
+        new AdaptiveNode(HeaderStacked(theme), null, HeaderRow(theme)) { ExpandedFrom = 640 };
+
+    private VisualNode HeaderRow(IAppTheme theme)
+    {
+        var row = new Row(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        row.Add(new Flexible(HeaderTitle(theme), 1));
+        row.Add(RangeControl());
+        row.Add(ExportMenu());
+        return row;
+    }
+
+    private VisualNode HeaderStacked(IAppTheme theme)
+    {
+        var controls = new Row(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        controls.Add(new Flexible(RangeControl(), 1));
+        controls.Add(ExportMenu());
+
+        var column = new Column(gap: Space.S3) { Width = SizeValue.Fill };
+        column.Add(HeaderTitle(theme));
+        column.Add(controls);
+        return column;
+    }
+
+    private VisualNode HeaderTitle(IAppTheme theme)
     {
         var title = new Column(gap: 2);
         title.Add(new Text("Payments", TypeRole.Heading, theme.TextPrimary, maxLines: 1));
         title.Add(new Text($"{Visible().Count} transactions · {ConsoleData.LabelOf(_range)}", TypeRole.BodyM,
             theme.TextMuted, maxLines: 1));
+        return title;
+    }
 
-        var row = new Row(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        row.Add(new Flexible(title, 1));
-        row.Add(new SegmentedControl(["7d", "30d", "90d"], (int)_range,
+    private VisualNode RangeControl() =>
+        new SegmentedControl(["7d", "30d", "90d"], (int)_range,
             i => SetState(() => _range = (DateRange)i))
         {
             Size = SizeVariant.Small,
             Stretch = false,
-        });
-        row.Add(new Menu(
+        };
+
+    private VisualNode ExportMenu() =>
+        new Menu(
             new Button("Export", Variant.Outline, SizeVariant.Small)
             {
                 Leading = CuratedIcons.Resolve(Icons.ChevronDown),
@@ -142,9 +175,7 @@ public sealed class PaymentsPage : StatefulComponent
             [new MenuItem("Export as CSV"), new MenuItem("Export as JSON"), new MenuItem("Export as PDF")],
             index => SetState(() => _notice =
                 $"{ExportFormats[index]} export queued for {Visible().Count} rows."))
-        { Placement = AnchorPlacement.BottomEnd });
-        return row;
-    }
+        { Placement = AnchorPlacement.BottomEnd };
 
     // ---- KPIs ------------------------------------------------------------------------------
 
