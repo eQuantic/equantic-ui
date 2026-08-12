@@ -1304,6 +1304,8 @@ function lowerIcon(node: IconNode): HtmlNode {
   const glyph = node.glyph;
   const attributes: Record<string, string | undefined> = {
     ...atomicAttrs({
+      // Block, not inline — the C# realizer says why; the two lowerings must agree byte-for-byte.
+      display: 'block',
       width: px(node.size),
       height: px(node.size),
       color: node.color ? tokenValue(node.color) : undefined,

@@ -57,7 +57,8 @@ public sealed class Mermaid : StatelessComponent
 
         foreach (var label in scene.Labels)
         {
-            var width = label.Text.Length * 6 + 16;
+            // The SAME estimate the layout used to widen the gap this chip sits in.
+            var width = MermaidLayout.LabelChipWidth(label.Text);
             canvas.Add(new Positioned(new Box(new BoxStyle
             {
                 Padding = new EdgeInsets(6, 1, 6, 1),

@@ -1,31 +1,63 @@
 == flowchart ==
-size 198x386
-node A(rect) 67,16 64x36
-node B(diamond) 56,100 86x86
-node C(rounded) 16,234 70x36
-node D(rect) 118,234 64x36
-node E(circle) 73,318 52x52
-seg 98,52 2x24
-seg 98,76 2x24
-seg 98,186 2x24
-seg 51,209 48x2
-seg 50,210 2x24
-seg 98,186 2x24
-seg 99,209 51x2
-seg 149,210 2x24
-seg 149,143 2x127
-seg 99,142 51x2
-seg 98,16 2x127
-seg 50,270 2x24
-seg 51,293 48x2
-seg 98,294 2x24
-arrow 99,100 d0
-arrow 51,234 d0
-arrow 150,234 d0
-arrow 99,16 d2
-arrow 99,318 d0
-label "yes" 75,210
-label "no" 124.5,210
+size 216x396
+node A(rect) 72,16 72x36
+node B(diamond) 62,100 92x92
+node C(rounded) 16,240 80x36
+node D(rect) 128,240 72x36
+node E(circle) 80,324 56x56
+seg 107,52 2x24
+seg 107,76 2x24
+seg 107,192 2x24
+seg 56,215 52x2
+seg 55,216 2x24
+seg 107,192 2x24
+seg 108,215 56x2
+seg 163,216 2x24
+seg 163,146 2x130
+seg 108,145 56x2
+seg 107,16 2x130
+seg 55,276 2x24
+seg 56,299 52x2
+seg 107,300 2x24
+arrow 108,100 d0
+arrow 56,240 d0
+arrow 164,240 d0
+arrow 108,16 d2
+arrow 108,324 d0
+label "yes" 82,216
+label "no" 136,216
+== flowchart-lr ==
+size 943x172
+node A(rect) 16,68 136x36
+node B(diamond) 200,48 76x76
+node C(rect) 419,34 96x36
+node D(rounded) 411,102 112x36
+node E(diamond) 571,16 140x140
+node F(rect) 759,68 168x36
+seg 152,85 24x2
+seg 176,85 24x2
+seg 276,85 71.5x2
+seg 346.5,52 2x34
+seg 347.5,51 71.5x2
+seg 276,85 67.5x2
+seg 342.5,86 2x34
+seg 343.5,119 67.5x2
+seg 515,51 28x2
+seg 542,52 2x34
+seg 543,85 28x2
+seg 523,119 24x2
+seg 546,86 2x34
+seg 547,85 24x2
+seg 711,85 24x2
+seg 735,85 24x2
+arrow 200,86 d1
+arrow 419,52 d1
+arrow 411,120 d1
+arrow 571,86 d1
+arrow 571,86 d1
+arrow 759,86 d1
+label "static shell" 347.5,69
+label "dynamic logic" 343.5,103
 == sequence ==
 size 248x216
 node U(rect) 16,16 80x36

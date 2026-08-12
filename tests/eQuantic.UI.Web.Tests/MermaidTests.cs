@@ -41,6 +41,19 @@ public class MermaidTests
         "  S->>S: audit",
     ]);
 
+    // The wiki's own architecture diagram — the LR-with-labels case that forced the label-aware
+    // rank gaps (a chip wider than the default gap slid under the next rank's nodes).
+    public static readonly string FlowchartLr = string.Join("\n",
+    [
+        "graph LR",
+        "  A[C# components] --> B{eqc}",
+        "  B -->|static shell| C[SSR HTML]",
+        "  B -->|dynamic logic| D(TypeScript)",
+        "  C --> E{Embedded Bun}",
+        "  D --> E",
+        "  E --> F[wwwroot/_equantic]",
+    ]);
+
     // ---- The shared dumper (mirrored in mermaid.spec.ts) ---------------------------------------
 
     /// <summary>Invariant float text — the fixture must read identically on any machine culture,
@@ -72,6 +85,7 @@ public class MermaidTests
     public void TheLayoutFixture_IsWhatBothCompilationsProduce()
     {
         var actual = "== flowchart ==\n" + SolveAndDump(Flowchart)
+            + "\n== flowchart-lr ==\n" + SolveAndDump(FlowchartLr)
             + "\n== sequence ==\n" + SolveAndDump(Sequence) + "\n";
 
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_MERMAID_FIXTURE") == "1")

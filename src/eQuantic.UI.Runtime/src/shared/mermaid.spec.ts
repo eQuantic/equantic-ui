@@ -35,6 +35,16 @@ const SEQUENCE = [
   '  S->>S: audit',
 ].join('\n');
 
+const FLOWCHART_LR = [
+  'graph LR',
+  '  A[C# components] --> B{eqc}',
+  '  B -->|static shell| C[SSR HTML]',
+  '  B -->|dynamic logic| D(TypeScript)',
+  '  C --> E{Embedded Bun}',
+  '  D --> E',
+  '  E --> F[wwwroot/_equantic]',
+].join('\n');
+
 function dump(scene: MermaidScene): string {
   const lines = [`size ${scene.width}x${scene.height}`];
   for (const n of scene.nodes)
@@ -54,7 +64,9 @@ function solveAndDump(source: string): string {
 describe('Mermaid twin layout (cross-pinned with MermaidTests.cs)', () => {
   it('places every box on the same numbers the C# layout pinned', () => {
     const actual =
-      '== flowchart ==\n' + solveAndDump(FLOWCHART) + '\n== sequence ==\n' + solveAndDump(SEQUENCE) + '\n';
+      '== flowchart ==\n' + solveAndDump(FLOWCHART)
+      + '\n== flowchart-lr ==\n' + solveAndDump(FLOWCHART_LR)
+      + '\n== sequence ==\n' + solveAndDump(SEQUENCE) + '\n';
     expect(actual).toBe(fixture);
   });
 

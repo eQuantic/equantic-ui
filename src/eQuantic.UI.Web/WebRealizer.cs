@@ -612,6 +612,11 @@ public static class WebRealizer
         {
             Style = new HtmlStyle
             {
+                // Block, not inline: an inline svg sits on the TEXT BASELINE of whatever box
+                // holds it, and inherits a line box — a 9dp arrowhead inside a positioned
+                // wrapper rendered ~a descender below the line it was aimed at. Flex items
+                // ignore display, so every icon in a Row is unaffected.
+                Display = Core.Display.Block,
                 Width = TokenCss.Px(size),
                 Height = TokenCss.Px(size),
                 Color = color is { } tint ? TokenCss.Value(tint) : null,

@@ -26,20 +26,27 @@ public static class MermaidLayout
     public static MermaidScene Solve(MermaidGraph graph) =>
         graph.Kind == MermaidKind.Sequence ? SolveSequence(graph) : SolveFlowchart(graph);
 
-    /// <summary>The flat-advance width estimate: whole dp, clamped to a sane card.</summary>
+    /// <summary>The flat-advance width estimate: whole dp, clamped to a sane card. Eight dp per
+    /// character — the Label role lands near 13–14dp across themes, and the first calibration
+    /// (seven) left long node names touching their borders.</summary>
     private static float LabelWidth(string label, float pad, float min, float max)
     {
-        var w = label.Length * 7 + pad;
+        var w = label.Length * 8 + pad;
         if (w < min) return min;
         if (w > max) return max;
         return w;
     }
 
+    /// <summary>An edge label's chip width — ONE estimate, used by the layout (to widen the rank
+    /// gap the chip sits in) and by the component (to center the chip on its point). Two numbers
+    /// would drift, and a drifted chip clips.</summary>
+    internal static float LabelChipWidth(string text) => text.Length * 7 + 20;
+
     private static float NodeWidth(MermaidNode node)
     {
         if (node.Shape == MermaidShape.Circle) return CircleSide(node);
         if (node.Shape == MermaidShape.Diamond) return DiamondSide(node);
-        return LabelWidth(node.Label, 28, 64, 240);
+        return LabelWidth(node.Label, 32, 72, 280);
     }
 
     private static float NodeHeightOf(MermaidNode node)
@@ -49,11 +56,13 @@ public static class MermaidLayout
         return NodeHeight;
     }
 
-    private static float CircleSide(MermaidNode node) => LabelWidth(node.Label, 24, 48, 120);
+    private static float CircleSide(MermaidNode node) => LabelWidth(node.Label, 24, 48, 130);
 
     /// <summary>Diamonds are SQUARE by construction: the rhombus is a single-path
-    /// <see cref="Primitives.Vector"/>, and a vector draws into a square box on both targets.</summary>
-    private static float DiamondSide(MermaidNode node) => LabelWidth(node.Label, 44, 72, 150);
+    /// <see cref="Primitives.Vector"/>, and a vector draws into a square box on both targets.
+    /// Ten dp per character — the label lives in the rhombus' inscribed box, roughly half the
+    /// side, so the estimate carries that geometry.</summary>
+    private static float DiamondSide(MermaidNode node) => LabelWidth(node.Label, 44, 76, 170);
 
     // ---- Flowchart ---------------------------------------------------------------------------
 
@@ -143,12 +152,31 @@ public static class MermaidLayout
         float maxSpan = 0;
         for (var r = 0; r < rankCount; r++) if (rankSpan[r] > maxSpan) maxSpan = rankSpan[r];
 
+        // In LR the label chip lies ALONG the rank gap, so a labeled edge's gap must fit its
+        // chip — mermaid.js solves the same collision the same way, by widening the gap. In TD
+        // the chip crosses the gap at its own 20dp height and the default depth already fits it.
+        var gapAfter = new float[rankCount];
+        for (var r = 0; r < rankCount; r++) gapAfter[r] = RankGap;
+        if (!graph.Vertical)
+        {
+            foreach (var edge in graph.Edges)
+            {
+                if (edge.Label.Length == 0) continue;
+                var lower = rank[index[edge.From]] < rank[index[edge.To]]
+                    ? rank[index[edge.From]]
+                    : rank[index[edge.To]];
+                var needed = LabelChipWidth(edge.Label) + 24;
+                if (lower >= 0 && lower < rankCount && gapAfter[lower] < needed)
+                    gapAfter[lower] = needed;
+            }
+        }
+
         var mainStart = new float[rankCount];
         var cursor = Margin;
         for (var r = 0; r < rankCount; r++)
         {
             mainStart[r] = cursor;
-            cursor += rankThickness[r] + RankGap;
+            cursor += rankThickness[r] + gapAfter[r];
         }
 
         var crossCenter = new float[count];
@@ -182,9 +210,11 @@ public static class MermaidLayout
             RouteFlowEdge(scene, graph.Vertical, from, to, edge);
         }
 
-        // The main-axis cursor already starts at Margin, so only ONE margin is added back there.
-        scene.Width = graph.Vertical ? maxSpan + Margin * 2 : cursor - RankGap + Margin;
-        scene.Height = graph.Vertical ? cursor - RankGap + Margin : maxSpan + Margin * 2;
+        // The main-axis cursor already starts at Margin, so only ONE margin is added back there —
+        // and the trailing gap it carries is the LAST rank's own, not the constant.
+        var mainExtent = cursor - gapAfter[rankCount - 1] + Margin;
+        scene.Width = graph.Vertical ? maxSpan + Margin * 2 : mainExtent;
+        scene.Height = graph.Vertical ? mainExtent : maxSpan + Margin * 2;
         return scene;
     }
 
