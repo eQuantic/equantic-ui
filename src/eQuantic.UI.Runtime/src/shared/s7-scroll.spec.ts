@@ -17,7 +17,9 @@ describe('S7 scroll semantics (C# cross-pin)', () => {
     );
     expect(style).toContain('position: sticky');
     expect(style).toContain('top: 8px');
-    expect(style).toContain('z-index: 1');
+    // Chrome sits on its own plane, above anything the CONTENT can reach (the C# twin pins
+    // the same literal). It was 1, which a merely raised card now out-stacks.
+    expect(style).toContain('z-index: 100');
   });
 
   it('positioned zIndex rides the anchor', () => {

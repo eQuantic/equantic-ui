@@ -550,6 +550,15 @@ function revealCaret(path: string): void {
   if (typeof setTimeout === 'function') setTimeout(reveal, 48);
 }
 
+/**
+ * The stacking PLANES, because CSS gives you one number and a page needs three (C# `ChromeLayer`).
+ *
+ * CONTENT is elevation 1–5 — the design system's own scale, and the only one an author names.
+ * CHROME is above all of it: a pinned header is not a raised card. Photon needs none of this, since
+ * paint order IS child order there.
+ */
+const CHROME_LAYER = '100';
+
 /** The caret's width in px — the C# `PhotonRealizer.CaretWidth` twin. */
 const CARET_WIDTH = 2;
 
@@ -1481,6 +1490,15 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     cursor: style.cursor && style.cursor !== 'default' ? cssCursor(style.cursor) : undefined,
   };
 
+  // ELEVATION DECIDES WHAT IS ON TOP, not just how deep the shadow is (C# twin). A raised surface
+  // that anything drawn after it covers is not raised — which is what chrome pinned over a
+  // scrolling page kept discovering. z-index needs a positioned box, and `relative` is the one that
+  // changes nothing else; a box that already positions itself keeps its own.
+  if (style.elevation && style.elevation > 0) {
+    entries['z-index'] = `${style.elevation}`;
+    if (entries['position'] === undefined) entries['position'] = 'relative';
+  }
+
   // A SIMULATED state REPLACES the base declarations, before they are atomized. Adding a second
   // class for the same property instead would leave the winner to stylesheet insertion order —
   // every atomic class has equal specificity — and would emit a class set the C# side does not.
@@ -2211,7 +2229,11 @@ function lowerSticky(node: StickyNode, context: LoweringContext, path: string): 
     top: px(node.offset),
     left: float ? '0' : undefined,
     right: float ? '0' : undefined,
-    'z-index': float ? '100' : '1',
+    // CHROME, both of them — a band of its own, above anything the CONTENT can reach (C# twin's
+    // ChromeLayer). Plain sticky sat at 1, one step above nothing, which is a number competing with
+    // other numbers: a raised card (elevation carries 1–5) would out-stack the pinned header and
+    // scroll straight over it.
+    'z-index': CHROME_LAYER,
     // Spec S6 (C# twin): the scrolled swap GLIDES instead of flipping in one frame.
     transition: node.transition ? transitionValue(node.transition) : undefined,
   });

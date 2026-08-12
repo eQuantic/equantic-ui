@@ -439,6 +439,21 @@ public static class WebRealizer
         return element;
     }
 
+    /// <summary>
+    /// The stacking PLANES, because CSS gives you one number and a page needs three.
+    /// <para>
+    /// CONTENT is elevation 1–5 — the design system's own scale, and the only one an author names.
+    /// CHROME is above all of it: a pinned header is not a raised card, and nothing an author does
+    /// inside the content should be able to scroll over it. Overlays sit above chrome, positioned
+    /// by their own layer rather than by a number.
+    /// </para>
+    /// <para>
+    /// Photon needs none of this: paint order IS child order there, so a later sibling is on top and
+    /// the question never comes up. This is the web realizer keeping that promise.
+    /// </para>
+    /// </summary>
+    private const string ChromeLayer = "100";
+
     private static HtmlElement LowerSticky(Sticky sticky, ComponentContext context)
     {
         var element = new RealizedElement("div")
@@ -451,7 +466,13 @@ public static class WebRealizer
                 Top = TokenCss.Px(sticky.Offset),
                 Left = sticky.Float ? "0" : null,
                 Right = sticky.Float ? "0" : null,
-                ZIndex = sticky.Float ? "100" : "1",
+                // CHROME, both of them — a band of its own, above anything the CONTENT can reach.
+                // Plain sticky used to sit at 1, one step above nothing, which is a number competing
+                // with other numbers: a raised card (elevation carries 1–5 now) or a deep enough
+                // stack cell would out-stack the pinned header and scroll straight over it. Chrome
+                // is not "slightly raised content", it is a different plane, and saying so here is
+                // what keeps the author out of the argument.
+                ZIndex = ChromeLayer,
                 // Spec S6: the scrolled swap GLIDES (the design's transparent-until-scrolled bar
                 // fades its veil in) instead of flipping in one frame.
                 Transition = sticky.Transition is { } transition ? TokenCss.Transition(transition) : null,
@@ -954,6 +975,22 @@ public static class WebRealizer
                 Cursor = style.Cursor != PointerCursor.Default ? TokenCss.Cursor(style.Cursor) : null,
             },
         };
+
+        // ELEVATION DECIDES WHAT IS ON TOP, not just how deep the shadow is.
+        //
+        // It used to draw a shadow and nothing else, which is half a sentence: a raised surface that
+        // anything drawn after it covers is not raised. The case that names it is chrome that pins
+        // while the page scrolls — content passes over the header, and the only cures on offer were
+        // a z-index on the node (CSS vocabulary, which the abstract layer does not speak) or moving
+        // the chrome into a layer of its own (which is what Overlay is, and a sticky header is not).
+        // Elevation is the word the design system already has for "above".
+        if (style.Elevation > 0)
+        {
+            element.Style!.ZIndex = style.Elevation.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            // z-index needs a positioned box, and `relative` is the one that changes nothing else.
+            // A box that already positions itself — sticky chrome, an absolute anchor — keeps its own.
+            element.Style.Position ??= Core.Position.Relative;
+        }
 
         // A SIMULATED state REPLACES the base declarations; otherwise the diff rides the
         // pseudo-class it belongs to. Replacing rather than adding a second class of the same

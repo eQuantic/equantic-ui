@@ -14,7 +14,9 @@ public class S7ScrollRealizerTests
             new Sticky(new Primitives.Box(new BoxStyle { Height = 32 }), offset: 8),
             PhotonTheme.Instance).Style!.ToCssString();
 
-        style.Should().Contain("position: sticky").And.Contain("top: 8px").And.Contain("z-index: 1");
+        // Chrome sits on its own plane, above anything the CONTENT can reach — see
+        // ElevationStackingTests. It was 1, which a merely raised card now out-stacks.
+        style.Should().Contain("position: sticky").And.Contain("top: 8px").And.Contain("z-index: 100");
     }
 
     [Fact]
