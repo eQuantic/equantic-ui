@@ -71,6 +71,9 @@ public sealed class PhotonApplicationBuilder
         // The light/dark hand, present on every head unless the app brought its own. The runner
         // attaches it to the window's host after Build — services exist before any window does.
         _host.Services.TryAddSingleton<IThemeController, PhotonThemeController>();
+        // The culture hand, same shape: the runner resolves the PLATFORM's locale and applies it
+        // here before the first frame; an app that wants to force a culture applies over it.
+        _host.Services.TryAddSingleton<PhotonCultureController>();
         PhotonApplication.RegisterCapabilities(_host.Services);
         return new PhotonApplication(_host.Build(), Args);
     }

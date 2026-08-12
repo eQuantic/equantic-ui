@@ -1,4 +1,5 @@
 using eQuantic.UI.Native.Hosting;
+using eQuantic.UI.Native.Shell.Apple;
 using eQuantic.UI.Primitives;
 
 [assembly: PhotonRunner(typeof(eQuantic.UI.Native.Shell.MacOS.MacOSPhotonRunner))]
@@ -28,6 +29,14 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         }
 
         var options = app.Options;
+
+        // The platform's locale, copied onto .NET BEFORE anything renders (screenshots included):
+        // a Finder-launched process has no LANG/LC_*, so without this read the app formats
+        // invariant on a pt-BR machine. NSLocale carries the D13 pair natively.
+        var cultureController = app.Services.GetService(typeof(PhotonCultureController)) as PhotonCultureController;
+        var (uiCulture, formatCulture) = AppleLocale.Resolve();
+        cultureController?.Apply(uiCulture, formatCulture);
+
         if (options.ScreenshotPath is { } screenshot)
         {
             RenderScreenshot(app, screenshot);
@@ -40,7 +49,7 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         // taken over the switch, and this attach quietly steps aside.
         var themeController = app.Services.GetService(typeof(IThemeController)) as PhotonThemeController;
         window.Run(app.Root(), options.Theme, options.Mode ?? ThemeMode.Light, options.MaxFrames,
-            themeController);
+            themeController, cultureController);
         Console.WriteLine($"[photon] frames presented: {window.FramesPresented}");
     }
 

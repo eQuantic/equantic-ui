@@ -92,6 +92,13 @@ public sealed class PhotonViewController : UIViewController
         var scale = (float)UIScreen.MainScreen.Scale;
         layer.ContentsScale = scale;
 
+        // The platform's locale, copied onto .NET before the first realize (I18N-PLAN D5/W6) —
+        // NSLocale carries the D13 pair natively. The statics-only write: PhotonApp.Run does not
+        // carry services, so the controller instance (repaint-on-switch) joins when it does, the
+        // same fence the theme controller lives behind on this shell.
+        var (uiCulture, formatCulture) = AppleLocale.Resolve();
+        eQuantic.UI.Native.Hosting.PhotonCultureController.ApplyToProcess(uiCulture, formatCulture);
+
         _text = new CoreTextService();
         _host = new PhotonHost(_root, _theme, Mode(), (float)view.Bounds.Width, (float)view.Bounds.Height, _text)
         {

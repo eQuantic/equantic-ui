@@ -172,6 +172,12 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             ? "presenting through Vulkan"
             : "presenting through the Reference backend (no Vulkan surface)");
 
+        // The device's locale, copied onto .NET before the first realize (I18N-PLAN D5/W6):
+        // Android's Locale.getDefault() carries language and region in one, so the D13 pair
+        // collapses to a single culture here.
+        var cultureController = app.Services.GetService(typeof(PhotonCultureController)) as PhotonCultureController;
+        cultureController?.Apply(AndroidLocale.Resolve());
+
         _host = new PhotonHost(app.Root(), app.Options.Theme, Mode(), metrics.WidthPixels / scale,
             metrics.HeightPixels / scale, text)
         {
@@ -182,6 +188,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             // A phone rolls too: a scroll that jumps reads as a redraw there just as on a desktop.
             SmoothScroll = app.Options.SmoothScroll,
         };
+        cultureController?.Attach(_host.Invalidate);
 
         Choreographer.Instance!.PostFrameCallback(this);
     }

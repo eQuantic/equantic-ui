@@ -86,7 +86,8 @@ public sealed class PhotonWindow
     /// <paramref name="maxFrames"/> presents, when positive — the self-test mode).
     /// </summary>
     public void Run(VisualNode root, IAppTheme theme, ThemeMode mode = ThemeMode.Light, int maxFrames = 0,
-        eQuantic.UI.Native.Hosting.PhotonThemeController? themeController = null)
+        eQuantic.UI.Native.Hosting.PhotonThemeController? themeController = null,
+        eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null)
     {
         LoadFrameworks();
         using var backend = new MetalBackend();
@@ -190,6 +191,9 @@ public sealed class PhotonWindow
             host.Mode = next;
             host.Invalidate();
         });
+        // The culture hand's repaint: the statics are already the controller's job — the window
+        // only lends the hand that makes a switch visible on the next frame.
+        cultureController?.Attach(host.Invalidate);
 
         var clock = Stopwatch.StartNew();
 

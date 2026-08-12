@@ -110,7 +110,13 @@ translation changes as data, not code.
 - **D5 — Culture selection is ASP.NET Core's job, not ours.** `RequestLocalizationMiddleware`
   (first-party) negotiates from route/cookie/`Accept-Language`; the SDK only reads
   `CultureInfo.CurrentUICulture`. We ship no negotiation logic, no cookie format, no custom
-  middleware. On native, the platform locale sets `CurrentUICulture` and nothing else changes.
+  middleware. On native, the PLATFORM locale sets the pair — and that needs a hand, because a GUI
+  process launched outside a terminal has no `LANG`/`LC_*` and .NET starts invariant on a pt-BR
+  machine: `PhotonCultureController` (shipped 2026-08-12, the `PhotonThemeController` shape) owns
+  the statics write; shells resolve the truth (`AppleLocale` — `preferredLanguages[0]` is the UI
+  culture, `currentLocale` the format culture, natively the D13 pair; `AndroidLocale` — one
+  locale feeds both) and apply it before the first realize, with the attached sink repainting on
+  a switch. Observing the OS's own locale CHANGE at runtime is a fence per shell, not v1.
 
 - **D6 — Switching culture re-renders; it never reloads.** `setCulture(name)` fetches the catalog
   if absent, swaps it, invalidates the tree — the exact `setPhotonTheme` shape. The developer
@@ -321,8 +327,11 @@ translation changes as data, not code.
   it.** Law 1 bets familiarity over modernity — for a .NET audience, the right bet. But the fix
   for a weak editor is the IDE's resx tooling or the XLIFF/TMS round-trip, never a parallel
   catalog format: that "fix" is exactly what law 1 exists to forbid.
-- **This plan is design-only.** Nothing here is implemented yet; the status log below records
-  design history only, until code lands and the milestone exits start getting checked.
+- **This plan is design-first, and mostly still design.** Two pieces shipped ahead of the track
+  because they owe nothing to the compiler bridge: the W8 `SdkStrings` seam and the D5 native
+  culture hand (`PhotonCultureController` + shell locale resolution). Everything touching eqc,
+  catalogs, the web bridge and formatting remains unimplemented; the milestone exits below are
+  the ledger.
 
 ---
 
@@ -355,3 +364,17 @@ translation changes as data, not code.
   the native text stack's, not this track's) and W5 gains the forward rule for culture-rendering
   components (DatePicker is born from `DateTimeFormatInfo`). Still design-only; the W8 seam is
   the one piece mechanical enough to land ahead of the track (standing task chip).
+- **2026-08-12 — Two pieces land ahead of the track (the ones that owe nothing to eqc).**
+  W8's seam: `SdkStrings` shipped and every component literal now routes through it — properties,
+  never consts, and the transpiled twins prove eqc emits static getters instead of inlining, so
+  the choke point survives on web too. And the native culture hand (Edgar's ask, named for the
+  repo's precedent): `PhotonCultureController` in Hosting — Apply copies the D13 pair onto BOTH
+  .NET statics (default-thread and current) and the attached sink repaints; registered TryAdd
+  like the theme hand. Shells resolve the platform truth: `AppleLocale.Resolve()` reads
+  `NSLocale` (a Finder-launched process has no `LANG` — .NET sat invariant on a pt-BR Mac),
+  macOS wires apply-before-first-frame + repaint attach, iOS applies the statics at host
+  creation (the controller instance joins when `PhotonApp.Run` carries services — the theme
+  controller's own fence there), Android applies + attaches in the Activity. OS locale-change
+  observation is a per-shell fence. Tests: `CultureControllerTests` (pair applied, formats
+  follow UI when single, repaint on switch), with a restore-scope because culture statics are
+  process state.
