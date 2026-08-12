@@ -327,7 +327,16 @@ public static class ConsoleShell
 
     private static VisualNode Toolbar(IAppTheme theme, IReadOnlyList<Crumb> crumbs, ShellActions actions)
     {
-        var row = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
+        // Height=Fill, or Cross=Center centers nothing: a hugging row inside a fixed-height Box
+        // sits at its TOP, and a 40dp row in a 56dp bar reads as "glued to the top". The same
+        // contract AppBar, SearchField and SegmentedControl state in the library — third time this
+        // shape has bitten in this file, and the compact bar already had the line.
+        var row = new Row(gap: Space.S2)
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fill,
+            Cross = CrossAlign.Center,
+        };
         row.Add(new Breadcrumb(crumbs));
         row.Add(new Spacer(1));
         row.Add(new Box(new BoxStyle { Width = 240 },

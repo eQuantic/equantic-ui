@@ -345,7 +345,12 @@ public static class PhotonCssGenerator
         // placement classes are the whole mechanism), invisible fixed scrim for tap-outside.
         css.AppendLine(".eq-anchorhost { position: relative; display: flex; flex-direction: column; }");
         css.AppendLine(".eq-anchor-scrim { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1040; background: transparent; border: none; padding: 0; margin: 0; appearance: none; }");
-        css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; }");
+        // `max-content`, and it is not a nicety: an absolutely positioned panel sizes shrink-to-fit
+        // against its CONTAINING BLOCK, which here is the anchor — a 24dp icon button. Every menu
+        // therefore collapsed onto its own min-width and wrapped any label longer than that ("
+        // Workspace settings" came out on two lines inside a one-line row). The panel measures its
+        // CONTENT instead, still bounded: never wider than the viewport it must stay inside.
+        css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
         // A PAINTED scrim (ScrimStyle) must dim the page, never its own anchor: the anchor lifts
         // between the scrim (1040) and the panel (1050).
         css.AppendLine(".eq-anchor-above { position: relative; z-index: 1045; }");

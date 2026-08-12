@@ -71,8 +71,12 @@ public sealed class Menu : StatefulComponent
             if (item.Icon is { } glyph)
                 row.Add(new Icon(glyph, IconSize.Dense,
                     item.Destructive ? theme.Colors(Variant.Destructive).Base : theme.TextSecondary));
+            // ONE line: a menu item is a single line on every platform that has menus, and a label
+            // that does not fit ellipsizes rather than growing the row it lives in — a wrapped
+            // label overflowed a fixed-height row and read as broken text.
             row.Add(new Text(item.Label, TypeRole.BodyM,
-                item.Destructive ? theme.Colors(Variant.Destructive).Base : theme.TextPrimary));
+                item.Destructive ? theme.Colors(Variant.Destructive).Base : theme.TextPrimary,
+                maxLines: 1));
 
             var surface = new Box(new BoxStyle
             {
