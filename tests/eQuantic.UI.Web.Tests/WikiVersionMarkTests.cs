@@ -47,6 +47,21 @@ public class WikiVersionMarkTests
     /// tag reachable from there. Null when it has not shipped yet — a mark on unreleased work is a
     /// promise, and this test is about what is true.
     /// </summary>
+    /// <summary>
+    /// A version mark, in either spelling the wiki has used.
+    /// <para>
+    /// The STRUCTURED one names its parts (<c>eq:since 0.2.0-preview.23 symbol="X" src="path"</c>);
+    /// the older one puts the symbol and its path in one string (<c>since: X @ path</c>). Both are
+    /// read, because the spelling migrated once while this guard was watching and it went on passing
+    /// — having matched nothing at all.
+    /// </para>
+    /// </summary>
+    private const string MarkPattern =
+        @"(?m)^\*Since \*\*(?<version>[^*]+)\*\*\*\s*<!--\s*(?:"
+        + @"since:\s*(?<symbol>[^>]+?)"
+        + @"|eq:since\s+\S+\s+symbol=""(?<name>[^""]+)""(?:\s+src=""(?<src>[^""]+)"")?"
+        + @")\s*-->";
+
     private static string? ShippedIn(string root, string search)
     {
         // `text @ path` narrows the search — a member name is rarely unique across a framework that
@@ -99,14 +114,20 @@ public class WikiVersionMarkTests
             "the guard compares against tags; fetch them before running it");
 
         var wrong = new List<string>();
+        var checkedMarks = 0;
         foreach (var page in Directory.GetFiles(wiki, "*.md"))
         {
             var text = File.ReadAllText(page);
-            foreach (Match mark in Regex.Matches(text,
-                @"(?m)^\*Since \*\*(?<version>[^*]+)\*\*\*\s*<!--\s*since:\s*(?<symbol>.+?)\s*-->"))
+            foreach (Match mark in Regex.Matches(text, MarkPattern))
             {
                 var claimed = mark.Groups["version"].Value.Trim();
-                var symbol = mark.Groups["symbol"].Value;
+                // The structured spelling names the symbol in an attribute and may add the path in
+                // another; the older one puts both in one string as `symbol @ path`.
+                var symbol = mark.Groups["symbol"].Success
+                    ? mark.Groups["symbol"].Value
+                    : mark.Groups["name"].Value
+                      + (mark.Groups["src"].Success ? $" @ {mark.Groups["src"].Value}" : "");
+                checkedMarks++;
                 // `? reason` — a mark about work that predates the tags, or that no single symbol
                 // pins. Rare and VISIBLE, like every other exception list here: it says "unchecked"
                 // rather than guessing a symbol that would make the test agree with itself.
@@ -116,6 +137,12 @@ public class WikiVersionMarkTests
                     wrong.Add($"{Path.GetFileName(page)}: `{symbol}` says {claimed}, shipped in {actual}");
             }
         }
+
+        // A guard that parses NOTHING passes, and that is the failure this whole file exists to
+        // prevent — pointed at itself. The mark spelling changed once under exactly these feet;
+        // counting what was compared is what turns that from a green tick into a red one.
+        checkedMarks.Should().BeGreaterThan(0,
+            "the wiki has version marks; parsing none means the spelling moved and this guard did not");
 
         // Every one of them, not the first: finding these one round trip at a time is how a docs
         // audit turns into an afternoon.
@@ -143,13 +170,16 @@ public class WikiVersionMarkTests
             // a mark is not one.
             foreach (Match mark in Regex.Matches(text, @"(?m)^\*Since \*\*[^*]+\*\*\*(?<tail>.{0,40})"))
             {
-                if (!mark.Groups["tail"].Value.Contains("<!-- since:", StringComparison.Ordinal))
+                var tail = mark.Groups["tail"].Value;
+                // Either spelling — see MarkPattern. Both name a symbol; only the punctuation moved.
+                if (!tail.Contains("<!-- since:", StringComparison.Ordinal)
+                    && !tail.Contains("<!-- eq:since", StringComparison.Ordinal))
                     unannotated.Add($"{Path.GetFileName(page)}: {mark.Value.Split('\n')[0]}");
             }
         }
 
         string.Join("\n", unannotated).Should().BeEmpty(
-            "a mark carries the symbol it claims — `<!-- since: class Foo -->` — or nothing can "
-            + "check it");
+            "a mark carries the symbol it claims — `<!-- eq:since … symbol=\"Foo\" -->` — or "
+            + "nothing can check it");
     }
 }
