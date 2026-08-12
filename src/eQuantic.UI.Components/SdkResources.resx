@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The SDK's OWN user-facing strings (I18N-PLAN D14/W8) — the neutral culture.
+
+  Everything a built-in component says or announces lives here and nowhere else, so a 100%
+  Portuguese app never announces "Checked" to VoiceOver. The file sits BESIDE the Designer at the
+  package's tools/source root on purpose: the app's build resolves a resource class's variants by
+  walking from its Designer path, so this layout is what makes the SDK's keys join every app's
+  culture catalogs without the app authoring anything.
+-->
+<root>
+  <data name="Checked" xml:space="preserve">
+    <value>Checked</value>
+  </data>
+  <data name="Unchecked" xml:space="preserve">
+    <value>Unchecked</value>
+  </data>
+  <data name="PartlySelected" xml:space="preserve">
+    <value>Partly selected</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Dismiss" xml:space="preserve">
+    <value>Dismiss</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Search…</value>
+  </data>
+  <data name="ClearSearch" xml:space="preserve">
+    <value>Clear search</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Find</value>
+  </data>
+  <data name="PreviousMatch" xml:space="preserve">
+    <value>Previous match</value>
+  </data>
+  <data name="NextMatch" xml:space="preserve">
+    <value>Next match</value>
+  </data>
+  <data name="Spreadsheet" xml:space="preserve">
+    <value>Spreadsheet</value>
+  </data>
+</root>

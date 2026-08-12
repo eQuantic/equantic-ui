@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The SDK's own strings, es. A second culture from day one is deliberate: one translation can
+     be special-cased by accident, two prove the pipeline is a pipeline. -->
+<root>
+  <data name="Checked" xml:space="preserve">
+    <value>Seleccionado</value>
+  </data>
+  <data name="Unchecked" xml:space="preserve">
+    <value>No seleccionado</value>
+  </data>
+  <data name="PartlySelected" xml:space="preserve">
+    <value>Parcialmente seleccionado</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>Activado</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Desactivado</value>
+  </data>
+  <data name="Dismiss" xml:space="preserve">
+    <value>Descartar</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Quitar</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Buscar…</value>
+  </data>
+  <data name="ClearSearch" xml:space="preserve">
+    <value>Borrar búsqueda</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Buscar</value>
+  </data>
+  <data name="PreviousMatch" xml:space="preserve">
+    <value>Coincidencia anterior</value>
+  </data>
+  <data name="NextMatch" xml:space="preserve">
+    <value>Coincidencia siguiente</value>
+  </data>
+  <data name="Spreadsheet" xml:space="preserve">
+    <value>Hoja de cálculo</value>
+  </data>
+</root>

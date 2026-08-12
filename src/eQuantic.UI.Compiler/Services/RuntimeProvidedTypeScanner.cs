@@ -101,6 +101,12 @@ public static class RuntimeProvidedTypeScanner
             // Interfaces exist only in the C# type system — they produce no JS value to import.
             if (type.TypeKind == TypeKind.Interface) continue;
 
+            // A RESOURCE class is rewritten away (Track L D2): `SdkResources.Checked` leaves as
+            // `$eq.str("SdkResources", "Checked")`, so the class ships no module to import — and
+            // the name survives only INSIDE that string literal, which is exactly where the
+            // emitters' "does the text name it?" filter cannot tell it from a real reference.
+            if (ResourceClasses.IsResourceClass(type)) continue;
+
             if (ComponentModelBaseNames.Contains(type.Name))
             {
                 // Only the BASE-LIST position is emitter-owned (the authoring bases are swapped at

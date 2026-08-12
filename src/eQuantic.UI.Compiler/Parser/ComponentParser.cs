@@ -16,6 +16,15 @@ public class ComponentParser
     private SemanticModelProvider? _semanticModelProvider;
 
     /// <summary>
+    /// Every resource class the parse SAW, by catalog id → Designer path (Track L D2/D14). These
+    /// are skipped as modules, but the catalog emitter needs them: a LIBRARY's resource class is
+    /// read only by components already transpiled into <c>runtime.js</c>, so no reachable use in
+    /// this compilation would ever mention it, and the SDK's own strings would silently miss every
+    /// app's catalogs.
+    /// </summary>
+    public Dictionary<string, string> DiscoveredResources { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>
     /// Supplies a semantic model provider so component detection can walk the base-type chain (via the
     /// project compilation, which resolves library bases) instead of matching base-type name strings.
     /// </summary>
@@ -148,8 +157,18 @@ public class ComponentParser
             // cannot run in a browser. Shape-detected, and checked FIRST because the Designer's
             // class itself is not static (only its members are) — but a PublicResXFileCodeGenerator
             // variant marked static must not slip through either.
-            if (Services.ResourceClasses.IsResourceClass(
-                    helperModel?.GetDeclaredSymbol(classDecl) as INamedTypeSymbol)) continue;
+            if (helperModel?.GetDeclaredSymbol(classDecl) is INamedTypeSymbol declared
+                && Services.ResourceClasses.IsResourceClass(declared))
+            {
+                // Skipped as a module, RECORDED as a resource class. A library's resource class is
+                // seen here and used nowhere the app compiles (its components are transpiled into
+                // runtime.js at the SDK's own build), so the catalog emitter has no reachable use
+                // to learn it from — and D14 promises the SDK's strings ride every app's catalogs.
+                DiscoveredResources.TryAdd(
+                    Services.ResourceClasses.IdFor(helperModel.Compilation, declared),
+                    Services.ResourceClasses.DesignerPathFor(declared));
+                continue;
+            }
             if (classDecl.Modifiers.Any(SyntaxKind.StaticKeyword))
             {
                 results.Add(new ComponentDefinition
@@ -238,9 +257,16 @@ public class ComponentParser
             if (classDecl.Members.Count == 0) continue;
             // Track L D2: a resx Designer is a plain non-static class by shape, and a module of
             // ResourceManager.GetString calls cannot run in a browser — its accessors rewrite to
-            // $eq.str at every use site instead.
-            if (Services.ResourceClasses.IsResourceClass(
-                    helperModel?.GetDeclaredSymbol(classDecl) as INamedTypeSymbol)) continue;
+            // $eq.str at every use site instead. Recorded on the way past (see the static-helper
+            // loop for why the catalog emitter needs to know it exists).
+            if (helperModel?.GetDeclaredSymbol(classDecl) is INamedTypeSymbol declaredPlain
+                && Services.ResourceClasses.IsResourceClass(declaredPlain))
+            {
+                DiscoveredResources.TryAdd(
+                    Services.ResourceClasses.IdFor(helperModel.Compilation, declaredPlain),
+                    Services.ResourceClasses.DesignerPathFor(declaredPlain));
+                continue;
+            }
 
             results.Add(new ComponentDefinition
             {

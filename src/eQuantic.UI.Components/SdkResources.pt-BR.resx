@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The SDK's own strings, pt-BR. Assistive-tech wording follows what VoiceOver and TalkBack
+     already say in Portuguese for the same native controls, not a literal translation. -->
+<root>
+  <data name="Checked" xml:space="preserve">
+    <value>Marcado</value>
+  </data>
+  <data name="Unchecked" xml:space="preserve">
+    <value>Não marcado</value>
+  </data>
+  <data name="PartlySelected" xml:space="preserve">
+    <value>Parcialmente selecionado</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>Ativado</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Desativado</value>
+  </data>
+  <data name="Dismiss" xml:space="preserve">
+    <value>Dispensar</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Remover</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Pesquisar…</value>
+  </data>
+  <data name="ClearSearch" xml:space="preserve">
+    <value>Limpar pesquisa</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Localizar</value>
+  </data>
+  <data name="PreviousMatch" xml:space="preserve">
+    <value>Ocorrência anterior</value>
+  </data>
+  <data name="NextMatch" xml:space="preserve">
+    <value>Próxima ocorrência</value>
+  </data>
+  <data name="Spreadsheet" xml:space="preserve">
+    <value>Planilha</value>
+  </data>
+</root>

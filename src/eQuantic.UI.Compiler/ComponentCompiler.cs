@@ -49,6 +49,12 @@ public class ComponentCompiler
     /// drains this into wwwroot/_equantic/strings/{culture}.json after the last file.</summary>
     public IReadOnlyCollection<AggregatedResource> ResourceUses => _resourceUses.Values;
 
+    /// <summary>Every resource class the parse SAW, used or not (id → Designer path). The CLI
+    /// needs both halves: reachable USES decide what an app's own resx contributes (D3 — unused
+    /// keys never ship), while a LIBRARY's resource class has no reachable use here at all (its
+    /// readers are already transpiled into runtime.js) and contributes whole (D14).</summary>
+    public IReadOnlyDictionary<string, string> DiscoveredResources => _parser.DiscoveredResources;
+
     public ComponentCompiler()
     {
         // The provider must exist BEFORE the parser receives it — the old order handed the parser a

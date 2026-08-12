@@ -680,6 +680,7 @@ public class TypeScriptEmitter
             if (component.EnumTypes.Contains(cleanType))
                 continue;
 
+
             // Never import the component's own name (a runtime-provided LIBRARY component referencing
             // itself would otherwise import the very class it declares).
             if (cleanType == component.Name)

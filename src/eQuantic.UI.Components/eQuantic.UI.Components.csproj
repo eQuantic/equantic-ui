@@ -7,7 +7,11 @@
     <PackageId>eQuantic.UI.Components</PackageId>
     <Description>The eQuantic.UI component library — components authored ONCE against the abstract vocabulary and tokens (eQuantic.UI.Primitives), realized per target: DOM/CSS on web, Photon pixels on native (docs/SHARED-COMPONENTS-PLAN.md).</Description>
     <IsAotCompatible>true</IsAotCompatible>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- NO InvariantGlobalization here: this library now carries its own localized strings
+         (SdkResources + satellites, I18N-PLAN D14), and a library declaring the globalization
+         mode of a host it does not own was always a misstatement — under invariant mode
+         `new CultureInfo("pt-BR")` resolves to invariant and every satellite lookup silently
+         returns English. An APP may still opt out globally; that is the app's call to make. -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +24,11 @@
          byte-pinned to eqc output — see SharedComponentTranspilationTests); sources still ship at
          tools/source as reference material for consumers/tooling. -->
     <Content Include="**\*.cs" Exclude="obj\**;bin\**" PackagePath="tools\source\" />
+    <!-- The SDK's own resx ships BESIDE its Designer in tools/source, and that layout is load
+         bearing: an app's build resolves a resource class's culture variants by walking from the
+         Designer path it compiled, so this is what puts "Marcado" in a pt-BR app's catalog
+         without the app authoring a single resx (D14). -->
+    <Content Include="SdkResources*.resx" PackagePath="tools\source\" />
   </ItemGroup>
 
 </Project>

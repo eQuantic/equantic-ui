@@ -395,7 +395,7 @@ bool CompileAndBundle()
         // tree used. The fallback chain is FLATTENED here — a key present only in the neutral
         // resx appears in every culture's catalog — so the runtime does a flat lookup and never
         // reimplements .NET's resolution.
-        EmitStringCatalogs(compiler, outputDir);
+        EmitStringCatalogs(compiler, outputDir, primarySourceDir);
 
         if (!hasBun && entryPoints.Count > 0)
         {
@@ -493,13 +493,45 @@ bool CompileAndBundle()
 }
 
 
-static void EmitStringCatalogs(eQuantic.UI.Compiler.ComponentCompiler compiler, string outputDir)
+static void EmitStringCatalogs(eQuantic.UI.Compiler.ComponentCompiler compiler, string outputDir,
+    string appSourceDir)
 {
+    // Two contributions, and the difference is not a preference — it is what each side can KNOW.
+    // The app's own resx contributes the keys its pages actually read (D3: unused keys never
+    // ship), because this compilation sees those reads. A LIBRARY's resx (the SDK's own
+    // SdkResources above all) is read by components already transpiled into runtime.js at the
+    // SDK's build, so no read is visible here at all — it contributes WHOLE, which is exactly
+    // D14's promise that an app with zero resx still announces "Marcado" to a pt-BR reader.
+    var appRoot = Path.GetFullPath(appSourceDir);
+    var libraryResources = compiler.DiscoveredResources
+        .Where(pair => pair.Value.Length > 0
+            && !Path.GetFullPath(pair.Value).StartsWith(appRoot, StringComparison.Ordinal))
+        .ToList();
+
     var uses = compiler.ResourceUses;
-    if (uses.Count == 0) return;
+    if (uses.Count == 0 && libraryResources.Count == 0) return;
 
     var neutral = new SortedDictionary<string, string>(StringComparer.Ordinal);
     var cultures = new SortedDictionary<string, SortedDictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+
+    SortedDictionary<string, string> CatalogFor(string culture) =>
+        culture.Length == 0
+            ? neutral
+            : cultures.TryGetValue(culture, out var existing)
+                ? existing
+                : cultures[culture] = new SortedDictionary<string, string>(StringComparer.Ordinal);
+
+    foreach (var (id, designerPath) in libraryResources)
+    {
+        foreach (var (culture, path) in eQuantic.UI.Compiler.Services.ResxFiles.VariantsFor(designerPath))
+        {
+            var values = eQuantic.UI.Compiler.Services.ResxFiles.Read(path);
+            if (values is null) continue;
+            var target = CatalogFor(culture);
+            foreach (var (key, value) in values) target[$"{id}/{key}"] = value;
+        }
+    }
+
     foreach (var use in uses)
     {
         var variants = eQuantic.UI.Compiler.Services.ResxFiles.VariantsFor(use.DesignerPath).ToList();
@@ -513,11 +545,7 @@ static void EmitStringCatalogs(eQuantic.UI.Compiler.ComponentCompiler compiler, 
         {
             var values = eQuantic.UI.Compiler.Services.ResxFiles.Read(path);
             if (values is null) continue;
-            var target = culture.Length == 0
-                ? neutral
-                : cultures.TryGetValue(culture, out var existing)
-                    ? existing
-                    : cultures[culture] = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            var target = CatalogFor(culture);
             foreach (var key in use.Keys)
             {
                 if (values.TryGetValue(key, out var value)) target[$"{use.Id}/{key}"] = value;

@@ -32,6 +32,35 @@ describe('culture atom', () => {
     }
   });
 
+  it("the SDK's own strings fall back to built-in English rather than to raw keys", () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      // No catalog at all — a page mounted without the server bridge (a test host, the
+      // playground). The chrome must still read as words, and quietly: this fallback is the
+      // designed path, not a missing translation.
+      expect(str('SdkResources', 'SearchPlaceholder')).toBe('Search…');
+      expect(str('SdkResources', 'Checked')).toBe('Checked');
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("an app's translation of an SDK string beats the built-in neutral", () => {
+    installCulture('pt-BR', 'pt-BR', { 'SdkResources/Checked': 'Marcado' });
+    expect(str('SdkResources', 'Checked')).toBe('Marcado');
+  });
+
+  it('an SDK key that exists in NO resx still degrades to the key', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(str('SdkResources', 'NotAKey')).toBe('NotAKey');
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('installing a new culture swaps the catalog and re-arms the warnings', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
