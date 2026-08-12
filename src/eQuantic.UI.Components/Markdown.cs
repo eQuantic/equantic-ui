@@ -102,6 +102,10 @@ public sealed class Markdown : StatelessComponent
                 return ListView(block, theme, style);
 
             case MarkdownBlockKind.Code:
+                // A mermaid fence is a DIAGRAM, natively: the Mermaid component parses and draws
+                // it with the same vocabulary as the rest of the page, and falls back to showing
+                // the fence as code when the source speaks a grammar the subset doesn't.
+                if (block.Lang == "mermaid") return new Mermaid(block.Raw);
                 return new CodeBlock(block.Raw, block.Lang)
                 {
                     ShowLineNumbers = style.CodeLineNumbers,

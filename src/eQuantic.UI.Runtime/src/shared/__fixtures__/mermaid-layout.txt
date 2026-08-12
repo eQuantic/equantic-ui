@@ -1,0 +1,45 @@
+== flowchart ==
+size 198x386
+node A(rect) 67,16 64x36
+node B(diamond) 56,100 86x86
+node C(rounded) 16,234 70x36
+node D(rect) 118,234 64x36
+node E(circle) 73,318 52x52
+seg 98,52 2x24
+seg 98,76 2x24
+seg 98,186 2x24
+seg 51,209 48x2
+seg 50,210 2x24
+seg 98,186 2x24
+seg 99,209 51x2
+seg 149,210 2x24
+seg 149,143 2x127
+seg 99,142 51x2
+seg 98,16 2x127
+seg 50,270 2x24
+seg 51,293 48x2
+seg 98,294 2x24
+arrow 99,100 d0
+arrow 51,234 d0
+arrow 150,234 d0
+arrow 99,16 d2
+arrow 99,318 d0
+label "yes" 75,210
+label "no" 124.5,210
+== sequence ==
+size 248x216
+node U(rect) 16,16 80x36
+node S(rect) 152,16 80x36
+seg 55,52 2x148
+seg 191,52 2x148
+seg 56,89 136x2
+seg 56,133 136x2
+seg 192,165 36x2
+seg 227,166 2x12
+seg 192,177 36x2
+arrow 192,90 d1
+arrow 56,134 d3
+arrow 192,178 d3
+label "POST /login" 124,78
+label "200 + token" 124,122
+label "audit" 240,166

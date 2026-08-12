@@ -297,6 +297,10 @@ public static class UI
     /// <c>IAppTheme</c> like every other component on the page.</summary>
     public static Markdown Markdown(string source) => new Markdown(source);
 
+    /// <summary>A mermaid diagram drawn by the design system — flowcharts and sequence diagrams
+    /// as Boxes, Text and Vectors, on web and Photon alike. Unknown grammars show as code.</summary>
+    public static Mermaid Mermaid(string source) => new Mermaid(source);
+
     /// <summary>Icon-only button; the label is what assistive tech announces.</summary>
     public static IconButton IconButton(Icons glyph, string label,
         IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
