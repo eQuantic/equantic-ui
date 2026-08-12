@@ -72,7 +72,7 @@ public sealed class Chip : StatelessComponent
         {
             content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
             {
-                Label = "Remove",
+                Label = SdkStrings.Remove,
             });
         }
 

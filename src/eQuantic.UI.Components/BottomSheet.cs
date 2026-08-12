@@ -34,7 +34,7 @@ public sealed class BottomSheet : StatelessComponent
         }), Dismissible ? OnDismiss : null)
         {
             Disabled = !Dismissible,
-            Label = "dismiss",
+            Label = SdkStrings.Dismiss,
         };
 
         var body = new Column(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Stretch };

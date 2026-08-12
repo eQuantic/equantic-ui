@@ -46,7 +46,7 @@ export class UI {
     static stepper(value: number, onChanged: ((int: number) => void) | null = null) { return new Stepper(value, onChanged); }
     static select(options: string[], selectedIndex: number = -1, onChanged: ((int: number) => void) | null = null, placeholder: string | null = null) { return new Select(options, selectedIndex, onChanged, placeholder); }
     static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: string | null = null, size: string = 'large') { return new TextInput(value, onChanged, label, placeholder, helper, error, leading, size); }
-    static searchField(query: string, onChanged: ((string: string) => void) | null = null, placeholder: string = 'Search…', onSubmit: (() => void) | null = null) { return new SearchField(query, onChanged, placeholder, onSubmit); }
+    static searchField(query: string, onChanged: ((string: string) => void) | null = null, placeholder: string | null = null, onSubmit: (() => void) | null = null) { return new SearchField(query, onChanged, placeholder, onSubmit); }
     static progressBar(value: number | null = null, variant: string = 'primary') { return new ProgressBar(value, variant); }
     static divider(inset: string = 'none', axis: string = 'horizontal') { return new Divider(inset, axis); }
     static iconButton(glyph: string, label: string, kind: string = 'standard', size: string = 'medium', onPressed: (() => void) | null = null) { return new IconButton(glyph, label, kind, size, onPressed); }

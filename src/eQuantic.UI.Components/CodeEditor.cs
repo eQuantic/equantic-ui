@@ -318,8 +318,8 @@ public sealed class CodeEditor : StatefulComponent
         row.Add(new Box(new BoxStyle { Width = 168 }, new TextEntry(_findText,
             value => SetState(() => _findText = value))
         {
-            Placeholder = "Find",
-            Label = "Find",
+            Placeholder = SdkStrings.Find,
+            Label = SdkStrings.Find,
             Autofocus = true,
             OnSubmit = () => Step(true),
         }));
@@ -328,12 +328,12 @@ public sealed class CodeEditor : StatefulComponent
         {
             Tabular = true,
         });
-        row.Add(new IconButton(Icons.ChevronUp, "Previous match")
+        row.Add(new IconButton(Icons.ChevronUp, SdkStrings.PreviousMatch)
         {
             Size = SizeVariant.Small,
             OnPressed = () => Step(false),
         });
-        row.Add(new IconButton(Icons.ChevronDown, "Next match")
+        row.Add(new IconButton(Icons.ChevronDown, SdkStrings.NextMatch)
         {
             Size = SizeVariant.Small,
             OnPressed = () => Step(true),

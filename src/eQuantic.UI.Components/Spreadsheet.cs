@@ -136,7 +136,7 @@ public sealed class Spreadsheet : StatefulComponent
         {
             FirstRow = _first,
             OnChanged = () => SetState(() => { }),
-            Label = "Spreadsheet",
+            Label = SdkStrings.Spreadsheet,
         });
 
         var content = new Column(gap: 0) { Width = SizeValue.Fill };

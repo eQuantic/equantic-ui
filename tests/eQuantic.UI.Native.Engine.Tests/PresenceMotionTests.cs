@@ -191,7 +191,7 @@ public class PresenceMotionTests
         // The first frame WITHOUT the subtree detects the departure — the exit starts HERE (alpha 1).
         var departure = host.RenderFrame(new DisplayListBuilder(), 1050);
         departure.HasActiveMotion.Should().BeTrue("the departure frame starts the exit clock");
-        departure.HitRegions.Should().NotContain(r => r.Node.Label == "dismiss",
+        departure.HitRegions.Should().NotContain(r => r.Node.Label == "Dismiss",
             "a departed subtree is pixels only — input passes through immediately");
 
         // 50ms into the exit: the replay paints inside a falling-alpha layer.

@@ -279,9 +279,9 @@ public static class UI
         Icons? leading = null, SizeVariant size = SizeVariant.Large) =>
         new TextInput(value, onChanged, label, placeholder, helper, error, leading, size);
 
-    /// <summary>The search entry.</summary>
+    /// <summary>The search entry. Null placeholder = the SDK's localized default.</summary>
     public static SearchField SearchField(string query, Action<string>? onChanged = null,
-        string placeholder = "Search…", Action? onSubmit = null) =>
+        string? placeholder = null, Action? onSubmit = null) =>
         new SearchField(query, onChanged, placeholder, onSubmit);
 
     /// <summary>Linear progress; null value = indeterminate.</summary>

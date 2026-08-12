@@ -227,7 +227,7 @@ describe('SearchField end to end (transpiled component)', () => {
       // The pill has no visible label — the placeholder text is promoted to the real name.
     );
     const clear = container.querySelector('button')!;
-    expect(clear.getAttribute('aria-label')).toBe('clear search');
+    expect(clear.getAttribute('aria-label')).toBe('Clear search');
 
     clear.click();
     await nextFrame();

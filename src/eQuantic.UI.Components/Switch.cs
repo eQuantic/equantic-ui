@@ -72,7 +72,7 @@ public sealed class Switch : StatelessComponent
         return new Pressable(stack, Disabled ? null : OnChanged)
         {
             Disabled = Disabled,
-            Label = On ? "On" : "Off",
+            Label = On ? SdkStrings.On : SdkStrings.Off,
         };
     }
 

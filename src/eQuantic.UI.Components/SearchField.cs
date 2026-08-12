@@ -12,12 +12,14 @@ namespace eQuantic.UI.Components;
 /// </summary>
 public sealed class SearchField : StatelessComponent
 {
+    // The default cannot live IN the signature: a default parameter is a compile-time constant,
+    // and the placeholder is SDK vocabulary the localization seam owns (I18N-PLAN D14).
     public SearchField(string query, Action<string>? onChanged = null,
-        string placeholder = "Search…", Action? onSubmit = null)
+        string? placeholder = null, Action? onSubmit = null)
     {
         Query = query;
         OnChanged = onChanged;
-        Placeholder = placeholder;
+        Placeholder = placeholder ?? SdkStrings.SearchPlaceholder;
         OnSubmit = onSubmit;
     }
 
@@ -48,7 +50,7 @@ public sealed class SearchField : StatelessComponent
                 new Icon(Icons.Close, IconSize.Dense, theme.TextMuted),
                 () => OnChanged?.Invoke(""))
             {
-                Label = "clear search",
+                Label = SdkStrings.ClearSearch,
             });
         }
 

@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, Draggable, Positioned, Pressable, Sizing, Stack, StatelessComponent } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, Draggable, Positioned, Pressable, SdkStrings, Sizing, Stack, StatelessComponent } from "../runtime-exports";
 
 export class Switch extends StatelessComponent {
     declare on: boolean;
@@ -15,7 +15,7 @@ export class Switch extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let trackFill = this.on ? theme.colors('primary').base : theme.borderStrong;if (this.disabled) trackFill = trackFill.withOpacity(theme.disabledOpacity);let density = context.density;let travel = Sizing.switchTravel(density);let inset = 3;let track = new Box(new BoxStyle({ width: Sizing.switchWidth(density), height: Sizing.switchHeight(density), background: trackFill, cornerRadius: new CornerRadii(theme.shape('full')) }));let thumb = new Box(new BoxStyle({ width: Sizing.switchThumb(density), height: Sizing.switchThumb(density), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), elevation: 1 }));let draggableThumb = this.disabled ? thumb : new Draggable(thumb, (offset: number) => this.release(offset, travel), { axis: 'horizontal', min: this.on ? -travel : 0, max: this.on ? 0 : travel });let stack = new Stack();stack.add(track);stack.add(this.on ? new Positioned(draggableThumb, inset, inset) : new Positioned(draggableThumb, inset, null, null, inset));return new Pressable(stack, this.disabled ? null : this.onChanged, { disabled: this.disabled, label: this.on ? 'On' : 'Off' });
+        let theme = context.theme;let trackFill = this.on ? theme.colors('primary').base : theme.borderStrong;if (this.disabled) trackFill = trackFill.withOpacity(theme.disabledOpacity);let density = context.density;let travel = Sizing.switchTravel(density);let inset = 3;let track = new Box(new BoxStyle({ width: Sizing.switchWidth(density), height: Sizing.switchHeight(density), background: trackFill, cornerRadius: new CornerRadii(theme.shape('full')) }));let thumb = new Box(new BoxStyle({ width: Sizing.switchThumb(density), height: Sizing.switchThumb(density), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), elevation: 1 }));let draggableThumb = this.disabled ? thumb : new Draggable(thumb, (offset: number) => this.release(offset, travel), { axis: 'horizontal', min: this.on ? -travel : 0, max: this.on ? 0 : travel });let stack = new Stack();stack.add(track);stack.add(this.on ? new Positioned(draggableThumb, inset, inset) : new Positioned(draggableThumb, inset, null, null, inset));return new Pressable(stack, this.disabled ? null : this.onChanged, { disabled: this.disabled, label: this.on ? SdkStrings.on : SdkStrings.off });
     }
 
     release(offset: number, travel: number) {

@@ -65,7 +65,8 @@ public sealed class Checkbox : StatelessComponent
         return new Pressable(row, Disabled ? null : OnChanged)
         {
             Disabled = Disabled,
-            Label = Label ?? (Indeterminate ? "Partly selected" : Checked ? "Checked" : "Unchecked"),
+            Label = Label ?? (Indeterminate ? SdkStrings.PartlySelected
+                : Checked ? SdkStrings.Checked : SdkStrings.Unchecked),
         };
     }
 }

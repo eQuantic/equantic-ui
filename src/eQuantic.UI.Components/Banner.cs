@@ -68,7 +68,7 @@ public sealed class Banner : StatelessComponent
         {
             content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, tint.OnSubtle), OnDismiss)
             {
-                Label = "Dismiss",
+                Label = SdkStrings.Dismiss,
             });
         }
 

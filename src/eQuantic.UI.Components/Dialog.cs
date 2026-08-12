@@ -69,7 +69,7 @@ public sealed class Dialog : StatelessComponent
         }), Dismissible ? OnDismiss : null)
         {
             Disabled = !Dismissible,
-            Label = "dismiss",
+            Label = SdkStrings.Dismiss,
         };
 
         // The card: one Box carries ALL the chrome (fill, radius, E5 shadow — the shadow follows

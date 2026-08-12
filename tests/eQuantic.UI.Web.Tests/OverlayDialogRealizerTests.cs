@@ -85,6 +85,6 @@ public class OverlayDialogRealizerTests
         var node = Render(Confirm(dismissible: true));
         var scrim = Find(node, n => n.Tag == "button")!;
         scrim.Attributes.Should().NotContainKey("disabled");
-        scrim.Attributes["aria-label"].Should().Be("dismiss");
+        scrim.Attributes["aria-label"].Should().Be("Dismiss");
     }
 }

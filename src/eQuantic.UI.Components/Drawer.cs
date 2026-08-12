@@ -48,7 +48,7 @@ public sealed class Drawer : StatelessComponent
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
             Background = theme.Scrim,
-        }), OnDismiss) { Label = "Dismiss" });
+        }), OnDismiss) { Label = SdkStrings.Dismiss });
 
         var panel = new Box(new BoxStyle
         {
