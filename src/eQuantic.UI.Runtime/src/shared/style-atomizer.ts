@@ -381,9 +381,15 @@ export function atomizeScrolled(entries: Record<string, string | undefined>): st
     const rewritten = rewrite(value, vars);
     const declaration = declarationFor(name, rewritten);
     const className = `eq-${hashDeclaration(`scrolled|${declaration}`)}`;
+    // TAGGED, for the reason the pseudo family is: a scroll-linked declaration is not the resting
+    // style, so the class must stay in the map (mergeAtomicDeclaration classifies it as atomic)
+    // while effectiveStyle, which describes what the element looks like AT REST, skips it. Stored
+    // untagged, a scrolled veil read as part of the base style; the other branch reached for a
+    // `pseudo` this function does not have, which is how the typecheck found both.
+    const tagged = `scrolled\u0001${declaration}`;
     if (!known.has(className)) {
       known.add(className);
-      ruleTexts.set(className, declaration);
+      ruleTexts.set(className, tagged);
       const target = registry();
       try {
         target?.insertRule(`html.eq-scrolled .${className}{${declaration}}`, target.cssRules.length);
@@ -391,7 +397,7 @@ export function atomizeScrolled(entries: Record<string, string | undefined>): st
         /* unparsable rules must never take the app down */
       }
     } else {
-      ruleTexts.set(className, `${pseudo}\u0001${declaration}`);
+      ruleTexts.set(className, tagged);
     }
     classes.push(className);
   }

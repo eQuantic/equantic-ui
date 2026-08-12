@@ -64,7 +64,7 @@ describe('modal focus trap (§10)', () => {
     commitFocusTraps();
 
     expect(activeFocusTraps()).toHaveLength(0);
-    expect(document.activeElement).toBe(invoker, 'closing returns focus to the invoker');
+    expect(document.activeElement, 'closing returns focus to the invoker').toBe(invoker);
   });
 
   it('restores even when the layer stops being a trap without being removed', () => {
@@ -98,12 +98,12 @@ describe('modal focus trap (§10)', () => {
 
     last.focus();
     const forward = tab();
-    expect(forward.defaultPrevented).toBe(true, 'the page behind must not be reachable');
-    expect(document.activeElement).toBe(first, 'Tab wraps to the first focusable');
+    expect(forward.defaultPrevented, 'the page behind must not be reachable').toBe(true);
+    expect(document.activeElement, 'Tab wraps to the first focusable').toBe(first);
 
     const backward = tab(true);
-    expect(backward.defaultPrevented).toBe(true);
-    expect(document.activeElement).toBe(last, 'Shift+Tab wraps to the last');
+    expect(backward.defaultPrevented, 'Shift+Tab wraps to the last').toBe(true);
+    expect(document.activeElement).toBe(last);
 
     // Focus escaping by any other route (a click behind, a return from browser chrome) is pulled
     // back by the focusin guard.
@@ -125,7 +125,7 @@ describe('modal focus trap (§10)', () => {
     expect(activeFocusTraps()).toHaveLength(2);
     innerButton.focus();
     tab();
-    expect(document.activeElement).toBe(innerButton, 'a single focusable cycles to itself');
+    expect(document.activeElement, 'a single focusable cycles to itself').toBe(innerButton);
 
     // Closing the inner one hands the keyboard back to the outer, and focus with it.
     inner.remove();
@@ -145,7 +145,7 @@ describe('modal focus trap (§10)', () => {
     commitFocusTraps();
 
     const event = tab();
-    expect(event.defaultPrevented).toBe(true);
-    expect(document.activeElement).toBe(empty, 'tabindex=-1 makes the container the fallback');
+    expect(event.defaultPrevented, 'tabindex=-1 makes the container the fallback').toBe(true);
+    expect(document.activeElement).toBe(empty);
   });
 });

@@ -8,7 +8,7 @@ const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
 
 /** The web half of arrow-key adjustment (C# twin: the Photon host's dispatch). */
 describe('adjustable lowering (C# cross-pin)', () => {
-  function lower(onAdjust?: (d: number) => void, role?: string) {
+  function lower(onAdjust?: (d: number) => void, role?: AdjustableNode['role']) {
     const node: AdjustableNode = {
       nodeKind: 'adjustable',
       child: { nodeKind: 'text', content: 'knob', role: 'label' } as unknown as AdjustableNode['child'],
