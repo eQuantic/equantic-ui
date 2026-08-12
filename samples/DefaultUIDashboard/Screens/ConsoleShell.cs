@@ -52,6 +52,7 @@ public static class ConsoleShell
     public static readonly NavEntry[] Explore =
     [
         new(Icons.Plus, "Declarative", "/declarative"),
+        new(Icons.Info, "Markdown", "/markdown"),
     ];
 
     /// <summary>
