@@ -760,6 +760,21 @@ public sealed class Link : VisualNode
 
     /// <summary>Accessible name when the child carries no text of its own (icon-only links).</summary>
     public string? Label { get; init; }
+
+    /// <summary>
+    /// Keeps the reader WHERE THEY ARE instead of starting the new page at its top.
+    /// <para>
+    /// Arriving at the top is right for a link that takes you somewhere else, and wrong for one that
+    /// swaps a panel beside a list you were half-way down — a documentation sidebar being the case
+    /// that names it: the content changes, everything jumps to the top, and a navigation that
+    /// preserved the entire shell is indistinguishable from a page that reloaded.
+    /// </para>
+    /// <para>
+    /// Chrome that keeps its own scrolling never had this problem and does not need this flag. It is
+    /// for the layouts where the list and the content share one scroll.
+    /// </para>
+    /// </summary>
+    public bool KeepsPosition { get; init; }
 }
 
 /// <summary>

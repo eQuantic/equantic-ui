@@ -638,6 +638,9 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
     children: [],
   };
   if (node.label) anchor.attributes['aria-label'] = node.label;
+  // Read by the router when it decides where the new page starts (C# twin). On the anchor because
+  // that is what the router's one delegated click listener meets.
+  if (node.keepsPosition) anchor.attributes['data-eq-keep-position'] = '';
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) anchor.children.push(child);
   return anchor;

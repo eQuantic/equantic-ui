@@ -193,6 +193,26 @@ describe('Router (happy-dom)', () => {
     scrollTo.mockRestore();
   });
 
+  /**
+   * A link may ask to KEEP THE READER'S POSITION. Arriving at the top is right for a link that takes
+   * you somewhere else, and wrong for one that swaps a panel beside a list you were half-way down —
+   * a documentation sidebar being the case that names it. The shell survives the navigation either
+   * way; what changes is whether the reader loses their place in it.
+   */
+  it('keeps the position when the link asked to', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    Object.defineProperty(window, 'scrollY', { value: 640, configurable: true });
+
+    const a = anchor({ href: '/counter', 'data-eq-keep-position': '' });
+    a.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(scrollTo).toHaveBeenCalledWith(0, 640);
+    expect(scrollTo).not.toHaveBeenCalledWith(0, 0);
+    scrollTo.mockRestore();
+  });
+
   it('sets manual scroll restoration when supported', () => {
     if ('scrollRestoration' in window.history) {
       expect(window.history.scrollRestoration).toBe('manual');

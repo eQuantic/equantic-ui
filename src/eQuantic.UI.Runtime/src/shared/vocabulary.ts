@@ -788,8 +788,14 @@ export class Link extends VisualNode {
   destination: string;
   child: VisualChild;
   label: string | null = null;
+  /** Keeps the reader where they are instead of starting the new page at its top (C# twin). */
+  keepsPosition = false;
 
-  constructor(destination: string, child: VisualChild, config?: { label?: string | null }) {
+  constructor(
+    destination: string,
+    child: VisualChild,
+    config?: { label?: string | null; keepsPosition?: boolean },
+  ) {
     super();
     this.destination = destination;
     this.child = child;

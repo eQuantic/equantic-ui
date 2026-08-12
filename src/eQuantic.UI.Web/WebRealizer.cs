@@ -1509,6 +1509,10 @@ public static class WebRealizer
             AriaLabel = link.Label,
             RawAttributes = new Dictionary<string, string> { ["href"] = link.Destination },
         };
+        // Read by the router when it decides where the new page starts. On the anchor rather than in
+        // a side table because the router meets the ANCHOR — a delegated click listener, one for the
+        // whole document, which is also what makes server-rendered links work with no wiring.
+        if (link.KeepsPosition) element.RawAttributes["data-eq-keep-position"] = "";
         if (LowerNode(link.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;

@@ -183,28 +183,37 @@ export class Router {
    * updates immediately, as callers expect). When guards exist they're consulted first — asynchronously,
    * since a guard may be async — and a cancel leaves the URL untouched while a redirect navigates elsewhere.
    */
-  private goForward(match: RouteMatch, url: URL): Promise<void> {
+  private goForward(match: RouteMatch, url: URL, keepPosition = false): Promise<void> {
     if (this.guards.length === 0) {
-      return this.commitForward(match, url);
+      return this.commitForward(match, url, keepPosition);
     }
-    return this.goForwardGuarded(match, url);
+    return this.goForwardGuarded(match, url, keepPosition);
   }
 
-  private async goForwardGuarded(match: RouteMatch, url: URL): Promise<void> {
+  private async goForwardGuarded(match: RouteMatch, url: URL, keepPosition: boolean): Promise<void> {
     const decision = await this.runGuards(match, url);
     if (decision === false) return; // cancelled — leave the URL untouched
     if (typeof decision === 'string') {
       await this.navigate(decision); // redirect
       return;
     }
-    return this.commitForward(match, url); // decision === true → allowed
+    return this.commitForward(match, url, keepPosition); // decision === true → allowed
   }
 
-  /** Commit an approved forward navigation: save outgoing scroll, push the entry, render, scroll to top. */
-  private commitForward(match: RouteMatch, url: URL): Promise<void> {
+  /**
+   * Commit an approved forward navigation: save outgoing scroll, push the entry, render, and start
+   * the new page at its top — unless the link asked to KEEP THE READER'S POSITION.
+   *
+   * Arriving at the top is right for a link that takes you somewhere else, and wrong for one that
+   * swaps a panel beside a list you were half-way down. A documentation sidebar is the case that
+   * names it: the shell is preserved, a couple of hundred nodes are patched, and then everything
+   * jumps to the top — which is indistinguishable, to a reader, from the page having reloaded.
+   */
+  private commitForward(match: RouteMatch, url: URL, keepPosition = false): Promise<void> {
+    const stay: ScrollTarget = { x: this.win.scrollX, y: this.win.scrollY };
     this.saveScroll();
     this.win.history.pushState(null, '', url.pathname + url.search + url.hash);
-    return this.activate(match, url, 'top');
+    return this.activate(match, url, keepPosition ? stay : 'top');
   }
 
   /**
@@ -278,7 +287,8 @@ export class Router {
     if (!match) return; // unknown route → let the browser navigate (server fallthrough)
 
     e.preventDefault();
-    void this.goForward(match, url);
+    // The LINK decides where the new page starts (Link.KeepsPosition → data-eq-keep-position).
+    void this.goForward(match, url, anchor.hasAttribute('data-eq-keep-position'));
   }
 
   /** Whether an anchor opts into (rather than out of) SPA interception. */

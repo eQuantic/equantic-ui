@@ -20,6 +20,17 @@ describe('link lowering (navigation semantics)', () => {
     expect(html.children).toHaveLength(1);
   });
 
+  // The router reads this off the anchor to decide where the new page starts (C# twin).
+  it('marks a link that keeps the reader position', () => {
+    expect(lower(new Link('/a', new Text('a', 'label')))!.attributes['data-eq-keep-position'])
+      .toBeUndefined();
+    expect(
+      lower(new Link('/a', new Text('a', 'label'), { keepsPosition: true }))!.attributes[
+        'data-eq-keep-position'
+      ],
+    ).toBe('');
+  });
+
   it('carries the accessible label for icon-only links', () => {
     const html = lower(new Link('/x', new Box(new BoxStyle({})), { label: 'Home' }))!;
     expect(html.attributes['aria-label']).toBe('Home');

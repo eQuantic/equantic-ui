@@ -478,6 +478,8 @@ export interface LinkNode extends VisualNodeValue {
   destination: string;
   child: VisualNodeValue;
   label?: string | null;
+  /** Keeps the reader where they are instead of starting the new page at its top (C# twin). */
+  keepsPosition?: boolean;
 }
 
 /** Gestures v2: vertical drag-to-dismiss — the child follows a downward drag; releasing past the

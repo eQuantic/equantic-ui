@@ -27,6 +27,26 @@ public class LinkRealizerTests
         node.Children.Should().NotBeEmpty();
     }
 
+    /// <summary>
+    /// A link may ask to KEEP THE READER'S POSITION, and the router reads it off the anchor.
+    /// <para>
+    /// Arriving at the top is right for a link that takes you somewhere else, and wrong for one that
+    /// swaps a panel beside a list you were half-way down: the whole shell survives the navigation,
+    /// a couple of hundred nodes are patched, and then everything jumps to the top — which reads,
+    /// to the person looking at it, exactly like the page reloaded.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ALinkCanAskToKeepTheReadersPosition()
+    {
+        var plain = WebRealizer.Lower(new Link("/docs/b", new Text("B", TypeRole.Label)), Theme).Render();
+        var keeps = WebRealizer.Lower(
+            new Link("/docs/b", new Text("B", TypeRole.Label)) { KeepsPosition = true }, Theme).Render();
+
+        plain.Attributes.Should().NotContainKey("data-eq-keep-position", "a new page starts at its top");
+        keeps.Attributes.Should().ContainKey("data-eq-keep-position");
+    }
+
     [Fact]
     public void FillChild_GetsThePassThroughChain()
     {
