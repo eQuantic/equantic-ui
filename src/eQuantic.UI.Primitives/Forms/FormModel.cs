@@ -74,6 +74,24 @@ public static class Rules
     /// <summary>An arbitrary predicate, for the rule this list does not have. The escape hatch is
     /// part of the design: a closed rule set gets worked around with a fake one.</summary>
     public static FieldRule Custom(string message, Func<string, bool> holds) => new(message, holds);
+
+    /// <summary>
+    /// A rule that only applies while <paramref name="condition"/> holds — "required, but only for
+    /// a business account", "a valid phone, but only if you asked to be called".
+    /// <para>
+    /// It wraps rather than replaces, so every rule above is conditional for free and there is no
+    /// second grammar to learn. While the condition is false the rule holds VACUOUSLY: not "the
+    /// value passed" but "nothing was asked of it", which is why the field goes quiet instead of
+    /// keeping the last answer it gave.
+    /// </para>
+    /// <para>
+    /// The condition reads whatever it closes over — usually another field, which the controller
+    /// re-runs on every change, and sometimes page state, which the page announces with
+    /// <see cref="FormController.Revalidate"/>.
+    /// </para>
+    /// </summary>
+    public static FieldRule When(Func<bool> condition, FieldRule rule) =>
+        new(rule.Message, value => !condition() || rule.Holds(value));
 }
 
 /// <summary>
@@ -89,13 +107,16 @@ public static class Rules
 public sealed class FormField
 {
     private readonly List<FieldRule> _rules;
+    private readonly Func<bool>? _relevantWhen;
 
-    public FormField(string name, string initial = "", IReadOnlyList<FieldRule>? rules = null)
+    public FormField(string name, string initial = "", IReadOnlyList<FieldRule>? rules = null,
+        Func<bool>? relevantWhen = null)
     {
         Name = name;
         Initial = initial;
         Value = initial;
         _rules = rules is null ? [] : [.. rules];
+        _relevantWhen = relevantWhen;
         // A form is invalid the moment it opens if a required field is empty, and it has to KNOW
         // that before anyone types: without this the first submit found nothing wrong and ran.
         // (Saying nothing yet is `VisibleError`'s job, not this one's.)
@@ -120,13 +141,27 @@ public sealed class FormField
     /// <summary>The value differs from <see cref="Initial"/>.</summary>
     public bool Dirty => Value != Initial;
 
+    /// <summary>
+    /// This field APPLIES right now. A shipping address on an order being collected in store is not
+    /// a field with a passing rule, it is a field that is not being asked — so it holds no error, it
+    /// cannot make the form invalid, and a page may draw it or leave it out.
+    /// <para>
+    /// The value survives becoming irrelevant, deliberately: someone who fills in a phone number,
+    /// switches to email and switches back finds their number where they left it. Only the QUESTION
+    /// went away.
+    /// </para>
+    /// </summary>
+    public bool Relevant => _relevantWhen is null || _relevantWhen();
+
     /// <summary>The first rule that does not hold, or null. Computed on every change, so it is
     /// always current... see <see cref="VisibleError"/> for the one a field may DISPLAY.</summary>
     public string? Error { get; private set; }
 
     /// <summary>The error the field is allowed to show: an error, once the user has left the field
-    /// or the form has been submitted. This is the property a component binds to.</summary>
-    public string? VisibleError => Touched ? Error : null;
+    /// or the form has been submitted, and only while the field still applies. Relevance is read
+    /// here rather than trusted from the last revalidation, so a field that goes away goes quiet on
+    /// the same frame. This is the property a component binds to.</summary>
+    public string? VisibleError => Touched && Relevant ? Error : null;
 
     public IReadOnlyList<FieldRule> RulesFor => _rules;
 
@@ -187,6 +222,9 @@ public sealed class FormField
     private void Revalidate()
     {
         Error = null;
+        // A field nobody is asking cannot be wrong. Checked here rather than in every rule so
+        // that turning a field off also CLEARS what it was complaining about a moment ago.
+        if (!Relevant) return;
         foreach (var rule in _rules)
         {
             if (rule.Holds(Value)) continue;

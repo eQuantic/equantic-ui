@@ -153,4 +153,39 @@ describe('the form model in the browser (C# cross-pin)', () => {
     expect(form.submitError).toBe('Service unavailable');
     expect(form.submitting).toBe(false);
   });
+
+  /**
+   * Conditional validation, cross-pinned with FormModelTests.cs. A rule that only applies under a
+   * condition, and a field that is not being asked at all — the two halves of a form whose shape
+   * changes as it is filled in.
+   */
+  it('does not ask a conditional rule while its condition is false', () => {
+    const form = new FormController();
+    const kind = form.add('kind', 'personal');
+    form.add('taxNumber', '', [Rules.when(() => kind.value === 'company', Rules.required())]);
+
+    expect(form.valid).toBe(true);
+
+    form.set('kind', 'company');
+
+    expect(form.valid).toBe(false);
+    expect(form.field('taxNumber')?.error).toBe('This field is required.');
+  });
+
+  it('an irrelevant field holds no error, blocks nothing, and keeps what was typed', () => {
+    const form = new FormController();
+    const contact = form.add('contact', 'phone');
+    form.add('phone', '', [Rules.required(), Rules.minLength(9)], () => contact.value === 'phone');
+
+    form.set('phone', '123');
+    form.touch('phone');
+    expect(form.field('phone')?.visibleError).toBe('Use at least 9 characters.');
+
+    form.set('contact', 'email');
+
+    expect(form.field('phone')?.relevant).toBe(false);
+    expect(form.field('phone')?.visibleError).toBe(null);
+    expect(form.valid).toBe(true);
+    expect(form.field('phone')?.value).toBe('123');
+  });
 });

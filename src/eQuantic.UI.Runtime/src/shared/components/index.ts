@@ -51,6 +51,8 @@ export { FieldError } from './FieldError';
 export { FieldRule } from './FieldRule';
 export { FormController } from './FormController';
 export { FormField } from './FormField';
+export { FormInput } from './FormInput';
+export { FormSubmit } from './FormSubmit';
 export { IconButton } from './IconButton';
 export { IndentationFoldProvider } from './IndentationFoldProvider';
 export { JsonLanguage } from './JsonLanguage';

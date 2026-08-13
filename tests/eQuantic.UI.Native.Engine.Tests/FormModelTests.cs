@@ -240,6 +240,92 @@ public class FormModelTests
         beats.Should().Be(4);
     }
 
+    /// <summary>
+    /// A rule that only applies under a condition — the ordinary shape of a real form. The invoice
+    /// needs a tax number ONLY for a company, and while "personal" is selected the same empty box
+    /// is not a problem to be fixed.
+    /// </summary>
+    [Fact]
+    public void AConditionalRuleIsNotAskingWhileItsConditionIsFalse()
+    {
+        var form = new FormController();
+        var kind = form.Add("kind", "personal");
+        form.Add("taxNumber", rules: [Rules.When(() => kind.Value == "company", Rules.Required())]);
+
+        form.Valid.Should().BeTrue("a personal invoice is not missing a tax number");
+
+        form.Set("kind", "company");
+
+        form.Valid.Should().BeFalse("the same empty box is now the one thing missing");
+        form.Field("taxNumber")!.Error.Should().Be("This field is required.");
+    }
+
+    /// <summary>
+    /// The other half: a field that is not being ASKED at all. Its rules do not run, it cannot hold
+    /// the form invalid, and what it already said stops being said — a red box under a question
+    /// that is no longer on screen is the worst of both.
+    /// </summary>
+    [Fact]
+    public void AnIrrelevantFieldHoldsNoErrorAndBlocksNothing()
+    {
+        var form = new FormController();
+        var contact = form.Add("contact", "phone");
+        form.Add("phone", relevantWhen: () => contact.Value == "phone",
+            rules: [Rules.Required(), Rules.MinLength(9)]);
+
+        form.Set("phone", "123");
+        form.Touch("phone");
+        form.Field("phone")!.VisibleError.Should().Be("Use at least 9 characters.");
+        form.Valid.Should().BeFalse();
+
+        form.Set("contact", "email");   // the question goes away
+
+        form.Field("phone")!.Relevant.Should().BeFalse();
+        form.Field("phone")!.Error.Should().BeNull();
+        form.Field("phone")!.VisibleError.Should().BeNull();
+        form.Valid.Should().BeTrue();
+    }
+
+    /// <summary>What was typed survives the question going away and coming back. Losing it is the
+    /// kind of small betrayal that makes people distrust a form.</summary>
+    [Fact]
+    public void AFieldThatComesBackStillHasWhatWasTypedInIt()
+    {
+        var form = new FormController();
+        var contact = form.Add("contact", "phone");
+        form.Add("phone", relevantWhen: () => contact.Value == "phone", rules: [Rules.Required()]);
+        form.Set("phone", "+351 912 345 678");
+
+        form.Set("contact", "email");
+        form.Set("contact", "phone");
+
+        form.Field("phone")!.Value.Should().Be("+351 912 345 678");
+        form.Field("phone")!.Relevant.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// A condition that reads state the form does not own — a checkbox held by the page. Nothing
+    /// inside the form changed, so nothing revalidated on its own... which is exactly what
+    /// <see cref="FormController.Revalidate"/> is for.
+    /// </summary>
+    [Fact]
+    public void AConditionOutsideTheFormIsAnnouncedByTheOwner()
+    {
+        var shipElsewhere = false;
+        var form = new FormController();
+        form.Add("address", rules: [Rules.When(() => shipElsewhere, Rules.Required())]);
+        var beats = 0;
+        form.Changed += () => beats++;
+
+        form.Valid.Should().BeTrue();
+
+        shipElsewhere = true;
+        form.Revalidate();
+
+        form.Valid.Should().BeFalse();
+        beats.Should().Be(1, "the page told the form, and the form told the screen");
+    }
+
     private static FormController Filled()
     {
         var form = SignUp();

@@ -44,7 +44,7 @@ public sealed class FormController
             // backing-field keyword, and a form library is the one place that name is unavoidable
             // everywhere else.
             foreach (var entry in _fields)
-                if (entry.Error is not null) return false;
+                if (entry.Relevant && entry.Error is not null) return false;
             return true;
         }
     }
@@ -61,9 +61,16 @@ public sealed class FormController
         }
     }
 
-    public FormField Add(string name, string initial = "", IReadOnlyList<FieldRule>? rules = null)
+    /// <summary>
+    /// Declares a field. <paramref name="relevantWhen"/> is what makes a form CONDITIONAL at the
+    /// field level: while it answers false the field is not being asked, so it holds no error and
+    /// cannot make the form invalid. For a rule that comes and goes on a field that stays, wrap the
+    /// rule in <see cref="Rules.When"/> instead.
+    /// </summary>
+    public FormField Add(string name, string initial = "", IReadOnlyList<FieldRule>? rules = null,
+        Func<bool>? relevantWhen = null)
     {
-        var field = new FormField(name, initial, rules);
+        var field = new FormField(name, initial, rules, relevantWhen);
         _fields.Add(field);
         return field;
     }
@@ -92,6 +99,17 @@ public sealed class FormController
         target.Set(value);
         foreach (var entry in _fields)
             if (!ReferenceEquals(entry, target)) entry.RevalidateNow();
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Re-runs every rule and announces the result. Changing a field already does this — the caller
+    /// this exists for is a CONDITION that lives outside the form: a checkbox in page state, a plan
+    /// chosen on a previous step, a toggle in a dialog. The page flips it and says so here.
+    /// </summary>
+    public void Revalidate()
+    {
+        foreach (var field in _fields) field.RevalidateNow();
         Changed?.Invoke();
     }
 

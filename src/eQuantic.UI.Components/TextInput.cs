@@ -53,6 +53,13 @@ public sealed class TextInput : StatefulComponent
     public bool Autofocus { get; init; }
     public bool Obscure { get; init; }
 
+    /// <summary>
+    /// Focus arrived or left. The input already tracks focus for its own border, and swallowed the
+    /// fact — but LEAVING a field is the moment a form is allowed to say what is wrong with it, so
+    /// the news has to reach whoever is holding the rules.
+    /// </summary>
+    public Action<bool>? OnFocusChanged { get; init; }
+
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not TextInput fresh) return;
@@ -99,7 +106,11 @@ public sealed class TextInput : StatefulComponent
             Disabled = Disabled,
             Obscure = Obscure,
             Autofocus = Autofocus,
-            OnFocusChanged = focused => SetState(() => _focused = focused),
+            OnFocusChanged = focused =>
+            {
+                SetState(() => _focused = focused);
+                OnFocusChanged?.Invoke(focused);
+            },
         }, 1));
 
         var container = new Box(new BoxStyle

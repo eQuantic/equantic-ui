@@ -7,5 +7,6 @@ export class Rules {
     static range(min: number, max: number, message: string | null = null) { let number: any; return new FieldRule(message ?? `Enter a number between ${min} and ${max}.`, (value: string) => {if (value.length === 0) return true;return (number = parseFloat(value), !isNaN(number)) && number >= min && number <= max;}); }
     static matches(other: FormField, message: string | null = null) { return new FieldRule(message ?? 'The two values do not match.', (value: string) => value === other.value); }
     static custom(message: string, holds: (value: string) => boolean) { return new FieldRule(message, holds); }
+    static when(condition: () => boolean, rule: FieldRule) { return new FieldRule(rule.message, (value: string) => !condition() || rule.holds(value)); }
 }
 
