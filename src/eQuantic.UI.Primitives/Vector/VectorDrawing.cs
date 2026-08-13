@@ -8,7 +8,9 @@ public enum VectorPaintKind : byte
     None = 0,
 
     /// <summary>Painted in whatever tints the drawing — SVG's <c>currentColor</c>. This is the
-    /// artwork ASKING to be tinted, and it is what makes a logo follow a theme.</summary>
+    /// artwork ASKING to be tinted, and it is what makes a logo follow a theme. Its
+    /// <see cref="VectorPaint.Color"/> carries only an ALPHA: a mark whose subtitle is the same ink
+    /// at 55% is one drawing, not two.</summary>
     Inherit = 1,
 
     /// <summary>A literal color the artwork chose for itself.</summary>
@@ -23,7 +25,10 @@ public readonly record struct VectorPaint(VectorPaintKind Kind, Color Color)
 {
     public static readonly VectorPaint None = new(VectorPaintKind.None, default);
 
-    public static readonly VectorPaint Inherit = new(VectorPaintKind.Inherit, default);
+    /// <summary>Tinted at full strength. `Inherit` at a fraction is this with a lower alpha —
+    /// <c>new VectorPaint(VectorPaintKind.Inherit, Color.Black.WithOpacity(0.55f))</c>, where only
+    /// the alpha is read.</summary>
+    public static readonly VectorPaint Inherit = new(VectorPaintKind.Inherit, Color.Black);
 
     public static VectorPaint Solid(Color color) => new(VectorPaintKind.Solid, color);
 
@@ -34,9 +39,15 @@ public readonly record struct VectorPaint(VectorPaintKind Kind, Color Color)
     public Color Resolve(Color tint) => Kind switch
     {
         VectorPaintKind.Solid => Color,
-        VectorPaintKind.Inherit => tint,
+        // The tint answers WHICH colour; the paint still owns how much of it — `fill-opacity` on a
+        // `currentColor` shape would otherwise be dropped, and a subtitle drawn at full strength
+        // is a different logo.
+        VectorPaintKind.Inherit => tint.WithOpacity(Color.A / 255f),
         _ => Color.Transparent,
     };
+
+    /// <summary>The alpha this paint applies on top of whatever colour it resolves to.</summary>
+    public float Alpha => Kind == VectorPaintKind.None ? 0 : Color.A / 255f;
 }
 
 /// <summary>
@@ -90,6 +101,8 @@ public sealed record VectorDrawing(
 
     public bool IsEmpty => Shapes.Count == 0 || Width <= 0 || Height <= 0;
 
+    /// <summary>Four decimals, which is what the web's own number formatter uses — the viewBox is
+    /// emitted by BOTH lowerings and a digit of disagreement is a patch on every hydration.</summary>
     private static string Number(float value) =>
-        MathF.Round(value, 3).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        value.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
 }

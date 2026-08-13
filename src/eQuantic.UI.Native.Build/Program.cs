@@ -54,6 +54,31 @@ if (args.Length > 0 && args[0] == "capabilities")
     return 0;
 }
 
+// `vectors` — the app's `Assets/**/*.svg`, as one C# class of drawing data. A browser cannot read
+// a file and a phone should not carry its artwork twice, so the reading happens HERE and what the
+// app compiles against is a typed member per file.
+if (args.Length > 0 && args[0] == "vectors")
+{
+    string? Arg(string flag)
+    {
+        var index = Array.IndexOf(args, flag);
+        return index >= 0 && args.Length > index + 1 ? args[index + 1].Trim() : null;
+    }
+
+    var assets = Arg("--assets");
+    var output = Arg("--out");
+    var ns = Arg("--namespace");
+    if (assets is null || output is null || ns is null)
+    {
+        Console.Error.WriteLine("Usage: eqicon vectors --assets <dir> --out <file.g.cs> --namespace <ns>");
+        return 1;
+    }
+
+    var count = VectorCatalog.Write(assets, output, ns);
+    if (count > 0) Console.WriteLine($"eqicon: {count} drawing(s) → {output}");
+    return 0;
+}
+
 // `bundle` — the macOS .app around a built head. A separate verb because it is a different job
 // from deriving artwork, and the SDK calls it with what the project already knows.
 if (args.Length > 0 && args[0] == "bundle")

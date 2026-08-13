@@ -301,6 +301,9 @@ public static class LayoutEngine
         // A vector is the same em-box at the size the author asked for — square unless they gave
         // it an aspect, which is what a diagram's connector or a banner rule needs.
         Vector vector => ctx.Node(vector, new Rect(0, 0, vector.Size, vector.Height)),
+        // Artwork is an explicitly placed box too — its height comes from the drawing's own aspect
+        // when the author gave only a width, which the node already resolved.
+        Drawing drawing => ctx.Node(drawing, new Rect(0, 0, drawing.Width, drawing.Height)),
         // The Spinner shares the icon em-box contract (spec B15: sizes = the §07 whitelist).
         Spinner spinner => ctx.Node(spinner, new Rect(0, 0, spinner.Size, spinner.Size)),
         // The INLINE-BLOCK barrier (CSS twin): a button, a link and an input are not block-level —
@@ -390,6 +393,7 @@ public static class LayoutEngine
         Image image => image.Width,
         Icon icon => icon.Size,
         Vector vector => vector.Size,
+        Drawing drawing => drawing.Width,
         Spinner spinner => spinner.Size,
         CameraPreview camera => camera.Width,
         Spacer spacer => spacer.FixedLength,
@@ -1646,6 +1650,7 @@ public static class LayoutEngine
         Image => SizeKind.Fixed,
         Icon => SizeKind.Fixed,
         Vector => SizeKind.Fixed,
+        Drawing => SizeKind.Fixed,
         Spinner => SizeKind.Fixed,
         Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
         // Layout-transparent wrappers delegate to what they wrap.

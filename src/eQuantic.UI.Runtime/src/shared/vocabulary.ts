@@ -15,6 +15,7 @@ import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
   ColorTokenValue,
+  ColorValue,
   CrossAlignValue,
   EdgeInsetsValue,
   MainAlignValue,
@@ -1270,6 +1271,119 @@ export class Vector extends VisualNode {
     this.size = size;
     this.height = height > 0 ? height : size;
     this.color = color;
+    this.label = label;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `VectorPaint`. */
+export class VectorPaint {
+  kind: string;
+  color: ColorValue;
+
+  constructor(kind: string, color: ColorValue, config?: EqConfig) {
+    this.kind = kind;
+    this.color = color;
+    if (config) Object.assign(this, config);
+  }
+
+  static none(): VectorPaint {
+    return new VectorPaint('none', { r: 0, g: 0, b: 0, a: 0 });
+  }
+
+  /** Tinted at full strength; a fraction of the tint is this with a lower alpha. */
+  static inherit(): VectorPaint {
+    return new VectorPaint('inherit', { r: 0, g: 0, b: 0, a: 255 });
+  }
+
+  static solid(color: ColorValue): VectorPaint {
+    return new VectorPaint('solid', color);
+  }
+}
+
+/** Mirror of the C# `VectorShape`. */
+export class VectorShape {
+  path: string;
+  fill: VectorPaint;
+  stroke: VectorPaint;
+  strokeWidth: number;
+  evenOdd: boolean;
+  opacity: number;
+
+  constructor(
+    path: string,
+    fill: VectorPaint,
+    stroke: VectorPaint = VectorPaint.none(),
+    strokeWidth = 1,
+    evenOdd = false,
+    opacity = 1,
+    config?: EqConfig,
+  ) {
+    this.path = path;
+    this.fill = fill;
+    this.stroke = stroke;
+    this.strokeWidth = strokeWidth;
+    this.evenOdd = evenOdd;
+    this.opacity = opacity;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `VectorDrawing` — what a `.svg` file became at build time. */
+export class VectorDrawing {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+  shapes: VectorShape[];
+
+  constructor(
+    minX: number,
+    minY: number,
+    width: number,
+    height: number,
+    shapes: VectorShape[],
+    config?: EqConfig,
+  ) {
+    this.minX = minX;
+    this.minY = minY;
+    this.width = width;
+    this.height = height;
+    this.shapes = shapes;
+    if (config) Object.assign(this, config);
+  }
+
+  get aspect(): number {
+    return this.height <= 0 ? 1 : this.width / this.height;
+  }
+}
+
+/** Mirror of the C# `Drawing`: vector artwork at a size the author decides. */
+export class Drawing extends VisualNode {
+  readonly nodeKind = 'drawing';
+  artwork: VectorDrawing;
+  width: number;
+  /** The box's HEIGHT — the artwork's own aspect unless the author decided. */
+  height: number;
+  tint: ColorTokenValue | null;
+  label: string | null;
+
+  constructor(
+    artwork: VectorDrawing,
+    width: number,
+    height = 0,
+    tint: ColorTokenValue | null = null,
+    label: string | null = null,
+    config?: EqConfig,
+  ) {
+    super();
+    this.artwork = artwork;
+    this.width = width;
+    // Defensive about the artwork itself: a drawing whose asset failed to generate is a page that
+    // should lose a logo, not a page that throws while building its tree.
+    const aspect = artwork && artwork.height > 0 ? artwork.width / artwork.height : 1;
+    this.height = height > 0 ? height : width / (aspect <= 0 ? 1 : aspect);
+    this.tint = tint;
     this.label = label;
     if (config) Object.assign(this, config);
   }

@@ -131,6 +131,7 @@ public static class WebRealizer
         Overlay overlay => LowerOverlay(overlay, context),
         Icon icon => LowerIcon(icon, context),
         Vector vector => LowerVector(vector),
+        Drawing drawing => LowerDrawing(drawing),
         Spinner spinner => LowerSpinner(spinner, context),
         Primitives.Image image => LowerImage(image),
         CameraPreview camera => LowerCameraPreview(camera),
@@ -605,6 +606,87 @@ public static class WebRealizer
 
     private static HtmlElement LowerIcon(Icon icon, ComponentContext context)
         => LowerGlyph(icon.Glyph, icon.Size, icon.Size, icon.Color, icon.Label);
+
+    /// <summary>
+    /// Artwork stays VECTOR in the DOM: one inline <c>&lt;svg&gt;</c> carrying the drawing's own
+    /// viewBox, and one <c>&lt;path&gt;</c> per shape with the paint the file chose. It scales
+    /// without blurring, it prints, and it costs no request.
+    /// <para>
+    /// The shapes the file left as <c>currentColor</c> are emitted as <c>currentColor</c> — the
+    /// word, not a resolved value — so the CSS colour on the wrapper answers them. That is what
+    /// makes a monochrome mark follow the theme, and it is why the tint is set as `color` rather
+    /// than painted into every path.
+    /// </para>
+    /// </summary>
+    private static HtmlElement LowerDrawing(Drawing drawing)
+    {
+        var svg = new RealizedElement("svg")
+        {
+            Style = new HtmlStyle
+            {
+                // Block for the same reason a glyph is: an inline svg sits on the text baseline of
+                // whatever holds it and picks up a line box it never asked for.
+                Display = Core.Display.Block,
+                Width = TokenCss.Px(drawing.Width),
+                Height = TokenCss.Px(drawing.Height),
+                Color = drawing.Tint is { } tint ? TokenCss.Value(tint) : null,
+            },
+        };
+        svg.RawAttributes = new Dictionary<string, string>
+        {
+            ["viewBox"] = drawing.Artwork.ViewBox,
+            // Each axis scales independently, matching the box the author asked for — the same
+            // contract Vector states. A caller who wants the artwork undistorted omits the height
+            // and gets the drawing's own aspect.
+            ["preserveAspectRatio"] = "none",
+            ["fill"] = "none",
+        };
+        if (drawing.Label is { } label) svg.RawAttributes["aria-label"] = label;
+        else svg.RawAttributes["aria-hidden"] = "true";
+
+        foreach (var shape in drawing.Artwork.Shapes)
+        {
+            var path = new RealizedElement("path");
+            var attributes = new Dictionary<string, string> { ["d"] = shape.Path };
+            attributes["fill"] = PaintCss(shape.Fill);
+            // `currentColor` has no alpha of its own, so an inherited paint drawn at a fraction
+            // says so beside it — a Solid one carries its alpha in the colour already.
+            if (shape.Fill.Kind == VectorPaintKind.Inherit && shape.Fill.Alpha < 1)
+                attributes["fill-opacity"] = TokenCss.Number(shape.Fill.Alpha);
+            if (shape.Stroke.Paints)
+            {
+                attributes["stroke"] = PaintCss(shape.Stroke);
+                if (shape.Stroke.Kind == VectorPaintKind.Inherit && shape.Stroke.Alpha < 1)
+                    attributes["stroke-opacity"] = TokenCss.Number(shape.Stroke.Alpha);
+                attributes["stroke-width"] = TokenCss.Number(shape.StrokeWidth);
+                attributes["stroke-linecap"] = "round";
+                attributes["stroke-linejoin"] = "round";
+            }
+            if (shape.EvenOdd) attributes["fill-rule"] = "evenodd";
+            if (shape.Opacity < 1) attributes["opacity"] = TokenCss.Number(shape.Opacity);
+            path.RawAttributes = attributes;
+            svg.Children.Add(path);
+        }
+        return svg;
+    }
+
+    private static string PaintCss(VectorPaint paint) => paint.Kind switch
+    {
+        VectorPaintKind.Inherit => "currentColor",
+        VectorPaintKind.Solid => CssColor(paint.Color),
+        _ => "none",
+    };
+
+    /// <summary>
+    /// A literal artwork colour, which is NOT a token: it is what the designer drew, and it does
+    /// not move with the theme. Spelled `#rrggbb(aa)` because the client twin's own formatter is —
+    /// the two lowerings have to agree byte for byte or hydration patches every path it touches.
+    /// </summary>
+    private static string CssColor(Primitives.Color color) =>
+        color.A == 255
+            ? $"#{color.R:x2}{color.G:x2}{color.B:x2}"
+            : $"#{color.R:x2}{color.G:x2}{color.B:x2}{color.A:x2}";
+
 
     private static HtmlElement LowerGlyph(IconGlyph glyph, float width, float height, ColorToken? color, string? label)
     {

@@ -129,6 +129,12 @@ public static class UI
         float height = 0) =>
         new Vector(glyph, size, color, label, height);
 
+    /// <summary>Vector ARTWORK — several shapes, each in the colour its designer chose. Give it one
+    /// number and it keeps the drawing's own aspect, because a squashed logo is a wrong logo.</summary>
+    public static Drawing Drawing(VectorDrawing artwork, float width, float height = 0,
+        ColorToken? tint = null, string? label = null) =>
+        new Drawing(artwork, width, height, tint, label);
+
     /// <summary>A bitmap with explicit dimensions (layout never waits for the network).</summary>
     public static Image Image(string source, float width, float height, ImageFit fit = ImageFit.Cover,
         string alt = "") =>

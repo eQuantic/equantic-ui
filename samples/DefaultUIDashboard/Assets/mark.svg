@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A mark with the three cases that matter: literal colour, a group transform, and a shape
+     that asks to be tinted by whatever holds it. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80">
+  <rect x="0" y="0" width="240" height="80" rx="16" fill="#1E1B4B"/>
+  <g transform="translate(24 16) scale(1.5)">
+    <circle cx="16" cy="16" r="16" fill="#6366F1"/>
+    <path d="M8 16 L14 22 L24 10" stroke="#E0E7FF" stroke-width="3" fill="none"/>
+  </g>
+  <path d="M112 30h96v8h-96z" fill="currentColor"/>
+  <path d="M112 46h64v6h-64z" fill="currentColor" fill-opacity="0.55"/>
+</svg>

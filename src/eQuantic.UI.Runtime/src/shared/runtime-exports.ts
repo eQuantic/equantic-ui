@@ -65,6 +65,10 @@ export {
   Sticky,
   AdaptiveNode,
   Vector,
+  Drawing,
+  VectorDrawing,
+  VectorPaint,
+  VectorShape,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';
 export { Navigator } from '../router/navigator';

@@ -309,6 +309,36 @@
         <_EqIconToolDir Condition="!Exists('$(_EqIconToolDir)eqicon.dll')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
     </PropertyGroup>
 
+    <!--
+        The app's VECTOR ARTWORK: every `Assets/**/*.svg`, read here and written as one C# class of
+        drawing data. Nothing at runtime reads a file — the browser cannot, and a phone would be
+        carrying the artwork twice — so an app points at a file and compiles against
+        `Vectors.Mark`, which is a compile error when it is wrong.
+
+        It lands under the compiler's own generated tree, which is where eqc already looks (the
+        generated-sources flag), so the same drawing reaches C#, the transpiler and both realizers.
+    -->
+    <PropertyGroup>
+        <EQuanticVectorsFile Condition="'$(EQuanticVectorsFile)' == ''">$(IntermediateOutputPath)generated/eQuantic.UI.Vectors/Vectors.g.cs</EQuanticVectorsFile>
+        <EQuanticVectorsNamespace Condition="'$(EQuanticVectorsNamespace)' == ''">$(RootNamespace)</EQuanticVectorsNamespace>
+        <EQuanticVectorsNamespace Condition="'$(EQuanticVectorsNamespace)' == ''">$(AssemblyName)</EQuanticVectorsNamespace>
+    </PropertyGroup>
+
+    <Target Name="EQuanticVectors" BeforeTargets="BeforeCompile;CompileEQuanticUI"
+        Condition="Exists('$(EQuanticAssetsDir)') AND Exists('$(_EqIconToolDir)eqicon.dll')"
+        Inputs="$(EQuanticAssetsDir)/**/*.svg" Outputs="$(EQuanticVectorsFile)">
+        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; vectors --assets &quot;$(EQuanticAssetsDir)&quot; --out &quot;$(MSBuildProjectDirectory)/$(EQuanticVectorsFile)&quot; --namespace &quot;$(EQuanticVectorsNamespace)&quot;"
+            StandardOutputImportance="normal" />
+
+        <!-- Added HERE, not in a file-scope ItemGroup: an `Exists` condition outside a target is
+             answered while MSBuild evaluates the project, which is before this target has written
+             anything. A cold build failed on `Vectors` not existing and the next one passed —
+             the shape of bug that reads as flaky and is not. -->
+        <ItemGroup>
+            <Compile Include="$(EQuanticVectorsFile)" Condition="Exists('$(EQuanticVectorsFile)')" />
+        </ItemGroup>
+    </Target>
+
     <Target Name="EQuanticWebAppIcon" BeforeTargets="Build"
         Condition="'$(EQuanticAppIconSource)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')">
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --web &quot;$(MSBuildProjectDirectory)/wwwroot/_equantic/icons&quot; --app &quot;$(ApplicationTitle)&quot;"

@@ -54,6 +54,13 @@ public sealed class FormScreen : StatefulComponent
         var theme = context.Theme;
         var column = new Column(gap: Space.S4) { Width = SizeValue.Fill, Cross = CrossAlign.Start };
 
+        // `Assets/mark.svg`, read at BUILD time into `Vectors.Mark` — the same drawing data the
+        // browser gets as inline <svg> and a native window gets as GPU pixels. The tint answers
+        // ONLY the two shapes the file left as currentColor, and it is a fixed light ink rather
+        // than a theme token on purpose: the plate under them is part of the artwork and is dark
+        // in both modes, so a token that flips would make the wordmark vanish in one of them.
+        column.Add(new Drawing(Vectors.Mark, 240,
+            tint: new ColorToken(Color.FromRgb(224, 231, 255)), label: "eQuantic"));
         column.Add(new Text("Create your account", TypeRole.Heading, theme.TextPrimary));
         column.Add(new Text(
             "Type a broken address and nothing turns red. Leave the field and it does. "

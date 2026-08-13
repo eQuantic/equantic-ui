@@ -674,6 +674,48 @@ export interface VectorNode extends VisualNodeValue {
   label?: string | null;
 }
 
+/** `VectorPaintKind` transpiles to camelCase member strings. */
+export type VectorPaintKindValue = 'none' | 'inherit' | 'solid';
+
+/** Mirrors `VectorPaint`: three states, because "not painted" and "painted in whatever tints me"
+ * are different answers and a null cannot be both. */
+export interface VectorPaintValue {
+  kind: VectorPaintKindValue;
+  color: ColorValue;
+}
+
+/** One shape of a drawing — path data on the artwork's own grid, plus how it paints. */
+export interface VectorShapeValue {
+  path: string;
+  fill: VectorPaintValue;
+  stroke: VectorPaintValue;
+  strokeWidth: number;
+  evenOdd: boolean;
+  opacity: number;
+}
+
+/** Mirrors `VectorDrawing`: what a `.svg` FILE became, read once at build time. */
+export interface VectorDrawingValue {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+  shapes: VectorShapeValue[];
+}
+
+/** Vector ARTWORK: several shapes, each in the colour its designer chose. */
+export interface DrawingNode extends VisualNodeValue {
+  nodeKind: 'drawing';
+  artwork: VectorDrawingValue;
+  /** The box's WIDTH in dp. */
+  width: number;
+  /** The box's HEIGHT — the artwork's own aspect unless the author decided. */
+  height: number;
+  /** What answers the shapes the file left as `currentColor`. */
+  tint?: ColorTokenValue | null;
+  label?: string | null;
+}
+
 export interface StackNode extends VisualNodeValue {
   nodeKind: 'stack';
   align: AlignmentValue;

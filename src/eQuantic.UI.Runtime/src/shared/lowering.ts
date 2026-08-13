@@ -41,6 +41,8 @@ import type {
   ColorTokenValue,
   ColorValue,
   ComponentNode,
+  DrawingNode,
+  VectorPaintValue,
   CornerRadiiValue,
   EdgeInsetsValue,
   FlexNodeValue,
@@ -302,6 +304,9 @@ function lowerNode(
       return lowerGlyph(vector.glyph, vector.size, vector.height ?? vector.size,
         vector.color ?? null, vector.label ?? null);
     }
+    // C# twin: artwork stays VECTOR in the DOM — one <path> per shape, the paint the file chose.
+    case 'drawing':
+      return lowerDrawing(node as unknown as DrawingNode);
     case 'spinner':
       return lowerSpinner(node as SpinnerNode);
     case 'stack':
@@ -1345,6 +1350,58 @@ function lowerGlyph(
     attributes,
     events: {},
     children: [{ tag: 'path', attributes: { d: glyph.path }, events: {}, children: [] }],
+  };
+}
+
+/**
+ * Mirror of the C# `LowerDrawing`. The shapes the file left as `currentColor` stay the WORD, so the
+ * `color` on the wrapper answers them — that is what makes a monochrome mark follow the theme.
+ */
+function lowerDrawing(node: DrawingNode): HtmlNode {
+  const artwork = node.artwork;
+  const attributes: Record<string, string | undefined> = {
+    ...atomicAttrs({
+      display: 'block',
+      width: px(node.width),
+      height: px(node.height),
+      color: node.tint ? tokenValue(node.tint) : undefined,
+    }),
+    viewBox: `${num(artwork.minX)} ${num(artwork.minY)} ${num(artwork.width)} ${num(artwork.height)}`,
+    preserveAspectRatio: 'none',
+    fill: 'none',
+  };
+  if (node.label) attributes['aria-label'] = node.label;
+  else attributes['aria-hidden'] = 'true';
+
+  const paint = (value: VectorPaintValue): string =>
+    value.kind === 'inherit' ? 'currentColor' : value.kind === 'solid' ? hex(value.color) : 'none';
+
+  return {
+    tag: 'svg',
+    attributes,
+    events: {},
+    children: (artwork.shapes ?? []).map((shape) => {
+      const shapeAttributes: Record<string, string | undefined> = {
+        d: shape.path,
+        fill: paint(shape.fill),
+      };
+      // `currentColor` has no alpha of its own — the C# realizer says why, and the two must agree.
+      const alpha = (value: VectorPaintValue): number =>
+        value.kind === 'none' ? 0 : value.color.a / 255;
+      if (shape.fill.kind === 'inherit' && alpha(shape.fill) < 1)
+        shapeAttributes['fill-opacity'] = num(alpha(shape.fill));
+      if (shape.stroke.kind !== 'none') {
+        shapeAttributes['stroke'] = paint(shape.stroke);
+        if (shape.stroke.kind === 'inherit' && alpha(shape.stroke) < 1)
+          shapeAttributes['stroke-opacity'] = num(alpha(shape.stroke));
+        shapeAttributes['stroke-width'] = num(shape.strokeWidth);
+        shapeAttributes['stroke-linecap'] = 'round';
+        shapeAttributes['stroke-linejoin'] = 'round';
+      }
+      if (shape.evenOdd) shapeAttributes['fill-rule'] = 'evenodd';
+      if (shape.opacity < 1) shapeAttributes['opacity'] = num(shape.opacity);
+      return { tag: 'path', attributes: shapeAttributes, events: {}, children: [] };
+    }),
   };
 }
 

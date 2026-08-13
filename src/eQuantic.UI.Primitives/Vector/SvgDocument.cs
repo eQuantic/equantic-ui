@@ -268,10 +268,12 @@ public static class SvgDocument
             return next;
         }
 
+        /// <summary>`fill-opacity` on ANY paint that draws — an inherited one keeps it in the alpha
+        /// slot its colour does not use, so `currentColor` at 55% survives to the realizer.</summary>
         private static VectorPaint WithOpacity(VectorPaint paint, float opacity) =>
-            paint.Kind == VectorPaintKind.Solid
-                ? VectorPaint.Solid(paint.Color.WithOpacity(Math.Clamp(opacity, 0, 1)))
-                : paint;
+            paint.Kind == VectorPaintKind.None
+                ? paint
+                : paint with { Color = paint.Color.WithOpacity(Math.Clamp(opacity, 0, 1)) };
     }
 
     private static string? Property(Dictionary<string, string> attributes,

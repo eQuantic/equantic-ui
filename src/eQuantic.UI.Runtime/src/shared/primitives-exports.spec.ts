@@ -31,6 +31,14 @@ const NO_TWIN_OWED = new Set([
   'ComponentInstanceStore',
   'FlexNode',
   'VisualNodeExtensions',
+  // BUILD TIME ONLY: reading a `.svg` and normalizing its path data happens where FILES exist,
+  // and the browser has none. What crosses is the DRAWING those produce — VectorDrawing and its
+  // shapes are exported; the reader, the normalizer and its geometry are not.
+  'SvgDocument',
+  'VectorPath',
+  'VectorPoint',
+  'VectorSegment',
+  'VectorTransform',
   // The seam a HOST arms so `context.GetService<T>()` can answer. A page names the capability, not
   // the scope; the client's twin of it is the ComponentContext.getService method.
   'CapabilityScope',

@@ -735,6 +735,44 @@ public static class PhotonRealizer
                 break;
             }
 
+            // Artwork: the same rasterizer an icon rides, ONCE PER SHAPE, each drawn in its own
+            // colour. The alternative was teaching the engine about colour rasters, and this needs
+            // nothing new: a texture command already carries a tint, and a drawing is a handful of
+            // shapes, not a scene.
+            case Drawing drawing:
+            {
+                if (motion.IconRasterizer is not { } drawingIcons)
+                {
+                    // No platform service (tests, headless): the documented placeholder, one box
+                    // rather than one per shape — it stands for the artwork, not for its parts.
+                    var box = (drawing.Tint ?? theme.TextPrimary).Resolve(mode).WithOpacity(0.30f);
+                    builder.FillRRect(new RRect(node.Bounds, new CornerRadii(0)), Paint.Solid(box));
+                    break;
+                }
+
+                var cache = motion.IconCache ?? IconRasterCache.Shared;
+                var inherited = (drawing.Tint ?? theme.TextPrimary).Resolve(mode);
+                foreach (var shape in drawing.Artwork.Shapes)
+                {
+                    // Fill and stroke are two rasters, because they are two shapes: the same path
+                    // as an alpha mask, and the same path as an outline of a given width.
+                    if (shape.Fill.Paints)
+                        EmitShape(shape, IconGlyphStyle.Fill, shape.Fill.Resolve(inherited));
+                    if (shape.Stroke.Paints)
+                        EmitShape(shape, IconGlyphStyle.Stroke, shape.Stroke.Resolve(inherited));
+                }
+
+                void EmitShape(VectorShape shape, IconGlyphStyle style, Color color)
+                {
+                    var glyph = new IconGlyph("", shape.Path, style, drawing.Artwork.ViewBox,
+                        shape.StrokeWidth);
+                    if (cache.Get(drawingIcons, glyph, drawing.Width, drawing.Height,
+                            motion.RenderScale) is not { } raster) return;
+                    builder.Texture(node.Bounds, color.WithOpacity(shape.Opacity), raster);
+                }
+                break;
+            }
+
             case Spinner spinner:
                 EmitSpinner(node, spinner, theme, mode, builder, motion);
                 break;
