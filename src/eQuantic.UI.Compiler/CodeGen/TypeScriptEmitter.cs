@@ -1808,6 +1808,19 @@ public class TypeScriptEmitter
         {
             tsType = "() => void";
         }
+        // `Func<…>` is the same shape with an answer: the LAST type argument is the return, the
+        // rest are parameters. Missing here, the C# spelling reached TypeScript verbatim — a
+        // shared method taking a `Func<string, bool>` emitted `holds: Func<string, bool>`, which
+        // names nothing in TS and fails the emitted module's own type check. (`Action<T>` was
+        // taught this the same way, by the first shared method that took one.)
+        else if (tsType.StartsWith("Func<") && tsType.EndsWith(">"))
+        {
+            var arguments = SplitTopLevel(tsType[5..^1]).Select(argument => argument.Trim()).ToList();
+            var result = CSharpTypeToTypeScript(arguments[^1]);
+            var parameters = arguments[..^1].Select((argument, index) =>
+                $"{(arguments.Count == 2 ? "value" : "arg" + (index + 1))}: {CSharpTypeToTypeScript(argument)}");
+            tsType = $"({string.Join(", ", parameters)}) => {result}";
+        }
         else if (tsType.StartsWith("Dictionary<") && tsType.EndsWith(">"))
         {
             tsType = "Record<string, any>";

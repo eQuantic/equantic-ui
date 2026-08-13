@@ -56,7 +56,14 @@ public class NumberMethodStrategy : IConversionStrategy
             if (args.Count < 2) return "false";
             
             var input = context.Converter.ConvertExpression(args[0].Expression);
-            var outArg = args[1];
+            // The `out` is the LAST argument, not the second. `TryParse(s, out var n)` and
+            // `TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var n)` are the same
+            // method with the same answer, and taking args[1] on the four-argument overload wrote
+            // the NUMBER STYLE where the variable belonged: `(511 = parseFloat(value), !isNaN(511))`,
+            // which is not even syntax. The styles and the provider have no JS equivalent worth
+            // emitting — `parseFloat` is already invariant and permissive — so they are dropped,
+            // deliberately, and the value they carried is the one this comment owes you.
+            var outArg = args[^1];
             
             string varName = "";
             bool isDeclaration = false;

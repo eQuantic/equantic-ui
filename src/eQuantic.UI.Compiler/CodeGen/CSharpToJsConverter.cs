@@ -126,6 +126,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<EnumHasFlagStrategy>();
         _strategyRegistry.Register<NullableStrategy>();
         _strategyRegistry.Register<StructuralEqualsStrategy>();
+        _strategyRegistry.Register<ReferenceEqualsStrategy>();
         _strategyRegistry.Register<TupleExpressionStrategy>();
         _strategyRegistry.Register<TupleMemberAccessStrategy>();
         _strategyRegistry.Register<CheckedExpressionStrategy>();
