@@ -21,8 +21,13 @@ public class DateTimeStrategy : ConversionStrategyBase
     {
         switch (node)
         {
-            case ObjectCreationExpressionSyntax oc:
-                return IsType(context.SemanticHelper.GetType(oc)) || oc.Type.ToString() == "DateTime";
+            // BaseObjectCreation, not ObjectCreation: `new DateTime(…)` and the TARGET-TYPED
+            // `DateTime x = new(…)` are different syntax nodes, and only the first was matched —
+            // so an ordinary modern-C# field emitted `new DateTime(…)` into JavaScript, where
+            // the type does not exist ("DateTime is not defined", at run time, far from here).
+            case BaseObjectCreationExpressionSyntax oc:
+                return IsType(context.SemanticHelper.GetType(oc))
+                    || (oc is ObjectCreationExpressionSyntax named && named.Type.ToString() == "DateTime");
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsDateTimeMember(ma, context);
@@ -40,7 +45,7 @@ public class DateTimeStrategy : ConversionStrategyBase
         context.UsedHelpers.Add(Eq.Import);
         switch (node)
         {
-            case ObjectCreationExpressionSyntax oc:
+            case BaseObjectCreationExpressionSyntax oc:
                 return $"{Eq.DateTime}({ConvertArgs(oc.ArgumentList, context)})";
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:

@@ -19,13 +19,15 @@ public class QueueStackStrategy : ConversionStrategyBase
     {
         switch (node)
         {
-            case ObjectCreationExpressionSyntax oc:
+            // Target-typed `new(…)` included (BaseObjectCreation) — see DateTimeStrategy.
+            case BaseObjectCreationExpressionSyntax oc:
             {
                 // Semantic resolution is AUTHORITATIVE: a resolved non-collection type (e.g. the Photon
                 // vocabulary `Stack`) must not fall through to the name heuristic — that heuristic only
                 // covers snippets with no semantic model.
                 var resolved = context.SemanticHelper.GetType(oc);
-                return resolved != null ? KindOf(resolved) != null : KindOfName(oc.Type.ToString()) != null;
+                if (resolved != null) return KindOf(resolved) != null;
+                return oc is ObjectCreationExpressionSyntax named && KindOfName(named.Type.ToString()) != null;
             }
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
@@ -43,12 +45,14 @@ public class QueueStackStrategy : ConversionStrategyBase
     {
         switch (node)
         {
-            case ObjectCreationExpressionSyntax oc:
+            case BaseObjectCreationExpressionSyntax oc:
             {
                 context.UsedHelpers.Add(Eq.Import);
                 var resolvedType = context.SemanticHelper.GetType(oc);
                 var kind = KindOf(resolvedType)
-                    ?? (resolvedType is null ? KindOfName(oc.Type.ToString()) : null)
+                    ?? (resolvedType is null && oc is ObjectCreationExpressionSyntax named
+                        ? KindOfName(named.Type.ToString())
+                        : null)
                     ?? "queue";
                 return $"$eq.collections.{kind}({ConvertArgs(oc.ArgumentList, context)})";
             }

@@ -27,6 +27,16 @@ public class StatementConformanceTests
     [InlineData("var pairs = new[] { (2, 5), (3, 7) }; int total = 0; foreach ((var a, var b) in pairs) { total += a + b; } return total;")] // 17
     // nested deconstruction
     [InlineData("var rows = new[] { (1, (2, 3)) }; int total = 0; foreach (var (a, (b, c)) in rows) { total += a + b + c; } return total;")] // 6
+    // TARGET-TYPED construction of the .NET compat types — `DateTime x = new(…)`, ordinary
+    // modern C#. Only the explicit `new DateTime(…)` was recognized, so a page with a target-typed
+    // field emitted the C# TYPE NAME into JavaScript and died at run time with "DateTime is not
+    // defined", nowhere near the declaration that caused it.
+    [InlineData("DateTime moment = new(2024, 1, 15); return moment.ToString();")]
+    [InlineData("DateTime moment = new(2024, 1, 5, 9, 3, 7); return moment.AddDays(2).ToString();")]
+    [InlineData("TimeSpan span = new(1, 30, 0); return span.ToString();")]
+    [InlineData("DateOnly day = new(2024, 3, 9); return day.ToString();")]
+    [InlineData("TimeOnly clock = new(14, 5, 9); return clock.ToString();")]
+    [InlineData("DateTimeOffset stamp = new(new DateTime(2024, 1, 15), TimeSpan.Zero); return stamp.Year;")]
     // MULTI-DECLARATOR statements — `float x0, y0;` is several variables in one statement, with
     // and without initializers; only the first used to survive, and `y0 is not defined` waited
     // at runtime (found by the mermaid layout, the first shared code to write one).

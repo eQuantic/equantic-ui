@@ -18,8 +18,9 @@ public class TimeSpanStrategy : ConversionStrategyBase
     {
         switch (node)
         {
-            case ObjectCreationExpressionSyntax oc:
-                return IsType(context.SemanticHelper.GetType(oc)) || oc.Type.ToString() == "TimeSpan";
+            case BaseObjectCreationExpressionSyntax oc:
+                return IsType(context.SemanticHelper.GetType(oc))
+                    || (oc is ObjectCreationExpressionSyntax named && named.Type.ToString() == "TimeSpan");
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsTimeSpanMember(ma, context);
@@ -37,7 +38,7 @@ public class TimeSpanStrategy : ConversionStrategyBase
         context.UsedHelpers.Add(Eq.Import);
         switch (node)
         {
-            case ObjectCreationExpressionSyntax oc:
+            case BaseObjectCreationExpressionSyntax oc:
                 return $"{Eq.TimeSpan}({ConvertArgs(oc.ArgumentList, context)})";
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:

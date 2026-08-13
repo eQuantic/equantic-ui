@@ -17,8 +17,9 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
     {
         switch (node)
         {
-            case ObjectCreationExpressionSyntax oc:
-                return KindOf(context.SemanticHelper.GetType(oc)) != null || KindOfName(oc.Type.ToString()) != null;
+            case BaseObjectCreationExpressionSyntax oc:
+                return KindOf(context.SemanticHelper.GetType(oc)) != null
+                    || (oc is ObjectCreationExpressionSyntax named && KindOfName(named.Type.ToString()) != null);
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return Kind(ma, context) != null;
@@ -36,9 +37,10 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
         context.UsedHelpers.Add(Eq.Import);
         switch (node)
         {
-            case ObjectCreationExpressionSyntax oc:
+            case BaseObjectCreationExpressionSyntax oc:
             {
-                var kind = KindOf(context.SemanticHelper.GetType(oc)) ?? KindOfName(oc.Type.ToString());
+                var kind = KindOf(context.SemanticHelper.GetType(oc))
+                    ?? (oc is ObjectCreationExpressionSyntax named ? KindOfName(named.Type.ToString()) : null);
                 return $"$eq.time.{kind}({ConvertArgs(oc.ArgumentList, context)})";
             }
 

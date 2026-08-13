@@ -23,8 +23,9 @@ public class StringBuilderStrategy : ConversionStrategyBase
     {
         switch (node)
         {
-            case ObjectCreationExpressionSyntax oc:
-                return IsType(context.SemanticHelper.GetType(oc)) || oc.Type.ToString() == "StringBuilder";
+            case BaseObjectCreationExpressionSyntax oc:
+                return IsType(context.SemanticHelper.GetType(oc))
+                    || (oc is ObjectCreationExpressionSyntax named && named.Type.ToString() == "StringBuilder");
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsMember(ma, context);
@@ -42,7 +43,7 @@ public class StringBuilderStrategy : ConversionStrategyBase
         context.UsedHelpers.Add(Eq.Import);
         switch (node)
         {
-            case ObjectCreationExpressionSyntax oc:
+            case BaseObjectCreationExpressionSyntax oc:
                 return $"{Eq.StringBuilder}({ConvertArgs(oc.ArgumentList, context)})";
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
