@@ -1,6 +1,6 @@
 <Project>
     <PropertyGroup>
-        <Version>0.2.0-preview.27</Version>
+        <Version>0.2.0-preview.28</Version>
         <Authors>eQuantic</Authors>
         <Company>eQuantic</Company>
         <Product>eQuantic.UI</Product>
