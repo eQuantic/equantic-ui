@@ -5,6 +5,25 @@ namespace eQuantic.UI.Native.Framework;
 /// <summary>One laid-out line of a measured paragraph.</summary>
 public readonly record struct MeasuredLine(float Width, bool Ellipsized);
 
+/// <summary>
+/// One piece of a RICH paragraph as the layout placed it: the text, the style it is drawn in, and
+/// where it sits inside the paragraph's box. A run that wraps produces several of these — a
+/// fragment is a run ON A LINE, which is the only unit that has a rectangle.
+/// </summary>
+/// <param name="Destination">
+/// Where this piece navigates to, when it belongs to a linked run. The rectangle is why it is here:
+/// a link inside a sentence can only be pressed if something knows which pixels are the link, and
+/// on a target that draws its own glyphs, nothing else does.
+/// </param>
+public readonly record struct TextFragment(
+    string Content,
+    TypeStyle Style,
+    float X,
+    float Y,
+    float Width,
+    Primitives.ColorToken? Color = null,
+    string? Destination = null);
+
 /// <summary>A measured paragraph: overall block size plus per-line widths (for placeholder rendering
 /// and, later, glyph placement).</summary>
 public sealed class TextMeasurement

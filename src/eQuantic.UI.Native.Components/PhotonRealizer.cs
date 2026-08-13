@@ -29,9 +29,16 @@ public readonly record struct ScrollRegion(Rect Bounds, string Path, float MaxOf
 /// </summary>
 public readonly record struct DragRegion(Rect Bounds, string Path, VisualNode Node);
 
-/// <summary>A navigation surface (the write-once Link): a tap no pressable claims resolves to the
-/// TOPMOST link region under the point, through the host's navigation seam.</summary>
-public readonly record struct LinkRegion(Rect Bounds, Link Node);
+/// <summary>
+/// A navigation surface: a tap no pressable claims resolves to the TOPMOST link region under the
+/// point, through the host's navigation seam.
+/// <para>
+/// It carries the DESTINATION rather than the <see cref="Link"/> node, because a link is not always
+/// a node: a linked run inside a sentence is a rectangle the layout computed and a string, and the
+/// destination was the only thing the host ever asked the node for.
+/// </para>
+/// </summary>
+public readonly record struct LinkRegion(Rect Bounds, string Destination);
 
 /// <summary>Spec S8: a keyboard binding that is live because its subtree is on screen — the host
 /// dispatches a key press to the LAST registered match (the dialog on top wins the chord).</summary>
@@ -653,6 +660,16 @@ public static class PhotonRealizer
 
             case Text text:
                 EmitText(node, text, theme, mode, builder, motion);
+                // A LINKED RUN is a navigation surface of its own: the layout knows which pixels
+                // the words cover, and nothing else does on a target that draws its own glyphs.
+                // Registered per fragment, so a link that wraps is pressable on both its lines.
+                if (node.TextRuns is { Count: > 0 } linked)
+                    foreach (var fragment in linked)
+                        if (fragment.Destination is { Length: > 0 } destination)
+                            input.Add(new LinkRegion(
+                                new Rect(node.Bounds.X + fragment.X, node.Bounds.Y + fragment.Y,
+                                    fragment.Width, node.Text?.LineHeight ?? node.Bounds.Height),
+                                destination));
                 break;
 
             // Spec B9 fence: the entry renders the W4 one-line placeholder bar — value in
@@ -938,7 +955,7 @@ public static class PhotonRealizer
         {
             // Navigation surface: pure semantics — the child paints; a tap that no pressable claims
             // resolves to this region through the host's navigation seam.
-            input.Add(new LinkRegion(node.Bounds, link));
+            input.Add(new LinkRegion(node.Bounds, link.Destination));
             foreach (var child in node.Children)
                 Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             return;
@@ -1157,6 +1174,30 @@ public static class PhotonRealizer
     /// </summary>
     private static void EmitText(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, MotionScope motion)
     {
+        // A RICH paragraph is drawn PIECE BY PIECE — one raster per run per line, each in its own
+        // style. Drawn as one raster of the joined text, a sentence lost its bold, its inline code
+        // and its links at once, and the native side of every markdown page was flat prose.
+        if (motion.TextRasterizer is { } runRasterizer && node.TextRuns is { Count: > 0 } fragments)
+        {
+            var cache = motion.TextCache ?? TextRasterCache.Shared;
+            var baseColor = (text.Color ?? theme.TextPrimary).Resolve(mode);
+            foreach (var fragment in fragments)
+            {
+                if (fragment.Content == " ") continue;   // a space paints nothing
+                var raster = cache.Get(runRasterizer, fragment.Content, fragment.Style, motion.TypeScale,
+                    float.PositiveInfinity, 1, motion.RenderScale);
+                if (raster is null) continue;
+                var rect = new Rect(
+                    node.Bounds.X + fragment.X,
+                    node.Bounds.Y + fragment.Y - raster.PadTop / motion.RenderScale,
+                    raster.Texture.Width / motion.RenderScale,
+                    raster.Texture.Height / motion.RenderScale);
+                var ink = fragment.Color is { } runColor ? runColor.Resolve(mode) : baseColor;
+                builder.Texture(rect, ink, raster.Texture);
+            }
+            return;
+        }
+
         if (motion.TextRasterizer is { } rasterizer && node.Text is { } measured)
         {
             var style = text.StyleOverride ?? theme.Type(text.Role);

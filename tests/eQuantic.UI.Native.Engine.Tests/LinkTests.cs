@@ -33,8 +33,8 @@ public class LinkTests
         var frame = host.RenderFrame(new DisplayListBuilder());
 
         frame.LinkRegions.Should().HaveCount(2);
-        frame.LinkRegions[0].Node.Destination.Should().Be("/users/2");
-        frame.LinkRegions[1].Node.Destination.Should().Be("/detail");
+        frame.LinkRegions[0].Destination.Should().Be("/users/2");
+        frame.LinkRegions[1].Destination.Should().Be("/detail");
     }
 
     [Fact]

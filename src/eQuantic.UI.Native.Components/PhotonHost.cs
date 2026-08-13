@@ -1817,7 +1817,7 @@ public sealed class PhotonHost
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             if (!regions[i].Bounds.Contains(point)) continue;
-            _navigationRequested(regions[i].Node.Destination);
+            _navigationRequested(regions[i].Destination);
             return true;
         }
         return false;
