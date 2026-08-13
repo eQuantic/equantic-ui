@@ -279,16 +279,17 @@ translation changes as data, not code.
   positional composite format (`"Olá, {0}!"`) — the first real page hits it immediately. EQ2100
   exists from day one with the accepted set = plain positional: specifiers are refused until M2
   widens the set, never approximated.
-  - Exit: `[ ]` the e2e identity test passes on a resx-backed page (including a `{0}` string).
+  - Exit: `[x]` the e2e identity test passes on a resx-backed page (including a `{0}` string) — shipped 0.2.0-preview.26 (b8a17e5).
 - **M1 — Two cultures + switching.** Request negotiation, `__EQ_CULTURE__`, `setCulture` re-render.
-  - Exit: `[ ]` pt-BR SSR → switch to en → re-render, no reload, no hydration warning.
-  - Exit: `[ ]` a pt-BR page with ZERO app resx announces "Marcado" on a Checkbox (D14: the SDK's
-    own strings localize without the app authoring anything), and `<html lang="pt-BR">` is SSR'd.
+  - Exit: `[x]` pt-BR SSR → switch to en → re-render, no reload, no hydration warning (d2cfd22).
+  - Exit: `[x]` a pt-BR page with ZERO app resx announces "Marcado" on a Checkbox (D14: the SDK's
+    own strings localize without the app authoring anything), and `<html lang="pt-BR">` is SSR'd
+    (c4c9f1b — measured live: pt-BR announces "Marcado", es announces "Seleccionado").
 - **M2 — Formatting subset.** The D7 specifier set green in the conformance harness; EQ2100's
   accepted set widens from plain-positional to the full subset; EQ2101 fires on malformed or
   arity-mismatched culture templates.
-  - Exit: `[ ]` cross-pinned fixture asserted by BOTH C# and vitest.
-  - Exit: `[ ]` the EQ2101 negative test fails the build on a mismatched `pt-BR` template.
+  - Exit: `[x]` cross-pinned fixture asserted by BOTH C# and vitest (7e94d68 — generated FROM real .NET, three cultures, 100+ cases including the bare `{0}`).
+  - Exit: `[x]` the EQ2101 negative test fails the build on a mismatched `pt-BR` template (extra {n}, dropped {n}, malformed — all pinned).
 - **M3 — Native.** Two cultures on Photon under AOT.
   - Exit: `[ ]` the macOS shell renders both cultures from the same component classes.
 - **M4 — Docs + template.** Wiki page, the SDK template ships a `Strings.resx` and a working
@@ -312,7 +313,14 @@ translation changes as data, not code.
   no rework.
 - **Translator workflow is `.resx`/XLIFF** — the framework will not grow a translation UI.
 - **Missing key never throws.** It renders the key and warns once: a missing translation must
-  degrade to ugly, never to a blank page or a crashed render.
+  degrade to ugly, never to a blank page or a crashed render. The SDK's OWN keys carry one more
+  net: the neutral English rides the runtime as generated data, so a page with no catalog at all
+  reads "Search…" rather than "SearchPlaceholder".
+- **A culture negotiated at runtime with no authored catalog degrades to the NEUTRAL facts.** An
+  app shipping pt-BR and es whose visitor switches to plain `en` gets neutral strings AND neutral
+  (invariant) formats — deterministic and visible, never browser-dependent. The exact-agreement
+  promise of the D7 subset is scoped to the cultures the app ships; emitting catalogs for every
+  middleware-supported culture is a v2 build option.
 - **The rendered shell is per-culture.** The active culture's catalog rides inline in every page's
   shell (the D3 size trade-off, restated for the HTML), and any SSR output caching must include
   culture in its key (W4). Alternate cultures load on demand via `strings/{culture}.json` (D4/D6).
@@ -336,6 +344,14 @@ translation changes as data, not code.
 ---
 
 ## Status log
+
+- **2026-08-13 — M1 + M2 shipped (with W8 the day before).** `ICultureController` (the
+  IThemeController shape, BCP-47 names because the contract crosses to a browser), CultureSwitcher,
+  setCulture over cached catalogs with the server's own pick walk; the D7 subset cross-pinned by a
+  fixture GENERATED from real .NET — banker's pre-rounding, currency codes and the culture's own
+  date patterns as `$`-facts in the catalogs, EQ2100 widened, EQ2101 added. Three eqc holes found
+  by writing ordinary C# in the sample (target-typed `new` for every compat type). M3's web half
+  is effectively proven; the AOT/trimming verification (W6) remains.
 
 - **2026-08-01 — Plan written (design only, no code).** Motivated by the eQuantic site dogfood
   (`../equantic-web`), where the design's `src/i18n.js` needs a .NET-native answer. Decision to
