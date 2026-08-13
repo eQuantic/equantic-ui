@@ -43,7 +43,7 @@ diagnostics, and a documented supported subset. That was the linchpin; it is now
 | Transpiler | 120+ strategies; **correctness net in place** — 530-case Bun-vs-.NET conformance harness, fail-on-unsupported diagnostics (`EQ2001/2002/21xx/1001/1002`), documented supported subset; the silent fallbacks are resolved to support or explicit diagnostics |
 | Components | **77** component files (Inputs 14, Overlays 11, Display 11, Navigation 8, Layout 8, Surfaces 6, Feedback 5, Forms 3 + primitives); some were half-implemented |
 | Client routing | **Shipped** — link-driven client router (`src/router`), layout preserved across navigation by reconcile-on-navigate. A typed programmatic `Navigator` API is still ahead |
-| Forms & validation | `FormField` exists (displays errors) but **no validation engine** |
+| Forms & validation | **Shipped** — `FormController`/`FormField`/`Rules` in Primitives (write-once, quiet-until-touched, cross-field, conditional via `Rules.When`/`relevantWhen`), `FormInput`/`FormSubmit` surface, async submit through Server Actions with `ApplyServerErrors`, and the `[FormModel]` DataAnnotations bridge (build-time, no second engine) |
 | State management | Component-local `SetState` only; **no global state / signals / context** |
 | Hot reload | Reload-based, but the runtime **captures live page state and replays it** through the ordinary SSR-hydration mechanic — save a file, the UI updates, the state survives. Module hot-swap without a reload is the v2 fence |
 | CSS engine pluggability | The framework now ships **one** styling engine: typed C# lowered to deduplicated atomic classes, byte-identical between SSR (C#) and hydration (TS) and cross-pinned by a shared fixture. Authoring is CSS-free; external CSS a consumer brings is their own build concern |
@@ -113,8 +113,11 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
   → see `docs/PHASE-2-CLIENT-ROUTER-PLAN.md`.
 - **Phase 3 — Hot reload with state preservation**: replace full reload with module/state-preserving
   reload; sub-second feedback loop.
-- **Phase 4 — Forms & validation engine**: declarative C# validation (ideally `DataAnnotations`),
-  form state (dirty/touched), async submit wired to Server Actions.
+- **Phase 4 — Forms & validation engine** — **✅ complete**: the model in Primitives (dirty/touched
+  as separate questions, `Error` vs `VisibleError`, cross-field and conditional rules), the thin
+  `FormInput`/`FormSubmit` surface, async submit through Server Actions with the server's verdict
+  returned onto fields, and `[FormModel]` reading DataAnnotations at build time into the same
+  `Rules` — no second validation engine. → wiki `Forms` page.
 - **Phase 5 — Component polish & accessibility**: finish existing components, add focus/keyboard/aria,
   variant coverage, a component test harness — before adding new components.
 - **Phase 6 — First-party embedded CSS engine** + documented provider contract. **Normative
