@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="PressedTimes" xml:space="preserve">
+    <value>Pressionado {0} vezes</value>
+  </data>
+  <data name="CountUp" xml:space="preserve">
+    <value>Contar</value>
+  </data>
+</root>

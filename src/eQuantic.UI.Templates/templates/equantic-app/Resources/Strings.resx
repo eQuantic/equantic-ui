@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Your app's strings — an ORDINARY .NET resx, and the only localization artifact you author.
+  The same class answers on the server (real ResourceManager), in the browser (the build emits a
+  per-culture catalog and rewrites the accessors), and in a native window. Add a culture by adding
+  a file: Strings.fr.resx appears in the switcher's reach with no other change.
+-->
+<root>
+  <data name="Tagline" xml:space="preserve">
+    <value>C# in, pixels out — the counter below is a component, a state field and a handler.</value>
+  </data>
+  <data name="CountedTimes" xml:space="preserve">
+    <value>Counted {0} times.</value>
+  </data>
+</root>

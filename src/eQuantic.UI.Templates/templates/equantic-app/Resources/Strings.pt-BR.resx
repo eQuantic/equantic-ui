@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Tagline" xml:space="preserve">
+    <value>C# entra, pixels saem — o contador abaixo é um componente, um campo de estado e um handler.</value>
+  </data>
+  <data name="CountedTimes" xml:space="preserve">
+    <value>Contado {0} vezes.</value>
+  </data>
+</root>

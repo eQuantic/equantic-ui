@@ -298,6 +298,12 @@ translation changes as data, not code.
   - Exit: `[ ]` the macOS shell renders both cultures from the same component classes.
 - **M4 — Docs + template.** Wiki page, the SDK template ships a `Strings.resx` and a working
   switcher.
+  - Exit: `[x]` the wiki's Localization page documents everything shipped (M0/M1/M2 sections).
+  - Exit: `[x]` `dotnet new equantic-app` scaffolds Resources/Strings.resx (+ pt-BR + Designer),
+    a CultureSwitcher on the home page, a `{0}` composite tied to the counter, and
+    UseRequestLocalization — proven by scaffolding from the packed template and running it: SSR
+    answers pt-BR and neutral from the same binary. `equantic-native` ships the same trio
+    resolved by plain satellites (D10).
 
 ---
 
@@ -348,6 +354,14 @@ translation changes as data, not code.
 ---
 
 ## Status log
+
+- **2026-08-13 (later still) — M4 closed; Track L web-complete.** Both templates are born
+  localized: `equantic-app` with the resx trio + CultureSwitcher + composite-on-the-counter (the
+  whole story in one line), `equantic-native` with the same resx resolved by satellites. Proven by
+  packing, scaffolding (`MinhaLoja`, `AppNativa` — sourceName rewrites namespace AND the
+  ResourceManager string) and running against the PUBLISHED preview.27 packages. Remaining in the
+  track: M3's windowed showcase; then the deliberate fences (plurals 3+, per-page split, metadata
+  on switch).
 
 - **2026-08-13 (later) — W6's satellite proof executable.** A NativeAOT publish of a binary
   referencing eQuantic.UI.Components answers the SDK chrome in en/pt-BR/es and lands es-AR on es —

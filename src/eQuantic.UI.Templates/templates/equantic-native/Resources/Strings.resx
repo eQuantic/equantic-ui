@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Your app's strings — an ORDINARY .NET resx. On native there is no bridge at all: this resolves
+  through the real ResourceManager and satellite assemblies, in the platform's own language (the
+  shell copies the device locale onto the process before the first frame). The same class answers
+  on the web when you reuse this component there.
+-->
+<root>
+  <data name="PressedTimes" xml:space="preserve">
+    <value>Pressed {0} times</value>
+  </data>
+  <data name="CountUp" xml:space="preserve">
+    <value>Count up</value>
+  </data>
+</root>

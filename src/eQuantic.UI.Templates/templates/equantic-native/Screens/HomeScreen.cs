@@ -1,5 +1,6 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
+using EQuanticNativeApp.Resources;
 
 namespace EQuanticNativeApp;
 
@@ -19,8 +20,12 @@ public sealed class HomeScreen : StatefulComponent
             Cross = CrossAlign.Center,
         };
         column.Add(new Text("EQuanticNativeApp", TypeRole.Heading, theme.TextPrimary, maxLines: 1));
-        column.Add(new Text($"Pressed {_count} times", TypeRole.BodyM, theme.TextSecondary, maxLines: 1));
-        column.Add(new Button("Count up", onPressed: () => SetState(() => _count++)));
+        // From Resources/Strings.resx — plain ResourceManager + satellites, in the language the
+        // DEVICE reports (the shell sets the process culture before the first frame). A pt-BR
+        // phone says "Pressionado 3 vezes" with no code for it here.
+        column.Add(new Text(string.Format(Strings.PressedTimes, _count), TypeRole.BodyM,
+            theme.TextSecondary, maxLines: 1));
+        column.Add(new Button(Strings.CountUp, onPressed: () => SetState(() => _count++)));
 
         return new Box(new BoxStyle
         {
