@@ -13,6 +13,35 @@ import { sdkNeutralStrings } from '../shared/sdk-strings.generated';
 /** The catalog id the SDK's own strings live under — the class name eqc rewrites against. */
 const SDK_RESOURCE_ID = 'SdkResources';
 
+/**
+ * The reserved catalog key carrying the culture's ISO currency code (Track L D7).
+ *
+ * It rides INSIDE the catalog rather than in a file of its own, and that is the whole trick:
+ * `{0:C}` needs a currency to format with, `Intl` demands a CODE ("BRL", never "R$"), and the
+ * browser has no API that maps a locale to one. The build knows it (`RegionInfo`), the catalog is
+ * already inlined by the shell and already fetched by `setCulture` — so the fact travels with the
+ * culture it belongs to, at zero extra cost. A `$` prefix cannot collide with a resource id, which
+ * is always a C# identifier followed by `/`.
+ */
+const CURRENCY_KEY = '$currency';
+
+/**
+ * The culture's own DATE/TIME patterns, carried the same way and for the same reason: .NET's
+ * standard specifiers (`d`, `D`, `g`…) are shorthand for a per-culture PATTERN
+ * (`M/d/yyyy` in en-US, `dd.MM.yyyy` in de-DE), and `Intl`'s style presets are a different
+ * editorial choice — its short date drops en-US to a two-digit year, which .NET never does. The
+ * build copies the patterns from `DateTimeFormatInfo`; the renderer here fills them using `Intl`
+ * for the NAMES (months, weekdays, AM/PM), which is the part `Intl` gets exactly right.
+ */
+const PATTERN_KEYS: Record<string, string> = {
+  dateShort: '$dateShort',
+  dateLong: '$dateLong',
+  timeShort: '$timeShort',
+  timeLong: '$timeLong',
+  monthDay: '$monthDay',
+  yearMonth: '$yearMonth',
+};
+
 /** The pair, by BCP-47 name. Empty = the neutral/invariant start every page boots from until the
  * server's `__EQ_CULTURE__` installs the request's truth. */
 export interface CulturePair {
@@ -115,9 +144,34 @@ function parentChain(culture: string): string[] {
   return chain;
 }
 
-/** The pair in force — `str` reads ui; the D7 formatters read format when the subset lands. */
+/** The pair in force — `str` reads ui, every D7 formatter reads format. */
 export function activeCulture(): CulturePair {
   return active;
+}
+
+/**
+ * The locale every formatter resolves against: the FORMAT half of the pair, or undefined while no
+ * culture is installed — which is `Intl`'s "use the host's default" and the closest thing the
+ * browser has to .NET's invariant start.
+ */
+export function formatLocale(): string | undefined {
+  return active.format.length > 0 ? active.format : undefined;
+}
+
+/** The active culture's ISO currency code, or null when the catalog carries none (the invariant
+ * case — .NET prints the generic ¤ sign there, and so do we). */
+export function activeCurrency(): string | null {
+  const code = activeStrings[CURRENCY_KEY];
+  return code === undefined || code.length === 0 ? null : code;
+}
+
+/** One of the active culture's date/time patterns by role, or null when the catalog carries none
+ * — the formatter then falls back to `Intl`'s own presets. */
+export function activePattern(role: string): string | null {
+  const key = PATTERN_KEYS[role];
+  if (key === undefined) return null;
+  const pattern = activeStrings[key];
+  return pattern === undefined || pattern.length === 0 ? null : pattern;
 }
 
 /**

@@ -141,11 +141,15 @@ public class StringStaticStrategy : IConversionStrategy
     public int Priority => 20;
 
     /// <summary>
-    /// The M0 slice of the EQ2100 gate (docs/I18N-PLAN.md D7/D11): a resx template may use plain
-    /// positional placeholders over STRING arguments — {0}, {1}, {{ }} escapes — and nothing else.
-    /// Alignment ({0,10}) and format specifiers ({0:C}) wait for the M2 mapped subset; a non-string
-    /// argument is refused too, because .NET formats it per culture and the browser would not —
-    /// refused at build, never approximated at runtime.
+    /// The EQ2100/EQ2101 gate over a resx template (docs/I18N-PLAN.md D7/D11).
+    ///
+    /// EQ2100 is about THIS call: the template must be a valid composite format whose specifiers
+    /// the browser can reproduce exactly (<see cref="Services.FormatSubset"/>), and it must not ask
+    /// for an argument the call does not pass.
+    ///
+    /// EQ2101 is about the TRANSLATIONS: every culture's resx is checked against the neutral one,
+    /// because a pt-BR string that says {2} where the neutral says {0}/{1} is a crash a Brazilian
+    /// visitor finds, on a page nobody tested — the build machine is where that belongs.
     /// </summary>
     private static void ValidateResourceTemplate(
         InvocationExpressionSyntax node,
@@ -153,18 +157,6 @@ public class StringStaticStrategy : IConversionStrategy
         IPropertySymbol templateProperty,
         ConversionContext context)
     {
-        for (var i = 1; i < args.Count; i++)
-        {
-            var argType = context.SemanticModel?.GetTypeInfo(args[i].Expression).Type;
-            if (argType is not null && argType.SpecialType != SpecialType.System_String)
-            {
-                context.Report(args[i], ConversionSeverity.Error, "EQ2100",
-                    $"string.Format over a resx template: argument {i - 1} is {argType.ToDisplayString()}, "
-                    + "and a non-string value formats per culture in .NET but not in the browser. "
-                    + "Pass a preformatted string until the M2 formatting subset lands.");
-            }
-        }
-
         var designerPath = Services.ResourceClasses.DesignerPathFor(templateProperty.ContainingType);
         var neutralPath = Services.ResxFiles.NeutralPathFor(designerPath);
         if (neutralPath is null) return;
@@ -172,50 +164,66 @@ public class StringStaticStrategy : IConversionStrategy
         var key = Services.ResourceClasses.KeyFor(templateProperty);
         if (values is null || !values.TryGetValue(key, out var template)) return;
 
-        var argCount = args.Count - 1;
-        for (var i = 0; i < template.Length; i++)
+        var holes = Services.FormatSubset.Read(template, out var error);
+        if (holes is null)
         {
-            var c = template[i];
-            if (c == '{' && i + 1 < template.Length && template[i + 1] == '{') { i++; continue; }
-            if (c == '}' && i + 1 < template.Length && template[i + 1] == '}') { i++; continue; }
-            if (c == '}')
-            {
-                context.Report(node, ConversionSeverity.Error, "EQ2100",
-                    $"resx template '{key}': a lone '}}' is not a valid composite format.");
-                return;
-            }
-            if (c != '{') continue;
+            context.Report(node, ConversionSeverity.Error, "EQ2100",
+                $"resx template '{key}': {error}.");
+            return;
+        }
 
-            var close = template.IndexOf('}', i + 1);
-            if (close < 0)
+        var argCount = args.Count - 1;
+        foreach (var hole in holes)
+        {
+            if (hole.Index < argCount) continue;
+            context.Report(node, ConversionSeverity.Error, "EQ2100",
+                $"resx template '{key}' expects argument {{{hole.Index}}} but the call passes only "
+                + $"{argCount}. The neutral resx is the arity contract every culture follows.");
+            return;
+        }
+
+        ValidateCultureTemplates(node, key, designerPath, holes, context);
+    }
+
+    /// <summary>
+    /// EQ2101: every OTHER culture's template for this key, held against the neutral one. A
+    /// translator works in a file the compiler never reads at the call site, so this is the only
+    /// place the two can be compared — and an arity drift there is a runtime error in exactly one
+    /// language.
+    /// </summary>
+    private static void ValidateCultureTemplates(
+        InvocationExpressionSyntax node,
+        string key,
+        string designerPath,
+        IReadOnlyList<Services.TemplateHole> neutralHoles,
+        ConversionContext context)
+    {
+        var expected = new SortedSet<int>(neutralHoles.Select(hole => hole.Index));
+
+        foreach (var (culture, path) in Services.ResxFiles.VariantsFor(designerPath))
+        {
+            if (culture.Length == 0) continue; // the neutral one IS the contract
+            var values = Services.ResxFiles.Read(path);
+            if (values is null || !values.TryGetValue(key, out var template)) continue;
+
+            var holes = Services.FormatSubset.Read(template, out var error);
+            if (holes is null)
             {
-                context.Report(node, ConversionSeverity.Error, "EQ2100",
-                    $"resx template '{key}': unterminated placeholder.");
-                return;
+                context.Report(node, ConversionSeverity.Error, "EQ2101",
+                    $"resx template '{key}' in '{culture}': {error}.");
+                continue;
             }
-            var token = template[(i + 1)..close];
-            if (token.Contains(',') || token.Contains(':'))
-            {
-                context.Report(node, ConversionSeverity.Error, "EQ2100",
-                    $"resx template '{key}': '{{{token}}}' uses alignment or a format specifier, "
-                    + "which is outside the v1 subset (plain positional only). The M2 mapped "
-                    + "subset widens this; until then format on the server or split the string.");
-                return;
-            }
-            if (!int.TryParse(token, out var index))
-            {
-                context.Report(node, ConversionSeverity.Error, "EQ2100",
-                    $"resx template '{key}': '{{{token}}}' is not a positional placeholder.");
-                return;
-            }
-            if (index >= argCount)
-            {
-                context.Report(node, ConversionSeverity.Error, "EQ2100",
-                    $"resx template '{key}' expects argument {{{index}}} but the call passes only "
-                    + $"{argCount}. The neutral resx is the arity contract every culture follows.");
-                return;
-            }
-            i = close;
+
+            var actual = new SortedSet<int>(holes.Select(hole => hole.Index));
+            if (actual.SetEquals(expected)) continue;
+
+            context.Report(node, ConversionSeverity.Error, "EQ2101",
+                $"resx template '{key}' in '{culture}' uses "
+                + (actual.Count == 0 ? "no placeholders" : "{" + string.Join("}, {", actual) + "}")
+                + " but the neutral culture uses "
+                + (expected.Count == 0 ? "none" : "{" + string.Join("}, {", expected) + "}")
+                + ". A translation that asks for an argument the call never passes throws for the "
+                + "readers of that language only.");
         }
     }
 }

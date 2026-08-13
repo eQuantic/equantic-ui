@@ -26,6 +26,10 @@ public sealed class I18nScreen : StatefulComponent
     private bool _agreed = true;
     private string _switched = "";
 
+    /// <summary>A fixed instant, so the line reads the same on every run — what changes with the
+    /// culture is the PATTERN, which is the point.</summary>
+    private static readonly DateTime Moment = new(2026, 8, 13, 15, 45, 7);
+
     private static readonly CultureOption[] Languages =
     [
         new("en", "English"),
@@ -56,6 +60,12 @@ public sealed class I18nScreen : StatefulComponent
         // is the SDK's own string — so this line is what a pt-BR reader hears as "Marcado" without
         // this app translating anything.
         column.Add(new Checkbox(_agreed, () => SetState(() => _agreed = !_agreed)));
+
+        // M2, live: the SAME C# line prints the currency, the grouping and the date THIS culture
+        // uses — R$ 1.234,50 and 13/08/2026 in pt-BR, $1,234.50 and 8/13/2026 in en-US — and the
+        // switch above changes them without a reload, exactly as it changes the strings.
+        column.Add(new Text($"{1234.5:C2} · {0.982:P1} · {Moment:d}", TypeRole.BodyM,
+            theme.TextSecondary));
 
         if (_switched.Length > 0)
             column.Add(new Text($"switched to {_switched}", TypeRole.Caption, theme.TextMuted));

@@ -561,6 +561,28 @@ static void EmitStringCatalogs(eQuantic.UI.Compiler.ComponentCompiler compiler, 
         foreach (var (key, value) in neutral)
             strings.TryAdd(key, value);
 
+    // D7: the FORMATTING facts ride with the strings. `{0:C}` needs an ISO currency code (Intl
+    // takes no symbol and no browser API maps a locale to one), and .NET's `d`/`D`/`g` are
+    // shorthand for the culture's OWN patterns, which Intl's presets do not reproduce (its short
+    // date drops en-US to a two-digit year). Both come from .NET here, where .NET is running, and
+    // travel inside the catalog the shell already inlines and setCulture already fetches.
+    // Written AFTER the flatten so a neutral key can never overwrite them.
+    AddFormatFacts(neutral, System.Globalization.CultureInfo.InvariantCulture);
+    foreach (var (culture, strings) in cultures)
+    {
+        try
+        {
+            AddFormatFacts(strings, System.Globalization.CultureInfo.GetCultureInfo(culture));
+        }
+        catch (System.Globalization.CultureNotFoundException)
+        {
+            // A resx named for a culture this machine does not know: the strings still ship; only
+            // the formatting facts are missing, and the client falls back to Intl's own presets.
+            Console.Error.WriteLine($"⚠️  strings: '{culture}' is not a culture this machine knows — "
+                + "its catalog ships without formatting facts.");
+        }
+    }
+
     var stringsDir = Path.Combine(outputDir, "strings");
     Directory.CreateDirectory(stringsDir);
     var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = false };
@@ -571,6 +593,37 @@ static void EmitStringCatalogs(eQuantic.UI.Compiler.ComponentCompiler compiler, 
             System.Text.Json.JsonSerializer.Serialize(strings, options));
     Console.WriteLine($"🌐 Strings: {neutral.Count} keys → neutral" +
         (cultures.Count > 0 ? " + " + string.Join(", ", cultures.Keys) : ""));
+}
+
+/// <summary>
+/// The reserved `$`-prefixed keys a catalog carries besides its strings (Track L D7): the ISO
+/// currency code and the culture's own date/time patterns. `$` cannot collide with a resource id,
+/// which is always a C# identifier followed by `/`.
+/// </summary>
+static void AddFormatFacts(SortedDictionary<string, string> catalog,
+    System.Globalization.CultureInfo culture)
+{
+    if (!culture.Equals(System.Globalization.CultureInfo.InvariantCulture))
+    {
+        try
+        {
+            catalog["$currency"] = new System.Globalization.RegionInfo(culture.Name).ISOCurrencySymbol;
+        }
+        catch (ArgumentException)
+        {
+            // A NEUTRAL culture ("pt", "es") names no country, so it has no currency of its own —
+            // .NET's own RegionInfo refuses it. The client then prints the generic ¤, exactly as
+            // .NET does for a culture that cannot name a currency.
+        }
+    }
+
+    var format = culture.DateTimeFormat;
+    catalog["$dateShort"] = format.ShortDatePattern;
+    catalog["$dateLong"] = format.LongDatePattern;
+    catalog["$timeShort"] = format.ShortTimePattern;
+    catalog["$timeLong"] = format.LongTimePattern;
+    catalog["$monthDay"] = format.MonthDayPattern;
+    catalog["$yearMonth"] = format.YearMonthPattern;
 }
 
 class Debouncer
