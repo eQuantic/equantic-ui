@@ -17,11 +17,9 @@ namespace eQuantic.UI.Components;
 public static class SdkStrings
 {
     // Toggle state announcements (Checkbox, Switch) — assistive-tech wording, not visible text.
-    public static string Checked => SdkResources.Checked;
-    public static string Unchecked => SdkResources.Unchecked;
-    public static string PartlySelected => SdkResources.PartlySelected;
-    public static string On => SdkResources.On;
-    public static string Off => SdkResources.Off;
+    // Checked/Unchecked/PartlySelected/On/Off lived here while a check's STATE went into its
+    // accessible NAME. The state rides aria-checked / SemanticNode.Checked now — the platform
+    // announces it in the user's language, which no resx of ours could ever have matched.
 
     /// <summary>The scrim/affordance label every dismissible surface shares (Banner, Dialog,
     /// Drawer, BottomSheet) — one string, one casing, for all of them.</summary>

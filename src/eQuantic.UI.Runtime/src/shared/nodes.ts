@@ -412,8 +412,12 @@ export interface PressableNode extends VisualNodeValue {
   pressedBackground?: ColorTokenValue | null;
   /** Selection for a toggling/picking button — lowers to aria-pressed. null = not selectable. */
   selected?: boolean | null;
-  /** Composite-item role ('button' | 'radio'): radio lowers as role="radio" + aria-checked and
-   * leaves the tab order — the wrapping Adjustable is the one stop, arrows do the walking. */
+  /** PARTLY selected — the "select all" over a mixed set. Checkbox role only (ARIA's own rule);
+   * wins over selected. */
+  mixed?: boolean;
+  /** Composite-item role ('button' | 'radio' | 'checkbox' | 'switch'): radio lowers as
+   * role="radio" + aria-checked and leaves the tab order (the wrapping Adjustable is the one
+   * stop); checkbox/switch state their aria-checked as an attribute and keep their own stop. */
   role?: string;
 }
 

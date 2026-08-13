@@ -7,19 +7,19 @@ using eQuantic.UI.Components;
 // TRANSLATIONS, never against "did it crash".
 var expectations = new (string Culture, string Checked, string On, string Spreadsheet)[]
 {
-    ("en", "Checked", "On", "Spreadsheet"),
-    ("pt-BR", "Marcado", "Ativado", "Planilha"),
-    ("es", "Seleccionado", "Activado", "Hoja de cálculo"),
+    ("en", "Find", "Dismiss", "Spreadsheet"),
+    ("pt-BR", "Localizar", "Dispensar", "Planilha"),
+    ("es", "Buscar", "Descartar", "Hoja de cálculo"),
     // The parent walk, under AOT: es-AR ships no satellite of its own and must land on es.
-    ("es-AR", "Seleccionado", "Activado", "Hoja de cálculo"),
+    ("es-AR", "Buscar", "Descartar", "Hoja de cálculo"),
 };
 
 var failures = 0;
 foreach (var (culture, expectedChecked, expectedOn, expectedSheet) in expectations)
 {
     CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(culture);
-    Report(culture, nameof(SdkStrings.Checked), SdkStrings.Checked, expectedChecked);
-    Report(culture, nameof(SdkStrings.On), SdkStrings.On, expectedOn);
+    Report(culture, nameof(SdkStrings.Find), SdkStrings.Find, expectedChecked);
+    Report(culture, nameof(SdkStrings.Dismiss), SdkStrings.Dismiss, expectedOn);
     Report(culture, nameof(SdkStrings.Spreadsheet), SdkStrings.Spreadsheet, expectedSheet);
 }
 

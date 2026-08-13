@@ -30,22 +30,22 @@ public class SdkStringsLocalizationTests
     [Fact]
     public void TheNeutralCulture_SpeaksEnglish()
     {
-        InCulture("en", () => SdkStrings.Checked).Should().Be("Checked");
+        InCulture("en", () => SdkStrings.Find).Should().Be("Find");
         InCulture("en", () => SdkStrings.SearchPlaceholder).Should().Be("Search…");
     }
 
     [Fact]
     public void APortugueseUiCulture_AnnouncesInPortuguese()
     {
-        InCulture("pt-BR", () => SdkStrings.Checked).Should().Be("Marcado");
-        InCulture("pt-BR", () => SdkStrings.Unchecked).Should().Be("Não marcado");
+        InCulture("pt-BR", () => SdkStrings.Find).Should().Be("Localizar");
+        InCulture("pt-BR", () => SdkStrings.SearchPlaceholder).Should().Be("Pesquisar…");
         InCulture("pt-BR", () => SdkStrings.Dismiss).Should().Be("Dispensar");
     }
 
     [Fact]
     public void ASpanishUiCulture_AnnouncesInSpanish()
     {
-        InCulture("es", () => SdkStrings.On).Should().Be("Activado");
+        InCulture("es", () => SdkStrings.Dismiss).Should().Be("Descartar");
         InCulture("es", () => SdkStrings.Spreadsheet).Should().Be("Hoja de cálculo");
     }
 
@@ -54,7 +54,7 @@ public class SdkStringsLocalizationTests
     {
         // es-AR ships no satellite of its own; .NET walks es-AR → es → neutral, and the SDK gets
         // that walk for free precisely because it uses ResourceManager rather than a map.
-        InCulture("es-AR", () => SdkStrings.On).Should().Be("Activado");
+        InCulture("es-AR", () => SdkStrings.Dismiss).Should().Be("Descartar");
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class SdkStringsLocalizationTests
     {
         // A missing translation degrades to English, never to empty — the missing-key policy the
         // plan states for the client, holding on the server for the same reason.
-        InCulture("ja-JP", () => SdkStrings.Checked).Should().Be("Checked");
+        InCulture("ja-JP", () => SdkStrings.Find).Should().Be("Find");
     }
 
     [Fact]
@@ -71,7 +71,10 @@ public class SdkStringsLocalizationTests
         // The whole seam, swept: a key added to the class but not to a resx would come back null
         // and surface as a blank announcement somewhere far from here.
         var properties = typeof(SdkStrings).GetProperties();
-        properties.Should().HaveCountGreaterThan(10, "the audited SDK string set");
+        // 8, down from 13: Checked/Unchecked/PartlySelected/On/Off left when a check's state moved
+        // into aria-checked / SemanticNode.Checked — the platform announces state in the user's
+        // language, which no resx of ours could match. The floor still guards the sweep being real.
+        properties.Should().HaveCountGreaterThan(5, "the audited SDK string set");
 
         foreach (var culture in new[] { "en", "pt-BR", "es" })
         foreach (var property in properties)

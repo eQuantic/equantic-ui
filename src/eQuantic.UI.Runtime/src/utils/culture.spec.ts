@@ -46,7 +46,7 @@ describe('culture atom', () => {
       // playground). The chrome must still read as words, and quietly: this fallback is the
       // designed path, not a missing translation.
       expect(str('SdkResources', 'SearchPlaceholder')).toBe('Search…');
-      expect(str('SdkResources', 'Checked')).toBe('Checked');
+      expect(str('SdkResources', 'Find')).toBe('Find');
       expect(warn).not.toHaveBeenCalled();
     } finally {
       warn.mockRestore();
@@ -54,8 +54,8 @@ describe('culture atom', () => {
   });
 
   it("an app's translation of an SDK string beats the built-in neutral", () => {
-    installCulture('pt-BR', 'pt-BR', { 'SdkResources/Checked': 'Marcado' });
-    expect(str('SdkResources', 'Checked')).toBe('Marcado');
+    installCulture('pt-BR', 'pt-BR', { 'SdkResources/Find': 'Localizar' });
+    expect(str('SdkResources', 'Find')).toBe('Localizar');
   });
 
   it('an SDK key that exists in NO resx still degrades to the key', () => {

@@ -2,21 +2,6 @@
 <!-- The SDK's own strings, pt-BR. Assistive-tech wording follows what VoiceOver and TalkBack
      already say in Portuguese for the same native controls, not a literal translation. -->
 <root>
-  <data name="Checked" xml:space="preserve">
-    <value>Marcado</value>
-  </data>
-  <data name="Unchecked" xml:space="preserve">
-    <value>Não marcado</value>
-  </data>
-  <data name="PartlySelected" xml:space="preserve">
-    <value>Parcialmente selecionado</value>
-  </data>
-  <data name="On" xml:space="preserve">
-    <value>Ativado</value>
-  </data>
-  <data name="Off" xml:space="preserve">
-    <value>Desativado</value>
-  </data>
   <data name="Dismiss" xml:space="preserve">
     <value>Dispensar</value>
   </data>

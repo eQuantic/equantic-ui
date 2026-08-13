@@ -27,31 +27,6 @@ namespace eQuantic.UI.Components
 
         internal static global::System.Globalization.CultureInfo? Culture { get; set; }
 
-        internal static string Checked
-        {
-            get { return ResourceManager.GetString("Checked", Culture)!; }
-        }
-
-        internal static string Unchecked
-        {
-            get { return ResourceManager.GetString("Unchecked", Culture)!; }
-        }
-
-        internal static string PartlySelected
-        {
-            get { return ResourceManager.GetString("PartlySelected", Culture)!; }
-        }
-
-        internal static string On
-        {
-            get { return ResourceManager.GetString("On", Culture)!; }
-        }
-
-        internal static string Off
-        {
-            get { return ResourceManager.GetString("Off", Culture)!; }
-        }
-
         internal static string Dismiss
         {
             get { return ResourceManager.GetString("Dismiss", Culture)!; }

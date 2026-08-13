@@ -8,17 +8,12 @@
  */
 
 export const sdkNeutralStrings: Record<string, string> = {
-  'Checked': "Checked",
   'ClearSearch': "Clear search",
   'Dismiss': "Dismiss",
   'Find': "Find",
   'NextMatch': "Next match",
-  'Off': "Off",
-  'On': "On",
-  'PartlySelected': "Partly selected",
   'PreviousMatch': "Previous match",
   'Remove': "Remove",
   'SearchPlaceholder': "Search\u2026",
   'Spreadsheet': "Spreadsheet",
-  'Unchecked': "Unchecked",
 };

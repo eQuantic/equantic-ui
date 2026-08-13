@@ -35,8 +35,8 @@ public class WindowCultureTests
         public override VisualNode Build(ComponentContext context)
         {
             var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
-            column.Add(new Text(SdkStrings.Checked, TypeRole.Heading, context.Theme.TextPrimary));
-            column.Add(new Pressable(new Text(SdkStrings.On, TypeRole.Label, context.Theme.TextPrimary),
+            column.Add(new Text(SdkStrings.Find, TypeRole.Heading, context.Theme.TextPrimary));
+            column.Add(new Pressable(new Text(SdkStrings.Dismiss, TypeRole.Label, context.Theme.TextPrimary),
                 () => { }));
             column.Add(new Text(SdkStrings.Spreadsheet, TypeRole.BodyM, context.Theme.TextMuted));
             return column;
@@ -72,14 +72,14 @@ public class WindowCultureTests
 
             culture.Apply(CultureInfo.GetCultureInfo("en"));
             host.RenderFrame(new DisplayListBuilder());
-            TextOf(host).Should().Contain("Checked");
+            TextOf(host).Should().Contain("Find");
 
             culture.Apply(CultureInfo.GetCultureInfo("pt-BR"));
             host.RenderFrame(new DisplayListBuilder());
 
             var translated = TextOf(host);
-            translated.Should().Contain("Marcado", "the window rebuilt in the culture that was applied");
-            translated.Should().NotContain("Checked", "a switch replaces the text, it does not add to it");
+            translated.Should().Contain("Localizar", "the window rebuilt in the culture that was applied");
+            translated.Should().NotContain("Find", "a switch replaces the text, it does not add to it");
         }
         finally
         {
@@ -104,12 +104,12 @@ public class WindowCultureTests
 
             culture.Apply(CultureInfo.GetCultureInfo("es"));
             host.RenderFrame(new DisplayListBuilder());
-            TextOf(host).Should().Contain("Seleccionado");
+            TextOf(host).Should().Contain("Buscar");
 
             // Japanese ships no satellite: the neutral answer is the honest one.
             culture.Apply(CultureInfo.GetCultureInfo("ja"));
             host.RenderFrame(new DisplayListBuilder());
-            TextOf(host).Should().Contain("Checked");
+            TextOf(host).Should().Contain("Find");
         }
         finally
         {
@@ -161,7 +161,7 @@ public class WindowCultureTests
             culture.Apply(CultureInfo.GetCultureInfo("pt-BR"), CultureInfo.GetCultureInfo("en-US"));
             host.RenderFrame(new DisplayListBuilder());
 
-            TextOf(host).Should().Contain("Marcado", "the interface speaks the UI culture");
+            TextOf(host).Should().Contain("Localizar", "the interface speaks the UI culture");
             1234.5m.ToString("C2", CultureInfo.CurrentCulture)
                 .Should().StartWith("$", "money speaks the FORMAT culture, which was set apart");
         }

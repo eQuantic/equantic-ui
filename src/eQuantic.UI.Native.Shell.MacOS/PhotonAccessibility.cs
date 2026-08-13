@@ -88,6 +88,11 @@ internal static class PhotonAccessibility
             SendVoid(element, Sel("setAccessibilityLabel:"), NSString(node.Label));
             if (node.Value is { } value)
                 SendVoid(element, Sel("setAccessibilityValue:"), NSString(value));
+            // A check's value is a NUMBER (0/1/2 — off/on/mixed): AXCheckBox's own contract, and
+            // what VoiceOver reads as "checked"/"unchecked"/"mixed" without the label saying it.
+            if (node.Checked is { } check)
+                SendVoid(element, Sel("setAccessibilityValue:"),
+                    Send(objc_getClass("NSNumber"), Sel("numberWithLong:"), (long)check));
             SendVoid(element, Sel("setAccessibilityEnabled:"), !node.Disabled);
             SendVoid(element, Sel("setAccessibilityParent:"), view);
             // The path, visible in Accessibility Inspector — the same identity every press,
@@ -116,6 +121,9 @@ internal static class PhotonAccessibility
         SemanticRole.CodeField => "AXTextArea",
         SemanticRole.Slider => "AXSlider",
         SemanticRole.Image => "AXImage",
+        // Both checks are AXCheckBox to AppKit — macOS has no switch role; the DISTINCTION lives
+        // in SemanticRole for the mobile bridges, which do (UISwitch trait, Switch class).
+        SemanticRole.Checkbox or SemanticRole.Switch => "AXCheckBox",
         _ => "AXStaticText",
     };
 }

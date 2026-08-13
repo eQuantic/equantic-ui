@@ -25,6 +25,12 @@ public sealed class Switch : StatelessComponent
     public Action? OnChanged { get; init; }
     public bool Disabled { get; init; }
 
+    /// <summary>What this switch is FOR — "Dark mode", "Notifications" — which is the accessible
+    /// name. The on/off STATE is announced by the role's own attribute, so it never goes here.
+    /// Null is acceptable when a visible Text beside the switch labels it for sighted users too,
+    /// though pointing both at the same words is better.</summary>
+    public string? Label { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
@@ -69,10 +75,15 @@ public sealed class Switch : StatelessComponent
             ? new Positioned(draggableThumb, top: inset, end: inset)
             : new Positioned(draggableThumb, top: inset, start: inset));
 
+        // The STATE goes in aria-checked (role: switch), never in the name — "On, switch" said the
+        // same thing twice, and the name changing with the state read as a different control. What
+        // remains for the name is what the switch IS FOR, which only the caller knows.
         return new Pressable(stack, Disabled ? null : OnChanged)
         {
             Disabled = Disabled,
-            Label = On ? SdkStrings.On : SdkStrings.Off,
+            Role = PressableRole.Switch,
+            Selected = On,
+            Label = Label,
         };
     }
 

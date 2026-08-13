@@ -781,8 +781,8 @@ public static class Gallery
         // The SDK's own chrome strings — the ones a screen reader announces. If these follow the
         // switch, so does every announcement in every app built on the framework.
         var strings = Column(Space.S1);
-        strings.Add(new Text(SdkStrings.Checked, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
-        strings.Add(new Text(SdkStrings.On, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
+        strings.Add(new Text(SdkStrings.Dismiss, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
+        strings.Add(new Text(SdkStrings.Find, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
         strings.Add(new Text(SdkStrings.Spreadsheet, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
 
         // Formats are the OTHER half. Plain .NET calls, so what you read here is what your own

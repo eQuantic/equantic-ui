@@ -62,11 +62,16 @@ public sealed class Checkbox : StatelessComponent
         if (Label is { } label)
             row.Add(new Text(label, TypeRole.BodyM, Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 2));
 
+        // The STATE goes in aria-checked, never in the name. A label-less checkbox announcing
+        // "Checked" twice over was noise, and a name that CHANGED with the state read as a
+        // different control to assistive tech every time it toggled.
         return new Pressable(row, Disabled ? null : OnChanged)
         {
             Disabled = Disabled,
-            Label = Label ?? (Indeterminate ? SdkStrings.PartlySelected
-                : Checked ? SdkStrings.Checked : SdkStrings.Unchecked),
+            Role = PressableRole.Checkbox,
+            Selected = Checked,
+            Mixed = Indeterminate,
+            Label = Label,
         };
     }
 }

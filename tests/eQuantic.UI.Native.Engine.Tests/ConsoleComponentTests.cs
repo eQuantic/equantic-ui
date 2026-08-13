@@ -250,10 +250,14 @@ public class ConsoleComponentTests
     }
 
     [Fact]
-    public void Checkbox_Indeterminate_AnnouncesItselfAsPartlySelected()
+    public void Checkbox_Indeterminate_StatesMixedBesideTheName_NeverInsideIt()
     {
+        // The state used to BE the label ("Partly selected") — a name that changed on every toggle.
+        // It rides the role's own attribute now, and the name is only what the control is for.
         var press = (Pressable)new Checkbox(false) { Indeterminate = true }.Build(Ctx);
-        press.Label.Should().Be("Partly selected");
+        press.Role.Should().Be(PressableRole.Checkbox);
+        press.Mixed.Should().BeTrue();
+        press.Label.Should().BeNull();
     }
 
     [Fact]

@@ -1644,6 +1644,20 @@ public static class WebRealizer
             element.TabIndex = -1;
         }
 
+        // A check states its state as an ATTRIBUTE, never in the name — a name that changes when
+        // the state does reads as a different control. Unlike a radio it keeps its own Tab stop
+        // (the button element already is one): a checkbox is not one choice of a composite.
+        if (pressable.Role is PressableRole.Checkbox or PressableRole.Switch)
+        {
+            element.Role = pressable.Role == PressableRole.Switch ? "switch" : "checkbox";
+            // "mixed" exists for checkboxes and nothing else — ARIA's own rule, enforced here so a
+            // Switch cannot half-say something the role has no word for.
+            element.AriaChecked =
+                pressable.Mixed && pressable.Role == PressableRole.Checkbox ? "mixed"
+                : pressable.Selected == true ? "true" : "false";
+            element.AriaPressed = null;
+        }
+
         if (child is not null) element.Children.Add(child);
         return element;
     }

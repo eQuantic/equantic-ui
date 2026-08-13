@@ -17,6 +17,22 @@ public enum SemanticRole : byte
     /// <summary>An Adjustable: one stop, arrows adjust (slider, segmented control, radio group).</summary>
     Slider,
     Image,
+    /// <summary>A two-or-three-state check: the STATE rides <see cref="SemanticNode.Checked"/>,
+    /// never the label — a name that changes when the state does reads as a different control.</summary>
+    Checkbox,
+    /// <summary>An on/off toggle that acts immediately. Split from Checkbox because the mobile
+    /// bridges speak different words for them (UISwitch trait, Switch class), even though macOS
+    /// maps both onto AXCheckBox.</summary>
+    Switch,
+}
+
+/// <summary>A check's state, in ARIA's own three words. Mixed exists for checkboxes and nothing
+/// else — the "select all" over a partly-selected set.</summary>
+public enum SemanticCheck : byte
+{
+    Off = 0,
+    On = 1,
+    Mixed = 2,
 }
 
 /// <summary>
@@ -30,7 +46,8 @@ public readonly record struct SemanticNode(
     Rect Bounds,
     string Label,
     string? Value,
-    bool Disabled);
+    bool Disabled,
+    SemanticCheck? Checked = null);
 
 /// <summary>
 /// Derives the SEMANTICS TREE from a realized frame: the page layout plus every overlay layout
@@ -63,9 +80,22 @@ public static class SemanticsTree
             // A control's inner text IS its name, not a separate stop — the subtree is consumed,
             // exactly as the web's <button>text</button> reads as one element.
             case Pressable pressable:
-                nodes.Add(new(SemanticRole.Button, node.Path ?? "", node.Bounds,
-                    pressable.Label ?? TextWithin(node), null, pressable.Disabled));
+            {
+                // A check states its state beside the name, never inside it — the exact mirror of
+                // the web's aria-checked. Mixed is checkbox-only, ARIA's own rule.
+                var (role, check) = pressable.Role switch
+                {
+                    PressableRole.Checkbox => (SemanticRole.Checkbox,
+                        (SemanticCheck?)(pressable.Mixed ? SemanticCheck.Mixed
+                            : pressable.Selected == true ? SemanticCheck.On : SemanticCheck.Off)),
+                    PressableRole.Switch => (SemanticRole.Switch,
+                        (SemanticCheck?)(pressable.Selected == true ? SemanticCheck.On : SemanticCheck.Off)),
+                    _ => (SemanticRole.Button, null),
+                };
+                nodes.Add(new(role, node.Path ?? "", node.Bounds,
+                    pressable.Label ?? TextWithin(node), null, pressable.Disabled, check));
                 return;
+            }
 
             case Link link:
                 nodes.Add(new(SemanticRole.Link, node.Path ?? "", node.Bounds,

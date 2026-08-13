@@ -2,21 +2,6 @@
 <!-- The SDK's own strings, es. A second culture from day one is deliberate: one translation can
      be special-cased by accident, two prove the pipeline is a pipeline. -->
 <root>
-  <data name="Checked" xml:space="preserve">
-    <value>Seleccionado</value>
-  </data>
-  <data name="Unchecked" xml:space="preserve">
-    <value>No seleccionado</value>
-  </data>
-  <data name="PartlySelected" xml:space="preserve">
-    <value>Parcialmente seleccionado</value>
-  </data>
-  <data name="On" xml:space="preserve">
-    <value>Activado</value>
-  </data>
-  <data name="Off" xml:space="preserve">
-    <value>Desactivado</value>
-  </data>
   <data name="Dismiss" xml:space="preserve">
     <value>Descartar</value>
   </data>

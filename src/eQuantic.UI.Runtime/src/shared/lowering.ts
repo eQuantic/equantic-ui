@@ -1974,6 +1974,13 @@ function lowerPressable(
     node.attributes['role'] = 'radio';
     node.attributes['aria-checked'] = pressable.selected === true ? 'true' : 'false';
     node.attributes['tabindex'] = '-1';
+  } else if (pressable.role === 'checkbox' || pressable.role === 'switch') {
+    // A check states its state as an ATTRIBUTE, never in the name; it keeps its own Tab stop.
+    // "mixed" exists for checkboxes and nothing else — the C# realizer enforces the same rule.
+    node.attributes['role'] = pressable.role;
+    node.attributes['aria-checked'] =
+      pressable.mixed && pressable.role === 'checkbox' ? 'mixed'
+      : pressable.selected === true ? 'true' : 'false';
   } else if (pressable.selected !== undefined && pressable.selected !== null) {
     node.attributes['aria-pressed'] = pressable.selected ? 'true' : 'false';
   }

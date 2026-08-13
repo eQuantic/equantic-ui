@@ -990,11 +990,20 @@ public sealed class Pressable : VisualNode
     /// SELECTION state for a button that toggles or picks one of a set — a segmented control's
     /// segment, a filter chip, a page dot. Selection that lives only in a fill colour is invisible
     /// to assistive tech, so this states it: web lowers to <c>aria-pressed</c> (or
-    /// <c>aria-checked</c> when <see cref="Role"/> says Radio), native reports it as the node's
-    /// selected state. <c>null</c> = the button does not carry selection at all, which is NOT the
-    /// same as <c>false</c> ("selectable, currently not selected").
+    /// <c>aria-checked</c> when <see cref="Role"/> says Radio, Checkbox or Switch), native reports
+    /// it as the node's selected state. <c>null</c> = the button does not carry selection at all,
+    /// which is NOT the same as <c>false</c> ("selectable, currently not selected").
     /// </summary>
     public bool? Selected { get; init; }
+
+    /// <summary>
+    /// PARTLY selected — the "select all" checkbox over a mixed set. Only a
+    /// <see cref="PressableRole.Checkbox"/> can say it (ARIA's own rule: <c>aria-checked="mixed"</c>
+    /// exists for checkboxes and nothing else), and it wins over <see cref="Selected"/>, because
+    /// "partly" is a statement about the whole set. It is a separate flag rather than a third value
+    /// of Selected so the forty callers that answer a yes/no question keep answering one.
+    /// </summary>
+    public bool Mixed { get; init; }
 
     /// <summary>
     /// What this pressable IS when it stands inside a composite control. <see cref="PressableRole.Radio"/>
@@ -1016,6 +1025,20 @@ public enum PressableRole : byte
 
     /// <summary>One choice of an exclusive set, inside an <see cref="AdjustableRole.Radiogroup"/>.</summary>
     Radio = 1,
+
+    /// <summary>
+    /// A two-or-three-state check. The STATE goes in <see cref="Pressable.Selected"/> (and
+    /// <see cref="Pressable.Mixed"/>), never in the name: a control that announces "Checked,
+    /// checkbox" twice over is noise, and one whose name CHANGES when its state does reads as a
+    /// different control to assistive tech. Unlike a radio it keeps its own Tab stop — a checkbox
+    /// is not one choice of a composite, it IS the control.
+    /// </summary>
+    Checkbox = 2,
+
+    /// <summary>An on/off toggle that acts immediately — ARIA's <c>switch</c>. Same contract as
+    /// <see cref="Checkbox"/> (state as attribute, own Tab stop), minus the mixed state, which the
+    /// role does not admit.</summary>
+    Switch = 3,
 }
 
 /// <summary>One inline run of a rich <see cref="Text"/> (see <see cref="Text.Spans"/>): its own
