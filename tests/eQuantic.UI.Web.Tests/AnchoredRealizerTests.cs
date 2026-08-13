@@ -163,4 +163,49 @@ public class AnchoredRealizerTests
         scrim.Style.Transition.Should()
             .Be("opacity 300ms cubic-bezier(0.2, 0, 0, 1), visibility 300ms cubic-bezier(0.2, 0, 0, 1)");
     }
+
+    /// <summary>
+    /// The Tooltip contract (DescribesAnchor): the panel is a REAL role="tooltip" with a
+    /// deterministic id, and the anchor's root points at it with aria-describedby — a screen
+    /// reader hears the hint after the control's name whether or not anything is revealed. The id
+    /// hashes the panel's TEXT (the `.eq-desc` rule), so SSR and hydration agree byte for byte.
+    /// </summary>
+    [Fact]
+    public void DescribesAnchor_WiresTooltipSemantics_WithADeterministicId()
+    {
+        var tooltip = new Anchored(
+            new Pressable(new Text("Save", TypeRole.Label), () => { }) { Label = "Save" },
+            new Text("Saves the draft", TypeRole.Caption))
+        {
+            OpenOnHover = true,
+            DescribesAnchor = true,
+        };
+
+        var element = Lower(tooltip);
+
+        var anchor = (Core.HtmlElement)element.Children[0];
+        var panel = (Core.HtmlElement)element.Children[^1];
+        panel.Role.Should().Be("tooltip");
+        panel.Id.Should().NotBeNullOrEmpty().And.StartWith("eq-tip-");
+        anchor.AriaDescribedBy.Should().Be(panel.Id, "the anchor names the panel that describes it");
+
+        // Same text, same id — the determinism hydration depends on.
+        var again = (Core.HtmlElement)Lower(tooltip).Children[^1];
+        again.Id.Should().Be(panel.Id);
+    }
+
+    /// <summary>Without the switch nothing changes: a Menu's panel is not a description of its
+    /// trigger, and a hover panel alone earns no tooltip role.</summary>
+    [Fact]
+    public void AHoverPanelAlone_IsNotATooltip()
+    {
+        var element = Lower(new Anchored(new Text("t", TypeRole.Label), new Text("p", TypeRole.Label))
+        {
+            OpenOnHover = true,
+        });
+
+        var panel = (Core.HtmlElement)element.Children[^1];
+        panel.Role.Should().BeNull();
+        ((Core.HtmlElement)element.Children[0]).AriaDescribedBy.Should().BeNull();
+    }
 }

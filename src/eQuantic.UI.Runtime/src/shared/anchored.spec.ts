@@ -3,7 +3,7 @@ import { lowerVisualNode } from './lowering';
 import { activeShortcuts, commitShortcuts, resetShortcuts } from '../dom/shortcuts';
 import type { LoweringContext } from './lowering';
 import { photonTheme } from './design-system.generated';
-import type { AnchoredNode } from './nodes';
+import type { AnchoredNode, VisualNodeValue } from './nodes';
 
 const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
 
@@ -83,6 +83,35 @@ describe('anchored lowering (C# cross-pin)', () => {
  * A menu opened with the keyboard has to be closable with it, and the outside-tap scrim is no help
  * to someone who never touched the mouse.
  */
+describe('tooltip semantics (describesAnchor, C# cross-pin)', () => {
+  it('wires role=tooltip + a deterministic id + aria-describedby on the anchor', () => {
+    const node = anchored({
+      openOnHover: true,
+      describesAnchor: true,
+      panel: { nodeKind: 'text', content: 'Saves the draft', role: 'caption' } as VisualNodeValue,
+    });
+
+    const host = lowerVisualNode(node, ctx)!;
+    const anchor = host.children[0];
+    const panel = host.children[host.children.length - 1];
+
+    expect(panel.attributes['role']).toBe('tooltip');
+    expect(panel.attributes['id']).toMatch(/^eq-tip-/);
+    expect(anchor.attributes['aria-describedby']).toBe(panel.attributes['id']);
+
+    // Same text, same id — SSR and hydration must agree without seeing each other.
+    const again = lowerVisualNode(node, ctx)!;
+    expect(again.children[again.children.length - 1].attributes['id']).toBe(panel.attributes['id']);
+  });
+
+  it('a hover panel alone is not a tooltip', () => {
+    const host = lowerVisualNode(anchored({ openOnHover: true }), ctx)!;
+
+    expect(host.children[host.children.length - 1].attributes['role']).toBeUndefined();
+    expect(host.children[0].attributes['aria-describedby']).toBeUndefined();
+  });
+});
+
 describe('anchored dismissal by keyboard', () => {
   beforeEach(() => resetShortcuts());
 

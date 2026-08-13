@@ -7,8 +7,12 @@ namespace eQuantic.UI.Components;
 /// TextInverse caption — the Toast pair, flipping correctly in both modes) that shows while the
 /// pointer hovers the child. Pure mechanics on both targets: the Anchored hover reveal is CSS-only
 /// on web (zero JS, never on touch) and rides the host's hover pipeline on Photon. Keep it to a few
-/// words — tooltips are hints, not documentation.
-/// v1 fences: show/hide delay, arrow caret, keyboard-focus reveal (a11y system).
+/// words — tooltips are hints, not documentation. Keyboard FOCUS reveals it exactly like hover
+/// (:has(:focus-visible), still zero JS), and the panel is a real <c>role="tooltip"</c> the anchor
+/// points at with <c>aria-describedby</c> — a screen reader hears the hint after the control's
+/// name whether or not anything is visually revealed.
+/// v1 fences: show/hide delay, arrow caret, Esc suppression (WCAG 1.4.13's dismissable clause —
+/// joins the Anchored Esc work, one controller for every floating panel).
 /// </summary>
 public sealed class Tooltip : StatelessComponent
 {
@@ -37,6 +41,7 @@ public sealed class Tooltip : StatelessComponent
         {
             Placement = Placement,
             OpenOnHover = true,
+            DescribesAnchor = true,
         };
     }
 }

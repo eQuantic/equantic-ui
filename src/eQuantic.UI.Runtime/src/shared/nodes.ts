@@ -124,6 +124,9 @@ export interface AnchoredNode extends VisualNodeValue {
   matchAnchorWidth?: boolean;
   /** Wave 3b (Tooltip): panel shows while the anchor is hovered — pure CSS on web. */
   openOnHover?: boolean;
+  /** The panel DESCRIBES the anchor (the Tooltip contract): role=tooltip + deterministic id on
+   * the panel, aria-describedby on the anchor's root. Meaningful only with openOnHover. */
+  describesAnchor?: boolean;
   /** Paints the outside-tap scrim (mega-menu page veil) — a BoxStyle, like the C# ScrimStyle. */
   scrimStyle?: BoxStyleValue | null;
   /** Open/close motion: panel + scrim stay mounted in both states and glide between them. */

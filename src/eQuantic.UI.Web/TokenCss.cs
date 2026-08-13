@@ -366,6 +366,10 @@ public static class PhotonCssGenerator
         // the browser's hover emulation rules).
         css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
         css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
+        // Keyboard FOCUS reveals the same panel — :focus-visible, not :focus-within, because a
+        // tooltip popping on every mouse click sits in the way; keyboard users are the ones who
+        // cannot hover. Still zero JS.
+        css.AppendLine(".eq-hoverreveal:has(:focus-visible) > .eq-anchor-panel { opacity: 1; }");
 
         // Link mechanics: the anchor is pure semantics — the child owns every visual (the Pressable
         // contract). display:block keeps flex/stack sizing natural.

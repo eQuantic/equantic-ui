@@ -2047,6 +2047,25 @@ function lowerFlexible(
  * invisible fixed scrim as a REAL pressable while dismissible, and the absolute panel positioned
  * ENTIRELY by the generated placement classes — the gap rides the margin as an atomic declaration.
  */
+/** The panel's visible text, flattened — the C# TextContentOf twin (the tooltip id hashes it). */
+function visualTextOf(node: VisualNodeValue): string {
+  switch (node.nodeKind) {
+    case 'text':
+      return (node as TextNode).content ?? '';
+    case 'box': {
+      const child = (node as BoxNode).child;
+      return child ? visualTextOf(child) : '';
+    }
+    case 'row':
+    case 'column':
+      return ((node as unknown as FlexNodeValue).children ?? []).map(visualTextOf).join('');
+    case 'pressable':
+      return visualTextOf((node as PressableNode).child);
+    default:
+      return '';
+  }
+}
+
 function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: string): HtmlNode {
   const host: HtmlNode = {
     tag: 'div',
@@ -2056,16 +2075,29 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
     events: {},
     children: [],
   };
+  // C# twin: the tooltip id hashes the panel's VISIBLE text (the `.eq-desc` rule), so SSR and
+  // hydration agree without either seeing the other.
+  const describedBy =
+    node.describesAnchor === true && node.openOnHover === true
+      ? `eq-tip-${hashDeclaration(visualTextOf(node.panel))}`
+      : null;
+
   const anchor = lowerNode(node.anchor, context, null, path + '/0');
   if (anchor) {
     // C# twin: a painted scrim dims the page, never its own anchor. Motion panels keep the class
     // in BOTH states — the scrim is still fading out after close.
     if (node.scrimStyle && node.onDismiss && (node.open === true || node.motion))
       prependClass(anchor, 'eq-anchor-above');
+    if (describedBy) anchor.attributes['aria-describedby'] = describedBy;
     host.children.push(anchor);
   }
   if (node.openOnHover === true) {
-    host.children.push(buildAnchorPanel(node, context, path));
+    const hoverPanel = buildAnchorPanel(node, context, path);
+    if (describedBy) {
+      hoverPanel.attributes['role'] = 'tooltip';
+      hoverPanel.attributes['id'] = describedBy;
+    }
+    host.children.push(hoverPanel);
     return host;
   }
   // C# twin: open/close MOTION keeps panel + scrim mounted in both states (element identity is

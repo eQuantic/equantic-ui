@@ -294,6 +294,8 @@ export class Anchored extends VisualNode {
   onDismiss?: (() => void) | null;
   matchAnchorWidth = false;
   openOnHover = false;
+  /** The panel DESCRIBES the anchor (the Tooltip contract) — role=tooltip + aria-describedby. */
+  describesAnchor = false;
   /** Paints the outside-tap scrim (mega-menu page veil) — a BoxStyle, like the C# ScrimStyle. */
   scrimStyle: BoxStyleValue | null = null;
   /** Open/close motion (C# twin): panel + scrim stay MOUNTED and glide between states. */

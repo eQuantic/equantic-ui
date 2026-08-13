@@ -107,7 +107,12 @@ public sealed class FormScreen : StatefulComponent
 
         var actions = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
         actions.Add(new FormSubmit(_form, "Create account", Submit));
-        actions.Add(new Button("Reset", Variant.Ghost) { OnPressed = () => _form.Reset() });
+        // The tooltip is a11y-complete now: keyboard focus reveals it exactly like hover, and
+        // the pill is a real role=tooltip the button points at with aria-describedby — a screen
+        // reader hears the hint after the button's name without anything being revealed at all.
+        actions.Add(new Tooltip(
+            new Button("Reset", Variant.Ghost) { OnPressed = () => _form.Reset() },
+            "Back to the values the form opened with"));
         card.Add(actions);
 
         column.Add(new Box(new BoxStyle

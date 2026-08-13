@@ -292,8 +292,18 @@ public static class WebRealizer
             // generated .eq-hoverreveal rules show it on :hover — pure CSS, no scrim, no state.
             ClassName = anchored.OpenOnHover ? "eq-anchorhost eq-hoverreveal" : "eq-anchorhost",
         };
+        // The tooltip semantics need the PANEL's id before the anchor renders, and the id needs
+        // the panel's text — lowered once, reused for both.
+        var describedBy = (string?)null;
+        if (anchored is { DescribesAnchor: true, OpenOnHover: true })
+            describedBy = $"eq-tip-{StyleAtomizer.Hash(TextContentOf(anchored.Panel))}";
+
         if (LowerNode(anchored.Anchor, context, horizontalAxis: null) is { } anchor)
         {
+            // What a screen reader reads AFTER the control's name — whether or not the panel is
+            // visually revealed. On the anchor's root, which for the ordinary Tooltip(child:
+            // IconButton) IS the focusable button.
+            if (describedBy is not null) anchor.AriaDescribedBy = describedBy;
             // A painted scrim dims the PAGE, never its own anchor — the anchor lifts above it.
             // Snap panels gate the class on Open (position+z the closed state shouldn't pay for);
             // Motion panels keep it ALWAYS — the scrim is still fading out after close, and an
@@ -307,7 +317,13 @@ public static class WebRealizer
 
         if (anchored.OpenOnHover)
         {
-            host.Children.Add(BuildAnchorPanel(anchored, context));
+            var hoverPanel = BuildAnchorPanel(anchored, context);
+            if (describedBy is not null)
+            {
+                hoverPanel.Role = "tooltip";
+                hoverPanel.Id = describedBy;
+            }
+            host.Children.Add(hoverPanel);
             return host;
         }
 
@@ -345,6 +361,17 @@ public static class WebRealizer
         host.Children.Add(BuildAnchorPanel(anchored, context));
         return host;
     }
+
+    /// <summary>The panel's visible text, flattened — what the tooltip id hashes. Walking the
+    /// VISUAL tree (not the lowered one) keeps the answer identical on both producers.</summary>
+    private static string TextContentOf(VisualNode node) => node switch
+    {
+        Text text => text.Content,
+        Box box => box.Child is { } child ? TextContentOf(child) : "",
+        FlexNode flex => string.Concat(flex.Children.Select(TextContentOf)),
+        Pressable pressable => TextContentOf(pressable.Child),
+        _ => "",
+    };
 
     private static RealizedElement BuildAnchorPanel(Anchored anchored, ComponentContext context)
     {

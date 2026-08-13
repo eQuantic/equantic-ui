@@ -553,9 +553,21 @@ public sealed class Anchored : VisualNode
 
     /// <summary>Wave 3b (the Tooltip mechanism): the panel shows while the POINTER hovers the
     /// anchor — pure CSS on web (the generated .eq-hoverreveal rules, zero JS), the host's hover
-    /// pipeline on native. No scrim (hover leaves = closed); never fires on touch. Composes with
-    /// <see cref="Open"/> (either shows the panel).</summary>
+    /// pipeline on native. Keyboard focus reveals it the same way (:has(:focus-visible) — focus
+    /// only, because a tooltip popping on every mouse CLICK is in the way). No scrim (hover
+    /// leaves = closed); never fires on touch. Composes with <see cref="Open"/> (either shows
+    /// the panel).</summary>
     public bool OpenOnHover { get; init; }
+
+    /// <summary>
+    /// The panel DESCRIBES the anchor — the Tooltip contract. The web panel becomes
+    /// <c>role="tooltip"</c> with a deterministic id (FNV of its text, the `.eq-desc` rule, so SSR
+    /// and hydration agree), and the anchor's root carries <c>aria-describedby</c> pointing at it:
+    /// a screen reader reads the hint after the control's own name, whether or not the panel is
+    /// visually revealed. Only meaningful with <see cref="OpenOnHover"/>; a menu's panel is not a
+    /// description of its trigger.
+    /// </summary>
+    public bool DescribesAnchor { get; init; }
 
     /// <summary>
     /// Visual style for the outside-tap scrim (mega-menu page dimming): when set (and
