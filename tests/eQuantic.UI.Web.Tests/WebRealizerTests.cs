@@ -133,6 +133,53 @@ public class WebRealizerTests
     }
 
     /// <summary>
+    /// A POSITIVE basis is the size the line breaker measures against, so it decides whether a
+    /// wrapping row BREAKS or squeezes. Regression: the realizer hardcoded `{Flex} 1 0%` while the
+    /// TS twin emitted the node's own basis and shrink — so SSR and hydration disagreed on the
+    /// class, and on the first paint a wrapping row measured ZERO for a child asking for 220dp,
+    /// never broke the line, and shrank the child to nothing.
+    /// </summary>
+    [Fact]
+    public void Flexible_CarriesItsBasisAndShrink_SoAWrappingRowCanBreakInsteadOfSqueezing()
+    {
+        var row = new Row(gap: 0) { Wrap = true };
+        row.Add(new Flexible(new Primitives.Text("t"), flex: 1, basis: 220));
+        row.Add(new Flexible(new Primitives.Text("t"), flex: 1, basis: 180, shrink: 0));
+        var node = Render(row);
+
+        node.Children[0].Attributes["style"].Should().Contain("flex: 1 1 220px");
+        node.Children[1].Attributes["style"].Should().Contain("flex: 1 0 180px",
+            "shrink is the node's, not a default");
+    }
+
+    /// <summary>A basis of zero keeps the historical `0%`, which is what native's leftover-by-weight
+    /// distribution matches — the default must not change shape.</summary>
+    [Fact]
+    public void Flexible_WithoutABasis_KeepsPercentZero()
+    {
+        var row = new Row(gap: 0);
+        row.Add(new Flexible(new Primitives.Text("t"), flex: 2));
+        Render(row).Children[0].Attributes["style"].Should().Contain("flex: 2 1 0%");
+    }
+
+    /// <summary>
+    /// `overflow` and `text-overflow` are INERT on a non-replaced inline box, and a Text lowers to a
+    /// `span`. Without a display the ellipsis contract was a no-op: a squeezed single-line Text
+    /// painted its full width straight out of its parent — in a topbar, the placeholder ran over the
+    /// ⌘K chip and off the screen.
+    /// </summary>
+    [Fact]
+    public void SingleLineText_IsABlock_SoTheEllipsisContractApplies()
+    {
+        var node = Render(new Primitives.Text("Saldo disponível", TypeRole.Caption, maxLines: 1));
+
+        var style = node.Attributes["style"];
+        style.Should().Contain("display: block");
+        style.Should().Contain("overflow: hidden");
+        style.Should().Contain("text-overflow: ellipsis");
+    }
+
+    /// <summary>
     /// Spec B14 / hydration identity: a WEIGHTED spacer is the ratio's counterweight (ProgressBar), so
     /// AnimateChanges must animate its weight exactly as it does the Flexible fill's. Regression: the
     /// realizer emitted the transition for Flexible only, so SSR shipped a bare `flex: n 1 0%` while the

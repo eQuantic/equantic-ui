@@ -13,7 +13,7 @@ namespace eQuantic.UI.Web;
 /// client-side, and hydration correctness depends on the two staying identical — every mapping rule
 /// here is therefore normative.
 ///
-/// Layout parity notes (v1): flex maps 1:1 (direction/gap/justify/align, Flexible → <c>flex: n 1 0%</c>
+/// Layout parity notes (v1): flex maps 1:1 (direction/gap/justify/align, Flexible → <c>flex: n s basis</c>
 /// matching the native leftover-by-weight semantics); Photon's inside border maps to
 /// <c>box-sizing: border-box</c>; the cross-target layout harness tightens the remainder (plan).
 /// </summary>
@@ -1370,6 +1370,17 @@ public static class WebRealizer
             element.Style!.WhiteSpace = mono ? "pre" : "nowrap";
             element.Style.Overflow = "hidden";
             element.Style.TextOverflow = "ellipsis";
+            // BLOCK, or the other two do nothing. A Text lowers to a `span`, and `overflow` and
+            // `text-overflow` are inert on a non-replaced INLINE box — so a squeezed single-line
+            // Text painted its full width straight out of its parent instead of ellipsising inside
+            // it: in a topbar that ran the placeholder over the ⌘K chip and off the screen. The
+            // multi-line clamp below already sets a display for exactly this reason.
+            //
+            // Block rather than inline-block: block takes the width the parent allows, which is
+            // what gives overflow something to clip against. Inline-block sizes to its content and
+            // would spill again. Inside a flex row — where most single-line Texts live — the two
+            // are identical, because a flex item is blockified either way.
+            element.Style.Display = Core.Display.Block;
         }
         // MULTI-LINE clamp: the paragraph occupies exactly N lines and ends in an ellipsis — what
         // keeps a grid of cards on one baseline when the copy is not the site's to control (a
@@ -1665,8 +1676,16 @@ public static class WebRealizer
 
     private static HtmlElement LowerFlexible(Flexible flexible, ComponentContext context, bool? horizontalAxis)
     {
-        // flex: n 1 0% — basis 0 matches the native engine's leftover-by-weight distribution; min-size 0
-        // lets text children shrink to ellipsis instead of pushing siblings (the truncation contract).
+        // flex: n s basis. A basis of 0 (the default) matches the native engine's leftover-by-weight
+        // distribution, and min-size 0 lets text children shrink to ellipsis instead of pushing
+        // siblings (the truncation contract).
+        //
+        // A POSITIVE basis is the size the line breaker measures against, which is the only way a
+        // wrapping row can decide to break rather than squeeze — so it has to reach the CSS. Both it
+        // and Shrink were hardcoded here (`{Flex} 1 0%`) while the TS twin emitted them, so SSR and
+        // hydration disagreed on the class, and on the first paint a wrapping row measured ZERO for
+        // a child asking for 220: it never broke the line and shrank the child to nothing instead.
+        var basis = flexible.Basis > 0 ? TokenCss.Px(flexible.Basis) : "0%";
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle
@@ -1676,7 +1695,7 @@ public static class WebRealizer
                 Transition = flexible.AnimateChanges
                     ? "flex-grow var(--eq-motion-base) var(--eq-curve-standard)"
                     : null,
-                Flex = $"{flexible.Flex} 1 0%",
+                Flex = $"{flexible.Flex} {flexible.Shrink} {basis}",
                 MinWidth = horizontalAxis is not false ? "0" : null,
                 MinHeight = horizontalAxis is false ? "0" : null,
             },

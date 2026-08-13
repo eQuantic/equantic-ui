@@ -4,7 +4,7 @@
  * every rule here is normative and cross-pinned by tests on both sides:
  * - colors lower as `light-dark(#light, #dark)` straight from tokens (mode-free DOM);
  * - Box → div with `box-sizing: border-box` (Photon's inside border = the CSS parity contract);
- * - Row/Column → flex with the spec alignment defaults; Flexible → `flex: n 1 0%` + `min-size: 0`;
+ * - Row/Column → flex with the spec alignment defaults; Flexible → `flex: n s basis` + `min-size: 0`;
  * - Text → role-classed span with single-line ellipsis; Pressable → neutralized <button>;
  * - styles lower to ATOMIC CLASSES (style-atomizer.ts twin of the C# StyleAtomizer): identical
  *   declarations hash to identical class names on both sides, so hydration compares one sorted
@@ -1733,6 +1733,11 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     style['white-space'] = text.mono === true ? 'pre' : 'nowrap';
     style.overflow = 'hidden';
     style['text-overflow'] = 'ellipsis';
+    // BLOCK, or the other two do nothing (C# twin): a Text lowers to a `span`, and `overflow` and
+    // `text-overflow` are inert on a non-replaced inline box, so a squeezed single-line Text
+    // painted its full width out of its parent instead of ellipsising inside it. Block takes the
+    // width the parent allows; inline-block would size to content and spill again.
+    style.display = 'block';
   } else if (text.maxLines > 1) {
     // MULTI-LINE clamp (C# twin): exactly N lines, then an ellipsis — what keeps a grid of cards
     // on one baseline when the copy is not the site's to control.

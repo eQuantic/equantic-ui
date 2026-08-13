@@ -187,6 +187,55 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(effectiveStyle(wrapper)).toContain('min-width: 0');
   });
 
+  // The C# twin asserts the same two shapes (WebRealizerTests): a positive basis is what lets a
+  // wrapping row break instead of squeezing, and the pair has to hash to the same class on both
+  // sides or hydration repaints what SSR already drew.
+  it('Flexible carries its own basis and shrink', () => {
+    const row: VisualNodeValue = {
+      nodeKind: 'row',
+      gap: 0,
+      main: 'start',
+      cross: 'center',
+      wrap: true,
+      children: [
+        {
+          nodeKind: 'flexible',
+          flex: 1,
+          basis: 220,
+          child: { nodeKind: 'text', content: 't', role: 'bodyM', maxLines: 0 },
+        } as VisualNodeValue,
+        {
+          nodeKind: 'flexible',
+          flex: 1,
+          basis: 180,
+          shrink: 0,
+          child: { nodeKind: 'text', content: 't', role: 'bodyM', maxLines: 0 },
+        } as VisualNodeValue,
+      ],
+    } as VisualNodeValue;
+
+    const children = lowerVisualNode(row, ctx).children;
+    expect(effectiveStyle(children[0])).toContain('flex: 1 1 220px');
+    expect(effectiveStyle(children[1])).toContain('flex: 1 0 180px');
+  });
+
+  // `overflow` and `text-overflow` are inert on a non-replaced inline box, and a Text lowers to a
+  // span — so without a display the ellipsis contract did nothing and a squeezed text painted out
+  // of its parent.
+  it('a single-line Text is a block, so the ellipsis contract applies', () => {
+    const text: VisualNodeValue = {
+      nodeKind: 'text',
+      content: 'Saldo disponível',
+      role: 'caption',
+      maxLines: 1,
+    } as VisualNodeValue;
+
+    const style = effectiveStyle(lowerVisualNode(text, ctx));
+    expect(style).toContain('display: block');
+    expect(style).toContain('overflow: hidden');
+    expect(style).toContain('text-overflow: ellipsis');
+  });
+
   it('Spacer follows the flex axis (flexible and fixed)', () => {
     const row: VisualNodeValue = {
       nodeKind: 'row',
