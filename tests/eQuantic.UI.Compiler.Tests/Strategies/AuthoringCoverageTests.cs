@@ -477,4 +477,31 @@ public class AuthoringCoverageTests
 
         TsOfResolved("C", src).Should().Contain(".count").And.NotContain("Bucket().length");
     }
+
+    /// <summary>
+    /// A LOCAL whose name starts with an underscore is a local. Without a semantic model that
+    /// leading underscore is a fair guess at a field, and WITH one it is simply wrong: a generated
+    /// `var _password = form.Add(…)` came back as `this._password`, which inside a static method is
+    /// undefined and throws on first use — on the client only, since the server ran the same C#
+    /// correctly. The generated DataAnnotations bridge is what walked into it.
+    /// </summary>
+    [Fact]
+    public void AnUnderscoredLOCAL_IsNotAField()
+    {
+        var ts = TsOf("Forms", """
+            public static class Forms
+            {
+                public static string Build()
+                {
+                    var _first = "a";
+                    var _second = _first + "b";
+                    return _second;
+                }
+            }
+            """);
+
+        ts.Should().Contain("let _first");
+        ts.Should().NotContain("this._first", "the model already said it was a local");
+        ts.Should().NotContain("this._second");
+    }
 }

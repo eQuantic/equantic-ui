@@ -1,8 +1,22 @@
+using System.ComponentModel.DataAnnotations;
 using eQuantic.UI.Components;
 using eQuantic.UI.Core;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.Console;
+
+/// <summary>
+/// The model the form comes from. Its annotations are read at BUILD time and emitted as calls to
+/// the same <c>Rules</c> a hand-written form uses — so `SignUpForm.Create()` below is not a
+/// different kind of form, it is the same object with its rules already on.
+/// </summary>
+[FormModel]
+public sealed class SignUp
+{
+    [Required, EmailAddress] public string Email { get; set; } = "";
+    [Required, MinLength(8)] public string Password { get; set; } = "";
+    [Required, Compare(nameof(Password))] public string Confirm { get; set; } = "";
+}
 
 /// <summary>
 /// A form, end to end: the model from <c>Primitives</c>, the fields bound to it, and a submit that
@@ -16,7 +30,9 @@ namespace eQuantic.Console;
 [Page("/form", Title = "Form — eQuantic Console")]
 public sealed class FormScreen : StatefulComponent
 {
-    private readonly FormController _form = new();
+    // Generated from SignUp's annotations. What follows in the constructor is the part the
+    // model does not describe — a form ADOPTS the bridge and can still outgrow it.
+    private readonly FormController _form = SignUpForm.Create();
     private string? _created;
 
     /// <summary>Page state, not form state — and the condition the phone field reads. Which is the
@@ -25,13 +41,11 @@ public sealed class FormScreen : StatefulComponent
 
     public FormScreen()
     {
-        _form.Add("email", rules: [Rules.Required(), Rules.Email()]);
-        var password = _form.Add("password", rules: [Rules.Required(), Rules.MinLength(8)]);
-        _form.Add("confirm", rules: [Rules.Required(), Rules.Matches(password)]);
         // Conditional: the phone is not a field with a passing rule while nobody asked to be
         // called, it is a field that is NOT BEING ASKED — no error, no vote on whether the form
-        // is valid, and the page does not draw it.
-        _form.Add("phone", relevantWhen: () => _callMe,
+        // is valid, and the page does not draw it. No annotation can say that, so it is written
+        // here, on the form the generator built.
+        _form.Add("Phone", relevantWhen: () => _callMe,
             rules: [Rules.Required("We need a number to call you on."), Rules.MinLength(9)]);
         _form.Changed += () => SetState(() => { });
     }
@@ -45,7 +59,7 @@ public sealed class FormScreen : StatefulComponent
     {
         await Task.Delay(400);   // the round trip a real registration would take
         return email.Trim().ToLowerInvariant() == "ana@equantic.tech"
-            ? [new FieldError("email", "That address is already registered.")]
+            ? [new FieldError("Email", "That address is already registered.")]
             : [];
     }
 
@@ -68,11 +82,11 @@ public sealed class FormScreen : StatefulComponent
             TypeRole.BodyM, theme.TextSecondary, maxLines: 3));
 
         var card = new Column(gap: Space.S3) { Width = SizeValue.Fill };
-        card.Add(new FormInput(_form, "email", "Email", placeholder: "you@example.com",
+        card.Add(new FormInput(_form, "Email", "Email", placeholder: "you@example.com",
             helper: "We never share it."));
-        card.Add(new FormInput(_form, "password", "Password", helper: "At least 8 characters")
+        card.Add(new FormInput(_form, "Password", "Password", helper: "At least 8 characters")
             { Obscure = true });
-        card.Add(new FormInput(_form, "confirm", "Confirm password") { Obscure = true });
+        card.Add(new FormInput(_form, "Confirm", "Confirm password") { Obscure = true });
 
         // The conditional half. The checkbox is page state, so the form is TOLD it changed —
         // the one case a value moving inside the form does not cover.
@@ -82,8 +96,8 @@ public sealed class FormScreen : StatefulComponent
             _form.Revalidate();
         }), "Call me instead of emailing"));
 
-        if (_form.Field("phone") is { Relevant: true })
-            card.Add(new FormInput(_form, "phone", "Phone", placeholder: "+351 912 345 678"));
+        if (_form.Field("Phone") is { Relevant: true })
+            card.Add(new FormInput(_form, "Phone", "Phone", placeholder: "+351 912 345 678"));
 
         if (_form.SubmitError is { } failure)
             card.Add(new Banner(Variant.Destructive, failure));
@@ -116,7 +130,7 @@ public sealed class FormScreen : StatefulComponent
     /// </summary>
     private async Task Submit()
     {
-        var email = _form.Field("email")!.Value;
+        var email = _form.Field("Email")!.Value;
         var verdict = await Register(email);
         if (verdict.Count > 0)
         {

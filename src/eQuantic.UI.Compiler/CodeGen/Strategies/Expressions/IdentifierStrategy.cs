@@ -40,6 +40,17 @@ public class IdentifierStrategy : IConversionStrategy
         // Resolve member access prefix (this.) using semantic model
         if (symbol != null)
         {
+            // A LOCAL is a local, whatever it is called. The heuristics at the bottom read a leading
+            // underscore as a field — a fair guess with no model, and a WRONG answer with one: a
+            // generated `var _password = form.Add(…)` came back as `this._password`, which inside a
+            // static method is undefined and throws on the first use.
+            // A primary-constructor PARAMETER is excluded on purpose: C# 12 lets an instance member
+            // read one, and there it behaves like a field (handled below). The name still goes
+            // through the JS-identifier rename, or a local called `new` would emit `new`.
+            if (symbol.Kind is SymbolKind.Local or SymbolKind.RangeVariable
+                || (symbol.Kind == SymbolKind.Parameter && !symbol.IsPrimaryConstructorParameter()))
+                return name.ToJsIdentifier();
+
             if (symbol.Kind == SymbolKind.Field || symbol.Kind == SymbolKind.Property || symbol.Kind == SymbolKind.Method)
             {
                 // A STATIC member is reached through the class, not the instance: a bare `Items` reference
