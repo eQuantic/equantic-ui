@@ -1026,6 +1026,13 @@ public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono
     public FontWeight? Weight { get; init; }
 
     /// <summary>
+    /// The SLANTED cut for this run — the other half of inline emphasis, and the one markdown's
+    /// <c>*single asterisk*</c> means. It composes with <see cref="Weight"/> and with
+    /// <see cref="Mono"/>, so <c>**bold *and italic***</c> is one run carrying both.
+    /// </summary>
+    public bool Italic { get; init; }
+
+    /// <summary>
     /// A SIZE of its own, for a run that is not the size of the prose around it — inline code at
     /// 13.5 inside a 16 paragraph is the case, and a run inherited the paragraph's size with no way
     /// to say otherwise.
@@ -1139,6 +1146,17 @@ public sealed class Text : VisualNode
     /// break (web renders with <c>white-space: pre-line</c>; CoreText breaks paragraphs natively).
     /// </summary>
     public bool Mono { get; init; }
+
+    /// <summary>
+    /// The SLANTED cut of the face (CSS <c>font-style: italic</c>): a defined term, a citation, a
+    /// caption under a figure. A face swap like <see cref="Mono"/>, and it lands in the same place
+    /// — the <see cref="TypeStyle"/> the measurer and the rasterizer both read — so the box a
+    /// slanted paragraph is measured into is the box it draws into.
+    /// <para>
+    /// On a run it is <see cref="TextRun.Italic"/>; here it slants the whole paragraph.
+    /// </para>
+    /// </summary>
+    public bool Italic { get; init; }
 
     /// <summary>
     /// TABULAR figures: every digit takes the same advance, so a number that changes in place does

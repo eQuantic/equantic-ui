@@ -115,12 +115,12 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static IntPtr LoadGlobalAddress(string library, string symbol) =>
         dlsym(dlopen(library, 2), symbol);
 
-    private readonly Dictionary<(float Size, bool Bold, bool Mono), IntPtr> _fonts = new();
+    private readonly Dictionary<(float Size, bool Bold, bool Mono, bool Italic), IntPtr> _fonts = new();
 
-    private IntPtr FontFor(float size, FontWeight weight, bool mono)
+    private IntPtr FontFor(float size, FontWeight weight, bool mono, bool italic)
     {
         var bold = weight >= FontWeight.SemiBold;
-        if (_fonts.TryGetValue((size, bold, mono), out var cached)) return cached;
+        if (_fonts.TryGetValue((size, bold, mono, italic), out var cached)) return cached;
 
         // kCTFontUIFontUserFixedPitch is the system's own MONOSPACED face (SF Mono on a modern
         // Mac) — the one every native editor uses. Asking the OS for it beats naming a family
@@ -128,27 +128,35 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         var font = CTFontCreateUIFontForLanguage(
             mono ? 1u /* kCTFontUIFontUserFixedPitch */ : 2u /* kCTFontUIFontSystem */,
             size, IntPtr.Zero);
-        if (bold)
+        // Bold and italic are the same mechanism — symbolic TRAITS on the face the OS handed
+        // back — so they are asked for TOGETHER: two copies in sequence would drop the first
+        // trait, because each copy is made from the ORIGINAL descriptor's traits plus the mask.
+        const uint italicTrait = 1 << 0;   // kCTFontTraitItalic
+        const uint boldTrait = 1 << 1;     // kCTFontTraitBold
+        var traits = (bold ? boldTrait : 0u) | (italic ? italicTrait : 0u);
+        if (traits != 0)
         {
-            const uint boldTrait = 1 << 1;
-            var boldFont = CTFontCreateCopyWithSymbolicTraits(font, size, IntPtr.Zero, boldTrait, boldTrait);
-            if (boldFont != IntPtr.Zero)
+            // The mask names WHICH traits this call decides; the value names what they become. A
+            // family with no italic cut answers zero, and the upright face we already have is the
+            // honest fallback — a synthesised slant would measure differently than it draws.
+            var traited = CTFontCreateCopyWithSymbolicTraits(font, size, IntPtr.Zero, traits, traits);
+            if (traited != IntPtr.Zero)
             {
                 CFRelease(font);
-                font = boldFont;
+                font = traited;
             }
         }
-        _fonts[(size, bold, mono)] = font; // per-process cache (the documented lifetime fence)
+        _fonts[(size, bold, mono, italic)] = font; // per-process cache (the documented lifetime fence)
         return font;
     }
 
     /// <summary>The framesetter + laid-out frame for a block (caller releases all three handles).</summary>
     private (IntPtr Framesetter, IntPtr Frame, IntPtr Path, IntPtr Attributed, IntPtr CfText, IntPtr Dict)
-        Layout(string content, float fontSize, FontWeight weight, float maxWidth, bool mono)
+        Layout(string content, float fontSize, FontWeight weight, float maxWidth, bool mono, bool italic)
     {
         var cfText = CFStringCreateWithCString(IntPtr.Zero, content.Length == 0 ? " " : content, Utf8);
         var dict = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
-        CFDictionarySetValue(dict, FontAttributeName, FontFor(fontSize, weight, mono));
+        CFDictionarySetValue(dict, FontAttributeName, FontFor(fontSize, weight, mono, italic));
         var attributed = CFAttributedStringCreate(IntPtr.Zero, cfText, dict);
         var framesetter = CTFramesetterCreateWithAttributedString(attributed);
         var width = float.IsFinite(maxWidth) && maxWidth > 0 ? maxWidth : 100_000f;
@@ -171,7 +179,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     {
         var size = style.ScaledSize(typeScale);
         var lineHeight = style.ScaledLineHeight(typeScale);
-        var layout = Layout(content, size, style.Weight, maxWidth, style.Mono);
+        var layout = Layout(content, size, style.Weight, maxWidth, style.Mono, style.Italic);
         try
         {
             var ctLines = CTFrameGetLines(layout.Frame);
@@ -201,7 +209,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         if (content.Length == 0) return null;
         var size = style.ScaledSize(typeScale);
         var lineHeight = style.ScaledLineHeight(typeScale);
-        var layout = Layout(content, size, style.Weight, maxWidth, style.Mono);
+        var layout = Layout(content, size, style.Weight, maxWidth, style.Mono, style.Italic);
         try
         {
             var ctLines = CTFrameGetLines(layout.Frame);

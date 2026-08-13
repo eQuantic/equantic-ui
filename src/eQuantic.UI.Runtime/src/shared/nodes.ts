@@ -50,6 +50,8 @@ export interface TypeStyleValue {
   maxScale?: number;
   /** The MONOSPACED face (C# `TypeStyle.Mono`) — code, keys, versions. */
   mono?: boolean;
+  /** The SLANTED cut (C# `TypeStyle.Italic`) — an axis, so it composes with weight and mono. */
+  italic?: boolean;
 }
 
 export type MainAlignValue = 'start' | 'center' | 'end' | 'spaceBetween';
@@ -336,6 +338,8 @@ export interface TextNode extends VisualNodeValue {
   /** Tabular figures (tnum) — a changing number must not shift its row. */
   tabular?: boolean;
   mono?: boolean;
+  /** The SLANTED cut for the whole paragraph (C# `Text.Italic`). */
+  italic?: boolean;
   /** Rich inline runs — rendered instead of `content` when present (wire of C# Text.Spans). */
   spans?: TextRunValue[] | null;
   /** Spec S6: animates color changes (the design's transition-colors). null = snap. */
@@ -347,8 +351,15 @@ export interface TextRunValue {
   content: string;
   color?: ColorTokenValue | null;
   mono?: boolean;
+  /** The SLANTED cut for this run (C# `TextRun.Italic`) — markdown's `*single asterisk*`. */
+  italic?: boolean;
   /** Inline emphasis (C# `TextRun.Weight`) — the camelCased FontWeight name. */
   weight?: string | null;
+  /**
+   * A SIZE of its own (C# `TextRun.StyleOverride`) — inline code at 13.5 inside a 16 paragraph.
+   * Only the size is taken: the run keeps the paragraph's line box, which is what makes it a run.
+   */
+  styleOverride?: TypeStyleValue | null;
   /**
    * Where the run LINKS to (C# `TextRun.Href`). A link inside a sentence has to live on a run: a
    * Link around the Text makes the whole paragraph one link, and a Row of Texts breaks between RUNS

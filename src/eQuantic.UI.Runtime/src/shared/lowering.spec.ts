@@ -131,6 +131,50 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(style).toContain('letter-spacing: 0.1px');
   });
 
+  it('Text slants when the node asks for it', () => {
+    const text: VisualNodeValue = {
+      nodeKind: 'text',
+      content: 'ementa',
+      role: 'bodyM',
+      maxLines: 0,
+      italic: true,
+    } as VisualNodeValue;
+
+    expect(effectiveStyle(lowerVisualNode(text, ctx))).toContain('font-style: italic');
+  });
+
+  /**
+   * The two things a RUN carries that the paragraph around it does not — and both were missing
+   * from this side until 0.2.0-preview.28. The size one is the sharper story: the server sized a
+   * markdown code span at 13.5 and hydration re-sized it to the paragraph's own size, so every
+   * inline `code` on a documentation page grew the moment the page booted.
+   */
+  it('a rich run carries its own slant and its own size', () => {
+    const text: VisualNodeValue = {
+      nodeKind: 'text',
+      content: '',
+      role: 'bodyM',
+      maxLines: 0,
+      spans: [
+        { content: 'plain ' },
+        { content: 'emphasis', italic: true },
+        { content: ' and ' },
+        {
+          content: 'code',
+          mono: true,
+          styleOverride: { size: 13.5, lineHeight: 20, weight: 'regular', tracking: 0 },
+        },
+      ],
+    } as VisualNodeValue;
+
+    const runs = lowerVisualNode(text, ctx).children;
+    expect(effectiveStyle(runs[1])).toContain('font-style: italic');
+    expect(effectiveStyle(runs[3])).toContain('font-size: 13.5px');
+    // An unemphasised run states nothing: a declaration nobody asked for is a class nobody shares.
+    expect(effectiveStyle(runs[0])).not.toContain('font-style');
+    expect(effectiveStyle(runs[0])).not.toContain('font-size');
+  });
+
   it('Pressable lowers to a neutralized button wiring onPressed to click', () => {
     let fired = false;
     const pressable: VisualNodeValue = {

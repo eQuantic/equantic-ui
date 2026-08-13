@@ -181,6 +181,8 @@ export class TypeStyle implements TypeStyleValue {
     readonly maxScale = 1,
     /** The MONOSPACED face — code, keys, versions (C# `TypeStyle.Mono`). */
     readonly mono = false,
+    /** The SLANTED cut — an AXIS, so it composes with weight and mono (C# `TypeStyle.Italic`). */
+    readonly italic = false,
   ) {}
 
   /**
@@ -191,7 +193,15 @@ export class TypeStyle implements TypeStyleValue {
   withSize(size: number): TypeStyle {
     const lineHeight =
       this.size <= 0 ? this.lineHeight : Math.round((this.lineHeight * size) / this.size * 2) / 2;
-    return new TypeStyle(size, lineHeight, this.weight, this.tracking, this.maxScale, this.mono);
+    return new TypeStyle(
+      size,
+      lineHeight,
+      this.weight,
+      this.tracking,
+      this.maxScale,
+      this.mono,
+      this.italic,
+    );
   }
 
   /** A style from a SIZE alone, with the typographic default line box (1.25×). */

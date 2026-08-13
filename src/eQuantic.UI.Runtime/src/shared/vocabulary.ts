@@ -103,6 +103,8 @@ export class TextRun {
   mono: boolean;
   /** Inline emphasis (C# `TextRun.Weight`) — the camelCased FontWeight name. */
   weight: string | null = null;
+  /** The SLANTED cut for this run (C# `TextRun.Italic`) — markdown's `*single asterisk*`. */
+  italic = false;
 
   constructor(content: string, color: ColorTokenValue | null = null, mono = false, config?: EqConfig) {
     this.content = content;
@@ -548,6 +550,8 @@ export class Column extends FlexNode {
 interface TextConfig {
   styleOverride?: TypeStyleValue | null;
   mono?: boolean;
+  /** The SLANTED cut for the whole paragraph (C# `Text.Italic`). */
+  italic?: boolean;
   /** Tabular figures (tnum) — a changing number must not shift its row. */
   tabular?: boolean;
   spans?: import('./nodes').TextRunValue[] | null;
@@ -570,6 +574,8 @@ export class Text extends VisualNode {
   gradient: LinearGradient | null = null;
   align: string = 'start';
   mono = false;
+  /** The SLANTED cut for the whole paragraph (C# `Text.Italic`). */
+  italic = false;
   tabular = false;
   spans: import('./nodes').TextRunValue[] | null = null;
   /** Spec S6: animates color changes (the design's transition-colors). */

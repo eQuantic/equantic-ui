@@ -19,7 +19,7 @@ export class Markdown extends StatelessComponent {
     }
 
     static paragraph(runs: MarkdownRun[], theme: any, style: MarkdownStyle) {
-        let prose = theme.type(style.body);let codeSize = prose.size < 13.5 ? prose.size : 13.5;let code = new TypeStyle(codeSize, prose.lineHeight, prose.weight, 0, prose.maxScale, true);let spans: TextRun[] = [];for (const run of runs) {spans.push(new TextRun(run.text, null, false, { mono: run.code, styleOverride: run.code ? code : null, color: run.code ? theme.textPrimary : null, weight: run.bold ? 'bold' : null, destination: run.isLink ? run.href : null }));}return new Text('', style.body, theme.textSecondary, 0, 'start', false, false, null, { spans: spans });
+        let prose = theme.type(style.body);let codeSize = prose.size < 13.5 ? prose.size : 13.5;let code = new TypeStyle(codeSize, prose.lineHeight, prose.weight, 0, prose.maxScale, true);let spans: TextRun[] = [];for (const run of runs) {spans.push(new TextRun(run.text, null, false, { mono: run.code, styleOverride: run.code ? code : null, color: run.code ? theme.textPrimary : null, weight: run.bold ? 'bold' : null, italic: run.italic, destination: run.isLink ? run.href : null }));}return new Text('', style.body, theme.textSecondary, 0, 'start', false, false, null, { spans: spans });
     }
 
     static listView(block: MarkdownBlock, theme: any, style: MarkdownStyle) {

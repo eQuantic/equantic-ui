@@ -1293,6 +1293,9 @@ public static class WebRealizer
         // The face can come from the NODE (this text is code) or from the STYLE (this ROLE is
         // code) — the native side merges the two into the style, and so does this.
         var mono = text.Mono || (text.StyleOverride?.Mono ?? context.Theme.Type(text.Role).Mono);
+        // The slant reads the same two places for the same reason: a role may BE italic (a
+        // theme's caption), and a node may slant a paragraph of an upright role.
+        var italic = text.Italic || (text.StyleOverride?.Italic ?? context.Theme.Type(text.Role).Italic);
         var element = new RealizedElement("span")
         {
             ClassName = $"eq-type-{text.Role.ToString().ToLowerInvariant()}",
@@ -1315,6 +1318,7 @@ public static class WebRealizer
                     : text.Content.Contains('\n') ? "pre-line" : null,
                 FontFamily = mono ? TokenCss.MonoStack : null,
                 FontVariantNumeric = text.Tabular ? "tabular-nums" : null,
+                FontStyle = italic ? "italic" : null,
                 // Spec S6: recolors glide (the design's transition-colors on nav labels/links).
                 Transition = text.Transition is { } transition ? TokenCss.Transition(transition) : null,
             },
@@ -1337,6 +1341,7 @@ public static class WebRealizer
                         Color = run.Color is { } runColor ? TokenCss.Value(runColor) : null,
                         FontFamily = run.Mono ? TokenCss.MonoStack : null,
                         FontWeight = run.Weight is { } runWeight ? ((int)runWeight).ToString() : null,
+                        FontStyle = run.Italic ? "italic" : null,
                         // SIZE only — no line-height. A run keeps the paragraph's line box, which
                         // is what makes it a run rather than a line of its own.
                         FontSize = run.StyleOverride is { } runStyle

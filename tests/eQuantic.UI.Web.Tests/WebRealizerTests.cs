@@ -120,6 +120,49 @@ public class WebRealizerTests
         node.Children[0].TextContent.Should().Be("Saldo disponível");
     }
 
+    /// <summary>
+    /// The slant is an AXIS on the style, so a paragraph that asks for it says so in one
+    /// declaration — the same shape the mono face already had. Cross-pinned with
+    /// <c>lowering.spec.ts</c>: SSR and hydration have to compute the same class for it.
+    /// </summary>
+    [Fact]
+    public void ItalicText_StatesTheSlant()
+    {
+        var style = Render(new Primitives.Text("ementa", TypeRole.BodyM) { Italic = true })
+            .Attributes["style"]!;
+
+        style.Should().Contain("font-style: italic");
+    }
+
+    /// <summary>
+    /// A RUN's own emphasis: the slant that markdown's <c>*single asterisk*</c> means, and the
+    /// size an inline code span sits at. Both belong to the run rather than to the paragraph,
+    /// which is the whole reason runs exist.
+    /// </summary>
+    [Fact]
+    public void ARun_CarriesItsOwnSlantAndItsOwnSize()
+    {
+        var code = new TypeStyle(13.5f, 20, FontWeight.Regular, 0, 1.3f, Mono: true);
+        var text = new Primitives.Text("", TypeRole.BodyM)
+        {
+            Spans =
+            [
+                new TextRun("plain "),
+                new TextRun("emphasis") { Italic = true },
+                new TextRun(" and "),
+                new TextRun("code", Mono: true) { StyleOverride = code },
+            ],
+        };
+
+        var runs = Render(text).Children;
+        runs[1].Attributes["style"].Should().Contain("font-style: italic");
+        runs[3].Attributes["style"].Should().Contain("font-size: 13.5px");
+        // An unemphasised run states nothing — a declaration nobody asked for is a class nobody
+        // shares, and every extra class is a byte on every paragraph on the page. (The empty
+        // attribute itself never reaches a page: the atomizer drops a style with no declarations.)
+        runs[0].Attributes["style"].Should().BeEmpty();
+    }
+
     [Fact]
     public void Flexible_LowersToBasisZeroGrow_MatchingNativeLeftoverSemantics()
     {

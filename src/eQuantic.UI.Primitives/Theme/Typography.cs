@@ -41,7 +41,18 @@ public enum TypeRole : byte
 /// here is honoured by all three for free — and a face that lives anywhere else is a layout that
 /// disagrees with its own pixels.
 /// </param>
-public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight Weight, float Tracking, float MaxScale, bool Mono = false)
+/// <param name="Italic">
+/// The SLANTED cut of the same family — emphasis inside prose, a term being defined, the citation
+/// under a figure. Here for the same reason <see cref="Mono"/> is: a slant is a different set of
+/// glyphs with different advances, so anything that measures without knowing about it measures a
+/// paragraph the renderer will not draw.
+/// <para>
+/// It is an AXIS, not a weight: <c>Italic</c> composes with <see cref="Weight"/> and with
+/// <see cref="Mono"/> (bold italic and italic code both exist), which is why it is a flag of its
+/// own rather than a value in the weight enum.
+/// </para>
+/// </param>
+public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight Weight, float Tracking, float MaxScale, bool Mono = false, bool Italic = false)
 {
     /// <summary>
     /// The effective size under an OS Dynamic Type factor: <c>Size × min(factor, MaxScale)</c>, snapped

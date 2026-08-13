@@ -147,16 +147,13 @@ public sealed class Markdown : StatelessComponent
         var spans = new List<TextRun>();
         foreach (var run in runs)
         {
-            // Italic parses and survives in the model, but paints upright today: TypeStyle has
-            // no slant axis (weight and mono are its only variances), so neither TextRun nor the
-            // rasterizers can say it yet. A fence of the type system, not of this component —
-            // when TypeStyle grows the axis, this loop is the only line that changes.
             spans.Add(new TextRun(run.Text)
             {
                 Mono = run.Code,
                 StyleOverride = run.Code ? code : null,
                 Color = run.Code ? theme.TextPrimary : null,
                 Weight = run.Bold ? FontWeight.Bold : null,
+                Italic = run.Italic,
                 Destination = run.IsLink ? run.Href : null,
             });
         }

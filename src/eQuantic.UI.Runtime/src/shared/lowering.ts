@@ -1713,6 +1713,9 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     'white-space': text.mono === true ? 'pre-wrap' : text.content.includes('\n') ? 'pre-line' : undefined,
     'font-family': text.mono === true ? MONO_STACK : undefined,
     'font-variant-numeric': text.tabular === true ? 'tabular-nums' : undefined,
+    // The slant (C# twin): the node's own, or the ROLE's when the theme cuts that role italic.
+    'font-style':
+      text.italic === true || text.styleOverride?.italic === true ? 'italic' : undefined,
     // Spec S6 (C# twin): recolors glide instead of flipping.
     transition: text.transition ? transitionValue(text.transition) : undefined,
   };
@@ -1772,6 +1775,16 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
               color: run.color ? tokenValue(run.color) : undefined,
               'font-family': run.mono === true ? MONO_STACK : undefined,
               'font-weight': run.weight ? String(cssFontWeight(run.weight)) : undefined,
+              'font-style': run.italic === true ? 'italic' : undefined,
+              // SIZE only — no line-height: a run keeps the paragraph's line box (C# twin).
+              // The browser has no Dynamic Type factor, so the C# `ScaledSize(typeScale)` reduces
+              // to the 0.5dp snap it ends with; snapping here keeps the two class strings equal.
+              // Missing on THIS side until the slant axis landed, and it showed: the server sized
+              // inline code at 13.5 and hydration re-sized it to the paragraph's own size, so
+              // every `code` span on a documentation page grew the moment the page booted.
+              'font-size': run.styleOverride
+                ? px(Math.round(run.styleOverride.size * 2) / 2)
+                : undefined,
             },
             [textLeaf(run.content)],
           );

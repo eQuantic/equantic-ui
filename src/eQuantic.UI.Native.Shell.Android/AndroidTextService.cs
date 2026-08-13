@@ -20,7 +20,7 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// </summary>
 public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
 {
-    private readonly Dictionary<(float Size, FontWeight Weight), TextPaint> _paints = new();
+    private readonly Dictionary<(float Size, FontWeight Weight, bool Mono, bool Italic), TextPaint> _paints = new();
 
     public TextMeasurement Measure(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines)
     {
@@ -39,7 +39,7 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         var lines = Break(content, style, typeScale, maxWidth, maxLines);
         if (lines.Count == 0) return null;
 
-        var paint = PaintFor(style.ScaledSize(typeScale) * scale, style.Weight);
+        var paint = PaintFor(style.ScaledSize(typeScale) * scale, style.Weight, style.Mono, style.Italic);
         // Measured with the SCALED paint, because a glyph's advance is not exactly linear in its
         // size: a width taken at 1x and multiplied comes out a hair short, and the last character
         // of every line is what gets sliced off.
@@ -71,7 +71,7 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
     /// <summary>Where the lines break, and what each one ends up saying.</summary>
     private List<Line> Break(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines)
     {
-        var paint = PaintFor(style.ScaledSize(typeScale), style.Weight);
+        var paint = PaintFor(style.ScaledSize(typeScale), style.Weight, style.Mono, style.Italic);
         // An unconstrained paragraph still needs a number; the text's own width is the smallest one
         // that changes nothing.
         var wrapAt = float.IsPositiveInfinity(maxWidth)
@@ -100,18 +100,28 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         return lines;
     }
 
-    private TextPaint PaintFor(float size, FontWeight weight)
+    private TextPaint PaintFor(float size, FontWeight weight, bool mono, bool italic)
     {
-        if (_paints.TryGetValue((size, weight), out var cached)) return cached;
+        if (_paints.TryGetValue((size, weight, mono, italic), out var cached)) return cached;
 
         var paint = new TextPaint(PaintFlags.AntiAlias | PaintFlags.SubpixelText)
         {
             TextSize = size,
             TextAlign = Paint.Align.Left,
         };
-        paint.SetTypeface(Typeface.Create(Typeface.Default,
-            weight >= FontWeight.SemiBold ? TypefaceStyle.Bold : TypefaceStyle.Normal));
-        _paints[(size, weight)] = paint;
+        // The FAMILY carries the face (the platform's own monospace), the STYLE carries the two
+        // axes — and they are asked for together, because Android has one enum for the pair:
+        // BoldItalic is not Bold applied twice, it is a fourth value.
+        var bold = weight >= FontWeight.SemiBold;
+        var style = (bold, italic) switch
+        {
+            (true, true) => TypefaceStyle.BoldItalic,
+            (true, false) => TypefaceStyle.Bold,
+            (false, true) => TypefaceStyle.Italic,
+            _ => TypefaceStyle.Normal,
+        };
+        paint.SetTypeface(Typeface.Create(mono ? Typeface.Monospace : Typeface.Default, style));
+        _paints[(size, weight, mono, italic)] = paint;
         return paint;
     }
 }
