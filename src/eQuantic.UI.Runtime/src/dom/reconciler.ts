@@ -148,6 +148,17 @@ export class Reconciler {
       return; // This should never happen, but satisfies TypeScript
     }
 
+    // Case 2b: the DOM is MISSING a node the tree says is there. Hydration assumes the SSR markup
+    // and the client tree are isomorphic, and for one node they never are: an EMPTY text node
+    // writes nothing into HTML, so a caption rendered blank arrives as `<span></span>` with zero
+    // children while the tree holds a `#text ''`. Every later patch then landed on `undefined` and
+    // returned in silence — a field whose helper was null never showed its error again, though
+    // assistive tech read it correctly from the description. Create what is missing instead.
+    if (!currentElement) {
+      parentElement.appendChild(this.createDomElement(newNode, parentElement));
+      return;
+    }
+
     // Case 3: Different node types - replace
     if (this.isDifferentNodeType(oldNode, newNode)) {
       const newElement = this.createDomElement(newNode, parentElement);

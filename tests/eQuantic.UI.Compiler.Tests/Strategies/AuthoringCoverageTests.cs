@@ -129,7 +129,10 @@ public class AuthoringCoverageTests
                   "public override IComponent Build(RenderContext c) => new Text(Body()); } " +
                   "public class InfoCard : CardBase { protected override string Body() => \"info\"; }";
         var baseTs = TsOf("CardBase", src);
-        baseTs.Should().Contain("build(context");            // concrete Build is emitted for subclasses to inherit
+        // The concrete Build is emitted for subclasses to inherit. The PARAMETER's name is the
+        // emitter's business, not this test's: a body that never reads the context gets `_context`,
+        // because the module it lands in type-checks with noUnusedParameters.
+        baseTs.Should().MatchRegex(@"build\(_?context");
         baseTs.Should().Contain("this.body()");
         baseTs.Should().NotContain("body() {}");             // abstract method gets no stub
         var subTs = TsOf("InfoCard", src);

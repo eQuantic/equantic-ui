@@ -28,6 +28,11 @@ public static class Eq
     public const string DateTimeOffset = "$eq.time.dateTimeOffset";
     public const string ParseEnum = "$eq.enums.parse";
 
+    /// <summary>C# multicast delegates: `+=` composes an invocation list, `-=` drops the last
+    /// occurrence. JavaScript has neither, and `+=` emitted literally is string concatenation.</summary>
+    public const string CombineDelegate = "$eq.delegates.combine";
+    public const string RemoveDelegate = "$eq.delegates.remove";
+
     /// <summary>Lifted Nullable&lt;T&gt; arithmetic — <c>null</c> if either operand is null.</summary>
     public const string LiftArith = "$eq.nullable.arith";
     /// <summary>Lifted Nullable&lt;T&gt; relational — <c>false</c> if either operand is null.</summary>

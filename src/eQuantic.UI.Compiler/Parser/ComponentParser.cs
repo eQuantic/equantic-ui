@@ -711,9 +711,15 @@ public class ComponentParser
             return described;
         }
 
+        // A PARAMETERLESS constructor is not an empty one. A stateful component sets its state up
+        // there — seeds a controller, subscribes to it, reads a clock — and dropping it because it
+        // takes no arguments meant the server ran that setup and the browser did not: SSR rendered
+        // a form with three fields, hydration adopted the markup, and the client's own model was
+        // empty, so typing changed nothing. Silent, and only on the target the user is on.
         var constructors = classDecl.Members
             .OfType<ConstructorDeclarationSyntax>()
-            .Where(c => c.ParameterList.Parameters.Count > 0); // Only non-default constructors
+            .Where(c => c.ParameterList.Parameters.Count > 0
+                        || c.Body is not null || c.ExpressionBody is not null);
 
         foreach (var ctor in constructors)
         {

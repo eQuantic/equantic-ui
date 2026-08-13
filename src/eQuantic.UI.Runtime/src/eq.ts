@@ -1,4 +1,5 @@
 import { dec } from './utils/decimal';
+import { combineDelegate, removeDelegate } from './utils/delegates';
 import { long } from './utils/long';
 import { round } from './utils/dotnet-math';
 import { format, parseEnum, stringFormat } from './utils/format';
@@ -78,6 +79,11 @@ export const $eq = {
   collections: { queue, stack, valueMap, linkedList, sortedSet, sortedDictionary, sortedList, contains, count, setAdd },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
   nullable: { arith: liftArith, cmp: liftCmp },
+  /**
+   * C# multicast delegates: `+=` composes an invocation list and `-=` drops the last occurrence.
+   * JavaScript has neither, and emitting `+=` literally made `null + function` a STRING.
+   */
+  delegates: { combine: combineDelegate, remove: removeDelegate },
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */
   equals,
   /** CSS class composition (the styling subsystem). */

@@ -31,7 +31,12 @@ public class TryStatementStrategy : IStatementStrategy
             var identifier = catchClause.Declaration?.Identifier.Text;
             if (!string.IsNullOrEmpty(identifier))
             {
-                builder.Append($" ({identifier})");
+                // ANNOTATED `any`, because the emitted TypeScript is type-checked and a catch
+                // binding is `unknown` there. C# hands you a typed exception, so the body reads
+                // `error.Message` without asking — and the emitted module refused to compile on
+                // exactly that line. The type is gone either way (every catch is catch-all in JS);
+                // this only stops the annotation from being narrower than the language it came from.
+                builder.Append(context.TypeAnnotations ? $" ({identifier}: any)" : $" ({identifier})");
             }
 
             builder.Append(" ");

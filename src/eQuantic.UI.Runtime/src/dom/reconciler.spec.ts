@@ -289,6 +289,29 @@ describe('Reconciler hydration', () => {
     (container.querySelector('button') as HTMLButtonElement).click();
     expect(clicks).toBe(1);
   });
+
+  /**
+   * An EMPTY text node writes nothing into HTML, so SSR of a blank caption produces
+   * `<span></span>` — zero children — while the client tree holds a `#text ''`. The patch then
+   * addressed a DOM node that was not there and returned in silence: a form field with no helper
+   * text NEVER showed its error, on the web only, for as long as the page lived.
+   */
+  it('fills a node the server left empty, because empty text renders as no node at all', () => {
+    const reconciler = new Reconciler();
+    const container = document.createElement('div');
+    container.innerHTML = '<span class="caption"></span>'; // SSR of a caption with nothing to say
+
+    const caption = (content: string): HtmlNode => ({
+      tag: 'span',
+      attributes: { class: 'caption' },
+      events: {},
+      children: [{ tag: '#text', textContent: content, attributes: {}, events: {}, children: [] }],
+    });
+
+    reconciler.reconcile(container, caption(''), caption('The two values do not match.'));
+
+    expect(container.querySelector('.caption')?.textContent).toBe('The two values do not match.');
+  });
 });
 
 describe('Reconciler event contracts', () => {

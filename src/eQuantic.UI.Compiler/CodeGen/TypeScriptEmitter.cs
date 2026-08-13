@@ -366,8 +366,12 @@ public class TypeScriptEmitter
 
                     // Build method — underscore the param when the body never uses it
                     // (noUnusedParameters-clean output; the override contract ignores names).
-                    var buildParamName = component.BuildMethodNode?.Body?.ToString().Contains("context") == false
-                        ? "_context" : "context";
+                    // An EXPRESSION-bodied Build has no `Body`, so this read `null?.Contains(...)`,
+                    // answered `context`, and emitted a parameter the body never uses — which the
+                    // emitted module's own type check rejects. Ask whichever half the method has.
+                    var buildBodyText = component.BuildMethodNode?.Body?.ToString()
+                        ?? component.BuildMethodNode?.ExpressionBody?.ToString();
+                    var buildParamName = buildBodyText?.Contains("context") == false ? "_context" : "context";
                     c.Method("build", Param(buildParamName, "BuildContext"), false, () =>
                     {
                          if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
