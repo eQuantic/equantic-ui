@@ -865,12 +865,22 @@ public static class LayoutEngine
                 SizeKind.Hug => !(stretchH != StretchKind.None && !inheritedIndeterminateH && !float.IsPositiveInfinity(selfMaxH)),
                 _ => inheritedIndeterminateH,
             };
-            // CSS block semantics, WIDTH only: a box whose width is determined stretches an
-            // auto-sized child across it — a div's child div is full-width without asking. Height
-            // never stretches (block height hugs; pages grow downward). This is what keeps a
-            // hugging Column inside a Fill card at the card's width on native, the way the SAME
-            // tree already behaves on the web, where a Column realizes as width:auto.
+            // CSS block semantics on the WIDTH: a box whose width is determined stretches an
+            // auto-sized child across it — a div's child div is full-width without asking. This is
+            // what keeps a hugging Column inside a Fill card at the card's width on native, the way
+            // the SAME tree already behaves on the web, where a Column realizes as width:auto.
             if (!ctx.IndeterminateWidth) ctx.StretchWidth = StretchKind.Block;
+            // And on the HEIGHT, where CSS gives nothing and the author paid for it: a box with a
+            // decided height hands that height to its child. A 56dp bar holding a Row got a Row as
+            // tall as its tallest label, so `Cross = Center` centred inside THAT — and the toolbar
+            // sat against the top of its own bar. The fix used to be `Height = Fill` on the child,
+            // written by hand, in every bar, remembered every time.
+            //
+            // It reaches exactly what an auto-sized CONTAINER is: a Box, a Row, a Column. Text,
+            // images and icons never took these flags (they size themselves), and a button, a link
+            // or an input hugs, because a Block stretch stops at an inline-block — the same fence
+            // the width has always respected.
+            if (!ctx.IndeterminateHeight) ctx.StretchHeight = StretchKind.Block;
             child = Measure(box.Child, MathF.Max(0, childMaxW), MathF.Max(0, childMaxH), ctx, ctx.ChildPath(path, 0));
             ctx.IndeterminateWidth = outerW;
             ctx.IndeterminateHeight = outerH;

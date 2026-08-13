@@ -399,3 +399,37 @@ describe('a fixed size does not shrink', () => {
     expect(effectiveStyle(lowerVisualNode(fill as VisualNodeValue, ctx))).not.toContain('flex-shrink');
   });
 });
+
+/**
+ * The web half of "a box with a decided height hands it down" — cross-pinned with the C#
+ * DecidedHeightRealizerTests and with the engine's own DecidedHeightTests. CSS gives this for free
+ * on the width and nothing on the height, so the height is said out loud.
+ */
+describe('a decided height reaches the child', () => {
+  const bar = (height: unknown, child: Record<string, unknown>): VisualNodeValue =>
+    ({
+      nodeKind: 'box',
+      style: { width: { kind: 'fill' }, height },
+      child,
+    }) as VisualNodeValue;
+
+  const row = { nodeKind: 'row', gap: 8, children: [] };
+
+  it('a hugging row inside a bar is told to fill it', () => {
+    const node = lowerVisualNode(bar({ kind: 'fixed', value: 56 }, row), ctx);
+    expect(effectiveStyle(node.children[0])).toContain('height: 100%');
+  });
+
+  it('a box that decided nothing says nothing', () => {
+    const node = lowerVisualNode(bar({ kind: 'hug' }, row), ctx);
+    expect(effectiveStyle(node.children[0])).not.toContain('height');
+  });
+
+  it('a child with its own height is never overruled', () => {
+    const sized = { nodeKind: 'box', style: { height: { kind: 'fixed', value: 20 } } };
+    const node = lowerVisualNode(bar({ kind: 'fixed', value: 56 }, sized), ctx);
+    const style = effectiveStyle(node.children[0]);
+    expect(style).toContain('height: 20px');
+    expect(style).not.toContain('height: 100%');
+  });
+});

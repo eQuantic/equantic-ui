@@ -1570,9 +1570,37 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
 
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');
-    if (child) result.children.push(child);
+    if (child) {
+      // A box with a DECIDED height hands it to an auto-sized CONTAINER child — the C# twin, and
+      // the web half of the layout engine's block stretch. `100%` rather than a number so CSS
+      // answers the indeterminate case the same way the layout does: inside an auto-height parent
+      // a percentage height computes to auto, and the child hugs exactly as before.
+      if (stretchesChildHeight(box)) appendAtomic(child, { height: '100%' });
+      result.children.push(child);
+    }
   }
   return result;
+}
+
+/** The C# `StretchesChildHeight`: the box decided a height, and the child is an auto-sized
+ * container. Text, images and icons size themselves; a control hugs (the inline-block fence). */
+function stretchesChildHeight(box: BoxNode): boolean {
+  const height = box.style?.height?.kind;
+  if (!height || height === 'hug') return false;
+  const child = box.child as VisualNodeValue | undefined;
+  if (!child) return false;
+  if (child.nodeKind === 'box') return ((child as BoxNode).style?.height?.kind ?? 'hug') === 'hug';
+  if (child.nodeKind === 'row' || child.nodeKind === 'column')
+    return ((child as FlexNodeValue).height?.kind ?? 'hug') === 'hug';
+  return false;
+}
+
+/** One more declaration on an already-lowered node, as its own atomic class. */
+function appendAtomic(node: HtmlNode, entries: StyleEntries): void {
+  const atomized = atomizeEntries(entries);
+  if (!atomized.class) return;
+  const existing = node.attributes['class'];
+  node.attributes['class'] = existing ? `${existing} ${atomized.class}` : atomized.class;
 }
 
 /** Spec S5 mirror of the C# AppendDiff — identical declaration strings, pseudo-hashed classes. */

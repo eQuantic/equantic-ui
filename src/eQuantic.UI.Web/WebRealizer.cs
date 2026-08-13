@@ -1052,8 +1052,39 @@ public static class WebRealizer
         }
 
         if (box.Child is not null && LowerNode(box.Child, context, horizontalAxis: null) is { } child)
+        {
+            // A box with a DECIDED height hands that height to an auto-sized container child — the
+            // native twin of this is the block stretch the layout engine applies on both axes. CSS
+            // gives it for free on the width (a div's child div is full-width) and nothing on the
+            // height, so the height is said out loud.
+            //
+            // `100%` rather than a number because CSS then answers the indeterminate case the same
+            // way the layout does: inside a parent whose own height is auto, a percentage height
+            // computes to auto, and the child hugs exactly as it did before.
+            if (StretchesChildHeight(style, box.Child))
+            {
+                child.Style ??= new HtmlStyle();
+                child.Style.Height ??= "100%";
+            }
             element.Children.Add(child);
+        }
         return element;
+    }
+
+    /// <summary>
+    /// Whether this box hands its height down: the box decided one, and the child is an auto-sized
+    /// CONTAINER. Text, images and icons size themselves; a button, a link or an input hugs, which
+    /// is the inline-block fence the width stretch has always respected.
+    /// </summary>
+    private static bool StretchesChildHeight(BoxStyle style, VisualNode child)
+    {
+        if (style.Height.Kind == SizeKind.Hug) return false;
+        return child switch
+        {
+            Box inner => inner.Style.Height.Kind == SizeKind.Hug,
+            FlexNode flex => flex.Height.Kind == SizeKind.Hug,
+            _ => false,
+        };
     }
 
     /// <summary>One box-shadow list from the optional parts (null when none are set).</summary>
