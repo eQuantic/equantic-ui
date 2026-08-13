@@ -295,7 +295,16 @@ translation changes as data, not code.
   - Exit: `[x]` cross-pinned fixture asserted by BOTH C# and vitest (7e94d68 — generated FROM real .NET, three cultures, 100+ cases including the bare `{0}`).
   - Exit: `[x]` the EQ2101 negative test fails the build on a mismatched `pt-BR` template (extra {n}, dropped {n}, malformed — all pinned).
 - **M3 — Native.** Two cultures on Photon under AOT.
-  - Exit: `[ ]` the macOS shell renders both cultures from the same component classes.
+  - Exit: `[x]` the macOS shell renders both cultures from the same component classes — the Studio's
+    Language section carries an ordinary `CultureSwitcher` (it resolves `ICultureController` from
+    the context, naming no platform), and the screenshot path renders it twice: default resolves
+    the MACHINE's pair (en-GB resources, en-PT formats — D13 visible in one frame), `--culture
+    pt-BR` renders Marcado/Ativado/Planilha with R$ 1.234,50. `WindowCultureTests` drives the real
+    host: apply, re-render, assert the translated tree, plus es, an untranslated culture falling
+    back to neutral, the repaint, and the ui/format pair set apart.
+  - Found by writing it: `PhotonApplicationBuilder` registered only the CONCRETE controller, so a
+    component asking for `ICultureController` in a window resolved null and the switcher switched
+    nothing. Both registrations now point at one instance.
 - **M4 — Docs + template.** Wiki page, the SDK template ships a `Strings.resx` and a working
   switcher.
   - Exit: `[x]` the wiki's Localization page documents everything shipped (M0/M1/M2 sections).

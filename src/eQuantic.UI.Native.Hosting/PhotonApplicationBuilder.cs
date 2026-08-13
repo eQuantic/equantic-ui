@@ -73,7 +73,15 @@ public sealed class PhotonApplicationBuilder
         _host.Services.TryAddSingleton<IThemeController, PhotonThemeController>();
         // The culture hand, same shape: the runner resolves the PLATFORM's locale and applies it
         // here before the first frame; an app that wants to force a culture applies over it.
+        //
+        // TWO registrations, one instance. The shells resolve the CONCRETE type (they hand it real
+        // CultureInfo objects, which only this side can materialize), while components ask for the
+        // INTERFACE — the write-once door, which speaks BCP-47 names because that is the currency
+        // the browser also has. Registering only the concrete type is what a CultureSwitcher in a
+        // window resolved to null against: the switch drew, and switched nothing.
         _host.Services.TryAddSingleton<PhotonCultureController>();
+        _host.Services.TryAddSingleton<eQuantic.UI.Primitives.ICultureController>(
+            services => services.GetRequiredService<PhotonCultureController>());
         PhotonApplication.RegisterCapabilities(_host.Services);
         return new PhotonApplication(_host.Build(), Args);
     }

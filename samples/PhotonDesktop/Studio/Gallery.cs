@@ -1,3 +1,4 @@
+using System.Globalization;
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
 
@@ -6,17 +7,21 @@ namespace eQuantic.Studio;
 /// <summary>The gallery's table of contents — one entry per family of controls.</summary>
 public enum GallerySection
 {
+    // ORDER IS THE SIDEBAR. It emits a group heading whenever GroupOf changes, so members of one
+    // group have to sit together — a section appended at the end reopened "Data display" under a
+    // second heading, which reads as two different groups with the same name.
     Buttons = 0,
     Inputs = 1,
     Selection = 2,
     DataDisplay = 3,
     Containers = 4,
     Progress = 5,
-    Navigation = 6,
-    Feedback = 7,
-    Overlays = 8,
-    Device = 9,
-    Sheets = 10,
+    Sheets = 6,
+    Navigation = 7,
+    Feedback = 8,
+    Overlays = 9,
+    Device = 10,
+    Culture = 11,
 }
 
 /// <summary>
@@ -48,6 +53,7 @@ public static class Gallery
         GallerySection.Feedback => "Banners & toasts",
         GallerySection.Overlays => "Overlays",
         GallerySection.Sheets => "Spreadsheet",
+        GallerySection.Culture => "Language",
         _ => "Device",
     };
 
@@ -60,7 +66,7 @@ public static class Gallery
             or GallerySection.Sheets => "Data display",
         GallerySection.Navigation => "Navigation",
         GallerySection.Feedback or GallerySection.Overlays => "Feedback",
-        _ => "Device",
+        _ => "Device",   // Language belongs here too: what the MACHINE says, taken as a service.
     };
 
     /// <summary>The footer's headline number: every distinct component this gallery puts live.</summary>
@@ -93,6 +99,8 @@ public static class Gallery
             "Surfaces over the page — and how each one maps to a desktop window.",
         GallerySection.Sheets =>
             "The editable grid: Excel's keyboard, TSV clipboard, drag-resize — one C# for every target.",
+        GallerySection.Culture =>
+            "Two cultures in one window: resx strings and .NET formats, switched without a reload.",
         _ => "What the DEVICE can do, taken through a constructor like any other dependency.",
     };
 
@@ -108,6 +116,7 @@ public static class Gallery
         GallerySection.Feedback => Icons.Notifications,
         GallerySection.Overlays => Icons.Info,
         GallerySection.Sheets => Icons.Table,
+        GallerySection.Culture => Icons.Mail,
         _ => Icons.Person,
     };
 
@@ -124,6 +133,7 @@ public static class Gallery
         GallerySection.Feedback => 4,
         GallerySection.Overlays => 4,
         GallerySection.Sheets => 1,
+        GallerySection.Culture => 2,
         _ => 6,
     };
 
@@ -141,6 +151,7 @@ public static class Gallery
         GallerySection.Feedback => Feedback(theme, state, mutate),
         GallerySection.Overlays => Overlays(theme, state, mutate),
         GallerySection.Sheets => Sheets(theme, state),
+        GallerySection.Culture => Culture(theme, state),
         _ => Device(theme, state, mutate),
     };
 
@@ -731,6 +742,74 @@ public static class Gallery
                 Height = SizeValue.Fill,
             }));
         return Section(theme, "Spreadsheet", column);
+    }
+
+    /// <summary>
+    /// TRACK L, M3 — the window speaking two languages, from one component tree.
+    ///
+    /// Nothing here knows a culture. The switcher takes the same `ICultureController` the browser
+    /// realizes, the strings come from resx through the ordinary Designer accessor, and the
+    /// numbers are formatted by plain `.ToString`. The shell resolves the controller and hands
+    /// down the pair, exactly as it hands down a camera or a clipboard.
+    ///
+    /// The two columns exist to show the D13 PAIR: resources and formats are separate decisions,
+    /// because a reader can want a Portuguese interface with the formats of where they live.
+    /// </summary>
+    private static VisualNode Culture(IAppTheme theme, SectionState state)
+    {
+        var column = Column(Space.S3);
+        column.Add(Caption(theme,
+            "Pick a language: the window rebuilds in place, keeping every bit of state on this page. "
+            + "The strings come from the SDK's own resx, so an app that authors none still speaks them."));
+
+        if (state.OnCulture is null)
+        {
+            column.Add(Label(theme, "This head registered no culture controller."));
+            return Section(theme, "Language", column);
+        }
+
+        // Exactly what an app writes. The switcher asks the context for ICultureController
+        // itself, so this call site names no platform and holds no state... OnChanged is only
+        // here because the eyebrow below prints which culture answered.
+        column.Add(new CultureSwitcher(
+            [new CultureOption("en", "English"), new CultureOption("pt-BR", "Português"),
+             new CultureOption("es", "Español")])
+        {
+            OnChanged = state.OnCulture,
+        });
+
+        // The SDK's own chrome strings — the ones a screen reader announces. If these follow the
+        // switch, so does every announcement in every app built on the framework.
+        var strings = Column(Space.S1);
+        strings.Add(new Text(SdkStrings.Checked, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
+        strings.Add(new Text(SdkStrings.On, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
+        strings.Add(new Text(SdkStrings.Spreadsheet, TypeRole.BodyM, theme.TextPrimary, maxLines: 1));
+
+        // Formats are the OTHER half. Plain .NET calls, so what you read here is what your own
+        // `ToString` would print on this machine, in the culture the switcher applied.
+        var formats = Column(Space.S1);
+        formats.Add(new Text(1234.5m.ToString("C2", CultureInfo.CurrentCulture),
+            TypeRole.BodyM, theme.TextPrimary, maxLines: 1) { Tabular = true });
+        formats.Add(new Text(0.982.ToString("P1", CultureInfo.CurrentCulture),
+            TypeRole.BodyM, theme.TextPrimary, maxLines: 1) { Tabular = true });
+        formats.Add(new Text(new DateTime(2026, 8, 13).ToString("d", CultureInfo.CurrentCulture),
+            TypeRole.BodyM, theme.TextPrimary, maxLines: 1) { Tabular = true });
+
+        var pair = new Row(gap: Space.S6) { Width = SizeValue.Fill, Cross = CrossAlign.Start };
+        pair.Add(Titled(theme, "RESOURCES · " + state.UICulture, strings));
+        pair.Add(Titled(theme, "FORMATS · " + CultureInfo.CurrentCulture.Name, formats));
+        column.Add(pair);
+
+        return Section(theme, "Language", column);
+    }
+
+    /// <summary>A labelled stack — the eyebrow over its own little column.</summary>
+    private static VisualNode Titled(IAppTheme theme, string eyebrow, VisualNode content)
+    {
+        var column = Column(Space.S1);
+        column.Add(new Text(eyebrow, TypeRole.Overline, theme.TextMuted, maxLines: 1));
+        column.Add(content);
+        return column;
     }
 
     private static SheetController SeedSheet()

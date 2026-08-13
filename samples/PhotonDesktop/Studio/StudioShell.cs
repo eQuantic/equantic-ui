@@ -30,7 +30,7 @@ public sealed class StudioShell : StatefulComponent
     public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null,
         IBiometrics? biometrics = null, INetworkStatus? network = null, IMotionSensor? motion = null,
         ILocation? location = null, ICamera? camera = null, IThemeController? themeSwitch = null,
-        ITextClipboard? clipboard = null)
+        ITextClipboard? clipboard = null, ICultureController? culture = null)
     {
         _clipboard = clipboard;
         // The light/dark hand arrives like any capability. Seed from whatever the host opened
@@ -52,6 +52,24 @@ public sealed class StudioShell : StatefulComponent
         _demo.MotionAvailable = motion?.IsAvailable == true;
         if (motion?.IsAvailable == true)
             motion.Subscribe(reading => SetState(() => _demo.Motion = reading));
+
+        // TRACK L, M3 — the culture hand, resolved like every other capability. The page below
+        // never learns which platform answered: on macOS this is the controller that copied
+        // NSLocale onto the process at launch, and applying a name here repaints the window.
+        if (culture is not null)
+        {
+            // `--culture pt-BR` forces the window's language at launch, over whatever the platform
+            // resolved. It exists for the SCREENSHOT path: a settled frame cannot press a
+            // switcher, and M3's exit asks to see both cultures rendered, not one plus a promise.
+            if (configuration["culture"] is { Length: > 0 } forced) culture.Apply(forced);
+
+            _demo.UICulture = culture.UICulture;
+            _demo.OnCulture = name => SetState(() =>
+            {
+                culture.Apply(name);
+                _demo.UICulture = culture.UICulture;
+            });
+        }
 
         _section = Enum.TryParse<GallerySection>(configuration["section"], ignoreCase: true, out var section)
             ? section
@@ -828,4 +846,10 @@ public sealed class SectionState
     /// <summary>The Spreadsheet section's controller — held HERE so cell edits, resized columns
     /// and the undo history survive every gallery rebuild.</summary>
     public SheetController? Sheet;
+
+    /// <summary>TRACK L: the culture the window is speaking, and the hand that changes it. Null
+    /// when this head registered no controller — the section says so rather than offering a
+    /// switcher that cannot switch.</summary>
+    public string UICulture = "en";
+    public Action<string>? OnCulture;
 }
