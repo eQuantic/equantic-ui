@@ -290,8 +290,9 @@ public static class LayoutEngine
         CameraPreview camera => ctx.Node(camera, new Rect(0, 0, camera.Width, camera.Height)),
         // Icons are a fixed square em-box (§07 whitelist) and ignore Dynamic Type (spec A10).
         Icon icon => ctx.Node(icon, new Rect(0, 0, icon.Size, icon.Size)),
-        // A vector is the same square em-box, at the size the author asked for.
-        Vector vector => ctx.Node(vector, new Rect(0, 0, vector.Size, vector.Size)),
+        // A vector is the same em-box at the size the author asked for — square unless they gave
+        // it an aspect, which is what a diagram's connector or a banner rule needs.
+        Vector vector => ctx.Node(vector, new Rect(0, 0, vector.Size, vector.Height)),
         // The Spinner shares the icon em-box contract (spec B15: sizes = the §07 whitelist).
         Spinner spinner => ctx.Node(spinner, new Rect(0, 0, spinner.Size, spinner.Size)),
         // The INLINE-BLOCK barrier (CSS twin): a button, a link and an input are not block-level —

@@ -45,6 +45,7 @@ import type {
   EdgeInsetsValue,
   FlexNodeValue,
   FlexibleNode,
+  IconGlyphValue,
   IconNode,
   AdjustableNode,
   CameraPreviewNode,
@@ -72,6 +73,7 @@ import type {
   SizeValueValue,
   StackNode,
   SpacerNode,
+  VectorNode,
   AdaptiveNodeValue,
   GridNode,
   AnchoredNode,
@@ -294,9 +296,12 @@ function lowerNode(
       return lowerImage(node as ImageNode);
     case 'icon':
       return lowerIcon(node as IconNode);
-    // C# twin: a vector IS an icon free of the §07 size whitelist.
-    case 'vector':
-      return lowerIcon(node as unknown as IconNode);
+    // C# twin: a vector IS an icon free of the §07 size whitelist, and free of the square box.
+    case 'vector': {
+      const vector = node as unknown as VectorNode;
+      return lowerGlyph(vector.glyph, vector.size, vector.height ?? vector.size,
+        vector.color ?? null, vector.label ?? null);
+    }
     case 'spinner':
       return lowerSpinner(node as SpinnerNode);
     case 'stack':
@@ -1301,14 +1306,24 @@ function lowerSpinner(node: SpinnerNode): HtmlNode {
 
 /** Spec A10 mirror: inline SVG, registry path, fill=currentColor riding the color token. */
 function lowerIcon(node: IconNode): HtmlNode {
-  const glyph = node.glyph;
+  return lowerGlyph(node.glyph, node.size, node.size, node.color ?? null, node.label ?? null);
+}
+
+/** The shape both an icon and a vector draw as — the C# `LowerGlyph`, box included. */
+function lowerGlyph(
+  glyph: IconGlyphValue,
+  width: number,
+  height: number,
+  color: ColorTokenValue | null,
+  label: string | null,
+): HtmlNode {
   const attributes: Record<string, string | undefined> = {
     ...atomicAttrs({
       // Block, not inline — the C# realizer says why; the two lowerings must agree byte-for-byte.
       display: 'block',
-      width: px(node.size),
-      height: px(node.size),
-      color: node.color ? tokenValue(node.color) : undefined,
+      width: px(width),
+      height: px(height),
+      color: color ? tokenValue(color) : undefined,
     }),
     viewBox: glyph.viewBox ?? '0 0 24 24',
   };
@@ -1322,7 +1337,7 @@ function lowerIcon(node: IconNode): HtmlNode {
   } else {
     attributes['fill'] = 'currentColor';
   }
-  if (node.label) attributes['aria-label'] = node.label;
+  if (label) attributes['aria-label'] = label;
   else attributes['aria-hidden'] = 'true';
 
   return {

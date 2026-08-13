@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { effectiveStyle } from './style-atomizer';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
@@ -99,5 +100,21 @@ describe('inlined pack glyph in a client re-render', () => {
     expect(node.attributes['viewBox']).toBe('0 0 100 100');
     expect(node.attributes['fill']).toBe('currentColor');
     expect(node.children[0]?.attributes['d']).toBe('M10 10 L90 10 L90 90 Z');
+  });
+
+  /**
+   * A box of the shape's OWN aspect — cross-pinned with IconRealizerTests. A diagram's connector
+   * is the case: squashed into a square it is an icon-shaped nothing, which is why a generated
+   * figure could only ever be a straight line drawn out of Boxes.
+   */
+  it('a vector takes an aspect of its own (C# cross-pin)', () => {
+    const edge = new IconGlyph('edge', 'M0 8 C 46 8, 94 40, 140 40', 'stroke', '0 0 140 48', 1.5);
+    const node = lower(new Vector(edge, 140, null, null, 48));
+
+    expect(node.attributes['viewBox']).toBe('0 0 140 48');
+    expect(effectiveStyle(node)).toContain('width: 140px');
+    expect(effectiveStyle(node)).toContain('height: 48px');
+    expect(node.attributes['fill']).toBe('none');
+    expect(node.attributes['stroke-width']).toBe('1.5');
   });
 });

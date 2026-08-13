@@ -67,6 +67,10 @@ public class MermaidTests
             lines.Add($"node {n.Node.Id}({n.Node.Shape.ToString().ToLowerInvariant()}) {F(n.X)},{F(n.Y)} {F(n.W)}x{F(n.H)}");
         foreach (var s in scene.Segments)
             lines.Add($"seg {F(s.X)},{F(s.Y)} {F(s.W)}x{F(s.H)}");
+        // The PATH is in the fixture on purpose: it is a string both compilations build, and the
+        // one place where a float formatted through a machine's culture would show up as `72,5`.
+        foreach (var c in scene.Curves)
+            lines.Add($"curve {F(c.X)},{F(c.Y)} {F(c.W)}x{F(c.H)} [{c.ViewBox}] {c.Path}");
         foreach (var a in scene.Arrows)
             lines.Add($"arrow {F(a.X)},{F(a.Y)} d{a.Direction}");
         foreach (var l in scene.Labels)

@@ -7,7 +7,8 @@ namespace eQuantic.UI.Components;
 /// renderer. The source parses into a graph, the graph solves into whole-dp geometry, and the
 /// geometry is COMPONENTS: nodes are Boxes on the theme's surface tokens, the decision diamond is
 /// a single-path <see cref="Vector"/> rhombus (the same vector door icons use on both targets),
-/// edges are orthogonal hairline Boxes with vector arrowheads, labels are <see cref="Text"/>. One
+/// each flowchart edge is ONE stroked <see cref="Vector"/> curve with a vector arrowhead, labels
+/// are <see cref="Text"/>. One
 /// tree, realized by the web realizer and by Photon — a diagram is finally just more UI.
 /// <para>
 /// The parser and the layout run on every side (C# for SSR and native, the transpiled twin in the
@@ -44,6 +45,16 @@ public sealed class Mermaid : StatelessComponent
         // Paint order: lines under heads under labels under nodes — a label chip sits ON its
         // edge, a node covers whatever routed beneath it.
         var ink = theme.BorderStrong;
+        // A flowchart edge is ONE stroked path in a box of its own aspect — the curve mermaid.js
+        // draws. The glyph's viewBox is the canvas rectangle the curve lives in, so the path needs
+        // no translation into a local frame, and the same Vector rasterizes on Photon.
+        foreach (var curve in scene.Curves)
+            canvas.Add(new Positioned(
+                new Vector(
+                    new IconGlyph("edge", curve.Path, IconGlyphStyle.Stroke, curve.ViewBox, EdgeWidth),
+                    curve.W, ink, height: curve.H),
+                top: curve.Y, start: curve.X));
+
         foreach (var segment in scene.Segments)
             canvas.Add(new Positioned(new Box(new BoxStyle
             {
@@ -125,6 +136,9 @@ public sealed class Mermaid : StatelessComponent
     // ---- Arrowheads ----------------------------------------------------------------------------
 
     private const float HeadSize = 9;
+
+    /// <summary>The stroke an edge is drawn with — the thickness its straight ancestor had.</summary>
+    private const float EdgeWidth = 2;
 
     // Glyphs are built INSIDE the methods, never in static initializers: a module-load-time
     // construction runs while the runtime's module cycle is still resolving on the client, and

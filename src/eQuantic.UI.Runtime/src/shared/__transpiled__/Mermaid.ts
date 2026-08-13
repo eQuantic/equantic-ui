@@ -2,6 +2,7 @@ import { Box, BoxStyle, BuildContext, CodeBlock, ColorToken, CornerRadii, EdgeIn
 
 export class Mermaid extends StatelessComponent {
     static headSize: number = 9;
+    static edgeWidth: number = 2;
     declare source: string;
     constructor(source?: any, props?: any) {
         super();
@@ -11,7 +12,7 @@ export class Mermaid extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let graph = MermaidParser.parse(this.source);if (graph == null) return new CodeBlock(this.source, 'mermaid', { showLineNumbers: false });let scene = MermaidLayout.solve(graph);let canvas = new Stack('topStart', { width: scene.width, height: scene.height });let ink = theme.borderStrong;for (const segment of scene.segments) canvas.add(new Positioned(new Box(new BoxStyle({ width: segment.w, height: segment.h, background: ink })), segment.y, null, null, segment.x));for (const arrow of scene.arrows) canvas.add(Mermaid.placeArrowhead(arrow, ink));for (const label of scene.labels) {let width = MermaidLayout.labelChipWidth(label.text);canvas.add(new Positioned(new Box(new BoxStyle({ padding: new EdgeInsets(6, 1, 6, 1), background: theme.background, borderColor: theme.border, borderWidth: 1, cornerRadius: new CornerRadii(6) }), new Text(label.text, 'caption', theme.textMuted, 1)), label.y - 10, null, null, label.x - width / 2));}for (const placed of scene.nodes) canvas.add(new Positioned(Mermaid.nodeView(placed, theme), placed.y, null, null, placed.x));return new ScrollView(canvas, 'horizontal', { width: SizeValue.fill });
+        let theme = context.theme;let graph = MermaidParser.parse(this.source);if (graph == null) return new CodeBlock(this.source, 'mermaid', { showLineNumbers: false });let scene = MermaidLayout.solve(graph);let canvas = new Stack('topStart', { width: scene.width, height: scene.height });let ink = theme.borderStrong;for (const curve of scene.curves) canvas.add(new Positioned(new Vector(new IconGlyph('edge', curve.path, 'stroke', curve.viewBox, Mermaid.edgeWidth), curve.w, ink, null, curve.h), curve.y, null, null, curve.x));for (const segment of scene.segments) canvas.add(new Positioned(new Box(new BoxStyle({ width: segment.w, height: segment.h, background: ink })), segment.y, null, null, segment.x));for (const arrow of scene.arrows) canvas.add(Mermaid.placeArrowhead(arrow, ink));for (const label of scene.labels) {let width = MermaidLayout.labelChipWidth(label.text);canvas.add(new Positioned(new Box(new BoxStyle({ padding: new EdgeInsets(6, 1, 6, 1), background: theme.background, borderColor: theme.border, borderWidth: 1, cornerRadius: new CornerRadii(6) }), new Text(label.text, 'caption', theme.textMuted, 1)), label.y - 10, null, null, label.x - width / 2));}for (const placed of scene.nodes) canvas.add(new Positioned(Mermaid.nodeView(placed, theme), placed.y, null, null, placed.x));return new ScrollView(canvas, 'horizontal', { width: SizeValue.fill });
     }
 
     static nodeView(placed: MermaidPlacedNode, theme: any) {

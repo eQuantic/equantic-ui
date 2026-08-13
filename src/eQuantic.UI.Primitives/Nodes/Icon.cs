@@ -52,20 +52,36 @@ public enum Icons : byte
 /// semantics, exactly like an icon), so a multi-colour figure is several Vectors stacked.
 /// <para>
 /// Web lowers it to the same <c>&lt;svg&gt;&lt;path&gt;</c> an icon uses; native runs the SAME
-/// glyph rasterizer at the requested size, so a figure drawn once appears on both targets. Keep it
-/// SQUARE — the viewBox is the shape's own coordinate system and the raster cache keys on one size.
+/// glyph rasterizer at the requested box, so a figure drawn once appears on both targets. The box
+/// is square unless <paramref name="height"/> says otherwise: an icon is square, a figure is
+/// whatever its viewBox is.
 /// </para>
 /// </summary>
 public sealed class Vector : VisualNode
 {
     public sealed override string NodeKind => "vector";
 
-    public Vector(IconGlyph glyph, float size, ColorToken? color = null, string? label = null)
+    /// <param name="size">The box's WIDTH in dp (and its height too, unless one is given).</param>
+    /// <param name="height">
+    /// A box of another aspect — the connector between two nodes of a diagram, a banner rule, a
+    /// sparkline: shapes whose viewBox is not square and which a square box would squash.
+    /// <para>
+    /// The glyph maps onto the box the way an <c>&lt;svg&gt;</c> without
+    /// <c>preserveAspectRatio</c> does: each axis scales independently, so a caller that wants the
+    /// shape undistorted asks for a box with the viewBox's own aspect. That is exactly what a
+    /// generated figure does, because it authors both.
+    /// </para>
+    /// </param>
+    public Vector(IconGlyph glyph, float size, ColorToken? color = null, string? label = null,
+        float height = 0)
     {
         if (size <= 0)
             throw new ArgumentOutOfRangeException(nameof(size), "A vector needs a positive size.");
+        if (height < 0)
+            throw new ArgumentOutOfRangeException(nameof(height), "A vector's height cannot be negative.");
         Glyph = glyph;
         Size = size;
+        Height = height > 0 ? height : size;
         Color = color;
         Label = label;
     }
@@ -73,8 +89,11 @@ public sealed class Vector : VisualNode
     /// <summary>The target-neutral path data (a path + its viewBox + fill/stroke intent).</summary>
     public IconGlyph Glyph { get; }
 
-    /// <summary>The square box the shape draws into, in dp.</summary>
+    /// <summary>The box's WIDTH, in dp.</summary>
     public float Size { get; }
+
+    /// <summary>The box's HEIGHT, in dp — <see cref="Size"/> unless the author asked for another.</summary>
+    public float Height { get; }
 
     /// <summary>Tint token; null inherits the context text color (like Text and Icon).</summary>
     public ColorToken? Color { get; init; }

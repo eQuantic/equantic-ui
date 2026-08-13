@@ -2,7 +2,7 @@ namespace eQuantic.UI.Components;
 
 /// <summary>
 /// Turns a <see cref="MermaidGraph"/> into placed geometry. A Sugiyama-lite for flowcharts —
-/// longest-path ranks, one barycenter ordering sweep each way, orthogonal edges — and a plain
+/// longest-path ranks, one barycenter ordering sweep each way, edges as single cubics — and a plain
 /// grid for sequence diagrams (participants are columns, messages are rows; declaration order IS
 /// the layout, which is the whole charm of the grammar).
 /// <para>
@@ -345,9 +345,11 @@ public static class MermaidLayout
         var mid = vertical ? (y0 + y1) / 2 : (x0 + x1) / 2;
         if (vertical)
         {
-            AddSegment(scene, x0, y0, x0, mid);
-            AddSegment(scene, x0, mid, x1, mid);
-            AddSegment(scene, x1, mid, x1, y1);
+            // ONE cubic whose controls sit on the mid line: the S every flowchart tool draws, and
+            // the shape three orthogonal boxes were standing in for. It leaves the source going
+            // along the flow and arrives at the target the same way, which is what makes an
+            // arrowhead aimed straight at the node still read as aimed.
+            AddCurve(scene, x0, y0, x0, mid, x1, mid, x1, y1);
             if (edge.Arrow)
                 scene.Arrows.Add(new MermaidArrowhead { X = x1, Y = y1, Direction = y1 >= mid ? 0 : 2 });
             if (edge.Label.Length > 0)
@@ -355,9 +357,7 @@ public static class MermaidLayout
         }
         else
         {
-            AddSegment(scene, x0, y0, mid, y0);
-            AddSegment(scene, mid, y0, mid, y1);
-            AddSegment(scene, mid, y1, x1, y1);
+            AddCurve(scene, x0, y0, mid, y0, mid, y1, x1, y1);
             if (edge.Arrow)
                 scene.Arrows.Add(new MermaidArrowhead { X = x1, Y = y1, Direction = x1 >= mid ? 1 : 3 });
             if (edge.Label.Length > 0)
@@ -365,7 +365,74 @@ public static class MermaidLayout
         }
     }
 
-    /// <summary>One orthogonal piece as a thin box; zero-length pieces are simply not added.</summary>
+    /// <summary>
+    /// One edge as a cubic: the box that holds it, and the path in the canvas's own coordinates.
+    /// <para>
+    /// Every number is ROUNDED TO AN INTEGER before it reaches the string. The path is built twice
+    /// — by C# for SSR, by the transpiled twin for the browser — and a float that goes through a
+    /// machine's current culture reads <c>72,5</c> on half the world's laptops, which is a path the
+    /// SVG parser drops and a diagram that renders on one continent.
+    /// </para>
+    /// <para>
+    /// The box is inflated by the stroke's own half-width plus a pixel, because a curve is drawn
+    /// ON its path: an un-inflated box clips exactly the outer half of the line, and does it worst
+    /// at the ends, where the arrowhead meets it.
+    /// </para>
+    /// </summary>
+    private static void AddCurve(MermaidScene scene, float x0, float y0,
+        float c1x, float c1y, float c2x, float c2y, float x1, float y1)
+    {
+        var sx = Whole(x0);
+        var sy = Whole(y0);
+        var k1x = Whole(c1x);
+        var k1y = Whole(c1y);
+        var k2x = Whole(c2x);
+        var k2y = Whole(c2y);
+        var ex = Whole(x1);
+        var ey = Whole(y1);
+
+        // The hull of a cubic bounds the curve, so the control points are enough — no need to
+        // solve the extrema for a shape that never leaves its own hull.
+        var minX = Min4(sx, k1x, k2x, ex) - CurvePad;
+        var maxX = Max4(sx, k1x, k2x, ex) + CurvePad;
+        var minY = Min4(sy, k1y, k2y, ey) - CurvePad;
+        var maxY = Max4(sy, k1y, k2y, ey) + CurvePad;
+
+        scene.Curves.Add(new MermaidCurve
+        {
+            X = minX,
+            Y = minY,
+            W = maxX - minX,
+            H = maxY - minY,
+            Path = "M " + sx + " " + sy + " C " + k1x + " " + k1y + ", "
+                + k2x + " " + k2y + ", " + ex + " " + ey,
+            ViewBox = minX + " " + minY + " " + (maxX - minX) + " " + (maxY - minY),
+        });
+    }
+
+    /// <summary>Half the stroke, plus one — see <see cref="AddCurve"/>.</summary>
+    private const int CurvePad = 2;
+
+    /// <summary>The nearest whole number, away from zero at the half — the one rule C# and the
+    /// transpiled twin state identically without either side reaching for a rounding mode.</summary>
+    private static int Whole(float v) => (int)(v < 0 ? v - 0.5f : v + 0.5f);
+
+    private static int Min4(int a, int b, int c, int d)
+    {
+        var m = a < b ? a : b;
+        if (c < m) m = c;
+        return d < m ? d : m;
+    }
+
+    private static int Max4(int a, int b, int c, int d)
+    {
+        var m = a > b ? a : b;
+        if (c > m) m = c;
+        return d > m ? d : m;
+    }
+
+    /// <summary>One orthogonal piece as a thin box (sequence diagrams: a lifeline is straight, and
+    /// so is a message); zero-length pieces are simply not added.</summary>
     private static void AddSegment(MermaidScene scene, float x0, float y0, float x1, float y1)
     {
         if (x0 == x1 && y0 == y1) return;

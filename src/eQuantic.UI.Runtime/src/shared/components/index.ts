@@ -67,6 +67,7 @@ export { Menu } from './Menu';
 export { MenuItem } from './MenuItem';
 export { Mermaid } from './Mermaid';
 export { MermaidArrowhead } from './MermaidArrowhead';
+export { MermaidCurve } from './MermaidCurve';
 export { MermaidEdge } from './MermaidEdge';
 export { MermaidEdgeRef } from './MermaidEdgeRef';
 export { MermaidGraph } from './MermaidGraph';

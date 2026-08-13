@@ -123,9 +123,11 @@ public static class UI
     public static Icon Icon(Icons glyph, float size = 24, ColorToken? color = null, string? label = null) =>
         new Icon(glyph, size, color, label);
 
-    /// <summary>A vector shape at any size — an icon freed of the size whitelist.</summary>
-    public static Vector Vector(IconGlyph glyph, float size, ColorToken? color = null, string? label = null) =>
-        new Vector(glyph, size, color, label);
+    /// <summary>A vector shape at any size — an icon freed of the size whitelist, and of the
+    /// square box when <paramref name="height"/> gives it an aspect of its own.</summary>
+    public static Vector Vector(IconGlyph glyph, float size, ColorToken? color = null, string? label = null,
+        float height = 0) =>
+        new Vector(glyph, size, color, label, height);
 
     /// <summary>A bitmap with explicit dimensions (layout never waits for the network).</summary>
     public static Image Image(string source, float width, float height, ImageFit fit = ImageFit.Cover,

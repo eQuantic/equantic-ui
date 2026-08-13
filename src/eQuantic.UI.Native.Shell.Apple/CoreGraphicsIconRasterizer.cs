@@ -63,7 +63,7 @@ public sealed partial class CoreGraphicsIconRasterizer : IIconRasterizer
     [LibraryImport(CoreGraphics)]
     private static partial void CGContextSetLineJoin(IntPtr context, int join);
 
-    public TextRaster? Rasterize(IconGlyph glyph, float sizeDp, float scale)
+    public TextRaster? Rasterize(IconGlyph glyph, float widthDp, float heightDp, float scale)
     {
         var segments = SvgPath.Parse(glyph.Path);
         if (segments.Count == 0) return null;
@@ -77,15 +77,18 @@ public sealed partial class CoreGraphicsIconRasterizer : IIconRasterizer
             || !float.TryParse(parts[3], System.Globalization.CultureInfo.InvariantCulture, out var unitH)
             || unitW <= 0 || unitH <= 0) return null;
 
-        var px = Math.Max(1, (int)MathF.Ceiling(sizeDp * scale));
-        var context = CGBitmapContextCreate(IntPtr.Zero, (nuint)px, (nuint)px,
-            8, (nuint)px, IntPtr.Zero, 7 /* kCGImageAlphaOnly */);
+        var pxW = Math.Max(1, (int)MathF.Ceiling(widthDp * scale));
+        var pxH = Math.Max(1, (int)MathF.Ceiling(heightDp * scale));
+        // A8 rows are one byte per pixel, so the stride IS the width — but it is passed explicitly
+        // because the two stopped being the same number the moment the box stopped being square.
+        var context = CGBitmapContextCreate(IntPtr.Zero, (nuint)pxW, (nuint)pxH,
+            8, (nuint)pxW, IntPtr.Zero, 7 /* kCGImageAlphaOnly */);
         if (context == IntPtr.Zero) return null;
         try
         {
-            // Flip to top-down, then viewBox units → pixels.
-            CGContextTranslateCTM(context, 0, px);
-            CGContextScaleCTM(context, px / (double)unitW, -(px / (double)unitH));
+            // Flip to top-down, then viewBox units → pixels, each axis on its own scale.
+            CGContextTranslateCTM(context, 0, pxH);
+            CGContextScaleCTM(context, pxW / (double)unitW, -(pxH / (double)unitH));
             CGContextTranslateCTM(context, -minX, -minY);
 
             CGContextBeginPath(context);
@@ -124,9 +127,9 @@ public sealed partial class CoreGraphicsIconRasterizer : IIconRasterizer
 
             var data = CGBitmapContextGetData(context);
             if (data == IntPtr.Zero) return null;
-            var alpha = new byte[px * px];
+            var alpha = new byte[pxW * pxH];
             Marshal.Copy(data, alpha, 0, alpha.Length);
-            return new TextRaster(px, px, alpha);
+            return new TextRaster(pxW, pxH, alpha);
         }
         finally
         {

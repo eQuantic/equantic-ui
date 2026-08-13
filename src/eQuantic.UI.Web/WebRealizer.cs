@@ -598,15 +598,15 @@ public static class WebRealizer
         return svg;
     }
 
-    /// <summary>A vector shape lowers exactly like an icon — the only difference is that its size
-    /// is the author's, not the §07 whitelist's.</summary>
+    /// <summary>A vector shape lowers exactly like an icon — the differences are that its size is
+    /// the author's rather than the §07 whitelist's, and that its box need not be square.</summary>
     private static HtmlElement LowerVector(Vector vector) =>
-        LowerGlyph(vector.Glyph, vector.Size, vector.Color, vector.Label);
+        LowerGlyph(vector.Glyph, vector.Size, vector.Height, vector.Color, vector.Label);
 
     private static HtmlElement LowerIcon(Icon icon, ComponentContext context)
-        => LowerGlyph(icon.Glyph, icon.Size, icon.Color, icon.Label);
+        => LowerGlyph(icon.Glyph, icon.Size, icon.Size, icon.Color, icon.Label);
 
-    private static HtmlElement LowerGlyph(IconGlyph glyph, float size, ColorToken? color, string? label)
+    private static HtmlElement LowerGlyph(IconGlyph glyph, float width, float height, ColorToken? color, string? label)
     {
         var svg = new RealizedElement("svg")
         {
@@ -617,8 +617,8 @@ public static class WebRealizer
                 // wrapper rendered ~a descender below the line it was aimed at. Flex items
                 // ignore display, so every icon in a Row is unaffected.
                 Display = Core.Display.Block,
-                Width = TokenCss.Px(size),
-                Height = TokenCss.Px(size),
+                Width = TokenCss.Px(width),
+                Height = TokenCss.Px(height),
                 Color = color is { } tint ? TokenCss.Value(tint) : null,
             },
         };

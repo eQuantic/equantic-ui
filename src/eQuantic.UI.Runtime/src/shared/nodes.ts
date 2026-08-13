@@ -666,7 +666,10 @@ export interface VectorNode extends VisualNodeValue {
   nodeKind: 'vector';
   /** The RESOLVED glyph — curated names resolve at construction, pack glyphs arrive whole. */
   glyph: IconGlyphValue;
+  /** The box's WIDTH in dp (C# `Vector.Size`). */
   size: number;
+  /** The box's HEIGHT in dp — `size` unless the author gave the shape an aspect of its own. */
+  height?: number;
   color?: ColorTokenValue | null;
   label?: string | null;
 }

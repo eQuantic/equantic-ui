@@ -83,6 +83,35 @@ public sealed class MermaidSegment
     public float H { get; set; }
 }
 
+/// <summary>
+/// One edge drawn as a CURVE: the box it occupies on the canvas, plus the path that runs through
+/// it — the shape mermaid.js draws, which a run of orthogonal boxes can only approximate with
+/// corners.
+/// <para>
+/// The path's numbers are INTEGERS, and that is a parity rule rather than a rounding preference:
+/// this string is built by C# for SSR and by the transpiled twin in the browser, and a float
+/// formatted through a machine's current culture says <c>72,5</c> in half the world. An integer
+/// says the same thing in every language and every locale.
+/// </para>
+/// <para>
+/// The path is stated in the CANVAS's own coordinates and the box carries them as its viewBox
+/// origin, so nothing has to be translated into a local frame — the two cannot drift because
+/// there is only one frame.
+/// </para>
+/// </summary>
+public sealed class MermaidCurve
+{
+    public float X { get; set; }
+    public float Y { get; set; }
+    public float W { get; set; }
+    public float H { get; set; }
+    public string Path { get; set; } = "";
+
+    /// <summary>The glyph's viewBox — the canvas rectangle this curve lives in, written where the
+    /// integers are so that no float ever reaches a string on the drawing side.</summary>
+    public string ViewBox { get; set; } = "";
+}
+
 /// <summary>An arrowhead: the tip point and the direction it points (0 down, 1 right, 2 up, 3 left).</summary>
 public sealed class MermaidArrowhead
 {
@@ -105,6 +134,7 @@ public sealed class MermaidScene
     public float Height { get; set; }
     public List<MermaidPlacedNode> Nodes { get; set; } = [];
     public List<MermaidSegment> Segments { get; set; } = [];
+    public List<MermaidCurve> Curves { get; set; } = [];
     public List<MermaidArrowhead> Arrows { get; set; } = [];
     public List<MermaidLabel> Labels { get; set; } = [];
 }

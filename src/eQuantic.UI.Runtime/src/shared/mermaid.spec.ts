@@ -50,6 +50,8 @@ function dump(scene: MermaidScene): string {
   for (const n of scene.nodes)
     lines.push(`node ${n.node.id}(${n.node.shape}) ${n.x},${n.y} ${n.w}x${n.h}`);
   for (const s of scene.segments) lines.push(`seg ${s.x},${s.y} ${s.w}x${s.h}`);
+  for (const c of scene.curves)
+    lines.push(`curve ${c.x},${c.y} ${c.w}x${c.h} [${c.viewBox}] ${c.path}`);
   for (const a of scene.arrows) lines.push(`arrow ${a.x},${a.y} d${a.direction}`);
   for (const l of scene.labels) lines.push(`label "${l.text}" ${l.x},${l.y}`);
   return lines.join('\n');

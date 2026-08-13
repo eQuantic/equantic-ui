@@ -14,7 +14,7 @@ export class UI {
     static link(destination: string, child: VisualNode) { return new Link(destination, child); }
     static glyph(glyph: IconGlyph, size: number = 24, color: ColorToken | null = null, label: string | null = null) { return new Icon(glyph, size, color, label); }
     static icon(glyph: string, size: number = 24, color: ColorToken | null = null, label: string | null = null) { return new Icon(glyph, size, color, label); }
-    static vector(glyph: IconGlyph, size: number, color: ColorToken | null = null, label: string | null = null) { return new Vector(glyph, size, color, label); }
+    static vector(glyph: IconGlyph, size: number, color: ColorToken | null = null, label: string | null = null, height: number = 0) { return new Vector(glyph, size, color, label, height); }
     static image(source: string, width: number, height: number, fit: string = 'cover', alt: string = '') { return new Image(source, width, height, fit, alt); }
     static spinner(size: number = 20, color: ColorToken | null = null) { return new Spinner(size, color); }
     static flexible(child: VisualNode, flex: number = 1, basis: number = 0, shrink: number = 1) { return new Flexible(child, flex, basis, shrink); }

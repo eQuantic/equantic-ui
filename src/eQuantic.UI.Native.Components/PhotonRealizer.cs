@@ -684,7 +684,7 @@ public static class PhotonRealizer
                 // documented 30% disc placeholder (tests, headless).
                 if (motion.IconRasterizer is { } icons
                     && (motion.IconCache ?? IconRasterCache.Shared)
-                        .Get(icons, icon.Glyph, icon.Size, motion.RenderScale) is { } raster)
+                        .Get(icons, icon.Glyph, icon.Size, icon.Size, motion.RenderScale) is { } raster)
                 {
                     var tint = (icon.Color ?? theme.TextPrimary).Resolve(mode);
                     builder.Texture(node.Bounds, tint, raster);
@@ -700,10 +700,12 @@ public static class PhotonRealizer
             case Vector vector:
             {
                 // The vector rides the SAME rasterizer as an icon — one tinted A8 raster per
-                // (glyph, size, scale). No service → the icon placeholder disc, same contract.
+                // (glyph, box, scale), the box being whatever aspect the author asked for. No
+                // service → the icon placeholder disc, same contract.
                 if (motion.IconRasterizer is { } vectorIcons
                     && (motion.IconCache ?? IconRasterCache.Shared)
-                        .Get(vectorIcons, vector.Glyph, vector.Size, motion.RenderScale) is { } vectorRaster)
+                        .Get(vectorIcons, vector.Glyph, vector.Size, vector.Height, motion.RenderScale)
+                        is { } vectorRaster)
                 {
                     var vectorTint = (vector.Color ?? theme.TextPrimary).Resolve(mode);
                     builder.Texture(node.Bounds, vectorTint, vectorRaster);

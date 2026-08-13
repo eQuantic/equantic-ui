@@ -16,7 +16,7 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// </summary>
 public sealed class AndroidIconRasterizer : IIconRasterizer
 {
-    public TextRaster? Rasterize(IconGlyph glyph, float sizeDp, float scale)
+    public TextRaster? Rasterize(IconGlyph glyph, float widthDp, float heightDp, float scale)
     {
         var segments = SvgPath.Parse(glyph.Path);
         if (segments.Count == 0) return null;
@@ -29,7 +29,8 @@ public sealed class AndroidIconRasterizer : IIconRasterizer
             || !float.TryParse(parts[3], System.Globalization.CultureInfo.InvariantCulture, out var unitH)
             || unitW <= 0 || unitH <= 0) return null;
 
-        var px = Math.Max(1, (int)MathF.Ceiling(sizeDp * scale));
+        var pxW = Math.Max(1, (int)MathF.Ceiling(widthDp * scale));
+        var pxH = Math.Max(1, (int)MathF.Ceiling(heightDp * scale));
 
         using var path = new Path();
         foreach (var segment in segments)
@@ -67,18 +68,19 @@ public sealed class AndroidIconRasterizer : IIconRasterizer
             paint.SetStyle(Paint.Style.Fill);
         }
 
-        using var bitmap = Bitmap.CreateBitmap(px, px, Bitmap.Config.Argb8888!)!;
+        using var bitmap = Bitmap.CreateBitmap(pxW, pxH, Bitmap.Config.Argb8888!)!;
         using var canvas = new Canvas(bitmap);
-        // viewBox units → pixels, with the box's own origin taken out first.
-        canvas.Scale(px / unitW, px / unitH);
+        // viewBox units → pixels, each axis on its own scale, with the box's own origin taken out
+        // first. Equal extents (an icon) leave this exactly where it was.
+        canvas.Scale(pxW / unitW, pxH / unitH);
         canvas.Translate(-minX, -minY);
         canvas.DrawPath(path, paint);
 
-        var argb = new int[px * px];
-        bitmap.GetPixels(argb, 0, px, 0, 0, px, px);
+        var argb = new int[pxW * pxH];
+        bitmap.GetPixels(argb, 0, pxW, 0, 0, pxW, pxH);
         var alpha = new byte[argb.Length];
         for (var i = 0; i < argb.Length; i++) alpha[i] = (byte)((argb[i] >> 24) & 0xFF);
 
-        return new TextRaster(px, px, alpha);
+        return new TextRaster(pxW, pxH, alpha);
     }
 }

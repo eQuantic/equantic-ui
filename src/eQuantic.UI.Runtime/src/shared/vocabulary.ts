@@ -1252,6 +1252,8 @@ export class Vector extends VisualNode {
   readonly nodeKind = 'vector';
   glyph: IconGlyph;
   size: number;
+  /** The box's HEIGHT — `size` unless the author gave the shape an aspect of its own. */
+  height: number;
   color: ColorTokenValue | null;
   label: string | null;
 
@@ -1260,11 +1262,13 @@ export class Vector extends VisualNode {
     size: number,
     color: ColorTokenValue | null = null,
     label: string | null = null,
+    height = 0,
     config?: EqConfig,
   ) {
     super();
     this.glyph = glyph;
     this.size = size;
+    this.height = height > 0 ? height : size;
     this.color = color;
     this.label = label;
     if (config) Object.assign(this, config);

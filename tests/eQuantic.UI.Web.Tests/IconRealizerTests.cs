@@ -78,4 +78,34 @@ public class IconRealizerTests
         node.Attributes["style"].Should().Contain("width: 300px").And.Contain("height: 300px");
         node.Children.Single(c => c.Tag == "path").Attributes["d"].Should().Be("M10 10 L90 10 L90 90 Z");
     }
+
+    /// <summary>
+    /// A shape whose box is NOT square — the connector between two nodes of a diagram is the case
+    /// that names it. A square box would have squashed it into an icon-shaped nothing, which is why
+    /// a generated figure could only ever be a straight line drawn out of Boxes.
+    /// </summary>
+    [Fact]
+    public void Vector_TakesAnAspectOfItsOwn()
+    {
+        var edge = new IconGlyph("edge", "M0 8 C 46 8, 94 40, 140 40", IconGlyphStyle.Stroke, "0 0 140 48", 1.5f);
+        var node = WebRealizer.Lower(new Vector(edge, 140, height: 48), PhotonTheme.Instance).Render();
+
+        node.Attributes["viewBox"].Should().Be("0 0 140 48");
+        node.Attributes["style"].Should().Contain("width: 140px").And.Contain("height: 48px");
+        // Stroke intent was always honoured — what was missing was the box to draw it in.
+        node.Attributes["fill"].Should().Be("none");
+        node.Attributes["stroke"].Should().Be("currentColor");
+        node.Attributes["stroke-width"].Should().Be("1.5");
+    }
+
+    /// <summary>An icon is square by construction, and stays square now that a vector need not be:
+    /// the whitelist is about the em-box, and the em-box has one number.</summary>
+    [Fact]
+    public void AnIconIsStillSquare()
+    {
+        var glyph = new IconGlyph("dot", "M12 12 L13 13 Z");
+        var node = WebRealizer.Lower(new Icon(glyph, IconSize.Md), PhotonTheme.Instance).Render();
+
+        node.Attributes["style"].Should().Contain("width: 24px; height: 24px");
+    }
 }
