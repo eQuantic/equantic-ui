@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Track L W6: the satellite-assemblies-under-AOT proof, as an EXECUTABLE fact.
+
+    Photon localizes through plain ResourceManager + satellites (D10 — the write-once payoff), and
+    the one way that breaks silently is a trimmed/AOT publish dropping the satellites or the
+    culture data. This harness IS that publish: NativeAOT, references the component library, asks
+    SdkStrings for its chrome under three cultures and refuses to exit cleanly unless every answer
+    is the translated one. scripts/verify-aot-satellites.sh publishes and runs it.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishAot>true</PublishAot>
+    <!-- The point of the exercise: culture data and satellites must ride into the native image. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -257,7 +257,11 @@ translation changes as data, not code.
   born reading `DateTimeFormatInfo`/`NumberFormatInfo` through this subset, never carrying month
   names or separators of their own.
 - **W6 — Native verification.** Satellite assemblies under NativeAOT/trimming; a Photon sample
-  rendering two cultures.
+  rendering two cultures. STATUS: the risk-retiring half is DONE and executable —
+  `scripts/verify-aot-satellites.sh` publishes `tests/eQuantic.UI.Aot.Harness` with NativeAOT and
+  refuses to pass unless en/pt-BR/es (and the es-AR parent walk) all answer with the TRANSLATION,
+  because a dropped satellite does not crash, it silently answers English. The windowed
+  two-culture Photon sample remains as M3's showcase half.
 - **W8 — The SDK's own strings (D14).** First the SEAM: extract the audited literals to
   `SdkStrings` with the English values as neutral defaults (mechanical, shippable today — it is
   the standing task chip). Then the resx behind it, the satellite assemblies, the always-included
@@ -344,6 +348,11 @@ translation changes as data, not code.
 ---
 
 ## Status log
+
+- **2026-08-13 (later) — W6's satellite proof executable.** A NativeAOT publish of a binary
+  referencing eQuantic.UI.Components answers the SDK chrome in en/pt-BR/es and lands es-AR on es —
+  the satellites and the culture data survive the native image. What remains of the native story
+  is M3's windowed sample, which is showcase, not risk.
 
 - **2026-08-13 — M1 + M2 shipped (with W8 the day before).** `ICultureController` (the
   IThemeController shape, BCP-47 names because the contract crosses to a browser), CultureSwitcher,
