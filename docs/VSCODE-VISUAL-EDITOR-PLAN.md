@@ -318,6 +318,33 @@ Refuse imperative `.Add()` bodies with a clear message rather than corrupting a 
 
 ---
 
+## The seam, tested
+
+Three defects in a row reached the user rather than a test, and all three lived in the seam with the
+editor: a message posted before the webview was listening, a template literal eating its escapes, and
+a callback touching a `const` the constructor it ran inside had not finished assigning. None can fail
+a unit test, because none lives on the side a unit test can reach.
+
+`npm test` in `extensions/vscode` now downloads a VS Code, loads the extension into it on the
+dashboard sample, and drives it. One dev dependency — the editor's own `@vscode/test-electron` — and
+**no test framework**: the harness asks for a module exporting `run()` that rejects on failure, and
+`node:assert` covers that.
+
+Six checks, and the third is most of the value: `openPreview` awaits the design host's `initialize`,
+so a panel existing afterwards means the host started, read the reference list and built the project
+compilation — and then awaits the first render, which waits on the webview announcing itself. **A
+broken handshake does not fail there, it hangs**, so each test is bounded and a hang reports as *"it
+did not fail, it never answered"*.
+
+Verified by putting each bug back: the dead-zone one fails two checks with "no preview panel is
+open", and the lost handshake times out.
+
+Two things the harness needed that are worth knowing. It still composes
+`Contents/MacOS/Electron`, which VS Code has since renamed to `Code`, so the executable is looked for
+where it actually is. And VS Code opens a Unix socket inside its user-data directory, which caps at
+103 characters — left under the repo it overflows and the editor dies at startup with `EINVAL`, so
+the tests name a short one.
+
 ## The lesson the probes could not teach
 
 A node that is a call's **only argument** — `card.Add(new FormInput(…))`, which is how imperative code
