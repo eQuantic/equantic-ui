@@ -251,9 +251,13 @@ silently degraded every hot-reload compile to a model-less one, and three plain-
 bugs that made a module unparseable (so the playground and the conformance harness were one static
 collection away from a blank frame).
 
-**Open decision before E4**: real screens are imperative (`WalletApp.cs` — 208 `new`, 126 `.Add`,
-zero `children:`), so a palette that inserts only into declarative `children:` arrays has almost
-nothing to edit. Choices are in the plan doc.
+**Decided 2026-08-14 (Edgar)**: the declarative form is the preferred one to AUTHOR in, so structural
+insertion stays fenced to it — but the editor opens code that already exists, and real code splits
+itself across helper methods and other files, so **understanding must work everywhere**. Selecting,
+inspecting and editing a property therefore work at any tier and across files (the host is sent every
+open buffer); only insert/move/remove require a `children: [ … ]` list, and every refusal names its
+reason before the affordance is drawn. E2, E3 and the structural half of E4 have landed on that
+split; dragging on the canvas and the `Grid`/`Stack` gestures are what remain.
 
 ## Track L — Localization (multi-language, zero third-party)
 
