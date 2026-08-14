@@ -106,7 +106,16 @@ public sealed record EditResult(
     [property: JsonPropertyName("startColumn")] int StartColumn,
     [property: JsonPropertyName("endLine")] int EndLine,
     [property: JsonPropertyName("endColumn")] int EndColumn,
-    [property: JsonPropertyName("newText")] string NewText)
+    [property: JsonPropertyName("newText")] string NewText,
+    /// <summary>
+    /// Where the edited node ENDS UP, for the edits that move it — null for the ones that do not.
+    /// <para>
+    /// An origin is a span, so moving the text invalidates the one the caller was holding: asking
+    /// about it afterwards describes whatever slid into those coordinates, which is the sibling it
+    /// was just swapped with. The panel needs the new one to go on talking about the same node.
+    /// </para>
+    /// </summary>
+    [property: JsonPropertyName("origin")] string? Origin = null)
 {
     public static EditResult Refused(string reason) => new(false, reason, 0, 0, 0, 0, "");
 }

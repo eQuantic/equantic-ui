@@ -76,6 +76,9 @@ export interface EditResult {
   endLine: number;
   endColumn: number;
   newText: string;
+  /** Where the node ENDED UP, for the edits that move it. An origin is a span, so the one the caller
+   * was holding now names whatever slid into those coordinates. */
+  origin?: string | null;
 }
 
 /** One file as the editor currently has it, saved or not. */
@@ -208,6 +211,12 @@ export class Sidecar {
 
   moveChild(path: string, text: string, origin: string, delta: number, buffers: OpenBuffer[]): Promise<EditResult> {
     return this.send('moveChild', { path, text, origin, delta, buffers });
+  }
+
+  /** Where a drag ends: `index` is the position the node ends up at in the finished list, not the gap
+   * it was dropped into. */
+  reorderChild(path: string, text: string, origin: string, index: number, buffers: OpenBuffer[]): Promise<EditResult> {
+    return this.send('reorderChild', { path, text, origin, index, buffers });
   }
 
   removeChild(path: string, text: string, origin: string, buffers: OpenBuffer[]): Promise<EditResult> {

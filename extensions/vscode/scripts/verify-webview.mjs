@@ -56,15 +56,36 @@ const survives = [
   [String.raw`/^"(?:[^"\\]|\\.)*"$/`, 'the string-literal test'],
   [String.raw`/"@equantic\/runtime"/g`, 'the runtime specifier the compiled module is pointed at'],
   [String.raw`'\n\n'`, 'the blank line in a reported error'],
+  // Written as the CHARACTER in the source rather than as `\u2192`, precisely so there is no
+  // backslash to lose — and checked here so it stays that way.
+  [String.raw`→`, 'the arrow the drag badge reads "Text → 3 of 5" with'],
+  [String.raw`∅`, 'the empty-set mark on a container that takes no insertion'],
 ];
 
 const eaten = survives.filter(([needle]) => !script[1].includes(needle));
 if (eaten.length > 0) {
   for (const [needle, what] of eaten) {
-    console.error(`verify-webview: ${what} lost its backslash — expected ${needle} in the emitted script.`);
+    console.error(`verify-webview: ${what} did not survive the template — expected ${needle} in the emitted script.`);
   }
-  console.error('A template literal consumes escapes; write them doubled in the TypeScript source.');
+  console.error('A template literal consumes escapes; double the backslash, or write the character itself.');
   process.exit(1);
 }
 
-console.log(`verify-webview: ok (${script[1].length} chars of script, ${html.length} of document)`);
+/**
+ * Every element the script reaches for has to exist in the document it reaches into.
+ *
+ * `getElementById` answers null for a name that is not there — silently, at load — and the failure
+ * surfaces only when a pointer first touches that feature, as a TypeError in a webview nobody has
+ * the console open for. The panel opens and looks perfectly well until then.
+ */
+const wanted = [...script[1].matchAll(/getElementById\('([^']+)'\)/g)].map((match) => match[1]);
+const absent = [...new Set(wanted)].filter((id) => !html.includes(`id="${id}"`));
+if (absent.length > 0) {
+  console.error(`verify-webview: the script asks for #${absent.join(', #')}, which the document does not contain.`);
+  console.error('getElementById would answer null and the feature would throw on first use.');
+  process.exit(1);
+}
+
+console.log(
+  `verify-webview: ok (${script[1].length} chars of script, ${html.length} of document, `
+  + `${new Set(wanted).size} elements resolved)`);

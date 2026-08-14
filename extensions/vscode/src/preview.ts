@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CompileResult, OpenBuffer, PaletteEntry, Sidecar } from './sidecar';
+import { CompileResult, EditResult, OpenBuffer, PaletteEntry, Sidecar } from './sidecar';
 import { ProjectLayout } from './project';
 
 /**
@@ -232,6 +232,52 @@ export class PreviewPanel {
       void this.insertChild(message.origin, message.index);
     } else if (message.type === 'arrange' && message.origin) {
       void this.arrange(message.origin, message.delta);
+    } else if (message.type === 'reorder' && message.origin && typeof message.index === 'number') {
+      void this.reorder(message.origin, message.index);
+    } else if (message.type === 'ask' && message.origin) {
+      void this.answer(message.origin);
+    }
+  }
+
+  /**
+   * What the canvas needs to know before it draws anything on a node: does it sit in a list, where,
+   * and does it hold one.
+   * <para>
+   * Cheaper than <c>describe</c> — no tier, no panel — because this one is asked on HOVER. The
+   * webview caches the answer per origin and per compile, so a pointer crossing the same row twice
+   * costs one round trip, not two, and an affordance is only ever drawn where the host has already
+   * said it would work.
+   * </para>
+   */
+  private async answer(origin: string): Promise<void> {
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) return;
+
+    try {
+      const node = await this.sidecar.inspect(span.path, await this.textOf(span.path), origin, this.buffers());
+      this.post({ type: 'known', origin, node: node === '' ? undefined : node });
+    } catch (error) {
+      this.log(`ask failed: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * A drag, landed: the node goes to a position, however far away it is.
+   * <para>
+   * One edit, not a run of swaps — a gesture the hand made once should be a gesture Ctrl+Z undoes
+   * once.
+   * </para>
+   */
+  private async reorder(origin: string, index: number): Promise<void> {
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) return;
+
+    try {
+      const edit = await this.sidecar.reorderChild(
+        span.path, await this.textOf(span.path), origin, index, this.buffers());
+      await this.applyMove(span.path, origin, edit, 'that move was refused');
+    } catch (error) {
+      this.log(`reorder failed: ${(error as Error).message}`);
     }
   }
 
@@ -249,30 +295,51 @@ export class PreviewPanel {
     try {
       const text = await this.textOf(span.path);
       const buffers = this.buffers();
-      const edit = delta === undefined
-        ? await this.sidecar.removeChild(span.path, text, origin, buffers)
-        : await this.sidecar.moveChild(span.path, text, origin, delta, buffers);
-
-      if (!edit.applied) {
-        void vscode.window.showWarningMessage(`eQuantic UI: ${edit.reason ?? 'that was refused'}`);
+      if (delta === undefined) {
+        const edit = await this.sidecar.removeChild(span.path, text, origin, buffers);
+        if (!(await this.applyEdit(span.path, edit, 'that was refused'))) return;
+        // A removed node has no origin left to describe, so the panel closes rather than showing an
+        // answer about something that is no longer there.
+        this.post({ type: 'deselect' });
         return;
       }
 
-      const workspaceEdit = new vscode.WorkspaceEdit();
-      workspaceEdit.replace(
-        vscode.Uri.file(span.path),
-        new vscode.Range(edit.startLine, edit.startColumn, edit.endLine, edit.endColumn),
-        edit.newText);
-
-      if (!(await vscode.workspace.applyEdit(workspaceEdit))) return;
-
-      // A removed node has no origin left to describe, and a moved one has a span that shifted — so
-      // the panel closes rather than showing an answer about something that is no longer there.
-      if (delta === undefined) this.post({ type: 'deselect' });
-      else await this.describe(origin);
+      const moved = await this.sidecar.moveChild(span.path, text, origin, delta, buffers);
+      await this.applyMove(span.path, origin, moved, 'that was refused');
     } catch (error) {
       this.log(`arrange failed: ${(error as Error).message}`);
     }
+  }
+
+  /** Applies an edit, or shows the host's own sentence explaining why there is none. */
+  private async applyEdit(path: string, edit: EditResult, fallback: string): Promise<boolean> {
+    if (!edit.applied) {
+      void vscode.window.showWarningMessage(`eQuantic UI: ${edit.reason ?? fallback}`);
+      return false;
+    }
+
+    const workspaceEdit = new vscode.WorkspaceEdit();
+    workspaceEdit.replace(
+      vscode.Uri.file(path),
+      new vscode.Range(edit.startLine, edit.startColumn, edit.endLine, edit.endColumn),
+      edit.newText);
+    return vscode.workspace.applyEdit(workspaceEdit);
+  }
+
+  /**
+   * An edit that MOVED the selected node, followed by the selection.
+   * <para>
+   * The origin the panel was holding is a span, and after the move those coordinates hold the sibling
+   * it was swapped with — so describing the old one would quietly switch which node the panel is
+   * about. The host says where the node landed; the canvas and the panel both follow it there.
+   * </para>
+   */
+  private async applyMove(path: string, origin: string, edit: EditResult, fallback: string): Promise<void> {
+    if (!(await this.applyEdit(path, edit, fallback))) return;
+
+    const landed = edit.origin ?? origin;
+    this.post({ type: 'reselect', origin: landed });
+    await this.describe(landed);
   }
 
   /** Cached for the session: the surface does not change while the editor is open, and a quick pick
@@ -437,6 +504,7 @@ export class PreviewPanel {
       ]);
       this.post({
         type: 'selected',
+        origin,
         tier: tier.tier,
         reason: tier.reason,
         node: inspected === '' ? undefined : inspected,
@@ -520,6 +588,31 @@ export class PreviewPanel {
     color: var(--vscode-button-foreground, #fff);
   }
   #badge.visible { display: block; }
+
+  /* Canvas affordances. The caret is a MARK and takes no pointer events; the chips are targets and
+     are part of the chrome, so hovering one does not count as leaving the node it belongs to. */
+  #caret {
+    position: fixed; z-index: 5; display: none; pointer-events: none; border-radius: 2px;
+    background: var(--vscode-focusBorder, #0078d4);
+  }
+  #caret.visible { display: block; }
+
+  .eq-plus {
+    position: fixed; z-index: 5; display: none; box-sizing: border-box;
+    width: 18px; height: 18px; padding: 0; border-radius: 9px; cursor: pointer;
+    align-items: center; justify-content: center;
+    font: 12px/1 var(--vscode-font-family, sans-serif);
+    border: 1px solid var(--vscode-focusBorder, #0078d4);
+    background: var(--vscode-editor-background, #1e1e1e);
+    color: var(--vscode-focusBorder, #0078d4);
+  }
+  .eq-plus.visible { display: flex; }
+  .eq-plus:hover { background: var(--vscode-focusBorder, #0078d4); color: var(--vscode-button-foreground, #fff); }
+  .eq-plus:focus-visible { outline: 1px solid var(--vscode-focusBorder, #0078d4); }
+
+  /* On every element, not only on body: the app draws its own cursors, and a button under the hand
+     that still says "click me" mid-drag is telling the truth about the wrong gesture. */
+  body.eq-dragging, body.eq-dragging * { cursor: grabbing !important; }
 
   /* ---- the properties panel -------------------------------------------------------------------
      Docked to the bottom and OVERLAYING the app rather than pushing it: a panel that took height
@@ -635,6 +728,9 @@ export class PreviewPanel {
 <div id="app"></div>
 <div id="outline"></div>
 <div id="badge"></div>
+<div id="caret"></div>
+<button class="eq-plus" id="plus-before" type="button" title="Insert before this" aria-label="Insert before this">+</button>
+<button class="eq-plus" id="plus-after" type="button" title="Insert after this" aria-label="Insert after this">+</button>
 
 <div id="panel">
   <div id="panel-head">
@@ -678,6 +774,9 @@ export class PreviewPanel {
   const notice = document.getElementById('notice');
   const outline = document.getElementById('outline');
   const badge = document.getElementById('badge');
+  const caret = document.getElementById('caret');
+  const plusBefore = document.getElementById('plus-before');
+  const plusAfter = document.getElementById('plus-after');
   const panel = document.getElementById('panel');
   const panelTitle = document.getElementById('panel-title');
   const panelTier = document.getElementById('panel-tier');
@@ -760,7 +859,16 @@ export class PreviewPanel {
 
   function setInspecting(on) {
     inspecting = on;
-    if (!on) { outline.classList.remove('visible'); badge.classList.remove('visible'); }
+    if (!on) {
+      outline.classList.remove('visible');
+      badge.classList.remove('visible');
+      // Every affordance goes with the mode. One left behind is a control that acts on a tree the
+      // pointer is no longer allowed to touch.
+      hideInserts();
+      caret.classList.remove('visible');
+      drag = null;
+      document.body.classList.remove('eq-dragging');
+    }
   }
 
   // The nearest ancestor that KNOWS where it came from. A component is several elements deep — a
@@ -794,7 +902,7 @@ export class PreviewPanel {
   }
 
   function insideChrome(target) {
-    return panel.contains(target);
+    return panel.contains(target) || plusBefore.contains(target) || plusAfter.contains(target);
   }
 
   // Focus is what actually has to be stopped, not the click. The framework's forms are quiet until
@@ -806,14 +914,27 @@ export class PreviewPanel {
       if (!inspecting || insideChrome(e.target)) return;
       e.preventDefault();
       e.stopPropagation();
+      if (name === 'pointerdown') beginDrag(e, stamped(e.target));
     }, true);
   }
 
   document.addEventListener('pointermove', (e) => {
-    if (!inspecting || insideChrome(e.target)) return;
+    if (!inspecting) return;
+    if (drag) { updateDrag(e); return; }
+    if (insideChrome(e.target)) return;
     const found = stamped(e.target);
-    if (found) frame(found);
-    else { outline.classList.remove('visible'); badge.classList.remove('visible'); }
+    if (found) { frame(found); hovering(found); }
+    else { outline.classList.remove('visible'); badge.classList.remove('visible'); hideInserts(); }
+  }, true);
+
+  document.addEventListener('pointerup', (e) => {
+    if (!inspecting) return;
+    if (!endDrag()) return;
+    // A drag ends with a click event on whatever is under the pointer. Selecting there would mean
+    // every drop also re-selected something, sometimes the node it was dropped onto.
+    suppressClick = true;
+    e.preventDefault();
+    e.stopPropagation();
   }, true);
 
   function select(element) {
@@ -824,13 +945,238 @@ export class PreviewPanel {
     vscode.postMessage({ type: 'select', origin: selectedOrigin });
   }
 
+  let suppressClick = false;
+
   document.addEventListener('click', (e) => {
     if (!inspecting || insideChrome(e.target)) return;
     e.preventDefault();
     e.stopPropagation();
+    if (suppressClick) { suppressClick = false; return; }
     const found = stamped(e.target);
     if (found) select(found);
   }, true);
+
+  // ---- what the host knows about a node, cached for as long as the tree is the same ---------------
+  //
+  // Keyed by ORIGIN, which is a span in the text, so one recompile invalidates the lot. Asked at most
+  // once per node: the pointer crossing a screen would otherwise be a storm of round trips for
+  // answers nobody reads. A pending question is remembered as null, an answered nothing as false.
+  const known = new Map();
+  let hovered = null;
+  let hoverTimer = 0;
+
+  function knownOf(element) {
+    const origin = element && element.getAttribute && element.getAttribute('data-eq-origin');
+    return origin ? known.get(origin) : undefined;
+  }
+
+  function ask(element) {
+    const origin = element && element.getAttribute('data-eq-origin');
+    if (!origin || known.has(origin)) return;
+    known.set(origin, null);
+    vscode.postMessage({ type: 'ask', origin: origin });
+  }
+
+  function forget() {
+    known.clear();
+    hovered = null;
+    hideInserts();
+    caret.classList.remove('visible');
+    drag = null;
+    document.body.classList.remove('eq-dragging');
+  }
+
+  /** Hovering settles before it asks: a pointer travelling across the screen crosses dozens of nodes
+   * and means none of them. */
+  function hovering(element) {
+    hovered = element;
+    drawInserts(element);
+    if (hoverTimer) clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(() => {
+      ask(element);
+      ask(stampedParent(element));
+    }, 120);
+  }
+
+  // ---- inserting from the canvas -----------------------------------------------------------------
+  let insertTarget = null;
+
+  function hideInserts() {
+    plusBefore.classList.remove('visible');
+    plusAfter.classList.remove('visible');
+    insertTarget = null;
+  }
+
+  /**
+   * Which way a container lays its children out, read off the RESULT rather than the CSS: a Row is
+   * flex, a Grid is grid and a Stack is absolute, and all three answer this the same way once they
+   * are on screen.
+   */
+  function axisOf(children) {
+    if (children.length < 2) return 'y';
+    const first = children[0].getBoundingClientRect();
+    const second = children[1].getBoundingClientRect();
+    return (second.left >= first.right - 1 && second.top < first.bottom) ? 'x' : 'y';
+  }
+
+  /**
+   * The list a node sits in, when the canvas may act on it — and nothing at all when it may not.
+   * <para>
+   * The screen and the C# list have to line up child for child, or an index computed from pixels
+   * names a different element in the file. A child that renders as several elements, or as none,
+   * breaks that correspondence, so the affordance is WITHHELD rather than guessed at.
+   * </para>
+   */
+  function placeIn(element) {
+    const node = knownOf(element);
+    if (!node || node.siblingIndex < 0) return null;
+
+    const container = stampedParent(element);
+    const list = knownOf(container);
+    if (!list || list.childCount < 0) return null;
+
+    const children = stampedChildren(container);
+    if (children.length !== list.childCount) return null;
+
+    return { container: container, children: children, index: node.siblingIndex, axis: axisOf(children) };
+  }
+
+  function drawInserts(element) {
+    hideInserts();
+    if (!inspecting || drag) return;
+
+    const place = placeIn(element);
+    if (!place) return;
+
+    const box = element.getBoundingClientRect();
+    const middle = box.top + box.height / 2;
+    if (place.axis === 'x') {
+      chipAt(plusBefore, box.left, middle);
+      chipAt(plusAfter, box.right, middle);
+    } else {
+      chipAt(plusBefore, box.left + 10, box.top);
+      chipAt(plusAfter, box.left + 10, box.bottom);
+    }
+    insertTarget = { origin: place.container.getAttribute('data-eq-origin'), index: place.index };
+  }
+
+  function chipAt(chip, x, y) {
+    chip.style.left = (x - 9) + 'px';
+    chip.style.top = (y - 9) + 'px';
+    chip.classList.add('visible');
+  }
+
+  plusBefore.addEventListener('click', () => {
+    if (insertTarget) vscode.postMessage({ type: 'insert', origin: insertTarget.origin, index: insertTarget.index });
+  });
+  plusAfter.addEventListener('click', () => {
+    if (insertTarget) vscode.postMessage({ type: 'insert', origin: insertTarget.origin, index: insertTarget.index + 1 });
+  });
+
+  // ---- dragging to reorder ------------------------------------------------------------------------
+  let drag = null;
+
+  /** Started only where the host has already said the node is an element of a list. A drag that could
+   * not possibly land is a drag that should never begin. */
+  function beginDrag(event, element) {
+    if (!element) return;
+    const place = placeIn(element);
+    if (!place) return;
+
+    drag = {
+      origin: element.getAttribute('data-eq-origin'),
+      name: element.getAttribute('data-eq-component') || 'this',
+      from: place.index, container: place.container, children: place.children, axis: place.axis,
+      x: event.clientX, y: event.clientY, armed: false, slot: null,
+    };
+  }
+
+  function updateDrag(event) {
+    if (!drag.armed) {
+      // A threshold, so a click that trembles is still a click.
+      if (Math.abs(event.clientX - drag.x) + Math.abs(event.clientY - drag.y) < 5) return;
+      drag.armed = true;
+      hideInserts();
+      document.body.classList.add('eq-dragging');
+    }
+
+    const box = drag.container.getBoundingClientRect();
+    const inside = event.clientX >= box.left && event.clientX <= box.right
+      && event.clientY >= box.top && event.clientY <= box.bottom;
+
+    // Within its own list, for now. Moving a node to a DIFFERENT parent is a remove and an insert of
+    // its own text, which is a bigger edit than a reorder and refuses for its own reasons — so the
+    // caret goes away and says why instead of implying a drop that would not happen.
+    drag.slot = inside ? slotAt(event) : null;
+    if (drag.slot === null) {
+      caret.classList.remove('visible');
+      say('outside its list', event.clientX, event.clientY);
+      return;
+    }
+
+    drawCaret(drag.slot);
+    const landing = drag.slot > drag.from ? drag.slot - 1 : drag.slot;
+    say(drag.name + ' → ' + (landing + 1) + ' of ' + drag.children.length, event.clientX, event.clientY);
+  }
+
+  /** How many children the pointer has passed the middle of — which is the gap it is over. */
+  function slotAt(event) {
+    const position = drag.axis === 'x' ? event.clientX : event.clientY;
+    let slot = 0;
+    for (const child of drag.children) {
+      const box = child.getBoundingClientRect();
+      if (position > (drag.axis === 'x' ? box.left + box.width / 2 : box.top + box.height / 2)) slot++;
+    }
+    return slot;
+  }
+
+  function drawCaret(slot) {
+    const box = drag.container.getBoundingClientRect();
+    const before = slot > 0 ? drag.children[slot - 1].getBoundingClientRect() : null;
+    const after = slot < drag.children.length ? drag.children[slot].getBoundingClientRect() : null;
+
+    if (drag.axis === 'x') {
+      const x = before && after ? (before.right + after.left) / 2 : (after ? after.left : before.right);
+      caret.style.left = (x - 1) + 'px';
+      caret.style.top = box.top + 'px';
+      caret.style.width = '2px';
+      caret.style.height = box.height + 'px';
+    } else {
+      const y = before && after ? (before.bottom + after.top) / 2 : (after ? after.top : before.bottom);
+      caret.style.left = box.left + 'px';
+      caret.style.top = (y - 1) + 'px';
+      caret.style.width = box.width + 'px';
+      caret.style.height = '2px';
+    }
+    caret.classList.add('visible');
+  }
+
+  function say(text, x, y) {
+    badge.textContent = text;
+    badge.classList.add('visible');
+    badge.style.left = (x + 12) + 'px';
+    badge.style.top = (y + 14) + 'px';
+  }
+
+  /** True when a drag actually happened, which is what tells the click afterwards to stand down. */
+  function endDrag() {
+    const finished = drag;
+    drag = null;
+    caret.classList.remove('visible');
+    document.body.classList.remove('eq-dragging');
+    if (!finished || !finished.armed) return false;
+
+    // The GAP it was dropped into, which is what this side actually saw. Turning that into the
+    // position the node ends up at is the host's arithmetic, where a test can reach it.
+    //
+    // Both gaps beside a node mean "where it already is", and the host refuses those with a sentence —
+    // correctly, but a warning popup that says "you put it back" is noise, so a drop that changes
+    // nothing is not sent at all.
+    if (finished.slot !== null && finished.slot !== finished.from && finished.slot !== finished.from + 1) {
+      vscode.postMessage({ type: 'reorder', origin: finished.origin, index: finished.slot });
+    }
+    return true;
+  }
 
   /** The nearest stamped ancestor — the node that CONTAINS this one in the tree, skipping the DOM
    * a component builds inside itself. */
@@ -897,7 +1243,7 @@ export class PreviewPanel {
     } else if (node && node.insertReason) {
       const why = document.createElement('span');
       why.className = 'label';
-      why.textContent = '\u2205 ' + node.insertReason;
+      why.textContent = '∅ ' + node.insertReason;
       why.title = node.insertReason;
       strip.appendChild(why);
     }
@@ -1118,10 +1464,22 @@ export class PreviewPanel {
       // hand that just used it would be its own bug.
       outline.classList.remove('visible');
       badge.classList.remove('visible');
+      // Everything the canvas had learned was about spans in the PREVIOUS text. Keeping any of it
+      // would draw a control for a child that has since moved, or gone.
+      forget();
       void render(payload);
     } else if (payload.type === 'selected') {
       if (payload.tier !== 'literal') outline.classList.add(payload.tier);
+      if (payload.node && payload.origin) known.set(payload.origin, payload.node);
       showSelection(payload);
+    } else if (payload.type === 'known') {
+      known.set(payload.origin, payload.node || false);
+      // The pointer may still be on it: the answer arrived after the hover that asked for it, which
+      // is the whole reason it was asked in advance.
+      if (hovered) drawInserts(hovered);
+    } else if (payload.type === 'reselect') {
+      // The node moved, so the origin the panel was holding now names its old neighbour.
+      selectedOrigin = payload.origin;
     } else if (payload.type === 'deselect') {
       panel.classList.remove('visible');
       outline.classList.remove('visible');

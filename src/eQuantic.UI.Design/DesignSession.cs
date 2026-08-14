@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 using eQuantic.UI.Compiler;
 using eQuantic.UI.Compiler.CodeGen;
@@ -570,7 +571,8 @@ public sealed class DesignSession
     /// broken the file.
     /// </summary>
     private EditResult Guarded(
-        SourceText source, Microsoft.CodeAnalysis.Text.TextSpan span, string value, string text, string path)
+        SourceText source, Microsoft.CodeAnalysis.Text.TextSpan span, string value, string text, string path,
+        string? movedTo = null)
     {
         // Compared as a MULTISET of (code, message), never by count and never by position: an edit
         // shifts every line after it, and a file that already had an error would otherwise have that
@@ -591,7 +593,7 @@ public sealed class DesignSession
 
         var start = source.Lines.GetLinePosition(span.Start);
         var end = source.Lines.GetLinePosition(span.End);
-        return new EditResult(true, null, start.Line, start.Character, end.Line, end.Character, value);
+        return new EditResult(true, null, start.Line, start.Character, end.Line, end.Character, value, movedTo);
     }
 
     /// <summary>The construction an origin names, with the model that can answer for it.</summary>
@@ -675,16 +677,118 @@ public sealed class DesignSession
             return EditResult.Refused(delta < 0 ? "It is already first." : "It is already last.");
         }
 
-        var first = delta < 0 ? list.Elements[target] : element;
-        var second = delta < 0 ? element : list.Elements[target];
-        var between = source.ToString(TextSpan.FromBounds(first.Span.End, second.SpanStart));
+        return Reorder(source, list, index, target, text, path, origin);
+    }
 
-        return Guarded(
-            source,
-            TextSpan.FromBounds(first.SpanStart, second.Span.End),
-            source.ToString(second.Span) + between + source.ToString(first.Span),
-            text,
-            path);
+    /// <summary>
+    /// Puts a node at a given position among its siblings, however far that is.
+    /// <para>
+    /// The one-place move is this with a target one step away. A drag needs the general form: a child
+    /// dropped three positions down is one gesture and must be one edit, not three swaps and three
+    /// entries in the undo stack.
+    /// </para>
+    /// <para>
+    /// <paramref name="index"/> is the GAP the node was dropped into, counted the way
+    /// <see cref="InsertChild"/> counts one: 0 is before the first child and <c>Count</c> is after the
+    /// last. Where the node ends up is one less whenever it travelled downwards, because taking it out
+    /// of its old place closes that gap — arithmetic that belongs here, where a test can reach it,
+    /// rather than in a pointer handler where it can only be found by dragging things about.
+    /// </para>
+    /// </summary>
+    public EditResult ReorderChild(string path, string text, string origin, int index)
+    {
+        if (_compilation is null) throw new InvalidOperationException("initialize first");
+
+        if (Locate(path, text, origin) is not var (_, source, construction, _) || construction is null)
+            return EditResult.Refused("That element's origin does not name anything in this file.");
+
+        if (construction.Parent is not ExpressionElementSyntax element
+            || element.Parent is not CollectionExpressionSyntax list)
+        {
+            return EditResult.Refused(
+                "This node is not an element of a [ … ] list, so there is no order to move it within.");
+        }
+
+        if (index < 0 || index > list.Elements.Count)
+            return EditResult.Refused($"There are {list.Elements.Count} children, so there is no gap {index}.");
+
+        var from = list.Elements.IndexOf(element);
+        var to = index > from ? index - 1 : index;
+        // The gap before itself and the gap after itself are both "where it already is". Dropping a
+        // node back where it started is not an edit, and writing the file to say so would put a
+        // no-op in the undo stack.
+        if (to == from) return EditResult.Refused("It is already there.");
+
+        return Reorder(source, list, from, to, text, path, origin);
+    }
+
+    /// <summary>
+    /// Rewrites the stretch of the list the move disturbs, keeping every SLOT where it is.
+    /// <para>
+    /// The elements between the two positions shift by one and the moved one takes the far end. What
+    /// separates them — the comma, the newline, the indentation — is read back from its position and
+    /// written to the same position, so the list keeps the shape the author gave it.
+    /// </para>
+    /// <para>
+    /// The imperfection this leaves is worth naming: a comment written ABOVE a child stays with the
+    /// position rather than travelling with the child. The alternative — rebuilding the list from its
+    /// element texts — loses the comment entirely, which is the worse of the two wrongs.
+    /// </para>
+    /// </summary>
+    private EditResult Reorder(
+        SourceText source, CollectionExpressionSyntax list, int from, int to, string text, string path,
+        string origin)
+    {
+        var first = Math.Min(from, to);
+        var last = Math.Max(from, to);
+
+        var order = new List<int>();
+        if (from < to)
+        {
+            for (var i = first + 1; i <= last; i++) order.Add(i);
+            order.Add(from);
+        }
+        else
+        {
+            order.Add(from);
+            for (var i = first; i < last; i++) order.Add(i);
+        }
+
+        var rewritten = new StringBuilder();
+        var moved = 0;
+        for (var slot = 0; slot < order.Count; slot++)
+        {
+            if (order[slot] == from) moved = rewritten.Length;
+            rewritten.Append(source.ToString(list.Elements[order[slot]].Span));
+            if (slot + 1 < order.Count)
+            {
+                rewritten.Append(source.ToString(TextSpan.FromBounds(
+                    list.Elements[first + slot].Span.End,
+                    list.Elements[first + slot + 1].SpanStart)));
+            }
+        }
+
+        var span = TextSpan.FromBounds(list.Elements[first].SpanStart, list.Elements[last].Span.End);
+
+        // Where the node lands, read off the text this edit produces. Everything after the edit shifts,
+        // but the moved node is INSIDE the replaced region, so its new offset is the region's start
+        // plus how far into the rewrite it sits.
+        var after = source.Replace(span, rewritten.ToString());
+        var landed = TextSpan.FromBounds(
+            span.Start + moved,
+            span.Start + moved + list.Elements[from].Span.Length);
+
+        return Guarded(source, span, rewritten.ToString(), text, path, Where(after, landed, origin));
+    }
+
+    /// <summary>An origin string for a span, keeping the SPELLING of the path the caller sent — the
+    /// editor matches origins as strings, and a path normalised on the way through would come back as
+    /// a node it does not recognise.</summary>
+    private static string Where(SourceText source, TextSpan span, string origin)
+    {
+        var start = source.Lines.GetLinePosition(span.Start);
+        var end = source.Lines.GetLinePosition(span.End);
+        return $"{origin.Split('|')[0]}|{start.Line}:{start.Character}|{end.Line}:{end.Character}";
     }
 
     /// <summary>

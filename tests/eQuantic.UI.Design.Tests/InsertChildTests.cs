@@ -236,6 +236,99 @@ public sealed class InsertChildTests : IDisposable
     }
 
     /// <summary>
+    /// A drag crosses more than one position, and it is ONE gesture — so it is one edit and one undo,
+    /// not a run of swaps. The index is the GAP it was dropped into, so past the last child is 4 here.
+    /// </summary>
+    [Fact]
+    public void ReorderingToTheEnd_MovesItPastEveryOtherChild()
+    {
+        var edit = _session.ReorderChild(_probe, Source, OriginOf("Text(\"first\""), 4);
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        var after = Apply(Source, edit);
+        after.IndexOf("\"first\"", StringComparison.Ordinal)
+            .Should().BeGreaterThan(after.IndexOf("\"omega\"", StringComparison.Ordinal));
+        // Everything else keeps its order — a reorder moves ONE child.
+        after.IndexOf("\"second\"", StringComparison.Ordinal)
+            .Should().BeLessThan(after.IndexOf("\"omega\"", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ReorderingToTheStart_MovesItBeforeEveryOtherChild()
+    {
+        var edit = _session.ReorderChild(_probe, Source, OriginOf("Text(\"omega\""), 0);
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        var after = Apply(Source, edit);
+        after.IndexOf("\"omega\"", StringComparison.Ordinal)
+            .Should().BeLessThan(after.IndexOf("\"first\"", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The reason the list is not simply rebuilt from its element texts. A comment between two
+    /// children is a note someone left, and losing it silently to a drag would be the worst kind of
+    /// edit: invisible, and only noticed much later.
+    /// </summary>
+    [Fact]
+    public void ReorderingAcrossAComment_KeepsTheComment()
+    {
+        var edit = _session.ReorderChild(_probe, Source, OriginOf("Text(\"first\""), 4);
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        Apply(Source, edit).Should().Contain("A plain reference, never a construction");
+    }
+
+    /// <summary>
+    /// A move invalidates the origin the caller was holding — the span still exists, but the text at
+    /// those coordinates is now the sibling it was swapped with. So the edit says where the node
+    /// LANDED, and asking about that describes the same node it did before.
+    /// </summary>
+    [Fact]
+    public void AMove_SaysWhereTheNodeLanded()
+    {
+        var before = OriginOf("Text(\"first\"");
+        var edit = _session.ReorderChild(_probe, Source, before, 4);
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        edit.Origin.Should().NotBeNull();
+
+        var after = Apply(Source, edit);
+        _session.Inspect(_probe, after, edit.Origin!)!.Properties
+            .Should().Contain(property => property.Value == "\"first\"");
+
+        // And the one the caller held now answers about something else, which is why this exists.
+        _session.Inspect(_probe, after, before)!.Properties
+            .Should().NotContain(property => property.Value == "\"first\"");
+    }
+
+    /// <summary>
+    /// BOTH gaps beside a node mean "where it already is" — the one before it and the one after it.
+    /// A drop that lands back where it started is not an edit, and putting a no-op in the file's undo
+    /// stack is worse than saying so.
+    /// </summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void ReorderingIntoEitherGapBesideItself_IsRefusedRatherThanWritingTheFileBack(int gap)
+    {
+        var edit = _session.ReorderChild(_probe, Source, SecondChild, gap);
+
+        edit.Applied.Should().BeFalse();
+        edit.Reason.Should().Contain("already there");
+    }
+
+    /// <summary>A drop can land anywhere the pointer went, so a gap off the end has to be a refusal
+    /// and not an exception.</summary>
+    [Fact]
+    public void ReorderingPastTheEnd_IsRefusedWithTheCount()
+    {
+        var edit = _session.ReorderChild(_probe, Source, SecondChild, 9);
+
+        edit.Applied.Should().BeFalse();
+        edit.Reason.Should().Contain("4 children");
+    }
+
+    /// <summary>
     /// EVERY entry the palette offers has to compile where it lands.
     /// <para>
     /// This is the check that keeps the snippet synthesis honest as the component library grows: the

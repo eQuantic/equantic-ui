@@ -311,10 +311,42 @@ for free, which a hand-rolled webview field is not.
 test here and quietly eats a bracket. 23 tests in all, over a real `Initialize` with a live
 compilation.
 
-### Phase 6 — insert from the palette, fenced
+### Phase 6 — insert from the palette, fenced ✅ done
 
 Insert only into a `children: [...]` collection expression — the one structurally uniform slot.
 Refuse imperative `.Add()` bodies with a clear message rather than corrupting a method.
+
+### Phase 7 — the canvas acts ✅ done
+
+The panel could already insert, move and remove; the pointer could only select. That split is
+backwards — the canvas is where the tree is legible, and reaching to a list at the bottom of the
+screen to move the row under your hand is the gesture a visual editor exists to remove.
+
+**Drag to reorder.** A drag reports the GAP it was dropped into; the host turns that into the position
+the node ends up at, which is one less whenever it travelled downwards. That arithmetic lives in C#
+on purpose: it is the one subtle step, and in a pointer handler it could only ever be found by
+dragging things about. `ReorderChild` is the general form and `MoveChild` is now a special case of it,
+so one drag across four positions is **one** edit and **one** undo.
+
+**Insert where the pointer is.** Hovering a child offers a `+` at each end of it, along the
+container's own axis. Which axis is read off the RESULT rather than the CSS — a Row is flex, a Grid is
+grid, a Stack is absolute, and once on screen all three answer "are these side by side?" the same way.
+
+Both stand on one new idea: the canvas **caches what the host knows about each origin**, filled by a
+question asked when the pointer settles (120 ms) rather than on every move. Cleared on every
+recompile, because an origin is a span in the text.
+
+Two refusals are drawn before the gesture, never after it:
+
+- The screen and the list must line up child for child. A child that renders as several elements, or
+  as none, breaks the correspondence, so an index computed from pixels would name a different element
+  in the file — the affordance is **withheld** rather than guessed.
+- A drop outside the container says *"outside its list"* and does nothing. Moving a node to a
+  different parent is a remove and an insert of its own text, which is a bigger edit than a reorder.
+
+And one bug this closed on the way: an origin is a span, so a move invalidates the one the panel was
+holding — asking about it afterwards described **the sibling it had just been swapped with**. Edits
+that move a node now answer with where it landed, and the selection follows it there.
 
 ---
 

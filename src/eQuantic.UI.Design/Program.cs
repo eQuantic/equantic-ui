@@ -68,6 +68,12 @@ while (await input.ReadLineAsync() is { } line)
                 Require(parameters.Origin, "origin"),
                 parameters.Delta ?? 0),
 
+            "reorderChild" => session.ReorderChild(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin"),
+                parameters.Index ?? 0),
+
             "removeChild" => session.RemoveChild(
                 Require(parameters.Path, "path"),
                 parameters.Text ?? "",
