@@ -1,8 +1,8 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Overlay, Presence, Pressable, Row, SizeValue, StatelessComponent, Text } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Overlay, Presence, Pressable, Row, SizeValue, StatelessComponent, Text, VariantValue } from "../runtime-exports";
 
 export class Toast extends StatelessComponent {
     declare message: string;
-    declare status: string;
+    declare status: VariantValue;
     declare actionLabel: any;
     declare onAction: (() => void) | null;
     constructor(message?: any, status: any = 'info', actionLabel: any = null, onAction: any = null, props?: any) {

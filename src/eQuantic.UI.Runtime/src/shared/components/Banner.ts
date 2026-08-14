@@ -1,7 +1,7 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconsValue, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Banner extends StatelessComponent {
-    declare status: string;
+    declare status: VariantValue;
     declare title: string;
     declare body: any;
     declare primaryAction: any;
@@ -18,7 +18,7 @@ export class Banner extends StatelessComponent {
     }
 
     build(context: BuildContext) {
-        let tint = context.theme.colors(this.status);let glyph = (() => { const _s = this.status; if (_s === 'success') return 'checkCircle'; if (_s === 'warning') return 'warning'; if (_s === 'destructive') return 'error'; return 'info'; })();let column = new Column(4);column.add(new Text(this.title, 'caption', tint.onSubtle, 2, 'start', false, false, null, { styleOverride: new TypeStyle(13, 18, 'semiBold', 0, 1.3) }));if (this.body != null) {column.add(new Text(this.body, 'caption', tint.onSubtle, 4, 'start', false, false, null, { styleOverride: new TypeStyle(13, 18, 'regular', 0, 1.3) }));}if (this.primaryAction != null || this.secondaryAction != null) {let actions = new Row(8);if (this.primaryAction != null) actions.add(this.primaryAction);if (this.secondaryAction != null) actions.add(this.secondaryAction);column.add(actions);}let content = new Row(10, 'start', 'center', false, null, null, { cross: 'start' });content.add(new Icon(glyph, 20, tint.onSubtle));content.add(new Flexible(column));if (this.onDismiss != null) {content.add(new Pressable(new Icon('close', 20, tint.onSubtle), this.onDismiss, { label: SdkStrings.dismiss }));}return new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(14, 12, 14, 12), background: tint.subtle, cornerRadius: new CornerRadii(context.theme.shape('large')) }), content);
+        let tint = context.theme.colors(this.status);let glyph: IconsValue = (() => { const _s = this.status; if (_s === 'success') return 'checkCircle'; if (_s === 'warning') return 'warning'; if (_s === 'destructive') return 'error'; return 'info'; })();let column = new Column(4);column.add(new Text(this.title, 'caption', tint.onSubtle, 2, 'start', false, false, null, { styleOverride: new TypeStyle(13, 18, 'semiBold', 0, 1.3) }));if (this.body != null) {column.add(new Text(this.body, 'caption', tint.onSubtle, 4, 'start', false, false, null, { styleOverride: new TypeStyle(13, 18, 'regular', 0, 1.3) }));}if (this.primaryAction != null || this.secondaryAction != null) {let actions = new Row(8);if (this.primaryAction != null) actions.add(this.primaryAction);if (this.secondaryAction != null) actions.add(this.secondaryAction);column.add(actions);}let content = new Row(10, 'start', 'center', false, null, null, { cross: 'start' });content.add(new Icon(glyph, 20, tint.onSubtle));content.add(new Flexible(column));if (this.onDismiss != null) {content.add(new Pressable(new Icon('close', 20, tint.onSubtle), this.onDismiss, { label: SdkStrings.dismiss }));}return new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(14, 12, 14, 12), background: tint.subtle, cornerRadius: new CornerRadii(context.theme.shape('large')) }), content);
     }
 
 }

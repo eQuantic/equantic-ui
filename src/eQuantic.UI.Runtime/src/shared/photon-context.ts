@@ -9,6 +9,7 @@ import { resolveService } from '../utils/services';
 import { getCurrentRoute, type RouteData } from '../router/current-route';
 import { cssFontWeight, type AppTheme } from './value-types';
 import type { TypeStyleValue } from './nodes';
+import type { DensityValue } from './enums.generated';
 import { photonTheme } from './design-system.generated';
 
 /** Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free). */
@@ -16,8 +17,9 @@ export class ComponentContext {
   constructor(
     readonly theme: AppTheme,
     readonly typeScale = 1,
-    /** 'comfortable' | 'compact' — how tight this target's controls are (C# `Density`). */
-    readonly density = 'comfortable',
+    /** How tight this target's controls are — the C# `Density`, in its own words rather than in
+        a `string` a component would then have to be trusted with. */
+    readonly density: DensityValue = 'comfortable',
   ) {}
 
   /**
@@ -136,13 +138,13 @@ let activeTypeScale = 1;
  * the same decision the native shells make, taken here from the pointer the browser reports.
  * A page never asks: it reads `context.density` like it reads the theme.
  */
-let activeDensity = 'comfortable';
+let activeDensity: DensityValue = 'comfortable';
 
 export function setPhotonDensity(density: string): void {
   activeDensity = density === 'compact' ? 'compact' : 'comfortable';
 }
 
-export function getPhotonDensity(): string {
+export function getPhotonDensity(): DensityValue {
   return activeDensity;
 }
 

@@ -1,7 +1,7 @@
-import { SheetCellSnapshot, SheetRange } from "@equantic/runtime";
+import { SheetCellSnapshot, SheetEditKindValue, SheetRange } from "@equantic/runtime";
 export class SheetEdit {
     constructor(props?: any) {  if (props && typeof props === 'object') Object.assign(this, props); }
-    declare kind: string;
+    declare kind: SheetEditKindValue;
     before: SheetCellSnapshot[] = [];
     after: SheetCellSnapshot[] = [];
     at: number = 0;

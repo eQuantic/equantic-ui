@@ -1,8 +1,8 @@
-import { Box, BuildContext, Button, CultureOption, CuratedIcons, Menu, MenuItem, SegmentedControl, StatelessComponent } from "../runtime-exports";
+import { Box, BuildContext, Button, CultureOption, CuratedIcons, Menu, MenuItem, SegmentedControl, SizeVariantValue, StatelessComponent } from "../runtime-exports";
 
 export class CultureSwitcher extends StatelessComponent {
     declare options: CultureOption[];
-    declare size: string;
+    declare size: SizeVariantValue;
     declare onChanged: ((string: string) => void) | null;
     constructor(options?: any, props?: any) {
         super();

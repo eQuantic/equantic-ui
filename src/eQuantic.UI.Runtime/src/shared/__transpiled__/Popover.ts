@@ -1,11 +1,11 @@
-import { Anchored, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, StatelessComponent, VisualNode } from "@equantic/runtime";
+import { Anchored, AnchorPlacementValue, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, StatelessComponent, VisualNode } from "@equantic/runtime";
 
 export class Popover extends StatelessComponent {
     declare trigger: VisualNode;
     declare content: VisualNode;
     declare open: boolean;
     declare onDismiss: (() => void) | null;
-    declare placement: string;
+    declare placement: AnchorPlacementValue;
     constructor(trigger?: any, content?: any, open?: any, onDismiss: any = null, props?: any) {
         super();
         if (trigger !== undefined) this.trigger = trigger;

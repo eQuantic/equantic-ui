@@ -1,4 +1,4 @@
-import { Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, KeyChord, MenuItem, Pressable, Row, SharedStatefulComponent, Shortcut, SizeValue, Sizing, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
+import { Anchored, AnchorPlacementValue, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, KeyChord, MenuItem, Pressable, Row, SharedStatefulComponent, Shortcut, SizeValue, Sizing, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class Menu extends SharedStatefulComponent {
     _open: boolean = false;
@@ -6,7 +6,7 @@ export class Menu extends SharedStatefulComponent {
     declare trigger: VisualNode;
     declare items: MenuItem[];
     declare onSelect: any;
-    declare placement: string;
+    declare placement: AnchorPlacementValue;
     constructor(trigger?: any, items?: any, onSelect: any = null, props?: any) {
         super();
         if (trigger !== undefined) this.trigger = trigger;

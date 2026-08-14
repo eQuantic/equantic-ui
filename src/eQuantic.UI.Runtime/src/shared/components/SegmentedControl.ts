@@ -1,10 +1,10 @@
-import { Adjustable, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Flexible, Motion, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, TransitionSpec } from "../runtime-exports";
+import { Adjustable, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Flexible, Motion, Pressable, Row, SizeValue, SizeVariantValue, Sizing, StatelessComponent, Text, TransitionSpec } from "../runtime-exports";
 
 export class SegmentedControl extends StatelessComponent {
     declare segments: string[];
     declare selectedIndex: number;
     declare onChanged: any;
-    declare size: string;
+    declare size: SizeVariantValue;
     declare disabled: boolean;
     declare stretch: boolean;
     constructor(segments?: any, selectedIndex?: any, onChanged: any = null, props?: any) {

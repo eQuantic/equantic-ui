@@ -13,6 +13,10 @@ let diagnostics: vscode.DiagnosticCollection;
 const hosts = new Map<string, Sidecar>();
 const panels = new Map<string, PreviewPanel>();
 
+/** The preview the title-bar buttons act on. VS Code's own `activeWebviewPanelId` decides which
+ * buttons are SHOWN; this is who they are sent to. */
+let active: PreviewPanel | undefined;
+
 export function activate(context: vscode.ExtensionContext): void {
   output = vscode.window.createOutputChannel('eQuantic UI');
   diagnostics = vscode.languages.createDiagnosticCollection('equanticUI');
@@ -20,6 +24,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('equanticUI.openPreview', () => openPreview(context)),
+    vscode.commands.registerCommand('equanticUI.startInspect', () => active?.setInspecting(true)),
+    vscode.commands.registerCommand('equanticUI.stopInspect', () => active?.setInspecting(false)),
     vscode.commands.registerCommand('equanticUI.restartSidecar', () => restart()),
   );
 }
@@ -85,7 +91,12 @@ async function openPreview(context: vscode.ExtensionContext): Promise<void> {
     const sidecar = await hostFor(context, layout);
 
     const panel = new PreviewPanel(
-      editor.document, layout, sidecar, diagnostics, log, context.extensionUri, () => panels.delete(key));
+      editor.document, layout, sidecar, diagnostics, log, context.extensionUri,
+      () => {
+        panels.delete(key);
+        if (active === panel) active = undefined;
+      },
+      (focused) => { if (focused) active = panel; });
     panels.set(key, panel);
     await panel.prime();
   } catch (error) {

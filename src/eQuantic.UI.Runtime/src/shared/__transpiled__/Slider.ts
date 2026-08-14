@@ -1,4 +1,4 @@
-import { $eq, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, Row, SizeValue, StatelessComponent, TransitionSpec } from "@equantic/runtime";
+import { $eq, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, Row, SizeValue, StatelessComponent, TransitionSpec, VariantValue } from "@equantic/runtime";
 
 export class Slider extends StatelessComponent {
     static trackHeight: number = 4;
@@ -9,7 +9,7 @@ export class Slider extends StatelessComponent {
     declare max: number;
     declare step: number;
     declare disabled: boolean;
-    declare variant: string;
+    declare variant: VariantValue;
     declare label: string;
     constructor(value?: any, onChanged: any = null, props?: any) {
         super();

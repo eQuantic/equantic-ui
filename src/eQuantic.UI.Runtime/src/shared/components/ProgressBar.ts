@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Row, SharedStatefulComponent, SizeValue, Spacer, UiComponent } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Row, SharedStatefulComponent, SizeValue, Spacer, UiComponent, VariantValue } from "../runtime-exports";
 
 export class ProgressBar extends SharedStatefulComponent {
     static sweepFromX: number = -0.35;
@@ -6,7 +6,7 @@ export class ProgressBar extends SharedStatefulComponent {
     static sweepDurationMs: number = 1200;
     _snapNext: boolean = false;
     declare value: any;
-    declare variant: string;
+    declare variant: VariantValue;
     declare prominent: boolean;
     constructor(value: any = null, variant: any = 'primary', props?: any) {
         super();

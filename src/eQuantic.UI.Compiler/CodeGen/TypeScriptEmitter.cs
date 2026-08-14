@@ -1012,8 +1012,10 @@ public class TypeScriptEmitter
         if (ts.Contains('<') || ts.Contains("=>") || ts.Contains('('))
             return IsResolvableTsName(component, ts) ? ts + suffix : "any" + suffix;
 
-        // Enum members lower to string literals, so `string` describes the runtime value exactly.
-        if (component.EnumTypes.Contains(ts)) return "string" + suffix;
+        // Enum members lower to string literals — and when the enum belongs to the VOCABULARY, the
+        // runtime NAMES that set of literals, which is narrower than `string` and therefore usable
+        // where a vocabulary slot expects it. See EnumUnion for why the width matters.
+        if (component.EnumTypes.Contains(ts)) return VocabularyEnumUnion(ts) + suffix;
 
         return (IsResolvableTsName(component, ts) ? ts : "any") + suffix;
     }
@@ -1485,7 +1487,7 @@ public class TypeScriptEmitter
         {
             // An enum crosses as its member STRING — unless it is [Flags], whose members COMBINE
             // and therefore cross as the number the bitwise operators need.
-            { TypeKind: TypeKind.Enum } => IsFlags(resolved!) ? "number" : "string",
+            { TypeKind: TypeKind.Enum } => IsFlags(resolved!) ? "number" : EnumUnion(resolved!),
             { TypeKind: TypeKind.Interface } => "any",
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
             // A name nothing here can VERIFY is a name the module may not resolve. Annotating with
@@ -1499,6 +1501,69 @@ public class TypeScriptEmitter
         if (!nullable || core == "any") return core;
         return core.Contains("=>") ? $"({core}) | null" : $"{core} | null";
     }
+
+    /// <summary>
+    /// What a non-flags enum is called on the other side. The runtime mirrors every VOCABULARY enum
+    /// as a string union named <c>&lt;Enum&gt;Value</c>, and declaring that union instead of a bare
+    /// <c>string</c> is what lets a component FORWARD its own enum property into a vocabulary slot:
+    /// `string` is wider than the slot, so the twin stopped compiling the first time a component
+    /// passed one on (a rail's alignment, straight into a Column's `main`). Comparing against enum
+    /// MEMBERS never needed it, which is why it took this long to surface.
+    /// <para>
+    /// An APP's own enum has no union in the runtime — it still crosses as its member string, which
+    /// is exactly what it is.
+    /// </para>
+    /// </summary>
+    private string EnumUnion(ITypeSymbol type) =>
+        VocabularyUnionFor(type) is { } union ? Union(type.Name) : "string";
+
+    /// <summary>The union name for a VOCABULARY enum, or null when the enum is an app's own — the
+    /// one question three emission paths ask (components, plain classes, records).</summary>
+    internal static string? VocabularyUnionFor(ITypeSymbol type) =>
+        type.ContainingNamespace?.ToDisplayString().StartsWith(VocabularyNamespace) == true
+            ? $"{type.Name}Value"
+            : null;
+
+    /// <summary>
+    /// The union names the emitted TEXT mentions, verified against the vocabulary. They exist only
+    /// in the TypeScript — no scan of the C# syntax could have found them — and an annotation
+    /// naming something the module never imported is a broken type, not a missing one.
+    /// </summary>
+    internal static void SeedEnumUnions(string emitted, Compilation? compilation, HashSet<string> runtimeProvided)
+    {
+        if (compilation is null) return;
+        foreach (System.Text.RegularExpressions.Match match in
+                 System.Text.RegularExpressions.Regex.Matches(emitted, @"(?<![\w$])([A-Z][A-Za-z0-9]*)Value(?![\w$])"))
+        {
+            var name = match.Groups[1].Value;
+            if (compilation.GetTypeByMetadataName($"{VocabularyNamespace}.{name}") is { TypeKind: TypeKind.Enum })
+                runtimeProvided.Add($"{name}Value");
+        }
+    }
+
+    /// <summary>
+    /// The same rule asked by NAME: a component knows its enums as names rather than symbols, so
+    /// the question goes to the compilation — does the vocabulary declare an enum called this? A
+    /// [Flags] enum answers <c>number</c> here as it does on the symbol path: its runtime value IS
+    /// a number, and calling it a string was a latent lie this pass found.
+    /// </summary>
+    private string VocabularyEnumUnion(string name)
+    {
+        var symbol = _semanticModel?.Compilation.GetTypeByMetadataName($"{VocabularyNamespace}.{name}");
+        if (symbol is not { TypeKind: TypeKind.Enum }) return "string";
+        return IsFlags(symbol) ? "number" : Union(name);
+    }
+
+    /// <summary>The union's name, registered so it travels with the module — an annotation naming
+    /// something the file never imported is a broken type, not a missing one.</summary>
+    private string Union(string enumName)
+    {
+        _converter.UsedRuntimeTypes.Add($"{enumName}Value");
+        return $"{enumName}Value";
+    }
+
+    /// <summary>The namespace whose enums the runtime mirrors as string unions.</summary>
+    private const string VocabularyNamespace = "eQuantic.UI.Primitives";
 
     /// <summary>A [Flags] enum is a SET of members, and a set of members is a number.</summary>
     private static bool IsFlags(ITypeSymbol type) =>
@@ -1592,6 +1657,7 @@ public class TypeScriptEmitter
         // Only what the emitted text NAMES. A type the C# mentions and the emission erases (an
         // interface, an enum) would otherwise import a name nothing uses — which the runtime's own
         // build rejects. Lookarounds rather than `\b`: `$eq` starts with a non-word character.
+        SeedEnumUnions(emitted, semanticModel?.Compilation, runtimeProvided);
         runtimeProvided.RemoveWhere(referenced => !System.Text.RegularExpressions.Regex.IsMatch(
             emitted, $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(referenced)}(?![\w$])"));
         core.UnionWith(runtimeProvided);

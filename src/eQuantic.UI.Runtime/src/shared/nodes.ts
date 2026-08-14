@@ -20,7 +20,16 @@ export interface ColorTokenValue {
 }
 
 /** `SizeKind` transpiles to camelCase member strings. */
-export type SizeKindValue = 'hug' | 'fill' | 'fixed';
+// Re-exported so every importer of './nodes' keeps the name it always had, and IMPORTED because a
+// re-export alone does not bring a name into this module's own scope.
+import type {
+  CrossAlignValue,
+  MainAlignValue,
+  SizeKindValue,
+  VectorPaintKindValue,
+} from './enums.generated';
+
+export type { SizeKindValue } from './enums.generated';
 
 export interface SizeValueValue {
   kind: SizeKindValue;
@@ -54,8 +63,8 @@ export interface TypeStyleValue {
   italic?: boolean;
 }
 
-export type MainAlignValue = 'start' | 'center' | 'end' | 'spaceBetween';
-export type CrossAlignValue = 'start' | 'center' | 'end' | 'stretch';
+export type { MainAlignValue } from './enums.generated';
+export type { CrossAlignValue } from './enums.generated';
 
 /** Wire shape of the C# `GridTrack`. */
 export interface GridTrackValue {
@@ -698,7 +707,7 @@ export interface VectorNode extends VisualNodeValue {
 }
 
 /** `VectorPaintKind` transpiles to camelCase member strings. */
-export type VectorPaintKindValue = 'none' | 'inherit' | 'solid';
+export type { VectorPaintKindValue } from './enums.generated';
 
 /** Mirrors `VectorPaint`: three states, because "not painted" and "painted in whatever tints me"
  * are different answers and a null cannot be both. */

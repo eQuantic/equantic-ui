@@ -54,6 +54,19 @@ public class LocalDeclarationStrategy : IStatementStrategy
     private static string Annotation(LocalDeclarationStatementSyntax decl, VariableDeclaratorSyntax variable,
         ConversionContext context)
     {
+        // A local holding a vocabulary ENUM. TypeScript widens `command ? 'dataEdge' : 'cell'` to
+        // `string`, and `string` is wider than the slot this local is on its way to — the keymaps
+        // were the first to hit it, choosing a motion and handing it to the controller.
+        if (variable.Initializer is not null
+            && context.SemanticHelper.GetType(variable.Initializer.Value) is { TypeKind: TypeKind.Enum } chosen
+            && !chosen.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute")
+            && CodeGen.TypeScriptEmitter.VocabularyUnionFor(chosen) is { } union)
+        {
+            // The name has to travel with the module, like every other runtime-provided one.
+            context.UsedRuntimeTypes.Add(union);
+            return $": {union}";
+        }
+
         // An EMPTY collection is the one case `var` still needs an annotation: `new List<Token>()`
         // emits `[]`, and TypeScript infers `any[]` from it — every push into it and every read
         // out of it then goes unchecked, which is the opposite of what two type layers are for.

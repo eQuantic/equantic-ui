@@ -1,9 +1,9 @@
-import { Anchored, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, StatelessComponent, Text, VisualNode } from "@equantic/runtime";
+import { Anchored, AnchorPlacementValue, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, StatelessComponent, Text, VisualNode } from "@equantic/runtime";
 
 export class Tooltip extends StatelessComponent {
     declare child: VisualNode;
     declare text: string;
-    declare placement: string;
+    declare placement: AnchorPlacementValue;
     constructor(child?: any, text?: any, props?: any) {
         super();
         if (child !== undefined) this.child = child;

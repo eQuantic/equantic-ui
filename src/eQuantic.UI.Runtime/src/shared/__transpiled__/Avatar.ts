@@ -1,10 +1,10 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Icon, Image, Positioned, Sizing, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Icon, Image, Positioned, SizeVariantValue, Sizing, Stack, StatelessComponent, Text, TypeStyle, VariantValue, VisualNode } from "@equantic/runtime";
 
 export class Avatar extends StatelessComponent {
-    static tintPalette: string[] = ['primary', 'success', 'info', 'warning', 'destructive'];
+    static tintPalette: VariantValue[] = ['primary', 'success', 'info', 'warning', 'destructive'];
     declare initials: string;
     declare imageSource: any;
-    declare size: string;
+    declare size: SizeVariantValue;
     declare name: any;
     declare status: string;
     constructor(initials?: any, size: any = 'medium', name: any = null, props?: any) {

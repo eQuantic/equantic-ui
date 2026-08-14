@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, Flexible, IconButton, KeyChord, Positioned, Row, ScrollView, SdkStrings, SharedStatefulComponent, Shortcut, SizeValue, Stack, Text, TextEntry, UiComponent, VisualNode } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, Flexible, IconButton, KeyChord, Positioned, Row, ScrollView, SdkStrings, SharedStatefulComponent, Shortcut, SizeValue, SizeVariantValue, Stack, Text, TextEntry, UiComponent, VisualNode } from "@equantic/runtime";
 
 export class CodeEditor extends SharedStatefulComponent {
     _editor: any;
@@ -14,7 +14,7 @@ export class CodeEditor extends SharedStatefulComponent {
     declare showLineNumbers: boolean;
     declare firstLineNumber: number;
     declare maxHeight: number;
-    declare size: string;
+    declare size: SizeVariantValue;
     declare inverse: boolean;
     declare readOnly: boolean;
     declare autofocus: boolean;

@@ -1,7 +1,7 @@
-import { SheetCellSnapshot, SheetRange } from "../runtime-exports";
+import { SheetCellSnapshot, SheetEditKindValue, SheetRange } from "../runtime-exports";
 export class SheetEdit {
     constructor(props?: any) {  if (props && typeof props === 'object') Object.assign(this, props); }
-    declare kind: string;
+    declare kind: SheetEditKindValue;
     before: SheetCellSnapshot[] = [];
     after: SheetCellSnapshot[] = [];
     at: number = 0;

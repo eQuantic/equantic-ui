@@ -30,17 +30,55 @@
         "icon": "$(preview)"
       },
       {
+        "command": "equanticUI.startInspect",
+        "title": "Inspect Elements",
+        "category": "eQuantic UI",
+        "icon": "$(inspect)"
+      },
+      {
+        "command": "equanticUI.stopInspect",
+        "title": "Stop Inspecting",
+        "category": "eQuantic UI",
+        "icon": "$(inspect)"
+      },
+      {
         "command": "equanticUI.restartSidecar",
         "title": "Restart Design Host",
-        "category": "eQuantic UI"
+        "category": "eQuantic UI",
+        "icon": "$(debug-restart)"
       }
     ],
     "menus": {
       "editor/title": [
         {
           "command": "equanticUI.openPreview",
-          "when": "resourceLangId == csharp",
+          "when": "resourceLangId == csharp && !activeWebviewPanelId",
           "group": "navigation"
+        },
+        {
+          "command": "equanticUI.startInspect",
+          "when": "activeWebviewPanelId == 'equanticUI.preview' && !equanticUI.inspecting",
+          "group": "navigation@1"
+        },
+        {
+          "command": "equanticUI.stopInspect",
+          "when": "activeWebviewPanelId == 'equanticUI.preview' && equanticUI.inspecting",
+          "group": "navigation@1"
+        },
+        {
+          "command": "equanticUI.restartSidecar",
+          "when": "activeWebviewPanelId == 'equanticUI.preview'",
+          "group": "navigation@9"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "equanticUI.startInspect",
+          "when": "false"
+        },
+        {
+          "command": "equanticUI.stopInspect",
+          "when": "false"
         }
       ]
     },

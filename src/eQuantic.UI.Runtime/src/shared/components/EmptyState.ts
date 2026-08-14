@@ -1,7 +1,7 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, Row, SizeValue, Spacer, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconsValue, Row, SizeValue, Spacer, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class EmptyState extends StatelessComponent {
-    declare icon: string;
+    declare icon: IconsValue;
     declare title: string;
     declare body: any;
     declare action: any;

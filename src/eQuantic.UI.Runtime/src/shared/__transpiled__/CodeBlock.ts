@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDocument, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeMetrics, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, IconButton, Positioned, Pressable, Row, ScrollView, SizeValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeMetrics, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, IconButton, Positioned, Pressable, Row, ScrollView, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "@equantic/runtime";
 
 export class CodeBlock extends StatelessComponent {
     static codeSlab: ColorToken = new ColorToken(Color.fromRgba(0x10, 0x14, 0x18, 0xFF));
@@ -11,7 +11,7 @@ export class CodeBlock extends StatelessComponent {
     declare firstLineNumber: number;
     declare maxHeight: number;
     declare standalone: boolean;
-    declare size: string;
+    declare size: SizeVariantValue;
     declare inverse: boolean;
     declare gutterMarkers: CodeGutterMarker[];
     declare decorations: CodeDecoration[];
@@ -52,7 +52,7 @@ export class CodeBlock extends StatelessComponent {
         return new CodeBlock('', null, { document: document, language: language });
     }
 
-    static metricsFor(context: any, size: string, showLineNumbers: boolean, lastLineNumber: number) {
+    static metricsFor(context: any, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
         let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });let gutter = showLineNumbers ? Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12 : 0;return new CodeMetrics(style, $eq.math.round(style.lineHeight * 1.15), context.monoAdvance(style), gutter);
     }
 
@@ -76,7 +76,7 @@ export class CodeBlock extends StatelessComponent {
         const _seq = []; let start = this.document.clamp(decoration.range.start);let end = this.document.clamp(decoration.range.end);let color = decoration.color ?? CodeBlock.defaultColor(decoration.kind, theme);if (this.inverse) color = new ColorToken(color.dark, color.dark);for (let line = start.line; line <= end.line; line++) {let from = line === start.line ? start.column : 0;let to = line === end.line ? end.column : this.document.line(line).length;if (to <= from) continue;let left = metrics.contentLeft + from * metrics.columnWidth;let top = line * metrics.lineHeight;let width = (to - from) * metrics.columnWidth;_seq.push((() => { const _s = decoration.kind; if (_s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if (_s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), top + metrics.lineHeight - 2, null, null, left); if (_s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), top + metrics.lineHeight / 2, null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());} return _seq;
     }
 
-    static defaultColor(kind: string, theme: any) {
+    static defaultColor(kind: CodeDecorationKindValue, theme: any) {
         return (() => { const _s = kind; if (_s === 'squiggle') return theme.colors('destructive').base; if (_s === 'outline') return theme.borderStrong; if (_s === 'strike') return theme.textMuted; return theme.colors('warning').subtle; })();
     }
 
@@ -88,11 +88,11 @@ export class CodeBlock extends StatelessComponent {
         for (const marker of this.gutterMarkers) if (marker.line === line) return marker;return null;
     }
 
-    gutterColor(kind: string, theme: any) {
+    gutterColor(kind: CodeGutterKindValue, theme: any) {
         let token = CodeBlock.gutterToken(kind, theme);return this.inverse ? new ColorToken(token.dark, token.dark) : token;
     }
 
-    static gutterToken(kind: string, theme: any) {
+    static gutterToken(kind: CodeGutterKindValue, theme: any) {
         return (() => { const _s = kind; if (_s === 'breakpoint') return theme.colors('destructive').base; if (_s === 'breakpointDisabled') return theme.borderStrong; if (_s === 'error') return theme.colors('destructive').base; if (_s === 'warning') return theme.colors('warning').base; if (_s === 'added') return theme.colors('success').base; if (_s === 'modified') return theme.colors('info').base; if (_s === 'removed') return theme.colors('destructive').subtle; return theme.colors('primary').base; })();
     }
 
@@ -108,7 +108,7 @@ export class CodeBlock extends StatelessComponent {
         return inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;
     }
 
-    static inverseCode(kind: string, theme: any) {
+    static inverseCode(kind: CodeTokenKindValue, theme: any) {
         let token = theme.code(kind);return new ColorToken(token.dark, token.dark);
     }
 

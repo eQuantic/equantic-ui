@@ -1,11 +1,11 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Motion, Pressable, Row, SizeValue, StatelessComponent, Text, TransitionSpec, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Motion, Pressable, Row, SizeValue, StatelessComponent, Text, TransitionSpec, VariantValue, VisualNode } from "../runtime-exports";
 
 export class PageIndicator extends StatelessComponent {
     static maxDots: number = 8;
     declare count: number;
     declare currentIndex: number;
     declare onSelected: any;
-    declare variant: string;
+    declare variant: VariantValue;
     constructor(count?: any, currentIndex?: any, onSelected: any = null, props?: any) {
         super();
         if (count !== undefined) this.count = count;

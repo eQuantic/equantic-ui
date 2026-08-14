@@ -47,10 +47,10 @@ export interface RenderContext {
    * is TYPE-ONLY (erased at compile time), so core/types carries the vocabulary's types without taking
    * any runtime dependency on it — the constraint the previous `unknown` was protecting. */
   theme: import('../shared/value-types').AppTheme;
-  /** How tight this target's controls are — 'comfortable' | 'compact' (C# `context.Density`).
-   * Optional so a host that predates the axis still type-checks; the components read it through
-   * the ladder, which defaults to comfortable. */
-  density?: string;
+  /** How tight this target's controls are (C# `context.Density`). Named rather than a bare string
+   * and REQUIRED like its C# original: a transpiled component reads it into a local of this type,
+   * and an optional mirror of a non-nullable property is a twin that cannot compile. */
+  density: import('../shared/enums.generated').DensityValue;
   /** The type scale multiplier the target is rendering at (C# `context.TypeScale`). */
   typeScale?: number;
   /** How wide a string WOULD be, in dp, at a given type style (C# `context.MeasureText`). A

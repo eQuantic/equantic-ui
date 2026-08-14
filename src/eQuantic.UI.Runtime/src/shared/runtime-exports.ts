@@ -7,6 +7,10 @@
  * SharedComponentTranspilationTests).
  */
 
+// Every vocabulary enum as its string union — what a transpiled component's own enum property is
+// declared with (see enums.generated.ts).
+export type * from './enums.generated';
+
 export { $eq } from '../eq';
 export { Component, HtmlElement } from '../core/types';
 // The C# `UiComponent` base as it surfaces in transpiled signatures (AdoptConfig, composition).

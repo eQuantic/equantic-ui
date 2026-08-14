@@ -165,8 +165,12 @@ public static class TypeDeclarationExtensions
             if (core.TypeKind == TypeKind.Enum)
             {
                 // [Flags] members COMBINE, so they cross as the number the bitwise operators need.
+                // Everything else crosses as its member string — NAMED, when the enum belongs to
+                // the vocabulary, so a record member can be passed where that union is expected
+                // (see TypeScriptEmitter.EnumUnion for the whole story).
                 var lowered = core.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute")
-                    ? "number" : "string";
+                    ? "number"
+                    : TypeScriptEmitter.VocabularyUnionFor(core) ?? "string";
                 return type is NullableTypeSyntax ? $"{lowered} | null" : lowered;
             }
             if (core.TypeKind == TypeKind.Interface) return "any";

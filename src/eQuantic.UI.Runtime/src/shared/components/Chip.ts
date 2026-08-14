@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, Pressable, Row, SdkStrings, SizeValue, Sizing, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, Pressable, Row, SdkStrings, SizeValue, Sizing, StatelessComponent, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Chip extends StatelessComponent {
     declare label: string;
@@ -6,7 +6,7 @@ export class Chip extends StatelessComponent {
     declare selected: boolean;
     declare onPressed: (() => void) | null;
     declare onRemove: (() => void) | null;
-    declare variant: string;
+    declare variant: VariantValue;
     constructor(label?: any, kind: any = 'filter', selected: any = false, onPressed: any = null, onRemove: any = null, props?: any) {
         super();
         if (label !== undefined) this.label = label;

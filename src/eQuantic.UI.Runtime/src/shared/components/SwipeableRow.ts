@@ -1,12 +1,12 @@
-import { Box, BoxStyle, BuildContext, Column, Draggable, Icon, Positioned, Pressable, SizeValue, Stack, StatelessComponent, Text, VisualNode } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, Draggable, Icon, IconsValue, Positioned, Pressable, SizeValue, Stack, StatelessComponent, Text, VariantValue, VisualNode } from "../runtime-exports";
 
 export class SwipeableRow extends StatelessComponent {
     static actionWidth: number = 96;
     declare child: VisualNode;
     declare actionLabel: string;
-    declare actionIcon: string;
+    declare actionIcon: IconsValue;
     declare onAction: (() => void) | null;
-    declare actionVariant: string;
+    declare actionVariant: VariantValue;
     declare open: boolean;
     declare onOpenChanged: any;
     constructor(child?: any, actionLabel?: any, actionIcon?: any, onAction: any = null, props?: any) {

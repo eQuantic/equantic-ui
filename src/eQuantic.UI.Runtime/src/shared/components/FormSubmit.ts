@@ -1,11 +1,11 @@
-import { BuildContext, Button, FormController, StatelessComponent } from "../runtime-exports";
+import { BuildContext, Button, FormController, SizeVariantValue, StatelessComponent, VariantValue } from "../runtime-exports";
 
 export class FormSubmit extends StatelessComponent {
     declare form: FormController;
     declare label: string;
     declare onSubmit: () => void;
-    declare variant: string;
-    declare size: string;
+    declare variant: VariantValue;
+    declare size: SizeVariantValue;
     declare wide: boolean;
     constructor(form?: any, label?: any, onSubmit?: any, variant: any = 'primary', size: any = 'medium', props?: any) {
         super();

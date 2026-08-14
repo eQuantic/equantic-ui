@@ -62,6 +62,9 @@ public class RecordTypeEmitter
         runtimeProvided.Remove(type.Identifier.Text);
 
         var body = Emit(type, tsTypeDeclarations);
+        // A vocabulary enum member is annotated with its UNION, a name that exists only in the
+        // emitted TypeScript — the scanner above walks C# syntax and could never have seen it.
+        TypeScriptEmitter.SeedEnumUnions(body, ModelFor(type)?.Compilation, runtimeProvided);
         // Only what the emitted text actually NAMES: a type mentioned in the C# and erased on the
         // way out (an interface, an enum) would otherwise import a name nothing uses, which the
         // runtime's own build rejects.

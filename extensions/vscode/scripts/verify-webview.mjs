@@ -45,4 +45,26 @@ try {
   process.exit(1);
 }
 
+/**
+ * Parsing is not enough. A template literal EATS escapes — `\n` becomes a newline and `\d` becomes
+ * a plain `d` — so a regex written into the panel can arrive semantically different while still
+ * parsing perfectly. `/^-?\d+$/` silently becoming `/^-?d+$/` matches nothing and nobody notices.
+ * These are the literals whose meaning depends on a backslash surviving.
+ */
+const survives = [
+  [String.raw`/^-?\d+(\.\d+)?[fFdDmM]?$/`, 'the number-literal test'],
+  [String.raw`/^"(?:[^"\\]|\\.)*"$/`, 'the string-literal test'],
+  [String.raw`/"@equantic\/runtime"/g`, 'the runtime specifier the compiled module is pointed at'],
+  [String.raw`'\n\n'`, 'the blank line in a reported error'],
+];
+
+const eaten = survives.filter(([needle]) => !script[1].includes(needle));
+if (eaten.length > 0) {
+  for (const [needle, what] of eaten) {
+    console.error(`verify-webview: ${what} lost its backslash — expected ${needle} in the emitted script.`);
+  }
+  console.error('A template literal consumes escapes; write them doubled in the TypeScript source.');
+  process.exit(1);
+}
+
 console.log(`verify-webview: ok (${script[1].length} chars of script, ${html.length} of document)`);

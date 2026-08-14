@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Positioned, Pressable, Row, ScrollView, SdkStrings, SharedStatefulComponent, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Stack, Text, UiComponent } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Positioned, Pressable, Row, ScrollView, SdkStrings, SharedStatefulComponent, SheetAxisValue, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Stack, Text, UiComponent } from "@equantic/runtime";
 
 export class Spreadsheet extends SharedStatefulComponent {
     _offset: number = 0;
@@ -60,11 +60,11 @@ export class Spreadsheet extends SharedStatefulComponent {
         let row = r;let selection = this.controller.selection;let inBand = r >= selection.topRow && r <= selection.bottomRow;let stack = new Stack();stack.add(Spreadsheet.headerCell(`${r + 1}`, Spreadsheet.headerWidth, document.rowHeight(r), theme, inBand, () => this.setState(() => this.controller.selectRows(row, row))));stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.headerWidth), height: SizeValue.fixed(Spreadsheet.grip), cursor: 'rowResize' })), null, { axis: 'vertical', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('rows', row, delta), onReleased: (delta: number) => this.commitResize('rows', row, delta) }), null, null, 0, 0, { zIndex: 1 }));return stack;
     }
 
-    previewResize(axis: string, index: number, delta: number) {
+    previewResize(axis: SheetAxisValue, index: number, delta: number) {
         let document = this.controller.document;if (this._resizeBase < 0) this._resizeBase = axis === 'cols' ? document.colWidth(index) : document.rowHeight(index);let floor = axis === 'cols' ? Spreadsheet.minColWidth : Spreadsheet.minRowHeight;let size = Math.max(floor, this._resizeBase + delta);this.setState(() => {if (axis === 'cols') document.setColWidth(index, size); else document.setRowHeight(index, size);});
     }
 
-    commitResize(axis: string, index: number, delta: number) {
+    commitResize(axis: SheetAxisValue, index: number, delta: number) {
         if (this._resizeBase < 0) return;let document = this.controller.document;let floor = axis === 'cols' ? Spreadsheet.minColWidth : Spreadsheet.minRowHeight;let final = Math.max(floor, this._resizeBase + delta);if (axis === 'cols') document.setColWidth(index, this._resizeBase); else document.setRowHeight(index, this._resizeBase);this._resizeBase = -1;this.controller.resize(axis, index, final);this.setState(() => {});
     }
 

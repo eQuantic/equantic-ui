@@ -1,9 +1,9 @@
-import { Box, BoxStyle, BuildContext, ButtonStyles, CornerRadii, EdgeInsets, Icon, Pressable, Row, SizeValue, Spinner, StatelessComponent, StyleDiff, Text, TypeStyle } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, ButtonStyles, CornerRadii, EdgeInsets, Icon, Pressable, Row, SizeValue, SizeVariantValue, Spinner, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "@equantic/runtime";
 
 export class Button extends StatelessComponent {
     declare label: string;
-    declare variant: string;
-    declare size: string;
+    declare variant: VariantValue;
+    declare size: SizeVariantValue;
     declare onPressed: (() => void) | null;
     declare disabled: boolean;
     declare expand: boolean;

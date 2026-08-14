@@ -88,6 +88,11 @@ export {
   setCultureCatalogLoader,
 } from './utils/culture';
 
+// Every vocabulary enum, NAMED: a transpiled component declares its own enum property with the
+// union rather than a bare string, which is what lets it forward that property into a vocabulary
+// slot. Generated from the C# enums — see enums.generated.ts.
+export type * from './shared/enums.generated';
+
 // Shared abstract vocabulary (write-once components) — client-side lowering to HtmlNode.
 export { lowerVisualNode, tokenValue } from './shared/lowering';
 export type { LoweringContext } from './shared/lowering';

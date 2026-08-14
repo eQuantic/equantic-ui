@@ -36,6 +36,7 @@ export class PreviewPanel {
     private readonly log: (line: string) => void,
     extensionUri: vscode.Uri,
     private readonly onDisposed: () => void,
+    private readonly onFocused: (focused: boolean) => void,
   ) {
     this.panel = vscode.window.createWebviewPanel(
       PreviewPanel.viewType,
@@ -69,6 +70,14 @@ export class PreviewPanel {
       }),
     );
 
+    this.disposables.push(this.panel.onDidChangeViewState((event) => {
+      this.onFocused(event.webviewPanel.active);
+      // The title bar shows one of two buttons by this key, so it has to say what THIS panel is
+      // doing the moment it becomes the active one.
+      if (event.webviewPanel.active) void this.publishInspectContext();
+    }));
+    this.onFocused(true);
+
     this.panel.onDidDispose(() => this.dispose());
     // No first render here: the theme has not arrived yet, and rendering without it would paint an
     // unthemed frame that is replaced a moment later. prime() does both, in order.
@@ -76,6 +85,27 @@ export class PreviewPanel {
 
   reveal(): void {
     this.panel.reveal(vscode.ViewColumn.Beside, true);
+  }
+
+  private inspecting = false;
+
+  /**
+   * Inspect mode, driven from the panel's own title bar.
+   * <para>
+   * The buttons live in VS Code's title bar rather than in the document, so they ARE the editor's
+   * UI — its theme, its icons, its hover behaviour — instead of a drawing of it. Which of the two
+   * (start/stop) is shown is decided by a context key, the idiomatic way to spell a toggle.
+   * </para>
+   */
+  setInspecting(on: boolean): void {
+    this.inspecting = on;
+    this.post({ type: 'inspect', on });
+    void this.publishInspectContext();
+  }
+
+  private publishInspectContext(): Promise<unknown> {
+    return Promise.resolve(
+      vscode.commands.executeCommand('setContext', 'equanticUI.inspecting', this.inspecting));
   }
 
   private config<T>(key: string, fallback: T): T {
@@ -230,7 +260,13 @@ export class PreviewPanel {
 
     if (!(await vscode.workspace.applyEdit(workspaceEdit))) {
       void vscode.window.showWarningMessage('eQuantic UI: the editor refused that edit.');
+      return;
     }
+
+    // The panel is still showing the values from BEFORE the edit — including the one just changed.
+    // Re-asked rather than patched locally, because an edit can move more than the field it touched:
+    // adding a named argument changes what "unset" means for the rest of the row list.
+    await this.describe(origin);
   }
 
   /**
@@ -262,19 +298,32 @@ export class PreviewPanel {
       this.log(`could not reveal ${span.path}: ${(error as Error).message}`);
     }
 
-    // Then say what KIND of node it is. Sent back separately rather than asked on hover: this is a
-    // round trip, and one per pointer move would be a request storm for an answer nobody read.
-    // The ORIGIN decides the file, not the panel. A screen is composed of several — a shell, a row,
-    // a helper — and their nodes carry their own file's spans; asking about the previewed file would
-    // answer "not mine" for most of what is on screen.
-    const path = span.path;
-    const text = await this.textOf(path);
+    await this.describe(origin);
+  }
+
+  /**
+   * What the panel shows for an origin: its tier, and what it holds.
+   * <para>
+   * Asked on selection and again after every edit, never on hover — it is a round trip, and one per
+   * pointer move would be a request storm for an answer nobody reads. Hover already has the name,
+   * carried in the DOM.
+   * </para>
+   * <para>
+   * The ORIGIN decides the file, not the panel. A screen is composed of several — a shell, a row, a
+   * helper — and their nodes carry their own file's spans, so asking about the previewed file would
+   * answer "not mine" for most of what is on screen.
+   * </para>
+   */
+  private async describe(origin: string): Promise<void> {
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) return;
 
     try {
+      const text = await this.textOf(span.path);
       const buffers = this.buffers();
       const [tier, inspected] = await Promise.all([
-        this.sidecar.classify(path, text, origin, buffers),
-        this.sidecar.inspect(path, text, origin, buffers),
+        this.sidecar.classify(span.path, text, origin, buffers),
+        this.sidecar.inspect(span.path, text, origin, buffers),
       ]);
       this.post({
         type: 'selected',
@@ -336,17 +385,10 @@ export class PreviewPanel {
   html { color-scheme: light dark; }
   /* Painted from the THEME, not left transparent: an unpainted preview shows the editor's colours
      through whatever the app has not drawn, which reads as a broken screen under any theme that is
-     not the one the app expects. Replaced by the real background as soon as the theme arrives. */
+     not the one the app expects. */
   html, body { margin: 0; padding: 0; height: 100%; background: var(--eq-preview-bg, Canvas); }
   #app { height: 100%; box-sizing: border-box; }
-  #notice {
-    position: fixed; left: 0; right: 0; bottom: 0; margin: 0; padding: 8px 12px;
-    font: 12px/1.5 var(--vscode-editor-font-family, ui-monospace, monospace);
-    background: var(--vscode-inputValidation-errorBackground, #5a1d1d);
-    color: var(--vscode-inputValidation-errorForeground, #fff);
-    white-space: pre-wrap; display: none;
-  }
-  #notice.visible { display: block; }
+
   /* The selection chrome lives OUTSIDE #app so it survives a remount, and is pointer-transparent so
      it never becomes the thing a click lands on. */
   #outline {
@@ -355,11 +397,11 @@ export class PreviewPanel {
     background: color-mix(in srgb, var(--vscode-focusBorder, #0078d4) 12%, transparent);
   }
   #outline.visible { display: block; }
-  /* The tier is drawn, not only written: a solid frame is a node you may edit where it stands, a
-     dashed one comes from a loop or a branch, a dotted one is written in another member entirely. */
+  /* A frame is drawn for what may be edited where it stands, dashed for what comes from a loop or a
+     branch, dotted for what is written somewhere else. */
   #outline.derived { border-style: dashed; }
-  /* The name rides WITH the frame, and is pointer-transparent like it — a label that could be
-     hovered would steal the pointer from the thing it is naming. */
+  #outline.foreign { border-style: dotted; opacity: 0.75; }
+
   #badge {
     position: fixed; pointer-events: none; display: none; z-index: 3;
     font: 10px/1.4 var(--vscode-font-family, sans-serif);
@@ -368,44 +410,87 @@ export class PreviewPanel {
     color: var(--vscode-button-foreground, #fff);
   }
   #badge.visible { display: block; }
-  #outline.foreign { border-style: dotted; opacity: 0.75; }
-  #tier {
-    position: fixed; left: 8px; bottom: 8px; right: 8px; z-index: 3; display: none;
-    max-height: 45%; overflow: auto;
-    font: 11px/1.5 var(--vscode-font-family, sans-serif);
-    padding: 6px 9px; border-radius: 4px;
-    background: var(--vscode-editorWidget-background, #252526);
-    color: var(--vscode-editorWidget-foreground, #ccc);
-    border: 1px solid var(--vscode-editorWidget-border, #454545);
+
+  /* ---- the properties panel -------------------------------------------------------------------
+     Docked to the bottom and OVERLAYING the app rather than pushing it: a panel that took height
+     would re-lay-out the screen being previewed, so what you designed against would not be what you
+     shipped. Built from VS Code's own variables, so it follows the editor's theme without knowing
+     which one is on. */
+  #panel {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 4;
+    display: none; flex-direction: column; max-height: 55%;
+    background: var(--vscode-panel-background, var(--vscode-editor-background, #1e1e1e));
+    border-top: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.35));
+    color: var(--vscode-foreground, #ccc);
+    font: 12px/1.5 var(--vscode-font-family, sans-serif);
   }
-  #tier.visible { display: block; }
-  #tier b { color: var(--vscode-textLink-foreground, #4daafc); }
-  #tier table { border-collapse: collapse; width: 100%; margin-top: 6px; }
-  #tier td { padding: 2px 6px 2px 0; vertical-align: top; }
-  #tier td.name { white-space: nowrap; }
-  #tier td.type { opacity: 0.6; white-space: nowrap; }
-  #tier td.value {
-    font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
-    word-break: break-all;
+  #panel.visible { display: flex; }
+  #panel.minimised #panel-body { display: none; }
+
+  #panel-head {
+    display: flex; align-items: center; gap: 8px; padding: 0 4px 0 10px;
+    height: 28px; flex: none;
+    border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.35));
   }
-  #tier tr.settable { cursor: pointer; }
-  #tier tr.settable:hover { background: var(--vscode-list-hoverBackground, #2a2d2e); }
-  #tier tr.unreachable { opacity: 0.5; }
-  #tier tr.unreachable td.value::after {
-    content: attr(data-reason); opacity: 0.9; font-family: var(--vscode-font-family, sans-serif);
+  #panel-title {
+    font-weight: 600; text-transform: none; white-space: nowrap;
+    color: var(--vscode-panelTitle-activeForeground, var(--vscode-foreground, #e7e7e7));
   }
-  #inspect {
-    position: fixed; top: 8px; right: 8px; z-index: 3;
-    font: 11px/1 var(--vscode-font-family, sans-serif);
-    padding: 5px 9px; border-radius: 4px; cursor: pointer;
-    border: 1px solid var(--vscode-button-border, transparent);
-    background: var(--vscode-button-secondaryBackground, #3a3d41);
-    color: var(--vscode-button-secondaryForeground, #fff);
+  #panel-tier {
+    font-size: 10px; padding: 1px 6px; border-radius: 8px; white-space: nowrap;
+    border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.4));
+    color: var(--vscode-descriptionForeground, #9d9d9d);
   }
-  #inspect[aria-pressed="true"] {
-    background: var(--vscode-button-background, #0078d4);
-    color: var(--vscode-button-foreground, #fff);
+  #panel-spacer { flex: 1 1 auto; }
+  #panel button.icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; padding: 0; border: none; border-radius: 5px;
+    background: transparent; color: var(--vscode-icon-foreground, #c5c5c5); cursor: pointer;
   }
+  #panel button.icon:hover { background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31)); }
+  #panel button.icon:focus-visible { outline: 1px solid var(--vscode-focusBorder, #0078d4); }
+
+  #panel-body { overflow: auto; padding: 6px 10px 10px; }
+  #panel-note {
+    color: var(--vscode-descriptionForeground, #9d9d9d);
+    padding: 2px 0 6px;
+  }
+  table.props { border-collapse: collapse; width: 100%; }
+  table.props td { padding: 2px 8px 2px 0; vertical-align: middle; }
+  td.pname { white-space: nowrap; width: 1%; }
+  td.ptype {
+    white-space: nowrap; width: 1%;
+    color: var(--vscode-descriptionForeground, #9d9d9d);
+  }
+  tr.unreachable td { color: var(--vscode-disabledForeground, #888); }
+  tr.unreachable td.pvalue { font-style: italic; }
+
+  /* The editors, dressed as the editor's own. */
+  .props input[type="text"], .props input[type="number"], .props select {
+    width: 100%; box-sizing: border-box; padding: 2px 6px; border-radius: 2px;
+    font: inherit;
+    color: var(--vscode-input-foreground, #ccc);
+    background: var(--vscode-input-background, #313131);
+    border: 1px solid var(--vscode-input-border, transparent);
+  }
+  .props select {
+    color: var(--vscode-dropdown-foreground, #ccc);
+    background: var(--vscode-dropdown-background, #313131);
+    border-color: var(--vscode-dropdown-border, transparent);
+  }
+  .props input:focus, .props select:focus {
+    outline: none; border-color: var(--vscode-focusBorder, #0078d4);
+  }
+  .props input[type="checkbox"] { accent-color: var(--vscode-focusBorder, #0078d4); }
+
+  #notice {
+    position: fixed; left: 0; right: 0; bottom: 0; margin: 0; padding: 8px 12px; z-index: 5;
+    font: 12px/1.5 var(--vscode-editor-font-family, ui-monospace, monospace);
+    background: var(--vscode-inputValidation-errorBackground, #5a1d1d);
+    color: var(--vscode-inputValidation-errorForeground, #fff);
+    white-space: pre-wrap; display: none;
+  }
+  #notice.visible { display: block; }
   .eq-preview-error {
     margin: 0; padding: 20px; white-space: pre-wrap;
     font: 13px/1.7 var(--vscode-editor-font-family, ui-monospace, monospace);
@@ -417,15 +502,40 @@ export class PreviewPanel {
 <div id="app"></div>
 <div id="outline"></div>
 <div id="badge"></div>
-<button id="inspect" type="button" aria-pressed="false" title="Click an element to reveal the C# that built it">Inspect</button>
-<div id="tier"></div>
+
+<div id="panel">
+  <div id="panel-head">
+    <span id="panel-title"></span>
+    <span id="panel-tier"></span>
+    <span id="panel-spacer"></span>
+    <button class="icon" id="panel-min" type="button" title="Minimize" aria-label="Minimize">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M4 6.5l4 4 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button class="icon" id="panel-close" type="button" title="Close" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <div id="panel-body"></div>
+</div>
+
 <pre id="notice"></pre>
 <script nonce="${nonce}">
 (function () {
   const vscode = acquireVsCodeApi();
   const app = document.getElementById('app');
   const notice = document.getElementById('notice');
+  const outline = document.getElementById('outline');
+  const badge = document.getElementById('badge');
+  const panel = document.getElementById('panel');
+  const panelTitle = document.getElementById('panel-title');
+  const panelTier = document.getElementById('panel-tier');
+  const panelBody = document.getElementById('panel-body');
   let objectUrl;
+  let selectedOrigin = null;
 
   function report(title, detail) {
     const box = document.createElement('pre');
@@ -444,8 +554,7 @@ export class PreviewPanel {
 
   // The app's own background token. The mode is chosen HERE rather than left to the CSS light-dark()
   // function, which is recent enough that a webview's Chromium may not have it — and a background
-  // that silently does not apply is the exact problem this is fixing. Re-applied when the viewer's
-  // scheme changes, so the preview follows it without a reload.
+  // that silently does not apply is the exact problem this is fixing.
   let themeSurfaces = null;
 
   function paintBackground(theme) {
@@ -495,25 +604,15 @@ export class PreviewPanel {
 
   // ---- inspect: a click on a pixel, answered with the C# expression that built it ----------------
   //
-  // A MODE, not a modifier. The preview is a running app: its buttons do things, and a click that
-  // both pressed a button and moved the editor's cursor would be two gestures wearing one costume.
-  // With inspect on, the app stops receiving pointer events entirely — capture-phase and
-  // preventDefault, so nothing downstream sees the click either.
-  const inspect = document.getElementById('inspect');
-  const outline = document.getElementById('outline');
-  const badge = document.getElementById('badge');
+  // A MODE, driven from the panel's title bar. The preview is a running app: its buttons do things,
+  // and a click that both pressed a button and moved the editor's cursor would be two gestures
+  // wearing one costume.
   let inspecting = false;
 
   function setInspecting(on) {
     inspecting = on;
-    inspect.setAttribute('aria-pressed', String(on));
     if (!on) { outline.classList.remove('visible'); badge.classList.remove('visible'); }
   }
-
-  inspect.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setInspecting(!inspecting);
-  });
 
   // The nearest ancestor that KNOWS where it came from. A component is several elements deep — a
   // Button is button > div > div > span — so the clicked node is usually not the stamped one, and
@@ -539,11 +638,14 @@ export class PreviewPanel {
     if (!name) { badge.classList.remove('visible'); return; }
     badge.textContent = name;
     badge.classList.add('visible');
-    // Above the frame when there is room for it, tucked inside the top edge when there is not —
-    // a label that hangs off the top of the panel names nothing.
+    // Above the frame when there is room for it, tucked inside the top edge when there is not.
     const height = badge.offsetHeight || 16;
     badge.style.left = Math.max(2, box.left) + 'px';
     badge.style.top = (box.top >= height + 2 ? box.top - height - 2 : box.top + 2) + 'px';
+  }
+
+  function insideChrome(target) {
+    return panel.contains(target);
   }
 
   // Focus is what actually has to be stopped, not the click. The framework's forms are quiet until
@@ -552,123 +654,205 @@ export class PreviewPanel {
   // focus from ever moving; the click still fires afterwards, which is what selection listens to.
   for (const name of ['pointerdown', 'mousedown']) {
     document.addEventListener(name, (e) => {
-      if (!inspecting || e.target === inspect) return;
+      if (!inspecting || insideChrome(e.target)) return;
       e.preventDefault();
       e.stopPropagation();
     }, true);
   }
 
   document.addEventListener('pointermove', (e) => {
-    if (!inspecting) return;
+    if (!inspecting || insideChrome(e.target)) return;
     const found = stamped(e.target);
     if (found) frame(found);
     else { outline.classList.remove('visible'); badge.classList.remove('visible'); }
   }, true);
 
-  const tier = document.getElementById('tier');
-  let selectedOrigin = null;
-
-  // Built with DOM calls rather than an HTML string: every value here is SOURCE TEXT the developer
-  // wrote, and interpolating that into innerHTML would let a string literal in their own file close
-  // a tag. textContent cannot.
-  function showSelection(payload) {
-    tier.replaceChildren();
-
-    const heading = document.createElement('div');
-    const kind = document.createElement('b');
-    kind.textContent = payload.node ? payload.node.component : payload.tier;
-    heading.appendChild(kind);
-    heading.appendChild(document.createTextNode(
-      (payload.node ? ' · ' + payload.node.form + ' · ' + payload.tier : '') + ' — ' + payload.reason));
-    tier.appendChild(heading);
-
-    if (payload.node && payload.node.summary) {
-      const summary = document.createElement('div');
-      summary.style.opacity = '0.75';
-      summary.style.marginTop = '4px';
-      summary.textContent = payload.node.summary;
-      tier.appendChild(summary);
-    }
-
-    if (payload.node) {
-      const table = document.createElement('table');
-      for (const property of payload.node.properties) {
-        // An unset property nobody can reach from this form is noise; an unset one they COULD set is
-        // the offer the panel exists to make.
-        if (property.kind === 'unset' && !property.editable && !property.reason) continue;
-
-        const row = document.createElement('tr');
-        if (!property.editable) row.className = 'unreachable';
-        else {
-          row.className = 'settable';
-          row.title = 'Set ' + property.name;
-          row.addEventListener('click', () => vscode.postMessage({
-            type: 'edit',
-            origin: selectedOrigin,
-            property: property.name,
-            value: property.value,
-            options: property.options,
-          }));
-        }
-
-        const name = document.createElement('td');
-        name.className = 'name';
-        name.textContent = property.name;
-        if (property.summary) name.title = property.summary;
-
-        const type = document.createElement('td');
-        type.className = 'type';
-        type.textContent = property.type;
-
-        const value = document.createElement('td');
-        value.className = 'value';
-        if (property.value) value.textContent = property.value.replace(/\\s+/g, ' ').slice(0, 90);
-        else if (property.editable) value.textContent = '—';
-        else value.setAttribute('data-reason', property.reason || 'not reachable from this form');
-
-        row.append(name, type, value);
-        table.appendChild(row);
-      }
-      tier.appendChild(table);
-    }
-
-    tier.classList.add('visible');
-  }
-
   document.addEventListener('click', (e) => {
-    if (!inspecting || e.target === inspect) return;
+    if (!inspecting || insideChrome(e.target)) return;
     e.preventDefault();
     e.stopPropagation();
     const found = stamped(e.target);
     if (!found) return;
-    // The frame is drawn NOW and re-dressed when the tier comes back, so the click feels answered
-    // before the round trip finishes.
     frame(found);
     outline.classList.remove('derived', 'foreign');
-    tier.classList.remove('visible');
     selectedOrigin = found.getAttribute('data-eq-origin');
     vscode.postMessage({ type: 'select', origin: selectedOrigin });
   }, true);
 
-  // Announced only after the listener above exists. A message posted before this point is simply
+  // ---- the properties panel ---------------------------------------------------------------------
+
+  document.getElementById('panel-min').addEventListener('click', () => panel.classList.toggle('minimised'));
+  document.getElementById('panel-close').addEventListener('click', () => panel.classList.remove('visible'));
+
+  const SIMPLE_STRING = /^"(?:[^"\\\\]|\\\\.)*"$/;
+  const NUMBER = /^-?\\d+(\\.\\d+)?[fFdDmM]?$/;
+
+  /**
+   * The control follows what is WRITTEN, not only what the type says. A gap is a float whose value
+   * is Space.S4 — a named constant, not a number — so a number box would be a lie about what may
+   * be typed there. When the written value is not a literal of the expected shape, the row falls
+   * back to editing the C# expression itself, which is always true and never surprising.
+   */
+  function editorFor(property, commit) {
+    const bare = (property.type || '').replace(/\\?$/, '');
+    const value = property.value;
+
+    if (property.options && property.options.length) {
+      const select = document.createElement('select');
+      // An unset property has no value to show; picking one is the point of the row.
+      const empty = document.createElement('option');
+      empty.value = '';
+      empty.textContent = value ? '—' : '(unset)';
+      select.appendChild(empty);
+      for (const option of property.options) {
+        const item = document.createElement('option');
+        item.value = option;
+        item.textContent = option;
+        select.appendChild(item);
+      }
+      if (value && property.options.indexOf(value) < 0) {
+        // Written as something the enum does not spell — an alias, a cast. Shown, never silently
+        // replaced by a member that is merely close.
+        const written = document.createElement('option');
+        written.value = value;
+        written.textContent = value;
+        select.appendChild(written);
+      }
+      select.value = value || '';
+      select.addEventListener('change', () => { if (select.value) commit(select.value); });
+      return select;
+    }
+
+    if (bare === 'bool' && (!value || value === 'true' || value === 'false')) {
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = value === 'true';
+      box.addEventListener('change', () => commit(box.checked ? 'true' : 'false'));
+      return box;
+    }
+
+    if (!value || NUMBER.test(value)) {
+      const numeric = ['int', 'long', 'short', 'byte', 'float', 'double', 'decimal', 'uint', 'ulong'];
+      if (numeric.indexOf(bare) >= 0) {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.value = value ? value.replace(/[fFdDmM]$/, '') : '';
+        commitOn(input, () => input.value.trim());
+        return input;
+      }
+    }
+
+    if (bare === 'string' && (!value || SIMPLE_STRING.test(value))) {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = value ? JSON.parse(value) : '';
+      // Quoted on the way out: the panel edits text, and the file takes a C# string literal.
+      commitOn(input, () => JSON.stringify(input.value));
+      return input;
+    }
+
+    const raw = document.createElement('input');
+    raw.type = 'text';
+    raw.value = value || '';
+    raw.title = 'C# expression — written into the file as typed';
+    commitOn(raw, () => raw.value.trim());
+    return raw;
+
+    function commitOn(element, read) {
+      let last = element.value;
+      const send = () => {
+        if (element.value === last) return;
+        last = element.value;
+        const written = read();
+        if (written) commit(written);
+      };
+      element.addEventListener('change', send);
+      element.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } });
+    }
+  }
+
+  function showSelection(payload) {
+    panelTitle.textContent = payload.node ? payload.node.component : 'Selection';
+    panelTier.textContent = payload.tier + (payload.node ? ' · ' + payload.node.form : '');
+    panelTier.title = payload.reason || '';
+    panel.classList.remove('minimised');
+    panel.classList.add('visible');
+
+    panelBody.replaceChildren();
+
+    if (payload.node && payload.node.summary) {
+      const note = document.createElement('div');
+      note.id = 'panel-note';
+      note.textContent = payload.node.summary;
+      panelBody.appendChild(note);
+    }
+
+    if (!payload.node) {
+      const note = document.createElement('div');
+      note.id = 'panel-note';
+      note.textContent = payload.reason || 'Nothing to inspect here.';
+      panelBody.appendChild(note);
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'props';
+
+    for (const property of payload.node.properties) {
+      // An unset property nobody can reach from this form is noise; an unset one they COULD set is
+      // the offer the panel exists to make.
+      if (property.kind === 'unset' && !property.editable && !property.reason) continue;
+
+      const row = document.createElement('tr');
+      const name = document.createElement('td');
+      name.className = 'pname';
+      name.textContent = property.name;
+      if (property.summary) name.title = property.summary;
+
+      const type = document.createElement('td');
+      type.className = 'ptype';
+      type.textContent = property.type;
+
+      const value = document.createElement('td');
+      value.className = 'pvalue';
+
+      if (!property.editable) {
+        row.className = 'unreachable';
+        value.textContent = property.reason || 'not reachable from this form';
+        value.title = value.textContent;
+      } else {
+        const origin = selectedOrigin;
+        value.appendChild(editorFor(property, (written) =>
+          vscode.postMessage({ type: 'edit', origin: origin, property: property.name, value: written })));
+      }
+
+      row.append(name, type, value);
+      table.appendChild(row);
+    }
+
+    panelBody.appendChild(table);
+  }
+
+  // Announced only after the listeners above exist. A message posted before this point is simply
   // dropped by the webview, which is how a first render can go missing and the panel sit empty until
   // the next keystroke.
   vscode.postMessage({ type: 'ready' });
 
   window.addEventListener('message', (event) => {
     const payload = event.data;
-    // The outline framed an element of the PREVIOUS tree; after a recompile that rectangle means
-    // nothing. The next pointer move draws a true one.
     if (payload.type === 'render') {
+      // The outline framed an element of the PREVIOUS tree; after a recompile that rectangle means
+      // nothing. The panel stays: an edit made from it recompiles, and closing the panel under the
+      // hand that just used it would be its own bug.
       outline.classList.remove('visible');
       badge.classList.remove('visible');
-      tier.classList.remove('visible');
       void render(payload);
     } else if (payload.type === 'selected') {
       if (payload.tier !== 'literal') outline.classList.add(payload.tier);
       showSelection(payload);
-    }
-    else if (payload.type === 'stale') {
+    } else if (payload.type === 'inspect') {
+      setInspecting(payload.on);
+    } else if (payload.type === 'stale') {
       // The last good render stays on screen. A blank frame while you are mid-word is worse than a
       // slightly old one with a line telling you what is wrong.
       notice.textContent = payload.hasPrevious

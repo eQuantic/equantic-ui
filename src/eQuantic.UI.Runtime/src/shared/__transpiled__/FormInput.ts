@@ -1,4 +1,4 @@
-import { Box, BuildContext, FormController, StatelessComponent, TextInput } from "@equantic/runtime";
+import { Box, BuildContext, FormController, SizeVariantValue, StatelessComponent, TextInput } from "@equantic/runtime";
 
 export class FormInput extends StatelessComponent {
     declare form: FormController;
@@ -7,7 +7,7 @@ export class FormInput extends StatelessComponent {
     declare placeholder: any;
     declare helper: any;
     declare leading: any;
-    declare size: string;
+    declare size: SizeVariantValue;
     declare obscure: boolean;
     declare autofocus: boolean;
     declare disabled: boolean;
