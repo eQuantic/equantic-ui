@@ -111,6 +111,14 @@ public sealed class PhotonViewController : UIViewController
             SmoothScroll = SmoothScroll,
         };
 
+        // The semantics bridge: VoiceOver reads the SAME target-neutral tree the macOS bridge
+        // does, and its gestures reach the same handlers a touch does — by path, like everything
+        // else that has to survive the next frame.
+        view.Semantics = new PhotonAccessibility(view,
+            () => _host?.Semantics() ?? [],
+            path => _host?.ActivatePath(path) ?? false,
+            (path, direction) => _host?.AdjustPath(path, direction) ?? false);
+
         _clock = CADisplayLink.Create(OnFrame);
         _clock.AddToRunLoop(NSRunLoop.Main, NSRunLoopMode.Common);
     }
@@ -228,8 +236,49 @@ public sealed class PhotonViewController : UIViewController
         _backend.RenderToDrawable(builder.Build(), Send(drawable, Sel("texture")),
             MetalBackend.PixelFormatBgra8UnormSrgb, drawable);
         FramesPresented++;
+        // The screen just changed: if that changed what a screen reader would read, tell it.
+        view.Semantics?.FrameRendered();
 
-        if (forced && FramesPresented >= MaxFrames) Stop();
+        if (forced && FramesPresented >= MaxFrames)
+        {
+            ProbeAccessibility(view);
+            Stop();
+        }
+    }
+
+    /// <summary>
+    /// Self-test evidence for the semantics bridge, taken through the REAL dispatch: what VoiceOver
+    /// would receive if it asked this view right now, and what happens when it double-taps the
+    /// first control. The selectors are answered by the Objective-C runtime, so only a message
+    /// actually SENT proves they are registered — a managed call would pass whether or not UIKit
+    /// can reach them.
+    /// </summary>
+    private static void ProbeAccessibility(PhotonView view)
+    {
+        var elements = Send(view.Handle, Sel("accessibilityElements"));
+        var count = elements != IntPtr.Zero ? SendULong(elements, Sel("count")) : 0;
+        if (count == 0)
+        {
+            PhotonLog.Write("[photon] accessibility elements: 0");
+            return;
+        }
+
+        var first = Send(elements, Sel("firstObject"));
+        var label = FromNSString(Send(first, Sel("accessibilityLabel")));
+        var traits = SendULong(first, Sel("accessibilityTraits"));
+        PhotonLog.Write($"[photon] accessibility elements: {count} — first: traits 0x{traits:x} \"{label}\"");
+
+        // The whole loop, end to end: VoiceOver's double tap on the first BUTTON reaches the same
+        // handler a finger does. A screen with no button reports that instead of a false pass.
+        for (var index = 0UL; index < count; index++)
+        {
+            var element = Send(elements, Sel("objectAtIndex:"), (long)index);
+            if ((SendULong(element, Sel("accessibilityTraits")) & (ulong)UIAccessibilityTrait.Button) == 0) continue;
+            var ran = SendBool(element, Sel("accessibilityActivate"));
+            PhotonLog.Write($"[photon] accessibility activate \"{FromNSString(Send(element, Sel("accessibilityLabel")))}\": {ran}");
+            return;
+        }
+        PhotonLog.Write("[photon] accessibility activate: no button on this screen");
     }
 
     private void Stop()
