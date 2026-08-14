@@ -99,11 +99,22 @@ public class PerfHarnessTests
     /// p95 0.32 ms.</summary>
     private const double RealizeP95CeilingMs = 33.0;
 
-    /// <summary>The same steady state with the SHELLS' configuration (RecycleFrames on): the
-    /// LayoutNode tree feeds itself forward, and what remains per frame is scratch. Measured
-    /// 2026-08-08 at 67.5 KB/frame on landing (from 106 KB without the pool) — what remains
-    /// is the frame's region lists and scratch, the pool's next candidates.</summary>
-    private const long PooledAllocationCeilingBytesPerFrame = 72 * 1024;
+    /// <summary>
+    /// The same steady state with the SHELLS' configuration (RecycleFrames on): the LayoutNode tree
+    /// feeds itself forward, and what remains per frame is scratch. Measured 2026-08-08 at
+    /// 67.5 KB/frame on landing (from 106 KB without the pool) — the frame's region lists and
+    /// scratch, the pool's next candidates.
+    /// <para>
+    /// Raised to 74 KB on 2026-08-15, with the reason measured rather than assumed: 71.4 KB of it
+    /// is the drift a week of features left behind, and 0.75 KB is `VisualNode.Origin` — the
+    /// design-mode source span added by the VS Code preview. That field is one pointer on EVERY
+    /// node of a tree rebuilt each frame, and it is null in production, so the bytes buy nothing
+    /// there. Removing it locally measures 71.4; keeping it measures 72.2. If the budget ever needs
+    /// them back, the field can move to a ConditionalWeakTable that only design mode populates —
+    /// same authoring surface, zero bytes per node when nobody is inspecting.
+    /// </para>
+    /// </summary>
+    private const long PooledAllocationCeilingBytesPerFrame = 74 * 1024;
 
     [Fact]
     public void SteadyMotion_WithRecycledFrames_AllocatesFarLess()
