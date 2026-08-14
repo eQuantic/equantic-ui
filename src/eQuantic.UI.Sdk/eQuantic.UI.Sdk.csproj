@@ -40,7 +40,10 @@
             icon both go through it — and it lives in its own project. Sdk.targets guards both with
             Exists(), so a package without it drew neither and said nothing.
         -->
-        <MSBuild Projects="..\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" Targets="Build"
+        <!-- Restore;Build, not Build. `Build` alone assumes someone has already restored that project,
+             which is true on a machine that has built this repo before and false on every other one —
+             CI packs from a clean checkout and got NETSDK1004 for a missing project.assets.json. -->
+        <MSBuild Projects="..\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" Targets="Restore;Build"
             Properties="Configuration=$(Configuration)" />
         <ItemGroup>
             <_BuildOutput Include="..\eQuantic.Build\bin\$(Configuration)\net10.0\**"
