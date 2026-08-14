@@ -491,6 +491,30 @@ The readme is what the Marketplace shows, and it still said "simple extension pr
 rewritten, and its claims checked against the manifest, which caught it advertising an `eq-style`
 snippet that does not exist.
 
+### Phase 14 — the screen as a list ✅ done
+
+The canvas can only offer what is under the pointer, and on a full screen there are nodes that are
+hard to hit and nodes that are impossible — a container filled edge to edge by its own children has no
+pixel of its own. Every editor worth comparing to has a layers list for exactly that.
+
+It needed **nothing new from the design host**. The rendered DOM already carries an origin and a
+component name on every node, which IS a layers list: the canvas walks it on every render and posts it
+up, and a `TreeDataProvider` turns that into a tree. Each row says where it is written —
+`PaymentsPage.cs:28` — which is the thing a list can say that a picture cannot.
+
+Both directions go through the door that already exists. Picking a row posts a `reveal` to the canvas,
+which selects it exactly as a click does, so the outline, the panel and the editor's cursor all follow
+from one path rather than three. Selecting on the canvas marks the row.
+
+It lives in the **Explorer**, beside the Outline and the Timeline, rather than in a container of its
+own: a container wants a monochrome 24×24 icon, the logo is a colour mark that would be a blue smudge
+at that size, and inventing branding is not a thing to do quietly.
+
+Two tests, and the first is the cheap one that matters: VS Code registers `<viewId>.focus` for every
+contributed view, so focusing it fails when the view is not in the manifest or its container is
+misspelled — which otherwise shows up as an empty sidebar nobody can explain. The second waits for the
+list to fill from a real render, through a small API the extension exports for no other reason.
+
 ---
 
 ## The seam, tested

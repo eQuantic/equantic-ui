@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { LayersProvider } from './layers';
 import { PreviewPanel } from './preview';
 import { ProjectLayout, ProjectNotReady, resolveLayout } from './project';
 import { Sidecar } from './sidecar';
@@ -17,17 +18,33 @@ const panels = new Map<string, PreviewPanel>();
  * buttons are SHOWN; this is who they are sent to. */
 let active: PreviewPanel | undefined;
 
-export function activate(context: vscode.ExtensionContext): void {
+/** The screen as a list, beside the screen as a picture. Fed by whichever preview is active. */
+let layers: LayersProvider;
+
+/** What the integration suite can ask about, and nothing else: the layers list lives in module scope
+ * and a test running inside VS Code has no other way to see whether it was ever filled. */
+export interface EquanticApi {
+  layerCount(): number;
+}
+
+export function activate(context: vscode.ExtensionContext): EquanticApi {
   output = vscode.window.createOutputChannel('eQuantic UI');
   diagnostics = vscode.languages.createDiagnosticCollection('equanticUI');
   context.subscriptions.push(output, diagnostics);
 
+  layers = new LayersProvider((origin) => active?.revealNode(origin));
+  const tree = vscode.window.createTreeView('equanticUI.layers', { treeDataProvider: layers });
+  context.subscriptions.push(tree);
+
   context.subscriptions.push(
     vscode.commands.registerCommand('equanticUI.openPreview', () => openPreview(context)),
+    vscode.commands.registerCommand('equanticUI.revealLayer', (origin: string) => layers.pick(origin)),
     vscode.commands.registerCommand('equanticUI.startInspect', () => active?.setInspecting(true)),
     vscode.commands.registerCommand('equanticUI.stopInspect', () => active?.setInspecting(false)),
     vscode.commands.registerCommand('equanticUI.restartSidecar', () => restart()),
   );
+
+  return { layerCount: () => layers.size };
 }
 
 function log(line: string): void {
@@ -98,9 +115,10 @@ async function openPreview(context: vscode.ExtensionContext): Promise<void> {
       editor.document, layout, sidecar, diagnostics, log, context.extensionUri,
       () => {
         panels.delete(key);
-        if (active === panel) active = undefined;
+        if (active === panel) { active = undefined; layers.clear(); }
       },
-      (focused) => { if (focused) active = panel; });
+      (focused) => { if (focused) active = panel; },
+      layers);
     panels.set(key, panel);
     active = panel;
     await panel.prime();

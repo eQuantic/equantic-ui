@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { CompileResult, EditResult, OpenBuffer, PaletteEntry, Sidecar } from './sidecar';
+import { LayerNode, LayersProvider } from './layers';
 import { ProjectLayout } from './project';
 
 /**
@@ -37,6 +38,7 @@ export class PreviewPanel {
     extensionUri: vscode.Uri,
     private readonly onDisposed: () => void,
     private readonly onFocused: (focused: boolean) => void,
+    private readonly layers: LayersProvider,
   ) {
     this.panel = vscode.window.createWebviewPanel(
       PreviewPanel.viewType,
@@ -98,6 +100,12 @@ export class PreviewPanel {
 
   reveal(): void {
     this.panel.reveal(vscode.ViewColumn.Beside, true);
+  }
+
+  /** A node picked in the layers list — sent to the canvas, which selects it the way a click does:
+   * the outline, the panel and the editor's cursor all follow from the one path. */
+  revealNode(origin: string): void {
+    this.post({ type: 'reveal', origin });
   }
 
   private inspecting = false;
@@ -220,11 +228,15 @@ export class PreviewPanel {
   private onWebviewMessage(
     message: {
       type: string; detail?: string; origin?: string; property?: string; value?: string;
+      nodes?: unknown[]; truncated?: boolean;
       options?: string[]; index?: number; delta?: number; target?: string; list?: string;
       elementType?: string;
     },
   ): void {
     if (message.type === 'ready') this.announceReady();
+    else if (message.type === 'tree' && Array.isArray(message.nodes)) {
+      this.layers.update(message.nodes as LayerNode[], message.truncated === true);
+    }
     else if (message.type === 'threw') this.log(`preview threw: ${message.detail ?? ''}`);
     else if (message.type === 'select' && message.origin) void this.revealSource(message.origin);
     else if (message.type === 'edit' && message.origin && message.property) {
@@ -638,6 +650,7 @@ export class PreviewPanel {
         this.sidecar.classify(span.path, text, origin, buffers),
         this.sidecar.inspect(span.path, text, origin, buffers),
       ]);
+      this.layers.select(origin);
       this.post({
         type: 'selected',
         origin,
@@ -1048,6 +1061,8 @@ export class PreviewPanel {
       }
       app.replaceChildren();
       new Component().mount(app);
+      // After mount: the stamped elements only exist once the component has rendered.
+      describeTree();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       objectUrl = nextUrl;
     } catch (error) {
@@ -1635,6 +1650,40 @@ export class PreviewPanel {
     return true;
   }
 
+  /**
+   * The whole rendered tree, as the author would recognise it, sent up for the sidebar.
+   *
+   * No round trip and no new question for the host: the DOM already carries an origin and a component
+   * name on every node, which is exactly what a layers list is. It goes up on every render, because
+   * that is when it changes.
+   *
+   * Bounded, and the bound is SAID rather than silently applied — a screen with a thousand rows would
+   * otherwise post a thousand entries on every keystroke.
+   */
+  const TREE_LIMIT = 2000;
+
+  function describeTree() {
+    const nodes = [];
+    let truncated = false;
+
+    const walk = (element, parent, depth) => {
+      for (const child of stampedChildren(element)) {
+        if (nodes.length >= TREE_LIMIT) { truncated = true; return; }
+        const origin = child.getAttribute('data-eq-origin');
+        nodes.push({
+          origin: origin,
+          parent: parent,
+          label: child.getAttribute('data-eq-component') || 'node',
+          depth: depth,
+        });
+        walk(child, origin, depth + 1);
+      }
+    };
+
+    walk(app, null, 0);
+    vscode.postMessage({ type: 'tree', nodes: nodes, truncated: truncated });
+  }
+
   /** The nearest stamped ancestor — the node that CONTAINS this one in the tree, skipping the DOM
    * a component builds inside itself. */
   function stampedParent(element) {
@@ -2114,6 +2163,11 @@ export class PreviewPanel {
       // The pointer may still be on it: the answer arrived after the hover that asked for it, which
       // is the whole reason it was asked in advance.
       if (hovered) drawInserts(hovered);
+    } else if (payload.type === 'reveal') {
+      // The sidebar asked for a node. It is the same selection the canvas makes, so it goes through
+      // the same door — the outline, the panel and the editor's cursor all follow.
+      const found = app.querySelector('[data-eq-origin="' + payload.origin.replace(/"/g, '\\"') + '"]');
+      if (found) select(found);
     } else if (payload.type === 'settling') {
       settling = true;
       hideInserts();

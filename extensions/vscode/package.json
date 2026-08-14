@@ -46,6 +46,11 @@
         "title": "Restart Design Host",
         "category": "eQuantic UI",
         "icon": "$(debug-restart)"
+      },
+      {
+        "command": "equanticUI.revealLayer",
+        "title": "Select Layer",
+        "category": "eQuantic UI"
       }
     ],
     "menus": {
@@ -78,6 +83,10 @@
         },
         {
           "command": "equanticUI.stopInspect",
+          "when": "false"
+        },
+        {
+          "command": "equanticUI.revealLayer",
           "when": "false"
         }
       ]
@@ -112,7 +121,17 @@
         "language": "csharp",
         "path": "./snippets/csharp.json"
       }
-    ]
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "equanticUI.layers",
+          "name": "eQuantic Layers",
+          "contextualTitle": "eQuantic UI",
+          "visibility": "collapsed"
+        }
+      ]
+    }
   },
   "scripts": {
     "compile": "tsc -p ./ && node scripts/verify-webview.mjs",

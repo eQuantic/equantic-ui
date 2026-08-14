@@ -81,6 +81,28 @@ test('inspect can be turned on and off from the commands the title bar runs', as
   await vscode.commands.executeCommand('equanticUI.stopInspect');
 });
 
+test('the layers view is contributed and can be focused', async () => {
+  // VS Code registers `<viewId>.focus` for every contributed view, so this fails if the view is not
+  // in the manifest or its container is misspelled — which otherwise shows up as an empty sidebar
+  // nobody can explain.
+  await vscode.commands.executeCommand('equanticUI.layers.focus');
+});
+
+test('the layers list fills from the rendered screen', async () => {
+  const extension = vscode.extensions.getExtension('equantictech.equantic-ui');
+  const api = extension?.exports as { layerCount(): number } | undefined;
+  assert.ok(api, 'the extension exported no API');
+
+  // The tree is posted by the canvas AFTER it mounts, which is a message later than the render the
+  // open awaited — so this waits rather than assuming the two are the same tick.
+  const deadline = Date.now() + 15_000;
+  while (api.layerCount() === 0 && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  assert.ok(api.layerCount() > 0, 'the layers list is empty — the canvas never described its tree');
+});
+
 test('a file outside any project refuses with a message rather than a panel', async () => {
   await closeAllPreviews();
 
