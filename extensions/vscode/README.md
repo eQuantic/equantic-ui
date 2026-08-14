@@ -63,11 +63,16 @@ npm run package      # compiles, publishes the design host into host/, writes eq
 `npm run package` writes the `.vsix`; putting it on the Marketplace needs two things this repository
 deliberately does not carry:
 
-- **A publisher and a credential.** Microsoft's documented path is now Microsoft Entra ID with
-  workload identity federation (`vsce publish --azure-credential`); Marketplace personal access tokens
-  **retire on 2026-12-01**. CI has a `publish-extension` job, gated on a `vscode-v*` tag, that takes
-  either — and refuses with a clear error when neither is configured. It publishes the archive the
-  packaging job already verified rather than rebuilding one.
+- **A publisher, and a trusted publishing policy.** CI has a `publish-extension` job, gated on a
+  `vscode-v*` tag, that publishes with `vsce publish --oidc`: the workflow asks GitHub for a token
+  addressed to `marketplace.visualstudio.com` and trades it for a short-lived Marketplace credential,
+  so **nothing is stored anywhere**. It needs a trusted publishing policy on the Marketplace naming
+  this repository and this workflow, and `id-token: write` on the job, which it has. A `VSCE_PAT`
+  secret still works and is used when set — but Marketplace personal access tokens **retire on
+  2026-12-01**, so the path with no secret is the one that keeps working. (The Entra ID / managed
+  identity flow Microsoft documents is the **Azure Pipelines** answer to the same problem; on GitHub
+  Actions, OIDC is.) Either way the job publishes the archive the packaging job already verified
+  rather than rebuilding one.
 - **An icon.** The Marketplace wants a PNG of at least 128×128; SVG is prohibited.
 
 One thing worth knowing before the first publish: an extension's name is **permanent**. Once
