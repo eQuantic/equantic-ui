@@ -401,6 +401,49 @@ jobs:
 
           echo "Template gate green on $RUNNER_OS."
 
+  publish-extension:
+    needs: package-extension
+    # A tag of its own: the extension has its own version, and a framework release is not an
+    # extension release. `vscode-v0.1.0`, never plain `v*`.
+    if: startsWith(github.ref, 'refs/tags/vscode-v')
+    runs-on: ubuntu-latest
+    permissions:
+      # Workload identity federation — what Microsoft Entra hands back instead of a stored secret.
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # The SAME archive the packaging job built and verified, not a rebuild of it. A rebuild is a
+      # different artifact, and the one that was checked would not be the one that shipped.
+      - name: Download the extension
+        uses: actions/download-artifact@v4
+        with:
+          name: equantic-ui-vsix
+
+      - name: Publish to the Marketplace
+        shell: bash
+        env:
+          # Set ONE of these. Entra is what Microsoft documents and recommends; personal access
+          # tokens for the Marketplace retire on 2026-12-01, so the PAT path here is a stopgap.
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        run: |
+          set -euo pipefail
+          npm install -g @vscode/vsce
+
+          if [ -n "${AZURE_CLIENT_ID:-}" ]; then
+            vsce publish --packagePath equantic-ui.vsix --azure-credential
+          elif [ -n "${VSCE_PAT:-}" ]; then
+            vsce publish --packagePath equantic-ui.vsix
+          else
+            echo "::error::Neither AZURE_CLIENT_ID (Entra, recommended) nor VSCE_PAT is configured."
+            exit 1
+          fi
+
   publish-nuget:
     needs: gate-templates
     if: startsWith(github.ref, 'refs/tags/v')

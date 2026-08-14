@@ -121,7 +121,7 @@
     "verify": "node scripts/verify-webview.mjs",
     "test": "npm run compile && node out/test/runTest.js",
     "host": "node scripts/build-host.mjs",
-    "package": "npm run compile && npm run host && vsce package --no-dependencies --out equantic-ui.vsix && node scripts/verify-package.mjs"
+    "package": "npm run compile && npm run host && vsce package --out equantic-ui.vsix && node scripts/verify-package.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

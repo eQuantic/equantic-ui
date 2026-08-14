@@ -58,6 +58,22 @@ npm run package      # compiles, publishes the design host into host/, writes eq
 
 `npm test` downloads a VS Code, loads the extension into it on the dashboard sample, and drives it.
 
+## Publishing it
+
+`npm run package` writes the `.vsix`; putting it on the Marketplace needs two things this repository
+deliberately does not carry:
+
+- **A publisher and a credential.** Microsoft's documented path is now Microsoft Entra ID with
+  workload identity federation (`vsce publish --azure-credential`); Marketplace personal access tokens
+  **retire on 2026-12-01**. CI has a `publish-extension` job, gated on a `vscode-v*` tag, that takes
+  either — and refuses with a clear error when neither is configured. It publishes the archive the
+  packaging job already verified rather than rebuilding one.
+- **An icon.** The Marketplace wants a PNG of at least 128×128; SVG is prohibited.
+
+One thing worth knowing before the first publish: an extension's name is **permanent**. Once
+`equantic.equantic-ui` is published, that identifier is reserved forever — it cannot be reused, even by
+the publisher who removed it.
+
 ## Settings
 
 | | |
