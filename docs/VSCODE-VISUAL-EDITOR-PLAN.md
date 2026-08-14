@@ -376,6 +376,30 @@ Three defects fell out of writing the tests, and two were live:
   wrote a duplicate. Both ends now resolve in one tree.
 - The compiler's real refusal was being masked by the first bug's syntax error.
 
+### Phase 9 — where a component COULD go ✅ done
+
+Edgar's ask: a mark showing where something can be inserted, and a `+` that opens the choice of every
+component available — the framework's **and** the developer's own.
+
+The canvas now answers "where could something go" without anyone guessing. Over a child of a list it
+offers a `+` at each end of it (before this one / after this one); over a container's own space,
+including an **empty** one, the gap nearest the pointer is marked with a dashed line and a single `+`.
+The dash is deliberate: the caret marks a commitment, the dash marks a possibility, and the eye should
+not need a label to tell them apart. Both share one geometry function, because the pair has to line up
+exactly and two of them would drift.
+
+**And the palette was only half a palette.** It scanned `eQuantic.UI.Components.UI` and nothing else,
+so a project's own components — the ones the developer wrote this morning — were not offered at all.
+They are generated into an `AppUI` surface in the shortest namespace the app's components share, which
+cannot be looked up by a fixed metadata name; the compilation's own assembly is walked for it instead.
+The app's entries come first, under their own heading, because a flat list buries them among a hundred
+framework names.
+
+The test for it failed on the first run for the right reason: the probe declared an `AppUI` but not
+the `global using static` the generator writes beside it, so the palette offered a component that did
+not compile where it landed — and the guard that inserts every entry into a real list caught it. The
+probe was wrong, not the palette, but the guard proved it is the palette that would have been blamed.
+
 ---
 
 ## The seam, tested

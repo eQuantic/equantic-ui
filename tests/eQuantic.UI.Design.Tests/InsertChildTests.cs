@@ -19,6 +19,10 @@ public sealed class InsertChildTests : IDisposable
     private readonly DesignSession _session = new();
 
     private const string Source = """
+        // What the generator writes beside the app's own surface, and what makes its factories
+        // reachable with no import in any file — exactly as the SDK does for its own.
+        global using static AppUI;
+
         using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
         // The component TYPES, not only the factory surface — the SDK puts this in every file of a
@@ -46,6 +50,13 @@ public sealed class InsertChildTests : IDisposable
                     Text("omega", TypeRole.BodyM, context.Theme.TextPrimary),
                 ]);
             }
+        }
+
+        /// <summary>The app's OWN surface, exactly as the generator writes it beside the components.</summary>
+        public static class AppUI
+        {
+            /// <summary>A panel this app defines.</summary>
+            public static VisualNode Panel(string title) => Text(title);
         }
         """;
 
@@ -336,6 +347,24 @@ public sealed class InsertChildTests : IDisposable
     /// anticipated shows up here as a refusal rather than as a broken file on someone's screen.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// The developer's OWN components are in the palette, not only the framework's.
+    /// <para>
+    /// They are generated into an <c>AppUI</c> surface in the namespace the app's components share —
+    /// so it cannot be looked up by a fixed name, and the first version of the palette, which asked
+    /// for <c>eQuantic.UI.Components.UI</c> and nothing else, could not build this app's own screens.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ThePalette_OffersTheAppsOwnComponentsFirst()
+    {
+        var palette = _session.Palette();
+
+        palette.Should().Contain(entry => entry.Name == "Panel" && entry.Source == "app");
+        palette[0].Source.Should().Be("app", "what the developer just wrote comes before a hundred framework names");
+        palette.Should().Contain(entry => entry.Source == "framework");
+    }
+
     [Fact]
     public void EveryPaletteEntry_InsertsIntoARealListAndStillCompiles()
     {

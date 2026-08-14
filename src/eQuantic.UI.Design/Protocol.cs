@@ -145,7 +145,11 @@ public sealed record InspectResult(
 public sealed record PaletteEntry(
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("snippet")] string Snippet,
-    [property: JsonPropertyName("summary")] string? Summary);
+    [property: JsonPropertyName("summary")] string? Summary,
+    /// <summary>app · framework — where the component comes from. The developer's own are what they
+    /// were just writing, so a picker that buries them among a hundred framework names is a picker
+    /// they have to search rather than read.</summary>
+    [property: JsonPropertyName("source")] string Source = "framework");
 
 /// <summary>
 /// What may be DONE with a selected node, which is not the same question as where it came from.

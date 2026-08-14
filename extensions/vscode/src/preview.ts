@@ -408,16 +408,28 @@ export class PreviewPanel {
     try {
       this.paletteEntries ??= await this.sidecar.palette();
 
-      const pick = await vscode.window.showQuickPick(
-        this.paletteEntries.map((entry) => ({
-          label: entry.name,
-          description: entry.snippet,
-          detail: entry.summary ?? undefined,
-          entry,
-        })),
-        { title: 'Insert a component', matchOnDescription: true, matchOnDetail: true },
-      );
-      if (!pick) return;
+      // Grouped, with the app's own components first and under their own heading. They are what the
+      // developer was writing a minute ago, and a flat list buries them among a hundred framework
+      // names — searchable, but only if you already know what you are looking for.
+      const items: (vscode.QuickPickItem & { entry?: PaletteEntry })[] = [];
+      let heading = '';
+      for (const entry of this.paletteEntries) {
+        if (entry.source !== heading) {
+          heading = entry.source;
+          items.push({
+            label: entry.source === 'app' ? 'This app' : 'Framework',
+            kind: vscode.QuickPickItemKind.Separator,
+          });
+        }
+        items.push({ label: entry.name, description: entry.snippet, detail: entry.summary ?? undefined, entry });
+      }
+
+      const pick = await vscode.window.showQuickPick(items, {
+        title: 'Insert a component',
+        matchOnDescription: true,
+        matchOnDetail: true,
+      });
+      if (!pick?.entry) return;
 
       const edit = await this.sidecar.insertChild(
         span.path, await this.textOf(span.path), origin, index, pick.entry.snippet, this.buffers());
@@ -644,6 +656,19 @@ export class PreviewPanel {
   }
   #caret.visible { display: block; }
 
+  /* Where a component COULD go. Dashed rather than solid, because it marks a possibility and the
+     caret marks a commitment — the eye should not have to read a label to tell them apart. */
+  #gap {
+    position: fixed; z-index: 5; display: none; pointer-events: none; border-radius: 2px;
+    background: repeating-linear-gradient(90deg,
+      var(--vscode-focusBorder, #0078d4) 0 5px, transparent 5px 9px);
+  }
+  #gap.vertical {
+    background: repeating-linear-gradient(180deg,
+      var(--vscode-focusBorder, #0078d4) 0 5px, transparent 5px 9px);
+  }
+  #gap.visible { display: block; }
+
   .eq-plus {
     position: fixed; z-index: 5; display: none; box-sizing: border-box;
     width: 18px; height: 18px; padding: 0; border-radius: 9px; cursor: pointer;
@@ -776,6 +801,7 @@ export class PreviewPanel {
 <div id="outline"></div>
 <div id="badge"></div>
 <div id="caret"></div>
+<div id="gap"></div>
 <button class="eq-plus" id="plus-before" type="button" title="Insert before this" aria-label="Insert before this">+</button>
 <button class="eq-plus" id="plus-after" type="button" title="Insert after this" aria-label="Insert after this">+</button>
 
@@ -822,6 +848,7 @@ export class PreviewPanel {
   const outline = document.getElementById('outline');
   const badge = document.getElementById('badge');
   const caret = document.getElementById('caret');
+  const gapMark = document.getElementById('gap');
   const plusBefore = document.getElementById('plus-before');
   const plusAfter = document.getElementById('plus-after');
   const panel = document.getElementById('panel');
@@ -970,7 +997,7 @@ export class PreviewPanel {
     if (drag) { updateDrag(e); return; }
     if (insideChrome(e.target)) return;
     const found = stamped(e.target);
-    if (found) { frame(found); hovering(found); }
+    if (found) { frame(found); hovering(found, e); }
     else { outline.classList.remove('visible'); badge.classList.remove('visible'); hideInserts(); }
   }, true);
 
@@ -1040,8 +1067,9 @@ export class PreviewPanel {
 
   /** Hovering settles before it asks: a pointer travelling across the screen crosses dozens of nodes
    * and means none of them. */
-  function hovering(element) {
+  function hovering(element, event) {
     hovered = element;
+    at = { clientX: event.clientX, clientY: event.clientY };
     // Not while the tree is stale: every answer would be about whatever now sits at those coordinates.
     if (settling) return;
     drawInserts(element);
@@ -1054,10 +1082,13 @@ export class PreviewPanel {
 
   // ---- inserting from the canvas -----------------------------------------------------------------
   let insertTarget = null;
+  /** The last place the pointer was, which is what decides WHICH gap of a container is marked. */
+  let at = { clientX: 0, clientY: 0 };
 
   function hideInserts() {
     plusBefore.classList.remove('visible');
     plusAfter.classList.remove('visible');
+    gapMark.classList.remove('visible');
     insertTarget = null;
   }
 
@@ -1106,23 +1137,56 @@ export class PreviewPanel {
     };
   }
 
+  /**
+   * What the pointer is offered where it is.
+   *
+   * Over a CHILD of a list: a + at each of its ends, which is "before this one" and "after this one" —
+   * the two insertions anyone hovering a row actually means.
+   *
+   * Over a container's own space, including an empty one: the gap nearest the pointer is marked with
+   * a dashed line and a single +. That mark is the answer to "where could something go", which is a
+   * question the canvas should not make anyone guess at.
+   */
   function drawInserts(element) {
     hideInserts();
     if (!inspecting || drag || settling) return;
 
     const place = placeIn(element);
-    if (!place) return;
-
-    const box = element.getBoundingClientRect();
-    const middle = box.top + box.height / 2;
-    if (place.axis === 'x') {
-      chipAt(plusBefore, box.left, middle);
-      chipAt(plusAfter, box.right, middle);
-    } else {
-      chipAt(plusBefore, box.left + 10, box.top);
-      chipAt(plusAfter, box.left + 10, box.bottom);
+    if (place) {
+      const box = element.getBoundingClientRect();
+      const middle = box.top + box.height / 2;
+      if (place.axis === 'x') {
+        chipAt(plusBefore, box.left, middle);
+        chipAt(plusAfter, box.right, middle);
+      } else {
+        chipAt(plusBefore, box.left + 10, box.top);
+        chipAt(plusAfter, box.left + 10, box.bottom);
+      }
+      insertTarget = {
+        origin: place.container.getAttribute('data-eq-origin'),
+        before: place.index, after: place.index + 1,
+      };
+      return;
     }
-    insertTarget = { origin: place.container.getAttribute('data-eq-origin'), index: place.index };
+
+    const here = listOf(element);
+    if (!here) return;
+
+    const slot = slotAt(at, here);
+    const rect = gapRect(here, slot);
+    put(gapMark, rect);
+    chipAt(plusBefore, rect.left + rect.width / 2, rect.top + rect.height / 2);
+    insertTarget = { origin: element.getAttribute('data-eq-origin'), before: slot, after: null };
+  }
+
+  /** The element's OWN list, when it has one this tool may write into. */
+  function listOf(element) {
+    const node = knownOf(element);
+    if (!node || node.childCount < 0) return null;
+
+    const children = stampedChildren(element);
+    if (children.length !== node.childCount) return null;
+    return { container: element, children: children, axis: axisOf(element, children) };
   }
 
   function chipAt(chip, x, y) {
@@ -1132,10 +1196,12 @@ export class PreviewPanel {
   }
 
   plusBefore.addEventListener('click', () => {
-    if (insertTarget) vscode.postMessage({ type: 'insert', origin: insertTarget.origin, index: insertTarget.index });
+    if (insertTarget) vscode.postMessage({ type: 'insert', origin: insertTarget.origin, index: insertTarget.before });
   });
   plusAfter.addEventListener('click', () => {
-    if (insertTarget) vscode.postMessage({ type: 'insert', origin: insertTarget.origin, index: insertTarget.index + 1 });
+    if (insertTarget && insertTarget.after !== null) {
+      vscode.postMessage({ type: 'insert', origin: insertTarget.origin, index: insertTarget.after });
+    }
   });
 
   // ---- dragging to reorder ------------------------------------------------------------------------
@@ -1170,15 +1236,12 @@ export class PreviewPanel {
 
     for (const candidate of [found, stampedParent(found)]) {
       if (!candidate) continue;
-      const node = knownOf(candidate);
       // Never asked. A drag lasts long enough for the answer to arrive and be used on a later move,
       // so this asks straight away rather than waiting for the pointer to settle.
-      if (node === undefined) { ask(candidate); continue; }
-      if (!node || node.childCount < 0) continue;
+      if (knownOf(candidate) === undefined) { ask(candidate); continue; }
 
-      const children = stampedChildren(candidate);
-      if (children.length !== node.childCount) continue;
-      return { container: candidate, children: children, axis: axisOf(candidate, children) };
+      const found = listOf(candidate);
+      if (found) return found;
     }
     return null;
   }
@@ -1237,37 +1300,44 @@ export class PreviewPanel {
     return past ? best + 1 : best;
   }
 
-  function drawCaret(slot, place) {
+  /**
+   * The boundary between two children, as a rectangle to draw on.
+   *
+   * One geometry for both marks: the caret says where a dragged node WILL go, the dashed gap says
+   * where a new one COULD. Two functions would drift, and the pair has to line up exactly.
+   */
+  function gapRect(place, slot) {
     const box = place.container.getBoundingClientRect();
+
+    // Nothing to draw between: the mark takes the container's own middle, which is where its first
+    // child would appear. Without this the branches below reach for a neighbour that does not exist.
+    if (place.children.length === 0) {
+      return { left: box.left, top: box.top + box.height / 2 - 1, width: box.width, height: 2, across: false };
+    }
+
     const before = slot > 0 ? place.children[slot - 1].getBoundingClientRect() : null;
     const after = slot < place.children.length ? place.children[slot].getBoundingClientRect() : null;
 
-    if (place.children.length === 0) {
-      // Nothing to draw between. The caret takes the container's own middle, which is where the first
-      // child will appear — and without this the two branches below dereference a neighbour that does
-      // not exist, throwing a TypeError that the window handler turns into a WIPED preview.
-      caret.style.left = box.left + 'px';
-      caret.style.top = (box.top + box.height / 2 - 1) + 'px';
-      caret.style.width = box.width + 'px';
-      caret.style.height = '2px';
-      caret.classList.add('visible');
-      return;
-    }
-
     if (place.axis === 'x') {
       const x = before && after ? (before.right + after.left) / 2 : (after ? after.left : before.right);
-      caret.style.left = (x - 1) + 'px';
-      caret.style.top = box.top + 'px';
-      caret.style.width = '2px';
-      caret.style.height = box.height + 'px';
-    } else {
-      const y = before && after ? (before.bottom + after.top) / 2 : (after ? after.top : before.bottom);
-      caret.style.left = box.left + 'px';
-      caret.style.top = (y - 1) + 'px';
-      caret.style.width = box.width + 'px';
-      caret.style.height = '2px';
+      return { left: x - 1, top: box.top, width: 2, height: box.height, across: true };
     }
-    caret.classList.add('visible');
+
+    const y = before && after ? (before.bottom + after.top) / 2 : (after ? after.top : before.bottom);
+    return { left: box.left, top: y - 1, width: box.width, height: 2, across: false };
+  }
+
+  function put(mark, rect) {
+    mark.style.left = rect.left + 'px';
+    mark.style.top = rect.top + 'px';
+    mark.style.width = rect.width + 'px';
+    mark.style.height = rect.height + 'px';
+    mark.classList.toggle('vertical', rect.across);
+    mark.classList.add('visible');
+  }
+
+  function drawCaret(slot, place) {
+    put(caret, gapRect(place, slot));
   }
 
   function say(text, x, y) {

@@ -1023,20 +1023,33 @@ public sealed class DesignSession
     {
         if (_current is null) throw new InvalidOperationException("initialize first");
 
-        var surface = _current.GetTypeByMetadataName("eQuantic.UI.Components.UI");
-        if (surface is null) return [];
+        // The app's OWN components first: they are generated into an `AppUI` surface exactly like the
+        // framework's, they are what the developer was writing a minute ago, and a palette that only
+        // offered the framework would be a palette that cannot build this app's screens.
+        var surfaces = AppSurfaces(_current).Select(type => (Type: type, Source: "app")).ToList();
+        if (_current.GetTypeByMetadataName("eQuantic.UI.Components.UI") is { } framework)
+            surfaces.Add((framework, "framework"));
 
         var entries = new List<PaletteEntry>();
-        foreach (var method in surface.GetMembers().OfType<IMethodSymbol>())
+        foreach (var (surface, source) in surfaces)
         {
-            if (!method.IsStatic || method.DeclaredAccessibility != Accessibility.Public) continue;
-            if (!method.ReturnType.IsVisualNode()) continue;
-            if (Snippet(method) is not { } snippet) continue;
+            foreach (var method in surface.GetMembers().OfType<IMethodSymbol>())
+            {
+                if (!method.IsStatic || method.DeclaredAccessibility != Accessibility.Public) continue;
+                if (!method.ReturnType.IsVisualNode()) continue;
+                if (Snippet(method) is not { } snippet) continue;
 
-            entries.Add(new PaletteEntry(method.Name, snippet, Summary(method.ReturnType)));
+                entries.Add(new PaletteEntry(method.Name, snippet, Summary(method.ReturnType), source));
+            }
         }
 
-        return entries.DistinctBy(e => e.Name).OrderBy(e => e.Name, StringComparer.Ordinal).ToArray();
+        // Distinct BEFORE ordering and with the app's entries first, so a name the app defines is the
+        // app's own — which is what the generated `global using static` does in the file too.
+        return entries
+            .DistinctBy(e => e.Name)
+            .OrderBy(e => e.Source == "app" ? 0 : 1)
+            .ThenBy(e => e.Name, StringComparer.Ordinal)
+            .ToArray();
     }
 
     /// <summary>The smallest call of a factory that compiles, or null when one cannot be written.</summary>
@@ -1124,6 +1137,30 @@ public sealed class DesignSession
         // rather than one a tool dropped in.
         var (at, addition, _) = Addition(source, children, index, snippet);
         return Guarded(source, new TextSpan(at, 0), addition, text, path);
+    }
+
+    /// <summary>
+    /// The app's own generated factory surfaces — every static <c>AppUI</c> the compilation declares.
+    /// <para>
+    /// Its namespace is the shortest one the app's components share, so it cannot be looked up by a
+    /// fixed metadata name. Only the compilation's OWN assembly is walked: a referenced library's
+    /// components reach this app through its own surface, not through a class this palette invented.
+    /// </para>
+    /// </summary>
+    private static IEnumerable<INamedTypeSymbol> AppSurfaces(Compilation compilation)
+    {
+        var pending = new Queue<INamespaceSymbol>();
+        pending.Enqueue(compilation.Assembly.GlobalNamespace);
+
+        while (pending.Count > 0)
+        {
+            var space = pending.Dequeue();
+            foreach (var nested in space.GetNamespaceMembers()) pending.Enqueue(nested);
+            foreach (var type in space.GetTypeMembers("AppUI"))
+            {
+                if (type.IsStatic) yield return type;
+            }
+        }
     }
 
     /// <summary>The whitespace at the start of the line a position sits on.</summary>

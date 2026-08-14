@@ -64,6 +64,8 @@ export interface PaletteEntry {
   name: string;
   snippet: string;
   summary: string | null;
+  /** Where it comes from: the app's own generated surface, or the framework's. */
+  source: 'app' | 'framework';
 }
 
 /** One text replacement to apply, or the reason there is none. Computed by the host; applied by the
