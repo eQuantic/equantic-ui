@@ -35,7 +35,7 @@ async function closeAllPreviews(): Promise<void> {
 const sample = () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
 
 test('the extension activates', async () => {
-  const extension = vscode.extensions.getExtension('equantic.equantic-ui');
+  const extension = vscode.extensions.getExtension('equantictech.equantic-ui');
   assert.ok(extension, 'the extension is not installed in this host');
   await extension.activate();
   assert.ok(extension.isActive, 'activate() did not complete');

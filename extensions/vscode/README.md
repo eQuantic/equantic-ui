@@ -76,7 +76,7 @@ deliberately does not carry:
 - **An icon.** The Marketplace wants a PNG of at least 128×128; SVG is prohibited.
 
 One thing worth knowing before the first publish: an extension's name is **permanent**. Once
-`equantic.equantic-ui` is published, that identifier is reserved forever — it cannot be reused, even by
+`equantictech.equantic-ui` is published, that identifier is reserved forever — it cannot be reused, even by
 the publisher who removed it.
 
 ## Settings
