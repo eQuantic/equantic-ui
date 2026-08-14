@@ -379,8 +379,7 @@ public sealed class DesignSession
         // inventing one would rewrite the form the author chose.
         foreach (var property in Inherited(component).OfType<IPropertySymbol>())
         {
-            if (property.DeclaredAccessibility != Accessibility.Public) continue;
-            if (property.IsStatic || property.SetMethod is null) continue;
+            if (!Writable(property)) continue;
             // The design stamp is the TOOL's, not the author's. Offering Origin as an editable
             // property would be the inspector inviting someone to edit its own scaffolding.
             if (property.Name is "Origin" or "OriginLabel") continue;
@@ -507,7 +506,21 @@ public sealed class DesignSession
                 : Insert(source, existing[^1].Span.End, ", " + addition, text, path);
         }
 
-        // 4. A member of a `new X(…)` written without an initializer — so give it one.
+        // 4. A member of an initializer that is already there — appended, not invented.
+        //
+        // Without this, only the FIRST property of a `new` node could be set: the branch below adds
+        // the braces, and every later one fell through to a refusal that also called it a factory
+        // call. Setting two things on the same node is the ordinary case, not the edge one.
+        if (construction is ObjectCreationExpressionSyntax open && open.Initializer is not null
+            && Settable(symbol.ContainingType, property))
+        {
+            var last = open.Initializer.Expressions.LastOrDefault();
+            return last is null
+                ? Insert(source, open.Initializer.OpenBraceToken.Span.End, $" {property} = {value}", text, path)
+                : Insert(source, last.Span.End, $", {property} = {value}", text, path);
+        }
+
+        // 5. A member of a `new X(…)` written without an initializer — so give it one.
         //
         // The fence was drawn in the wrong place. Rewriting a FACTORY call into `new Button("Save")
         // { … }` changes the form the author chose, and the factory surface exists precisely so
@@ -516,8 +529,7 @@ public sealed class DesignSession
         // this, every property of every `new Box(…)` on the screen answered "not from here", which is
         // most of the properties on most of the screens in this repo.
         if (construction is ObjectCreationExpressionSyntax bare && bare.Initializer is null
-            && Inherited(symbol.ContainingType!).OfType<IPropertySymbol>()
-                .Any(candidate => candidate.Name == property && candidate.SetMethod is not null))
+            && Settable(symbol.ContainingType, property))
         {
             return Insert(source, bare.ArgumentList?.Span.End ?? bare.Type.Span.End,
                 $" {{ {property} = {value} }}", text, path);
@@ -1424,11 +1436,14 @@ public sealed class DesignSession
         var reachable = true;
 
         var members = new List<NodeProperty>();
+        // Nearest declaration wins. A property that is overridden, or shadowed with `new`, is declared
+        // at more than one level of the hierarchy and would otherwise be listed once per level.
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
         foreach (var member in Inherited(type).OfType<IPropertySymbol>())
         {
-            if (member.DeclaredAccessibility != Accessibility.Public || member.IsStatic) continue;
-            if (member.SetMethod is null || member.IsIndexer) continue;
-            if (IsStructural(member.Type)) continue;
+            if (!Writable(member) || IsStructural(member.Type)) continue;
+            if (!seen.Add(member.Name)) continue;
 
             var assignment = creation.Initializer?.Expressions
                 .OfType<AssignmentExpressionSyntax>()
@@ -1497,6 +1512,25 @@ public sealed class DesignSession
         return Guarded(source, Removal(written.Initializer.Expressions, (ExpressionSyntax)assignment), "", text, path);
     }
 
+    /// <summary>Whether a name is a member this tool may write into an object initializer: settable,
+    /// and settable from OUTSIDE the type — a private setter is not an offer.</summary>
+    private static bool Settable(ITypeSymbol? type, string name) =>
+        type is not null && Inherited(type).OfType<IPropertySymbol>().Any(member =>
+            member.Name == name && Writable(member));
+
+    /// <summary>
+    /// A property this panel may set: public, instance, with a setter that is public too.
+    /// <para>
+    /// <c>SetMethod is not null</c> is not enough — a <c>private set</c> has one, and offering it
+    /// produces a row whose every edit is refused by the compiler rather than by the tool.
+    /// </para>
+    /// </summary>
+    private static bool Writable(IPropertySymbol property) =>
+        property.DeclaredAccessibility == Accessibility.Public
+        && !property.IsStatic
+        && !property.IsIndexer
+        && property.SetMethod is { DeclaredAccessibility: Accessibility.Public };
+
     /// <summary>A type's own members and every base's, nearest first — <c>object</c> excluded, which
     /// contributes nothing an inspector would show.</summary>
     private static IEnumerable<ISymbol> Inherited(ITypeSymbol type)
@@ -1560,11 +1594,17 @@ public sealed class DesignSession
         if (model.GetSymbolInfo(access).Symbol is not IFieldSymbol field) return null;
         if (!field.IsStatic || field.ContainingType is not { IsStatic: true } scale) return null;
 
+        // Qualified the way the AUTHOR qualified it. The panel writes what it offers straight into the
+        // file, and the scale's simple name is only certainly in scope if that is how it is already
+        // written there — `Primitives.Space.S3` would otherwise be answered with an unresolvable
+        // `Space.S4`.
+        var prefix = access.Expression.ToString();
+
         var siblings = scale.GetMembers().OfType<IFieldSymbol>()
             .Where(sibling => sibling.IsStatic
                               && sibling.DeclaredAccessibility == Accessibility.Public
                               && SymbolEqualityComparer.Default.Equals(sibling.Type, field.Type))
-            .Select(sibling => $"{scale.Name}.{sibling.Name}")
+            .Select(sibling => $"{prefix}.{sibling.Name}")
             .ToArray();
 
         return siblings.Length > 1 ? siblings : null;

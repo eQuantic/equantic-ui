@@ -170,6 +170,27 @@ public sealed class SetPropertyTests : IDisposable
         Apply(Source, edit).Should().Contain("{ AlignSelf = CrossAlign.Center }");
     }
 
+    /// <summary>
+    /// And the SECOND one goes in beside the first.
+    /// <para>
+    /// Adding the braces is one branch and filling them is another, and with only the first there,
+    /// setting two things on the same node — the ordinary case, not the edge one — refused everything
+    /// after the first, with a message that called a `new` construction a factory call.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ASecondMemberJoinsTheBracesRatherThanBeingRefused()
+    {
+        var first = _session.SetProperty(_probe, Source, OriginOf("new Box(new BoxStyle"), "AlignSelf", "CrossAlign.Center");
+        var after = Apply(Source, first);
+
+        var second = _session.SetProperty(_probe, after, OriginOf("new Box(new BoxStyle"), "GridSpan", "2");
+
+        second.Applied.Should().BeTrue(second.Reason);
+        var written = Apply(after, second);
+        written.Should().Contain("AlignSelf = CrossAlign.Center").And.Contain("GridSpan = 2");
+    }
+
     /// <summary>A value that is not C# would be written verbatim into a C# file.</summary>
     [Fact]
     public void AValueThatIsNotAnExpression_IsRefusedBeforeAnythingIsComputed()

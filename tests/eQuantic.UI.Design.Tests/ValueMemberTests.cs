@@ -31,6 +31,7 @@ public sealed class ValueMemberTests : IDisposable
             {
                 var scaled = new Row(gap: Space.S3);
                 var plain = new Row(gap: 7);
+                var qualified = new Row(gap: eQuantic.UI.Primitives.Space.S3);
                 return new Box(new BoxStyle
                 {
                     Padding = EdgeInsets.All(Space.S4),
@@ -212,6 +213,30 @@ public sealed class ValueMemberTests : IDisposable
 
         align.Editable.Should().BeTrue();
         align.Options.Should().NotBeNull("CrossAlign is an enum, so it is a list and not a text box");
+    }
+
+    /// <summary>
+    /// The options are qualified the way the AUTHOR qualified them. The panel writes what it offers
+    /// straight into the file, so the scale's simple name is only certainly in scope where that is how
+    /// it is already spelled there.
+    /// </summary>
+    [Fact]
+    public void TheOptionsKeepTheSpellingTheFileUses()
+    {
+        var node = _session.Inspect(_probe, Source, OriginOf("new Row(gap: eQuantic.UI.Primitives.Space.S3"));
+        var gap = node!.Properties.Single(property => property.Name == "gap");
+
+        gap.Options.Should().NotBeNull();
+        gap.Options.Should().OnlyContain(option => option.StartsWith("eQuantic.UI.Primitives.Space."));
+    }
+
+    /// <summary>A property with a private setter is not an offer: every edit of that row would be
+    /// refused by the compiler rather than by the tool.</summary>
+    [Fact]
+    public void AMemberWithNoPublicSetter_IsNotOffered()
+    {
+        Style.Members.Should().OnlyContain(member => member.Name != "GetHashCode");
+        Style.Members.Should().NotContain(member => member.Name == "EqualityContract");
     }
 
     [Fact]
