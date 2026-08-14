@@ -40,7 +40,7 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// </summary>
 public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IFrameCallback
 {
-    private SurfaceView? _view;
+    private PhotonSurfaceView? _view;
     private PhotonHost? _host;
     private VulkanBackend? _vulkan;
     private VulkanSwapchain? _swapchain;
@@ -140,7 +140,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         base.OnCreate(savedInstanceState);
         Current = this;
 
-        _view = new SurfaceView(this);
+        _view = new PhotonSurfaceView(this);
         _view.Holder!.AddCallback(this);
         SetContentView(_view);
     }
@@ -189,6 +189,14 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             SmoothScroll = app.Options.SmoothScroll,
         };
         cultureController?.Attach(_host.Invalidate);
+
+        // The semantics bridge: TalkBack reads the SAME target-neutral tree the Apple shells read,
+        // and its gestures reach the same handlers a finger does — by path, like everything else
+        // that has to survive the next frame.
+        _view!.Semantics = new PhotonAccessibility(_view,
+            () => _host?.Semantics() ?? [],
+            path => _host?.ActivatePath(path) ?? false,
+            (path, direction) => _host?.AdjustPath(path, direction) ?? false);
 
         Choreographer.Instance!.PostFrameCallback(this);
     }
@@ -295,12 +303,50 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             FramesPresented++;
         }
 
+        // The screen just changed: if that changed what a screen reader would read, tell the system.
+        _view.Semantics?.FrameRendered();
+
         if (forced == true && FramesPresented >= Application!.Options.MaxFrames)
         {
+            ProbeAccessibility();
             Console.WriteLine($"[photon] frames presented: {FramesPresented}");
             Choreographer.Instance.RemoveFrameCallback(this);
             Finish();
         }
+    }
+
+    /// <summary>
+    /// Self-test evidence for the semantics bridge, taken through the PROVIDER the platform itself
+    /// queries: what TalkBack would receive if it asked this view right now, and what happens when
+    /// it double-taps the first control. Asking the provider rather than the tree is the point —
+    /// a walk of the tree would pass whether or not the virtual hierarchy is reachable.
+    /// </summary>
+    private void ProbeAccessibility()
+    {
+        if (_view?.AccessibilityNodeProvider is not { } provider) return;
+        var host = provider.CreateAccessibilityNodeInfo(
+            global::Android.Views.Accessibility.AccessibilityNodeProvider.HostViewId);
+        var count = host?.ChildCount ?? 0;
+        if (count == 0)
+        {
+            global::Android.Util.Log.Info("Photon", "accessibility elements: 0");
+            return;
+        }
+
+        var first = provider.CreateAccessibilityNodeInfo(0);
+        global::Android.Util.Log.Info("Photon",
+            $"accessibility elements: {count} — first: {first?.ClassName} \"{first?.ContentDescription}\"");
+
+        for (var index = 0; index < count; index++)
+        {
+            var node = provider.CreateAccessibilityNodeInfo(index);
+            if (node?.ClassName != "android.widget.Button") continue;
+            var ran = provider.PerformAction(index, global::Android.Views.Accessibility.Action.Click, null);
+            global::Android.Util.Log.Info("Photon",
+                $"accessibility activate \"{node.ContentDescription}\": {ran}");
+            return;
+        }
+        global::Android.Util.Log.Info("Photon", "accessibility activate: no button on this screen");
     }
 
     // ---- Touches --------------------------------------------------------------------------------
