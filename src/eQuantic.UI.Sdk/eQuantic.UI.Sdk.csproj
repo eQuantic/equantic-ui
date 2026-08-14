@@ -33,7 +33,7 @@
     </PropertyGroup>
 
     <Target Name="CollectBuildOutput">
-        <MSBuild Projects="..\eQuantic.Build\eQuantic.Build.csproj" Targets="Build"
+        <MSBuild Projects="..\eQuantic.Build\eQuantic.Build.csproj" Targets="Restore;Build"
             Properties="Configuration=$(Configuration)" />
         <!--
             eqicon is a SECOND tool this SDK runs — the `Assets/*.svg` vector catalog and the web app
