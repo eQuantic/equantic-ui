@@ -13,4 +13,28 @@
         <Content Include="Sdk\**" PackagePath="Sdk" />
     </ItemGroup>
 
+    <!--
+        eqicon travels INSIDE the package, staged at pack time from a build of its own project in
+        the pack's configuration — the shape the web SDK already uses for eqc. Sdk.targets looks for
+        it at `<package>/tools/net10.0/`, and every target that runs it is guarded by Exists(): a
+        package without it does not fail, it silently stops drawing app icons and vector catalogs,
+        which is what shipped until this.
+    -->
+    <PropertyGroup>
+        <TargetsForTfmSpecificContentInPackage>
+            $(TargetsForTfmSpecificContentInPackage);CollectIconTool</TargetsForTfmSpecificContentInPackage>
+    </PropertyGroup>
+
+    <Target Name="CollectIconTool">
+        <MSBuild Projects="..\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" Targets="Build"
+            Properties="Configuration=$(Configuration)" />
+        <ItemGroup>
+            <_IconTool Include="..\eQuantic.UI.Native.Build\bin\$(Configuration)\net10.0\**"
+                Exclude="..\eQuantic.UI.Native.Build\bin\$(Configuration)\net10.0\*.pdb" />
+        </ItemGroup>
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="@(_IconTool)" PackagePath="tools\net10.0" />
+        </ItemGroup>
+    </Target>
+
 </Project>

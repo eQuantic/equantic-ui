@@ -19,6 +19,9 @@ src/eQuantic.UI.Runtime.*/tools/bun/bun-linux
 src/eQuantic.UI.Runtime.*/tools/bun/bun.exe
 !src/eQuantic.UI.Runtime.*/tools/bun/*.zip
 src/eQuantic.UI.Sdk/tools/
+# Refreshed by eQuantic.UI.Native.Build on every build and staged into the package at PACK time
+# (CollectIconTool) — tracking it committed a Debug binary and churned on every configuration flip.
+src/eQuantic.UI.Sdk.Native/tools/
 
 # IDE
 .idea/
