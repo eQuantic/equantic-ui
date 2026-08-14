@@ -33,6 +33,13 @@ public sealed record DesignParams
 
     /// <summary>An origin string a rendered element carried back (classify).</summary>
     [JsonPropertyName("origin")] public string? Origin { get; init; }
+
+    /// <summary>The property being set (setProperty).</summary>
+    [JsonPropertyName("property")] public string? Property { get; init; }
+
+    /// <summary>Its new value, as C# SOURCE — <c>Variant.Secondary</c>, <c>12</c>, <c>"Save"</c>.
+    /// The panel writes C#, because the file does.</summary>
+    [JsonPropertyName("value")] public string? Value { get; init; }
 }
 
 /// <summary>
@@ -61,6 +68,27 @@ public sealed record NodeProperty(
     [property: JsonPropertyName("options")] string[]? Options,
     /// <summary>The doc comment's summary, read off the source symbol.</summary>
     [property: JsonPropertyName("summary")] string? Summary);
+
+/// <summary>
+/// One text replacement the editor should apply, or the reason there is none.
+/// <para>
+/// The host computes the edit and the EDITOR applies it. That split is deliberate: an edit that goes
+/// through <c>WorkspaceEdit</c> lands in the document's own undo stack, so one Ctrl+Z reverses the
+/// whole gesture and an unsaved buffer stays unsaved. A host writing the file itself would fight the
+/// editor for the same document and win in the worst way.
+/// </para>
+/// </summary>
+public sealed record EditResult(
+    [property: JsonPropertyName("applied")] bool Applied,
+    [property: JsonPropertyName("reason")] string? Reason,
+    [property: JsonPropertyName("startLine")] int StartLine,
+    [property: JsonPropertyName("startColumn")] int StartColumn,
+    [property: JsonPropertyName("endLine")] int EndLine,
+    [property: JsonPropertyName("endColumn")] int EndColumn,
+    [property: JsonPropertyName("newText")] string NewText)
+{
+    public static EditResult Refused(string reason) => new(false, reason, 0, 0, 0, 0, "");
+}
 
 /// <summary>What the inspector shows for one selected node.</summary>
 public sealed record InspectResult(

@@ -144,9 +144,59 @@ export class PreviewPanel {
     void this.panel.webview.postMessage(message);
   }
 
-  private onWebviewMessage(message: { type: string; detail?: string; origin?: string }): void {
+  private onWebviewMessage(
+    message: { type: string; detail?: string; origin?: string; property?: string; value?: string; options?: string[] },
+  ): void {
     if (message.type === 'threw') this.log(`preview threw: ${message.detail ?? ''}`);
     else if (message.type === 'select' && message.origin) void this.revealSource(message.origin);
+    else if (message.type === 'edit' && message.origin && message.property) {
+      void this.editProperty(message.origin, message.property, message.value, message.options);
+    }
+  }
+
+  /**
+   * Ask for the new value and write it.
+   * <para>
+   * Asked through VS Code's OWN input rather than a field in the webview: an enum becomes a quick
+   * pick with the members on it, everything else an input box seeded with what is written now. It is
+   * keyboard-navigable and screen-reader-correct for free, which a hand-rolled panel field is not.
+   * </para>
+   */
+  private async editProperty(
+    origin: string, property: string, current: string | undefined, options: string[] | undefined,
+  ): Promise<void> {
+    const value = options?.length
+      // The members are offered as they must be WRITTEN, qualified — the panel's job is to spare
+      // the author from knowing the type's name, not to produce something that does not compile.
+      ? await vscode.window.showQuickPick(options, { title: `${property}`, placeHolder: current ?? 'choose a value' })
+      : await vscode.window.showInputBox({
+          title: property,
+          value: current ?? '',
+          prompt: 'C# expression — this goes into the file as written',
+        });
+
+    if (value === undefined) return;
+
+    const edit = await this.sidecar.setProperty(
+      this.document.uri.fsPath, this.document.getText(), origin, property, value);
+
+    if (!edit.applied) {
+      void vscode.window.showWarningMessage(`eQuantic UI: ${edit.reason ?? 'that edit was refused'}`);
+      return;
+    }
+
+    // ONE WorkspaceEdit for the gesture, applied to the document rather than written to disk: it
+    // joins the editor's undo stack, so a single Ctrl+Z takes it back, and an unsaved buffer stays
+    // unsaved. The preview recompiles from the buffer on its usual debounce.
+    const workspaceEdit = new vscode.WorkspaceEdit();
+    workspaceEdit.replace(
+      this.document.uri,
+      new vscode.Range(edit.startLine, edit.startColumn, edit.endLine, edit.endColumn),
+      edit.newText);
+
+    if (!(await vscode.workspace.applyEdit(workspaceEdit))) {
+      void vscode.window.showWarningMessage('eQuantic UI: the editor refused that edit.');
+    }
   }
 
   /**
@@ -277,6 +327,8 @@ export class PreviewPanel {
     font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
     word-break: break-all;
   }
+  #tier tr.settable { cursor: pointer; }
+  #tier tr.settable:hover { background: var(--vscode-list-hoverBackground, #2a2d2e); }
   #tier tr.unreachable { opacity: 0.5; }
   #tier tr.unreachable td.value::after {
     content: attr(data-reason); opacity: 0.9; font-family: var(--vscode-font-family, sans-serif);
@@ -411,6 +463,7 @@ export class PreviewPanel {
   }, true);
 
   const tier = document.getElementById('tier');
+  let selectedOrigin = null;
 
   // Built with DOM calls rather than an HTML string: every value here is SOURCE TEXT the developer
   // wrote, and interpolating that into innerHTML would let a string literal in their own file close
@@ -443,6 +496,17 @@ export class PreviewPanel {
 
         const row = document.createElement('tr');
         if (!property.editable) row.className = 'unreachable';
+        else {
+          row.className = 'settable';
+          row.title = 'Set ' + property.name;
+          row.addEventListener('click', () => vscode.postMessage({
+            type: 'edit',
+            origin: selectedOrigin,
+            property: property.name,
+            value: property.value,
+            options: property.options,
+          }));
+        }
 
         const name = document.createElement('td');
         name.className = 'name';
@@ -479,7 +543,8 @@ export class PreviewPanel {
     frame(found);
     outline.classList.remove('derived', 'foreign');
     tier.classList.remove('visible');
-    vscode.postMessage({ type: 'select', origin: found.getAttribute('data-eq-origin') });
+    selectedOrigin = found.getAttribute('data-eq-origin');
+    vscode.postMessage({ type: 'select', origin: selectedOrigin });
   }, true);
 
   window.addEventListener('message', (event) => {

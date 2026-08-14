@@ -22,6 +22,7 @@ public sealed class InspectTests : IDisposable
         using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
         using static eQuantic.UI.Components.UI;
+        using StatefulComponent = eQuantic.UI.Primitives.StatefulComponent;
 
         [Page("/probe")]
         public sealed class Probe : StatefulComponent
@@ -109,14 +110,15 @@ public sealed class InspectTests : IDisposable
     }
 
     /// <summary>An enum is a closed set, so the panel offers a list rather than a text box — the
-    /// difference between choosing a value and having to know one.</summary>
+    /// difference between choosing a value and having to know one. QUALIFIED, because what the panel
+    /// offers is what gets written into the file, and a bare member name would not compile.</summary>
     [Fact]
     public void AnEnumParameter_CarriesItsMembers()
     {
         var cross = Inspect("Row(gap:").Properties.Single(p => p.Name == "cross");
 
         cross.Options.Should().NotBeNull();
-        cross.Options.Should().Contain(["Start", "Center", "End", "Stretch"]);
+        cross.Options.Should().Contain(["CrossAlign.Start", "CrossAlign.Center", "CrossAlign.Stretch"]);
     }
 
     /// <summary>

@@ -50,6 +50,13 @@ while (await input.ReadLineAsync() is { } line)
                 parameters.Text ?? "",
                 Require(parameters.Origin, "origin")) ?? (object)"",
 
+            "setProperty" => session.SetProperty(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin"),
+                Require(parameters.Property, "property"),
+                parameters.Value ?? ""),
+
             "theme" => session.Theme(),
 
             "shutdown" => "bye",

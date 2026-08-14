@@ -5,6 +5,7 @@ using eQuantic.UI.Compiler.Services;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 namespace eQuantic.UI.Design;
 
@@ -352,6 +353,202 @@ public sealed class DesignSession
             properties.ToArray());
     }
 
+    /// <summary>
+    /// Sets one property on the node an origin names, as a TEXT REPLACEMENT for the editor to apply.
+    /// <para>
+    /// Three shapes are supported and nothing else: replace an argument that is already written,
+    /// add a named argument for a constructor parameter the call omitted, and replace a member in an
+    /// object initializer that already exists. What is deliberately NOT here is form transformation —
+    /// turning <c>Row(…)</c> into <c>new Row(…) { … }</c> so a field becomes editable would rewrite
+    /// how the author's file is authored, and that is their decision, not the panel's.
+    /// </para>
+    /// </summary>
+    public EditResult SetProperty(string path, string text, string origin, string property, string value)
+    {
+        if (_compilation is null) throw new InvalidOperationException("initialize first");
+
+        // The value is C# and goes into a C# file; a fragment that does not parse would be written
+        // verbatim and break the document.
+        var parsedValue = SyntaxFactory.ParseExpression(value);
+        if (parsedValue.ContainsDiagnostics || parsedValue.ToString().Trim() != value.Trim())
+            return EditResult.Refused($"'{value}' is not a C# expression.");
+
+        var located = Locate(path, text, origin);
+        if (located is not var (tree, source, construction, model) || construction is null)
+            return EditResult.Refused("That element's origin does not name anything in this file.");
+
+        if (model.GetSymbolInfo(construction).Symbol is not IMethodSymbol symbol)
+            return EditResult.Refused("The compiler cannot resolve that construction.");
+
+        var arguments = construction switch
+        {
+            ObjectCreationExpressionSyntax creation => creation.ArgumentList?.Arguments,
+            InvocationExpressionSyntax invocation => invocation.ArgumentList.Arguments,
+            _ => null,
+        };
+
+        // `style.Padding` — a member of the value an argument carries. See SetNested.
+        if (property.Split('.') is [var argumentName, var member])
+        {
+            return SetNested(source, arguments, symbol, argumentName, member, value, text, path);
+        }
+
+        // 1. An argument already written — replace just its expression, so trivia and the name colon
+        //    survive untouched.
+        var parameterIndex = -1;
+        for (var i = 0; i < symbol.Parameters.Length; i++)
+        {
+            if (symbol.Parameters[i].Name == property) { parameterIndex = i; break; }
+        }
+
+        if (parameterIndex >= 0 && arguments is { } list
+            && ArgumentFor(list, symbol.Parameters[parameterIndex], parameterIndex) is { } written)
+        {
+            return Replace(source, written.Expression.Span, value, text, path);
+        }
+
+        // 2. A member already in an object initializer.
+        var initializer = (construction as ObjectCreationExpressionSyntax)?.Initializer;
+        if (initializer?.Expressions.OfType<AssignmentExpressionSyntax>()
+                .FirstOrDefault(a => a.Left.ToString() == property) is { } assignment)
+        {
+            return Replace(source, assignment.Right.Span, value, text, path);
+        }
+
+        // 3. A constructor parameter the call omitted — added NAMED, and placed before a trailing
+        //    `children:` so the tree stays last, which is how every screen in the repo is written.
+        if (parameterIndex >= 0 && arguments is { } existing)
+        {
+            var children = existing.FirstOrDefault(a => a.NameColon?.Name.Identifier.Text == "children");
+            var addition = $"{property}: {value}";
+
+            if (children is not null)
+            {
+                return Insert(source, children.SpanStart, addition + ", ", text, path);
+            }
+
+            return existing.Count == 0
+                ? Insert(source, construction.Span.End - 1, addition, text, path)
+                : Insert(source, existing[^1].Span.End, ", " + addition, text, path);
+        }
+
+        return EditResult.Refused(
+            $"'{property}' is not a constructor parameter of {symbol.ContainingType?.Name ?? "this component"} "
+            + "and there is no object initializer to set it in. Adding one would change how this file is written.");
+    }
+
+    /// <summary>
+    /// A member of a VALUE an argument carries — <c>style.Padding</c>, where <c>style</c> is the
+    /// argument and <c>Padding</c> a member of the <c>BoxStyle</c> written into it.
+    /// <para>
+    /// This exists because the things an author most wants to change — padding, background, corner
+    /// radius — are not on the node at all; they are on a <c>BoxStyle</c>, which is data rather than
+    /// tree and therefore carries no origin of its own. Without descending one level, the panel could
+    /// offer a Box's <c>gap</c> and nothing anyone came for.
+    /// </para>
+    /// <para>
+    /// One level, and only into an initializer that already exists: the same fence as everywhere else
+    /// in this phase. <c>BoxStyle</c> is the case it was built for, and it is a <c>readonly record
+    /// struct</c> with no positional parameters, so every member of it is a plain add-or-replace with
+    /// no ordinal arithmetic anywhere.
+    /// </para>
+    /// </summary>
+    private EditResult SetNested(
+        SourceText source, SeparatedSyntaxList<ArgumentSyntax>? arguments, IMethodSymbol symbol,
+        string argumentName, string member, string value, string text, string path)
+    {
+        if (arguments is not { } list) return EditResult.Refused("That construction takes no arguments.");
+
+        var index = -1;
+        for (var i = 0; i < symbol.Parameters.Length; i++)
+        {
+            if (symbol.Parameters[i].Name == argumentName) { index = i; break; }
+        }
+        if (index < 0) return EditResult.Refused($"'{argumentName}' is not a parameter of {symbol.Name}.");
+
+        if (ArgumentFor(list, symbol.Parameters[index], index)?.Expression is not ObjectCreationExpressionSyntax written)
+            return EditResult.Refused($"'{argumentName}' is not written as a value this panel can edit in place.");
+
+        if (written.Initializer is null)
+            return EditResult.Refused(
+                $"The {argumentName} here has no object initializer to set '{member}' in. "
+                + "Adding one would change how this file is written.");
+
+        var assignment = written.Initializer.Expressions
+            .OfType<AssignmentExpressionSyntax>()
+            .FirstOrDefault(a => a.Left.ToString() == member);
+
+        if (assignment is not null) return Guarded(source, assignment.Right.Span, value, text, path);
+
+        // Appended to the initializer that is already there — never one invented for the purpose.
+        var last = written.Initializer.Expressions.LastOrDefault();
+        return last is null
+            ? Guarded(source, new TextSpan(written.Initializer.OpenBraceToken.Span.End, 0), $" {member} = {value}", text, path)
+            : Guarded(source, new TextSpan(last.Span.End, 0), $", {member} = {value}", text, path);
+    }
+
+    private EditResult Replace(SourceText source, Microsoft.CodeAnalysis.Text.TextSpan span, string value, string text, string path) =>
+        Guarded(source, span, value, text, path);
+
+    private EditResult Insert(SourceText source, int position, string value, string text, string path) =>
+        Guarded(source, new Microsoft.CodeAnalysis.Text.TextSpan(position, 0), value, text, path);
+
+    /// <summary>
+    /// The edit, checked before it is offered: the whole file is re-parsed with the change applied,
+    /// and if that introduces a C# error the file did not already have, the edit is refused instead
+    /// of returned. A panel that writes a broken file and lets the preview report it has still
+    /// broken the file.
+    /// </summary>
+    private EditResult Guarded(
+        SourceText source, Microsoft.CodeAnalysis.Text.TextSpan span, string value, string text, string path)
+    {
+        // Compared as a MULTISET of (code, message), never by count and never by position: an edit
+        // shifts every line after it, and a file that already had an error would otherwise have that
+        // error reported back as though this edit had caused it.
+        var before = _compiler.GetLanguageErrors(text, path)
+            .GroupBy(e => (e.Code, e.Message))
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var introduced = _compiler.GetLanguageErrors(source.Replace(span, value).ToString(), path)
+            .GroupBy(e => (e.Code, e.Message))
+            .Select(g => (g.Key, Added: g.Count() - (before.TryGetValue(g.Key, out var had) ? had : 0), First: g.First()))
+            .FirstOrDefault(entry => entry.Added > 0);
+
+        if (introduced.First is { } error)
+        {
+            return EditResult.Refused($"That would not compile: {error.Code} {error.Message}.");
+        }
+
+        var start = source.Lines.GetLinePosition(span.Start);
+        var end = source.Lines.GetLinePosition(span.End);
+        return new EditResult(true, null, start.Line, start.Character, end.Line, end.Character, value);
+    }
+
+    /// <summary>The construction an origin names, with the model that can answer for it.</summary>
+    private (SyntaxTree Tree, SourceText Source, SyntaxNode? Construction, SemanticModel Model)? Locate(
+        string path, string text, string origin)
+    {
+        var parts = origin.Split('|');
+        if (parts.Length != 3 || !SamePath(parts[0], path)) return null;
+
+        var tree = CSharpSyntaxTree.ParseText(text, path: path);
+        var source = tree.GetText();
+        var (startLine, startCharacter) = ParsePosition(parts[1]);
+        var (endLine, endCharacter) = ParsePosition(parts[2]);
+        if (startLine >= source.Lines.Count || endLine >= source.Lines.Count) return null;
+
+        var start = source.Lines[startLine].Start + startCharacter;
+        var end = source.Lines[endLine].Start + endCharacter;
+        if (start > source.Length || end > source.Length || end < start) return null;
+
+        var construction = tree.GetRoot()
+            .FindNode(Microsoft.CodeAnalysis.Text.TextSpan.FromBounds(start, end))
+            .AncestorsAndSelf()
+            .FirstOrDefault(n => n is ObjectCreationExpressionSyntax or InvocationExpressionSyntax);
+
+        return (tree, source, construction, Swap(_compilation!, tree).GetSemanticModel(tree));
+    }
+
     /// <summary>A type's own members and every base's, nearest first — <c>object</c> excluded, which
     /// contributes nothing an inspector would show.</summary>
     private static IEnumerable<ISymbol> Inherited(ITypeSymbol type)
@@ -383,8 +580,13 @@ public sealed class DesignSession
             ? nullable.TypeArguments[0]
             : type;
 
+        // QUALIFIED — `CrossAlign.Center`, not `Center`. What the panel offers is what gets written
+        // into the file, so a bare member name would be a pick that cannot compile.
         return underlying.TypeKind == TypeKind.Enum
-            ? underlying.GetMembers().OfType<IFieldSymbol>().Where(f => f.HasConstantValue).Select(f => f.Name).ToArray()
+            ? underlying.GetMembers().OfType<IFieldSymbol>()
+                .Where(f => f.HasConstantValue)
+                .Select(f => $"{underlying.Name}.{f.Name}")
+                .ToArray()
             : null;
     }
 

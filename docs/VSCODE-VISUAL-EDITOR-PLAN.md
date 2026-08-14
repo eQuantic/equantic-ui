@@ -271,23 +271,45 @@ One gap worth naming: the framework's **factories document no parameters**. The 
 (188 `<param>` comments exist, mostly on records), so writing them on `UI.cs` would light up the
 inspector immediately at no cost to this code.
 
-### Phase 5 — property write-back, fenced
+### Phase 5 — property write-back, fenced ✅ done
 
-`DocumentEditor.ReplaceNode`, one `WorkspaceEdit` per gesture so one Ctrl+Z reverses it and it lands
-in the document's own undo stack. Never `fs.writeFile`.
+The host computes the edit; the **editor applies it**, as one `WorkspaceEdit` per gesture. That split
+is the whole design: the edit lands in the document's own undo stack, so one Ctrl+Z reverses it, and
+an unsaved buffer stays unsaved. A host writing the file itself would be fighting the editor for the
+same document and would win in the worst way. Never `fs.writeFile`.
 
-`Microsoft.CodeAnalysis.Workspaces.Common` is already on the restore graph via
-`eQuantic.UI.Compiler.csproj:13`, so this needs no new dependency decision.
+Three shapes, and deliberately nothing else:
 
-**`BoxStyle` first**: it is a `readonly record struct` with no positional parameters, so every
-appearance edit is a pure initializer-member add or replace with no ordinal arithmetic.
+1. **Replace an argument already written** — just its expression, so trivia and the name colon survive.
+2. **Add a parameter the call omitted**, as a NAMED argument placed before a trailing `children:` so
+   the tree stays last, which is how every screen in the repo reads.
+3. **Set a member of the value an argument carries** — `style.Padding`. This one is not a nicety: the
+   things an author reaches for (padding, background, corner radius) are on a `BoxStyle`, which is
+   *data rather than tree* and so carries no origin — a click on a Box resolves to the Box. Without
+   descending one level the panel could offer a Box's `gap` and nothing anyone came for. And
+   `BoxStyle` is a `readonly record struct` with no positional parameters, so every member of it is a
+   plain add-or-replace with no ordinal arithmetic anywhere.
 
-**No form transformation in v1.** Setting `Width` on `Column(gap: 12, children: [...])` is impossible
-without rewriting the call into `new Column(...) { Width = ... }` — a different authoring form the
-whole factory surface exists to avoid. The inspector shows such properties **disabled, with the
-reason**. Honest beats clever.
+**Two gates before an edit is even offered:** the value must parse as a C# expression, and re-parsing
+the whole file with the change applied must introduce no error the file did not already have. The
+second compares a MULTISET of (code, message) rather than a count or a position — an edit shifts
+every line after it, and a file with a pre-existing error would otherwise have that error handed back
+as though this edit caused it. A panel that writes a broken file and lets the preview report it has
+still broken the file.
 
-**Exit:** applying a no-op edit to all sample screens produces byte-identical files.
+**No form transformation.** Setting `Width` on `Row(gap: …)` needs an object initializer the call does
+not have, and adding one rewrites `Row(…)` into `new Row(…) { … }` — the authoring form the whole
+factory surface exists to avoid. The panel says so, with the reason, and does not do it.
+
+Values are asked for through **VS Code's own input**: an enum becomes a quick pick of its members
+*qualified* (`CrossAlign.Center`, never `Center` — what the panel offers is what gets written), and
+anything else an input box seeded with the current text. Keyboard-navigable and screen-reader-correct
+for free, which a hand-rolled webview field is not.
+
+**Exit, proved:** setting every written argument to the value it already has returns the file
+**byte-identical**. That is the guard the phase needs — a span off by one character passes every other
+test here and quietly eats a bracket. 23 tests in all, over a real `Initialize` with a live
+compilation.
 
 ### Phase 6 — insert from the palette, fenced
 

@@ -51,6 +51,18 @@ export interface InspectResult {
   properties: NodeProperty[];
 }
 
+/** One text replacement to apply, or the reason there is none. Computed by the host; applied by the
+ * editor, so it lands in the document's own undo stack. */
+export interface EditResult {
+  applied: boolean;
+  reason: string | null;
+  startLine: number;
+  startColumn: number;
+  endLine: number;
+  endColumn: number;
+  newText: string;
+}
+
 export interface CompileResult {
   success: boolean;
   js: string;
@@ -155,6 +167,10 @@ export class Sidecar {
    * every request, and a missing reply would leave the panel waiting forever. */
   inspect(path: string, text: string, origin: string): Promise<InspectResult | ''> {
     return this.send('inspect', { path, text, origin });
+  }
+
+  setProperty(path: string, text: string, origin: string, property: string, value: string): Promise<EditResult> {
+    return this.send('setProperty', { path, text, origin, property, value });
   }
 
   theme(): Promise<string> {
