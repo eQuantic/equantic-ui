@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CompileResult, Sidecar } from './sidecar';
+import { CompileResult, OpenBuffer, Sidecar } from './sidecar';
 import { ProjectLayout } from './project';
 
 /**
@@ -27,7 +27,7 @@ export class PreviewPanel {
 
   constructor(
     private readonly document: vscode.TextDocument,
-    layout: ProjectLayout,
+    private readonly layout: ProjectLayout,
     private readonly sidecar: Sidecar,
     private readonly diagnostics: vscode.DiagnosticCollection,
     private readonly log: (line: string) => void,
@@ -52,8 +52,12 @@ export class PreviewPanel {
 
     this.disposables.push(
       this.panel.webview.onDidReceiveMessage((message) => this.onWebviewMessage(message)),
+      // ANY C# file in the project, not only the previewed one: a screen is composed of several,
+      // and editing the shell beside it has to repaint just the same.
       vscode.workspace.onDidChangeTextDocument((event) => {
-        if (event.document.uri.toString() === this.document.uri.toString()) this.schedule();
+        if (event.document.languageId === 'csharp' && event.document.uri.fsPath.startsWith(this.layout.dir)) {
+          this.schedule();
+        }
       }),
       vscode.workspace.onDidCloseTextDocument((closed) => {
         if (closed.uri.toString() === this.document.uri.toString()) this.panel.dispose();
@@ -85,7 +89,7 @@ export class PreviewPanel {
 
   private async publishDiagnostics(): Promise<void> {
     try {
-      const marks = await this.sidecar.diagnose(this.document.uri.fsPath, this.document.getText());
+      const marks = await this.sidecar.diagnose(this.document.uri.fsPath, this.document.getText(), this.buffers());
       this.diagnostics.set(
         this.document.uri,
         marks.map((mark) => {
@@ -110,7 +114,7 @@ export class PreviewPanel {
 
     let result: CompileResult;
     try {
-      result = await this.sidecar.compile(this.document.uri.fsPath, this.document.getText());
+      result = await this.sidecar.compile(this.document.uri.fsPath, this.document.getText(), this.buffers());
     } catch (error) {
       this.post({ type: 'error', title: 'The design host could not compile this file', detail: (error as Error).message });
       return;
@@ -138,6 +142,24 @@ export class PreviewPanel {
   async prime(): Promise<void> {
     this.theme = await this.sidecar.theme();
     await this.refresh();
+  }
+
+  /**
+   * Every C# file the editor holds UNSAVED inside this project.
+   * <para>
+   * A screen is rarely one file — a shell, a row, a data helper — so a preview built from the edited
+   * buffer and everything else from disk would show the last saved version of all the parts the
+   * author is not currently typing in. Scoped to the project, because the host's compilation is.
+   * </para>
+   */
+  private buffers(): OpenBuffer[] {
+    return vscode.workspace.textDocuments
+      .filter((document) =>
+        document.isDirty
+        && document.languageId === 'csharp'
+        && document.uri.scheme === 'file'
+        && document.uri.fsPath.startsWith(this.layout.dir))
+      .map((document) => ({ path: document.uri.fsPath, text: document.getText() }));
   }
 
   private post(message: unknown): void {
@@ -177,8 +199,11 @@ export class PreviewPanel {
 
     if (value === undefined) return;
 
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) return;
+
     const edit = await this.sidecar.setProperty(
-      this.document.uri.fsPath, this.document.getText(), origin, property, value);
+      span.path, await this.textOf(span.path), origin, property, value, this.buffers());
 
     if (!edit.applied) {
       void vscode.window.showWarningMessage(`eQuantic UI: ${edit.reason ?? 'that edit was refused'}`);
@@ -190,7 +215,7 @@ export class PreviewPanel {
     // unsaved. The preview recompiles from the buffer on its usual debounce.
     const workspaceEdit = new vscode.WorkspaceEdit();
     workspaceEdit.replace(
-      this.document.uri,
+      vscode.Uri.file(span.path),
       new vscode.Range(edit.startLine, edit.startColumn, edit.endLine, edit.endColumn),
       edit.newText);
 
@@ -230,13 +255,17 @@ export class PreviewPanel {
 
     // Then say what KIND of node it is. Sent back separately rather than asked on hover: this is a
     // round trip, and one per pointer move would be a request storm for an answer nobody read.
-    const path = this.document.uri.fsPath;
-    const text = this.document.getText();
+    // The ORIGIN decides the file, not the panel. A screen is composed of several — a shell, a row,
+    // a helper — and their nodes carry their own file's spans; asking about the previewed file would
+    // answer "not mine" for most of what is on screen.
+    const path = span.path;
+    const text = await this.textOf(path);
 
     try {
+      const buffers = this.buffers();
       const [tier, inspected] = await Promise.all([
-        this.sidecar.classify(path, text, origin),
-        this.sidecar.inspect(path, text, origin),
+        this.sidecar.classify(path, text, origin, buffers),
+        this.sidecar.inspect(path, text, origin, buffers),
       ]);
       this.post({
         type: 'selected',
@@ -247,6 +276,15 @@ export class PreviewPanel {
     } catch (error) {
       this.log(`inspect failed: ${(error as Error).message}`);
     }
+  }
+
+  /** A file as the editor has it — its unsaved buffer when one is open, and its saved text
+   * otherwise. openTextDocument answers for both, and returns the already-open document when there
+   * is one rather than a second copy of it. */
+  private async textOf(path: string): Promise<string> {
+    const open = vscode.workspace.textDocuments.find((document) => document.uri.fsPath === path);
+    if (open) return open.getText();
+    return (await vscode.workspace.openTextDocument(vscode.Uri.file(path))).getText();
   }
 
   /** `path|startLine:startColumn|endLine:endColumn`, zero-based — the editor's own coordinates. */

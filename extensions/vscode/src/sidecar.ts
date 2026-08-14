@@ -63,6 +63,12 @@ export interface EditResult {
   newText: string;
 }
 
+/** One file as the editor currently has it, saved or not. */
+export interface OpenBuffer {
+  path: string;
+  text: string;
+}
+
 export interface CompileResult {
   success: boolean;
   js: string;
@@ -151,26 +157,28 @@ export class Sidecar {
     return this.send('initialize', { projectDir, refsFile, generatedDir });
   }
 
-  diagnose(path: string, text: string): Promise<DesignMark[]> {
-    return this.send('diagnose', { path, text });
+  diagnose(path: string, text: string, buffers: OpenBuffer[]): Promise<DesignMark[]> {
+    return this.send('diagnose', { path, text, buffers });
   }
 
-  compile(path: string, text: string): Promise<CompileResult> {
-    return this.send('compile', { path, text });
+  compile(path: string, text: string, buffers: OpenBuffer[]): Promise<CompileResult> {
+    return this.send('compile', { path, text, buffers });
   }
 
-  classify(path: string, text: string, origin: string): Promise<OriginTier> {
-    return this.send('classify', { path, text, origin });
+  classify(path: string, text: string, origin: string, buffers: OpenBuffer[]): Promise<OriginTier> {
+    return this.send('classify', { path, text, origin, buffers });
   }
 
   /** Empty string rather than null when the origin names nothing inspectable — the host answers
    * every request, and a missing reply would leave the panel waiting forever. */
-  inspect(path: string, text: string, origin: string): Promise<InspectResult | ''> {
-    return this.send('inspect', { path, text, origin });
+  inspect(path: string, text: string, origin: string, buffers: OpenBuffer[]): Promise<InspectResult | ''> {
+    return this.send('inspect', { path, text, origin, buffers });
   }
 
-  setProperty(path: string, text: string, origin: string, property: string, value: string): Promise<EditResult> {
-    return this.send('setProperty', { path, text, origin, property, value });
+  setProperty(
+    path: string, text: string, origin: string, property: string, value: string, buffers: OpenBuffer[],
+  ): Promise<EditResult> {
+    return this.send('setProperty', { path, text, origin, property, value, buffers });
   }
 
   theme(): Promise<string> {

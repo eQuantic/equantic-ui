@@ -40,7 +40,19 @@ public sealed record DesignParams
     /// <summary>Its new value, as C# SOURCE — <c>Variant.Secondary</c>, <c>12</c>, <c>"Save"</c>.
     /// The panel writes C#, because the file does.</summary>
     [JsonPropertyName("value")] public string? Value { get; init; }
+
+    /// <summary>
+    /// Every OTHER file the editor currently holds unsaved. A screen is rarely one file — a shell, a
+    /// row, a data helper — and a preview that read those from disk would show the last saved version
+    /// of everything except the file you happen to be typing in.
+    /// </summary>
+    [JsonPropertyName("buffers")] public OpenBuffer[]? Buffers { get; init; }
 }
+
+/// <summary>One file as the editor currently has it, saved or not.</summary>
+public sealed record OpenBuffer(
+    [property: JsonPropertyName("path")] string Path,
+    [property: JsonPropertyName("text")] string Text);
 
 /// <summary>
 /// One thing about a selected node that a panel can show, and one day edit.

@@ -318,21 +318,35 @@ Refuse imperative `.Add()` bodies with a clear message rather than corrupting a 
 
 ---
 
-## The open decision
+## The decision — settled 2026-08-14
 
-Phase 6's fence is worth almost nothing on today's code: **no real screen in this repo is written in
-the declarative form it can edit.** Three ways out, and it is a product call:
+**Declarative is the preferred form, and the fence stays there. But UNDERSTANDING is not fenced.**
+The editor opens pre-existing code, and pre-existing code is elaborate: helper methods, and whole
+screens split across files. So reading, selecting, inspecting and property-editing work everywhere,
+and only *structural insertion* is held to `children: [...]`.
 
-1. **Hold the fence.** Drag-and-drop works on declarative screens only. Safe, and nearly unusable on
-   the existing codebase until screens are rewritten.
-2. **Statement-level insertion into imperative bodies.** Covers 100 % of real screens, and is genuinely
-   hard: which local is the parent, which statements mutate it, whether an insertion crosses a
-   declaration it depends on. Getting it wrong corrupts a file rather than annoying someone.
-3. **Normalise on touch.** The first structural edit converts the touched container to declarative
-   form. Covers everything, at the cost of rewriting code the author did not ask to have rewritten.
+That distinction turned out to be the difference between a tool that works on this codebase and one
+that does not, because "elsewhere" is where most of a real screen lives — the classifier reports
+almost everything on `PaymentsPage` as `foreign`.
 
-Phases 2–5 are unaffected: selection, inspection and property editing all work identically either way.
-The decision is only needed before Phase 6.
+What it took (done):
+
+- **The origin decides the file, not the panel.** Inspect and edit used to refuse any origin outside
+  the previewed buffer, which is most of what you can click on a composed screen. They now answer in
+  whatever file the node was written in, and a property edit lands in that file's document.
+- **Any project `.cs` repaints the preview**, not just the previewed one. A screen is composed of
+  several files, and editing the shell beside it has to repaint the same.
+- **Unsaved neighbours are the truth.** The host takes the editor's open buffers and rebuilds the
+  compilation on top of them, so the semantic model agrees with what the author sees across every open
+  file. Dependencies compiled from an open buffer are never cached by write time — their text changes
+  without the file being touched, which is precisely the case a write-time cache answers wrongly and
+  never notices. Close without saving and the overlay forgets it.
+
+Structural insertion is still the one fenced gesture, and the fence now has a reason rather than a
+shrug: inserting into an imperative `.Add()` body is statement-level dataflow — which local is the
+parent, which statements mutate it, whether the insertion crosses a declaration it depends on — and
+getting it wrong corrupts a file rather than annoying someone. A palette that refuses with
+*"this container is built imperatively"* is honest; one that guesses is not.
 
 ---
 

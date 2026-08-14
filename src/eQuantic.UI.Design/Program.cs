@@ -25,6 +25,9 @@ while (await input.ReadLineAsync() is { } line)
                   ?? throw new InvalidOperationException("empty request");
 
         var parameters = request.Params ?? new DesignParams();
+        // Whatever the editor holds unsaved, before the question is answered — every method
+        // below reads the project, and a stale neighbour is a wrong answer.
+        session.SyncBuffers(parameters.Buffers);
         object result = request.Method switch
         {
             "initialize" => session.Initialize(

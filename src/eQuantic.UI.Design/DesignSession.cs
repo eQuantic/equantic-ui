@@ -27,11 +27,57 @@ public sealed class DesignSession
     // identity click-to-select runs on. Nothing else in the product turns this on.
     private readonly ComponentCompiler _compiler = new() { TypeAnnotations = false, DesignMode = true };
     private Compilation? _compilation;
+
+    /// <summary>The compilation with the editor's unsaved buffers applied — what every question is
+    /// actually answered against. Equal to <see cref="_compilation"/> until something is open.</summary>
+    private Compilation? _current;
     private string _projectDir = "";
 
     /// <summary>Emitted JS per dependency FILE, keyed by path and invalidated by write time — a page's
     /// neighbours do not change while you are typing in the page.</summary>
     private readonly Dictionary<string, (DateTime Stamp, List<CompilationResult> Modules)> _dependencies = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Files the editor holds UNSAVED, by full path. A screen is rarely one file — a shell, a row, a
+    /// data helper — and reading a page's neighbours from disk showed the last saved version of
+    /// everything except the one file being typed in, which is the confusing half of a stale preview.
+    /// </summary>
+    private readonly Dictionary<string, string> _open = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Installs the editor's unsaved buffers and rebuilds the compilation on top of them, so the
+    /// SEMANTIC MODEL agrees with what the author is looking at across every open file — not only the
+    /// one being previewed. Anything previously open and now absent is forgotten, so a file closed
+    /// without saving goes back to what is on disk.
+    /// </summary>
+    public void SyncBuffers(IEnumerable<OpenBuffer>? buffers)
+    {
+        if (buffers is null || _compilation is null) return;
+
+        var next = buffers
+            .Where(b => !string.IsNullOrEmpty(b.Path))
+            .ToDictionary(b => Path.GetFullPath(b.Path), b => b.Text, StringComparer.OrdinalIgnoreCase);
+
+        if (next.Count == _open.Count && next.All(entry => _open.TryGetValue(entry.Key, out var had) && had == entry.Value))
+            return;
+
+        _open.Clear();
+        foreach (var entry in next) _open[entry.Key] = entry.Value;
+
+        var current = _compilation;
+        foreach (var entry in _open)
+        {
+            current = Swap(current, CSharpSyntaxTree.ParseText(entry.Value, path: entry.Key));
+        }
+
+        _current = current;
+        _compiler.SetProjectCompilation(_current);
+    }
+
+    /// <summary>The file as the AUTHOR currently sees it: their unsaved buffer if there is one, and
+    /// what is on disk otherwise.</summary>
+    private string ReadAsOpen(string path) =>
+        _open.TryGetValue(Path.GetFullPath(path), out var text) ? text : File.ReadAllText(path);
 
     /// <summary>
     /// Builds the compilation the whole session runs on. Measured at ~200 ms for a real project
@@ -71,7 +117,8 @@ public sealed class DesignSession
 
         _compilation = WithDocumentation(ProjectCompilationHelper.CreateCompilationFromSources(
             sources, references, assemblyName: assemblyName, addStandardReferences: false));
-        _compiler.SetProjectCompilation(_compilation);
+        _current = _compilation;
+        _compiler.SetProjectCompilation(_current);
 
         watch.Stop();
         return new InitializeResult(assemblyName, sources.Count, references.Count, (int)watch.ElapsedMilliseconds);
@@ -142,7 +189,7 @@ public sealed class DesignSession
         if (_compilation is null) throw new InvalidOperationException("initialize first");
 
         var tree = CSharpSyntaxTree.ParseText(text, path: path);
-        var compilation = Swap(_compilation, tree);
+        var compilation = Swap(_current!, tree);
 
         var marks = new List<DesignMark>();
         foreach (var diagnostic in compilation.GetSemanticModel(tree).GetDiagnostics())
@@ -546,7 +593,7 @@ public sealed class DesignSession
             .AncestorsAndSelf()
             .FirstOrDefault(n => n is ObjectCreationExpressionSyntax or InvocationExpressionSyntax);
 
-        return (tree, source, construction, Swap(_compilation!, tree).GetSemanticModel(tree));
+        return (tree, source, construction, Swap(_current!, tree).GetSemanticModel(tree));
     }
 
     /// <summary>A type's own members and every base's, nearest first — <c>object</c> excluded, which
@@ -781,14 +828,17 @@ public sealed class DesignSession
                               && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
         if (file is null) return [];
 
+        // An OPEN file is never cached by write time: its text changes without the file being touched,
+        // which is exactly the case the cache would answer wrongly and never notice.
+        var open = _open.TryGetValue(Path.GetFullPath(file), out var buffer);
         var stamp = File.GetLastWriteTimeUtc(file);
-        if (_dependencies.TryGetValue(file, out var cached) && cached.Stamp == stamp) return cached.Modules;
+        if (!open && _dependencies.TryGetValue(file, out var cached) && cached.Stamp == stamp) return cached.Modules;
 
-        var modules = _compiler.CompileSource(File.ReadAllText(file), file)
+        var modules = _compiler.CompileSource(open ? buffer! : File.ReadAllText(file), file)
             .Where(r => r.Success && r.TypeScript.Length > 0)
             .ToList();
 
-        _dependencies[file] = (stamp, modules);
+        if (!open) _dependencies[file] = (stamp, modules);
         return modules;
     }
 }
