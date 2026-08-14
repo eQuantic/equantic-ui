@@ -11,8 +11,9 @@ namespace eQuantic.UI.Components;
 /// (:has(:focus-visible), still zero JS), and the panel is a real <c>role="tooltip"</c> the anchor
 /// points at with <c>aria-describedby</c> — a screen reader hears the hint after the control's
 /// name whether or not anything is visually revealed.
-/// v1 fences: show/hide delay, arrow caret, Esc suppression (WCAG 1.4.13's dismissable clause —
-/// joins the Anchored Esc work, one controller for every floating panel).
+/// Escape hides a revealed tooltip without moving pointer or focus (WCAG 1.4.13), and the next
+/// hover or focus reveals it again — Esc is a "not now", never a "never again".
+/// v1 fences: show/hide delay, arrow caret.
 /// </summary>
 public sealed class Tooltip : StatelessComponent
 {

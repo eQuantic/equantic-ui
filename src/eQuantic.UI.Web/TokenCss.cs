@@ -370,6 +370,10 @@ public static class PhotonCssGenerator
         // tooltip popping on every mouse click sits in the way; keyboard users are the ones who
         // cannot hover. Still zero JS.
         css.AppendLine(".eq-hoverreveal:has(:focus-visible) > .eq-anchor-panel { opacity: 1; }");
+        // WCAG 1.4.13: Escape hides a revealed panel WITHOUT moving pointer or focus. The class is
+        // set by the runtime's suppression controller and cleared when the trigger condition ends
+        // (mouseleave/focusout) — !important because it must beat both reveal rules above.
+        css.AppendLine(".eq-hoverreveal.eq-reveal-suppressed > .eq-anchor-panel { opacity: 0 !important; }");
 
         // Link mechanics: the anchor is pure semantics — the child owns every visual (the Pressable
         // contract). display:block keeps flex/stack sizing natural.

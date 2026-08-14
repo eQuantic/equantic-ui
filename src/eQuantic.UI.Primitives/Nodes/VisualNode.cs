@@ -511,9 +511,11 @@ public enum AnchorPlacement : byte
 /// the panel consumes the outside tap and fires it (tap-outside-closes). Web realizes as a
 /// position:relative host with an absolute panel — pure CSS, no JS positioning, SSR-exact; native
 /// queues a synthetic overlay layer with the panel <c>Positioned</c> from the anchor's absolute
-/// bounds. v1 fences: viewport flip/clamp (a panel near the edge does not reposition), escape from
-/// clipping ancestors on web (keep anchors out of overflow-hidden scrollers), Esc-key dismissal
-/// (a11y system).
+/// bounds. A dismissible OPEN panel declares Escape through the shortcut pipeline (close = the
+/// same <see cref="OnDismiss"/> the scrim fires), and a hover-revealed one is Esc-SUPPRESSED by
+/// the runtime controller (WCAG 1.4.13). v1 fences: viewport flip/clamp (a panel near the edge
+/// does not reposition), escape from clipping ancestors on web (keep anchors out of
+/// overflow-hidden scrollers).
 /// </summary>
 public sealed class Anchored : VisualNode
 {

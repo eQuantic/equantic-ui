@@ -311,6 +311,7 @@ export class Anchored extends VisualNode {
       onDismiss?: (() => void) | null;
       matchAnchorWidth?: boolean;
       openOnHover?: boolean;
+      describesAnchor?: boolean;
       scrimStyle?: BoxStyleValue | null;
       motion?: TransitionSpec | null;
       key?: string | null;
