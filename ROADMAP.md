@@ -118,8 +118,12 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
   `FormInput`/`FormSubmit` surface, async submit through Server Actions with the server's verdict
   returned onto fields, and `[FormModel]` reading DataAnnotations at build time into the same
   `Rules` — no second validation engine. → wiki `Forms` page.
-- **Phase 5 — Component polish & accessibility**: finish existing components, add focus/keyboard/aria,
-  variant coverage, a component test harness — before adding new components.
+- **Phase 5 — Component polish & accessibility**: the WEB accessibility half is **✅ complete**
+  (the 2026-08 pass: state as attribute for checks/switches/tabs/options, full menu/combobox
+  patterns with `aria-activedescendant`, tooltip keyboard reveal + Escape dismissal per WCAG
+  1.4.13, dialog names/alertdialog/safe-action initial focus, `aria-expanded` on triggers — all
+  pinned on both producers). Remaining: the mobile accessibility bridges (native track), variant
+  coverage, a component test harness.
 - **Phase 6 — First-party embedded CSS engine** + documented provider contract. **Normative
   (2026-07-03): the embedded CSS follows exactly the same design system as mobile** — the Photon
   Design System, generated at build time from the shared `eQuantic.UI.Primitives` tokens (single
