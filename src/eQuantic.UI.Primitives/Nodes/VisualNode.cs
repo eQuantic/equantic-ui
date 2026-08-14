@@ -33,6 +33,18 @@ public abstract class VisualNode
     public string? Origin { get; init; }
 
     /// <summary>
+    /// What to CALL this node in a design tool — the component's type, and the local it was assigned
+    /// to when it has one (<c>Column · content</c>). Set only by a design-mode compilation, beside
+    /// <see cref="Origin"/>.
+    /// <para>
+    /// Carried rather than derived because it is wanted on HOVER: resolving a name from the span
+    /// means asking the compiler, and asking on every pointer move is a request per frame for an
+    /// answer that never changes.
+    /// </para>
+    /// </summary>
+    public string? OriginLabel { get; init; }
+
+    /// <summary>
     /// Overrides the parent flex container's <see cref="FlexNode.Cross"/> for THIS child only
     /// (spec S1 — the CSS <c>align-self</c> twin). <c>null</c> = follow the container. Ignored
     /// outside a Row/Column.

@@ -61,8 +61,10 @@ export const slice = <T extends string | unknown[]>(
  * Assigned rather than passed to a constructor because the node is already built by the time the
  * wrapper sees it, and because that keeps this indifferent to every node's own signature.
  */
-export const origin = <T extends object>(node: T, source: string): T => {
-  (node as { origin?: string }).origin = source;
+export const origin = <T extends object>(node: T, source: string, label?: string): T => {
+  const carrier = node as { origin?: string; originLabel?: string };
+  carrier.origin = source;
+  if (label) carrier.originLabel = label;
   return node;
 };
 

@@ -37,8 +37,12 @@ public class DesignOriginTests
                     column.Add(new Text(row, TypeRole.BodyM, theme.TextPrimary));
                 }
                 column.Add(new Button("Up", onPressed: () => SetState(() => _count++)));
+                column.Add(Footer(theme));
                 return new Box(new BoxStyle { Padding = EdgeInsets.All(Space.S4) }, column);
             }
+
+            private VisualNode Footer(IAppTheme theme) =>
+                new Text("footer", TypeRole.Caption, theme.TextMuted);
         }
         """;
 
@@ -102,7 +106,7 @@ public class DesignOriginTests
     public void EveryOriginResolvesToTheConstructionItWasStampedOn()
     {
         var lines = Source.Replace("\r\n", "\n").Split('\n');
-        var origins = Regex.Matches(Emit(designMode: true), @"\$eq\.origin\([^""]*""([^""]+)""\)")
+        var origins = Regex.Matches(Emit(designMode: true), @"\$eq\.origin\([^""]*""([^""|]+\|[^""]+)""")
             .Select(m => m.Groups[1].Value)
             .ToArray();
 
@@ -122,8 +126,51 @@ public class DesignOriginTests
                 ? lines[startLine][startColumn..endColumn]
                 : lines[startLine][startColumn..];
 
-            Assert.Matches(@"^(new\s+)?(Box|Column|Text|Button)\s*[\(<]", text);
+            Assert.Matches(@"^(new\s+)?(Box|Column|Text|Button|Footer)\s*[\(<]", text);
         }
+    }
+
+    private static string[] Labels(string js) =>
+        Regex.Matches(js, @"\$eq\.origin\([^""]*""[^""]+"", ""([^""]+)""\)")
+            .Select(m => m.Groups[1].Value)
+            .ToArray();
+
+    /// <summary>
+    /// A node carries what to CALL it, so a design tool can label it on hover without asking the
+    /// compiler once per pointer move.
+    /// </summary>
+    [Fact]
+    public void EveryStampedNodeCarriesItsComponentName()
+    {
+        var labels = Labels(Emit(designMode: true));
+
+        Assert.NotEmpty(labels);
+        Assert.Contains("Text", labels);
+        // Box and Text, not Button: this probe imports Core and Primitives only, so `Button` — which
+        // lives in Components — does not resolve, and an unresolved type is deliberately not stamped.
+        Assert.Contains("Box", labels);
+    }
+
+    /// <summary>A screen assembles half a dozen Columns; the name the author gave one is the only
+    /// thing that tells them apart on sight.</summary>
+    [Fact]
+    public void ANodeAssignedToALocal_IsLabelledWithThatName()
+    {
+        Assert.Contains("Column \u00B7 column", Labels(Emit(designMode: true)));
+    }
+
+    /// <summary>
+    /// A helper method's STATIC return type is the abstract node, so labelling by type would call
+    /// half a real screen "VisualNode" — true, and useless. The method that built it is both more
+    /// informative and where the author has to go to change it.
+    /// </summary>
+    [Fact]
+    public void ANodeFromAHelperMethod_IsLabelledByTheMethod_NotByTheAbstractType()
+    {
+        var labels = Labels(Emit(designMode: true));
+
+        Assert.Contains("Footer()", labels);
+        Assert.DoesNotContain("VisualNode", labels);
     }
 
     private static (int Line, int Column) Position(string value)
@@ -141,7 +188,7 @@ public class DesignOriginTests
     public void ANodeBuiltInALoopIsStampedWithTheLoopBodysExpression()
     {
         var js = Emit(designMode: true);
-        var loopTextOrigin = Regex.Matches(js, @"\$eq\.origin\(new Text\(row[^""]*""([^""]+)""\)")
+        var loopTextOrigin = Regex.Matches(js, @"\$eq\.origin\(new Text\(row[^""]*""([^""|]+\|[^""]+)""")
             .Select(m => m.Groups[1].Value)
             .SingleOrDefault();
 

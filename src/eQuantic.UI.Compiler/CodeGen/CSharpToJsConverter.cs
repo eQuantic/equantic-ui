@@ -421,7 +421,41 @@ public class CSharpToJsConverter
             span.EndLinePosition.Line.ToString(), ":", span.EndLinePosition.Character.ToString());
 
         _context.UsedHelpers.Add(Eq.Import);
-        return $"{Eq.Origin}({emitted}, {JsString(origin)})";
+        return $"{Eq.Origin}({emitted}, {JsString(origin)}, {JsString(LabelFor(expression, type!))})";
+    }
+
+    /// <summary>
+    /// What a design tool should CALL this node: its component type, and the local it is assigned to
+    /// when it has one — <c>Column · content</c>. A screen assembles half a dozen Columns, and the
+    /// name the author gave one is the only thing that tells them apart on sight.
+    /// </summary>
+    private string LabelFor(ExpressionSyntax expression, ITypeSymbol type)
+    {
+        // A helper method's STATIC return type is the abstract node, so the type name would label
+        // half a real screen "VisualNode" — true, and useless. What identifies it is the method that
+        // built it, which is also where the author has to go to change it.
+        var name = type.Name;
+        if (name is "VisualNode" or "UiComponent"
+            && expression is InvocationExpressionSyntax
+            && _context.SemanticModel?.GetSymbolInfo(expression).Symbol is IMethodSymbol method)
+        {
+            name = $"{method.Name}()";
+        }
+
+        return Named(expression, name);
+    }
+
+    private static string Named(ExpressionSyntax expression, string name)
+    {
+        // `var content = new Column(…)` — the declarator is the construction's own parent, so this
+        // names only the node that IS the variable, never one merely passed to it.
+        var declared = expression.Parent is EqualsValueClauseSyntax { Parent: VariableDeclaratorSyntax declarator }
+            ? declarator.Identifier.Text
+            : expression.Parent is AssignmentExpressionSyntax { Left: IdentifierNameSyntax assigned }
+                ? assigned.Identifier.Text
+                : null;
+
+        return declared is null ? name : $"{name} · {declared}";
     }
 
     /// <summary>A JavaScript string literal. Paths carry backslashes on Windows and may carry quotes

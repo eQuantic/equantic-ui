@@ -131,7 +131,9 @@ public static class WebRealizer
             // DataAttributes and not RawAttributes: RawAttributes lives on RealizedElement (it exists
             // so SVG can emit viewBox/d verbatim), and not every lowered node is one. DataAttributes
             // is on HtmlElement itself and prefixes `data-`, so this reaches every node there is.
-            (lowered.DataAttributes ??= new Dictionary<string, string>())["eq-origin"] = origin;
+            var data = lowered.DataAttributes ??= new Dictionary<string, string>();
+            data["eq-origin"] = origin;
+            if (node.OriginLabel is { Length: > 0 } label) data["eq-component"] = label;
         }
         return lowered;
     }

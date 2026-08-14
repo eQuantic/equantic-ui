@@ -358,6 +358,16 @@ export class PreviewPanel {
   /* The tier is drawn, not only written: a solid frame is a node you may edit where it stands, a
      dashed one comes from a loop or a branch, a dotted one is written in another member entirely. */
   #outline.derived { border-style: dashed; }
+  /* The name rides WITH the frame, and is pointer-transparent like it — a label that could be
+     hovered would steal the pointer from the thing it is naming. */
+  #badge {
+    position: fixed; pointer-events: none; display: none; z-index: 3;
+    font: 10px/1.4 var(--vscode-font-family, sans-serif);
+    padding: 2px 6px; border-radius: 3px; white-space: nowrap;
+    background: var(--vscode-focusBorder, #0078d4);
+    color: var(--vscode-button-foreground, #fff);
+  }
+  #badge.visible { display: block; }
   #outline.foreign { border-style: dotted; opacity: 0.75; }
   #tier {
     position: fixed; left: 8px; bottom: 8px; right: 8px; z-index: 3; display: none;
@@ -406,6 +416,7 @@ export class PreviewPanel {
 <body>
 <div id="app"></div>
 <div id="outline"></div>
+<div id="badge"></div>
 <button id="inspect" type="button" aria-pressed="false" title="Click an element to reveal the C# that built it">Inspect</button>
 <div id="tier"></div>
 <pre id="notice"></pre>
@@ -490,12 +501,13 @@ export class PreviewPanel {
   // preventDefault, so nothing downstream sees the click either.
   const inspect = document.getElementById('inspect');
   const outline = document.getElementById('outline');
+  const badge = document.getElementById('badge');
   let inspecting = false;
 
   function setInspecting(on) {
     inspecting = on;
     inspect.setAttribute('aria-pressed', String(on));
-    if (!on) outline.classList.remove('visible');
+    if (!on) { outline.classList.remove('visible'); badge.classList.remove('visible'); }
   }
 
   inspect.addEventListener('click', (e) => {
@@ -522,6 +534,16 @@ export class PreviewPanel {
     outline.style.width = box.width + 'px';
     outline.style.height = box.height + 'px';
     outline.classList.add('visible');
+
+    const name = element.getAttribute('data-eq-component');
+    if (!name) { badge.classList.remove('visible'); return; }
+    badge.textContent = name;
+    badge.classList.add('visible');
+    // Above the frame when there is room for it, tucked inside the top edge when there is not —
+    // a label that hangs off the top of the panel names nothing.
+    const height = badge.offsetHeight || 16;
+    badge.style.left = Math.max(2, box.left) + 'px';
+    badge.style.top = (box.top >= height + 2 ? box.top - height - 2 : box.top + 2) + 'px';
   }
 
   // Focus is what actually has to be stopped, not the click. The framework's forms are quiet until
@@ -540,7 +562,7 @@ export class PreviewPanel {
     if (!inspecting) return;
     const found = stamped(e.target);
     if (found) frame(found);
-    else outline.classList.remove('visible');
+    else { outline.classList.remove('visible'); badge.classList.remove('visible'); }
   }, true);
 
   const tier = document.getElementById('tier');
@@ -639,6 +661,7 @@ export class PreviewPanel {
     // nothing. The next pointer move draws a true one.
     if (payload.type === 'render') {
       outline.classList.remove('visible');
+      badge.classList.remove('visible');
       tier.classList.remove('visible');
       void render(payload);
     } else if (payload.type === 'selected') {

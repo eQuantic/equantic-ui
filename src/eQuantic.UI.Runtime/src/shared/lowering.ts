@@ -266,8 +266,11 @@ function lowerNode(
   path: string,
 ): HtmlNode | null {
   const lowered = lowerNodeKind(node, context, horizontalAxis, path);
-  const source = (node as { origin?: string }).origin;
-  if (lowered && source) lowered.attributes['data-eq-origin'] = source;
+  const stamped = node as { origin?: string; originLabel?: string };
+  if (lowered && stamped.origin) {
+    lowered.attributes['data-eq-origin'] = stamped.origin;
+    if (stamped.originLabel) lowered.attributes['data-eq-component'] = stamped.originLabel;
+  }
   return lowered;
 }
 
