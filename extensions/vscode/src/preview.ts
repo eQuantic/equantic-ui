@@ -333,7 +333,11 @@ export class PreviewPanel {
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; }
+  html { color-scheme: light dark; }
+  /* Painted from the THEME, not left transparent: an unpainted preview shows the editor's colours
+     through whatever the app has not drawn, which reads as a broken screen under any theme that is
+     not the one the app expects. Replaced by the real background as soon as the theme arrives. */
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--eq-preview-bg, Canvas); }
   #app { height: 100%; box-sizing: border-box; }
   #notice {
     position: fixed; left: 0; right: 0; bottom: 0; margin: 0; padding: 8px 12px;
@@ -427,6 +431,22 @@ export class PreviewPanel {
   window.addEventListener('unhandledrejection', (e) =>
     report('Something failed after it started:', (e.reason && e.reason.stack) || String(e.reason)));
 
+  // The app's own background token. The mode is chosen HERE rather than left to the CSS light-dark()
+  // function, which is recent enough that a webview's Chromium may not have it — and a background
+  // that silently does not apply is the exact problem this is fixing. Re-applied when the viewer's
+  // scheme changes, so the preview follows it without a reload.
+  let themeSurfaces = null;
+
+  function paintBackground(theme) {
+    if (theme && theme.surfaces && theme.surfaces.background) themeSurfaces = theme.surfaces.background;
+    if (!themeSurfaces || themeSurfaces.length < 2) return;
+    const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const c = themeSurfaces[dark ? 1 : 0];
+    document.documentElement.style.setProperty('--eq-preview-bg', 'rgb(' + c[0] + ' ' + c[1] + ' ' + c[2] + ')');
+  }
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => paintBackground(null));
+
   async function render(payload) {
     notice.classList.remove('visible');
 
@@ -442,8 +462,10 @@ export class PreviewPanel {
       const loaded = await import(nextUrl);
       const runtime = await import(payload.runtime);
       if (payload.theme) {
+        const theme = JSON.parse(payload.theme);
         runtime.detectPhotonDensity();
-        runtime.setPhotonTheme(runtime.materializeTheme(JSON.parse(payload.theme)));
+        runtime.setPhotonTheme(runtime.materializeTheme(theme));
+        paintBackground(theme);
       }
       const Component = loaded[payload.className];
       if (typeof Component !== 'function') {
@@ -500,6 +522,18 @@ export class PreviewPanel {
     outline.style.width = box.width + 'px';
     outline.style.height = box.height + 'px';
     outline.classList.add('visible');
+  }
+
+  // Focus is what actually has to be stopped, not the click. The framework's forms are quiet until
+  // TOUCHED, and a field is touched when it loses focus — so clicking one input and then another ran
+  // validation across the form while selecting nothing. preventDefault on pointerdown/mousedown stops
+  // focus from ever moving; the click still fires afterwards, which is what selection listens to.
+  for (const name of ['pointerdown', 'mousedown']) {
+    document.addEventListener(name, (e) => {
+      if (!inspecting || e.target === inspect) return;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
   }
 
   document.addEventListener('pointermove', (e) => {

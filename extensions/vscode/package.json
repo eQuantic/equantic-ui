@@ -77,9 +77,10 @@
     ]
   },
   "scripts": {
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && node scripts/verify-webview.mjs",
     "watch": "tsc -watch -p ./",
-    "vscode:prepublish": "npm run compile"
+    "vscode:prepublish": "npm run compile",
+    "verify": "node scripts/verify-webview.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
