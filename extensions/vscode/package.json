@@ -1,21 +1,89 @@
 {
-  "name": "equantic-ui-vscode",
-  "displayName": "eQuantic UI Tools",
-  "description": "Productivity tools for eQuantic UI development",
+  "name": "equantic-ui",
+  "displayName": "eQuantic UI",
+  "description": "Live preview and visual editing for eQuantic.UI screens, straight from the C# buffer.",
   "version": "0.1.0",
+  "publisher": "equantic",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eQuantic/equantic-ui"
+  },
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.85.0"
   },
   "categories": [
-    "Snippets",
-    "Programming Languages"
+    "Programming Languages",
+    "Visualization",
+    "Snippets"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:csharp"
   ],
   "contributes": {
+    "commands": [
+      {
+        "command": "equanticUI.openPreview",
+        "title": "Open Preview",
+        "category": "eQuantic UI",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "equanticUI.restartSidecar",
+        "title": "Restart Design Host",
+        "category": "eQuantic UI"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "equanticUI.openPreview",
+          "when": "resourceLangId == csharp",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "eQuantic UI",
+      "properties": {
+        "equanticUI.sidecarPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Path to `eqdesign.dll` (the design host). Leave empty to use the copy shipped with the extension."
+        },
+        "equanticUI.runtimePath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Path to `runtime.js`. Leave empty to use the one the project's own build produced at `wwwroot/_equantic/runtime.js`."
+        },
+        "equanticUI.compileDebounceMs": {
+          "type": "number",
+          "default": 400,
+          "description": "How long typing must pause before the preview recompiles."
+        },
+        "equanticUI.diagnoseDebounceMs": {
+          "type": "number",
+          "default": 150,
+          "description": "How long typing must pause before errors are re-checked. Cheaper than a compile, so it runs sooner."
+        }
+      }
+    },
     "snippets": [
       {
         "language": "csharp",
         "path": "./snippets/csharp.json"
       }
     ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
   }
 }

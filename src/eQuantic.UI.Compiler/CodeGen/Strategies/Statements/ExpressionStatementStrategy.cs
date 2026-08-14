@@ -16,7 +16,7 @@ public class ExpressionStatementStrategy : IStatementStrategy
         var exprStmt = (ExpressionStatementSyntax)node;
         // `is` pattern bindings assign inside the converted expression — their `let`s hoist here
         // (C# scopes them to the enclosing block; see PatternVariableScanner).
-        var declarations = PatternVariableScanner.Declarations(exprStmt.Expression);
+        var declarations = PatternVariableScanner.Declarations(exprStmt.Expression, context.TypeAnnotations);
         return declarations + context.Converter.ConvertExpression(exprStmt.Expression) + ";";
     }
 

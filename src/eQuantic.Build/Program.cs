@@ -122,6 +122,23 @@ try
             }
             usingExplicitRefs = assemblyPaths.Count > 0;
             Console.WriteLine($"   Using {assemblyPaths.Count} MSBuild-resolved references from {Path.GetFileName(refsFile)}");
+
+            // An EMPTY --refs file is not a reason to fall back — it is a reason to stop. The bin-tree
+            // fallback below exists for a human running eqc by hand with no MSBuild at all; reaching it
+            // from a real build means the semantic model is gone, and the compiler's degraded path
+            // passes named arguments through in SYNTACTIC order. That renders a component with the
+            // wrong values and reports nothing, which is the single worst outcome this compiler has.
+            // Fail the build and say what to do about it.
+            if (!usingExplicitRefs)
+            {
+                Console.Error.WriteLine(
+                    $"{refsFile}(1,1): error EQ0002: the MSBuild reference list is empty, so the " +
+                    "semantic model would be built from an incomplete compilation and named arguments " +
+                    "could be emitted in the wrong order. Rebuild the project (dotnet build) to " +
+                    "regenerate it; if this persists, the CompileEQuanticUI target ran without " +
+                    "FindReferenceAssembliesForReferences.");
+                return 1;
+            }
         }
 
         if (!usingExplicitRefs)

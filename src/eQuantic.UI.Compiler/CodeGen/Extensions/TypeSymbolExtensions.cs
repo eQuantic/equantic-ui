@@ -52,6 +52,25 @@ public static class TypeSymbolExtensions
     }
 
     /// <summary>
+    /// True when the type is a NODE — anything that ends up in the built tree, which is everything
+    /// deriving from <c>VisualNode</c>: the abstract vocabulary (<c>Box</c>, <c>Row</c>, <c>Text</c>)
+    /// and every component, since <c>UiComponent : VisualNode</c>.
+    /// <para>
+    /// Broader than <see cref="IsUiComponent"/> deliberately. That one asks "is this a component
+    /// class", which a <c>Column</c> is not; origin stamping has to cover the vocabulary too, or a
+    /// click on a layout container finds nothing to select.
+    /// </para>
+    /// </summary>
+    public static bool IsVisualNode(this ITypeSymbol? type)
+    {
+        for (var t = type; t != null; t = t.BaseType)
+        {
+            if (t.Name == "VisualNode") return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// True when the type derives (transitively) from <c>ComponentState</c> — a <c>StatefulComponent</c>'s
     /// state class. A state class is owned by its page: the page's module emits it complete (via
     /// <c>ParseStateClass</c>) and <c>createState()</c> news it up from that same module, so it must never

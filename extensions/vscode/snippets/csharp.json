@@ -2,56 +2,100 @@
   "eQuantic Page": {
     "prefix": "eq-page",
     "body": [
-      "[Page(\"/${1:route}\")]",
-      "public class ${2:Name} : StatefulComponent",
+      "[Page(\"/${1:route}\", Title = \"${2:Title}\")]",
+      "public sealed class ${3:Name} : StatefulComponent",
       "{",
-      "    public override ComponentState CreateState() => new ${2}State(this);",
-      "}",
+      "    private int _count;",
       "",
-      "public class ${2}State : ComponentState<${2}>",
-      "{",
-      "    public override void Build(BuildContext context)",
+      "    public override VisualNode Build(ComponentContext context)",
       "    {",
-      "        return new Container",
+      "        var theme = context.Theme;",
+      "",
+      "        return Box(new BoxStyle",
       "        {",
-      "            Children = {",
-      "                new Text(\"Hello ${2}\")",
-      "            }",
-      "        };",
+      "            Width = SizeValue.Fill,",
+      "            Background = theme.Background,",
+      "            Padding = EdgeInsets.All(Space.S6),",
+      "        },",
+      "        Column(gap: Space.S4, children: [",
+      "            Text(\\$\"Count: {_count}\", TypeRole.Display, theme.TextPrimary),",
+      "            Button(\"Up\", onPressed: () => SetState(() => _count++)),",
+      "            $0",
+      "        ]));",
       "    }",
       "}"
     ],
-    "description": "Create a new eQuantic UI Page"
+    "description": "A routable eQuantic.UI page — write-once StatefulComponent, declarative factories"
   },
-  "eQuantic Component": {
+  "eQuantic Stateless Component": {
     "prefix": "eq-comp",
     "body": [
-      "public class ${1:Name} : StatelessComponent",
+      "public sealed class ${1:Name} : StatelessComponent",
       "{",
-      "    protected override ComponentTree Build()",
+      "    public ${1}(${2:string label})",
       "    {",
-      "        return new Container",
+      "        ${3:Label} = ${4:label};",
+      "    }",
+      "",
+      "    public ${5:string} ${3:Label} { get; init; }",
+      "",
+      "    public override VisualNode Build(ComponentContext context)",
+      "    {",
+      "        var theme = context.Theme;",
+      "",
+      "        return Box(new BoxStyle",
       "        {",
+      "            Padding = EdgeInsets.All(Space.S4),",
+      "            Background = theme.Surface,",
+      "            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),",
+      "        },",
+      "        Column(gap: Space.S1, children: [",
       "            $0",
-      "        };",
+      "        ]));",
       "    }",
       "}"
     ],
-    "description": "Create a new eQuantic UI Stateless Component"
+    "description": "A write-once component. The build generates a factory named after it, so callers write Name(...) with no new."
   },
-  "eQuantic Style": {
-    "prefix": "eq-style",
+  "eQuantic Stateful Component": {
+    "prefix": "eq-stateful",
     "body": [
-      "public static class ${1:Name}Styles",
+      "public sealed class ${1:Name} : StatefulComponent",
       "{",
-      "    public static Style Main => new()",
+      "    private ${2:bool} ${3:_open};",
+      "",
+      "    public override VisualNode Build(ComponentContext context)",
       "    {",
-      "        BackgroundColor = \"white\",",
-      "        Padding = \"16px\",",
-      "        $0",
-      "    };",
+      "        var theme = context.Theme;",
+      "",
+      "        return Column(gap: Space.S2, children: [",
+      "            Button(\"${4:Toggle}\", onPressed: () => SetState(() => ${3:_open} = !${3:_open})),",
+      "            $0",
+      "        ]);",
+      "    }",
       "}"
     ],
-    "description": "Create a new eQuantic UI Style Class"
+    "description": "A component with internal state, mutated through SetState"
+  },
+  "eQuantic Server Action": {
+    "prefix": "eq-action",
+    "body": [
+      "[ServerAction]",
+      "public async Task<${1:string}> ${2:LoadData}(${3})",
+      "{",
+      "    $0",
+      "}"
+    ],
+    "description": "A method executed on the server and called from the browser by RPC"
+  },
+  "eQuantic Row": {
+    "prefix": "eq-row",
+    "body": ["Row(gap: Space.${1:S2}, children: [", "    $0", "])"],
+    "description": "A horizontal flex container"
+  },
+  "eQuantic Column": {
+    "prefix": "eq-col",
+    "body": ["Column(gap: Space.${1:S4}, children: [", "    $0", "])"],
+    "description": "A vertical flex container"
   }
 }

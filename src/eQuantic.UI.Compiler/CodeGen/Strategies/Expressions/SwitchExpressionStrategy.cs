@@ -33,8 +33,8 @@ public class SwitchExpressionStrategy : IConversionStrategy
         // strategy already emits is exactly the scope they belong to.
         foreach (var arm in switchExpr.Arms)
         {
-            sb.Append(PatternVariableScanner.Declarations(arm.Expression));
-            if (arm.WhenClause != null) sb.Append(PatternVariableScanner.Declarations(arm.WhenClause.Condition));
+            sb.Append(PatternVariableScanner.Declarations(arm.Expression, context.TypeAnnotations));
+            if (arm.WhenClause != null) sb.Append(PatternVariableScanner.Declarations(arm.WhenClause.Condition, context.TypeAnnotations));
         }
         sb.Append($" const _s = {governingExpr};");
 

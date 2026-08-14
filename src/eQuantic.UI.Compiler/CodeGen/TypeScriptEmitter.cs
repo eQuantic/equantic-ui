@@ -18,6 +18,10 @@ public class TypeScriptEmitter
     /// mode). The OUTPUT language is the only thing that changes; every strategy stays the same.</summary>
     public bool TypeAnnotations { get; set; } = true;
 
+    /// <summary>See <see cref="ConversionContext.DesignMode"/>. Off, and only a design tool turns
+    /// it on — an SDK build must never emit the wrapper into a user's bundle.</summary>
+    public bool DesignMode { get; set; }
+
     private TypeScriptCodeBuilder _builder = new();
 
     /// <summary>One parameter in a hand-written signature: annotated in TypeScript mode, bare in
@@ -42,11 +46,11 @@ public class TypeScriptEmitter
     /// </para>
     /// </summary>
     private string ExpressionBodyReturn(ExpressionSyntax expression) =>
-        $"{PatternVariableScanner.Declarations(expression)}return {_converter.ConvertExpression(expression)};";
+        $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}return {_converter.ConvertExpression(expression)};";
 
     /// <summary>The same, in STATEMENT position (a setter) — no return to give it.</summary>
     private string ExpressionBodyStatement(ExpressionSyntax expression) =>
-        $"{PatternVariableScanner.Declarations(expression)}{_converter.ConvertExpression(expression)};";
+        $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}{_converter.ConvertExpression(expression)};";
 
     private string ParamWithDefault(string name, string type, string? convertedDefault,
         bool rest = false) =>
@@ -107,15 +111,14 @@ public class TypeScriptEmitter
     public string Emit(ComponentDefinition component, SemanticModel? semanticModel = null)
     {
         _converter.EmitTypeAnnotations(TypeAnnotations);
+        _converter.EmitDesignOrigins(DesignMode);
         _builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations };
         _semanticModel = semanticModel;
         _converter.SetSemanticModel(semanticModel);
-        _converter.ClearDiagnostics();
-
-        // Clear UsedHelpers from previous compilations
+        // Everything the PREVIOUS component left behind goes here — the node cache above all, which
+        // pins a syntax tree per entry and used to survive this point (see ConversionContext.Reset).
+        _converter.Reset();
         component.UsedHelpers.Clear();
-        _converter.UsedAppTypes.Clear();
-        _converter.UsedRuntimeTypes.Clear();
 
         // Note: We'll emit imports AFTER generating component code
         // to ensure UsedHelpers is populated
@@ -1147,6 +1150,22 @@ public class TypeScriptEmitter
     /// MODULES, by NESTED static classes embedded in their owner's module, and by a PLAIN class the
     /// developer wrote. The only difference is whether the members are static, so that is the
     /// parameter: a plain class is the same shapes without the keyword, plus its constructor.</summary>
+    /// <summary>
+    /// A type annotation, or nothing at all when the target is plain JavaScript.
+    /// <para>
+    /// <see cref="TypeScriptCodeBuilder.ClassBuilder.Field"/> asks this question for the members it
+    /// writes, but the members written through <c>Raw</c> — getters, setters, abstract and declare
+    /// members, lazy statics — each have to ask it themselves, and for a long time none of them did.
+    /// A leaked <c>: T</c> is not a cosmetic problem in that mode: the browser rejects the module at
+    /// parse time, so nothing in the file runs and the only symptom is an empty frame.
+    /// </para>
+    /// </summary>
+    private string Annotation(string type) => TypeAnnotations ? $": {type}" : "";
+
+    /// <summary>Whether a TYPE-ONLY member (<c>abstract</c>, <c>declare</c>) can be written at all.
+    /// Neither keyword exists in JavaScript, and neither carries runtime behaviour to preserve.</summary>
+    private bool CanDeclareTypeOnly => TypeAnnotations;
+
     private void EmitStaticMembers(ClassDeclarationSyntax cls, TypeScriptCodeBuilder.ClassBuilder c,
         bool asStatic = true)
     {
@@ -1180,8 +1199,13 @@ public class TypeScriptEmitter
                     if (isStaticMember && def is not null && NeedsLazyInit(def))
                     {
                         var slot = $"_{fieldName}";
-                        c.Raw($"static {slot}: {DeclaredType(f.Declaration.Type)} | undefined;", v);
-                        c.Raw($"static get {fieldName}(): {DeclaredType(f.Declaration.Type)} "
+                        // Raw output, so the annotation gate Field() applies has to be applied by
+                        // hand. In plain-JavaScript mode this text is run by a browser, where
+                        // `static _x: T | undefined;` is a syntax error that takes the WHOLE module
+                        // with it — one static collection in a helper class blanked the preview and
+                        // reported only "Unexpected strict mode reserved word".
+                        c.Raw($"static {slot}{Annotation($"{DeclaredType(f.Declaration.Type)} | undefined")};", v);
+                        c.Raw($"static get {fieldName}(){Annotation(DeclaredType(f.Declaration.Type))} "
                             + $"{{ return {name}.{slot} ??= {def}; }}", v);
                     }
                     else
@@ -1200,7 +1224,8 @@ public class TypeScriptEmitter
                 // nothing to shadow with.
                 if (p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword))
                 {
-                    c.Raw($"abstract {p.Identifier.Text.ToCamelCase()}: {DeclaredType(p.Type)};", p);
+                    if (CanDeclareTypeOnly)
+                        c.Raw($"abstract {p.Identifier.Text.ToCamelCase()}: {DeclaredType(p.Type)};", p);
                     continue;
                 }
                 var pn = p.Identifier.Text.ToCamelCase();
@@ -1210,7 +1235,7 @@ public class TypeScriptEmitter
                 var propertyType = DeclaredType(p.Type);
                 if (p.ExpressionBody != null)
                 {
-                    c.Raw($"{qualifier}get {pn}(): {propertyType} {{ {ExpressionBodyReturn(p.ExpressionBody.Expression)} }}", p);
+                    c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {{ {ExpressionBodyReturn(p.ExpressionBody.Expression)} }}", p);
                 }
                 else if (p.AccessorList != null)
                 {
@@ -1222,16 +1247,18 @@ public class TypeScriptEmitter
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
                         var slotDefault = TypeDeclarationExtensions.DefaultFor(p.Type);
                         if (slotDefault == "null")
-                            c.Raw($"declare {slot}: {DeclaredType(p.Type)};", p);
+                        {
+                            if (CanDeclareTypeOnly) c.Raw($"declare {slot}: {DeclaredType(p.Type)};", p);
+                        }
                         else
                             c.Field(slot, DeclaredType(p.Type), slotDefault, p);
                     }
 
                     var g = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
                     if (g?.ExpressionBody != null)
-                        c.Raw($"{qualifier}get {pn}(): {propertyType} {{ {ExpressionBodyReturn(g.ExpressionBody.Expression)} }}", g);
+                        c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {{ {ExpressionBodyReturn(g.ExpressionBody.Expression)} }}", g);
                     else if (g?.Body != null)
-                        c.Raw($"{qualifier}get {pn}(): {propertyType} {{ {StripJsBraces(_converter.Convert(g.Body))} }}", g);
+                        c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {{ {StripJsBraces(_converter.Convert(g.Body))} }}", g);
                     else if (p.Initializer != null)
                         c.Field(pn, DeclaredType(p.Type),
                             _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()), p,
@@ -1249,7 +1276,9 @@ public class TypeScriptEmitter
                         var isStaticProperty = asStatic
                             || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
                         if (defaulted == "null" && !isStaticProperty)
-                            c.Raw($"declare {pn}: {DeclaredType(p.Type)};", p);
+                        {
+                            if (CanDeclareTypeOnly) c.Raw($"declare {pn}: {DeclaredType(p.Type)};", p);
+                        }
                         else
                             c.Field(pn, DeclaredType(p.Type), defaulted, p, isStatic: isStaticProperty);
                     }
@@ -1265,9 +1294,9 @@ public class TypeScriptEmitter
                     var setter = p.AccessorList.Accessors
                         .FirstOrDefault(a => a.Keyword.Text is "set" or "init");
                     if (setter?.ExpressionBody != null)
-                        c.Raw($"{qualifier}set {pn}(value: {DeclaredType(p.Type)}) {{ {ExpressionBodyStatement(setter.ExpressionBody.Expression)} }}", setter);
+                        c.Raw($"{qualifier}set {pn}(value{Annotation(DeclaredType(p.Type))}) {{ {ExpressionBodyStatement(setter.ExpressionBody.Expression)} }}", setter);
                     else if (setter?.Body != null)
-                        c.Raw($"{qualifier}set {pn}(value: {DeclaredType(p.Type)}) {{ {StripJsBraces(_converter.Convert(setter.Body))} }}", setter);
+                        c.Raw($"{qualifier}set {pn}(value{Annotation(DeclaredType(p.Type))}) {{ {StripJsBraces(_converter.Convert(setter.Body))} }}", setter);
                 }
             }
             // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
@@ -1515,6 +1544,7 @@ public class TypeScriptEmitter
     {
         if (semanticModel != null) { _semanticModel = semanticModel; _converter.SetSemanticModel(semanticModel); }
         _converter.EmitTypeAnnotations(TypeAnnotations);
+        _converter.EmitDesignOrigins(DesignMode);
         _converter.SetCurrentClass(cls.Identifier.Text);
         _converter.UsedHelpers.Clear();
         _converter.UsedAppTypes.Clear();

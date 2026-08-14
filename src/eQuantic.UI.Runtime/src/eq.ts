@@ -50,6 +50,22 @@ export const slice = <T extends string | unknown[]>(
   return (value as string).slice(from, to) as T;
 };
 
+/**
+ * Stamps a node with the C# span that constructed it and returns the SAME node, so the wrapper can
+ * sit around any construction without changing what the expression means.
+ *
+ * Emitted only by a DESIGN-MODE compilation — a visual editor has to answer "which C# made this
+ * pixel", and the source maps cannot say: the whole `Build` body is emitted as one span. Production
+ * bundles never contain a call to this.
+ *
+ * Assigned rather than passed to a constructor because the node is already built by the time the
+ * wrapper sees it, and because that keeps this indifferent to every node's own signature.
+ */
+export const origin = <T extends object>(node: T, source: string): T => {
+  (node as { origin?: string }).origin = source;
+  return node;
+};
+
 export const $eq = {
   /** A rewritten resx accessor (Track L D2): resolves against the installed culture catalog at
    * CALL time — the whole reason the compiler never inlines it. */
@@ -60,6 +76,8 @@ export const $eq = {
   withPatch,
   /** C# range indexing whose endpoints count from the end — see `slice`. */
   slice,
+  /** Design mode only: the source span that constructed a node — see `origin`. */
+  origin,
   /** Numeric compat: exact decimal and 64-bit integer. */
   num: { dec, long },
   /** Math with .NET semantics (banker's rounding). */

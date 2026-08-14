@@ -157,7 +157,7 @@
          into its own compilation (that is how the implicit factory `using static` reaches it), and
          on a FIRST build the file does not exist until the target writes it. -->
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
-        DependsOnTargets="ResolveReferences;GenerateGlobalUsings"
+        DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences;GenerateGlobalUsings"
         Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' != ''">
         <PropertyGroup>
             <!-- Standard components source files are packaged in eQuantic.UI.Components package -->
@@ -201,9 +201,18 @@
         <PropertyGroup>
             <_EqcRefsFile>$(MSBuildProjectDirectory)/$(IntermediateOutputPath)equantic.refs.txt</_EqcRefsFile>
         </PropertyGroup>
+        <!-- The reference list is produced by FindReferenceAssembliesForReferences, NOT by
+             ResolveReferences — during a full Build this target runs after Compile so the item is
+             already populated, but invoked on its own (`dotnet msbuild -t:CompileEQuanticUI`, which
+             is exactly what hot reload runs on every save) it was empty, and Overwrite="true"
+             truncated a good 316-line file to zero. eqc then fell back to scanning bin/, lost the
+             semantic model, and passed named arguments through in SYNTACTIC order — a miscompile
+             with no error anywhere. The dependency above is the fix; this condition is the seatbelt,
+             because an empty reference set is never worth writing over a good one. -->
         <WriteLinesToFile File="$(_EqcRefsFile)"
             Lines="@(ReferencePathWithRefAssemblies)"
-            Overwrite="true" WriteOnlyWhenDifferent="true" />
+            Overwrite="true" WriteOnlyWhenDifferent="true"
+            Condition="'@(ReferencePathWithRefAssemblies)' != ''" />
 
         <!-- REFERENCE-SOURCE dirs for constant inlining (icon packs): a referenced pack's sources
              enter the compilation SEMANTICALLY so eqc can inline a `static readonly IconGlyph` at the

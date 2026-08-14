@@ -104,6 +104,10 @@ public class CSharpToJsConverter
 
     public void ClearDiagnostics() => _context.ClearDiagnostics();
 
+    /// <summary>See <see cref="ConversionContext.Reset"/> — call between components, not just
+    /// between diagnostics.</summary>
+    public void Reset() => _context.Reset();
+
     /// <summary>Resx accessor reads the most recent conversion(s) rewrote (Track L D3) — drained
     /// alongside diagnostics, cleared by the same call.</summary>
     public IReadOnlyList<Services.ResourceUse> ResourceUses => _context.ResourceUses;
@@ -111,6 +115,9 @@ public class CSharpToJsConverter
     /// <summary>Raises a diagnostic from OUTSIDE a strategy — the emitter's own whole-method checks.</summary>
     /// <summary>Turns TypeScript annotations on — see <see cref="ConversionContext.TypeAnnotations"/>.</summary>
     public void EmitTypeAnnotations(bool enabled) => _context.TypeAnnotations = enabled;
+
+    /// <summary>See <see cref="ConversionContext.DesignMode"/> — off in every build that ships.</summary>
+    public void EmitDesignOrigins(bool enabled) => _context.DesignMode = enabled;
 
     public void Report(SyntaxNode node, ConversionSeverity severity, string code, string message) =>
         _context.Report(node, severity, code, message);
@@ -361,7 +368,7 @@ public class CSharpToJsConverter
         var strategy = _strategyRegistry.FindStrategy(expression, _context);
         if (strategy != null)
         {
-            var result = strategy.Convert(expression, _context);
+            var result = Stamp(expression, strategy.Convert(expression, _context));
             _context.SetCached(expression, result);
             return result;
         }
@@ -370,6 +377,61 @@ public class CSharpToJsConverter
             $"C# expression '{expression.Kind()}' has no transpilation strategy — it cannot be emitted as JavaScript. " +
             "Rewrite it in a transpilable form, or add a conversion strategy for this construct.");
         return expression.ToString();
+    }
+
+    /// <summary>
+    /// In design mode, wraps a node CONSTRUCTION so the built node remembers the span that made it.
+    /// Everything else passes through untouched.
+    /// <para>
+    /// Constructions only — <c>new Card(…)</c>, <c>Card(…)</c> — never a reference. Stamping
+    /// <c>column</c> where it is merely mentioned would overwrite the origin the construction already
+    /// set with the span of a use, and the editor would select the wrong line.
+    /// </para>
+    /// <para>
+    /// It needs the semantic model to know a node from anything else; without one it stamps nothing,
+    /// which costs identity and never produces a wrong answer.
+    /// </para>
+    /// </summary>
+    private string Stamp(ExpressionSyntax expression, string emitted)
+    {
+        if (!_context.DesignMode) return emitted;
+        if (expression is not (ObjectCreationExpressionSyntax
+            or ImplicitObjectCreationExpressionSyntax
+            or InvocationExpressionSyntax)) return emitted;
+
+        var type = _context.SemanticModel?.GetTypeInfo(expression).Type;
+        if (!type.IsVisualNode()) return emitted;
+
+        var span = expression.GetLocation().GetLineSpan();
+        if (!span.IsValid) return emitted;
+
+        var origin = string.Concat(
+            expression.SyntaxTree.FilePath, "|",
+            span.StartLinePosition.Line.ToString(), ":", span.StartLinePosition.Character.ToString(), "|",
+            span.EndLinePosition.Line.ToString(), ":", span.EndLinePosition.Character.ToString());
+
+        _context.UsedHelpers.Add(Eq.Import);
+        return $"{Eq.Origin}({emitted}, {JsString(origin)})";
+    }
+
+    /// <summary>A JavaScript string literal. Paths carry backslashes on Windows and may carry quotes
+    /// anywhere, and either one unescaped ends the literal early — which breaks the whole module.</summary>
+    private static string JsString(string value)
+    {
+        var sb = new StringBuilder(value.Length + 2);
+        sb.Append('"');
+        foreach (var c in value)
+        {
+            switch (c)
+            {
+                case '"': sb.Append("\\\""); break;
+                case '\\': sb.Append("\\\\"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '\r': sb.Append("\\r"); break;
+                default: sb.Append(c); break;
+            }
+        }
+        return sb.Append('"').ToString();
     }
 
     public string ConvertBlock(BlockSyntax block)

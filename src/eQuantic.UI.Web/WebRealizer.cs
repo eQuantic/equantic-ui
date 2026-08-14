@@ -113,7 +113,30 @@ public static class WebRealizer
         return wrapper;
     }
 
-    private static HtmlElement? LowerNode(VisualNode node, ComponentContext context, bool? horizontalAxis) => node switch
+    /// <summary>
+    /// The single dispatch every node passes through — and therefore the one place the design-mode
+    /// origin is attached, once, rather than in each of the branches below.
+    /// <para>
+    /// <see cref="VisualNode.Origin"/> is set only by a design-mode compilation, so in every shipped
+    /// build this is one null check per node and the DOM is byte-identical. It has to stay the exact
+    /// twin of the same step in <c>lowering.ts</c>: the two producers render the same tree on either
+    /// side of hydration, and one attribute of disagreement is a diverged subtree.
+    /// </para>
+    /// </summary>
+    private static HtmlElement? LowerNode(VisualNode node, ComponentContext context, bool? horizontalAxis)
+    {
+        var lowered = LowerNodeKind(node, context, horizontalAxis);
+        if (lowered is not null && node.Origin is { Length: > 0 } origin)
+        {
+            // DataAttributes and not RawAttributes: RawAttributes lives on RealizedElement (it exists
+            // so SVG can emit viewBox/d verbatim), and not every lowered node is one. DataAttributes
+            // is on HtmlElement itself and prefixes `data-`, so this reaches every node there is.
+            (lowered.DataAttributes ??= new Dictionary<string, string>())["eq-origin"] = origin;
+        }
+        return lowered;
+    }
+
+    private static HtmlElement? LowerNodeKind(VisualNode node, ComponentContext context, bool? horizontalAxis) => node switch
     {
         Box box => LowerBox(box, context),
         FlexNode flex => LowerFlex(flex, context),

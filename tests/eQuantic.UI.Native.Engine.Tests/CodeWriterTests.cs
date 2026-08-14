@@ -106,4 +106,20 @@ public class CodeWriterTests
             """.ReplaceLineEndings() + System.Environment.NewLine);
         writer.IndentLevel.Should().Be(0, "every scope put back what it took");
     }
+
+    [Fact]
+    public void TheLineCounterCountsWhatWasActuallyWritten_NotHowManyCallsWereMade()
+    {
+        // CurrentLine is what a source map anchors a generated position against, and a writer is
+        // routinely handed text that is already several lines — a converted method body, a doc
+        // comment. Counting each call as one line shifted every mapping after it, which reads in a
+        // debugger as breakpoints landing on the wrong statement.
+        var writer = new CodeWriter();
+        writer.AppendLine("const a = 1;");
+        writer.AppendLine("const b = () => {\n    return 2;\n};");
+        writer.Append("const c =\n    3;\n");
+
+        var written = writer.ToString().ReplaceLineEndings("\n").TrimEnd('\n').Split('\n').Length;
+        writer.CurrentLine.Should().Be(written + 1, "the counter names the line the NEXT write lands on");
+    }
 }

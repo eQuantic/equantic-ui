@@ -42,8 +42,10 @@ public class TypeScriptCodeBuilder
         var extendsClause = string.IsNullOrEmpty(baseClass) ? "" : $" extends {baseClass}";
         // `abstract` is emitted, not erased: a base that declares a member for its subclasses to
         // supply has to say so, or TypeScript reads the declaration as a real property and refuses
-        // the accessor that implements it.
-        var abstractKeyword = isAbstract ? "abstract " : "";
+        // the accessor that implements it. In PLAIN JavaScript there is no such keyword — `abstract
+        // class X {` is a parse error that costs the whole module — and nothing is lost by dropping
+        // it, since the only thing it buys is a compile-time refusal to instantiate.
+        var abstractKeyword = isAbstract && TypeAnnotations ? "abstract " : "";
 
         // The closing brace travels with the scope: a class body that opens and never closes is the
         // one bug generated code reliably ships, and a `using` makes it unrepresentable.

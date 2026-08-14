@@ -15,6 +15,24 @@ public abstract class VisualNode
     public string? Key { get; init; }
 
     /// <summary>
+    /// WHERE IN THE SOURCE this node was constructed — <c>path|startLine:startCol|endLine:endCol</c>,
+    /// zero-based — or <c>null</c>, which is what production always is.
+    /// <para>
+    /// Set only by a DESIGN-MODE compilation, for tools that have to answer "which C# made this
+    /// pixel". A string and not a file/span type on purpose: this layer speaks no target's language,
+    /// and both realizers can carry an opaque string to their own world (a <c>data-eq-origin</c>
+    /// attribute on the web; nothing at all on Photon, where <c>LayoutNode.Source</c> already hands a
+    /// hit-test back the node itself).
+    /// </para>
+    /// <para>
+    /// It is EXACT rather than correlated, which is the whole point: a row built five hundred times
+    /// inside a <c>foreach</c> carries the span of the one expression that built it — and that
+    /// expression is the only editable thing anyway.
+    /// </para>
+    /// </summary>
+    public string? Origin { get; init; }
+
+    /// <summary>
     /// Overrides the parent flex container's <see cref="FlexNode.Cross"/> for THIS child only
     /// (spec S1 — the CSS <c>align-self</c> twin). <c>null</c> = follow the container. Ignored
     /// outside a Row/Column.

@@ -64,22 +64,29 @@ test.describe('Write-once SSR + hydration', () => {
 
   test('adopted DOM is interactive: the showroom segmented control switches', async ({ page }) => {
     // The flagship screen, not a toy counter: a SegmentedControl from the shared library, rendered
-    // by the server and then adopted. Selection is asserted through `aria-pressed` — the semantic
-    // the component promises assistive tech — so a control that merely repaints the active pill
-    // without moving selection still fails here.
+    // by the server and then adopted. Selection is asserted through the semantics the component
+    // promises assistive tech, so a control that merely repaints the active pill without moving
+    // selection still fails here.
+    //
+    // Those semantics are RADIO, not a pressed button: `SegmentedControl` sets
+    // `Role = PressableRole.Radio` and wraps the options in a radiogroup (one Tab stop, arrows
+    // between the options). This test asserted `getByRole('button')` + `aria-pressed` until the
+    // component changed underneath it, and an explicit `role="radio"` overrides the implicit button
+    // role — so the locator matched nothing and the suite had been failing here ever since.
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const sevenDays = page.getByRole('button', { name: '7d', exact: true }).first();
-    const ninetyDays = page.getByRole('button', { name: '90d', exact: true }).first();
+    const sevenDays = page.getByRole('radio', { name: '7d', exact: true }).first();
+    const ninetyDays = page.getByRole('radio', { name: '90d', exact: true }).first();
 
-    await expect(sevenDays).toHaveAttribute('aria-pressed', 'false');
-    await expect(ninetyDays).toHaveAttribute('aria-pressed', 'false');
+    // The screen opens on 30d, so neither of these two starts selected.
+    await expect(sevenDays).toHaveAttribute('aria-checked', 'false');
+    await expect(ninetyDays).toHaveAttribute('aria-checked', 'false');
 
     await ninetyDays.click();
 
-    await expect(ninetyDays).toHaveAttribute('aria-pressed', 'true');
-    await expect(sevenDays).toHaveAttribute('aria-pressed', 'false');
+    await expect(ninetyDays).toHaveAttribute('aria-checked', 'true');
+    await expect(sevenDays).toHaveAttribute('aria-checked', 'false');
   });
 
   test('the declarative (no-new) page hydrates by identity and stays alive', async ({ page }) => {

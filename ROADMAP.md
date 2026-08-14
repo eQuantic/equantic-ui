@@ -225,8 +225,12 @@ Every pillar it needs already exists in the product:
 - **Preview = the real web realizer** in a webview (SSR + runtime — the preview IS the product,
   never a lookalike), with the dev server driving rebuilds (Phase 3 hot reload compounds here).
 - **Click-to-select**: the component tree + stable layout paths already power hit-testing and the
-  reconciler; the same identity maps a click in the viewer to a `VisualNode` and (via the V3
-  source maps eqc already emits) to the exact C# line.
+  reconciler; the same identity maps a click in the viewer to a `VisualNode`. **Correction
+  (2026-08-14): the V3 source maps CANNOT carry it** — the whole `Build` body is emitted through a
+  single `Raw(jsBody, BuildMethodNode.Body)` call (`TypeScriptEmitter.cs:252`), so the finest position
+  a map can name is the start of the method body (a measured 942-character line in `Badge.ts`).
+  Identity comes instead from a target-neutral `VisualNode.Origin` stamped by a design-mode emission,
+  which is exact rather than correlated and which the native track inherits for free.
 - **Property editing**: Roslyn rewrites the component's object initializers/constructor args in
   place — the same semantic machinery the compiler uses, run in reverse; typed tokens
   (Variant/Space/Radius/TypeRole) make every property a dropdown/slider, not a string.
@@ -236,7 +240,20 @@ Every pillar it needs already exists in the product:
 Milestones: **E1** live preview panel (open a `[Page]`/component → rendered webview, auto-reload
 on save) · **E2** inspection (click-to-select, highlight, component tree view, jump-to-source)
 · **E3** property panel with two-way C# editing · **E4** full visual editing (insert/move/delete
-from the component palette). Plan doc lands when the track starts.
+from the component palette).
+
+**Started 2026-08-14** → full plan, with the measurements and the corrected premises:
+`docs/VSCODE-VISUAL-EDITOR-PLAN.md`. E1 goes further than "auto-reload on save": the design host
+(`src/eQuantic.UI.Design`, `eqdesign`) compiles the **unsaved editor buffer** in-process, measured at
+**p50 293 ms** on the 662-line `PaymentsPage` with the full 316-assembly reference set, so nothing in
+the loop touches MSBuild or the filesystem. Landed with it: the `equantic.refs.txt` truncation that
+silently degraded every hot-reload compile to a model-less one, and three plain-JavaScript emission
+bugs that made a module unparseable (so the playground and the conformance harness were one static
+collection away from a blank frame).
+
+**Open decision before E4**: real screens are imperative (`WalletApp.cs` — 208 `new`, 126 `.Add`,
+zero `children:`), so a palette that inserts only into declarative `children:` arrays has almost
+nothing to edit. Choices are in the plan doc.
 
 ## Track L — Localization (multi-language, zero third-party)
 

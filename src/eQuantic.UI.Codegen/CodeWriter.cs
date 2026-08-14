@@ -47,6 +47,7 @@ public class CodeWriter
     public CodeWriter Append(string text)
     {
         _content.Append(text);
+        CurrentLine += NewlinesIn(text);
         return this;
     }
 
@@ -54,8 +55,25 @@ public class CodeWriter
     public CodeWriter AppendLine(string line)
     {
         _content.Append(Indentation()).AppendLine(line);
-        CurrentLine++;
+        CurrentLine += NewlinesIn(line) + 1;
         return this;
+    }
+
+    /// <summary>
+    /// What the text ITSELF advances the line counter by. <see cref="CurrentLine"/> is what a source
+    /// map anchors against, and a writer is routinely handed a block that is already several lines —
+    /// a converted method body, a doc comment. Counting those as one line silently shifts every
+    /// mapping after them, which reads in a debugger as breakpoints landing on the wrong statement.
+    /// Counting '\n' covers both line endings: "\r\n" has exactly one.
+    /// </summary>
+    private static int NewlinesIn(string text)
+    {
+        var count = 0;
+        foreach (var c in text)
+        {
+            if (c == '\n') count++;
+        }
+        return count;
     }
 
     /// <summary>A blank line carries no indentation — trailing whitespace is a diff nobody wants.</summary>

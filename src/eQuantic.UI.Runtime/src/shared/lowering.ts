@@ -250,7 +250,28 @@ type StyleEntries = Partial<Record<string, string | undefined>>;
 
 // ---- node lowering --------------------------------------------------------------------------------
 
+/**
+ * The single dispatch every node passes through — and therefore the one place the design-mode origin
+ * can be attached, once, instead of in each of the thirty branches below.
+ *
+ * `origin` is set only by a DESIGN-MODE compilation, so in every shipped build this is one undefined
+ * check per node and the DOM is byte-identical. That matters more than it looks: SSR emits this same
+ * attribute from C# (`WebRealizer`), and if the two producers disagreed by so much as one attribute,
+ * hydration would diverge.
+ */
 function lowerNode(
+  node: VisualNodeValue,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const lowered = lowerNodeKind(node, context, horizontalAxis, path);
+  const source = (node as { origin?: string }).origin;
+  if (lowered && source) lowered.attributes['data-eq-origin'] = source;
+  return lowered;
+}
+
+function lowerNodeKind(
   node: VisualNodeValue,
   context: LoweringContext,
   horizontalAxis: boolean | null,

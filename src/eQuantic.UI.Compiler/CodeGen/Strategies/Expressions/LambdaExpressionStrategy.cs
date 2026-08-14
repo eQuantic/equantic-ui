@@ -56,7 +56,7 @@ public class LambdaExpressionStrategy : IConversionStrategy
     /// </summary>
     private static string ExpressionBody(ExpressionSyntax expression, ConversionContext context)
     {
-        var hoisted = PatternVariableScanner.Declarations(expression);
+        var hoisted = PatternVariableScanner.Declarations(expression, context.TypeAnnotations);
         var converted = context.Converter.ConvertExpression(expression);
         return hoisted.Length == 0 ? converted : $"{{ {hoisted}return {converted}; }}";
     }

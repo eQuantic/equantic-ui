@@ -118,6 +118,21 @@ public class ComponentCompiler
     }
 
     /// <summary>
+    /// Emit every node construction wrapped so the built node carries the source span that made it
+    /// (<c>VisualNode.Origin</c>) — the identity a visual editor needs to answer "which C# made this
+    /// pixel", and which source maps cannot give: the whole Build body is emitted as one span.
+    /// <para>
+    /// Off, and only a design tool turns it on. The wrapper is real emitted code; an SDK build that
+    /// shipped it would be putting a design tool's concern in every user's bundle.
+    /// </para>
+    /// </summary>
+    public bool DesignMode
+    {
+        get => _tsEmitter.DesignMode;
+        set => _tsEmitter.DesignMode = value;
+    }
+
+    /// <summary>
     /// The C# errors in this source, as the language itself sees them — CS1002, CS0103, CS0246 —
     /// anchored to their line. Roslyn parses leniently, so eqc will happily transpile a file with
     /// a syntax error and emit a component built from a tree it only half understood; the result

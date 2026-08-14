@@ -12,6 +12,13 @@ public static class Eq
     /// <summary>The single symbol imported from <c>@equantic/runtime</c> when any <c>$eq.*</c> is emitted.</summary>
     public const string Import = "$eq";
 
+    /// <summary>
+    /// Stamps a node with the source span that constructed it and returns the SAME node — emitted
+    /// only by a design-mode compilation, so production output never mentions it. Two args: the node
+    /// and its origin string (see <c>VisualNode.Origin</c>).
+    /// </summary>
+    public const string Origin = "$eq.origin";
+
     /// <summary>A resx accessor, resolved at CALL time against the active UI culture (Track L D2:
     /// rewritten, never inlined — an inlined accessor bakes the build machine's culture into the
     /// bundle). Two args: the catalog id and the resx key.</summary>

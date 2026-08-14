@@ -17,7 +17,7 @@ public class WhileStatementStrategy : IStatementStrategy
         // A pattern variable bound in the CONDITION is assigned on every test, so its declaration
         // has to sit outside the loop — inside, it would be redeclared each pass, and the loop is
         // the one place the condition runs more than once.
-        var hoisted = PatternVariableScanner.Declarations(whileStmt.Condition);
+        var hoisted = PatternVariableScanner.Declarations(whileStmt.Condition, context.TypeAnnotations);
         var condition = context.Converter.ConvertExpression(whileStmt.Condition);
         var body = context.Converter.Convert(whileStmt.Statement);
 

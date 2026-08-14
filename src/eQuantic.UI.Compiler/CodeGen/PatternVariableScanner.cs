@@ -14,8 +14,15 @@ namespace eQuantic.UI.Compiler.CodeGen;
 public static class PatternVariableScanner
 {
     /// <summary>`let a; let b;` for every pattern variable bound in <paramref name="expression"/>,
-    /// or an empty string when there is none.</summary>
-    public static string Declarations(ExpressionSyntax? expression)
+    /// or an empty string when there is none.
+    /// <para>
+    /// <paramref name="typeAnnotations"/> has no default on purpose. The same converter also emits
+    /// plain <c>.js</c> — for the conformance harness, the playground and the design host — and
+    /// there <c>let x: any;</c> is a SYNTAX error that costs the whole module, not a type that gets
+    /// ignored. A default would mean the next call site gets it wrong silently.
+    /// </para>
+    /// </summary>
+    public static string Declarations(ExpressionSyntax? expression, bool typeAnnotations)
     {
         if (expression is null) return "";
         // A lambda is its OWN scope, and Walk only skips lambdas it finds as children — handed one
@@ -30,8 +37,10 @@ public static class PatternVariableScanner
         Walk(expression, vars);
         // `: any`, not a bare `let`: these are assigned inside the CONDITION they are hoisted out
         // of, and TypeScript cannot see through that — an untyped slot reads as "implicitly any in
-        // some locations", which is an error, where an explicit one is a decision.
-        return vars.Count == 0 ? "" : string.Join(" ", vars.Select(v => $"let {v}: any;")) + " ";
+        // some locations", which is an error, where an explicit one is a decision. In plain
+        // JavaScript there is no such question and no such syntax, so the slot is just a slot.
+        var slot = typeAnnotations ? ": any" : "";
+        return vars.Count == 0 ? "" : string.Join(" ", vars.Select(v => $"let {v}{slot};")) + " ";
     }
 
     private static void Walk(SyntaxNode node, List<string> vars)

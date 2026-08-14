@@ -16,7 +16,7 @@ public class ReturnStatementStrategy : IStatementStrategy
         var retStmt = (ReturnStatementSyntax)node;
         if (retStmt.Expression != null)
         {
-            var declarations = PatternVariableScanner.Declarations(retStmt.Expression);
+            var declarations = PatternVariableScanner.Declarations(retStmt.Expression, context.TypeAnnotations);
             var expr = context.Converter.ConvertExpression(retStmt.Expression);
             return $"{declarations}return {expr};";
         }
