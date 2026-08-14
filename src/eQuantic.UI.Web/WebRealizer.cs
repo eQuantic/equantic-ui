@@ -298,12 +298,36 @@ public static class WebRealizer
         if (anchored is { DescribesAnchor: true, OpenOnHover: true })
             describedBy = $"eq-tip-{StyleAtomizer.Hash(TextContentOf(anchored.Panel))}";
 
+        // The menu/listbox panel id: FNV of the panel's text. The TS producer hashes its PATH
+        // instead (unique when an adaptive shell mounts the same menu twice) — the spellings may
+        // differ because an OPEN panel never comes from SSR, so hydration never compares them.
+        // An app that does SSR an open listbox gets a benign id patch on hydration, nothing more.
+        var panelId = anchored.PanelRole != AnchorPanelRole.None
+            ? $"eq-panel-{StyleAtomizer.Hash(TextContentOf(anchored.Panel))}"
+            : null;
+
         if (LowerNode(anchored.Anchor, context, horizontalAxis: null) is { } anchor)
         {
             // What a screen reader reads AFTER the control's name — whether or not the panel is
             // visually revealed. On the anchor's root, which for the ordinary Tooltip(child:
             // IconButton) IS the focusable button.
             if (describedBy is not null) anchor.AriaDescribedBy = describedBy;
+
+            // The anchor's half of the menu/listbox pattern, on its root — the trigger button.
+            if (panelId is not null)
+            {
+                anchor.AriaHasPopup = anchored.PanelRole == AnchorPanelRole.Listbox ? "listbox" : "menu";
+                // A Select's FIELD is the combobox — the role rides the trigger, not the panel.
+                if (anchored.PanelRole == AnchorPanelRole.Listbox) anchor.Role = "combobox";
+                if (anchored.Open)
+                {
+                    anchor.AriaControls = panelId;
+                    // The highlight the arrows move, stated — otherwise it is only paint, and a
+                    // screen reader following the keyboard hears nothing move.
+                    if (anchored.ActiveIndex >= 0)
+                        anchor.AriaActiveDescendant = $"{panelId}-{anchored.ActiveIndex}";
+                }
+            }
             // A painted scrim dims the PAGE, never its own anchor — the anchor lifts above it.
             // Snap panels gate the class on Open (position+z the closed state shouldn't pay for);
             // Motion panels keep it ALWAYS — the scrim is still fading out after close, and an
@@ -358,8 +382,32 @@ public static class WebRealizer
             host.Children.Add(scrim);
         }
 
-        host.Children.Add(BuildAnchorPanel(anchored, context));
+        var openPanel = BuildAnchorPanel(anchored, context);
+        if (panelId is not null)
+        {
+            openPanel.Role = anchored.PanelRole == AnchorPanelRole.Listbox ? "listbox" : "menu";
+            openPanel.Id = panelId;
+            // Number the item rows IN TREE ORDER — the ids aria-activedescendant points at. Tree
+            // order is the one thing both producers agree on without sharing any state.
+            var next = 0;
+            NumberItemRows(openPanel, panelId, ref next);
+        }
+        host.Children.Add(openPanel);
         return host;
+    }
+
+    /// <summary>Walks the lowered panel and ids every menuitem/option row: <c>{panelId}-0</c>,
+    /// <c>-1</c>… in tree order — the TS twin numbers the same way.</summary>
+    private static void NumberItemRows(Core.HtmlElement element, string panelId, ref int next)
+    {
+        if (element.Role is "menuitem" or "option")
+        {
+            element.Id = $"{panelId}-{next}";
+            next++;
+        }
+        foreach (var child in element.Children)
+            if (child is Core.HtmlElement childElement)
+                NumberItemRows(childElement, panelId, ref next);
     }
 
     /// <summary>The panel's visible text, flattened — what the tooltip id hashes. Walking the
@@ -1690,6 +1738,22 @@ public static class WebRealizer
         if (pressable.Role == PressableRole.Tab)
         {
             element.Role = "tab";
+            element.AriaSelected = pressable.Selected == true;
+            element.AriaPressed = null;
+            element.TabIndex = -1;
+        }
+
+        // Panel item rows: out of the Tab order — the keyboard lives on the TRIGGER while the
+        // panel is up, and the highlight travels as aria-activedescendant (see LowerAnchored).
+        if (pressable.Role == PressableRole.MenuItem)
+        {
+            element.Role = "menuitem";
+            element.AriaPressed = null;
+            element.TabIndex = -1;
+        }
+        if (pressable.Role == PressableRole.Option)
+        {
+            element.Role = "option";
             element.AriaSelected = pressable.Selected == true;
             element.AriaPressed = null;
             element.TabIndex = -1;

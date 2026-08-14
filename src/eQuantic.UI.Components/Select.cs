@@ -98,7 +98,13 @@ public sealed class Select : StatefulComponent
                 Background = selected ? theme.Colors(Variant.Primary).Subtle
                     : highlighted ? theme.SurfaceSubtle : null,
                 Hover = selected ? null : new StyleDiff { Background = theme.SurfaceSubtle },
-            }, row), () => Choose(index)));
+            }, row), () => Choose(index))
+            {
+                // An option is PICKED, like a tab — the check glyph is paint, aria-selected is
+                // the answer.
+                Role = PressableRole.Option,
+                Selected = selected,
+            });
         }
 
         var panel = new Box(new BoxStyle
@@ -121,6 +127,11 @@ public sealed class Select : StatefulComponent
             Open = _open && !Disabled,
             OnDismiss = () => SetState(() => _open = false),
             MatchAnchorWidth = true,
+            // The combobox pattern, whole: the FIELD becomes role=combobox with haspopup/controls,
+            // the panel a role=listbox of numbered options, and the keyboard highlight rides
+            // aria-activedescendant off the field — stated, not merely painted.
+            PanelRole = AnchorPanelRole.Listbox,
+            ActiveIndex = _open ? _highlight : -1,
         };
 
         // The keyboard, exactly while the panel is up. Nested Shortcuts share one child root — the

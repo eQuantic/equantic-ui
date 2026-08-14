@@ -88,9 +88,14 @@ public sealed class Menu : StatefulComponent
                 Hover = item.Disabled ? null : new StyleDiff { Background = theme.SurfaceSubtle },
             }, row);
 
-            list.Add(item.Disabled
-                ? surface
-                : new Pressable(surface, () => Choose(index)));
+            // A disabled item is still a MENU ITEM — perceivable and announced dimmed, exactly
+            // like every disabled row in a native menu. A bare Box would make it invisible to
+            // assistive tech, which reads as the menu having fewer commands than the screen shows.
+            list.Add(new Pressable(surface, item.Disabled ? null : () => Choose(index))
+            {
+                Disabled = item.Disabled,
+                Role = PressableRole.MenuItem,
+            });
         }
 
         var panel = new Box(new BoxStyle
@@ -110,6 +115,11 @@ public sealed class Menu : StatefulComponent
             Placement = Placement,
             Open = _open,
             OnDismiss = () => SetState(() => _open = false),
+            // The full ARIA menu pattern: role=menu + numbered menuitem rows on the panel,
+            // haspopup/controls on the trigger, and the keyboard highlight as
+            // aria-activedescendant — stated, not merely painted.
+            PanelRole = AnchorPanelRole.Menu,
+            ActiveIndex = _open ? _highlight : -1,
         };
 
         if (_open && Items.Count > 0)

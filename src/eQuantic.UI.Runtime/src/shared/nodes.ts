@@ -127,6 +127,12 @@ export interface AnchoredNode extends VisualNodeValue {
   /** The panel DESCRIBES the anchor (the Tooltip contract): role=tooltip + deterministic id on
    * the panel, aria-describedby on the anchor's root. Meaningful only with openOnHover. */
   describesAnchor?: boolean;
+  /** What the panel IS ('none' | 'menu' | 'listbox'): role + id on the panel, numbered item rows,
+   * and the anchor's half of the pattern (haspopup/controls; combobox for a listbox). */
+  panelRole?: string;
+  /** Which item row the keyboard is on (tree order, -1 = none) — aria-activedescendant on the
+   * anchor: a highlight that is only paint says nothing to a screen reader. */
+  activeIndex?: number;
   /** Paints the outside-tap scrim (mega-menu page veil) — a BoxStyle, like the C# ScrimStyle. */
   scrimStyle?: BoxStyleValue | null;
   /** Open/close motion: panel + scrim stay mounted in both states and glide between them. */
@@ -423,9 +429,10 @@ export interface PressableNode extends VisualNodeValue {
   expanded?: boolean | null;
   /** §10 initial focus: when a trap opens around this pressable, focus lands HERE first. */
   initialFocus?: boolean;
-  /** Composite-item role ('button' | 'radio' | 'checkbox' | 'switch' | 'tab'): radio and tab
-   * lower with roving tabindex (the wrapping Adjustable is the one stop) — radio states
-   * aria-checked, tab states aria-selected; checkbox/switch keep their own stop. */
+  /** Composite-item role ('button' | 'radio' | 'checkbox' | 'switch' | 'tab' | 'menuItem' |
+   * 'option'): radio and tab lower with roving tabindex (the wrapping Adjustable is the one
+   * stop); menuItem/option leave the tab order too (the keyboard lives on the trigger, the
+   * highlight rides aria-activedescendant); checkbox/switch keep their own stop. */
   role?: string;
 }
 

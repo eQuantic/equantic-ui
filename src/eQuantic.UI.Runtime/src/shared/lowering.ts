@@ -1986,6 +1986,15 @@ function lowerPressable(
     node.attributes['role'] = 'tab';
     node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false';
     node.attributes['tabindex'] = '-1';
+  } else if (pressable.role === 'menuItem') {
+    // Panel item rows: out of the Tab order — the keyboard lives on the trigger, and the
+    // highlight travels as aria-activedescendant (see lowerAnchored).
+    node.attributes['role'] = 'menuitem';
+    node.attributes['tabindex'] = '-1';
+  } else if (pressable.role === 'option') {
+    node.attributes['role'] = 'option';
+    node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false';
+    node.attributes['tabindex'] = '-1';
   } else if (pressable.role === 'checkbox' || pressable.role === 'switch') {
     // A check states its state as an ATTRIBUTE, never in the name; it keeps its own Tab stop.
     // "mixed" exists for checkboxes and nothing else — the C# realizer enforces the same rule.
@@ -2094,6 +2103,15 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
       ? `eq-tip-${hashDeclaration(visualTextOf(node.panel))}`
       : null;
 
+  // The menu/listbox contract: the id hashes the PATH, not the text — an adaptive shell mounts
+  // the same menu twice (desktop and compact layouts), and two open clones hashing their text
+  // would collide, sending aria-activedescendant to whichever came first in the document. The
+  // path is unique per instance by construction. It NEED not match the C# producer's spelling:
+  // an open panel never comes from SSR (it opens by interaction), so hydration never compares
+  // these ids — the one place both spellings could meet.
+  const panelRole = node.panelRole === 'menu' || node.panelRole === 'listbox' ? node.panelRole : null;
+  const panelId = panelRole ? `eq-panel-${hashDeclaration(path)}` : null;
+
   const anchor = lowerNode(node.anchor, context, null, path + '/0');
   if (anchor) {
     // C# twin: a painted scrim dims the page, never its own anchor. Motion panels keep the class
@@ -2101,6 +2119,16 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
     if (node.scrimStyle && node.onDismiss && (node.open === true || node.motion))
       prependClass(anchor, 'eq-anchor-above');
     if (describedBy) anchor.attributes['aria-describedby'] = describedBy;
+    // The anchor's half of the menu/listbox pattern (C# twin) — on its root, the trigger button.
+    if (panelId) {
+      anchor.attributes['aria-haspopup'] = panelRole === 'listbox' ? 'listbox' : 'menu';
+      if (panelRole === 'listbox') anchor.attributes['role'] = 'combobox';
+      if (node.open === true) {
+        anchor.attributes['aria-controls'] = panelId;
+        const active = node.activeIndex ?? -1;
+        if (active >= 0) anchor.attributes['aria-activedescendant'] = `${panelId}-${active}`;
+      }
+    }
     host.children.push(anchor);
   }
   if (node.openOnHover === true) {
@@ -2159,8 +2187,25 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
     }
   }
 
-  host.children.push(buildAnchorPanel(node, context, path));
+  const openPanel = buildAnchorPanel(node, context, path);
+  if (panelId) {
+    openPanel.attributes['role'] = panelRole === 'listbox' ? 'listbox' : 'menu';
+    openPanel.attributes['id'] = panelId;
+    // Number the item rows in TREE ORDER — the ids aria-activedescendant points at (C# twin).
+    numberItemRows(openPanel, panelId, { next: 0 });
+  }
+  host.children.push(openPanel);
   return host;
+}
+
+/** Walks the lowered panel and ids every menuitem/option row — the C# NumberItemRows twin. */
+function numberItemRows(node: HtmlNode, panelId: string, counter: { next: number }): void {
+  const role = node.attributes['role'];
+  if (role === 'menuitem' || role === 'option') {
+    node.attributes['id'] = `${panelId}-${counter.next}`;
+    counter.next++;
+  }
+  for (const child of node.children) numberItemRows(child, panelId, counter);
 }
 
 /** Atomizes extra declarations onto an ALREADY-lowered node (the C# realizer's equivalent of

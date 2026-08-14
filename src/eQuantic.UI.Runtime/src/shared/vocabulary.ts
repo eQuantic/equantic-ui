@@ -296,6 +296,10 @@ export class Anchored extends VisualNode {
   openOnHover = false;
   /** The panel DESCRIBES the anchor (the Tooltip contract) — role=tooltip + aria-describedby. */
   describesAnchor = false;
+  /** What the panel IS ('none' | 'menu' | 'listbox') — the C# AnchorPanelRole twin. */
+  panelRole = 'none';
+  /** Which item row the keyboard is on (tree order, -1 = none) — aria-activedescendant. */
+  activeIndex = -1;
   /** Paints the outside-tap scrim (mega-menu page veil) — a BoxStyle, like the C# ScrimStyle. */
   scrimStyle: BoxStyleValue | null = null;
   /** Open/close motion (C# twin): panel + scrim stay MOUNTED and glide between states. */
@@ -312,6 +316,8 @@ export class Anchored extends VisualNode {
       matchAnchorWidth?: boolean;
       openOnHover?: boolean;
       describesAnchor?: boolean;
+      panelRole?: string;
+      activeIndex?: number;
       scrimStyle?: BoxStyleValue | null;
       motion?: TransitionSpec | null;
       key?: string | null;

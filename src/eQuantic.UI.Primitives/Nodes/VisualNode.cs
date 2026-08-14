@@ -527,6 +527,21 @@ public enum AnchorPlacement : byte
 /// does not reposition), escape from clipping ancestors on web (keep anchors out of
 /// overflow-hidden scrollers).
 /// </summary>
+/// <summary>What an <see cref="Anchored"/> panel IS to assistive tech. Grows with the composites
+/// that need it, never speculatively — the same rule <see cref="PressableRole"/> follows.</summary>
+public enum AnchorPanelRole : byte
+{
+    /// <summary>A plain floating panel — today's default everywhere.</summary>
+    None = 0,
+
+    /// <summary>A menu of commands (<c>role="menu"</c>); its rows are MenuItems.</summary>
+    Menu = 1,
+
+    /// <summary>A list of choices (<c>role="listbox"</c>); its rows are Options, and the ANCHOR
+    /// becomes the combobox.</summary>
+    Listbox = 2,
+}
+
 public sealed class Anchored : VisualNode
 {
     public override string NodeKind => "anchored";
@@ -570,6 +585,25 @@ public sealed class Anchored : VisualNode
     /// leaves = closed); never fires on touch. Composes with <see cref="Open"/> (either shows
     /// the panel).</summary>
     public bool OpenOnHover { get; init; }
+
+    /// <summary>
+    /// What the floating panel IS to assistive tech. <see cref="AnchorPanelRole.Menu"/> and
+    /// <see cref="AnchorPanelRole.Listbox"/> make the panel a real <c>role="menu"</c> /
+    /// <c>role="listbox"</c> with a deterministic id, number its item rows (the descendants whose
+    /// <see cref="PressableRole"/> says MenuItem/Option), and teach the ANCHOR its side of the
+    /// pattern: <c>aria-haspopup</c>, <c>aria-controls</c> while open — and for a Listbox the
+    /// anchor becomes the <c>combobox</c>, which is what a Select's field is.
+    /// </summary>
+    public AnchorPanelRole PanelRole { get; init; }
+
+    /// <summary>
+    /// Which item row the KEYBOARD is on, counted over the panel's item rows in tree order —
+    /// <c>-1</c> = none. Lowered as <c>aria-activedescendant</c> on the anchor: the highlight the
+    /// arrows move is otherwise only PAINT, and a screen reader following the keyboard hears
+    /// nothing move. The focus itself stays on the trigger, which is the combobox pattern's own
+    /// arrangement.
+    /// </summary>
+    public int ActiveIndex { get; init; } = -1;
 
     /// <summary>
     /// The panel DESCRIBES the anchor — the Tooltip contract. The web panel becomes
@@ -1085,6 +1119,16 @@ public enum PressableRole : byte
     /// tabindex under an <see cref="AdjustableRole.Tablist"/> wrapper, selection as an attribute —
     /// but the attribute is <c>aria-selected</c>: a tab is picked, not checked.</summary>
     Tab = 4,
+
+    /// <summary>One row of a menu panel (<c>role="menuitem"</c>). Out of the Tab order — the
+    /// keyboard lives on the TRIGGER while a menu is up, and the highlight travels through
+    /// <see cref="Anchored.ActiveIndex"/> as <c>aria-activedescendant</c>.</summary>
+    MenuItem = 5,
+
+    /// <summary>One option of a listbox panel (<c>role="option"</c>): selection as
+    /// <c>aria-selected</c> — an option is picked, like a tab — and out of the Tab order for the
+    /// same reason a menu item is.</summary>
+    Option = 6,
 }
 
 /// <summary>One inline run of a rich <see cref="Text"/> (see <see cref="Text.Spans"/>): its own

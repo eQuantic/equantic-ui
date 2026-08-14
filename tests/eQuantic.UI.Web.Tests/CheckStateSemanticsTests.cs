@@ -193,4 +193,73 @@ public class CheckStateSemanticsTests
         tabs.Should().OnlyContain(tab => !tab.Attributes.ContainsKey("aria-pressed"),
             "picked-ness is not pressed-ness");
     }
+
+    /// <summary>
+    /// The full combobox pattern on the Select, in one render: the FIELD is the combobox
+    /// (haspopup/controls/activedescendant ride the trigger, focus never leaves it), the panel is
+    /// a listbox of numbered options, the committed choice says aria-selected, and the keyboard
+    /// highlight — otherwise just paint — is stated as aria-activedescendant.
+    /// </summary>
+    [Fact]
+    public void AnOpenSelectSpeaksTheWholeComboboxPattern()
+    {
+        var select = new Select(["Small", "Medium", "Large"], selectedIndex: 1, onChanged: _ => { });
+        Press(Render(select));   // open through the field's own toggle
+
+        var nodes = Walk(Render(select)).ToList();
+
+        var combobox = nodes.Single(node => node.Attributes.GetValueOrDefault("role") == "combobox");
+        var listbox = nodes.Single(node => node.Attributes.GetValueOrDefault("role") == "listbox");
+        var options = nodes.Where(node => node.Attributes.GetValueOrDefault("role") == "option").ToList();
+
+        combobox.Attributes["aria-haspopup"].Should().Be("listbox");
+        combobox.Attributes["aria-controls"].Should().Be(listbox.Attributes["id"]);
+        options.Should().HaveCount(3);
+        // Tree order is the id order on both producers; the check glyph is paint, aria-selected
+        // is the answer.
+        options.Select(option => option.Attributes["id"])
+            .Should().Equal($"{listbox.Attributes["id"]}-0", $"{listbox.Attributes["id"]}-1",
+                $"{listbox.Attributes["id"]}-2");
+        options.Select(option => option.Attributes["aria-selected"])
+            .Should().Equal("false", "true", "false");
+        combobox.Attributes["aria-activedescendant"].Should().Be(options[1].Attributes["id"],
+            "the highlight opens on the committed choice");
+    }
+
+    /// <summary>The menu half: role=menu with numbered menuitems (the DISABLED one included — a
+    /// bare box would make the menu read as having fewer commands than the screen shows), and
+    /// haspopup=menu on a trigger that stays a plain button.</summary>
+    [Fact]
+    public void AnOpenMenuSpeaksTheMenuPattern_DisabledItemsIncluded()
+    {
+        var menu = new Menu(new Text("Actions", TypeRole.Label),
+        [
+            new MenuItem("Rename"),
+            new MenuItem("Duplicate") { Disabled = true },
+            new MenuItem("Delete") { Destructive = true },
+        ], _ => { });
+        Press(Render(menu));   // open through the trigger's press
+
+        var nodes = Walk(Render(menu)).ToList();
+
+        var panel = nodes.Single(node => node.Attributes.GetValueOrDefault("role") == "menu");
+        var items = nodes.Where(node => node.Attributes.GetValueOrDefault("role") == "menuitem").ToList();
+        var trigger = nodes.Single(node => node.Attributes.ContainsKey("aria-haspopup"));
+
+        items.Should().HaveCount(3, "the disabled command is still a command");
+        items[1].Attributes.Should().ContainKey("disabled");
+        trigger.Attributes["aria-haspopup"].Should().Be("menu");
+        trigger.Attributes.GetValueOrDefault("role").Should().NotBe("combobox",
+            "a menu trigger stays a button; only a listbox anchor becomes the combobox");
+        trigger.Attributes["aria-activedescendant"].Should().Be($"{panel.Attributes["id"]}-0",
+            "the highlight opens on the first enabled item");
+    }
+
+    /// <summary>Fires the FIRST clickable button in the rendered tree — the trigger's toggle on
+    /// both components.</summary>
+    private static void Press(HtmlNode html)
+    {
+        var button = Walk(html).First(node => node.Tag == "button" && node.Events.ContainsKey("click"));
+        ((Action)button.Events["click"])();
+    }
 }
