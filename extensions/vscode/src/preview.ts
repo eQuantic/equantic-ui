@@ -180,11 +180,22 @@ export class PreviewPanel {
 
     // Then say what KIND of node it is. Sent back separately rather than asked on hover: this is a
     // round trip, and one per pointer move would be a request storm for an answer nobody read.
+    const path = this.document.uri.fsPath;
+    const text = this.document.getText();
+
     try {
-      const tier = await this.sidecar.classify(this.document.uri.fsPath, this.document.getText(), origin);
-      this.post({ type: 'tier', tier: tier.tier, reason: tier.reason });
+      const [tier, inspected] = await Promise.all([
+        this.sidecar.classify(path, text, origin),
+        this.sidecar.inspect(path, text, origin),
+      ]);
+      this.post({
+        type: 'selected',
+        tier: tier.tier,
+        reason: tier.reason,
+        node: inspected === '' ? undefined : inspected,
+      });
     } catch (error) {
-      this.log(`classify failed: ${(error as Error).message}`);
+      this.log(`inspect failed: ${(error as Error).message}`);
     }
   }
 
@@ -249,6 +260,7 @@ export class PreviewPanel {
   #outline.foreign { border-style: dotted; opacity: 0.75; }
   #tier {
     position: fixed; left: 8px; bottom: 8px; right: 8px; z-index: 3; display: none;
+    max-height: 45%; overflow: auto;
     font: 11px/1.5 var(--vscode-font-family, sans-serif);
     padding: 6px 9px; border-radius: 4px;
     background: var(--vscode-editorWidget-background, #252526);
@@ -257,6 +269,18 @@ export class PreviewPanel {
   }
   #tier.visible { display: block; }
   #tier b { color: var(--vscode-textLink-foreground, #4daafc); }
+  #tier table { border-collapse: collapse; width: 100%; margin-top: 6px; }
+  #tier td { padding: 2px 6px 2px 0; vertical-align: top; }
+  #tier td.name { white-space: nowrap; }
+  #tier td.type { opacity: 0.6; white-space: nowrap; }
+  #tier td.value {
+    font-family: var(--vscode-editor-font-family, ui-monospace, monospace);
+    word-break: break-all;
+  }
+  #tier tr.unreachable { opacity: 0.5; }
+  #tier tr.unreachable td.value::after {
+    content: attr(data-reason); opacity: 0.9; font-family: var(--vscode-font-family, sans-serif);
+  }
   #inspect {
     position: fixed; top: 8px; right: 8px; z-index: 3;
     font: 11px/1 var(--vscode-font-family, sans-serif);
@@ -388,6 +412,62 @@ export class PreviewPanel {
 
   const tier = document.getElementById('tier');
 
+  // Built with DOM calls rather than an HTML string: every value here is SOURCE TEXT the developer
+  // wrote, and interpolating that into innerHTML would let a string literal in their own file close
+  // a tag. textContent cannot.
+  function showSelection(payload) {
+    tier.replaceChildren();
+
+    const heading = document.createElement('div');
+    const kind = document.createElement('b');
+    kind.textContent = payload.node ? payload.node.component : payload.tier;
+    heading.appendChild(kind);
+    heading.appendChild(document.createTextNode(
+      (payload.node ? ' · ' + payload.node.form + ' · ' + payload.tier : '') + ' — ' + payload.reason));
+    tier.appendChild(heading);
+
+    if (payload.node && payload.node.summary) {
+      const summary = document.createElement('div');
+      summary.style.opacity = '0.75';
+      summary.style.marginTop = '4px';
+      summary.textContent = payload.node.summary;
+      tier.appendChild(summary);
+    }
+
+    if (payload.node) {
+      const table = document.createElement('table');
+      for (const property of payload.node.properties) {
+        // An unset property nobody can reach from this form is noise; an unset one they COULD set is
+        // the offer the panel exists to make.
+        if (property.kind === 'unset' && !property.editable && !property.reason) continue;
+
+        const row = document.createElement('tr');
+        if (!property.editable) row.className = 'unreachable';
+
+        const name = document.createElement('td');
+        name.className = 'name';
+        name.textContent = property.name;
+        if (property.summary) name.title = property.summary;
+
+        const type = document.createElement('td');
+        type.className = 'type';
+        type.textContent = property.type;
+
+        const value = document.createElement('td');
+        value.className = 'value';
+        if (property.value) value.textContent = property.value.replace(/\\s+/g, ' ').slice(0, 90);
+        else if (property.editable) value.textContent = '—';
+        else value.setAttribute('data-reason', property.reason || 'not reachable from this form');
+
+        row.append(name, type, value);
+        table.appendChild(row);
+      }
+      tier.appendChild(table);
+    }
+
+    tier.classList.add('visible');
+  }
+
   document.addEventListener('click', (e) => {
     if (!inspecting || e.target === inspect) return;
     e.preventDefault();
@@ -410,11 +490,9 @@ export class PreviewPanel {
       outline.classList.remove('visible');
       tier.classList.remove('visible');
       void render(payload);
-    } else if (payload.type === 'tier') {
+    } else if (payload.type === 'selected') {
       if (payload.tier !== 'literal') outline.classList.add(payload.tier);
-      tier.innerHTML = '<b>' + payload.tier + '</b> — ';
-      tier.appendChild(document.createTextNode(payload.reason));
-      tier.classList.add('visible');
+      showSelection(payload);
     }
     else if (payload.type === 'stale') {
       // The last good render stays on screen. A blank frame while you are mid-word is worse than a

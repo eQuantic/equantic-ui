@@ -36,6 +36,42 @@ public sealed record DesignParams
 }
 
 /// <summary>
+/// One thing about a selected node that a panel can show, and one day edit.
+/// <para>
+/// <c>Editable</c> is about the SYNTACTIC form the call is written in, not about the property. A
+/// component's init-only members — <c>Button.Loading</c>, <c>FlexNode.Width</c> — are reachable only
+/// through an object initializer, and the factory surface exists precisely so nobody writes one. So
+/// the honest answer for those, on a factory call, is "not from here, and here is why" — which beats
+/// silently rewriting <c>Button("Save")</c> into <c>new Button("Save") { … }</c> behind the author's
+/// back.
+/// </para>
+/// </summary>
+public sealed record NodeProperty(
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("type")] string Type,
+    /// <summary>argument · initializer · unset.</summary>
+    [property: JsonPropertyName("kind")] string Kind,
+    /// <summary>The source text of the value as written, when it is written at all.</summary>
+    [property: JsonPropertyName("value")] string? Value,
+    [property: JsonPropertyName("editable")] bool Editable,
+    /// <summary>Why not, when it is not.</summary>
+    [property: JsonPropertyName("reason")] string? Reason,
+    /// <summary>The closed set a value may take — enum members, so a panel offers a list rather
+    /// than a text box.</summary>
+    [property: JsonPropertyName("options")] string[]? Options,
+    /// <summary>The doc comment's summary, read off the source symbol.</summary>
+    [property: JsonPropertyName("summary")] string? Summary);
+
+/// <summary>What the inspector shows for one selected node.</summary>
+public sealed record InspectResult(
+    [property: JsonPropertyName("component")] string Component,
+    /// <summary>factory · new · unknown — the form the call is written in, which decides what is
+    /// reachable.</summary>
+    [property: JsonPropertyName("form")] string Form,
+    [property: JsonPropertyName("summary")] string? Summary,
+    [property: JsonPropertyName("properties")] NodeProperty[] Properties);
+
+/// <summary>
 /// What may be DONE with a selected node, which is not the same question as where it came from.
 /// <para>
 /// A row built five hundred times inside a <c>foreach</c> has one source site and no separate

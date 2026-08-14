@@ -68,8 +68,8 @@ public sealed class DesignSession
             ? Path.GetFileNameWithoutExtension(csproj)
             : "DesignAssembly";
 
-        _compilation = ProjectCompilationHelper.CreateCompilationFromSources(
-            sources, references, assemblyName: assemblyName, addStandardReferences: false);
+        _compilation = WithDocumentation(ProjectCompilationHelper.CreateCompilationFromSources(
+            sources, references, assemblyName: assemblyName, addStandardReferences: false));
         _compiler.SetProjectCompilation(_compilation);
 
         watch.Stop();
@@ -87,6 +87,41 @@ public sealed class DesignSession
     /// </para>
     /// </summary>
     public string Theme() => eQuantic.UI.Web.ThemeBridge.SerializeJson(eQuantic.UI.Material.MaterialTheme.Instance);
+
+    /// <summary>
+    /// Re-attaches each reference's XML documentation, so the inspector can describe a framework
+    /// component and not only the developer's own.
+    /// <para>
+    /// It has to be done by hand because MSBuild hands eqc REF ASSEMBLIES — <c>obj/…/ref/X.dll</c> —
+    /// and the documentation is written a directory above them, beside the implementation. Roslyn
+    /// looks only next to the file it was given, finds nothing, and every framework symbol comes back
+    /// undocumented. This is the whole reason turning on <c>GenerateDocumentationFile</c> was not by
+    /// itself enough.
+    /// </para>
+    /// </summary>
+    private static Compilation WithDocumentation(Compilation compilation) =>
+        compilation.WithReferences(compilation.References.Select(reference =>
+            reference is PortableExecutableReference { FilePath: { Length: > 0 } file } portable
+            && DocumentationBeside(file) is { } xml
+                ? MetadataReference.CreateFromFile(file, portable.Properties, XmlDocumentationProvider.CreateFromFile(xml))
+                : reference));
+
+    private static string? DocumentationBeside(string assemblyPath)
+    {
+        var beside = Path.ChangeExtension(assemblyPath, ".xml");
+        if (File.Exists(beside)) return beside;
+
+        // `obj/<cfg>/<tfm>/ref/X.dll` → `obj/<cfg>/<tfm>/X.xml`.
+        var directory = Path.GetDirectoryName(assemblyPath);
+        if (directory is null || !string.Equals(Path.GetFileName(directory), "ref", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var parent = Path.GetDirectoryName(directory);
+        if (parent is null) return null;
+
+        var above = Path.Combine(parent, Path.GetFileNameWithoutExtension(assemblyPath) + ".xml");
+        return File.Exists(above) ? above : null;
+    }
 
     private static List<string> ReadReferences(string? refsFile)
     {
@@ -209,6 +244,181 @@ public sealed class DesignSession
         }
 
         return new OriginTier("foreign", "Built outside any member this tool can place.", null);
+    }
+
+    /// <summary>
+    /// What the node an origin names IS, and what could be set on it.
+    /// <para>
+    /// Read from the semantic model rather than from a generated catalogue, because the question is
+    /// about THIS call: which parameters it actually supplies, what it wrote for them, and which of
+    /// the type's members the form it is written in can even reach. A catalogue answers "what does
+    /// Button have"; the panel needs "what does this Button say, and what may I change".
+    /// </para>
+    /// </summary>
+    public InspectResult? Inspect(string path, string text, string origin)
+    {
+        if (_compilation is null) throw new InvalidOperationException("initialize first");
+
+        var parts = origin.Split('|');
+        if (parts.Length != 3 || !SamePath(parts[0], path)) return null;
+
+        var tree = CSharpSyntaxTree.ParseText(text, path: path);
+        var source = tree.GetText();
+        var (startLine, startCharacter) = ParsePosition(parts[1]);
+        var (endLine, endCharacter) = ParsePosition(parts[2]);
+        if (startLine >= source.Lines.Count || endLine >= source.Lines.Count) return null;
+
+        var start = source.Lines[startLine].Start + startCharacter;
+        var end = source.Lines[endLine].Start + endCharacter;
+        if (start > source.Length || end > source.Length || end < start) return null;
+
+        var construction = tree.GetRoot()
+            .FindNode(Microsoft.CodeAnalysis.Text.TextSpan.FromBounds(start, end))
+            .AncestorsAndSelf()
+            .FirstOrDefault(n => n is ObjectCreationExpressionSyntax or InvocationExpressionSyntax);
+        if (construction is null) return null;
+
+        var model = Swap(_compilation, tree).GetSemanticModel(tree);
+        var symbol = model.GetSymbolInfo(construction).Symbol as IMethodSymbol;
+        if (symbol is null) return null;
+
+        // A factory is a method NAMED like the type it returns; a constructor carries the type
+        // itself. Both end at the same component — the difference is only what may be reached.
+        var isFactory = construction is InvocationExpressionSyntax;
+        var component = isFactory ? symbol.ReturnType : symbol.ContainingType;
+        var initializer = (construction as ObjectCreationExpressionSyntax)?.Initializer;
+
+        var arguments = construction switch
+        {
+            ObjectCreationExpressionSyntax creation => creation.ArgumentList?.Arguments,
+            InvocationExpressionSyntax invocation => invocation.ArgumentList.Arguments,
+            _ => null,
+        };
+
+        var properties = new List<NodeProperty>();
+        var covered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (var i = 0; i < symbol.Parameters.Length; i++)
+        {
+            var parameter = symbol.Parameters[i];
+            covered.Add(parameter.Name);
+
+            var written = arguments is null ? null : ArgumentFor(arguments.Value, parameter, i);
+            properties.Add(new NodeProperty(
+                parameter.Name,
+                parameter.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
+                written is null ? "unset" : "argument",
+                written?.Expression.ToString(),
+                true,
+                null,
+                OptionsFor(parameter.Type),
+                ParameterSummary(parameter)));
+        }
+
+        // Settable members the constructor did not already cover, INHERITED ONES INCLUDED: a Row's
+        // Width and Height live on FlexNode and VisualNode, and GetMembers only answers for the type
+        // it is asked about — so the first version of this listed none of the properties an author
+        // most often reaches for. On a factory call there is no initializer to put them in, and
+        // inventing one would rewrite the form the author chose.
+        foreach (var property in Inherited(component).OfType<IPropertySymbol>())
+        {
+            if (property.DeclaredAccessibility != Accessibility.Public) continue;
+            if (property.IsStatic || property.SetMethod is null) continue;
+            if (!covered.Add(property.Name)) continue;
+
+            var written = initializer?.Expressions
+                .OfType<AssignmentExpressionSyntax>()
+                .FirstOrDefault(a => a.Left.ToString() == property.Name);
+
+            properties.Add(new NodeProperty(
+                property.Name,
+                property.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
+                written is null ? "unset" : "initializer",
+                written?.Right.ToString(),
+                written is not null || initializer is not null,
+                written is not null || initializer is not null
+                    ? null
+                    : isFactory
+                        ? "Set through an object initializer, which this factory call does not have. Rewriting it into `new` form is a change to how the file is authored, so it is not done for you."
+                        : "This construction has no object initializer to set it in.",
+                OptionsFor(property.Type),
+                Summary(property)));
+        }
+
+        return new InspectResult(
+            component.Name,
+            isFactory ? "factory" : "new",
+            Summary(component),
+            properties.ToArray());
+    }
+
+    /// <summary>A type's own members and every base's, nearest first — <c>object</c> excluded, which
+    /// contributes nothing an inspector would show.</summary>
+    private static IEnumerable<ISymbol> Inherited(ITypeSymbol type)
+    {
+        for (var current = type; current is not null && current.SpecialType != SpecialType.System_Object; current = current.BaseType)
+        {
+            foreach (var member in current.GetMembers()) yield return member;
+        }
+    }
+
+    /// <summary>The argument bound to a parameter — by NAME first, because the declarative surface is
+    /// written with named arguments and their order is the author's, not the signature's.</summary>
+    private static ArgumentSyntax? ArgumentFor(
+        SeparatedSyntaxList<ArgumentSyntax> arguments, IParameterSymbol parameter, int position)
+    {
+        var named = arguments.FirstOrDefault(a => a.NameColon?.Name.Identifier.Text == parameter.Name);
+        if (named is not null) return named;
+
+        // Positional only up to the first named one: after that, position means nothing.
+        var firstNamed = arguments.IndexOf(a => a.NameColon is not null);
+        var positional = firstNamed < 0 ? arguments.Count : firstNamed;
+        return position < positional ? arguments[position] : null;
+    }
+
+    /// <summary>An enum's members — the closed set a panel offers instead of a text box.</summary>
+    private static string[]? OptionsFor(ITypeSymbol type)
+    {
+        var underlying = type is INamedTypeSymbol { Name: "Nullable" } nullable && nullable.TypeArguments.Length == 1
+            ? nullable.TypeArguments[0]
+            : type;
+
+        return underlying.TypeKind == TypeKind.Enum
+            ? underlying.GetMembers().OfType<IFieldSymbol>().Where(f => f.HasConstantValue).Select(f => f.Name).ToArray()
+            : null;
+    }
+
+    /// <summary>
+    /// The <c>&lt;summary&gt;</c> of a symbol's doc comment, flattened to one line.
+    /// <para>
+    /// It comes from wherever the symbol does: the app's OWN components are in this compilation as
+    /// source, so their prose is in the tree; the framework's arrive as metadata, and Roslyn can only
+    /// read their comments from the XML file beside the assembly — which is why the framework builds
+    /// one. A component whose project does not is simply undocumented here, never wrong.
+    /// </para>
+    /// </summary>
+    private static string? Summary(ISymbol symbol) =>
+        Prose(symbol.GetDocumentationCommentXml(), "summary");
+
+    /// <summary>
+    /// A parameter's description, which lives in its METHOD's doc comment as
+    /// <c>&lt;param name="gap"&gt;</c> — asking the parameter symbol for its own XML returns nothing,
+    /// so the first version of this showed a constructor's summary against every one of its
+    /// parameters, or more often nothing at all.
+    /// </summary>
+    private static string? ParameterSummary(IParameterSymbol parameter) =>
+        Prose(parameter.ContainingSymbol?.GetDocumentationCommentXml(), $"param name=\"{parameter.Name}\"", "param");
+
+    private static string? Prose(string? xml, string open, string? close = null)
+    {
+        if (string.IsNullOrWhiteSpace(xml)) return null;
+
+        var match = Regex.Match(xml, $"<{Regex.Escape(open)}>(.*?)</{close ?? open}>", RegexOptions.Singleline);
+        if (!match.Success) return null;
+
+        var prose = Regex.Replace(match.Groups[1].Value, @"<[^>]+>", "");
+        prose = Regex.Replace(prose, @"\s+", " ").Trim();
+        return prose.Length == 0 ? null : prose;
     }
 
     private static (int Line, int Character) ParsePosition(string value)

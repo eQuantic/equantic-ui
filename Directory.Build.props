@@ -10,6 +10,16 @@
         <RepositoryType>git</RepositoryType>
         <PackageIcon>Icon.png</PackageIcon>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+
+        <!-- The doc comments are the only description of a component's parameters that exists, and
+             the visual editor's inspector reads them off the SYMBOL. An app's own components arrive
+             in that compilation as source, so their prose is already there; the framework's arrive
+             as metadata, and Roslyn can only read comments for those from the XML beside the
+             assembly. Without this the inspector could describe a developer's own Button and not
+             ours. CS1591 is off because "missing a doc comment" is not a build error here — the
+             comments that exist are the point, not blanket coverage. -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

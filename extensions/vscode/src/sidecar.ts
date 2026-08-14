@@ -31,6 +31,26 @@ export interface OriginTier {
   member: string | null;
 }
 
+/** One row of the inspector: what a property is, what this call says for it, and whether the form
+ * the call is written in can reach it at all. */
+export interface NodeProperty {
+  name: string;
+  type: string;
+  kind: 'argument' | 'initializer' | 'unset';
+  value: string | null;
+  editable: boolean;
+  reason: string | null;
+  options: string[] | null;
+  summary: string | null;
+}
+
+export interface InspectResult {
+  component: string;
+  form: 'factory' | 'new' | 'unknown';
+  summary: string | null;
+  properties: NodeProperty[];
+}
+
 export interface CompileResult {
   success: boolean;
   js: string;
@@ -129,6 +149,12 @@ export class Sidecar {
 
   classify(path: string, text: string, origin: string): Promise<OriginTier> {
     return this.send('classify', { path, text, origin });
+  }
+
+  /** Empty string rather than null when the origin names nothing inspectable — the host answers
+   * every request, and a missing reply would leave the panel waiting forever. */
+  inspect(path: string, text: string, origin: string): Promise<InspectResult | ''> {
+    return this.send('inspect', { path, text, origin });
   }
 
   theme(): Promise<string> {

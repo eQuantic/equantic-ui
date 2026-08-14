@@ -25,6 +25,10 @@
     <!-- The design host is an Exe; referencing it from a test project is fine and is how its
          session logic gets exercised without a process boundary in the way. -->
     <ProjectReference Include="..\..\src\eQuantic.UI.Design\eQuantic.UI.Design.csproj" />
+    <!-- Seeds for the reference set the tests write: a compilation is only as good as what it can
+         resolve, and these are the assemblies a real app compiles against. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+    <ProjectReference Include="..\..\src\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
   </ItemGroup>
 
 </Project>

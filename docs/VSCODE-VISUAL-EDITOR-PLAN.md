@@ -223,18 +223,53 @@ Without them, clicking a loop-generated row still sends you to the right line �
 *why* three hundred rows share one. The tiers are what stop a later phase from offering to "delete
 this row" when there is no such thing to delete.
 
-### Phase 4 — read-only inspector
+### Phase 4 — read-only inspector ✅ done, by a different route
 
-A generated `components.manifest.json`, byte-pinned by a test the way `design-system.generated.ts`
-already is. Sourced from Roslyn over the component **sources** the SDK already ships at
-`tools/source/*.cs` — which is why `GenerateDocumentationFile` is *not* needed: doc comments, parameter
-names and defaults all come off the source symbols, richer than an XML file would be.
+The plan here was a generated `components.manifest.json`. **The inspector does not use one**, and the
+reason is worth recording: a catalogue answers *"what does Row have"*, and the panel needs *"what does
+**this** Row say, and what may I change"*. Those are different questions, and only the second is
+useful next to a selected node. So `inspect` reads the **semantic model** at the origin's span:
 
-Seed the categories from `Gallery.cs:44-80` — the only human-decided component taxonomy in the repo.
-Close the **22 components with no factory** (Accordion, AppBar, BottomSheet, Breadcrumb, CodeBlock,
-CodeEditor, DataTable, FormInput, FormSubmit, List, ListItem, ListView, Menu, PageIndicator,
-Pagination, Popover, PullToRefresh, RadioGroup, SegmentedControl, Spreadsheet, SwipeableRow, Table),
-so the palette does not emit two different insertion forms depending on what you drag.
+- the constructed type, and whether the call is written as a factory or as `new`;
+- each constructor parameter, whether this call supplies it, and the argument **as written** —
+  matched by NAME first, because the declarative surface is written with named arguments and their
+  order is the author's, not the signature's;
+- every settable member **including inherited ones** — a `Row`'s `Width` lives on `FlexNode` and its
+  `Key` on `VisualNode`, and asking only the type itself listed none of what an author reaches for;
+- enum members as a closed set, so the panel offers a list rather than a text box;
+- the doc prose, off the symbol.
+
+And the honest half: an init-only member on a factory call is reported **unreachable, with the
+reason** — it needs an object initializer, which the factory surface exists so nobody writes.
+Rewriting `Row(…)` into `new Row(…) { … }` behind the author's back is the thing this refuses to do.
+
+**Two corrections this phase forced**, both of which had been written down confidently and wrongly:
+
+1. `GenerateDocumentationFile` **was** needed. The earlier reasoning — that the SDK hands the compiler
+   the component library as source, so prose is in the tree — is true for eqc and false for the design
+   host, which deliberately does not add component sources (they are already in the reference set, and
+   adding both defines every type twice). Framework symbols arrive as metadata, so their comments come
+   from XML or not at all. It is on now, with CS1591 off.
+2. Turning it on was **not enough**. MSBuild hands over REF assemblies (`obj/…/ref/X.dll`) and the
+   documentation is written a directory above them, so Roslyn looked beside the file it was given,
+   found nothing, and every framework symbol came back undocumented. The host re-attaches each
+   reference's XML by hand.
+
+**Proved:** 15 tests over a real `Initialize` — a temp project, a written reference list, a live
+compilation. They pin the argument-as-written, the unset-but-reachable parameter, the enum's members,
+the inherited members, the unreachable init-only member *with its reason*, and that a framework
+component arrives documented (which is what pins the XML discovery).
+
+**Still ahead**, and correctly belonging to the palette rather than here: the generated manifest of
+every component (the palette needs to list what does not exist on screen yet), categories seeded from
+`Gallery.cs:44-80`, and the **22 components with no factory** (Accordion, AppBar, BottomSheet,
+Breadcrumb, CodeBlock, CodeEditor, DataTable, FormInput, FormSubmit, List, ListItem, ListView, Menu,
+PageIndicator, Pagination, Popover, PullToRefresh, RadioGroup, SegmentedControl, Spreadsheet,
+SwipeableRow, Table) — so the palette does not emit two insertion forms depending on what you drag.
+
+One gap worth naming: the framework's **factories document no parameters**. The prose plumbing works
+(188 `<param>` comments exist, mostly on records), so writing them on `UI.cs` would light up the
+inspector immediately at no cost to this code.
 
 ### Phase 5 — property write-back, fenced
 

@@ -45,6 +45,11 @@ while (await input.ReadLineAsync() is { } line)
                 parameters.Text ?? "",
                 Require(parameters.Origin, "origin")),
 
+            "inspect" => session.Inspect(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin")) ?? (object)"",
+
             "theme" => session.Theme(),
 
             "shutdown" => "bye",
