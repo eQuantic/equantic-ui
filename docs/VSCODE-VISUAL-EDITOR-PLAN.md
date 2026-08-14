@@ -515,6 +515,37 @@ contributed view, so focusing it fails when the view is not in the manifest or i
 misspelled — which otherwise shows up as an empty sidebar nobody can explain. The second waits for the
 list to fill from a real render, through a small API the extension exports for no other reason.
 
+### Phase 15 — a toolbar of its own, and a format ✅ done
+
+Edgar, on the title-bar buttons: a toolbar of our own would give room for more controls and for
+formats. He is right, and the reason is structural — VS Code's title bar holds COMMANDS. A mode can be
+faked there with two commands that swap places, which is what inspect was doing; a format selector is
+a control with state and a list, and the trick stops working at the third format. So the mode moved
+into a toolbar built from the editor's own variables, pressed state and all, and the title bar keeps
+the commands for the palette and for keybindings.
+
+**The format selector, and what a format actually is.** The framework has exactly two responsive axes,
+and neither is a device: `WindowSizeClass { Compact, Medium, Expanded }` at 600dp and 840dp, and
+`Density { Comfortable, Compact }` — which the spec calls a property of the TARGET, never of the call
+site. So the presets are named after devices for the reader, and what they apply is those two, which
+is what the bar says: *compact width · comfortable density · web realizer*.
+
+Both had to be applied properly, and one of them is the whole reason a device frame could have been a
+lie:
+
+- **Density is read while a component BUILDS**, so it is baked into the tree and no stylesheet can
+  change it — a format change re-mounts the last frame.
+- **The adaptive gates are viewport media queries.** An `AdaptiveNode` emits every variant it declares,
+  each wrapped in a gate whose rules key off the WINDOW — so a 390px box inside a wide panel still
+  shows the expanded variant. A phone shell around that would hide the one design deviation it
+  exists to reveal. The gate's range is in its NAME (`eq-vc600`, `eq-vm600-840`, `eq-vx1024`), so the
+  same decision is made against the chosen width and written into a sheet that comes later and wins.
+
+What the frame is NOT is a native render: there is no way to put Photon's own raster in a webview yet.
+It is the web realizer showing the same component tree at that size, with the size class and density
+that shape of target would have — which, given the SDK's promise, is the same tree the native target
+builds. The bar says "web realizer" for exactly that reason.
+
 ---
 
 ## The seam, tested

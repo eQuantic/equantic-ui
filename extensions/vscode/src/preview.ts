@@ -229,7 +229,7 @@ export class PreviewPanel {
     message: {
       type: string; detail?: string; origin?: string; property?: string; value?: string;
       nodes?: unknown[]; truncated?: boolean;
-      options?: string[]; index?: number; delta?: number; target?: string; list?: string;
+      options?: string[]; index?: number; delta?: number; target?: string; list?: string; on?: boolean;
       elementType?: string;
     },
   ): void {
@@ -245,8 +245,8 @@ export class PreviewPanel {
       void this.insertChild(message.origin, message.index, message.list, message.elementType);
     } else if (message.type === 'duplicate' && message.origin) {
       void this.duplicate(message.origin);
-    } else if (message.type === 'stopInspect') {
-      this.setInspecting(false);
+    } else if (message.type === 'inspectMode') {
+      this.setInspecting(message.on === true);
     } else if (message.type === 'unset' && message.origin && message.property) {
       void this.unsetProperty(message.origin, message.property);
     } else if (message.type === 'removeAt' && message.origin && message.list && typeof message.index === 'number') {
@@ -714,7 +714,75 @@ export class PreviewPanel {
      through whatever the app has not drawn, which reads as a broken screen under any theme that is
      not the one the app expects. */
   html, body { margin: 0; padding: 0; height: 100%; background: var(--eq-preview-bg, Canvas); }
-  #app { height: 100%; box-sizing: border-box; }
+  body { display: flex; flex-direction: column; }
+
+  /* ---- the toolbar ----------------------------------------------------------------------------
+     A toolbar of our own rather than more buttons in VS Code's title bar. The title bar can hold
+     commands and nothing else: a form-factor selector is a control with STATE, and expressing it as
+     two commands that swap places is a trick that stops working at the third format. Built from the
+     editor's own variables, so it follows the theme without knowing which one is on. */
+  #bar {
+    flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px;
+    height: 30px; box-sizing: border-box;
+    background: var(--vscode-editorWidget-background, var(--vscode-panel-background, #252526));
+    border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.35));
+    color: var(--vscode-foreground, #ccc);
+    font: 12px/1.4 var(--vscode-font-family, sans-serif);
+  }
+  #bar button.icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 24px; height: 22px; padding: 0; border: none; border-radius: 5px;
+    background: transparent; color: var(--vscode-icon-foreground, #c5c5c5); cursor: pointer;
+  }
+  #bar button.icon:hover { background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31)); }
+  #bar button.icon:focus-visible { outline: 1px solid var(--vscode-focusBorder, #0078d4); }
+  /* PRESSED, not merely hovered: inspect is a mode, and a mode that looks like a button is a mode
+     you cannot tell you are in. */
+  #bar button.icon[aria-pressed="true"] {
+    background: var(--vscode-inputOption-activeBackground, rgba(0,120,212,0.4));
+    color: var(--vscode-inputOption-activeForeground, #fff);
+    box-shadow: inset 0 0 0 1px var(--vscode-inputOption-activeBorder, transparent);
+  }
+  #bar .sep {
+    width: 1px; height: 16px; margin: 0 2px;
+    background: var(--vscode-panel-border, rgba(128,128,128,0.35));
+  }
+  #bar select {
+    background: var(--vscode-dropdown-background, #3c3c3c);
+    color: var(--vscode-dropdown-foreground, #ccc);
+    border: 1px solid var(--vscode-dropdown-border, rgba(128,128,128,0.4));
+    border-radius: 3px; font: inherit; padding: 1px 4px; max-width: 190px;
+  }
+  #bar .grow { flex: 1 1 auto; }
+  #bar .note {
+    color: var(--vscode-descriptionForeground, #9d9d9d); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* ---- the stage ------------------------------------------------------------------------------
+     Where the screen is shown at the size the format asks for. It scrolls, because a phone is taller
+     than the panel usually is. */
+  #stage {
+    flex: 1 1 auto; overflow: auto; display: flex; justify-content: center;
+    background: var(--eq-preview-bg, Canvas);
+  }
+  #stage.framed {
+    align-items: flex-start; padding: 14px 0;
+    /* Not the app's own background: a device sitting ON something reads as a device. */
+    background: var(--vscode-editorWidget-background, #252526);
+  }
+  #frame { flex: 1 1 auto; display: flex; min-height: 100%; }
+  /* A shell, not a picture of a phone: a rounded bezel with room for the screen inside it. */
+  #stage.framed #frame {
+    flex: none; min-height: 0; padding: 10px;
+    border-radius: 26px; background: #1c1c1e;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 10px 30px rgba(0,0,0,0.45);
+  }
+  #app { flex: 1 1 auto; box-sizing: border-box; }
+  #stage.framed #app {
+    flex: none; overflow: auto; border-radius: 18px;
+    background: var(--eq-preview-bg, Canvas);
+  }
 
   /* The selection chrome lives OUTSIDE #app so it survives a remount, and is pointer-transparent so
      it never becomes the thing a click lands on. */
@@ -942,7 +1010,20 @@ export class PreviewPanel {
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="bar">
+  <button class="icon" id="bar-inspect" type="button" aria-pressed="false"
+          title="Inspect elements" aria-label="Inspect elements">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3.5 2.5l9 4.2-3.7 1.2-1.2 3.7-4.1-9.1z" stroke="currentColor" stroke-width="1.2"
+            stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <span class="sep"></span>
+  <select id="bar-format" title="The size the screen is shown at"></select>
+  <span class="grow"></span>
+  <span class="note" id="bar-note"></span>
+</div>
+<div id="stage"><div id="frame"><div id="app"></div></div></div>
 <div id="outline"></div>
 <div id="badge"></div>
 <div id="caret"></div>
@@ -993,6 +1074,14 @@ export class PreviewPanel {
   const outline = document.getElementById('outline');
   const badge = document.getElementById('badge');
   const caret = document.getElementById('caret');
+  const stage = document.getElementById('stage');
+  const device = document.getElementById('frame');
+  const formatSelect = document.getElementById('bar-format');
+  const note = document.getElementById('bar-note');
+  const inspectButton = document.getElementById('bar-inspect');
+  /** Where the gate overrides live — later than the runtime's own sheet, so they win. */
+  const gates = document.createElement('style');
+  document.head.appendChild(gates);
   const gapMark = document.getElementById('gap');
   const plusBefore = document.getElementById('plus-before');
   const plusAfter = document.getElementById('plus-after');
@@ -1034,8 +1123,13 @@ export class PreviewPanel {
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => paintBackground(null));
 
+  /** The last frame that mounted. A format change re-mounts it: density is read while a component
+   * BUILDS, so it is baked into the tree and a stylesheet cannot change it afterwards. */
+  let lastFrame = null;
+
   async function render(payload) {
     notice.classList.remove('visible');
+    lastFrame = payload;
 
     // The bare specifier has no import map behind it here, so it is pointed straight at the
     // runtime the project's own build produced.
@@ -1050,7 +1144,10 @@ export class PreviewPanel {
       const runtime = await import(payload.runtime);
       if (payload.theme) {
         const theme = JSON.parse(payload.theme);
-        runtime.detectPhotonDensity();
+        // The FORMAT decides, when one has been chosen: a phone is a touch target and its controls
+        // are the full-size ones, whatever pointer the machine running the preview happens to have.
+        if (format().density) runtime.setPhotonDensity(format().density);
+        else runtime.detectPhotonDensity();
         runtime.setPhotonTheme(runtime.materializeTheme(theme));
         paintBackground(theme);
       }
@@ -1061,8 +1158,10 @@ export class PreviewPanel {
       }
       app.replaceChildren();
       new Component().mount(app);
-      // After mount: the stamped elements only exist once the component has rendered.
+      // After mount: the stamped elements only exist once the component has rendered, and the gates
+      // only exist once something has asked for them.
       describeTree();
+      applyWidth();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       objectUrl = nextUrl;
     } catch (error) {
@@ -1078,8 +1177,16 @@ export class PreviewPanel {
   // wearing one costume.
   let inspecting = false;
 
+  inspectButton.addEventListener('click', () => {
+    // Asks rather than sets: the extension owns the mode, because the title bar's buttons and the
+    // context key behind them are its. It answers with an inspect message, and that is what moves
+    // this button — so the two can never disagree about which mode we are in.
+    vscode.postMessage({ type: 'inspectMode', on: !inspecting });
+  });
+
   function setInspecting(on) {
     inspecting = on;
+    inspectButton.setAttribute('aria-pressed', on ? 'true' : 'false');
     if (!on) {
       outline.classList.remove('visible');
       badge.classList.remove('visible');
@@ -1179,6 +1286,105 @@ export class PreviewPanel {
     if (found) select(found);
   }, true);
 
+  // ---- the format ------------------------------------------------------------------------------
+  //
+  // The framework has exactly two responsive axes, and a format is a choice on both of them:
+  // WindowSizeClass (Compact / Medium / Expanded, at 600dp and 840dp) and Density (Comfortable for
+  // touch, Compact for a pointer). Naming the presets after devices is for the reader; what is
+  // actually applied is those two, which is why the bar says which.
+  const FORMATS = [
+    { id: 'fill', label: 'Fill the panel', width: 0, height: 0, density: null, shell: false },
+    { id: 'phone', label: 'Phone \u00B7 390 \u00D7 844', width: 390, height: 844, density: 'comfortable', shell: true },
+    { id: 'phone-max', label: 'Phone L \u00B7 430 \u00D7 932', width: 430, height: 932, density: 'comfortable', shell: true },
+    { id: 'tablet', label: 'Tablet \u00B7 834 \u00D7 1112', width: 834, height: 1112, density: 'comfortable', shell: true },
+    { id: 'desktop', label: 'Desktop \u00B7 1280 \u00D7 800', width: 1280, height: 800, density: 'compact', shell: false },
+  ];
+
+  let formatId = 'fill';
+
+  function format() {
+    return FORMATS.find((entry) => entry.id === formatId) || FORMATS[0];
+  }
+
+  /** What the framework would call this width — its own vocabulary, not a device name. */
+  function sizeClass(width) {
+    if (width <= 0) return null;
+    return width < 600 ? 'compact' : width < 840 ? 'medium' : 'expanded';
+  }
+
+  /**
+   * The adaptive gates, resolved against the CHOSEN width instead of the window's.
+   *
+   * This is what makes a phone-sized preview honest. An AdaptiveNode emits every variant it declares,
+   * each wrapped in a gate class whose rules are VIEWPORT media queries — so a 390px box inside a
+   * wide panel still shows the expanded variant, which is the one design deviation a device frame
+   * would otherwise hide. The range is IN the gate's name (eq-vc600, eq-vm600-840, eq-vx1024),
+   * so the same decision can be made here, written as plain rules in a sheet that comes later and
+   * therefore wins.
+   */
+  function applyWidth() {
+    const width = format().width;
+    const classes = new Set();
+    for (const element of app.querySelectorAll('[class*="eq-v"]')) {
+      for (const name of element.classList) {
+        if (/^eq-v[cmx][0-9.]+(-[0-9.]+)?$/.test(name)) classes.add(name);
+      }
+    }
+
+    const rules = [];
+    for (const gate of classes) {
+      const kind = gate[4];
+      const range = gate.slice(5).split('-').map(Number);
+      const shown = width <= 0
+        ? null
+        : kind === 'c'
+          ? width < range[0]
+          : range.length > 1
+            ? width >= range[0] && width < range[1]
+            : width >= range[0];
+      // Left to the stylesheet the runtime wrote when no width is being simulated.
+      if (shown !== null) rules.push('.' + gate + '{display:' + (shown ? 'contents' : 'none') + '}');
+    }
+
+    // Joined with a SPACE. A newline written here is eaten by the template literal and arrives
+    // as a real line break inside the string, which does not parse — CSS does not care either way.
+    gates.textContent = rules.join(' ');
+  }
+
+  function applyFormat() {
+    const chosen = format();
+    stage.classList.toggle('framed', chosen.shell);
+    device.classList.toggle('phone', chosen.shell);
+
+    app.style.width = chosen.width > 0 ? chosen.width + 'px' : '';
+    app.style.height = chosen.height > 0 ? chosen.height + 'px' : '';
+
+    const at = sizeClass(chosen.width);
+    note.textContent = at
+      ? at + ' width \u00B7 ' + chosen.density + ' density \u00B7 web realizer'
+      : '';
+    note.title = at
+      ? 'The screen is rendered by the WEB realizer at this size, with the size class and density a '
+        + 'target of this shape would have. It is the same component tree the native target builds, '
+        + 'not a frame from the native engine.'
+      : '';
+
+    applyWidth();
+    // Density is read while a component BUILDS, so it is baked into the tree: a stylesheet cannot
+    // change it and only a re-mount can.
+    if (lastFrame) void render(lastFrame);
+  }
+
+  formatSelect.addEventListener('change', () => { formatId = formatSelect.value; applyFormat(); });
+
+  for (const entry of FORMATS) {
+    const option = document.createElement('option');
+    option.value = entry.id;
+    option.textContent = entry.label;
+    formatSelect.appendChild(option);
+  }
+  formatSelect.value = formatId;
+
   // ---- the keyboard --------------------------------------------------------------------------
   //
   // A visual editor that can only be driven with a pointer is a visual editor you have to keep
@@ -1203,7 +1409,7 @@ export class PreviewPanel {
         badge.classList.remove('visible');
         hideInserts();
       } else {
-        vscode.postMessage({ type: 'stopInspect' });
+        vscode.postMessage({ type: 'inspectMode', on: false });
       }
       return;
     }

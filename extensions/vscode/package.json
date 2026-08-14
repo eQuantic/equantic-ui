@@ -61,16 +61,6 @@
           "group": "navigation"
         },
         {
-          "command": "equanticUI.startInspect",
-          "when": "activeWebviewPanelId == 'equanticUI.preview' && !equanticUI.inspecting",
-          "group": "navigation@1"
-        },
-        {
-          "command": "equanticUI.stopInspect",
-          "when": "activeWebviewPanelId == 'equanticUI.preview' && equanticUI.inspecting",
-          "group": "navigation@1"
-        },
-        {
           "command": "equanticUI.restartSidecar",
           "when": "activeWebviewPanelId == 'equanticUI.preview'",
           "group": "navigation@9"
