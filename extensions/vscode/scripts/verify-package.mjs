@@ -59,6 +59,9 @@ const required = [
   'extension/out/preview.js',
   'extension/host/eqdesign.dll',
   'extension/host/eqdesign.runtimeconfig.json',
+  // Without it the listing shows a grey placeholder, which is a thing nobody notices until it is
+  // published.
+  'extension/icon.png',
 ];
 
 const missing = required.filter((name) => !names.includes(name));

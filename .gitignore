@@ -59,3 +59,4 @@ tests/e2e/test-results/
 # The VS Code extension's packaging output: 30 MB of published host, and the archive itself.
 extensions/vscode/host/
 extensions/vscode/*.vsix
+extensions/vscode/icon.png

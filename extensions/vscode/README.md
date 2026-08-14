@@ -73,7 +73,10 @@ deliberately does not carry:
   identity flow Microsoft documents is the **Azure Pipelines** answer to the same problem; on GitHub
   Actions, OIDC is.) Either way the job publishes the archive the packaging job already verified
   rather than rebuilding one.
-- **An icon.** The Marketplace wants a PNG of at least 128×128; SVG is prohibited.
+The icon comes from `assets/equantic-vscode-icon.png` and is copied in on every package, because a
+second copy is a thing that drifts — this one was a stale 100×100 within the same minute the source
+was corrected. The Marketplace requires PNG at 128×128 or larger and prohibits SVG, so `npm run
+package` refuses anything smaller rather than letting an upload fail after a tag has been pushed.
 
 One thing worth knowing before the first publish: an extension's name is **permanent**. Once
 `equantictech.equantic-ui` is published, that identifier is reserved forever — it cannot be reused, even by
