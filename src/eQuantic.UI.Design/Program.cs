@@ -60,7 +60,14 @@ while (await input.ReadLineAsync() is { } line)
                 Require(parameters.Property, "property"),
                 parameters.Value ?? ""),
 
-            "palette" => session.Palette(),
+            "unsetProperty" => session.UnsetProperty(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin"),
+                Require(parameters.Property, "property")),
+
+            "palette" => session.Palette(
+                parameters.Path, parameters.Text, parameters.Origin, parameters.List),
 
             "moveChild" => session.MoveChild(
                 Require(parameters.Path, "path"),
@@ -81,6 +88,13 @@ while (await input.ReadLineAsync() is { } line)
                 Require(parameters.Target, "target"),
                 parameters.Index ?? 0),
 
+            "removeAt" => session.RemoveAt(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin"),
+                Require(parameters.List, "list"),
+                parameters.Index ?? 0),
+
             "removeChild" => session.RemoveChild(
                 Require(parameters.Path, "path"),
                 parameters.Text ?? "",
@@ -91,7 +105,8 @@ while (await input.ReadLineAsync() is { } line)
                 parameters.Text ?? "",
                 Require(parameters.Origin, "origin"),
                 parameters.Index ?? 0,
-                Require(parameters.Snippet, "snippet")),
+                Require(parameters.Snippet, "snippet"),
+                parameters.List),
 
             "theme" => session.Theme(),
 

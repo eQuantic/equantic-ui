@@ -368,7 +368,8 @@ public sealed class DesignSession
                 true,
                 null,
                 OptionsFor(parameter.Type),
-                ParameterSummary(parameter)));
+                ParameterSummary(parameter),
+                MembersOf(written?.Expression as ObjectCreationExpressionSyntax, model)));
         }
 
         // Settable members the constructor did not already cover, INHERITED ONES INCLUDED: a Row's
@@ -421,7 +422,8 @@ public sealed class DesignSession
             childCount,
             insertReason,
             siblingIndex,
-            siblingCount);
+            siblingCount,
+            Lists(symbol, arguments));
     }
 
     /// <summary>
@@ -881,7 +883,7 @@ public sealed class DesignSession
         var snippet = Reindented(
             source, element, source.ToString(element.Span),
             Indentation(source, element.SpanStart), ListIndentation(source, into));
-        var removal = Removal(source, from, element);
+        var removal = Removal(from.Elements, element);
         var (at, addition, offset) = Addition(source, into, index, snippet);
 
         if (removal.Contains(at) && at != removal.Start)
@@ -903,14 +905,13 @@ public sealed class DesignSession
 
     /// <summary>The span a child occupies INCLUDING one separator — the comma after it, or the comma
     /// before it when it is last. Shared by remove and by move, which take the same bite.</summary>
-    private static TextSpan Removal(
-        SourceText source, CollectionExpressionSyntax list, ExpressionElementSyntax element)
+    private static TextSpan Removal<T>(SeparatedSyntaxList<T> list, T element) where T : SyntaxNode
     {
-        var index = list.Elements.IndexOf(element);
-        var separators = list.Elements.GetSeparators().ToArray();
+        var index = list.IndexOf(element);
+        var separators = list.GetSeparators().ToArray();
 
-        if (index + 1 < list.Elements.Count)
-            return TextSpan.FromBounds(element.SpanStart, list.Elements[index + 1].SpanStart);
+        if (index + 1 < list.Count)
+            return TextSpan.FromBounds(element.SpanStart, list[index + 1].SpanStart);
 
         // The last of several: back to the comma before it, so none is left orphaned.
         if (index > 0) return TextSpan.FromBounds(separators[index - 1].SpanStart, element.Span.End);
@@ -932,8 +933,18 @@ public sealed class DesignSession
         if (elements.Count == 0) return (list.OpenBracketToken.Span.End, snippet, 0);
 
         var position = Math.Clamp(index, 0, elements.Count);
-        var indent = Indentation(source, elements[Math.Min(position, elements.Count - 1)].SpanStart);
 
+        // A list written on ONE line stays on one line. `columns: [Flex(), Fixed(120)]` is how a Grid
+        // is written and how it reads, and breaking it across lines to add a track would reformat the
+        // author's file to make room for a tool.
+        if (source.Lines.GetLinePosition(list.SpanStart).Line == source.Lines.GetLinePosition(list.Span.End).Line)
+        {
+            return position == elements.Count
+                ? (elements[^1].Span.End, $", {snippet}", 2)
+                : (elements[position].SpanStart, $"{snippet}, ", 0);
+        }
+
+        var indent = Indentation(source, elements[Math.Min(position, elements.Count - 1)].SpanStart);
         return position == elements.Count
             ? (elements[^1].Span.End, $",\n{indent}{snippet}", 2 + indent.Length)
             : (elements[position].SpanStart, $"{snippet},\n{indent}", 0);
@@ -1003,7 +1014,41 @@ public sealed class DesignSession
 
         // Up to the NEXT element when there is one, so the line and its indentation go together;
         // back to the previous separator when this is the last, so no comma is orphaned.
-        return Guarded(source, Removal(source, list, element), "", text, path);
+        return Guarded(source, Removal(list.Elements, element), "", text, path);
+    }
+
+    /// <summary>
+    /// Removes the element at a position of a named list.
+    /// <para>
+    /// Addressed by INDEX rather than by origin, because the things in a list are not all nodes: a
+    /// <c>GridTrack</c> is data, it never renders, so nothing on the canvas carries its span. The
+    /// panel points at the container and says which one.
+    /// </para>
+    /// </summary>
+    public EditResult RemoveAt(string path, string text, string origin, string list, int index)
+    {
+        if (_compilation is null) throw new InvalidOperationException("initialize first");
+
+        if (Locate(path, text, origin) is not var (_, source, construction, model) || construction is null)
+            return EditResult.Refused("That element's origin does not name anything in this file.");
+
+        if (model.GetSymbolInfo(construction).Symbol is not IMethodSymbol symbol)
+            return EditResult.Refused("The compiler cannot resolve that construction.");
+
+        var arguments = construction switch
+        {
+            ObjectCreationExpressionSyntax creation => creation.ArgumentList?.Arguments,
+            InvocationExpressionSyntax invocation => invocation.ArgumentList.Arguments,
+            _ => null,
+        };
+
+        if (ListArgument(symbol, arguments, list) is not { } written)
+            return EditResult.Refused($"This {symbol.Name} has no `{list}: [ … ]` written on it.");
+
+        if (index < 0 || index >= written.Elements.Count)
+            return EditResult.Refused($"`{list}` has {written.Elements.Count} entries, so there is no {index}.");
+
+        return Guarded(source, Removal(written.Elements, written.Elements[index]), "", text, path);
     }
 
     /// <summary>
@@ -1019,9 +1064,15 @@ public sealed class DesignSession
     /// file to show a menu.
     /// </para>
     /// </summary>
-    public PaletteEntry[] Palette()
+    public PaletteEntry[] Palette(string? path = null, string? text = null, string? origin = null, string? list = null)
     {
         if (_current is null) throw new InvalidOperationException("initialize first");
+
+        // A list of DATA is offered its own type's ways of being written, not the component surface:
+        // `columns: [ … ]` takes GridTracks, and offering it a Button would be a palette that has not
+        // read the signature it is filling in.
+        if (ElementType(path, text, origin, list) is { } element && !element.IsVisualNode())
+            return ValuePalette(element);
 
         // The app's OWN components first: they are generated into an `AppUI` surface exactly like the
         // framework's, they are what the developer was writing a minute ago, and a palette that only
@@ -1053,19 +1104,19 @@ public sealed class DesignSession
     }
 
     /// <summary>The smallest call of a factory that compiles, or null when one cannot be written.</summary>
-    private static string? Snippet(IMethodSymbol factory)
+    private static string? Snippet(IMethodSymbol factory, string? call = null)
     {
         var arguments = new List<string>();
         foreach (var parameter in factory.Parameters)
         {
             if (parameter.HasExplicitDefaultValue || parameter.IsParams) continue;
 
-            var literal = Literal(parameter.Type, factory.Name);
+            var literal = Literal(parameter.Type, factory.ContainingType?.Name ?? factory.Name);
             if (literal is null) return null;
             arguments.Add(literal);
         }
 
-        return $"{factory.Name}({string.Join(", ", arguments)})";
+        return $"{call ?? factory.Name}({string.Join(", ", arguments)})";
     }
 
     /// <summary>
@@ -1107,7 +1158,8 @@ public sealed class DesignSession
     /// text exactly where a person would have typed it.
     /// </para>
     /// </summary>
-    public EditResult InsertChild(string path, string text, string origin, int index, string snippet)
+    public EditResult InsertChild(
+        string path, string text, string origin, int index, string snippet, string? list = null)
     {
         if (_compilation is null) throw new InvalidOperationException("initialize first");
 
@@ -1127,16 +1179,83 @@ public sealed class DesignSession
             _ => null,
         };
 
-        if (ChildrenList(symbol, arguments) is not { } children)
+        var named = list ?? "children";
+        if (ListArgument(symbol, arguments, named) is not { } children)
         {
-            return EditResult.Refused(InsertRefusal(symbol, arguments)
-                ?? $"{symbol.Name} does not take a list of children.");
+            return EditResult.Refused(named == "children"
+                ? InsertRefusal(symbol, arguments) ?? $"{symbol.Name} does not take a list of children."
+                : $"This {symbol.Name} has no `{named}: [ … ]` written on it.");
         }
 
         // Indented like the element it lands beside, so the new line reads as one the author wrote
         // rather than one a tool dropped in.
         var (at, addition, _) = Addition(source, children, index, snippet);
         return Guarded(source, new TextSpan(at, 0), addition, text, path);
+    }
+
+    /// <summary>What a named list's elements are, when the caller named one and it resolves.</summary>
+    private ITypeSymbol? ElementType(string? path, string? text, string? origin, string? list)
+    {
+        if (path is null || text is null || origin is null || list is null) return null;
+        if (Locate(path, text, origin) is not var (_, _, construction, model) || construction is null) return null;
+        if (model.GetSymbolInfo(construction).Symbol is not IMethodSymbol symbol) return null;
+
+        var parameter = symbol.Parameters.FirstOrDefault(p => p.Name == list);
+        return parameter?.Type switch
+        {
+            IArrayTypeSymbol array => array.ElementType,
+            INamedTypeSymbol { TypeArguments: [var single] } => single,
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// The ways a VALUE is written: its own static factories, and target-typed <c>new(…)</c>.
+    /// <para>
+    /// The framework deliberately gives value records no factory of their own — they are data, and
+    /// data reads fine as <c>new(…)</c> inside a list whose type is already known. So this reads the
+    /// type rather than a surface, which is also why it works for a record the app just defined.
+    /// </para>
+    /// </summary>
+    private static PaletteEntry[] ValuePalette(ITypeSymbol type)
+    {
+        var entries = new List<PaletteEntry>();
+
+        foreach (var member in type.GetMembers())
+        {
+            if (!member.IsStatic || member.DeclaredAccessibility != Accessibility.Public) continue;
+
+            switch (member)
+            {
+                case IMethodSymbol method when method.MethodKind == MethodKind.Ordinary
+                                               && SymbolEqualityComparer.Default.Equals(method.ReturnType, type)
+                                               && Snippet(method, $"{type.Name}.{method.Name}") is { } call:
+                    entries.Add(new PaletteEntry($"{type.Name}.{method.Name}", call, Summary(method), "value"));
+                    break;
+
+                // `GridTrack.Auto` — a whole value with no call at all.
+                case IPropertySymbol property when SymbolEqualityComparer.Default.Equals(property.Type, type):
+                    entries.Add(new PaletteEntry(
+                        $"{type.Name}.{property.Name}", $"{type.Name}.{property.Name}", Summary(property), "value"));
+                    break;
+
+                case IFieldSymbol field when SymbolEqualityComparer.Default.Equals(field.Type, type):
+                    entries.Add(new PaletteEntry(
+                        $"{type.Name}.{field.Name}", $"{type.Name}.{field.Name}", Summary(field), "value"));
+                    break;
+            }
+        }
+
+        foreach (var constructor in (type as INamedTypeSymbol)?.InstanceConstructors ?? [])
+        {
+            if (constructor.DeclaredAccessibility != Accessibility.Public) continue;
+            if (constructor.Parameters.Length == 0) continue;
+            if (Snippet(constructor, "new") is not { } call) continue;
+
+            entries.Add(new PaletteEntry($"new {type.Name}(…)", call, Summary(type), "value"));
+        }
+
+        return entries.DistinctBy(entry => entry.Snippet).OrderBy(entry => entry.Name, StringComparer.Ordinal).ToArray();
     }
 
     /// <summary>
@@ -1163,6 +1282,13 @@ public sealed class DesignSession
         }
     }
 
+    /// <summary>One line, and not a long one: this is a label in a panel, not the source of record.</summary>
+    private static string Shortened(string text)
+    {
+        var single = string.Join(' ', text.Split('\n').Select(line => line.Trim()));
+        return single.Length <= 60 ? single : single[..57] + "…";
+    }
+
     /// <summary>The whitespace at the start of the line a position sits on.</summary>
     private static string Indentation(SourceText source, int position)
     {
@@ -1181,17 +1307,57 @@ public sealed class DesignSession
     /// them is statement-level dataflow.
     /// </para>
     /// </summary>
-    private static CollectionExpressionSyntax? ChildrenList(
-        IMethodSymbol symbol, SeparatedSyntaxList<ArgumentSyntax>? arguments)
+    private static CollectionExpressionSyntax? ListArgument(
+        IMethodSymbol symbol, SeparatedSyntaxList<ArgumentSyntax>? arguments, string name)
     {
         if (arguments is not { } list) return null;
 
         for (var i = 0; i < symbol.Parameters.Length; i++)
         {
-            if (symbol.Parameters[i].Name != "children") continue;
+            if (symbol.Parameters[i].Name != name) continue;
             return ArgumentFor(list, symbol.Parameters[i], i)?.Expression as CollectionExpressionSyntax;
         }
         return null;
+    }
+
+    private static CollectionExpressionSyntax? ChildrenList(
+        IMethodSymbol symbol, SeparatedSyntaxList<ArgumentSyntax>? arguments) =>
+        ListArgument(symbol, arguments, "children");
+
+    /// <summary>
+    /// Every list this call is written with — not only <c>children</c>.
+    /// <para>
+    /// A <c>Grid</c>'s <c>columns</c> is the same shape as a <c>children</c>: a collection expression
+    /// whose elements have real spans, so everything built for children works on it unchanged. So do
+    /// a menu's items and a dialog's actions. Withholding those would have been a fence around the
+    /// word "children" rather than around anything real.
+    /// </para>
+    /// </summary>
+    private static NodeList[] Lists(IMethodSymbol symbol, SeparatedSyntaxList<ArgumentSyntax>? arguments)
+    {
+        var found = new List<NodeList>();
+        foreach (var parameter in symbol.Parameters)
+        {
+            if (ListArgument(symbol, arguments, parameter.Name) is not { } list) continue;
+
+            var element = parameter.Type switch
+            {
+                IArrayTypeSymbol array => array.ElementType,
+                INamedTypeSymbol { TypeArguments: [var single] } => single,
+                _ => null,
+            };
+            if (element is null) continue;
+
+            var visual = element.IsVisualNode();
+            found.Add(new NodeList(
+                parameter.Name,
+                element.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
+                list.Elements.Count,
+                visual,
+                visual ? null : list.Elements.Select(entry => Shortened(entry.ToString())).ToArray()));
+        }
+
+        return found.ToArray();
     }
 
     /// <summary>
@@ -1219,6 +1385,96 @@ public sealed class DesignSession
             ? "This container's children are not written as a [ … ] list, so there is no list to insert into."
             : "This container was called without a children list. Adding one would change how it is written, "
                 + "so it is not done for you.";
+    }
+
+    /// <summary>
+    /// The settable members of a value written as <c>new T { … }</c>, each an ordinary property.
+    /// <para>
+    /// A <c>BoxStyle</c> arrives at the panel as one long line of C#, and the things inside it —
+    /// padding, background, corner radius — are exactly what an author reaches for. Reported as rows
+    /// rather than as text, they get the same editor and the same refusals as any other property.
+    /// </para>
+    /// </summary>
+    private static NodeProperty[]? MembersOf(ObjectCreationExpressionSyntax? creation, SemanticModel model)
+    {
+        if (creation is null) return null;
+        if (model.GetTypeInfo(creation).Type is not INamedTypeSymbol type) return null;
+        // A value the author wrote WITHOUT an initializer has nowhere to put a member, and adding one
+        // would rewrite the form they chose. The rows are still listed, and each says so.
+        var reachable = creation.Initializer is not null;
+
+        var members = new List<NodeProperty>();
+        foreach (var member in Inherited(type).OfType<IPropertySymbol>())
+        {
+            if (member.DeclaredAccessibility != Accessibility.Public || member.IsStatic) continue;
+            if (member.SetMethod is null || member.IsIndexer) continue;
+            if (IsStructural(member.Type)) continue;
+
+            var assignment = creation.Initializer?.Expressions
+                .OfType<AssignmentExpressionSyntax>()
+                .FirstOrDefault(a => a.Left.ToString() == member.Name);
+
+            members.Add(new NodeProperty(
+                member.Name,
+                member.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
+                assignment is null ? "unset" : "initializer",
+                assignment?.Right.ToString(),
+                reachable,
+                reachable ? null : $"This {type.Name} is written without an initializer to set it in.",
+                OptionsFor(member.Type),
+                Summary(member)));
+        }
+
+        return members.Count == 0 ? null : members.ToArray();
+    }
+
+    /// <summary>
+    /// Takes a member back OUT of a value's initializer — <c>style.Padding</c>, unset.
+    /// <para>
+    /// A spreadsheet you can only add rows to is a spreadsheet with a leak. The assignment goes and
+    /// exactly one separator with it, the same bite every other removal here takes.
+    /// </para>
+    /// </summary>
+    public EditResult UnsetProperty(string path, string text, string origin, string property)
+    {
+        if (_compilation is null) throw new InvalidOperationException("initialize first");
+
+        if (property.Split('.') is not [var argumentName, var member])
+            return EditResult.Refused($"'{property}' does not name a member of a value.");
+
+        if (Locate(path, text, origin) is not var (_, source, construction, model) || construction is null)
+            return EditResult.Refused("That element's origin does not name anything in this file.");
+
+        if (model.GetSymbolInfo(construction).Symbol is not IMethodSymbol symbol)
+            return EditResult.Refused("The compiler cannot resolve that construction.");
+
+        var arguments = construction switch
+        {
+            ObjectCreationExpressionSyntax creation => creation.ArgumentList?.Arguments,
+            InvocationExpressionSyntax invocation => invocation.ArgumentList.Arguments,
+            _ => null,
+        };
+        if (arguments is not { } list) return EditResult.Refused("That construction takes no arguments.");
+
+        var index = -1;
+        for (var i = 0; i < symbol.Parameters.Length; i++)
+        {
+            if (symbol.Parameters[i].Name == argumentName) { index = i; break; }
+        }
+        if (index < 0) return EditResult.Refused($"'{argumentName}' is not a parameter of {symbol.Name}.");
+
+        if (ArgumentFor(list, symbol.Parameters[index], index)?.Expression is not ObjectCreationExpressionSyntax written
+            || written.Initializer is null)
+        {
+            return EditResult.Refused($"'{argumentName}' is not written as a value with members to unset.");
+        }
+
+        var assignment = written.Initializer.Expressions
+            .OfType<AssignmentExpressionSyntax>()
+            .FirstOrDefault(a => a.Left.ToString() == member);
+        if (assignment is null) return EditResult.Refused($"'{member}' is not set here.");
+
+        return Guarded(source, Removal(written.Initializer.Expressions, (ExpressionSyntax)assignment), "", text, path);
     }
 
     /// <summary>A type's own members and every base's, nearest first — <c>object</c> excluded, which

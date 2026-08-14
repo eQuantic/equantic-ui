@@ -376,7 +376,7 @@ Three defects fell out of writing the tests, and two were live:
   wrote a duplicate. Both ends now resolve in one tree.
 - The compiler's real refusal was being masked by the first bug's syntax error.
 
-### Phase 9 — where a component COULD go ✅ done
+### Phase 9 — the mark and the palette ✅ done
 
 Edgar's ask: a mark showing where something can be inserted, and a `+` that opens the choice of every
 component available — the framework's **and** the developer's own.
@@ -399,6 +399,30 @@ The test for it failed on the first run for the right reason: the probe declared
 the `global using static` the generator writes beside it, so the palette offered a component that did
 not compile where it landed — and the guard that inserts every entry into a real list caught it. The
 probe was wrong, not the palette, but the guard proved it is the palette that would have been blamed.
+
+### Phase 10 — the other lists, and the values inside a property ✅ done
+
+Two fences that turned out to be around words rather than around anything real.
+
+**A list is a list.** A `Grid`'s `columns` is a collection expression whose elements have real spans,
+exactly like a `children`. So is a menu's `items` and a dialog's `actions`. Everything built for
+children now works on any of them: `inspect` reports every list a call is written with, and insert and
+remove take the name. What differs is what goes IN them — a `GridTrack` is data, it never renders, so
+nothing on the canvas carries its span and a palette of components has nothing to offer. Both follow
+from reading the signature: a data list is addressed by INDEX from the panel, and its palette is the
+element type's own ways of being written (`GridTrack.Flex()`, `GridTrack.Auto`, target-typed `new(…)`
+— the framework gives value records no factory on purpose).
+
+One defect fell out: `Addition` always broke the line. `columns: [Flex(), Fixed(120)]` is written on
+one line and reads that way, and adding a track reformatted the author's file to make room for a tool.
+A list written on one line stays on one line.
+
+**A value is not a string.** `BoxStyle` reached the panel as one long line of C# in a single cell —
+the thing an author most wants to change, in the one place they could not change it. `inspect` now
+reports the members of a value written as `new T { … }` as ordinary properties: name, type, what is
+written there, what it may be. The panel renders them as a small sheet under the row that carries
+them, keys on the left and a select of everything not set yet on the last line. `UnsetProperty` takes
+a member back out, because a sheet you can only add rows to leaks.
 
 ---
 

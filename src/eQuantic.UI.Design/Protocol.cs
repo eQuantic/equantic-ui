@@ -43,6 +43,9 @@ public sealed record DesignParams
     /// <summary>Where in a children list to insert — 0 is before the first (insertChild).</summary>
     [JsonPropertyName("index")] public int? Index { get; init; }
 
+    /// <summary>Which list of the call is meant — <c>children</c> unless something else is named.</summary>
+    [JsonPropertyName("list")] public string? List { get; init; }
+
     /// <summary>The C# to insert there, as a palette entry's snippet.</summary>
     [JsonPropertyName("snippet")] public string? Snippet { get; init; }
 
@@ -91,7 +94,18 @@ public sealed record NodeProperty(
     /// than a text box.</summary>
     [property: JsonPropertyName("options")] string[]? Options,
     /// <summary>The doc comment's summary, read off the source symbol.</summary>
-    [property: JsonPropertyName("summary")] string? Summary);
+    [property: JsonPropertyName("summary")] string? Summary,
+    /// <summary>
+    /// The members of the VALUE written here, when it is written as a construction — a
+    /// <c>BoxStyle</c>'s padding, background and radius.
+    /// <para>
+    /// Without this a panel can only show the raw C# of the whole initializer in one cell, which is
+    /// the thing an author most wants to change and the one thing they cannot change there. Each
+    /// member is an ordinary property in its own right, so the same row, the same editor, the same
+    /// refusals.
+    /// </para>
+    /// </summary>
+    [property: JsonPropertyName("members")] NodeProperty[]? Members = null);
 
 /// <summary>
 /// One text replacement the editor should apply, or the reason there is none.
@@ -139,7 +153,27 @@ public sealed record InspectResult(
     /// <summary>This node's position among its parent's declarative children, or -1 when it is not
     /// an element of such a list — which is what decides whether it can be moved or removed.</summary>
     [property: JsonPropertyName("siblingIndex")] int SiblingIndex,
-    [property: JsonPropertyName("siblingCount")] int SiblingCount);
+    [property: JsonPropertyName("siblingCount")] int SiblingCount,
+    /// <summary>Every list this call is written with, children included.</summary>
+    [property: JsonPropertyName("lists")] NodeList[]? Lists = null);
+
+/// <summary>
+/// One list a call is written with — <c>children</c>, but also a Grid's <c>columns</c>, a menu's
+/// <c>items</c>, a dialog's <c>actions</c>. All the same shape, so all the same gestures.
+/// </summary>
+public sealed record NodeList(
+    [property: JsonPropertyName("name")] string Name,
+    /// <summary>What its elements are, for a palette that offers the right things.</summary>
+    [property: JsonPropertyName("elementType")] string ElementType,
+    [property: JsonPropertyName("count")] int Count,
+    /// <summary>Whether its elements are nodes on the canvas, or data that only the panel can reach.</summary>
+    [property: JsonPropertyName("visual")] bool Visual,
+    /// <summary>
+    /// Each entry as it is written, for the DATA lists only — <c>GridTrack.Flex()</c> reads as itself
+    /// and a panel can list them. A visual list's elements are whole subtrees, so carrying their text
+    /// would put a screen's worth of source in the answer to every hover.
+    /// </summary>
+    [property: JsonPropertyName("entries")] string[]? Entries = null);
 
 /// <summary>One entry a palette can offer, with the smallest call that compiles.</summary>
 public sealed record PaletteEntry(

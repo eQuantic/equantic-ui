@@ -42,6 +42,20 @@ export interface NodeProperty {
   reason: string | null;
   options: string[] | null;
   summary: string | null;
+  /** The members of the VALUE written here, when it is written as a construction — a BoxStyle's
+   * padding, background and radius. Each is an ordinary property in its own right. */
+  members?: NodeProperty[] | null;
+}
+
+/** One list a call is written with — children, but also a Grid's columns or a menu's items. */
+export interface NodeList {
+  name: string;
+  elementType: string;
+  count: number;
+  /** Whether its elements are nodes on the canvas, or data only the panel can reach. */
+  visual: boolean;
+  /** Each entry as written — data lists only; a visual one's elements are whole subtrees. */
+  entries: string[] | null;
 }
 
 export interface InspectResult {
@@ -57,6 +71,8 @@ export interface InspectResult {
   siblingCount: number;
   /** Why this container cannot take an insertion, when it cannot. */
   insertReason: string | null;
+  /** Every list this call is written with, children included. */
+  lists: NodeList[] | null;
 }
 
 /** One entry a palette can offer, with the smallest call of it that compiles. */
@@ -64,8 +80,9 @@ export interface PaletteEntry {
   name: string;
   snippet: string;
   summary: string | null;
-  /** Where it comes from: the app's own generated surface, or the framework's. */
-  source: 'app' | 'framework';
+  /** Where it comes from: the app's own generated surface, the framework's, or — for a list of data
+   * rather than of nodes — the element type's own ways of being written. */
+  source: 'app' | 'framework' | 'value';
 }
 
 /** One text replacement to apply, or the reason there is none. Computed by the host; applied by the
@@ -195,20 +212,38 @@ export class Sidecar {
     return this.send('inspect', { path, text, origin, buffers });
   }
 
+  /** Takes a member back out of a value's initializer — `style.Padding`, unset. */
+  unsetProperty(
+    path: string, text: string, origin: string, property: string, buffers: OpenBuffer[],
+  ): Promise<EditResult> {
+    return this.send('unsetProperty', { path, text, origin, property, buffers });
+  }
+
   setProperty(
     path: string, text: string, origin: string, property: string, value: string, buffers: OpenBuffer[],
   ): Promise<EditResult> {
     return this.send('setProperty', { path, text, origin, property, value, buffers });
   }
 
-  palette(): Promise<PaletteEntry[]> {
-    return this.send('palette', {});
+  /** Type-directed when it is told which list it is filling: a Grid's `columns` is offered GridTracks,
+   * not components. Without a list it answers with the component surface. */
+  palette(path?: string, text?: string, origin?: string, list?: string): Promise<PaletteEntry[]> {
+    return this.send('palette', { path, text, origin, list });
   }
 
   insertChild(
     path: string, text: string, origin: string, index: number, snippet: string, buffers: OpenBuffer[],
+    list?: string,
   ): Promise<EditResult> {
-    return this.send('insertChild', { path, text, origin, index, snippet, buffers });
+    return this.send('insertChild', { path, text, origin, index, snippet, buffers, list });
+  }
+
+  /** Removes the entry at a position of a named list. By POSITION because the things in a data list
+   * never render, so nothing on the canvas carries their span. */
+  removeAt(
+    path: string, text: string, origin: string, list: string, index: number, buffers: OpenBuffer[],
+  ): Promise<EditResult> {
+    return this.send('removeAt', { path, text, origin, list, index, buffers });
   }
 
   moveChild(path: string, text: string, origin: string, delta: number, buffers: OpenBuffer[]): Promise<EditResult> {

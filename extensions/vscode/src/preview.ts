@@ -220,7 +220,8 @@ export class PreviewPanel {
   private onWebviewMessage(
     message: {
       type: string; detail?: string; origin?: string; property?: string; value?: string;
-      options?: string[]; index?: number; delta?: number; target?: string;
+      options?: string[]; index?: number; delta?: number; target?: string; list?: string;
+      elementType?: string;
     },
   ): void {
     if (message.type === 'ready') this.announceReady();
@@ -229,7 +230,11 @@ export class PreviewPanel {
     else if (message.type === 'edit' && message.origin && message.property) {
       void this.editProperty(message.origin, message.property, message.value, message.options);
     } else if (message.type === 'insert' && message.origin && typeof message.index === 'number') {
-      void this.insertChild(message.origin, message.index);
+      void this.insertChild(message.origin, message.index, message.list, message.elementType);
+    } else if (message.type === 'unset' && message.origin && message.property) {
+      void this.unsetProperty(message.origin, message.property);
+    } else if (message.type === 'removeAt' && message.origin && message.list && typeof message.index === 'number') {
+      void this.removeAt(message.origin, message.list, message.index);
     } else if (message.type === 'arrange' && message.origin) {
       void this.arrange(message.origin, message.delta);
     } else if (message.type === 'reorder' && message.origin && typeof message.index === 'number') {
@@ -389,9 +394,54 @@ export class PreviewPanel {
     await this.describe(landed);
   }
 
-  /** Cached for the session: the surface does not change while the editor is open, and a quick pick
-   * that waits on a round trip feels like a stall. */
-  private paletteEntries: PaletteEntry[] | undefined;
+  /**
+   * Cached for the session, by what the list HOLDS: the surface does not change while the editor is
+   * open, and a quick pick that waits on a round trip feels like a stall. Keyed by element type
+   * because a Grid's `columns` is offered GridTracks and a Column's `children` is offered components.
+   */
+  private readonly palettes = new Map<string, PaletteEntry[]>();
+
+  private async paletteFor(
+    origin: string, list: string | undefined, elementType: string | undefined,
+  ): Promise<PaletteEntry[]> {
+    const key = elementType ?? '#components';
+    const cached = this.palettes.get(key);
+    if (cached) return cached;
+
+    const span = PreviewPanel.parseOrigin(origin);
+    const entries = await this.sidecar.palette(
+      span?.path, span ? await this.textOf(span.path) : undefined, origin, list);
+    this.palettes.set(key, entries);
+    return entries;
+  }
+
+  /** Takes a member back out of a value's initializer. A sheet you can only add rows to leaks. */
+  private async unsetProperty(origin: string, property: string): Promise<void> {
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) return;
+
+    try {
+      const edit = await this.sidecar.unsetProperty(
+        span.path, await this.textOf(span.path), origin, property, this.buffers());
+      if (await this.applyEdit(span.path, edit, 'that was refused')) await this.describe(origin);
+    } catch (error) {
+      this.log(`unset failed: ${(error as Error).message}`);
+    }
+  }
+
+  /** Removes an entry of a data list, which is addressed by position because it has no origin. */
+  private async removeAt(origin: string, list: string, index: number): Promise<void> {
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) return;
+
+    try {
+      const edit = await this.sidecar.removeAt(
+        span.path, await this.textOf(span.path), origin, list, index, this.buffers());
+      if (await this.applyEdit(span.path, edit, 'that was refused')) await this.describe(origin);
+    } catch (error) {
+      this.log(`remove failed: ${(error as Error).message}`);
+    }
+  }
 
   /**
    * Insert a component into a declarative children list.
@@ -401,23 +451,25 @@ export class PreviewPanel {
    * it is pressed.
    * </para>
    */
-  private async insertChild(origin: string, index: number): Promise<void> {
+  private async insertChild(
+    origin: string, index: number, list?: string, elementType?: string,
+  ): Promise<void> {
     const span = PreviewPanel.parseOrigin(origin);
     if (!span) return;
 
     try {
-      this.paletteEntries ??= await this.sidecar.palette();
+      const palette = await this.paletteFor(origin, list, elementType);
 
       // Grouped, with the app's own components first and under their own heading. They are what the
       // developer was writing a minute ago, and a flat list buries them among a hundred framework
       // names — searchable, but only if you already know what you are looking for.
       const items: (vscode.QuickPickItem & { entry?: PaletteEntry })[] = [];
       let heading = '';
-      for (const entry of this.paletteEntries) {
+      for (const entry of palette) {
         if (entry.source !== heading) {
           heading = entry.source;
           items.push({
-            label: entry.source === 'app' ? 'This app' : 'Framework',
+            label: entry.source === 'app' ? 'This app' : entry.source === 'value' ? 'Values' : 'Framework',
             kind: vscode.QuickPickItemKind.Separator,
           });
         }
@@ -425,14 +477,14 @@ export class PreviewPanel {
       }
 
       const pick = await vscode.window.showQuickPick(items, {
-        title: 'Insert a component',
+        title: list && list !== 'children' ? `Add to ${list}` : 'Insert a component',
         matchOnDescription: true,
         matchOnDetail: true,
       });
       if (!pick?.entry) return;
 
       const edit = await this.sidecar.insertChild(
-        span.path, await this.textOf(span.path), origin, index, pick.entry.snippet, this.buffers());
+        span.path, await this.textOf(span.path), origin, index, pick.entry.snippet, this.buffers(), list);
 
       if (!edit.applied) {
         void vscode.window.showWarningMessage(`eQuantic UI: ${edit.reason ?? 'that insertion was refused'}`);
@@ -731,6 +783,54 @@ export class PreviewPanel {
   #panel button.icon:disabled:hover { background: transparent; }
 
   #panel-body { overflow: auto; padding: 6px 10px 10px; }
+
+  /* The lists a call is written with that are NOT children: a Grid's columns, a menu's items. Their
+     entries never render, so the canvas cannot point at them and the panel is the only place they
+     can be reached from. */
+  .eq-list { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 0 0 6px; }
+  .eq-list .lname {
+    font-weight: 600; margin-right: 2px;
+    color: var(--vscode-symbolIcon-propertyForeground, var(--vscode-foreground, #ccc));
+  }
+  .eq-list .entry {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 1px 4px 1px 7px; border-radius: 10px;
+    border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.4));
+    font: 11px/1.6 var(--vscode-editor-font-family, ui-monospace, monospace);
+  }
+  .eq-list .entry button {
+    border: none; background: transparent; cursor: pointer; padding: 0 2px; border-radius: 8px;
+    color: var(--vscode-descriptionForeground, #9d9d9d); font: inherit;
+  }
+  /* The members of a value, as a sheet under the property that carries them. Indented and ruled on
+     the left, so the eye reads them as INSIDE the row above rather than as more properties. */
+  .members-row > td { padding: 0 0 6px 10px; }
+  .members {
+    width: 100%; border-collapse: collapse;
+    border-left: 2px solid var(--vscode-panel-border, rgba(128,128,128,0.45));
+  }
+  .members td { padding: 1px 6px; vertical-align: top; }
+  .members select {
+    background: var(--vscode-dropdown-background, #3c3c3c);
+    color: var(--vscode-dropdown-foreground, #ccc);
+    border: 1px solid var(--vscode-dropdown-border, rgba(128,128,128,0.4));
+    border-radius: 3px; font: inherit; padding: 0 2px;
+  }
+  .members .pdrop { width: 18px; text-align: right; }
+  .members .pdrop button {
+    border: none; background: transparent; cursor: pointer; border-radius: 8px; font: inherit;
+    color: var(--vscode-descriptionForeground, #9d9d9d); padding: 0 4px;
+  }
+  .members .pdrop button:hover {
+    background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31));
+    color: var(--vscode-errorForeground, #e5645c);
+  }
+  .props .pvalue.count { color: var(--vscode-descriptionForeground, #9d9d9d); font-style: italic; }
+
+  .eq-list .entry button:hover {
+    background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31));
+    color: var(--vscode-errorForeground, #e5645c);
+  }
   /* Moving through the tree, from the tree itself: the panel names the parent and the children it
      can see, and selecting one is the same gesture as clicking it on the canvas. */
   #panel-tree { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 0 0 8px; }
@@ -1575,6 +1675,157 @@ export class PreviewPanel {
     }
   }
 
+  /**
+   * One data list — a Grid's columns, a menu's items — with what is in it and a + to add.
+   *
+   * Entries are addressed by POSITION, not by origin: a GridTrack never renders, so nothing on the
+   * canvas carries its span and there is nothing to click. That is also why they are here at all.
+   */
+  function buildList(list) {
+    const row = document.createElement('div');
+    row.className = 'eq-list';
+
+    const name = document.createElement('span');
+    name.className = 'lname';
+    name.textContent = list.name;
+    row.appendChild(name);
+
+    const add = document.createElement('span');
+    add.className = 'chip add';
+    add.textContent = '+ ' + list.elementType;
+    add.title = 'Add to ' + list.name;
+    add.addEventListener('click', () => vscode.postMessage({
+      type: 'insert', origin: selectedOrigin, index: list.count, list: list.name,
+      elementType: list.elementType,
+    }));
+    row.appendChild(add);
+
+    (list.entries || []).forEach((written, index) => {
+      const entry = document.createElement('span');
+      entry.className = 'entry';
+      entry.appendChild(document.createTextNode(written));
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.textContent = '×';
+      remove.title = 'Remove ' + written;
+      remove.addEventListener('click', () => vscode.postMessage({
+        type: 'removeAt', origin: selectedOrigin, list: list.name, index: index,
+      }));
+      entry.appendChild(remove);
+      row.appendChild(entry);
+    });
+
+    return row;
+  }
+
+  /**
+   * A value's members, as a small sheet under the property that carries them.
+   *
+   * Key, type, value — one row each, the set ones first because they are what is true now, and a last
+   * row whose key is a SELECT of everything not set yet. Choosing one and pressing + asks for its
+   * value through the editor's own input, exactly as any other property does.
+   */
+  function memberRows(property) {
+    const row = document.createElement('tr');
+    row.className = 'members-row';
+    const cell = document.createElement('td');
+    cell.colSpan = 3;
+
+    const sheet = document.createElement('table');
+    sheet.className = 'members';
+
+    const origin = selectedOrigin;
+    const written = property.members.filter((member) => member.kind !== 'unset');
+
+    for (const member of written) {
+      const line = document.createElement('tr');
+
+      const key = document.createElement('td');
+      key.className = 'pname';
+      key.textContent = member.name;
+      if (member.summary) key.title = member.summary;
+
+      const type = document.createElement('td');
+      type.className = 'ptype';
+      type.textContent = member.type;
+
+      const value = document.createElement('td');
+      value.className = 'pvalue';
+      if (member.editable) {
+        value.appendChild(editorFor(member, (next) => vscode.postMessage({
+          type: 'edit', origin: origin, property: property.name + '.' + member.name, value: next,
+        })));
+      } else {
+        value.textContent = member.reason || 'not reachable from this form';
+        line.className = 'unreachable';
+      }
+
+      const drop = document.createElement('td');
+      drop.className = 'pdrop';
+      if (member.editable) {
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = '×';
+        remove.title = 'Unset ' + member.name;
+        remove.addEventListener('click', () => vscode.postMessage({
+          type: 'unset', origin: origin, property: property.name + '.' + member.name,
+        }));
+        drop.appendChild(remove);
+      }
+
+      line.append(key, type, value, drop);
+      sheet.appendChild(line);
+    }
+
+    const rest = property.members.filter((member) => member.kind === 'unset' && member.editable);
+    if (rest.length > 0) {
+      const line = document.createElement('tr');
+      line.className = 'add';
+
+      const key = document.createElement('td');
+      const select = document.createElement('select');
+      for (const member of rest) {
+        const option = document.createElement('option');
+        option.value = member.name;
+        option.textContent = member.name;
+        option.title = member.summary || '';
+        select.appendChild(option);
+      }
+      key.appendChild(select);
+
+      const type = document.createElement('td');
+      type.className = 'ptype';
+      type.textContent = rest[0].type;
+      select.addEventListener('change', () => {
+        const chosen = rest.find((member) => member.name === select.value);
+        type.textContent = chosen ? chosen.type : '';
+      });
+
+      const value = document.createElement('td');
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'chip add';
+      add.textContent = '+ set';
+      add.addEventListener('click', () => {
+        const chosen = rest.find((member) => member.name === select.value);
+        if (!chosen) return;
+        vscode.postMessage({
+          type: 'edit', origin: origin, property: property.name + '.' + chosen.name,
+          options: chosen.options || undefined,
+        });
+      });
+      value.appendChild(add);
+
+      line.append(key, type, value, document.createElement('td'));
+      sheet.appendChild(line);
+    }
+
+    cell.appendChild(sheet);
+    row.appendChild(cell);
+    return row;
+  }
+
   function showSelection(payload) {
     panelTitle.textContent = payload.node ? payload.node.component : 'Selection';
     panelTier.textContent = payload.tier + (payload.node ? ' · ' + payload.node.form : '');
@@ -1593,6 +1844,13 @@ export class PreviewPanel {
 
     panelBody.replaceChildren();
     panelBody.appendChild(buildTree(payload.node));
+
+    for (const list of (payload.node && payload.node.lists) || []) {
+      // Visual lists are the tree, and the tree is on the canvas — where you can see what you are
+      // pointing at. Only the data ones need a place to live.
+      if (list.visual) continue;
+      panelBody.appendChild(buildList(list));
+    }
 
     if (payload.node && payload.node.summary) {
       const note = document.createElement('div');
@@ -1630,7 +1888,13 @@ export class PreviewPanel {
       const value = document.createElement('td');
       value.className = 'pvalue';
 
-      if (!property.editable) {
+      if (property.members) {
+        // The value is a whole BoxStyle. Showing its C# here would put the one thing an author most
+        // wants to change into the one cell they cannot change it in.
+        const set = property.members.filter((member) => member.kind !== 'unset').length;
+        value.className = 'pvalue count';
+        value.textContent = set + ' of ' + property.members.length + ' set';
+      } else if (!property.editable) {
         row.className = 'unreachable';
         value.textContent = property.reason || 'not reachable from this form';
         value.title = value.textContent;
@@ -1642,6 +1906,8 @@ export class PreviewPanel {
 
       row.append(name, type, value);
       table.appendChild(row);
+
+      if (property.members) table.appendChild(memberRows(property));
     }
 
     panelBody.appendChild(table);
