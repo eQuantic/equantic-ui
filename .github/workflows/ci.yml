@@ -424,6 +424,21 @@ jobs:
         with:
           name: equantic-ui-vsix
 
+      # The tag and the manifest have to agree, or the job publishes a version nobody tagged — and the
+      # Marketplace refuses a version that already exists, which is how a release "fails at the end"
+      # for a reason decided at the beginning. Read out of the ARCHIVE, since that is what ships.
+      - name: The tag names the version being published
+        shell: bash
+        run: |
+          set -euo pipefail
+          tagged="${GITHUB_REF_NAME#vscode-v}"
+          packaged="$(unzip -p equantic-ui.vsix extension/package.json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")"
+          if [ "$tagged" != "$packaged" ]; then
+            echo "::error::the tag says $tagged and the package says $packaged."
+            exit 1
+          fi
+          echo "publishing $packaged"
+
       - name: Publish to the Marketplace
         shell: bash
         env:
