@@ -424,6 +424,29 @@ written there, what it may be. The panel renders them as a small sheet under the
 them, keys on the left and a select of everything not set yet on the last line. `UnsetProperty` takes
 a member back out, because a sheet you can only add rows to leaks.
 
+### Phase 11 — a pile is not a row ✅ done
+
+The last container whose gestures were lying. A `Stack`'s children overlap, and spec A3 makes **paint
+order the child order** — so its list is meaningful and its geometry is not. Between two boxes sitting
+on top of each other there is no gap for a caret to sit in, "3 of 5" counts something nobody can see,
+and "move up" means "send backward".
+
+The canvas cannot work this out: two overlapping children look exactly like two children nobody has
+laid out. So the host says it — `IsLayered` resolves `eQuantic.UI.Primitives.Stack` through the
+compilation and walks the base chain, which fails safe to "no" rather than matching a name in the
+author's file. `inspect` reports it twice over: on each list (*this one's order is depth*) and on the
+node itself (*your position here is your depth*).
+
+With that known, everything else is presentation:
+
+- The drop mark becomes a **cover** over the child the node would come to rest in front of, rather
+  than a line between two that do not have a between.
+- The slot is read as "the topmost child under the pointer, plus one" — over the stack's own space,
+  the top of the pile.
+- The badge says *in front of Card* rather than *3 of 5*.
+- The panel's arrows keep their gesture and stop mis-naming it: **Send backward** and **Bring
+  forward**, in the tooltip and in the accessible name.
+
 ---
 
 ## The seam, tested

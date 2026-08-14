@@ -54,6 +54,8 @@ export interface NodeList {
   count: number;
   /** Whether its elements are nodes on the canvas, or data only the panel can reach. */
   visual: boolean;
+  /** Whether its order is PAINT order rather than position — a Stack, whose children overlap. */
+  layered: boolean;
   /** Each entry as written — data lists only; a visual one's elements are whole subtrees. */
   entries: string[] | null;
 }
@@ -73,6 +75,8 @@ export interface InspectResult {
   insertReason: string | null;
   /** Every list this call is written with, children included. */
   lists: NodeList[] | null;
+  /** Whether this node sits in a layered parent, where its position is its depth. */
+  inLayer: boolean;
 }
 
 /** One entry a palette can offer, with the smallest call of it that compiles. */

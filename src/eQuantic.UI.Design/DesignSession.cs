@@ -424,7 +424,12 @@ public sealed class DesignSession
             insertReason,
             siblingIndex,
             siblingCount,
-            Lists(symbol, arguments));
+            Lists(symbol, arguments),
+            EnclosingConstruction(construction) is { } parent
+            && model.GetSymbolInfo(parent).Symbol is IMethodSymbol enclosing
+            && IsLayered(enclosing.MethodKind == MethodKind.Constructor
+                ? enclosing.ContainingType
+                : enclosing.ReturnType));
     }
 
     /// <summary>
@@ -1357,6 +1362,34 @@ public sealed class DesignSession
         }
     }
 
+    /// <summary>
+    /// Whether a component paints its children in LAYERS — a <c>Stack</c>, where spec A3 makes paint
+    /// order the child order.
+    /// <para>
+    /// Asked of the compilation rather than matched on a name in the author's file: the type resolves
+    /// through the semantic model or the answer is simply no. It is what tells the canvas that a caret
+    /// between two children would mark a place that does not exist, and the panel that "move up"
+    /// means "send backward" there.
+    /// </para>
+    /// </summary>
+    private bool IsLayered(ITypeSymbol? type)
+    {
+        if (type is null || _current is null) return false;
+        if (_current.GetTypeByMetadataName("eQuantic.UI.Primitives.Stack") is not { } stack) return false;
+
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            if (SymbolEqualityComparer.Default.Equals(current, stack)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>The construction a node's own list belongs to — its parent in the tree as WRITTEN.</summary>
+    private static SyntaxNode? EnclosingConstruction(SyntaxNode construction) =>
+        construction.Parent is ExpressionElementSyntax { Parent: CollectionExpressionSyntax list }
+            ? list.Ancestors().FirstOrDefault(n => n is ObjectCreationExpressionSyntax or InvocationExpressionSyntax)
+            : null;
+
     /// <summary>One line, and not a long one: this is a label in a panel, not the source of record.</summary>
     private static string Shortened(string text)
     {
@@ -1408,9 +1441,10 @@ public sealed class DesignSession
     /// word "children" rather than around anything real.
     /// </para>
     /// </summary>
-    private static NodeList[] Lists(IMethodSymbol symbol, SeparatedSyntaxList<ArgumentSyntax>? arguments)
+    private NodeList[] Lists(IMethodSymbol symbol, SeparatedSyntaxList<ArgumentSyntax>? arguments)
     {
         var found = new List<NodeList>();
+        var layered = IsLayered(symbol.MethodKind == MethodKind.Constructor ? symbol.ContainingType : symbol.ReturnType);
         foreach (var parameter in symbol.Parameters)
         {
             if (ListArgument(symbol, arguments, parameter.Name) is not { } list) continue;
@@ -1429,6 +1463,7 @@ public sealed class DesignSession
                 element.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
                 list.Elements.Count,
                 visual,
+                visual && layered,
                 visual ? null : list.Elements.Select(entry => Shortened(entry.ToString())).ToArray()));
         }
 

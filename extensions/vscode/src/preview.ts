@@ -714,6 +714,13 @@ export class PreviewPanel {
     background: var(--vscode-focusBorder, #0078d4);
   }
   #caret.visible { display: block; }
+  /* Over a pile the mark is a COVER, not a line: it says which child the node would come to rest in
+     front of, because between two overlapping children there is no gap a line could sit in. */
+  #caret.layer {
+    background: color-mix(in srgb, var(--vscode-focusBorder, #0078d4) 22%, transparent);
+    border: 1px solid var(--vscode-focusBorder, #0078d4);
+    border-radius: 3px;
+  }
 
   /* Where a component COULD go. Dashed rather than solid, because it marks a possibility and the
      caret marks a commitment — the eye should not have to read a label to tell them apart. */
@@ -1262,13 +1269,17 @@ export class PreviewPanel {
     if (place) {
       const box = element.getBoundingClientRect();
       const middle = box.top + box.height / 2;
-      if (place.axis === 'x') {
+      if (place.axis === 'x' && !place.layered) {
         chipAt(plusBefore, box.left, middle);
         chipAt(plusAfter, box.right, middle);
       } else {
         chipAt(plusBefore, box.left + 10, box.top);
         chipAt(plusAfter, box.left + 10, box.bottom);
       }
+      // Same two insertions either way — it is what they MEAN that differs, and a tooltip saying
+      // "insert before" over a pile would be describing a row that is not there.
+      plusBefore.title = place.layered ? 'Insert behind this' : 'Insert before this';
+      plusAfter.title = place.layered ? 'Insert in front of this' : 'Insert after this';
       insertTarget = {
         origin: place.container.getAttribute('data-eq-origin'),
         before: place.index, after: place.index + 1,
@@ -1280,9 +1291,19 @@ export class PreviewPanel {
     if (!here) return;
 
     const slot = slotAt(at, here);
+    if (here.layered) {
+      // No gap to mark. The + goes where a new top layer would appear, and says so.
+      const box = element.getBoundingClientRect();
+      chipAt(plusBefore, box.left + box.width / 2, box.top + 12);
+      plusBefore.title = 'Add on top';
+      insertTarget = { origin: element.getAttribute('data-eq-origin'), before: here.children.length, after: null };
+      return;
+    }
+
     const rect = gapRect(here, slot);
     put(gapMark, rect);
     chipAt(plusBefore, rect.left + rect.width / 2, rect.top + rect.height / 2);
+    plusBefore.title = 'Insert here';
     insertTarget = { origin: element.getAttribute('data-eq-origin'), before: slot, after: null };
   }
 
@@ -1293,7 +1314,15 @@ export class PreviewPanel {
 
     const children = stampedChildren(element);
     if (children.length !== node.childCount) return null;
-    return { container: element, children: children, axis: axisOf(element, children) };
+
+    // A Stack's children overlap, so their order is DEPTH — the host says so, because geometry
+    // cannot: two boxes on top of each other look exactly like two boxes nobody has laid out.
+    const own = (node.lists || []).find((list) => list.name === 'children');
+    return {
+      container: element, children: children,
+      layered: !!(own && own.layered),
+      axis: axisOf(element, children),
+    };
   }
 
   function chipAt(chip, x, y) {
@@ -1374,6 +1403,16 @@ export class PreviewPanel {
     }
 
     drawCaret(drag.slot, drag.place);
+
+    if (drag.place.layered) {
+      // Depth, not position: saying "3 of 5" about a pile would be counting something nobody sees.
+      const under = drag.slot > 0 ? drag.place.children[drag.slot - 1] : null;
+      say(drag.name + ' → ' + (under
+        ? 'in front of ' + (under.getAttribute('data-eq-component') || 'that')
+        : 'behind everything'), event.clientX, event.clientY);
+      return;
+    }
+
     // Leaving its own list, the node is added to the other one; staying, it is taken out first, so
     // everything after the gap it left shifts up by one.
     const home = drag.place.container === drag.source;
@@ -1386,6 +1425,21 @@ export class PreviewPanel {
   /** How many children the pointer has passed the middle of — which is the gap it is over. */
   function slotAt(event, place) {
     if (place.children.length === 0) return 0;
+
+    // In a layer, "where" is "in front of which". The LAST child containing the pointer is the one
+    // on top of the pile there, and dropping means landing just above it. Over the stack's own space
+    // the answer is the top of the pile.
+    if (place.layered) {
+      for (let i = place.children.length - 1; i >= 0; i--) {
+        const box = place.children[i].getBoundingClientRect();
+        if (event.clientX >= box.left && event.clientX <= box.right
+          && event.clientY >= box.top && event.clientY <= box.bottom) {
+          return i + 1;
+        }
+      }
+      return place.children.length;
+    }
+
 
     // The NEAREST child, then which side of it. Projecting the pointer onto one axis instead counts
     // the children on every other line when a row wraps, or every other row of a grid, and lands the
@@ -1444,7 +1498,18 @@ export class PreviewPanel {
   }
 
   function drawCaret(slot, place) {
-    put(caret, gapRect(place, slot));
+    if (!place.layered) {
+      caret.classList.remove('layer');
+      put(caret, gapRect(place, slot));
+      return;
+    }
+
+    // Between two overlapping children there is no gap to draw a line in. What can be shown is WHICH
+    // one the node would come to rest in front of, so the mark covers that child instead.
+    const under = slot > 0 ? place.children[slot - 1] : null;
+    const box = (under || place.container).getBoundingClientRect();
+    caret.classList.add('layer');
+    put(caret, { left: box.left, top: box.top, width: box.width, height: box.height, across: false });
   }
 
   function say(text, x, y) {
@@ -1844,6 +1909,14 @@ export class PreviewPanel {
     if (arrangeable) {
       upButton.disabled = payload.node.siblingIndex === 0;
       downButton.disabled = payload.node.siblingIndex === payload.node.siblingCount - 1;
+      // In a layer the list order IS the paint order, so the same two gestures move the node through
+      // depth rather than through position. The buttons do the same thing and stop saying the wrong
+      // thing about it.
+      const layered = payload.node.inLayer;
+      upButton.title = layered ? 'Send backward' : 'Move up';
+      downButton.title = layered ? 'Bring forward' : 'Move down';
+      upButton.setAttribute('aria-label', upButton.title);
+      downButton.setAttribute('aria-label', downButton.title);
     }
 
     panel.classList.remove('minimised');

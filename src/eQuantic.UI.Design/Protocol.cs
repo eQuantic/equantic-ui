@@ -155,7 +155,10 @@ public sealed record InspectResult(
     [property: JsonPropertyName("siblingIndex")] int SiblingIndex,
     [property: JsonPropertyName("siblingCount")] int SiblingCount,
     /// <summary>Every list this call is written with, children included.</summary>
-    [property: JsonPropertyName("lists")] NodeList[]? Lists = null);
+    [property: JsonPropertyName("lists")] NodeList[]? Lists = null,
+    /// <summary>Whether this node sits in a layered parent, where its position is its depth — which
+    /// is what makes "move up" mean "send backward".</summary>
+    [property: JsonPropertyName("inLayer")] bool InLayer = false);
 
 /// <summary>
 /// One list a call is written with — <c>children</c>, but also a Grid's <c>columns</c>, a menu's
@@ -168,6 +171,12 @@ public sealed record NodeList(
     [property: JsonPropertyName("count")] int Count,
     /// <summary>Whether its elements are nodes on the canvas, or data that only the panel can reach.</summary>
     [property: JsonPropertyName("visual")] bool Visual,
+    /// <summary>
+    /// Whether this list's order is PAINT order rather than position — a <c>Stack</c>. Its children
+    /// overlap, so a caret drawn between two of them marks a place that does not exist, and moving one
+    /// changes what is in front rather than what is where.
+    /// </summary>
+    [property: JsonPropertyName("layered")] bool Layered = false,
     /// <summary>
     /// Each entry as it is written, for the DATA lists only — <c>GridTrack.Flex()</c> reads as itself
     /// and a panel can list them. A visual list's elements are whole subtrees, so carrying their text

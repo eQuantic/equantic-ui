@@ -37,6 +37,10 @@ public sealed class NamedListTests : IDisposable
                 return Grid(columns: [GridTrack.Flex(), GridTrack.Fixed(120)], gap: 12, children: [
                     Text("a", TypeRole.BodyM, context.Theme.TextPrimary),
                     Text("b", TypeRole.BodyM, context.Theme.TextPrimary),
+                    Stack(children: [
+                        Text("under", TypeRole.BodyM, context.Theme.TextPrimary),
+                        Text("over", TypeRole.BodyM, context.Theme.TextPrimary),
+                    ]),
                 ]);
             }
         }
@@ -97,8 +101,31 @@ public sealed class NamedListTests : IDisposable
 
         node!.Lists.Should().NotBeNull();
         node.Lists.Should().Contain(list => list.Name == "columns" && list.Count == 2 && !list.Visual);
-        node.Lists.Should().Contain(list => list.Name == "children" && list.Count == 2 && list.Visual);
+        node.Lists.Should().Contain(list => list.Name == "children" && list.Count == 3 && list.Visual);
         node.Lists!.Single(list => list.Name == "columns").ElementType.Should().Be("GridTrack");
+    }
+
+    /// <summary>
+    /// A Stack's children overlap, so their ORDER is depth: spec A3 makes paint order the child
+    /// order. A canvas that did not know would draw a caret between two boxes sitting on top of each
+    /// other, marking a place that does not exist.
+    /// </summary>
+    [Fact]
+    public void AStacksChildrenAreLayered_AndAGridsAreNot()
+    {
+        _session.Inspect(_probe, Source, OriginOf("Stack(children:"))!.Lists!
+            .Single(list => list.Name == "children").Layered.Should().BeTrue();
+
+        _session.Inspect(_probe, Source, TheGrid)!.Lists!
+            .Single(list => list.Name == "children").Layered.Should().BeFalse();
+    }
+
+    /// <summary>Which is what makes "move up" mean "send backward" for the node itself.</summary>
+    [Fact]
+    public void ANodeInsideAStack_KnowsItsPositionIsItsDepth()
+    {
+        _session.Inspect(_probe, Source, OriginOf("Text(\"over\""))!.InLayer.Should().BeTrue();
+        _session.Inspect(_probe, Source, OriginOf("Text(\"a\""))!.InLayer.Should().BeFalse();
     }
 
     /// <summary>
@@ -141,7 +168,7 @@ public sealed class NamedListTests : IDisposable
         after.Should().Contain("columns: [GridTrack.Flex(), GridTrack.Fixed(120), GridTrack.Auto]");
         // Untouched: adding a column re-flows the children, it does not add one.
         _session.Inspect(_probe, after, OriginOf("Grid(columns:"))!.Lists!
-            .Single(list => list.Name == "children").Count.Should().Be(2);
+            .Single(list => list.Name == "children").Count.Should().Be(3);
     }
 
     [Fact]
