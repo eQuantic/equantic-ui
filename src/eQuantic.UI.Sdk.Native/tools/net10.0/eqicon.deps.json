@@ -6,15 +6,15 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v10.0": {
-      "eqicon/0.2.0-preview.28": {
+      "eqicon/0.2.0-preview.29": {
         "dependencies": {
           "Microsoft.CodeAnalysis.CSharp": "5.0.0",
-          "eQuantic.UI.Codegen": "0.2.0-preview.28",
-          "eQuantic.UI.Components": "0.2.0-preview.28",
-          "eQuantic.UI.Native.Components": "0.2.0-preview.28",
-          "eQuantic.UI.Native.Engine.Reference": "0.2.0-preview.28",
-          "eQuantic.UI.Native.Shell.Apple": "0.2.0-preview.28",
-          "eQuantic.UI.Primitives": "0.2.0-preview.28"
+          "eQuantic.UI.Codegen": "0.2.0-preview.29",
+          "eQuantic.UI.Components": "0.2.0-preview.29",
+          "eQuantic.UI.Native.Components": "0.2.0-preview.29",
+          "eQuantic.UI.Native.Engine.Reference": "0.2.0-preview.29",
+          "eQuantic.UI.Native.Shell.Apple": "0.2.0-preview.29",
+          "eQuantic.UI.Primitives": "0.2.0-preview.29"
         },
         "runtime": {
           "eqicon.dll": {}
@@ -121,7 +121,7 @@
           }
         }
       },
-      "eQuantic.UI.Codegen/0.2.0-preview.28": {
+      "eQuantic.UI.Codegen/0.2.0-preview.29": {
         "runtime": {
           "eQuantic.UI.Codegen.dll": {
             "assemblyVersion": "0.2.0.0",
@@ -129,9 +129,9 @@
           }
         }
       },
-      "eQuantic.UI.Components/0.2.0-preview.28": {
+      "eQuantic.UI.Components/0.2.0-preview.29": {
         "dependencies": {
-          "eQuantic.UI.Primitives": "0.2.0-preview.28"
+          "eQuantic.UI.Primitives": "0.2.0-preview.29"
         },
         "runtime": {
           "eQuantic.UI.Components.dll": {
@@ -148,11 +148,11 @@
           }
         }
       },
-      "eQuantic.UI.Native.Components/0.2.0-preview.28": {
+      "eQuantic.UI.Native.Components/0.2.0-preview.29": {
         "dependencies": {
-          "eQuantic.UI.Native.Engine": "0.2.0-preview.28",
-          "eQuantic.UI.Native.Framework": "0.2.0-preview.28",
-          "eQuantic.UI.Primitives": "0.2.0-preview.28"
+          "eQuantic.UI.Native.Engine": "0.2.0-preview.29",
+          "eQuantic.UI.Native.Framework": "0.2.0-preview.29",
+          "eQuantic.UI.Primitives": "0.2.0-preview.29"
         },
         "runtime": {
           "eQuantic.UI.Native.Components.dll": {
@@ -161,9 +161,9 @@
           }
         }
       },
-      "eQuantic.UI.Native.Engine/0.2.0-preview.28": {
+      "eQuantic.UI.Native.Engine/0.2.0-preview.29": {
         "dependencies": {
-          "eQuantic.UI.Primitives": "0.2.0-preview.28"
+          "eQuantic.UI.Primitives": "0.2.0-preview.29"
         },
         "runtime": {
           "eQuantic.UI.Native.Engine.dll": {
@@ -172,9 +172,9 @@
           }
         }
       },
-      "eQuantic.UI.Native.Engine.Reference/0.2.0-preview.28": {
+      "eQuantic.UI.Native.Engine.Reference/0.2.0-preview.29": {
         "dependencies": {
-          "eQuantic.UI.Native.Engine": "0.2.0-preview.28"
+          "eQuantic.UI.Native.Engine": "0.2.0-preview.29"
         },
         "runtime": {
           "eQuantic.UI.Native.Engine.Reference.dll": {
@@ -183,10 +183,10 @@
           }
         }
       },
-      "eQuantic.UI.Native.Framework/0.2.0-preview.28": {
+      "eQuantic.UI.Native.Framework/0.2.0-preview.29": {
         "dependencies": {
-          "eQuantic.UI.Native.Engine": "0.2.0-preview.28",
-          "eQuantic.UI.Primitives": "0.2.0-preview.28"
+          "eQuantic.UI.Native.Engine": "0.2.0-preview.29",
+          "eQuantic.UI.Primitives": "0.2.0-preview.29"
         },
         "runtime": {
           "eQuantic.UI.Native.Framework.dll": {
@@ -195,10 +195,10 @@
           }
         }
       },
-      "eQuantic.UI.Native.Shell.Apple/0.2.0-preview.28": {
+      "eQuantic.UI.Native.Shell.Apple/0.2.0-preview.29": {
         "dependencies": {
-          "eQuantic.UI.Native.Framework": "0.2.0-preview.28",
-          "eQuantic.UI.Primitives": "0.2.0-preview.28"
+          "eQuantic.UI.Native.Framework": "0.2.0-preview.29",
+          "eQuantic.UI.Primitives": "0.2.0-preview.29"
         },
         "runtime": {
           "eQuantic.UI.Native.Shell.Apple.dll": {
@@ -207,7 +207,7 @@
           }
         }
       },
-      "eQuantic.UI.Primitives/0.2.0-preview.28": {
+      "eQuantic.UI.Primitives/0.2.0-preview.29": {
         "runtime": {
           "eQuantic.UI.Primitives.dll": {
             "assemblyVersion": "0.2.0.0",
@@ -218,7 +218,7 @@
     }
   },
   "libraries": {
-    "eqicon/0.2.0-preview.28": {
+    "eqicon/0.2.0-preview.29": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -237,42 +237,42 @@
       "path": "microsoft.codeanalysis.csharp/5.0.0",
       "hashPath": "microsoft.codeanalysis.csharp.5.0.0.nupkg.sha512"
     },
-    "eQuantic.UI.Codegen/0.2.0-preview.28": {
+    "eQuantic.UI.Codegen/0.2.0-preview.29": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "eQuantic.UI.Components/0.2.0-preview.28": {
+    "eQuantic.UI.Components/0.2.0-preview.29": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "eQuantic.UI.Native.Components/0.2.0-preview.28": {
+    "eQuantic.UI.Native.Components/0.2.0-preview.29": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "eQuantic.UI.Native.Engine/0.2.0-preview.28": {
+    "eQuantic.UI.Native.Engine/0.2.0-preview.29": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "eQuantic.UI.Native.Engine.Reference/0.2.0-preview.28": {
+    "eQuantic.UI.Native.Engine.Reference/0.2.0-preview.29": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "eQuantic.UI.Native.Framework/0.2.0-preview.28": {
+    "eQuantic.UI.Native.Framework/0.2.0-preview.29": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "eQuantic.UI.Native.Shell.Apple/0.2.0-preview.28": {
+    "eQuantic.UI.Native.Shell.Apple/0.2.0-preview.29": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "eQuantic.UI.Primitives/0.2.0-preview.28": {
+    "eQuantic.UI.Primitives/0.2.0-preview.29": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
