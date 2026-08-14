@@ -252,6 +252,17 @@ export class Router {
     if (match.title) this.win.document.title = match.title;
     await Promise.resolve(this.onNavigate(match, url, () => token === this.navToken));
     if (token === this.navToken) this.applyScroll(scroll);
+    // The one navigation signal the DOCUMENT carries — the extension point for anything that is
+    // not the framework (analytics installers, most obviously: a SPA navigation is a page view no
+    // tag manager can see on its own). Fired only for the navigation that WON: a stale token is a
+    // navigation that was overtaken mid-flight, and it was never a page view.
+    if (token === this.navToken) {
+      this.win.document.dispatchEvent(
+        new CustomEvent('eq:navigate', {
+          detail: { path: url.pathname, search: url.search, title: this.win.document.title },
+        }),
+      );
+    }
   }
 
   /** Stores the current scroll position on the current History entry, for restoration on back/forward. */

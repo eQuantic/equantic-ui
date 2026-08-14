@@ -88,6 +88,20 @@ describe('Router (happy-dom)', () => {
     return e;
   }
 
+  it('announces a committed navigation on the document — the analytics extension point', async () => {
+    const seen: Array<{ path: string; title: string }> = [];
+    const listen = (e: Event) => {
+      const detail = (e as CustomEvent<{ path: string; search: string; title: string }>).detail;
+      seen.push({ path: detail.path, title: detail.title });
+    };
+    document.addEventListener('eq:navigate', listen);
+
+    await router.navigate('/counter');
+
+    document.removeEventListener('eq:navigate', listen);
+    expect(seen).toEqual([{ path: '/counter', title: 'Counter — App' }]);
+  });
+
   it('intercepts an internal matched link → SPA nav (no reload), pushes history', () => {
     const e = click(anchor({ href: '/counter' }));
     expect(e.defaultPrevented).toBe(true);

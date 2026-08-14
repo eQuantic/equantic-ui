@@ -131,4 +131,14 @@ internal static class AbsentCapabilities
         {
         }
     }
+
+    /// <summary>Analytics during server rendering: a no-op, and not an apology — analytics
+    /// describes what a USER did, and SSR is not a user. A page that tracks on the server would
+    /// count its own crawlers.</summary>
+    internal sealed class Analytics : IAnalytics
+    {
+        public void Track(string eventName, Dictionary<string, object?>? data = null)
+        {
+        }
+    }
 }

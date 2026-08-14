@@ -8,6 +8,7 @@ import { WebNetworkStatus } from './network-status';
 import { WebPhotoLibrary } from './photo-library';
 import { WebTextClipboard } from './text-clipboard';
 import { WebCultureController } from './culture-controller';
+import { WebAnalytics } from './analytics';
 import { WebThemeController } from './theme-controller';
 
 /**
@@ -40,4 +41,7 @@ export function registerDeviceCapabilities(): void {
   // server through its own cookie, and the component asking never learns either half.
   services.registerSingleton('ICultureController', () => new WebCultureController());
   services.registerSingleton('ITextClipboard', () => new WebTextClipboard());
+  // Analytics: registered even without an installer — a page that tracks must RESOLVE something,
+  // and the realization itself goes quiet when no collector declared itself (__EQ_ANALYTICS__).
+  services.registerSingleton('IAnalytics', () => new WebAnalytics());
 }

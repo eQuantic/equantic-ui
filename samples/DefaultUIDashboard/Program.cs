@@ -1,5 +1,6 @@
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Server;
+using eQuantic.UI.Gtm;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,10 @@ builder.Services.AddUI(options =>
            // setPhotonTheme) — swap this for MaterialTheme.Instance / MaterialTheme.FromSeed(seed) to
            // rebrand every shared component with nothing else changed.
            .UseTheme(PhotonTheme.Instance)
+           // Google Tag Manager, the whole install: the container in the shell, SPA page views
+           // wired to the router, and IAnalytics armed for every page. One container per APP —
+           // per-route variation is what the container's own triggers are for.
+           .UseGtm("GTM-EQDEMO1")
            .ConfigureHtmlShell(shell =>
            {
                shell.SetTitle("eQuantic Console")

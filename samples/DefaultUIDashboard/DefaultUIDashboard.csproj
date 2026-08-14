@@ -12,6 +12,7 @@
     <!-- Icon packs are OPT-IN: reference the sets you use. -->
     <ItemGroup>
         <ProjectReference Include="../../src/eQuantic.UI.Lucide/eQuantic.UI.Lucide.csproj" />
+        <ProjectReference Include="../../src/eQuantic.UI.Gtm/eQuantic.UI.Gtm.csproj" />
     </ItemGroup>
 
     <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.targets" />

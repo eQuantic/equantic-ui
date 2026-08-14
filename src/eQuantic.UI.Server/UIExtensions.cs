@@ -122,6 +122,7 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.IMotionSensor, AbsentCapabilities.MotionSensor>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IBiometrics, AbsentCapabilities.Biometrics>();
         services.TryAddSingleton<eQuantic.UI.Primitives.INetworkStatus, AbsentCapabilities.NetworkStatus>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IAnalytics, AbsentCapabilities.Analytics>();
 
         // Add response compression (Brotli + Gzip for JS, CSS, HTML)
         services.AddResponseCompression(opts =>

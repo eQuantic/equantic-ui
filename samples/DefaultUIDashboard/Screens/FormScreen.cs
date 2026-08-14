@@ -34,6 +34,7 @@ public sealed class FormScreen : StatefulComponent
     // model does not describe — a form ADOPTS the bridge and can still outgrow it.
     private readonly FormController _form = SignUpForm.Create();
     private string? _created;
+    private IAnalytics? _analytics;
 
     /// <summary>Page state, not form state — and the condition the phone field reads. Which is the
     /// point: a condition is ordinary C# that happens to be true or false right now.</summary>
@@ -65,6 +66,10 @@ public sealed class FormScreen : StatefulComponent
 
     public override VisualNode Build(ComponentContext context)
     {
+        // Resolved here and held for the handlers — the pattern every capability consumer uses:
+        // the page asks by interface, and never learns that on this app the listener happens to
+        // be a GTM container the server installed.
+        _analytics = context.GetService<IAnalytics>();
         var theme = context.Theme;
         var column = new Column(gap: Space.S4) { Width = SizeValue.Fill, Cross = CrossAlign.Start };
 
@@ -145,5 +150,6 @@ public sealed class FormScreen : StatefulComponent
 
         _created = email;
         _form.Accept();
+        _analytics?.Track("sign_up");
     }
 }

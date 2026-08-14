@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <PackageId>eQuantic.UI.Gtm</PackageId>
+    <Description>Google Tag Manager for eQuantic.UI — one UseGtm(containerId) call installs the container in the HTML shell, wires SPA page views to the client router, and arms the IAnalytics capability pages already know how to ask for.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SERVER-ONLY by design: the package installs scripts into the shell and registers the
+         server's no-op. Nothing here crosses to the browser through eqc — the page's own calls go
+         through IAnalytics (Primitives), realized by the runtime. -->
+    <ProjectReference Include="..\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
+  </ItemGroup>
+
+</Project>
