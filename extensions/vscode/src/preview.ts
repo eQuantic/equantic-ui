@@ -464,6 +464,20 @@ export class PreviewPanel {
   #panel button.icon:focus-visible { outline: 1px solid var(--vscode-focusBorder, #0078d4); }
 
   #panel-body { overflow: auto; padding: 6px 10px 10px; }
+  /* Moving through the tree, from the tree itself: the panel names the parent and the children it
+     can see, and selecting one is the same gesture as clicking it on the canvas. */
+  #panel-tree { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 0 0 8px; }
+  #panel-tree .chip {
+    font: 11px/1.4 var(--vscode-font-family, sans-serif);
+    padding: 2px 8px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.4));
+    background: transparent; color: var(--vscode-foreground, #ccc);
+  }
+  #panel-tree .chip:hover { background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31)); }
+  #panel-tree .label {
+    font: 11px/1.4 var(--vscode-font-family, sans-serif);
+    color: var(--vscode-descriptionForeground, #9d9d9d);
+  }
   #panel-note {
     color: var(--vscode-descriptionForeground, #9d9d9d);
     padding: 2px 0 6px;
@@ -549,6 +563,7 @@ export class PreviewPanel {
   const panelBody = document.getElementById('panel-body');
   let objectUrl;
   let selectedOrigin = null;
+  let selectedElement = null;
 
   function report(title, detail) {
     const box = document.createElement('pre');
@@ -680,17 +695,94 @@ export class PreviewPanel {
     else { outline.classList.remove('visible'); badge.classList.remove('visible'); }
   }, true);
 
+  function select(element) {
+    frame(element);
+    outline.classList.remove('derived', 'foreign');
+    selectedElement = element;
+    selectedOrigin = element.getAttribute('data-eq-origin');
+    vscode.postMessage({ type: 'select', origin: selectedOrigin });
+  }
+
   document.addEventListener('click', (e) => {
     if (!inspecting || insideChrome(e.target)) return;
     e.preventDefault();
     e.stopPropagation();
     const found = stamped(e.target);
-    if (!found) return;
-    frame(found);
-    outline.classList.remove('derived', 'foreign');
-    selectedOrigin = found.getAttribute('data-eq-origin');
-    vscode.postMessage({ type: 'select', origin: selectedOrigin });
+    if (found) select(found);
   }, true);
+
+  /** The nearest stamped ancestor — the node that CONTAINS this one in the tree, skipping the DOM
+   * a component builds inside itself. */
+  function stampedParent(element) {
+    return element.parentElement ? stamped(element.parentElement) : null;
+  }
+
+  /**
+   * The nearest stamped descendants, one per branch.
+   * <para>
+   * Not element.children: a component is several elements deep, so its own DOM sits between it and
+   * the nodes an author would recognise. This descends until it meets a stamped element and stops
+   * there, which is what "the children of this node" means in the tree the author wrote.
+   * </para>
+   */
+  function stampedChildren(element) {
+    const found = [];
+    const walk = (node) => {
+      for (const child of node.children) {
+        if (child.getAttribute('data-eq-origin')) found.push(child);
+        else walk(child);
+      }
+    };
+    walk(element);
+    return found;
+  }
+
+  function chip(element, text) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'chip';
+    button.textContent = text;
+    button.addEventListener('click', () => select(element));
+    return button;
+  }
+
+  function buildTree() {
+    const strip = document.createElement('div');
+    strip.id = 'panel-tree';
+    if (!selectedElement || !selectedElement.isConnected) return strip;
+
+    const parent = stampedParent(selectedElement);
+    if (parent) {
+      strip.appendChild(chip(parent, '\u2191 ' + (parent.getAttribute('data-eq-component') || 'parent')));
+    }
+
+    const children = stampedChildren(selectedElement);
+    if (children.length === 0) {
+      const none = document.createElement('span');
+      none.className = 'label';
+      none.textContent = parent ? '\u00B7 no children' : 'no children';
+      strip.appendChild(none);
+      return strip;
+    }
+
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = '\u00B7 into:';
+    strip.appendChild(label);
+
+    // Capped, and the cap is SAID: a table with two hundred rows would otherwise become two hundred
+    // chips and bury the properties under them.
+    for (const child of children.slice(0, 12)) {
+      strip.appendChild(chip(child, child.getAttribute('data-eq-component') || 'child'));
+    }
+    if (children.length > 12) {
+      const more = document.createElement('span');
+      more.className = 'label';
+      more.textContent = '+' + (children.length - 12) + ' more — click them on the canvas';
+      strip.appendChild(more);
+    }
+    return strip;
+  }
 
   // ---- the properties panel ---------------------------------------------------------------------
 
@@ -792,6 +884,7 @@ export class PreviewPanel {
     panel.classList.add('visible');
 
     panelBody.replaceChildren();
+    panelBody.appendChild(buildTree());
 
     if (payload.node && payload.node.summary) {
       const note = document.createElement('div');

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using eQuantic.UI.Compiler;
+using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.Services;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -323,26 +324,12 @@ public sealed class DesignSession
     {
         if (_compilation is null) throw new InvalidOperationException("initialize first");
 
-        var parts = origin.Split('|');
-        if (parts.Length != 3 || !SamePath(parts[0], path)) return null;
+        // ONE resolution, shared with SetProperty. There were two, written weeks apart, and only one
+        // of them got the getInnermostNodeForTie fix — so the panel kept naming a FormInput "Void"
+        // long after the edit path had stopped doing it. Two copies of "which node is this" is two
+        // answers to the same question.
+        if (Locate(path, text, origin) is not var (_, _, construction, model) || construction is null) return null;
 
-        var tree = CSharpSyntaxTree.ParseText(text, path: path);
-        var source = tree.GetText();
-        var (startLine, startCharacter) = ParsePosition(parts[1]);
-        var (endLine, endCharacter) = ParsePosition(parts[2]);
-        if (startLine >= source.Lines.Count || endLine >= source.Lines.Count) return null;
-
-        var start = source.Lines[startLine].Start + startCharacter;
-        var end = source.Lines[endLine].Start + endCharacter;
-        if (start > source.Length || end > source.Length || end < start) return null;
-
-        var construction = tree.GetRoot()
-            .FindNode(Microsoft.CodeAnalysis.Text.TextSpan.FromBounds(start, end))
-            .AncestorsAndSelf()
-            .FirstOrDefault(n => n is ObjectCreationExpressionSyntax or InvocationExpressionSyntax);
-        if (construction is null) return null;
-
-        var model = Swap(_compilation, tree).GetSemanticModel(tree);
         var symbol = model.GetSymbolInfo(construction).Symbol as IMethodSymbol;
         if (symbol is null) return null;
 
@@ -366,6 +353,10 @@ public sealed class DesignSession
         {
             var parameter = symbol.Parameters[i];
             covered.Add(parameter.Name);
+            // A child is STRUCTURE, not a value. Offering `child` as a text box invites editing a
+            // whole subtree as a string, which is the one edit most likely to destroy something —
+            // and the tree is navigated on the canvas, by clicking into it, not typed here.
+            if (IsStructural(parameter.Type)) continue;
 
             var written = arguments is null ? null : ArgumentFor(arguments.Value, parameter, i);
             properties.Add(new NodeProperty(
@@ -388,7 +379,11 @@ public sealed class DesignSession
         {
             if (property.DeclaredAccessibility != Accessibility.Public) continue;
             if (property.IsStatic || property.SetMethod is null) continue;
+            // The design stamp is the TOOL's, not the author's. Offering Origin as an editable
+            // property would be the inspector inviting someone to edit its own scaffolding.
+            if (property.Name is "Origin" or "OriginLabel") continue;
             if (!covered.Add(property.Name)) continue;
+            if (IsStructural(property.Type)) continue;
 
             var written = initializer?.Expressions
                 .OfType<AssignmentExpressionSyntax>()
@@ -604,8 +599,13 @@ public sealed class DesignSession
         var end = source.Lines[endLine].Start + endCharacter;
         if (start > source.Length || end > source.Length || end < start) return null;
 
+        // getInnermostNodeForTie, and it is not a nicety. `card.Add(new FormInput(…))` gives the
+        // ArgumentSyntax exactly the same span as the construction inside it, and FindNode's default
+        // returns the OUTERMOST of a tie — so the walk up landed on `Add(…)`, whose symbol returns
+        // void. The panel then introduced a FormInput as "Void" and offered to edit `child`, the
+        // Add parameter. Every node that is a call's only argument had this.
         var construction = tree.GetRoot()
-            .FindNode(Microsoft.CodeAnalysis.Text.TextSpan.FromBounds(start, end))
+            .FindNode(TextSpan.FromBounds(start, end), getInnermostNodeForTie: true)
             .AncestorsAndSelf()
             .FirstOrDefault(n => n is ObjectCreationExpressionSyntax or InvocationExpressionSyntax);
 
@@ -634,6 +634,26 @@ public sealed class DesignSession
         var firstNamed = arguments.IndexOf(a => a.NameColon is not null);
         var positional = firstNamed < 0 ? arguments.Count : firstNamed;
         return position < positional ? arguments[position] : null;
+    }
+
+    /// <summary>
+    /// Whether a member holds TREE rather than a value — a node, or a collection of them.
+    /// <para>
+    /// Those are navigated, never typed: a text box over a subtree is an invitation to replace a
+    /// screen with a typo. The canvas already offers the gesture that belongs here — click the child.
+    /// </para>
+    /// </summary>
+    private static bool IsStructural(ITypeSymbol type)
+    {
+        var bare = type is INamedTypeSymbol { Name: "Nullable" } nullable && nullable.TypeArguments.Length == 1
+            ? nullable.TypeArguments[0]
+            : type;
+
+        if (bare is IArrayTypeSymbol array) return array.ElementType.IsVisualNode();
+        if (bare is INamedTypeSymbol { TypeArguments.Length: 1 } generic && generic.TypeArguments[0].IsVisualNode())
+            return true;
+
+        return bare.IsVisualNode();
     }
 
     /// <summary>An enum's members — the closed set a panel offers instead of a text box.</summary>

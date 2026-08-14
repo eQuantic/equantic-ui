@@ -27,10 +27,18 @@ public sealed class InspectTests : IDisposable
         [Page("/probe")]
         public sealed class Probe : StatefulComponent
         {
-            public override VisualNode Build(ComponentContext context) =>
-                Row(gap: Space.S2, children: [
+            public override VisualNode Build(ComponentContext context)
+            {
+                // Imperative, and the construction is the call's ONLY argument — the shape that used
+                // to resolve to Add() instead of to the node.
+                var column = new Column(gap: Space.S2);
+                column.Add(new Text("only", TypeRole.BodyM, context.Theme.TextPrimary));
+
+                return Row(gap: Space.S2, children: [
                     Text("hello", TypeRole.BodyM, context.Theme.TextPrimary),
+                    column,
                 ]);
+            }
         }
         """;
 
@@ -154,6 +162,48 @@ public sealed class InspectTests : IDisposable
     public void AFrameworkComponent_CarriesItsDocumentation()
     {
         Inspect("Row(gap:").Summary.Should().NotBeNullOrWhiteSpace();
+    }
+
+    /// <summary>
+    /// A node that is a call's ONLY argument resolves to ITSELF.
+    /// <para>
+    /// `column.Add(new Text(…))` gives the ArgumentSyntax exactly the same span as the construction
+    /// inside it, and Roslyn's FindNode returns the OUTERMOST of a tie unless asked otherwise — so
+    /// the walk up landed on Add(), whose symbol returns void. The panel introduced a FormInput as
+    /// "Void" and offered to edit `child`, which is Add's parameter. Every node added imperatively
+    /// had this, which is most of every real screen.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ANodeThatIsACallsOnlyArgument_ResolvesToItself_NotToTheCall()
+    {
+        var node = Inspect("new Text(\"only\"");
+
+        node.Component.Should().Be("Text");
+        node.Properties.Select(p => p.Name).Should().Contain("content");
+    }
+
+    /// <summary>
+    /// Children are STRUCTURE, not a value. A text box over a subtree is an invitation to replace a
+    /// screen with a typo, and the canvas already has the gesture that belongs here — click the child.
+    /// </summary>
+    [Fact]
+    public void ChildrenAreNotOfferedAsAProperty()
+    {
+        var names = Inspect("Row(gap:").Properties.Select(p => p.Name);
+
+        names.Should().NotContain("children");
+        names.Should().Contain("gap", "the value-shaped parameters are still there");
+    }
+
+    /// <summary>The design stamp is the TOOL's own scaffolding; offering it as an editable property
+    /// would be the inspector inviting someone to edit the thing that makes it work.</summary>
+    [Fact]
+    public void TheDesignStampIsNotOfferedAsAProperty()
+    {
+        var names = Inspect("Row(gap:").Properties.Select(p => p.Name);
+
+        names.Should().NotContain("Origin").And.NotContain("OriginLabel");
     }
 
     [Fact]
