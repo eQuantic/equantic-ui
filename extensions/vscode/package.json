@@ -2,7 +2,7 @@
   "name": "equantic-ui",
   "displayName": "eQuantic UI",
   "description": "Live preview and visual editing for eQuantic.UI screens, straight from the C# buffer.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "equantictech",
   "license": "MIT",
   "repository": {

@@ -20,6 +20,9 @@ and that is the point: a preview that renders is evidence the page renders.
   offered, and applied through the document's own undo stack, so one Ctrl+Z reverses a whole gesture.
 - **Structure from the canvas.** Drag a child to reorder it, drag it into another container, hover for
   a `+` where something can go, duplicate, remove.
+- **A layers list.** The whole screen as a tree in the Explorer, each row saying where it is written
+  (`PaymentsPage.cs:28`). Picking one selects it on the canvas; selecting on the canvas marks the row.
+  It is how you reach a container that has no pixel of its own.
 - **Refusals that explain themselves** before the affordance is drawn, never after it is clicked — a
   node built inside a loop has no single row to move, and a factory call has no object initializer to
   set an init-only member in.
