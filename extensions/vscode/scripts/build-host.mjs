@@ -9,7 +9,7 @@
  * assumes is the one they are already using.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, rmSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -26,6 +26,12 @@ if (!existsSync(project)) {
 // A stale DLL from a previous shape of the host is worse than none: it loads, answers, and answers
 // the way it did two releases ago.
 rmSync(output, { recursive: true, force: true });
+
+// The repository's NuGet.config declares a LOCAL package source, `artifacts/packages`, which a Debug
+// build fills and a fresh clone does not have. NuGet refuses to restore against a source that is not
+// there (NU1301) — so a clean checkout could not publish the host, which is exactly what CI is. The
+// host needs nothing from it; it only has to exist.
+mkdirSync(resolve(extension, '../../artifacts/packages'), { recursive: true });
 
 const result = spawnSync(
   'dotnet',

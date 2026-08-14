@@ -71,7 +71,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22, because vsce's own dependencies ask for it — on 20 npm prints an EBADENGINE wall.
+          node-version: 22
 
       # Builds the .vsix, and then checks the two ways it can be quietly broken: a .vscodeignore that
       # leaves the design host out (the extension installs, activates, and fails on the first
@@ -415,7 +416,8 @@ jobs:
     steps:
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22, because vsce's own dependencies ask for it — on 20 npm prints an EBADENGINE wall.
+          node-version: 22
 
       # The SAME archive the packaging job built and verified, not a rebuild of it. A rebuild is a
       # different artifact, and the one that was checked would not be the one that shipped.
