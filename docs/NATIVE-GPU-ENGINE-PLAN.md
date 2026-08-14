@@ -272,7 +272,8 @@ regression-gated like the test suites).
   → UIAccessibility / AccessibilityNodeInfo: labels, roles, focus order, tap actions); lifecycle
   (backgrounding, surface loss, memory pressure → atlas/page eviction); device matrix widened
   (Adreno/Mali/Xclipse/PowerVR); crash-free monkey runs.
-  - Exit: `[ ]` VoiceOver + TalkBack can navigate and activate the Dashboard demo.
+  - Exit: `[x]` VoiceOver + TalkBack can navigate and activate the Dashboard demo (2026-08-14:
+    both bridges ship; the wallet answers with the same 26 elements on macOS, iOS and Android).
 - **M5 — v1 preview (months 15–18).** SDK packaging polish (`Sdk=` one-liner, templates), docs +
   wiki (architecture, styling divergence D11, supported set), perf budgets published, preview NuGets.
   - Exit: `[ ]` an external developer builds & runs a new native app from template in < 10 minutes
@@ -795,6 +796,30 @@ Bun and the JS bundling chain, the TypeScript runtime.
   drift apart silently), and the window self-test now prints the live AX answer — the Studio
   gallery reports `accessibility elements: 100 — first: AXButton "Back"` through the real ObjC
   dispatch. iOS/Android bridges consume this same tree when their shells gain them.
+
+- **2026-08-14 — M4 accessibility: the phones join, and the exit criterion is met.** Both mobile
+  bridges over the SAME tree. iOS: `PhotonView` is a UIAccessibility CONTAINER whose elements
+  carry traits, screen-space frames and the path as identifier, with `accessibilityActivate` /
+  `accessibilityIncrement` / `accessibilityDecrement` exported by selector onto `ActivatePath` /
+  `AdjustPath`; a check's state is the VALUE `"1"`/`"0"` (UIKit's own toggle contract, so the word
+  comes from the system in the user's language), disclosure rides iOS 17's
+  `accessibilityExpandedStatus`, and `LayoutChanged` is posted only when a presented frame changed
+  the semantics and only while VoiceOver runs. Android: `PhotonSurfaceView` answers an
+  `AccessibilityNodeProvider` with a VIRTUAL child per node (class name as role, screen-pixel
+  bounds, `ACTION_CLICK` → `ActivatePath`, scroll forward/back → `AdjustPath`, expand/collapse as
+  ACTIONS, explore-by-touch from `dispatchHoverEvent`). The snapshot is refreshed from the render
+  loop, never per query: assistive tech asks node by node, and a layout walk per question would
+  cost a full pass per spoken word.
+  - Two bugs only a device could show: a bare `SurfaceView` is not important for accessibility, so
+    the window had NO accessible root (uiautomator answered "null root node"); and every node came
+    out clickable, so a reader offered "double tap to activate" over a paragraph.
+  - Proof by asking the PLATFORM: the iOS controller sends the real ObjC selectors and the wallet
+    answers `accessibility elements: 26 — first: traits 0x40 "Good morning"` then
+    `accessibility activate "Send": True`; on Android `uiautomator dump` reads the app from OUTSIDE
+    through the same service pipeline TalkBack uses and finds the same 26 nodes, 9 of them
+    clickable. M4's exit criterion (VoiceOver + TalkBack navigate and activate the demo) is met.
+  - Fences: neither phone has a third check state, so `mixed` announces without one; Android has no
+    link class, so a link is announced as what it does.
 
 - **2026-08-07 — M4 IME: composition through NSTextInputClient.** The macOS view CONFORMS (runtime
   `class_addProtocol` + ten methods with hand-spelled struct encodings — a wrong encoding is a

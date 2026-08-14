@@ -122,8 +122,10 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
   (the 2026-08 pass: state as attribute for checks/switches/tabs/options, full menu/combobox
   patterns with `aria-activedescendant`, tooltip keyboard reveal + Escape dismissal per WCAG
   1.4.13, dialog names/alertdialog/safe-action initial focus, `aria-expanded` on triggers — all
-  pinned on both producers). Remaining: the mobile accessibility bridges (native track), variant
-  coverage, a component test harness.
+  pinned on both producers), and the NATIVE half now matches: every shell has its bridge over the
+  one target-neutral semantics tree (macOS `NSAccessibility`, iOS `UIAccessibility` elements,
+  Android's virtual `AccessibilityNodeInfo` hierarchy), each proved by asking the platform rather
+  than the tree. Remaining: variant coverage, a component test harness.
 - **Phase 6 — First-party embedded CSS engine** + documented provider contract. **Normative
   (2026-07-03): the embedded CSS follows exactly the same design system as mobile** — the Photon
   Design System, generated at build time from the shared `eQuantic.UI.Primitives` tokens (single
