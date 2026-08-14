@@ -194,6 +194,7 @@ jobs:
             eQuantic.UI.Generators
             eQuantic.UI.Server
             eQuantic.UI.Web
+            eQuantic.UI.Gtm
             eQuantic.UI.Native.Components
             eQuantic.UI.Native.Engine
             eQuantic.UI.Native.Engine.Metal
