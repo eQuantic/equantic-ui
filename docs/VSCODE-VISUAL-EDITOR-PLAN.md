@@ -318,6 +318,25 @@ Refuse imperative `.Add()` bodies with a clear message rather than corrupting a 
 
 ---
 
+## The lesson the probes could not teach
+
+A node that is a call's **only argument** — `card.Add(new FormInput(…))`, which is how imperative code
+adds children and therefore how most of a real screen is written — resolved to the *call* rather than
+to the node. The panel introduced a `FormInput` as **`Void`** and offered to edit `child`, which is
+`Add`'s parameter. Roslyn's `FindNode` returns the outermost of a span tie unless asked for the
+innermost, and an `ArgumentSyntax` has exactly the span of the construction inside it.
+
+Every hand-written probe missed it, and not by accident: they were declarative, and a declarative
+container passes its children through a *named* argument, whose span differs. **A probe inherits the
+assumptions of whoever wrote it.**
+
+So the standing guard is a sweep over the REAL screens (`RealScreensTests`): compile each one in
+design mode, take every stamp the compiler emitted, and ask the host to resolve it. It is a
+cross-examination rather than a smoke test — the compiler labels the node at emission, the host
+resolves it from the span afterwards, and **two independent answers to the same question have to
+agree**. Over 200 nodes across the sample's screens. Reverting the fix makes it name the file, the
+line and the disagreement.
+
 ## The decision — settled 2026-08-14
 
 **Declarative is the preferred form, and the fence stays there. But UNDERSTANDING is not fenced.**
