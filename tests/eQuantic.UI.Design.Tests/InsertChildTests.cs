@@ -365,6 +365,24 @@ public sealed class InsertChildTests : IDisposable
         palette.Should().Contain(entry => entry.Source == "framework");
     }
 
+    /// <summary>
+    /// A component's placeholder is named after the COMPONENT.
+    /// <para>
+    /// The snippet builder was widened to take a constructor's containing type — a constructor's own
+    /// name is ".ctor" — and taking it for factories too named every component after the surface it
+    /// lives on. The palette went on compiling, so nothing here failed: it inserted a button labelled
+    /// "UI" and a card whose text read "AppUI".
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void APaletteEntry_IsNamedAfterWhatItBuildsAndNotAfterTheSurface()
+    {
+        var palette = _session.Palette();
+
+        palette.Should().Contain(entry => entry.Name == "Button" && entry.Snippet.Contains("\"Button\""));
+        palette.Should().NotContain(entry => entry.Snippet.Contains("\"UI\"") || entry.Snippet.Contains("\"AppUI\""));
+    }
+
     [Fact]
     public void EveryPaletteEntry_InsertsIntoARealListAndStillCompiles()
     {

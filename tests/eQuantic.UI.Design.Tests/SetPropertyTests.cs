@@ -31,6 +31,7 @@ public sealed class SetPropertyTests : IDisposable
             public override VisualNode Build(ComponentContext context)
             {
                 var box = new Box(new BoxStyle { Padding = EdgeInsets.All(Space.S2) });
+                var empty = new Row();
                 return Row(gap: Space.S2, children: [
                     Text("hello", TypeRole.BodyM, context.Theme.TextPrimary),
                     box,
@@ -148,6 +149,29 @@ public sealed class SetPropertyTests : IDisposable
 
         edit.Applied.Should().BeFalse();
         edit.Reason.Should().Contain("factory call").And.Contain("authored");
+    }
+
+    /// <summary>
+    /// A constructor parameter goes into the ARGUMENT LIST, wherever that is.
+    /// <para>
+    /// Anchoring it on the end of the construction assumed the construction ends with `)`. One that
+    /// carries an object initializer ends with `}`, so the argument landed inside the braces — and
+    /// this tool CREATES that shape itself the moment it sets one property, so the very next edit on
+    /// the same node hit it.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AParameterGoesInTheParens_EvenAfterTheNodeHasGainedBraces()
+    {
+        // The empty-parens shape, which is the one the tool creates for itself: setting a property
+        // first gives it braces, and the parameter must still go in the parens that come before them.
+        var braces = _session.SetProperty(_probe, Source, OriginOf("new Row()"), "AlignSelf", "CrossAlign.Center");
+        var after = Apply(Source, braces);
+
+        var edit = _session.SetProperty(_probe, after, OriginOf("new Row()"), "gap", "Space.S4");
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        Apply(after, edit).Should().Contain("new Row(gap: Space.S4) { AlignSelf = CrossAlign.Center }");
     }
 
     /// <summary>

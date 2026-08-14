@@ -496,18 +496,40 @@ public sealed class DesignSession
 
         // 3. A constructor parameter the call omitted — added NAMED, and placed before a trailing
         //    `children:` so the tree stays last, which is how every screen in the repo is written.
-        if (parameterIndex >= 0 && arguments is { } existing)
+        if (parameterIndex >= 0)
         {
-            var children = existing.FirstOrDefault(a => a.NameColon?.Name.Identifier.Text == "children");
+            var argumentList = construction switch
+            {
+                ObjectCreationExpressionSyntax creation => (BaseArgumentListSyntax?)creation.ArgumentList,
+                InvocationExpressionSyntax invocation => invocation.ArgumentList,
+                _ => null,
+            };
+
             var addition = $"{property}: {value}";
+
+            // `new Row { AlignSelf = … }` has no argument list at all. Writing one is not a change of
+            // form — it is the same `new`, with the arguments it was always allowed to take.
+            if (argumentList is null)
+            {
+                return construction is ObjectCreationExpressionSyntax noParens
+                    ? Insert(source, noParens.Type.Span.End, $"({addition})", text, path, construction, origin)
+                    : EditResult.Refused($"'{property}' cannot be added to a call with no argument list.");
+            }
+
+            var existing = argumentList.Arguments;
+            var children = existing.FirstOrDefault(a => a.NameColon?.Name.Identifier.Text == "children");
 
             if (children is not null)
             {
                 return Insert(source, children.SpanStart, addition + ", ", text, path, construction, origin);
             }
 
+            // Anchored on the CLOSING PAREN, never on the end of the construction: a construction that
+            // carries an object initializer ends with `}`, and the argument would land inside the
+            // braces. This tool creates that shape itself the moment it sets one property, so the very
+            // next edit on the same node hit it.
             return existing.Count == 0
-                ? Insert(source, construction.Span.End - 1, addition, text, path, construction, origin)
+                ? Insert(source, CloseParenOrBracket(argumentList), addition, text, path, construction, origin)
                 : Insert(source, existing[^1].Span.End, ", " + addition, text, path, construction, origin);
         }
 
@@ -540,10 +562,12 @@ public sealed class DesignSession
                 $" {{ {property} = {value} }}", text, path, construction, origin);
         }
 
-        return EditResult.Refused(
-            $"'{property}' is not a constructor parameter of {symbol.ContainingType?.Name ?? "this component"}, "
-            + "and this is a factory call, which has no object initializer to set it in. Rewriting it into "
-            + "`new` form is a change to how the file is authored, so it is not done for you.");
+        var component = symbol.ContainingType?.Name ?? "this component";
+        return EditResult.Refused(construction is InvocationExpressionSyntax
+            ? $"'{property}' is not a parameter of {component}, and this is a factory call, which has no "
+              + "object initializer to set it in. Rewriting it into `new` form is a change to how the file "
+              + "is authored, so it is not done for you."
+            : $"'{property}' is neither a parameter nor a settable member of {component}.");
     }
 
     /// <summary>
@@ -1181,7 +1205,14 @@ public sealed class DesignSession
         {
             if (parameter.HasExplicitDefaultValue || parameter.IsParams) continue;
 
-            var literal = Literal(parameter.Type, factory.ContainingType?.Name ?? factory.Name);
+            // A constructor's own Name is ".ctor", so a value takes its type's name. A factory is
+            // already named after what it builds — and taking its CONTAINING type there named every
+            // component after the surface it lives on: `Button("UI")`, `Card(Text("AppUI"))`.
+            var named = factory.MethodKind == MethodKind.Constructor
+                ? factory.ContainingType?.Name ?? factory.Name
+                : factory.Name;
+
+            var literal = Literal(parameter.Type, named);
             if (literal is null) return null;
             arguments.Add(literal);
         }
@@ -1589,6 +1620,11 @@ public sealed class DesignSession
         var bite = Removal(written.Initializer.Expressions, (ExpressionSyntax)assignment);
         return Guarded(source, bite, "", text, path, Moved(source, bite, "", construction, origin));
     }
+
+    /// <summary>Where an argument goes when the list is empty: just inside the closing token, which
+    /// an argument list spells with a paren and an indexer's with a bracket.</summary>
+    private static int CloseParenOrBracket(BaseArgumentListSyntax list) =>
+        list is ArgumentListSyntax parens ? parens.CloseParenToken.SpanStart : list.Span.End - 1;
 
     /// <summary>Whether a name is a member this tool may write into an object initializer: settable,
     /// and settable from OUTSIDE the type — a private setter is not an offer.</summary>
