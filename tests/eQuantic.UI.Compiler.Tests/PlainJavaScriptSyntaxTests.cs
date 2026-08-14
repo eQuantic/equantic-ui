@@ -27,6 +27,12 @@ public class PlainJavaScriptSyntaxTests
 
         public sealed record Row(string Id, string Label);
 
+        // A PRIMITIVE component (an HtmlElement) takes the generic props constructor, which is where
+        // the optional-parameter marker is written by hand.
+        public sealed class Marker : HtmlElement
+        {
+        }
+
         public static class Catalogue
         {
             // A static collection: emitted as a lazy getter with a backing slot, because a static
@@ -75,6 +81,9 @@ public class PlainJavaScriptSyntaxTests
             {
                 // A pattern variable is hoisted out of the condition it is assigned in.
                 var column = new Column(gap: Space.S2);
+                // C#'s null-forgiving `!` — an assertion that produces no code.
+                var first = _model!.Label;
+                column.Add(new Text(first, TypeRole.BodyM, context.Theme.TextPrimary));
                 if (_notice is { } notice) column.Add(new Text(notice, TypeRole.BodyM, context.Theme.TextPrimary));
                 column.Add(new Text(_model.Label, TypeRole.BodyM, context.Theme.TextPrimary));
                 return column;
@@ -103,6 +112,8 @@ public class PlainJavaScriptSyntaxTests
     [InlineData(@"\bget\s+\w+\(\)\s*:", "an annotated getter")]
     [InlineData(@"\bset\s+\w+\(value\s*:", "an annotated setter")]
     [InlineData(@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted pattern variable")]
+    [InlineData(@"\w\?\s*:", "an optional-parameter marker")]
+    [InlineData(@"\w!\s*[.);,]", "a null-forgiving assertion")]
     public void PlainJavaScript_CarriesNoTypeScriptOnlySyntax(string pattern, string what)
     {
         var js = EmitPlainJs();
@@ -133,6 +144,8 @@ public class PlainJavaScriptSyntaxTests
                 (@"^\s*static\s+_\w+\s*:", "an annotated lazy-static backing slot"),
                 (@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted pattern variable"),
                 (@"\bdeclare\s", "a type-only declared property"),
+                (@"\w\?\s*:", "an optional parameter"),
+                (@"\w!\s*[.);,]", "a null-forgiving assertion"),
                 (@"\babstract\s+\w+\s*:", "a type-only abstract property"),
             }
             .Where(probe => !Regex.IsMatch(ts, probe.Item1, RegexOptions.Multiline))

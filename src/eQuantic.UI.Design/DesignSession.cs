@@ -44,6 +44,10 @@ public sealed class DesignSession
     /// </summary>
     private readonly Dictionary<string, string> _open = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Which file declares a given TYPE — including the ones a source generator wrote, which
+    /// no filename search would find. Built once, from the compilation itself.</summary>
+    private readonly Dictionary<string, string> _declaringFile = new(StringComparer.Ordinal);
+
     /// <summary>
     /// Installs the editor's unsaved buffers and rebuilds the compilation on top of them, so the
     /// SEMANTIC MODEL agrees with what the author is looking at across every open file — not only the
@@ -119,6 +123,18 @@ public sealed class DesignSession
             sources, references, assemblyName: assemblyName, addStandardReferences: false));
         _current = _compilation;
         _compiler.SetProjectCompilation(_current);
+
+        _declaringFile.Clear();
+        foreach (var tree in _compilation.SyntaxTrees)
+        {
+            if (string.IsNullOrEmpty(tree.FilePath)) continue;
+            foreach (var declaration in tree.GetRoot().DescendantNodes().OfType<BaseTypeDeclarationSyntax>())
+            {
+                // First declaration wins: a partial type spread over several files is compiled from
+                // whichever one holds it, and eqc emits one module per type either way.
+                _declaringFile.TryAdd(declaration.Identifier.Text, tree.FilePath);
+            }
+        }
 
         watch.Stop();
         return new InitializeResult(assemblyName, sources.Count, references.Count, (int)watch.ElapsedMilliseconds);
@@ -823,10 +839,12 @@ public sealed class DesignSession
     /// </summary>
     private List<CompilationResult> ResolveDependency(string moduleName)
     {
-        var file = Directory.EnumerateFiles(_projectDir, moduleName + ".cs", SearchOption.AllDirectories)
-            .FirstOrDefault(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
-                              && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
-        if (file is null) return [];
+        // Asked of the COMPILATION, not of the filesystem. Matching a file NAME was wrong twice over:
+        // a file may declare a type called something else, and a source generator's output is called
+        // `SignUpForm.g.cs` and lives under obj/ — which the old search excluded on purpose, to avoid
+        // build artifacts. Generated types are part of the program csc compiled, so a page that calls
+        // one has to find it here or fail at runtime with "X is not defined".
+        if (!_declaringFile.TryGetValue(moduleName, out var file)) return [];
 
         // An OPEN file is never cached by write time: its text changes without the file being touched,
         // which is exactly the case the cache would answer wrongly and never notice.

@@ -29,11 +29,18 @@ public class TypeScriptEmitter
     private string Param(string name, string type) => TypeAnnotations ? $"{name}: {type}" : name;
 
     /// <summary>
-    /// A parameter WITH its converted default. `= default` on a twin-backed struct converts to
-    /// `undefined`, and in annotated mode that must emit as an OPTIONAL parameter
-    /// (<c>style?: BoxStyle</c>) — identical call-site semantics, but it typechecks where
-    /// <c>style: BoxStyle = undefined</c> is a TS2322 in the runtime's own build.
+    /// An OPTIONAL parameter in a hand-written signature — <c>props?: any</c> in TypeScript, and
+    /// plain <c>props</c> otherwise, because <c>?</c> in a JavaScript parameter list is a syntax
+    /// error that costs the whole module.
+    /// <para>
+    /// The doc comment describing this had outlived the method itself, so four signatures went back
+    /// to spelling <c>"props?: any"</c> by hand — and a component with a parameterless constructor
+    /// emitted a module a browser refuses to parse. The claim on <see cref="Param"/> that every
+    /// literal signature goes through it was, for those four, simply false.
+    /// </para>
     /// </summary>
+    private string OptionalParam(string name, string type) => TypeAnnotations ? $"{name}?: {type}" : name;
+
     /// <summary>
     /// A concise body converted to <c>return …;</c>, with the <c>let</c> for any pattern variable it
     /// binds already hoisted in front.
@@ -173,13 +180,13 @@ public class TypeScriptEmitter
                     if (hasExplicitParams)
                     {
                         // Constructor has explicit params (e.g., Heading(content, level))
-                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => $"{p.Name}: any"));
+                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => Param(p.Name, "any")));
                         jsParams = paramList;
                     }
                     else
                     {
                         // Constructor has no params - accept generic props for Object.assign
-                        jsParams = "props?: any";
+                        jsParams = OptionalParam("props", "any");
                     }
 
                     c.Constructor(jsParams, () =>
@@ -315,7 +322,9 @@ public class TypeScriptEmitter
                         var paramList = string.Join(", ", passed.Select(p => p.DefaultValueNode != null
                             ? $"{p.Name.ToCamelCase()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
                             : $"{p.Name.ToCamelCase()}?: any"));
-                        var signature = paramList.Length > 0 ? $"{paramList}, props?: any" : "props?: any";
+                        var signature = paramList.Length > 0
+                            ? $"{paramList}, {OptionalParam("props", "any")}"
+                            : OptionalParam("props", "any");
                         c.Constructor(signature, () =>
                         {
                             // The config object carries what a C# OBJECT INITIALIZER assigned, and in C#
@@ -1405,7 +1414,7 @@ public class TypeScriptEmitter
         // `new Editor(text) { ReadOnly = true }` — an object initialiser is an ordinary way to
         // construct one of these, and it arrives as a trailing config object exactly as it does for
         // a component. A constructor that did not take one made the emitted call arity-wrong.
-        var config = parameters.Length == 0 ? "props?: any" : ", props?: any";
+        var config = parameters.Length == 0 ? OptionalParam("props", "any") : $", {OptionalParam("props", "any")}";
         var assign = " if (props && typeof props === 'object') Object.assign(this, props);";
         // A derived class must call super() before it touches `this`.
         var superCall = HasEmittedBase(cls) ? "super(); " : "";

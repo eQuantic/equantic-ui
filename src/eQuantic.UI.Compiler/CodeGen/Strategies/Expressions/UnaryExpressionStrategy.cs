@@ -28,8 +28,17 @@ public class UnaryExpressionStrategy : IConversionStrategy
         if (node is PostfixUnaryExpressionSyntax postfix)
         {
             var operand = context.Converter.ConvertExpression(postfix.Operand);
-            var op = postfix.OperatorToken.Text;
-            return $"{operand}{op}";
+
+            // C#'s null-forgiving `x!` is an ASSERTION, not an operation — it produces no code and
+            // means only "I know this is not null". TypeScript spells the same assertion the same
+            // way, so it survives there; JavaScript has no such syntax, and `x!.value` is a parse
+            // error that costs the whole module rather than the one expression.
+            if (postfix.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SuppressNullableWarningExpression))
+            {
+                return context.TypeAnnotations ? $"{operand}!" : operand;
+            }
+
+            return $"{operand}{postfix.OperatorToken.Text}";
         }
 
         return node.ToString();
