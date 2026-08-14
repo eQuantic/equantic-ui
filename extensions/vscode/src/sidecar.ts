@@ -254,6 +254,11 @@ export class Sidecar {
     return this.send('moveChild', { path, text, origin, delta, buffers });
   }
 
+  /** A copy of a node, landing immediately after it in the same list. */
+  duplicateChild(path: string, text: string, origin: string, buffers: OpenBuffer[]): Promise<EditResult> {
+    return this.send('duplicateChild', { path, text, origin, buffers });
+  }
+
   /** A node leaving its own container for another list, both in the same file. */
   moveAcross(
     path: string, text: string, origin: string, target: string, index: number, buffers: OpenBuffer[],

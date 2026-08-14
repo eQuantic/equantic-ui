@@ -447,6 +447,23 @@ With that known, everything else is presentation:
 - The panel's arrows keep their gesture and stop mis-naming it: **Send backward** and **Bring
   forward**, in the tooltip and in the accessible name.
 
+### Phase 12 — duplicate, and a keyboard ✅ done
+
+Two gaps that had nothing to do with the hard parts, and everything to do with whether this is
+pleasant to use.
+
+**Duplicate** is the commonest gesture in any editor and had no answer here: a second row like the
+first meant picking one out of the palette and setting every property again. The element's text is
+copied verbatim and lands immediately after it, and the edit answers with the COPY's origin — what
+stays selected is the thing just made, not the thing copied.
+
+**The keyboard** turns every existing gesture into a key rather than adding a second implementation of
+it. Arrows WALK the tree the author wrote (up to the parent, down to the first child, left and right
+along the siblings), Alt+Arrows move the node instead, Delete removes it, Cmd/Ctrl+D duplicates it,
+and Escape lets go — first of the selection, then of the mode. All of it respects the same guards the
+pointer does: nothing structural while the tree is settling, and nothing at all when the pointer is
+over the panel.
+
 ---
 
 ## The seam, tested

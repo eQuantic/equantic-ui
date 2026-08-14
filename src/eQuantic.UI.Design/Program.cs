@@ -95,6 +95,11 @@ while (await input.ReadLineAsync() is { } line)
                 Require(parameters.List, "list"),
                 parameters.Index ?? 0),
 
+            "duplicateChild" => session.DuplicateChild(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin")),
+
             "removeChild" => session.RemoveChild(
                 Require(parameters.Path, "path"),
                 parameters.Text ?? "",

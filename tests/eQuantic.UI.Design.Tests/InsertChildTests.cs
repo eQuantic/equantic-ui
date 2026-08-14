@@ -340,6 +340,45 @@ public sealed class InsertChildTests : IDisposable
     }
 
     /// <summary>
+    /// The commonest gesture in any editor, and the one this had no answer for: a second row like the
+    /// first meant picking it out of a palette and setting every property again.
+    /// </summary>
+    [Fact]
+    public void ANodeCanBeDuplicatedInPlace()
+    {
+        var edit = _session.DuplicateChild(_probe, Source, SecondChild);
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        var after = Apply(Source, edit);
+
+        // Twice now, and immediately after the original rather than at the end.
+        System.Text.RegularExpressions.Regex.Matches(after, "\"second\"").Count.Should().Be(2);
+        after.IndexOf("\"omega\"", StringComparison.Ordinal)
+            .Should().BeGreaterThan(after.LastIndexOf("\"second\"", StringComparison.Ordinal));
+    }
+
+    /// <summary>What you get selected is the thing you just MADE, not the thing you copied.</summary>
+    [Fact]
+    public void ADuplicate_HandsBackTheCopysOwnOrigin()
+    {
+        var edit = _session.DuplicateChild(_probe, Source, SecondChild);
+        var after = Apply(Source, edit);
+
+        edit.Origin.Should().NotBeNull().And.NotBe(SecondChild);
+        _session.Inspect(_probe, after, edit.Origin!)!.Properties
+            .Should().Contain(property => property.Value == "\"second\"");
+    }
+
+    [Fact]
+    public void DuplicatingSomethingThatIsNotInAList_IsRefusedWithTheReason()
+    {
+        var edit = _session.DuplicateChild(_probe, Source, Declarative);
+
+        edit.Applied.Should().BeFalse();
+        edit.Reason.Should().Contain("[ … ] list");
+    }
+
+    /// <summary>
     /// EVERY entry the palette offers has to compile where it lands.
     /// <para>
     /// This is the check that keeps the snippet synthesis honest as the component library grows: the

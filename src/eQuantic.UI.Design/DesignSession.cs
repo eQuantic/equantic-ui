@@ -1086,6 +1086,42 @@ public sealed class DesignSession
     }
 
     /// <summary>
+    /// Duplicates a node in place — the copy lands immediately after it, in the same list.
+    /// <para>
+    /// The commonest gesture in any editor, and the one this had no answer for: building a second row
+    /// like the first meant picking it out of a palette and setting every property again. The text is
+    /// copied verbatim and re-indented to nothing, because it stays at exactly the depth it was.
+    /// </para>
+    /// <para>
+    /// It answers with the COPY's origin, so what you get selected is the thing you just made rather
+    /// than the thing you copied.
+    /// </para>
+    /// </summary>
+    public EditResult DuplicateChild(string path, string text, string origin)
+    {
+        if (_compilation is null) throw new InvalidOperationException("initialize first");
+
+        if (Locate(path, text, origin) is not var (_, source, construction, _) || construction is null)
+            return EditResult.Refused("That element's origin does not name anything in this file.");
+
+        if (construction.Parent is not ExpressionElementSyntax element
+            || element.Parent is not CollectionExpressionSyntax list)
+        {
+            return EditResult.Refused(
+                "This node is not an element of a [ … ] list, so there is nowhere to put a copy of it.");
+        }
+
+        var copy = source.ToString(element.Span);
+        var (at, addition, offset) = Addition(
+            source, list, list.Elements.IndexOf(element) + 1, copy);
+
+        var after = source.Replace(new TextSpan(at, 0), addition);
+        return Guarded(
+            source, new TextSpan(at, 0), addition, text, path,
+            Where(after, new TextSpan(at + offset, copy.Length), origin));
+    }
+
+    /// <summary>
     /// Removes a node from its parent's children.
     /// <para>
     /// The element goes and so does ONE separator — the comma after it, or the comma before it when

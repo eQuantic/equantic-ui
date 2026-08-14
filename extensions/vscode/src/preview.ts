@@ -231,6 +231,10 @@ export class PreviewPanel {
       void this.editProperty(message.origin, message.property, message.value, message.options);
     } else if (message.type === 'insert' && message.origin && typeof message.index === 'number') {
       void this.insertChild(message.origin, message.index, message.list, message.elementType);
+    } else if (message.type === 'duplicate' && message.origin) {
+      void this.duplicate(message.origin);
+    } else if (message.type === 'stopInspect') {
+      this.setInspecting(false);
     } else if (message.type === 'unset' && message.origin && message.property) {
       void this.unsetProperty(message.origin, message.property);
     } else if (message.type === 'removeAt' && message.origin && message.list && typeof message.index === 'number') {
@@ -431,6 +435,20 @@ export class PreviewPanel {
 
     if (elementType === undefined) this.components = entries;
     return entries;
+  }
+
+  /** A copy of the selected node, and the copy is what stays selected — it is the thing just made. */
+  private async duplicate(origin: string): Promise<void> {
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) return;
+
+    try {
+      const edit = await this.sidecar.duplicateChild(
+        span.path, await this.textOf(span.path), origin, this.buffers());
+      await this.applyMove(span.path, origin, edit, 'that could not be duplicated');
+    } catch (error) {
+      this.log(`duplicate failed: ${(error as Error).message}`);
+    }
   }
 
   /** Takes a member back out of a value's initializer. A sheet you can only add rows to leaks. */
@@ -1145,6 +1163,77 @@ export class PreviewPanel {
     const found = stamped(e.target);
     if (found) select(found);
   }, true);
+
+  // ---- the keyboard --------------------------------------------------------------------------
+  //
+  // A visual editor that can only be driven with a pointer is a visual editor you have to keep
+  // reaching across the desk for. Everything here is a gesture that already exists — the keys are
+  // another way to ask for it, not a second implementation of it.
+  //
+  // Arrows WALK the tree (up to the parent, down to the first child, left and right along the
+  // siblings), Alt+arrows MOVE the node instead, Delete removes it, Cmd/Ctrl+D duplicates it, and
+  // Escape lets go — first of the selection, then of the mode.
+  window.addEventListener('keydown', (event) => {
+    if (!inspecting || insideChrome(event.target)) return;
+
+    const stop = () => { event.preventDefault(); event.stopPropagation(); };
+
+    if (event.key === 'Escape') {
+      stop();
+      if (selectedOrigin) {
+        selectedOrigin = null;
+        selectedElement = null;
+        panel.classList.remove('visible');
+        outline.classList.remove('visible');
+        badge.classList.remove('visible');
+        hideInserts();
+      } else {
+        vscode.postMessage({ type: 'stopInspect' });
+      }
+      return;
+    }
+
+    if (!selectedElement || !selectedElement.isConnected || !selectedOrigin) return;
+    // Every origin in the tree names the text as it WAS until the next frame — see settle().
+    if (settling) return;
+
+    // Structural: the same messages the panel's own buttons send.
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      stop();
+      vscode.postMessage({ type: 'arrange', origin: selectedOrigin });
+      return;
+    }
+
+    if ((event.key === 'd' || event.key === 'D') && (event.metaKey || event.ctrlKey)) {
+      stop();
+      vscode.postMessage({ type: 'duplicate', origin: selectedOrigin });
+      return;
+    }
+
+    if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      stop();
+      vscode.postMessage({ type: 'arrange', origin: selectedOrigin, delta: event.key === 'ArrowUp' ? -1 : 1 });
+      return;
+    }
+
+    const walked = walk(event.key);
+    if (walked) { stop(); select(walked); }
+  });
+
+  /** Where an arrow key goes in the tree — the tree the author wrote, not the DOM. */
+  function walk(key) {
+    if (key === 'ArrowUp') return stampedParent(selectedElement);
+    if (key === 'ArrowDown') return stampedChildren(selectedElement)[0] || null;
+    if (key !== 'ArrowLeft' && key !== 'ArrowRight') return null;
+
+    const parent = stampedParent(selectedElement);
+    if (!parent) return null;
+
+    const siblings = stampedChildren(parent);
+    const index = siblings.indexOf(selectedElement);
+    if (index < 0) return null;
+    return siblings[index + (key === 'ArrowLeft' ? -1 : 1)] || null;
+  }
 
   // ---- what the host knows about a node, cached for as long as the tree is the same ---------------
   //
@@ -1898,8 +1987,14 @@ export class PreviewPanel {
     return row;
   }
 
+  const KEYS = 'Arrows walk the tree \u00B7 Alt+Arrows move \u00B7 Delete removes \u00B7 '
+    + 'Cmd/Ctrl+D duplicates \u00B7 Esc lets go';
+
   function showSelection(payload) {
     panelTitle.textContent = payload.node ? payload.node.component : 'Selection';
+    // Discoverable where someone would look for it: the keys are the panel's own gestures, and a
+    // webview cannot advertise them in VS Code's keybinding tooltips.
+    panelTitle.title = KEYS;
     panelTier.textContent = payload.tier + (payload.node ? ' · ' + payload.node.form : '');
     panelTier.title = payload.reason || '';
     // Arrangement is only a thing for a node that IS an element of a list. Everything else — a
