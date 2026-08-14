@@ -89,4 +89,43 @@ public class CheckStateSemanticsTests
         toggle.Attributes.GetValueOrDefault("tabindex").Should().NotBe("-1");
         checkbox.Tag.Should().Be("button", "a button is focusable without any tabindex at all");
     }
+
+    /// <summary>
+    /// A trigger that OPENS something says so — aria-expanded on the accordion header, the
+    /// select's field and the menu's trigger. A rotated chevron is paint; the attribute is the
+    /// answer. And a plain button carries nothing: "controls no disclosure" and "closed" are
+    /// different answers, the same null-versus-false line Selected draws.
+    /// </summary>
+    [Fact]
+    public void ATriggerSaysWhetherItIsOpen_AndAPlainButtonSaysNothing()
+    {
+        // A plain Pressable lowers to a bare <button> with no role attribute, so these are found
+        // by tag rather than through ControlOf.
+        HtmlNode ButtonOf(VisualNode node) => Walk(Render(node)).Single(c => c.Tag == "button");
+        var closed = ButtonOf(new Pressable(new Text("More", TypeRole.Label), () => { }) { Expanded = false });
+        var open = ButtonOf(new Pressable(new Text("More", TypeRole.Label), () => { }) { Expanded = true });
+        var plain = ButtonOf(new Pressable(new Text("Save", TypeRole.Label), () => { }));
+
+        closed.Attributes["aria-expanded"].Should().Be("false");
+        open.Attributes["aria-expanded"].Should().Be("true");
+        plain.Attributes.Should().NotContainKey("aria-expanded");
+    }
+
+    /// <summary>The accordion is the live proof: its header states the section's state.</summary>
+    [Fact]
+    public void AnAccordionHeaderStatesItsSection()
+    {
+        var accordion = new Accordion([
+            new AccordionItem("First") { Content = new Text("body", TypeRole.BodyM) },
+            new AccordionItem("Second") { Content = new Text("body", TypeRole.BodyM) },
+        ], openIndex: 0);
+
+        var html = Render(accordion);
+        var headers = Walk(html)
+            .Where(node => node.Attributes.ContainsKey("aria-expanded"))
+            .Select(node => node.Attributes["aria-expanded"])
+            .ToList();
+
+        headers.Should().Equal("true", "false");
+    }
 }

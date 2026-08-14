@@ -93,6 +93,9 @@ internal static class PhotonAccessibility
             if (node.Checked is { } check)
                 SendVoid(element, Sel("setAccessibilityValue:"),
                     Send(objc_getClass("NSNumber"), Sel("numberWithLong:"), (long)check));
+            // Disclosure state — VoiceOver reads "expanded"/"collapsed" after the name.
+            if (node.Expanded is { } isOpen)
+                SendVoid(element, Sel("setAccessibilityExpanded:"), isOpen);
             SendVoid(element, Sel("setAccessibilityEnabled:"), !node.Disabled);
             SendVoid(element, Sel("setAccessibilityParent:"), view);
             // The path, visible in Accessibility Inspector — the same identity every press,

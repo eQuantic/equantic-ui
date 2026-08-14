@@ -627,6 +627,8 @@ interface PressableConfig {
   selected?: boolean | null;
   /** Partly selected — checkbox role only; wins over selected. */
   mixed?: boolean;
+  /** Controls a disclosure, and whether it is open — lowers to aria-expanded. */
+  expanded?: boolean | null;
   /** Composite-item role — the C# initializer `{ Role = PressableRole.Radio }` lands here. */
   role?: string;
 }
@@ -641,6 +643,8 @@ export class Pressable extends VisualNode {
   selected: boolean | null = null;
   /** Partly selected — checkbox role only; wins over selected. */
   mixed = false;
+  /** Controls a disclosure, and whether it is open — lowers to aria-expanded. */
+  expanded: boolean | null = null;
   role = 'button';
 
   constructor(child: VisualChild, onPressed: (() => void) | null = null, config?: PressableConfig) {

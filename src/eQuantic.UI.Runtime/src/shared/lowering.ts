@@ -1967,6 +1967,9 @@ function lowerPressable(
     if (!disabled) node.attributes['tabindex'] = '0';
   }
   if (pressable.label) node.attributes['aria-label'] = pressable.label;
+  // Disclosure stated, not merely painted — the C# realizer emits the same attribute.
+  if (pressable.expanded !== undefined && pressable.expanded !== null)
+    node.attributes['aria-expanded'] = pressable.expanded ? 'true' : 'false';
   // Selection stated, not merely painted — a fill colour says nothing to a screen reader.
   if (pressable.role === 'radio') {
     // One choice of an exclusive set: the wrapping Adjustable is the one Tab stop, so the item

@@ -114,7 +114,7 @@ public sealed class Select : StatefulComponent
 
         var trigger = Disabled
             ? field
-            : (VisualNode)new Pressable(field, Toggle);
+            : (VisualNode)new Pressable(field, Toggle) { Expanded = _open };
 
         VisualNode select = new Anchored(trigger, panel)
         {

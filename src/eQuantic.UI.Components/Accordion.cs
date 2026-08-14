@@ -74,7 +74,11 @@ public sealed class Accordion : StatefulComponent
                 Width = SizeValue.Fill,
                 Padding = EdgeInsets.Symmetric(Space.S3, 0),
                 Hover = new StyleDiff { Background = theme.SurfaceSubtle },
-            }, header), () => Toggle(index)));
+            }, header), () => Toggle(index))
+            {
+                // The chevron is paint; this is the answer a screen reader gets.
+                Expanded = open,
+            });
 
             if (open && item.Content is { } content)
             {

@@ -1630,6 +1630,8 @@ public static class WebRealizer
             AriaLabel = pressable.Label,
             // Selection stated, not merely painted — a fill colour says nothing to a screen reader.
             AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
+            // Disclosure stated the same way: a rotated chevron is paint, aria-expanded is the answer.
+            AriaExpanded = pressable.Expanded,
             OnClick = pressable.Disabled ? null : pressable.OnPressed,
         };
 

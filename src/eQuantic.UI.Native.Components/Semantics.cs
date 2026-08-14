@@ -47,7 +47,8 @@ public readonly record struct SemanticNode(
     string Label,
     string? Value,
     bool Disabled,
-    SemanticCheck? Checked = null);
+    SemanticCheck? Checked = null,
+    bool? Expanded = null);
 
 /// <summary>
 /// Derives the SEMANTICS TREE from a realized frame: the page layout plus every overlay layout
@@ -93,7 +94,8 @@ public static class SemanticsTree
                     _ => (SemanticRole.Button, null),
                 };
                 nodes.Add(new(role, node.Path ?? "", node.Bounds,
-                    pressable.Label ?? TextWithin(node), null, pressable.Disabled, check));
+                    pressable.Label ?? TextWithin(node), null, pressable.Disabled, check,
+                    pressable.Expanded));
                 return;
             }
 

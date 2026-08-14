@@ -1011,6 +1011,15 @@ public sealed class Pressable : VisualNode
     public bool? Selected { get; init; }
 
     /// <summary>
+    /// This pressable OPENS something, and whether it is open right now — an accordion header, a
+    /// select's field, a menu's trigger. Painted state (a rotated chevron) says nothing to
+    /// assistive tech; this lowers to <c>aria-expanded</c> on the web and the expanded bit of the
+    /// native semantics node. <c>null</c> = the button does not control a disclosure at all,
+    /// which is NOT the same as <c>false</c> ("controls one, currently closed").
+    /// </summary>
+    public bool? Expanded { get; init; }
+
+    /// <summary>
     /// PARTLY selected — the "select all" checkbox over a mixed set. Only a
     /// <see cref="PressableRole.Checkbox"/> can say it (ARIA's own rule: <c>aria-checked="mixed"</c>
     /// exists for checkboxes and nothing else), and it wins over <see cref="Selected"/>, because

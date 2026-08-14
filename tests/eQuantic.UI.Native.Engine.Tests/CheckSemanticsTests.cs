@@ -73,4 +73,26 @@ public class CheckSemanticsTests
 
         nodes.Single(node => node.Role == SemanticRole.Button).Checked.Should().BeNull();
     }
+
+    /// <summary>Disclosure crosses the same way the check does: the accordion's open header says
+    /// expanded, the closed one says collapsed, and a plain button says NOTHING — "controls no
+    /// disclosure" and "closed" are different answers.</summary>
+    [Fact]
+    public void AnAccordionHeaderCarriesItsDisclosure_AndAPlainButtonNone()
+    {
+        var accordion = new Accordion([
+            new AccordionItem("First") { Content = new Text("body", TypeRole.BodyM) },
+            new AccordionItem("Second") { Content = new Text("body", TypeRole.BodyM) },
+        ], openIndex: 0);
+
+        var nodes = SemanticsOf(accordion);
+        var headers = nodes.Where(node => node.Expanded is not null).ToList();
+
+        headers.Should().HaveCount(2);
+        headers[0].Expanded.Should().BeTrue();
+        headers[1].Expanded.Should().BeFalse();
+
+        SemanticsOf(new Button("Save", Variant.Primary))
+            .Single(node => node.Role == SemanticRole.Button).Expanded.Should().BeNull();
+    }
 }

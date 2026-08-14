@@ -105,7 +105,7 @@ public sealed class Menu : StatefulComponent
             Clip = true,
         }, list);
 
-        VisualNode menu = new Anchored(new Pressable(Trigger, Toggle), panel)
+        VisualNode menu = new Anchored(new Pressable(Trigger, Toggle) { Expanded = _open }, panel)
         {
             Placement = Placement,
             Open = _open,
