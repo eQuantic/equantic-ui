@@ -91,12 +91,15 @@ public class QualifiedTypeNameTests
     {
         // The enum rule lives behind a comparison with the declared spelling; normalising only the
         // mapper's input would have made every qualified enum skip it and annotate as a class name.
+        // A VOCABULARY enum crosses as the NAMED union of its member strings — still strings, and
+        // never the C# type name, which is what this test has always been about.
         var result = Compile("""
                 public static string Name(global::eQuantic.UI.Primitives.TypeRole role) => "x";
             """);
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        Assert.Contains("role: string", result.TypeScript);
-        Assert.DoesNotContain("role: TypeRole", result.TypeScript);
+        Assert.Contains("role: TypeRoleValue", result.TypeScript);
+        Assert.DoesNotContain("role: TypeRole,", result.TypeScript);
+        Assert.DoesNotContain("role: TypeRole)", result.TypeScript);
     }
 }

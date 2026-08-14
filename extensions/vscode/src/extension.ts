@@ -98,6 +98,7 @@ async function openPreview(context: vscode.ExtensionContext): Promise<void> {
       },
       (focused) => { if (focused) active = panel; });
     panels.set(key, panel);
+    active = panel;
     await panel.prime();
   } catch (error) {
     const message = (error as Error).message;

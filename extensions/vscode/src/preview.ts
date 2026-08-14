@@ -51,6 +51,18 @@ export class PreviewPanel {
       },
     );
 
+    // Everything past createWebviewPanel is wiring, and anything that throws in it would leave the
+    // panel ON SCREEN with nothing in it — a black rectangle beside a toast. A failed open should
+    // leave no trace.
+    try {
+      this.wire(layout);
+    } catch (error) {
+      this.panel.dispose();
+      throw error;
+    }
+  }
+
+  private wire(layout: ProjectLayout): void {
     this.ready = new Promise<void>((resolve) => { this.announceReady = resolve; });
 
     this.runtimeUri = this.panel.webview.asWebviewUri(vscode.Uri.file(layout.runtimePath)).toString();
@@ -76,8 +88,9 @@ export class PreviewPanel {
       // doing the moment it becomes the active one.
       if (event.webviewPanel.active) void this.publishInspectContext();
     }));
-    this.onFocused(true);
-
+    // NOT announced here: the callback closes over the `const panel` this constructor is still
+    // running inside, and touching it before the assignment completes is a temporal-dead-zone
+    // error. The caller announces it once construction has returned.
     this.panel.onDidDispose(() => this.dispose());
     // No first render here: the theme has not arrived yet, and rendering without it would paint an
     // unthemed frame that is replaced a moment later. prime() does both, in order.
