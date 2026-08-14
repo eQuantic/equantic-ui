@@ -1685,6 +1685,16 @@ public static class WebRealizer
             element.TabIndex = -1;
         }
 
+        // One tab of a tablist — the radio's twin (roving, the wrapping Adjustable is the one Tab
+        // stop), except a tab is PICKED, not checked: aria-selected is its word.
+        if (pressable.Role == PressableRole.Tab)
+        {
+            element.Role = "tab";
+            element.AriaSelected = pressable.Selected == true;
+            element.AriaPressed = null;
+            element.TabIndex = -1;
+        }
+
         // A check states its state as an ATTRIBUTE, never in the name — a name that changes when
         // the state does reads as a different control. Unlike a radio it keeps its own Tab stop
         // (the button element already is one): a checkbox is not one choice of a composite.

@@ -1080,6 +1080,11 @@ public enum PressableRole : byte
     /// <see cref="Checkbox"/> (state as attribute, own Tab stop), minus the mixed state, which the
     /// role does not admit.</summary>
     Switch = 3,
+
+    /// <summary>One tab of a tablist. The radio's twin in every mechanical respect — roving
+    /// tabindex under an <see cref="AdjustableRole.Tablist"/> wrapper, selection as an attribute —
+    /// but the attribute is <c>aria-selected</c>: a tab is picked, not checked.</summary>
+    Tab = 4,
 }
 
 /// <summary>One inline run of a rich <see cref="Text"/> (see <see cref="Text.Spans"/>): its own

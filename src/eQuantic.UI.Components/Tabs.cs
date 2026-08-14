@@ -63,6 +63,11 @@ public sealed class Tabs : StatelessComponent
             {
                 Label = Labels[i],
                 PressedBackground = theme.SurfaceSubtle,
+                // The underline is paint; the attribute is the answer. Roving under the Tablist
+                // wrapper below, exactly like the RadioGroup's items — but a tab is PICKED, so
+                // the web speaks aria-selected.
+                Role = PressableRole.Tab,
+                Selected = isActive,
             }));
         }
 

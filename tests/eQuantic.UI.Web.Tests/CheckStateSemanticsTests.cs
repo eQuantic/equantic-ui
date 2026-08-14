@@ -171,4 +171,26 @@ public class CheckStateSemanticsTests
         marked.Should().ContainSingle();
         Walk(marked[0]).Select(node => node.TextContent).Should().Contain("Cancel");
     }
+
+    /// <summary>
+    /// A tab is the radio's mechanical twin — roving tabindex, ONE stop on the Tablist wrapper —
+    /// but a tab is PICKED, not checked: aria-selected is its word, and aria-pressed never
+    /// appears. The underline is paint; the attribute is the answer.
+    /// </summary>
+    [Fact]
+    public void ATabStatesItsSelection_AndRovesUnderTheOneStop()
+    {
+        var html = Render(new Tabs(["Overview", "Settings"], selected: 1, onSelect: _ => { }));
+
+        var tabs = Walk(html)
+            .Where(node => node.Attributes.GetValueOrDefault("role") == "tab")
+            .ToList();
+
+        tabs.Should().HaveCount(2);
+        tabs.Select(tab => tab.Attributes["aria-selected"]).Should().Equal("false", "true");
+        tabs.Should().OnlyContain(tab => tab.Attributes["tabindex"] == "-1",
+            "the Tablist wrapper is the one Tab stop; arrows do the walking");
+        tabs.Should().OnlyContain(tab => !tab.Attributes.ContainsKey("aria-pressed"),
+            "picked-ness is not pressed-ness");
+    }
 }

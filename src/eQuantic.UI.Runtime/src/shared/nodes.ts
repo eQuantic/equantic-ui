@@ -423,9 +423,9 @@ export interface PressableNode extends VisualNodeValue {
   expanded?: boolean | null;
   /** §10 initial focus: when a trap opens around this pressable, focus lands HERE first. */
   initialFocus?: boolean;
-  /** Composite-item role ('button' | 'radio' | 'checkbox' | 'switch'): radio lowers as
-   * role="radio" + aria-checked and leaves the tab order (the wrapping Adjustable is the one
-   * stop); checkbox/switch state their aria-checked as an attribute and keep their own stop. */
+  /** Composite-item role ('button' | 'radio' | 'checkbox' | 'switch' | 'tab'): radio and tab
+   * lower with roving tabindex (the wrapping Adjustable is the one stop) — radio states
+   * aria-checked, tab states aria-selected; checkbox/switch keep their own stop. */
   role?: string;
 }
 
