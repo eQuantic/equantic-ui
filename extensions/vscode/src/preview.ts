@@ -19,6 +19,9 @@ export class PreviewPanel {
   private compileTimer: NodeJS.Timeout | undefined;
   private diagnoseTimer: NodeJS.Timeout | undefined;
   private runtimeUri = '';
+  /** Resolves when the webview's script has registered its message listener. */
+  private ready!: Promise<void>;
+  private announceReady!: () => void;
   private theme = '';
   /** The last compile that produced a module. A failing edit holds this on screen rather than
    * blanking: an empty frame tells you nothing, and you are usually mid-word when it happens. */
@@ -46,6 +49,8 @@ export class PreviewPanel {
         localResourceRoots: [extensionUri, vscode.Uri.file(layout.dir)],
       },
     );
+
+    this.ready = new Promise<void>((resolve) => { this.announceReady = resolve; });
 
     this.runtimeUri = this.panel.webview.asWebviewUri(vscode.Uri.file(layout.runtimePath)).toString();
     this.panel.webview.html = this.shell();
@@ -141,6 +146,9 @@ export class PreviewPanel {
 
   async prime(): Promise<void> {
     this.theme = await this.sidecar.theme();
+    // The webview has to be listening before the first render is posted, or it is dropped and the
+    // panel sits empty until the next keystroke.
+    await this.ready;
     await this.refresh();
   }
 
@@ -169,7 +177,8 @@ export class PreviewPanel {
   private onWebviewMessage(
     message: { type: string; detail?: string; origin?: string; property?: string; value?: string; options?: string[] },
   ): void {
-    if (message.type === 'threw') this.log(`preview threw: ${message.detail ?? ''}`);
+    if (message.type === 'ready') this.announceReady();
+    else if (message.type === 'threw') this.log(`preview threw: ${message.detail ?? ''}`);
     else if (message.type === 'select' && message.origin) void this.revealSource(message.origin);
     else if (message.type === 'edit' && message.origin && message.property) {
       void this.editProperty(message.origin, message.property, message.value, message.options);
@@ -584,6 +593,11 @@ export class PreviewPanel {
     selectedOrigin = found.getAttribute('data-eq-origin');
     vscode.postMessage({ type: 'select', origin: selectedOrigin });
   }, true);
+
+  // Announced only after the listener above exists. A message posted before this point is simply
+  // dropped by the webview, which is how a first render can go missing and the panel sit empty until
+  // the next keystroke.
+  vscode.postMessage({ type: 'ready' });
 
   window.addEventListener('message', (event) => {
     const payload = event.data;

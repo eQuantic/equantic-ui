@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Opens a second VS Code window with the extension loaded, on the dashboard sample — a real
+      // project with a real build behind it, which is what the preview stands on.
+      "name": "eQuantic UI extension (dashboard sample)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/extensions/vscode",
+        "${workspaceFolder}/samples/DefaultUIDashboard"
+      ],
+      "outFiles": ["${workspaceFolder}/extensions/vscode/out/**/*.js"]
+    },
+    {
+      // The same, on whatever folder you pick — for trying it against a project of your own.
+      "name": "eQuantic UI extension (choose a folder)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/extensions/vscode"],
+      "outFiles": ["${workspaceFolder}/extensions/vscode/out/**/*.js"]
+    }
+  ]
+}
