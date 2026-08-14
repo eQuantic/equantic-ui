@@ -468,6 +468,16 @@ public sealed class Overlay : VisualNode
     /// hit); the web realizer lowers the pointer-events variant. Default TRUE (dialogs, sheets).</summary>
     public bool Modal { get; init; } = true;
 
+    /// <summary>The dialog's accessible NAME — what a screen reader says on entry, before reading
+    /// the content. A Dialog passes its title; a modal layer without one is announced as just
+    /// "dialog", which tells the user a wall appeared but not which.</summary>
+    public string? Label { get; init; }
+
+    /// <summary>An ALERT dialog — a confirmation that interrupts (the destructive confirm).
+    /// Lowers to <c>role="alertdialog"</c>, which assistive tech announces assertively instead of
+    /// politely; everything else about the layer (trap, modal, restore) is identical.</summary>
+    public bool Alert { get; init; }
+
     /// <summary>Visibility while <see cref="Motion"/> is set — a CLOSED layer stays mounted and
     /// animates out. Ignored without Motion (the caller renders the Overlay conditionally).</summary>
     public bool Open { get; init; } = true;
@@ -1009,6 +1019,14 @@ public sealed class Pressable : VisualNode
     /// which is NOT the same as <c>false</c> ("selectable, currently not selected").
     /// </summary>
     public bool? Selected { get; init; }
+
+    /// <summary>
+    /// When a focus trap opens around this pressable, the INITIAL focus lands here rather than on
+    /// the first focusable — §10's rule for a confirm dialog: the SAFE action (Ghost) takes the
+    /// focus, so Enter pressed on reflex cancels instead of destroying. A static marker the trap
+    /// controller prefers; meaningless outside a modal layer.
+    /// </summary>
+    public bool InitialFocus { get; init; }
 
     /// <summary>
     /// This pressable OPENS something, and whether it is open right now — an accordion header, a

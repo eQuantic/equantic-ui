@@ -748,8 +748,10 @@ function lowerOverlay(node: OverlayNode, context: LoweringContext, path: string)
   // and a closed one is not a dialog RIGHT NOW — it is hidden, out of hit-testing and focus.
   const modalAndOpen = node.modal !== false && node.open !== false;
   if (modalAndOpen) {
-    layer.attributes['role'] = 'dialog';
+    // C# twin: alertdialog is the assertive sibling; the label is the dialog's NAME.
+    layer.attributes['role'] = node.alert === true ? 'alertdialog' : 'dialog';
     layer.attributes['aria-modal'] = 'true';
+    if (node.label) layer.attributes['aria-label'] = node.label;
     layer.attributes['tabindex'] = '-1';
     layer.attributes['data-eq-trap'] = '';
   }
@@ -1970,6 +1972,8 @@ function lowerPressable(
   // Disclosure stated, not merely painted — the C# realizer emits the same attribute.
   if (pressable.expanded !== undefined && pressable.expanded !== null)
     node.attributes['aria-expanded'] = pressable.expanded ? 'true' : 'false';
+  // §10 initial focus — the marker the trap controller prefers (C# twin emits it identically).
+  if (pressable.initialFocus === true) node.attributes['data-eq-initial-focus'] = '';
   // Selection stated, not merely painted — a fill colour says nothing to a screen reader.
   if (pressable.role === 'radio') {
     // One choice of an exclusive set: the wrapping Adjustable is the one Tab stop, so the item

@@ -35,6 +35,10 @@ public sealed class Button : StatelessComponent
     /// <summary>Fills the parent row instead of hugging the label (checkout CTAs, spec A12).</summary>
     public bool Expand { get; init; }
 
+    /// <summary>When a focus trap opens around this button, the INITIAL focus lands here — §10's
+    /// rule for a confirm dialog: the SAFE action takes it, so Enter on reflex cancels.</summary>
+    public bool InitialFocus { get; init; }
+
     /// <summary>Optional LEADING icon (spec A12's icon+label form) — sized from the size table,
     /// tinted with the label.</summary>
     public IconGlyph? Leading { get; init; }
@@ -127,6 +131,7 @@ public sealed class Button : StatelessComponent
             Disabled = inert,
             Label = Label,
             PressedBackground = inert ? null : pressedFill,
+            InitialFocus = InitialFocus,
         };
     }
 }

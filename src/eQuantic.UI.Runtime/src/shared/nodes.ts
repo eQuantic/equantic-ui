@@ -421,6 +421,8 @@ export interface PressableNode extends VisualNodeValue {
   /** This pressable OPENS something (accordion header, select field, menu trigger) — lowers to
    * aria-expanded. null = controls no disclosure at all. */
   expanded?: boolean | null;
+  /** §10 initial focus: when a trap opens around this pressable, focus lands HERE first. */
+  initialFocus?: boolean;
   /** Composite-item role ('button' | 'radio' | 'checkbox' | 'switch'): radio lowers as
    * role="radio" + aria-checked and leaves the tab order (the wrapping Adjustable is the one
    * stop); checkbox/switch state their aria-checked as an attribute and keep their own stop. */
@@ -483,6 +485,10 @@ export interface OverlayNode extends VisualNodeValue {
   child: VisualNodeValue;
   /** false = non-modal layer (Toast): pointer events pass through outside the child. */
   modal?: boolean;
+  /** The dialog's accessible NAME (aria-label) — a Dialog passes its title. */
+  label?: string | null;
+  /** An ALERT dialog (destructive confirm) — role="alertdialog", announced assertively. */
+  alert?: boolean;
   /** Visibility while `motion` is set — a closed layer stays mounted and animates out. */
   open?: boolean;
   /** Open/close motion: the layer stays mounted in both states and fades between them. */

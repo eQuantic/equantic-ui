@@ -814,8 +814,12 @@ public static class WebRealizer
         // closed one is not a dialog right now.
         if (overlay.Modal && overlay.Open)
         {
-            element.Role = "dialog";
+            // alertdialog is the assertive sibling — a destructive confirm interrupts; everything
+            // else about the layer is identical. The label is the dialog's NAME: without one a
+            // screen reader says a wall appeared but not which.
+            element.Role = overlay.Alert ? "alertdialog" : "dialog";
             element.AriaModal = true;
+            element.AriaLabel = overlay.Label;
             element.TabIndex = -1;
             element.RawAttributes = new Dictionary<string, string> { ["data-eq-trap"] = "" };
         }
@@ -1652,6 +1656,14 @@ public static class WebRealizer
                     ["--eq-pressed-bg"] = TokenCss.Value(pressedFill),
                 };
             }
+        }
+
+        // §10 initial focus: the marker the trap controller prefers over the first focusable —
+        // static, identical on both producers, so hydration compares equal.
+        if (pressable.InitialFocus)
+        {
+            element.RawAttributes ??= new Dictionary<string, string>();
+            element.RawAttributes["data-eq-initial-focus"] = "";
         }
 
         // A span that acts as a button says so, and takes the keyboard the same way.

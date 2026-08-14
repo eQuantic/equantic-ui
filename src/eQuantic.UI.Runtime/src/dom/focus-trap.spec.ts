@@ -5,7 +5,7 @@
  * lets the controller find traps without any path agreement between them.
  */
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { activeFocusTraps, commitFocusTraps, resetFocusTraps } from './focus-trap';
 
 /** A modal layer as the lowerings emit it: the marker plus the dialog semantics. */
@@ -147,5 +147,49 @@ describe('modal focus trap (§10)', () => {
     const event = tab();
     expect(event.defaultPrevented, 'tabindex=-1 makes the container the fallback').toBe(true);
     expect(document.activeElement).toBe(empty);
+  });
+});
+describe('§10 preferred initial focus', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    resetFocusTraps();
+    // The controller hops one rAF before focusing (a fading-in layer is not focusable until the
+    // style lands); a synchronous stub lets these tests observe the LANDING, which is their point.
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0; });
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('the marked SAFE action takes initial focus over the first focusable', () => {
+    const trap = document.createElement('div');
+    trap.setAttribute('data-eq-trap', '');
+    trap.tabIndex = -1;
+    const destroy = document.createElement('button');
+    destroy.textContent = 'Delete';
+    const cancel = document.createElement('button');
+    cancel.textContent = 'Cancel';
+    cancel.setAttribute('data-eq-initial-focus', '');
+    // DOM order puts the destructive action FIRST — the marker must still win.
+    trap.appendChild(destroy);
+    trap.appendChild(cancel);
+    document.body.appendChild(trap);
+
+    commitFocusTraps();
+
+    expect(document.activeElement).toBe(cancel);
+  });
+
+  it('without a marker the first focusable keeps the job', () => {
+    const trap = document.createElement('div');
+    trap.setAttribute('data-eq-trap', '');
+    trap.tabIndex = -1;
+    const first = document.createElement('button');
+    first.textContent = 'OK';
+    trap.appendChild(first);
+    document.body.appendChild(trap);
+
+    commitFocusTraps();
+
+    expect(document.activeElement).toBe(first);
   });
 });

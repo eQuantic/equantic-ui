@@ -44,13 +44,16 @@ function focusablesIn(layer: Element): HTMLElement[] {
   );
 }
 
-/** Initial focus (§10): the first focusable inside, or the layer itself — it carries tabindex=-1
- * for exactly this reason. An explicit Autofocus inside WINS: it already moved focus by the time
- * this runs, and stealing it back would defeat the field the app asked for. */
+/** Initial focus (§10): the marked PREFERRED target first — a confirm dialog marks its SAFE
+ * action, so Enter pressed on reflex cancels instead of destroying — then the first focusable,
+ * then the layer itself (it carries tabindex=-1 for exactly this reason). An explicit Autofocus
+ * inside WINS over all of it: it already moved focus by the time this runs, and stealing it back
+ * would defeat the field the app asked for. */
 function focusInto(layer: Element): void {
   if (layer.contains(document.activeElement)) return;
+  const preferred = layer.querySelector<HTMLElement>('[data-eq-initial-focus]');
   const first = focusablesIn(layer)[0];
-  (first ?? (layer as HTMLElement)).focus();
+  (preferred ?? first ?? (layer as HTMLElement)).focus();
 }
 
 function restore(layer: Element): void {

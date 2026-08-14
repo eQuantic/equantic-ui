@@ -629,6 +629,8 @@ interface PressableConfig {
   mixed?: boolean;
   /** Controls a disclosure, and whether it is open — lowers to aria-expanded. */
   expanded?: boolean | null;
+  /** §10 initial focus — the trap prefers this pressable when it opens. */
+  initialFocus?: boolean;
   /** Composite-item role — the C# initializer `{ Role = PressableRole.Radio }` lands here. */
   role?: string;
 }
@@ -645,6 +647,8 @@ export class Pressable extends VisualNode {
   mixed = false;
   /** Controls a disclosure, and whether it is open — lowers to aria-expanded. */
   expanded: boolean | null = null;
+  /** §10 initial focus: when a trap opens around this pressable, focus lands here first. */
+  initialFocus = false;
   role = 'button';
 
   constructor(child: VisualChild, onPressed: (() => void) | null = null, config?: PressableConfig) {
@@ -773,6 +777,10 @@ export class Overlay extends VisualNode {
   child: VisualChild;
   /** False = non-modal layer (toasts): pointer passes through except the layer's pressables. */
   modal = true;
+  /** The dialog's accessible NAME (aria-label) — a Dialog passes its title. */
+  label: string | null = null;
+  /** An ALERT dialog (destructive confirm) — role="alertdialog". */
+  alert = false;
   /** Visibility while `motion` is set — a closed layer stays mounted and animates out. */
   open = true;
   /** Open/close motion: the layer stays mounted in both states and fades between them. */
@@ -780,7 +788,14 @@ export class Overlay extends VisualNode {
 
   constructor(
     child: VisualChild,
-    config?: { modal?: boolean; open?: boolean; motion?: TransitionSpec | null; key?: string | null },
+    config?: {
+      modal?: boolean;
+      label?: string | null;
+      alert?: boolean;
+      open?: boolean;
+      motion?: TransitionSpec | null;
+      key?: string | null;
+    },
   ) {
     super();
     this.child = child;

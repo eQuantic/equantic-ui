@@ -12,11 +12,11 @@ public sealed record DialogAction(string Label, Action? OnPressed = null, Varian
 /// ActionSheet or a screen. DECLARATIVE presence: the app shows it by building it
 /// (`if (_confirming) … new Dialog(…)`) and resolves it through the action callbacks;
 /// <c>Dismissible</c> (default FALSE — destructive confirms) arms the scrim tap with
-/// <c>OnDismiss</c>. The layer is a modal dialog on web (§10): role, aria-modal, Tab trapped
-/// inside, focus restored to the invoker on every close path. v1 fences: enter/exit motion
-/// (state-transition system), alertdialog announcements and aria-labelledby on the title (both
-/// need the shared id machinery), §10's preferred initial focus (the safe Ghost action — the
-/// trap takes the FIRST focusable today), stacked modals are a spec violation — don't.
+/// <c>OnDismiss</c>. The layer is a modal dialog on web (§10): role (alertdialog when an
+/// action is destructive), the TITLE as its accessible name, aria-modal, Tab trapped inside,
+/// initial focus on the SAFE action (the Ghost — Enter on reflex cancels instead of committing),
+/// focus restored to the invoker on every close path. v1 fences: enter/exit motion
+/// (state-transition system); stacked modals are a spec violation — don't.
 /// </summary>
 public sealed class Dialog : StatelessComponent
 {
@@ -52,9 +52,15 @@ public sealed class Dialog : StatelessComponent
         content.Add(new Text(Body, TypeRole.BodyM, theme.TextSecondary, maxLines: 6));
 
         var actions = new Row(gap: 8) { Main = MainAlign.End };
+        // §10 initial focus: the SAFE action (the Ghost) takes it, so Enter pressed on reflex
+        // cancels instead of committing. Exactly one gets the marker.
+        var safe = Actions.FirstOrDefault(action => action.Variant == Variant.Ghost);
         foreach (var action in Actions)
         {
-            actions.Add(new Button(action.Label, action.Variant, SizeVariant.Medium, action.OnPressed));
+            actions.Add(new Button(action.Label, action.Variant, SizeVariant.Medium, action.OnPressed)
+            {
+                InitialFocus = ReferenceEquals(action, safe),
+            });
         }
 
         var body = new Column(gap: 20) { Width = SizeValue.Fill };
@@ -109,7 +115,13 @@ public sealed class Dialog : StatelessComponent
         // Shortcut rather than taught to each realizer: the node already exists on web and native,
         // and its "last registered wins" dispatch IS the stacking rule — a sheet opened over a
         // dialog takes the key, and closes first.
-        var layer = new Overlay(new Presence(layers));
+        // The layer says its NAME (the title) and, when an action is destructive, that it is an
+        // ALERT — the assertive announcement a destructive confirm deserves.
+        var layer = new Overlay(new Presence(layers))
+        {
+            Label = Title,
+            Alert = Actions.Any(action => action.Variant == Variant.Destructive),
+        };
         return Dismissible && OnDismiss is { } escape ? new Shortcut(layer, KeyChord.Escape, escape) : layer;
     }
 }

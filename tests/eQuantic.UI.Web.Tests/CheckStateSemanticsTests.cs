@@ -128,4 +128,47 @@ public class CheckStateSemanticsTests
 
         headers.Should().Equal("true", "false");
     }
+
+    /// <summary>
+    /// The dialog says its NAME and, destructive, that it is an ALERT. Without the label a screen
+    /// reader announces that a wall appeared but not which; without alertdialog a destructive
+    /// confirm is announced politely, as if it could wait.
+    /// </summary>
+    [Fact]
+    public void ADialogSaysItsNameAndADestructiveOneIsAnAlert()
+    {
+        HtmlNode LayerOf(Dialog dialog) =>
+            Walk(Render(dialog)).Single(node => node.Attributes.ContainsKey("aria-modal"));
+
+        var confirm = LayerOf(new Dialog("Delete draft?", "This cannot be undone.",
+        [
+            new DialogAction("Cancel", Variant: Variant.Ghost),
+            new DialogAction("Delete", Variant: Variant.Destructive),
+        ]));
+        confirm.Attributes["role"].Should().Be("alertdialog");
+        confirm.Attributes["aria-label"].Should().Be("Delete draft?");
+
+        var plain = LayerOf(new Dialog("Rename", "Pick a new name.",
+        [
+            new DialogAction("Cancel", Variant: Variant.Ghost),
+            new DialogAction("Save"),
+        ]));
+        plain.Attributes["role"].Should().Be("dialog");
+    }
+
+    /// <summary>§10 initial focus: the SAFE action carries the marker the trap prefers — Enter
+    /// pressed on reflex cancels instead of destroying. Exactly one button gets it.</summary>
+    [Fact]
+    public void TheSafeActionCarriesTheInitialFocusMarker()
+    {
+        var html = Render(new Dialog("Delete draft?", "This cannot be undone.",
+        [
+            new DialogAction("Cancel", Variant: Variant.Ghost),
+            new DialogAction("Delete", Variant: Variant.Destructive),
+        ]));
+
+        var marked = Walk(html).Where(node => node.Attributes.ContainsKey("data-eq-initial-focus")).ToList();
+        marked.Should().ContainSingle();
+        Walk(marked[0]).Select(node => node.TextContent).Should().Contain("Cancel");
+    }
 }
