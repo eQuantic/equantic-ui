@@ -49,6 +49,17 @@ export interface InspectResult {
   form: 'factory' | 'new' | 'unknown';
   summary: string | null;
   properties: NodeProperty[];
+  /** How many children the declarative list holds, or -1 when there is no such list. */
+  childCount: number;
+  /** Why this container cannot take an insertion, when it cannot. */
+  insertReason: string | null;
+}
+
+/** One entry a palette can offer, with the smallest call of it that compiles. */
+export interface PaletteEntry {
+  name: string;
+  snippet: string;
+  summary: string | null;
 }
 
 /** One text replacement to apply, or the reason there is none. Computed by the host; applied by the
@@ -179,6 +190,16 @@ export class Sidecar {
     path: string, text: string, origin: string, property: string, value: string, buffers: OpenBuffer[],
   ): Promise<EditResult> {
     return this.send('setProperty', { path, text, origin, property, value, buffers });
+  }
+
+  palette(): Promise<PaletteEntry[]> {
+    return this.send('palette', {});
+  }
+
+  insertChild(
+    path: string, text: string, origin: string, index: number, snippet: string, buffers: OpenBuffer[],
+  ): Promise<EditResult> {
+    return this.send('insertChild', { path, text, origin, index, snippet, buffers });
   }
 
   theme(): Promise<string> {

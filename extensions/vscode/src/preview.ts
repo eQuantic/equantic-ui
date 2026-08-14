@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CompileResult, OpenBuffer, Sidecar } from './sidecar';
+import { CompileResult, OpenBuffer, PaletteEntry, Sidecar } from './sidecar';
 import { ProjectLayout } from './project';
 
 /**
@@ -218,13 +218,68 @@ export class PreviewPanel {
   }
 
   private onWebviewMessage(
-    message: { type: string; detail?: string; origin?: string; property?: string; value?: string; options?: string[] },
+    message: {
+      type: string; detail?: string; origin?: string; property?: string; value?: string;
+      options?: string[]; index?: number;
+    },
   ): void {
     if (message.type === 'ready') this.announceReady();
     else if (message.type === 'threw') this.log(`preview threw: ${message.detail ?? ''}`);
     else if (message.type === 'select' && message.origin) void this.revealSource(message.origin);
     else if (message.type === 'edit' && message.origin && message.property) {
       void this.editProperty(message.origin, message.property, message.value, message.options);
+    } else if (message.type === 'insert' && message.origin && typeof message.index === 'number') {
+      void this.insertChild(message.origin, message.index);
+    }
+  }
+
+  /** Cached for the session: the surface does not change while the editor is open, and a quick pick
+   * that waits on a round trip feels like a stall. */
+  private paletteEntries: PaletteEntry[] | undefined;
+
+  /**
+   * Insert a component into a declarative children list.
+   * <para>
+   * Offered only where the host has already said there IS such a list — an affordance that appears
+   * and then refuses reads as a bug, so the panel asks before it draws the control rather than after
+   * it is pressed.
+   * </para>
+   */
+  private async insertChild(origin: string, index: number): Promise<void> {
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) return;
+
+    try {
+      this.paletteEntries ??= await this.sidecar.palette();
+
+      const pick = await vscode.window.showQuickPick(
+        this.paletteEntries.map((entry) => ({
+          label: entry.name,
+          description: entry.snippet,
+          detail: entry.summary ?? undefined,
+          entry,
+        })),
+        { title: 'Insert a component', matchOnDescription: true, matchOnDetail: true },
+      );
+      if (!pick) return;
+
+      const edit = await this.sidecar.insertChild(
+        span.path, await this.textOf(span.path), origin, index, pick.entry.snippet, this.buffers());
+
+      if (!edit.applied) {
+        void vscode.window.showWarningMessage(`eQuantic UI: ${edit.reason ?? 'that insertion was refused'}`);
+        return;
+      }
+
+      const workspaceEdit = new vscode.WorkspaceEdit();
+      workspaceEdit.replace(
+        vscode.Uri.file(span.path),
+        new vscode.Range(edit.startLine, edit.startColumn, edit.endLine, edit.endColumn),
+        edit.newText);
+
+      if (await vscode.workspace.applyEdit(workspaceEdit)) await this.describe(origin);
+    } catch (error) {
+      this.log(`insert failed: ${(error as Error).message}`);
     }
   }
 
@@ -474,6 +529,10 @@ export class PreviewPanel {
     background: transparent; color: var(--vscode-foreground, #ccc);
   }
   #panel-tree .chip:hover { background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31)); }
+  #panel-tree .chip.add {
+    border-style: dashed;
+    color: var(--vscode-textLink-foreground, #4daafc);
+  }
   #panel-tree .label {
     font: 11px/1.4 var(--vscode-font-family, sans-serif);
     color: var(--vscode-descriptionForeground, #9d9d9d);
@@ -746,7 +805,17 @@ export class PreviewPanel {
     return button;
   }
 
-  function buildTree() {
+  function insertChip(text, index) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'chip add';
+    button.textContent = text;
+    button.addEventListener('click', () =>
+      vscode.postMessage({ type: 'insert', origin: selectedOrigin, index: index }));
+    return button;
+  }
+
+  function buildTree(node) {
     const strip = document.createElement('div');
     strip.id = 'panel-tree';
     if (!selectedElement || !selectedElement.isConnected) return strip;
@@ -754,6 +823,21 @@ export class PreviewPanel {
     const parent = stampedParent(selectedElement);
     if (parent) {
       strip.appendChild(chip(parent, '\u2191 ' + (parent.getAttribute('data-eq-component') || 'parent')));
+    }
+
+    // The insert controls, drawn only where the host has already said there IS a list to insert
+    // into. An affordance that appears and then refuses reads as a bug, so the question is asked
+    // before the control is drawn rather than after it is pressed.
+    const insertable = node && node.childCount >= 0;
+    if (insertable) {
+      strip.appendChild(insertChip('+ first', 0));
+      strip.appendChild(insertChip('+ last', node.childCount));
+    } else if (node && node.insertReason) {
+      const why = document.createElement('span');
+      why.className = 'label';
+      why.textContent = '\u2205 ' + node.insertReason;
+      why.title = node.insertReason;
+      strip.appendChild(why);
     }
 
     const children = stampedChildren(selectedElement);
@@ -884,7 +968,7 @@ export class PreviewPanel {
     panel.classList.add('visible');
 
     panelBody.replaceChildren();
-    panelBody.appendChild(buildTree());
+    panelBody.appendChild(buildTree(payload.node));
 
     if (payload.node && payload.node.summary) {
       const note = document.createElement('div');

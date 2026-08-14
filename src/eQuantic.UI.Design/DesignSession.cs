@@ -404,11 +404,19 @@ public sealed class DesignSession
                 Summary(property)));
         }
 
+        var (childCount, insertReason) = ChildrenList(symbol, arguments) switch
+        {
+            { } list => (list.Elements.Count, (string?)null),
+            _ => (-1, InsertRefusal(symbol, arguments)),
+        };
+
         return new InspectResult(
             component.Name,
             isFactory ? "factory" : "new",
             Summary(component),
-            properties.ToArray());
+            properties.ToArray(),
+            childCount,
+            insertReason);
     }
 
     /// <summary>
@@ -610,6 +618,196 @@ public sealed class DesignSession
             .FirstOrDefault(n => n is ObjectCreationExpressionSyntax or InvocationExpressionSyntax);
 
         return (tree, source, construction, Swap(_current!, tree).GetSemanticModel(tree));
+    }
+
+    /// <summary>
+    /// What a palette can offer, and the smallest call of each that compiles.
+    /// <para>
+    /// Derived from the factory surface in the COMPILATION rather than from a list someone typed:
+    /// the surface is generated for the app's own components too, so a hand-written list would be
+    /// permanently one component behind whatever the developer just wrote.
+    /// </para>
+    /// <para>
+    /// A component whose required parameters cannot be filled with a literal is simply not offered.
+    /// Refusing to guess is the point — a palette that inserts something not compiling has broken the
+    /// file to show a menu.
+    /// </para>
+    /// </summary>
+    public PaletteEntry[] Palette()
+    {
+        if (_current is null) throw new InvalidOperationException("initialize first");
+
+        var surface = _current.GetTypeByMetadataName("eQuantic.UI.Components.UI");
+        if (surface is null) return [];
+
+        var entries = new List<PaletteEntry>();
+        foreach (var method in surface.GetMembers().OfType<IMethodSymbol>())
+        {
+            if (!method.IsStatic || method.DeclaredAccessibility != Accessibility.Public) continue;
+            if (!method.ReturnType.IsVisualNode()) continue;
+            if (Snippet(method) is not { } snippet) continue;
+
+            entries.Add(new PaletteEntry(method.Name, snippet, Summary(method.ReturnType)));
+        }
+
+        return entries.DistinctBy(e => e.Name).OrderBy(e => e.Name, StringComparer.Ordinal).ToArray();
+    }
+
+    /// <summary>The smallest call of a factory that compiles, or null when one cannot be written.</summary>
+    private static string? Snippet(IMethodSymbol factory)
+    {
+        var arguments = new List<string>();
+        foreach (var parameter in factory.Parameters)
+        {
+            if (parameter.HasExplicitDefaultValue || parameter.IsParams) continue;
+
+            var literal = Literal(parameter.Type, factory.Name);
+            if (literal is null) return null;
+            arguments.Add(literal);
+        }
+
+        return $"{factory.Name}({string.Join(", ", arguments)})";
+    }
+
+    /// <summary>
+    /// A literal for a required parameter. Deliberately narrow: a type this cannot write is a
+    /// component the palette does not offer, which is better than offering one that will not compile.
+    /// </summary>
+    private static string? Literal(ITypeSymbol type, string componentName)
+    {
+        var bare = type is INamedTypeSymbol { Name: "Nullable" } nullable && nullable.TypeArguments.Length == 1
+            ? nullable.TypeArguments[0]
+            : type;
+
+        // A child slot gets something VISIBLE. An empty Box inside a Card is indistinguishable from
+        // the insert having done nothing at all.
+        if (bare.IsVisualNode()) return $"Text(\"{componentName}\")";
+
+        if (bare.TypeKind == TypeKind.Enum)
+        {
+            var first = bare.GetMembers().OfType<IFieldSymbol>().FirstOrDefault(f => f.HasConstantValue);
+            return first is null ? null : $"{bare.Name}.{first.Name}";
+        }
+
+        return bare.SpecialType switch
+        {
+            SpecialType.System_String => $"\"{componentName}\"",
+            SpecialType.System_Boolean => "false",
+            SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16 => "0",
+            SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal => "0",
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// Inserts a child into a declarative <c>children: [ … ]</c> at a position.
+    /// <para>
+    /// Anchored on an ELEMENT's span, never on the brackets: the list is written multi-line with a
+    /// trailing comma in every screen in this repo, and a naive splice before the <c>]</c> lands
+    /// after that comma and produces a list with a hole in it. Inserting after element N-1 puts the
+    /// text exactly where a person would have typed it.
+    /// </para>
+    /// </summary>
+    public EditResult InsertChild(string path, string text, string origin, int index, string snippet)
+    {
+        if (_compilation is null) throw new InvalidOperationException("initialize first");
+
+        var parsed = SyntaxFactory.ParseExpression(snippet);
+        if (parsed.ContainsDiagnostics) return EditResult.Refused($"'{snippet}' is not a C# expression.");
+
+        if (Locate(path, text, origin) is not var (_, source, construction, model) || construction is null)
+            return EditResult.Refused("That element's origin does not name anything in this file.");
+
+        if (model.GetSymbolInfo(construction).Symbol is not IMethodSymbol symbol)
+            return EditResult.Refused("The compiler cannot resolve that container.");
+
+        var arguments = construction switch
+        {
+            ObjectCreationExpressionSyntax creation => creation.ArgumentList?.Arguments,
+            InvocationExpressionSyntax invocation => invocation.ArgumentList.Arguments,
+            _ => null,
+        };
+
+        if (ChildrenList(symbol, arguments) is not { } children)
+        {
+            return EditResult.Refused(InsertRefusal(symbol, arguments)
+                ?? $"{symbol.Name} does not take a list of children.");
+        }
+
+        var elements = children.Elements;
+        var position = Math.Clamp(index, 0, elements.Count);
+
+        // The indentation of the element it is going beside, so the inserted line reads as one the
+        // author wrote rather than one a tool dropped in.
+        var anchor = elements.Count == 0 ? null : elements[Math.Min(position, elements.Count - 1)];
+        var indent = anchor is null ? "" : Indentation(source, anchor.SpanStart);
+
+        if (elements.Count == 0)
+        {
+            return Guarded(source, new TextSpan(children.OpenBracketToken.Span.End, 0), snippet, text, path);
+        }
+
+        return position == elements.Count
+            ? Guarded(source, new TextSpan(elements[^1].Span.End, 0), $",\n{indent}{snippet}", text, path)
+            : Guarded(source, new TextSpan(elements[position].SpanStart, 0), $"{snippet},\n{indent}", text, path);
+    }
+
+    /// <summary>The whitespace at the start of the line a position sits on.</summary>
+    private static string Indentation(SourceText source, int position)
+    {
+        var line = source.Lines.GetLineFromPosition(position);
+        var textOfLine = source.ToString(line.Span);
+        return textOfLine[..(textOfLine.Length - textOfLine.TrimStart().Length)];
+    }
+
+    /// <summary>
+    /// The declarative <c>children: [ … ]</c> of a container call, or null when there is not one.
+    /// <para>
+    /// A collection expression is the ONLY shape an insertion can be spliced into safely: its
+    /// elements are a list with real spans, so a new one goes between two of them without touching
+    /// anything else. The other two shapes a container is written in — a collection initializer, and
+    /// <c>.Add(…)</c> statements — are not lists at all in the place that matters, and inserting into
+    /// them is statement-level dataflow.
+    /// </para>
+    /// </summary>
+    private static CollectionExpressionSyntax? ChildrenList(
+        IMethodSymbol symbol, SeparatedSyntaxList<ArgumentSyntax>? arguments)
+    {
+        if (arguments is not { } list) return null;
+
+        for (var i = 0; i < symbol.Parameters.Length; i++)
+        {
+            if (symbol.Parameters[i].Name != "children") continue;
+            return ArgumentFor(list, symbol.Parameters[i], i)?.Expression as CollectionExpressionSyntax;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Why a container cannot take an insertion. ALWAYS a reason when there is no list — an
+    /// affordance that appears and then refuses reads as a bug, so the panel needs to know before it
+    /// offers anything.
+    /// </summary>
+    private static string InsertRefusal(IMethodSymbol symbol, SeparatedSyntaxList<ArgumentSyntax>? arguments)
+    {
+        // A CONSTRUCTOR takes only the layout knobs — children are appended by the factory, or added
+        // by statements afterwards. So `new Column(gap: …)` has no children parameter at all, and the
+        // first version of this said nothing about the commonest container in the repo.
+        if (!symbol.Parameters.Any(p => p.Name == "children"))
+        {
+            // A constructor's own Name is ".ctor"; what the reader recognises is the type.
+            var named = symbol.MethodKind == MethodKind.Constructor
+                ? symbol.ContainingType?.Name ?? symbol.Name
+                : symbol.Name;
+            return $"This {named} is written as `new {named}(…)`, whose "
+                + "children are added one statement at a time. Inserting there is a change to the method's flow, "
+                + "not to a list, so it is not done for you.";
+        }
+
+        return arguments is { } list && list.Any(a => a.NameColon?.Name.Identifier.Text == "children")
+            ? "This container's children are not written as a [ … ] list, so there is no list to insert into."
+            : "This container was called without a children list. Adding one would change how it is written, "
+                + "so it is not done for you.";
     }
 
     /// <summary>A type's own members and every base's, nearest first — <c>object</c> excluded, which

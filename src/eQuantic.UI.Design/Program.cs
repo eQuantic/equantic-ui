@@ -60,6 +60,15 @@ while (await input.ReadLineAsync() is { } line)
                 Require(parameters.Property, "property"),
                 parameters.Value ?? ""),
 
+            "palette" => session.Palette(),
+
+            "insertChild" => session.InsertChild(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin"),
+                parameters.Index ?? 0,
+                Require(parameters.Snippet, "snippet")),
+
             "theme" => session.Theme(),
 
             "shutdown" => "bye",

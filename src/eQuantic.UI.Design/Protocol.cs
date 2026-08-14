@@ -34,6 +34,12 @@ public sealed record DesignParams
     /// <summary>An origin string a rendered element carried back (classify).</summary>
     [JsonPropertyName("origin")] public string? Origin { get; init; }
 
+    /// <summary>Where in a children list to insert — 0 is before the first (insertChild).</summary>
+    [JsonPropertyName("index")] public int? Index { get; init; }
+
+    /// <summary>The C# to insert there, as a palette entry's snippet.</summary>
+    [JsonPropertyName("snippet")] public string? Snippet { get; init; }
+
     /// <summary>The property being set (setProperty).</summary>
     [JsonPropertyName("property")] public string? Property { get; init; }
 
@@ -109,7 +115,18 @@ public sealed record InspectResult(
     /// reachable.</summary>
     [property: JsonPropertyName("form")] string Form,
     [property: JsonPropertyName("summary")] string? Summary,
-    [property: JsonPropertyName("properties")] NodeProperty[] Properties);
+    [property: JsonPropertyName("properties")] NodeProperty[] Properties,
+    /// <summary>How many children the declarative list holds, or -1 when there is no such list —
+    /// which is what decides whether an insert affordance is offered at all.</summary>
+    [property: JsonPropertyName("childCount")] int ChildCount,
+    /// <summary>Why this container cannot take an insertion, when it cannot.</summary>
+    [property: JsonPropertyName("insertReason")] string? InsertReason);
+
+/// <summary>One entry a palette can offer, with the smallest call that compiles.</summary>
+public sealed record PaletteEntry(
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("snippet")] string Snippet,
+    [property: JsonPropertyName("summary")] string? Summary);
 
 /// <summary>
 /// What may be DONE with a selected node, which is not the same question as where it came from.
