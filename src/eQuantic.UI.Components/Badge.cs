@@ -34,6 +34,19 @@ public sealed class Badge : StatelessComponent
 
     public static Badge AsDot(Variant variant = Variant.Destructive) => new(0, 99, variant) { Dot = true };
 
+    /// <summary>
+    /// The badge OVERLAY of spec B7: the count pins to the content's top-end corner, ringed so it
+    /// reads against whatever it sits on. Lives here rather than in either navigation component
+    /// because both draw it, and a rule drawn twice is a rule that drifts.
+    /// </summary>
+    internal static VisualNode Over(VisualNode content, int count)
+    {
+        var stack = new Stack();
+        stack.Add(content);
+        stack.Add(new Positioned(new Badge(count) { Ring = true }, top: -4, end: -8));
+        return stack;
+    }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;

@@ -111,17 +111,29 @@ public sealed class WalletApp : StatefulComponent
         content.Add(new Banner(Variant.Warning, "Limit almost reached",
             "92% of April's transfer limit used."));
 
-        var page = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        page.Add(new Flexible(new ScrollView(new Box(new BoxStyle
+        // The SAME body, laid out twice — once under a bar and once beside a rail. Two instances
+        // rather than one node used twice: a node belongs to one tree, and both variants are real
+        // trees (the web emits both behind media queries, Photon lays out the one that fits).
+        VisualNode Body() => new ScrollView(new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Padding = EdgeInsets.Symmetric(Space.S4, Space.S2),
-        }, content)), 1));
-        page.Add(TabBar(theme));
+        }, content));
 
-        // The top inset only: the tab bar keeps its own bottom clear, so the page must not add it
+        var phone = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        phone.Add(new Flexible(Body(), 1));
+        phone.Add(TabBar(theme));
+
+        // Past 600dp the destinations stand up on the leading edge instead of eating a band of a
+        // screen that is now wider than it is tall. Same four destinations, same handler, same
+        // state: the shell follows the WINDOW, and nothing above it is told which one it got.
+        var wide = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
+        wide.Add(Rail(theme));
+        wide.Add(new Flexible(Body(), 1));
+
+        // The top inset only: each navigation keeps its own edge clear, so the page must not add it
         // twice — that is the composition SafeArea exists to make possible.
-        return new SafeArea(page, SafeEdges.Top);
+        return new SafeArea(new AdaptiveNode(phone, wide), SafeEdges.Top);
     }
 
     /// <summary>The balance, on the one gradient in the app — a wallet's single hero surface.</summary>
@@ -265,13 +277,7 @@ public sealed class WalletApp : StatefulComponent
         var bar = new BottomNavigation(
             WalletData.Tabs.Select(t => new NavItem(t.Icon, t.Label) { BadgeCount = t.Badge }).ToArray(),
             _tab,
-            i => SetState(() =>
-            {
-                _tab = i;
-                // The bar NAVIGATES. Anything else is a control that lights up and lies — and on a
-                // phone the tab bar is the one thing a user trusts to take them somewhere.
-                _screen = WalletData.Tabs[i].Screen;
-            }));
+            Go);
 
         return new Box(new BoxStyle
         {
@@ -281,6 +287,34 @@ public sealed class WalletApp : StatefulComponent
             BorderColor = theme.Border,
         }, new SafeArea(bar, SafeEdges.Bottom));
     }
+
+    /// <summary>The same four destinations as a rail, for a window wide enough to give them a side
+    /// of their own. It shares TabBar's items and its handler — a destination that behaved
+    /// differently after a rotation would be a different app, not a wider one.</summary>
+    private VisualNode Rail(IAppTheme theme)
+    {
+        var rail = new NavigationRail(
+            WalletData.Tabs.Select(t => new NavItem(t.Icon, t.Label) { BadgeCount = t.Badge }).ToArray(),
+            _tab,
+            Go);
+
+        return new Box(new BoxStyle
+        {
+            Height = SizeValue.Fill,
+            Background = theme.Surface,
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+        }, new SafeArea(rail, SafeEdges.Start | SafeEdges.Bottom));
+    }
+
+    /// <summary>What a destination DOES, written once for both shells.</summary>
+    private void Go(int index) => SetState(() =>
+    {
+        _tab = index;
+        // Navigation NAVIGATES. Anything else is a control that lights up and lies — and the
+        // destination bar is the one thing a user trusts to take them somewhere.
+        _screen = WalletData.Tabs[index].Screen;
+    });
 
     // ---- 02 Transactions -------------------------------------------------------------------
 

@@ -181,6 +181,38 @@ authored ONCE in a shared assembly (abstract nodes + typed tokens in `eQuantic.U
 lowered per target by realizers — DOM/CSS on web, Photon pixels on native — so the two platforms are
 written practically identically → `docs/SHARED-COMPONENTS-PLAN.md`.
 
+## Track F — Form factors (tablet, watch, TV)
+
+Added 2026-08-14 (Edgar's question: "and apps for watch, tablet?"). The framework's own answer to a
+form factor is NOT a second project — the same C# already runs on macOS, iOS and Android from one
+`equantic-native` — so this track is about the two things that genuinely differ: what a shell looks
+like at a given width, and what a device can do that a phone cannot.
+
+- **Tablet: shipped.** `WindowSizeClass` (Compact <600dp / Medium 600-839 / Expanded ≥840) and
+  `AdaptiveNode` were already realized on both targets (build-time media queries on web, re-layout
+  on Photon); 2026-08-14 added the missing half of the vocabulary, `NavigationRail`, so one
+  `NavItem` list feeds a bar under a phone and a rail down the leading edge of a tablet with no
+  listener and no second state. Two goldens pin both. What is still ahead here is a two-pane
+  list-detail pattern.
+- **F1 — pre-built shells in the templates.** `dotnet new equantic-native --shell blank|tabs|drawer|
+  list-detail` and `equantic-app --shell blank|topnav|dashboard`, as a `dotnet new` CHOICE parameter
+  on the existing two templates rather than one template per shape (a template per form factor would
+  deny the write-once thesis on the first screen a developer sees). The generated shell is adaptive
+  by default, which demonstrates the framework's promise in the first 30 seconds of a new project.
+- **F2 — Wear OS.** Wear is Android, so the Android shell is the base. What it needs: a round safe
+  area (`isScreenRound` is a configuration answer, not a guess), a size class BELOW Compact (a watch
+  is ~200dp and the smallest class today starts where a phone starts), rotary input from the crown
+  or bezel, and swipe-to-dismiss. Fence to state plainly: **Tiles and Complications are not
+  Activities** — they are their own surfaces with their own render path, so write-once covers the
+  watch APP and not the tile.
+- **F3 — Android TV.** Cheaper than it looks: the central piece, arrow-key focus navigation, exists
+  since the keyboard pass. What it needs is the leanback manifest, an overscan-safe area, the
+  10-foot type scale, and a focus ring readable from three metres.
+- **Out of scope, with the reason.** Android Auto/AAOS makes the app assemble Google's approved
+  templates instead of drawing what it wants, which is the exact opposite of this engine; it would
+  need a shell that speaks their language, and at that point it is not the same product. XR sits on
+  the same shelf.
+
 ## Track E — VS Code extension "eQuantic UI" (the visual editor)
 
 Added 2026-07-31 (Edgar's directive): a first-party VS Code extension that turns the SDK into a

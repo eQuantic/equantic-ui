@@ -87,6 +87,7 @@ export { MermaidPlacedNode } from './MermaidPlacedNode';
 export { MermaidScene } from './MermaidScene';
 export { MermaidSegment } from './MermaidSegment';
 export { NavItem } from './NavItem';
+export { NavigationRail } from './NavigationRail';
 export { PageIndicator } from './PageIndicator';
 export { Pagination } from './Pagination';
 export { PlainTextLanguage } from './PlainTextLanguage';

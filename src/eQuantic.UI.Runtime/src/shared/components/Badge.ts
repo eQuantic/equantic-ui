@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Positioned, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class Badge extends StatelessComponent {
     declare count: number;
@@ -28,6 +28,10 @@ export class Badge extends StatelessComponent {
 
     static asDot(variant: string = 'destructive') {
         return new Badge(0, 99, variant, { dot: true });
+    }
+
+    static over(content: VisualNode, count: number) {
+        let stack = new Stack();stack.add(content);stack.add(new Positioned(new Badge(count, 99, 'destructive', { ring: true }), -4, -8));return stack;
     }
 
 }

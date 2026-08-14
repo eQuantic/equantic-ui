@@ -328,6 +328,21 @@ public static class UI
     public static Tabs Tabs(IReadOnlyList<string> labels, int selected, Action<int>? onSelect = null) =>
         new Tabs(labels, selected, onSelect);
 
+    /// <summary>The phone's destination bar (spec B4) — 3-5 destinations across the bottom.</summary>
+    public static BottomNavigation BottomNavigation(IReadOnlyList<NavItem> items, int selected,
+        Action<int>? onSelect = null) =>
+        new BottomNavigation(items, selected, onSelect);
+
+    /// <summary>The same destinations stood on their side for a wide window (spec B4). Hand both
+    /// this and the bar the SAME item list inside an AdaptiveNode and the shell follows the window.</summary>
+    public static NavigationRail NavigationRail(IReadOnlyList<NavItem> items, int selected,
+        Action<int>? onSelect = null) =>
+        new NavigationRail(items, selected, onSelect);
+
+    /// <summary>The sliding panel for everything past a rail's worth of destinations.</summary>
+    public static Drawer Drawer(VisualNode content, bool open, Action? onDismiss = null) =>
+        new Drawer(content, open, onDismiss);
+
     /// <summary>Modal dialog with its action row.</summary>
     public static Dialog Dialog(string title, string body, DialogAction[] actions,
         bool dismissible = false, Action? onDismiss = null) =>

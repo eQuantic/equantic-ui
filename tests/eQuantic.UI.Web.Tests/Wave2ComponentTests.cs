@@ -184,6 +184,50 @@ public class Wave2ComponentTests
         tooFew.Should().Throw<ArgumentException>("2 destinations → Tabs per spec B4");
     }
 
+    /// <summary>
+    /// The rail is the bar stood on its side, and the web has to agree with Photon about that: 80dp
+    /// of leading edge, the same destination list, the same pill. The header slot sits ABOVE the
+    /// destinations rather than among them, which is what keeps a FAB from counting as one.
+    /// </summary>
+    [Fact]
+    public void NavigationRail_IsTheBarOnItsSide_AndTakesTwoMoreDestinations()
+    {
+        NavItem[] four =
+        [
+            new(Icons.Person, "Home"),
+            new(Icons.Mail, "Cards") { BadgeCount = 2 },
+            new(Icons.Search, "Transfer"),
+            new(Icons.Menu, "Profile"),
+        ];
+
+        var node = Render(new NavigationRail(four, selected: 0, _ => { }));
+        node.Attributes["style"].Should().Contain("width: 80px");
+        node.Attributes["style"].Should().Contain($"background-color: {TokenCss.Value(Theme.Surface)}");
+
+        var destinations = Walk(node).Where(child => child.Tag == "button").ToList();
+        destinations.Should().HaveCount(4, "the whole item is the target, exactly as in the bar");
+        destinations.Select(button => button.Attributes["aria-label"])
+            .Should().Equal("Home", "Cards", "Transfer", "Profile");
+
+        // A header is not a destination: it rides above them and never joins the count.
+        var withHeader = Render(new NavigationRail(four, selected: 0, _ => { })
+        {
+            Leading = new IconButton(Icons.Plus, "Compose"),
+        });
+        Walk(withHeader).Count(child => child.Tag == "button").Should().Be(5);
+
+        var tooFew = () => Render(new NavigationRail([new NavItem(Icons.Person, "A"), new NavItem(Icons.Mail, "B")], 0));
+        tooFew.Should().Throw<ArgumentException>("2 destinations → Tabs per spec B4");
+    }
+
+    private static IEnumerable<HtmlNode> Walk(HtmlNode node)
+    {
+        yield return node;
+        foreach (var child in node.Children)
+            foreach (var descendant in Walk(child))
+                yield return descendant;
+    }
+
     [Fact]
     public void ClosedFences_AvatarImage_And_BannerDismiss()
     {
