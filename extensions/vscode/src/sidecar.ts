@@ -51,6 +51,10 @@ export interface InspectResult {
   properties: NodeProperty[];
   /** How many children the declarative list holds, or -1 when there is no such list. */
   childCount: number;
+  /** Position among the parent's declarative children, or -1 when this node is not an element of
+   * such a list — which is what decides whether it can be moved or removed. */
+  siblingIndex: number;
+  siblingCount: number;
   /** Why this container cannot take an insertion, when it cannot. */
   insertReason: string | null;
 }
@@ -200,6 +204,14 @@ export class Sidecar {
     path: string, text: string, origin: string, index: number, snippet: string, buffers: OpenBuffer[],
   ): Promise<EditResult> {
     return this.send('insertChild', { path, text, origin, index, snippet, buffers });
+  }
+
+  moveChild(path: string, text: string, origin: string, delta: number, buffers: OpenBuffer[]): Promise<EditResult> {
+    return this.send('moveChild', { path, text, origin, delta, buffers });
+  }
+
+  removeChild(path: string, text: string, origin: string, buffers: OpenBuffer[]): Promise<EditResult> {
+    return this.send('removeChild', { path, text, origin, buffers });
   }
 
   theme(): Promise<string> {

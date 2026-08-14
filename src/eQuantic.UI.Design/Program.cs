@@ -62,6 +62,17 @@ while (await input.ReadLineAsync() is { } line)
 
             "palette" => session.Palette(),
 
+            "moveChild" => session.MoveChild(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin"),
+                parameters.Delta ?? 0),
+
+            "removeChild" => session.RemoveChild(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin")),
+
             "insertChild" => session.InsertChild(
                 Require(parameters.Path, "path"),
                 parameters.Text ?? "",

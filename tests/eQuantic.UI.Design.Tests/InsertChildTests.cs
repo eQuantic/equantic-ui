@@ -40,7 +40,10 @@ public sealed class InsertChildTests : IDisposable
                 return Column(gap: Space.S4, children: [
                     Text("first", TypeRole.BodyM, context.Theme.TextPrimary),
                     Text("second", TypeRole.BodyM, context.Theme.TextPrimary),
+                    // A plain reference, never a construction — so it carries no origin, and the
+                    // editor can no more select it than the compiler could stamp it.
                     built,
+                    Text("omega", TypeRole.BodyM, context.Theme.TextPrimary),
                 ]);
             }
         }
@@ -100,7 +103,7 @@ public sealed class InsertChildTests : IDisposable
     {
         var node = _session.Inspect(_probe, Source, Declarative);
 
-        node!.ChildCount.Should().Be(3);
+        node!.ChildCount.Should().Be(4);
         node.InsertReason.Should().BeNull();
     }
 
@@ -133,10 +136,12 @@ public sealed class InsertChildTests : IDisposable
     [Fact]
     public void InsertingAtTheEnd_PutsItAfterTheLastChild()
     {
-        var edit = _session.InsertChild(_probe, Source, Declarative, 3, "Divider()");
+        var edit = _session.InsertChild(_probe, Source, Declarative, 4, "Divider()");
 
         edit.Applied.Should().BeTrue(edit.Reason);
-        Apply(Source, edit).Should().Contain("built,\n            Divider(),");
+        var after = Apply(Source, edit);
+        after.IndexOf("Divider()", StringComparison.Ordinal)
+            .Should().BeGreaterThan(after.IndexOf("\"omega\"", StringComparison.Ordinal));
     }
 
     /// <summary>Past the end is the same as at the end — a panel offering "+ last" should not have to
@@ -147,7 +152,9 @@ public sealed class InsertChildTests : IDisposable
         var edit = _session.InsertChild(_probe, Source, Declarative, 99, "Divider()");
 
         edit.Applied.Should().BeTrue(edit.Reason);
-        Apply(Source, edit).Should().Contain("built,\n            Divider(),");
+        var after = Apply(Source, edit);
+        after.IndexOf("Divider()", StringComparison.Ordinal)
+            .Should().BeGreaterThan(after.IndexOf("\"omega\"", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -157,6 +164,75 @@ public sealed class InsertChildTests : IDisposable
 
         edit.Applied.Should().BeFalse();
         edit.Reason.Should().Contain("statement");
+    }
+
+    private string SecondChild => OriginOf("Text(\"second\"");
+
+    [Fact]
+    public void AnElementOfAList_KnowsWhereItSitsAmongItsSiblings()
+    {
+        var node = _session.Inspect(_probe, Source, SecondChild);
+
+        node!.SiblingIndex.Should().Be(1);
+        node.SiblingCount.Should().Be(4);
+    }
+
+    /// <summary>A node that is not an element of a list has no order to be moved within, and the
+    /// panel hides the controls rather than explaining an arrangement that does not exist.</summary>
+    [Fact]
+    public void ANodeThatIsNotAnElement_HasNoSiblingPosition()
+    {
+        _session.Inspect(_probe, Source, Declarative)!.SiblingIndex.Should().Be(-1);
+    }
+
+    /// <summary>
+    /// The two elements swap and everything BETWEEN them stays where it is — the comma, the newline,
+    /// the indentation. Rewriting the list from its element texts would be simpler and would silently
+    /// discard a comment sitting between two children.
+    /// </summary>
+    [Fact]
+    public void MovingAChildUp_SwapsItWithThePreviousSibling()
+    {
+        var edit = _session.MoveChild(_probe, Source, SecondChild, -1);
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        Apply(Source, edit).Should().Contain("Text(\"second\"").And.Contain("Text(\"first\"");
+        var after = Apply(Source, edit);
+        after.IndexOf("\"second\"", StringComparison.Ordinal)
+            .Should().BeLessThan(after.IndexOf("\"first\"", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void MovingTheFirstChildUp_IsRefusedWithASentenceRatherThanSilence()
+    {
+        var edit = _session.MoveChild(_probe, Source, OriginOf("Text(\"first\""), -1);
+
+        edit.Applied.Should().BeFalse();
+        edit.Reason.Should().Contain("already first");
+    }
+
+    /// <summary>The element goes and so does ONE separator. Taking the element alone leaves a stray
+    /// comma; taking both leaves a hole.</summary>
+    [Fact]
+    public void RemovingAChild_TakesItsSeparatorWithIt()
+    {
+        var edit = _session.RemoveChild(_probe, Source, SecondChild);
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        var after = Apply(Source, edit);
+        after.Should().NotContain("\"second\"");
+        after.Should().NotContain(",,").And.NotContain("[,");
+    }
+
+    [Fact]
+    public void RemovingTheLastChild_LeavesNoOrphanedComma()
+    {
+        var edit = _session.RemoveChild(_probe, Source, OriginOf("Text(\"omega\""));
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        var after = Apply(Source, edit);
+        after.Should().NotContain("\"omega\"");
+        after.Should().NotContain(",\n                ]").And.NotContain(",,");
     }
 
     /// <summary>

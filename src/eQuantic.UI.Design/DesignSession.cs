@@ -410,13 +410,17 @@ public sealed class DesignSession
             _ => (-1, InsertRefusal(symbol, arguments)),
         };
 
+        var (siblingIndex, siblingCount) = Sibling(construction);
+
         return new InspectResult(
             component.Name,
             isFactory ? "factory" : "new",
             Summary(component),
             properties.ToArray(),
             childCount,
-            insertReason);
+            insertReason,
+            siblingIndex,
+            siblingCount);
     }
 
     /// <summary>
@@ -618,6 +622,103 @@ public sealed class DesignSession
             .FirstOrDefault(n => n is ObjectCreationExpressionSyntax or InvocationExpressionSyntax);
 
         return (tree, source, construction, Swap(_current!, tree).GetSemanticModel(tree));
+    }
+
+    /// <summary>Where a node sits among its parent's declarative children, and how many there are —
+    /// (-1, 0) when it is not an element of such a list, which is most nodes.</summary>
+    private static (int Index, int Count) Sibling(SyntaxNode construction)
+    {
+        // The element is the construction itself: a collection expression holds expressions directly,
+        // with no argument or wrapper in between.
+        if (construction.Parent is not ExpressionElementSyntax element
+            || element.Parent is not CollectionExpressionSyntax list)
+        {
+            return (-1, 0);
+        }
+
+        return (list.Elements.IndexOf(element), list.Elements.Count);
+    }
+
+    /// <summary>
+    /// Moves a node up or down among its siblings.
+    /// <para>
+    /// The two elements swap places and everything BETWEEN them stays exactly where it is — the
+    /// comma, the newline, the indentation. Rewriting the whole list from its element texts would be
+    /// simpler and would silently discard any comment sitting between two children, which is a note
+    /// someone left for a reason.
+    /// </para>
+    /// <para>
+    /// The imperfection this leaves is worth naming: a comment written ABOVE a child stays with the
+    /// position rather than travelling with the child. Moving the text and leaving the note is the
+    /// lesser wrong of the two, and the alternative loses the note entirely.
+    /// </para>
+    /// </summary>
+    public EditResult MoveChild(string path, string text, string origin, int delta)
+    {
+        if (_compilation is null) throw new InvalidOperationException("initialize first");
+        if (delta is not (-1 or 1)) return EditResult.Refused("A child moves one place at a time.");
+
+        if (Locate(path, text, origin) is not var (_, source, construction, _) || construction is null)
+            return EditResult.Refused("That element's origin does not name anything in this file.");
+
+        if (construction.Parent is not ExpressionElementSyntax element
+            || element.Parent is not CollectionExpressionSyntax list)
+        {
+            return EditResult.Refused(
+                "This node is not an element of a [ … ] list, so there is no order to move it within.");
+        }
+
+        var index = list.Elements.IndexOf(element);
+        var target = index + delta;
+        if (target < 0 || target >= list.Elements.Count)
+        {
+            return EditResult.Refused(delta < 0 ? "It is already first." : "It is already last.");
+        }
+
+        var first = delta < 0 ? list.Elements[target] : element;
+        var second = delta < 0 ? element : list.Elements[target];
+        var between = source.ToString(TextSpan.FromBounds(first.Span.End, second.SpanStart));
+
+        return Guarded(
+            source,
+            TextSpan.FromBounds(first.SpanStart, second.Span.End),
+            source.ToString(second.Span) + between + source.ToString(first.Span),
+            text,
+            path);
+    }
+
+    /// <summary>
+    /// Removes a node from its parent's children.
+    /// <para>
+    /// The element goes and so does ONE separator — the comma after it, or the comma before it when
+    /// it is the last. Taking the element alone leaves a stray comma; taking both leaves a hole.
+    /// </para>
+    /// </summary>
+    public EditResult RemoveChild(string path, string text, string origin)
+    {
+        if (_compilation is null) throw new InvalidOperationException("initialize first");
+
+        if (Locate(path, text, origin) is not var (_, source, construction, _) || construction is null)
+            return EditResult.Refused("That element's origin does not name anything in this file.");
+
+        if (construction.Parent is not ExpressionElementSyntax element
+            || element.Parent is not CollectionExpressionSyntax list)
+        {
+            return EditResult.Refused("This node is not an element of a [ … ] list, so there is nothing to remove it from.");
+        }
+
+        var index = list.Elements.IndexOf(element);
+        var separators = list.Elements.GetSeparators().ToArray();
+
+        // Up to the NEXT element when there is one, so the line and its indentation go together;
+        // back to the previous separator when this is the last, so no comma is orphaned.
+        var span = index + 1 < list.Elements.Count
+            ? TextSpan.FromBounds(element.SpanStart, list.Elements[index + 1].SpanStart)
+            : index > 0
+                ? TextSpan.FromBounds(separators[index - 1].SpanStart, element.Span.End)
+                : TextSpan.FromBounds(element.SpanStart, element.Span.End);
+
+        return Guarded(source, span, "", text, path);
     }
 
     /// <summary>

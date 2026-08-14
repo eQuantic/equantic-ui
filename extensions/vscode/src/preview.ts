@@ -220,7 +220,7 @@ export class PreviewPanel {
   private onWebviewMessage(
     message: {
       type: string; detail?: string; origin?: string; property?: string; value?: string;
-      options?: string[]; index?: number;
+      options?: string[]; index?: number; delta?: number;
     },
   ): void {
     if (message.type === 'ready') this.announceReady();
@@ -230,6 +230,48 @@ export class PreviewPanel {
       void this.editProperty(message.origin, message.property, message.value, message.options);
     } else if (message.type === 'insert' && message.origin && typeof message.index === 'number') {
       void this.insertChild(message.origin, message.index);
+    } else if (message.type === 'arrange' && message.origin) {
+      void this.arrange(message.origin, message.delta);
+    }
+  }
+
+  /**
+   * Move a child among its siblings, or take it out.
+   * <para>
+   * Both go through the same path as every other edit: one WorkspaceEdit, so one Ctrl+Z reverses the
+   * gesture, and the host refuses rather than writing anything that would not compile.
+   * </para>
+   */
+  private async arrange(origin: string, delta: number | undefined): Promise<void> {
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) return;
+
+    try {
+      const text = await this.textOf(span.path);
+      const buffers = this.buffers();
+      const edit = delta === undefined
+        ? await this.sidecar.removeChild(span.path, text, origin, buffers)
+        : await this.sidecar.moveChild(span.path, text, origin, delta, buffers);
+
+      if (!edit.applied) {
+        void vscode.window.showWarningMessage(`eQuantic UI: ${edit.reason ?? 'that was refused'}`);
+        return;
+      }
+
+      const workspaceEdit = new vscode.WorkspaceEdit();
+      workspaceEdit.replace(
+        vscode.Uri.file(span.path),
+        new vscode.Range(edit.startLine, edit.startColumn, edit.endLine, edit.endColumn),
+        edit.newText);
+
+      if (!(await vscode.workspace.applyEdit(workspaceEdit))) return;
+
+      // A removed node has no origin left to describe, and a moved one has a span that shifted — so
+      // the panel closes rather than showing an answer about something that is no longer there.
+      if (delta === undefined) this.post({ type: 'deselect' });
+      else await this.describe(origin);
+    } catch (error) {
+      this.log(`arrange failed: ${(error as Error).message}`);
     }
   }
 
@@ -517,6 +559,11 @@ export class PreviewPanel {
   }
   #panel button.icon:hover { background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31)); }
   #panel button.icon:focus-visible { outline: 1px solid var(--vscode-focusBorder, #0078d4); }
+  /* Hidden rather than disabled when the node is not an element of a list: there is nothing to
+     explain about an arrangement that does not exist. */
+  #panel button.icon[hidden] { display: none; }
+  #panel button.icon:disabled { opacity: 0.35; cursor: default; }
+  #panel button.icon:disabled:hover { background: transparent; }
 
   #panel-body { overflow: auto; padding: 6px 10px 10px; }
   /* Moving through the tree, from the tree itself: the panel names the parent and the children it
@@ -594,6 +641,21 @@ export class PreviewPanel {
     <span id="panel-title"></span>
     <span id="panel-tier"></span>
     <span id="panel-spacer"></span>
+    <button class="icon" id="panel-up" type="button" title="Move up" aria-label="Move up">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 12V4M4.5 7.5L8 4l3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button class="icon" id="panel-down" type="button" title="Move down" aria-label="Move down">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 4v8M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button class="icon" id="panel-remove" type="button" title="Remove" aria-label="Remove">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.6 8h4.8l.6-8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
     <button class="icon" id="panel-min" type="button" title="Minimize" aria-label="Minimize">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M4 6.5l4 4 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -870,6 +932,17 @@ export class PreviewPanel {
 
   // ---- the properties panel ---------------------------------------------------------------------
 
+  const upButton = document.getElementById('panel-up');
+  const downButton = document.getElementById('panel-down');
+  const removeButton = document.getElementById('panel-remove');
+
+  upButton.addEventListener('click', () =>
+    vscode.postMessage({ type: 'arrange', origin: selectedOrigin, delta: -1 }));
+  downButton.addEventListener('click', () =>
+    vscode.postMessage({ type: 'arrange', origin: selectedOrigin, delta: 1 }));
+  removeButton.addEventListener('click', () =>
+    vscode.postMessage({ type: 'arrange', origin: selectedOrigin }));
+
   document.getElementById('panel-min').addEventListener('click', () => panel.classList.toggle('minimised'));
   document.getElementById('panel-close').addEventListener('click', () => panel.classList.remove('visible'));
 
@@ -964,6 +1037,15 @@ export class PreviewPanel {
     panelTitle.textContent = payload.node ? payload.node.component : 'Selection';
     panelTier.textContent = payload.tier + (payload.node ? ' · ' + payload.node.form : '');
     panelTier.title = payload.reason || '';
+    // Arrangement is only a thing for a node that IS an element of a list. Everything else — a
+    // container's only child, a node built by a helper — has no order to be moved within.
+    const arrangeable = payload.node && payload.node.siblingIndex >= 0;
+    for (const button of [upButton, downButton, removeButton]) button.hidden = !arrangeable;
+    if (arrangeable) {
+      upButton.disabled = payload.node.siblingIndex === 0;
+      downButton.disabled = payload.node.siblingIndex === payload.node.siblingCount - 1;
+    }
+
     panel.classList.remove('minimised');
     panel.classList.add('visible');
 
@@ -1040,6 +1122,12 @@ export class PreviewPanel {
     } else if (payload.type === 'selected') {
       if (payload.tier !== 'literal') outline.classList.add(payload.tier);
       showSelection(payload);
+    } else if (payload.type === 'deselect') {
+      panel.classList.remove('visible');
+      outline.classList.remove('visible');
+      badge.classList.remove('visible');
+      selectedElement = null;
+      selectedOrigin = null;
     } else if (payload.type === 'inspect') {
       setInspecting(payload.on);
     } else if (payload.type === 'stale') {

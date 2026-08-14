@@ -34,6 +34,9 @@ public sealed record DesignParams
     /// <summary>An origin string a rendered element carried back (classify).</summary>
     [JsonPropertyName("origin")] public string? Origin { get; init; }
 
+    /// <summary>How far to move a child: -1 is up, +1 is down (moveChild).</summary>
+    [JsonPropertyName("delta")] public int? Delta { get; init; }
+
     /// <summary>Where in a children list to insert — 0 is before the first (insertChild).</summary>
     [JsonPropertyName("index")] public int? Index { get; init; }
 
@@ -120,7 +123,11 @@ public sealed record InspectResult(
     /// which is what decides whether an insert affordance is offered at all.</summary>
     [property: JsonPropertyName("childCount")] int ChildCount,
     /// <summary>Why this container cannot take an insertion, when it cannot.</summary>
-    [property: JsonPropertyName("insertReason")] string? InsertReason);
+    [property: JsonPropertyName("insertReason")] string? InsertReason,
+    /// <summary>This node's position among its parent's declarative children, or -1 when it is not
+    /// an element of such a list — which is what decides whether it can be moved or removed.</summary>
+    [property: JsonPropertyName("siblingIndex")] int SiblingIndex,
+    [property: JsonPropertyName("siblingCount")] int SiblingCount);
 
 /// <summary>One entry a palette can offer, with the smallest call that compiles.</summary>
 public sealed record PaletteEntry(
