@@ -29,6 +29,8 @@ public sealed class ValueMemberTests : IDisposable
         {
             public override VisualNode Build(ComponentContext context)
             {
+                var scaled = new Row(gap: Space.S3);
+                var plain = new Row(gap: 7);
                 return new Box(new BoxStyle
                 {
                     Padding = EdgeInsets.All(Space.S4),
@@ -160,6 +162,56 @@ public sealed class ValueMemberTests : IDisposable
 
         twice.Applied.Should().BeTrue(twice.Reason);
         Apply(after, twice).Should().NotContain(",,").And.NotContain("{,");
+    }
+
+    /// <summary>
+    /// Half the framework's tokens are not enums. `Space` is a static class of `const float`, so a
+    /// `float gap` reads as a number and a panel that looked only at the type would offer a number box
+    /// for a value that must come off a 4dp scale. What is WRITTEN there says otherwise.
+    /// </summary>
+    [Fact]
+    public void AValueOffAScaleOffersTheWholeScale_EvenThoughItsTypeIsFloat()
+    {
+        var node = _session.Inspect(_probe, Source, OriginOf("new Row(gap: Space.S3"));
+        var gap = node!.Properties.Single(property => property.Name == "gap");
+
+        gap.Type.Should().Be("float");
+        gap.Options.Should().NotBeNull();
+        gap.Options.Should().Contain("Space.S4").And.Contain("Space.S1");
+    }
+
+    /// <summary>A number that is just a number stays a number: the scale is inferred from what is
+    /// written, so there is nothing to infer when nothing names a scale.</summary>
+    [Fact]
+    public void APlainNumber_IsStillJustANumber()
+    {
+        var node = _session.Inspect(_probe, Source, OriginOf("new Row(gap: 7"));
+
+        node!.Properties.Single(property => property.Name == "gap").Options.Should().BeNull();
+    }
+
+    /// <summary>
+    /// A construction written with `new` and no braces can be GIVEN them: they are how that form is
+    /// spelled, so adding them rewrites nothing the author chose. The fence belongs around a factory
+    /// call, where `new Button("Save") { … }` really would change the form.
+    /// </summary>
+    [Fact]
+    public void ANewConstructionWithoutBraces_CanStillBeSet()
+    {
+        var edit = _session.SetProperty(_probe, Source, TheBox, "AlignSelf", "CrossAlign.Center");
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        Apply(Source, edit).Should().Contain("{ AlignSelf = CrossAlign.Center }");
+    }
+
+    [Fact]
+    public void ThoseRowsAreOffered_RatherThanExplainedAway()
+    {
+        var align = _session.Inspect(_probe, Source, TheBox)!
+            .Properties.Single(property => property.Name == "AlignSelf");
+
+        align.Editable.Should().BeTrue();
+        align.Options.Should().NotBeNull("CrossAlign is an enum, so it is a list and not a text box");
     }
 
     [Fact]

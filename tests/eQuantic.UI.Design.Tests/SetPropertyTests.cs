@@ -147,7 +147,27 @@ public sealed class SetPropertyTests : IDisposable
         var edit = _session.SetProperty(_probe, Source, OriginOf("Row(gap:"), "Width", "SizeValue.Fill");
 
         edit.Applied.Should().BeFalse();
-        edit.Reason.Should().Contain("how this file is written");
+        edit.Reason.Should().Contain("factory call").And.Contain("authored");
+    }
+
+    /// <summary>
+    /// The other half of that fence, and the half that was drawn in the wrong place.
+    /// <para>
+    /// A construction ALREADY written with `new` has chosen that form: the braces are how it is
+    /// spelled, so adding them rewrites nothing. Refusing there meant every property of every
+    /// `new Box(…)` on a screen answered "not from here" — which is most of the properties on most of
+    /// the screens in this repo.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheSameMemberOnANewConstruction_IsWrittenIntoBracesThatDidNotExist()
+    {
+        // `Width` lives on the STYLE, not on the Box — the node's own init-only members are things
+        // like AlignSelf, and this is one of them.
+        var edit = _session.SetProperty(_probe, Source, OriginOf("new Box(new BoxStyle"), "AlignSelf", "CrossAlign.Center");
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        Apply(Source, edit).Should().Contain("{ AlignSelf = CrossAlign.Center }");
     }
 
     /// <summary>A value that is not C# would be written verbatim into a C# file.</summary>

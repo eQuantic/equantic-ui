@@ -367,7 +367,7 @@ public sealed class DesignSession
                 written?.Expression.ToString(),
                 true,
                 null,
-                OptionsFor(parameter.Type),
+                OptionsFor(parameter.Type, written?.Expression, model),
                 ParameterSummary(parameter),
                 MembersOf(written?.Expression as ObjectCreationExpressionSyntax, model)));
         }
@@ -391,18 +391,20 @@ public sealed class DesignSession
                 .OfType<AssignmentExpressionSyntax>()
                 .FirstOrDefault(a => a.Left.ToString() == property.Name);
 
+            // A `new X(…)` can always be given an initializer — the braces are how that form is
+            // spelled, so adding them rewrites nothing. A FACTORY call cannot, and says why.
+            var reachable = written is not null || initializer is not null || !isFactory;
+
             properties.Add(new NodeProperty(
                 property.Name,
                 property.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat),
                 written is null ? "unset" : "initializer",
                 written?.Right.ToString(),
-                written is not null || initializer is not null,
-                written is not null || initializer is not null
+                reachable,
+                reachable
                     ? null
-                    : isFactory
-                        ? "Set through an object initializer, which this factory call does not have. Rewriting it into `new` form is a change to how the file is authored, so it is not done for you."
-                        : "This construction has no object initializer to set it in.",
-                OptionsFor(property.Type),
+                    : "Set through an object initializer, which this factory call does not have. Rewriting it into `new` form is a change to how the file is authored, so it is not done for you.",
+                OptionsFor(property.Type, written?.Right, model),
                 Summary(property)));
         }
 
@@ -505,9 +507,26 @@ public sealed class DesignSession
                 : Insert(source, existing[^1].Span.End, ", " + addition, text, path);
         }
 
+        // 4. A member of a `new X(…)` written without an initializer — so give it one.
+        //
+        // The fence was drawn in the wrong place. Rewriting a FACTORY call into `new Button("Save")
+        // { … }` changes the form the author chose, and the factory surface exists precisely so
+        // nobody writes one. But a construction ALREADY written with `new` has chosen that form: the
+        // braces are how it is spelled, and adding them refuses nothing and rewrites nothing. Without
+        // this, every property of every `new Box(…)` on the screen answered "not from here", which is
+        // most of the properties on most of the screens in this repo.
+        if (construction is ObjectCreationExpressionSyntax bare && bare.Initializer is null
+            && Inherited(symbol.ContainingType!).OfType<IPropertySymbol>()
+                .Any(candidate => candidate.Name == property && candidate.SetMethod is not null))
+        {
+            return Insert(source, bare.ArgumentList?.Span.End ?? bare.Type.Span.End,
+                $" {{ {property} = {value} }}", text, path);
+        }
+
         return EditResult.Refused(
-            $"'{property}' is not a constructor parameter of {symbol.ContainingType?.Name ?? "this component"} "
-            + "and there is no object initializer to set it in. Adding one would change how this file is written.");
+            $"'{property}' is not a constructor parameter of {symbol.ContainingType?.Name ?? "this component"}, "
+            + "and this is a factory call, which has no object initializer to set it in. Rewriting it into "
+            + "`new` form is a change to how the file is authored, so it is not done for you.");
     }
 
     /// <summary>
@@ -542,10 +561,12 @@ public sealed class DesignSession
         if (ArgumentFor(list, symbol.Parameters[index], index)?.Expression is not ObjectCreationExpressionSyntax written)
             return EditResult.Refused($"'{argumentName}' is not written as a value this panel can edit in place.");
 
+        // Written as `new BoxStyle()` with nothing in it — the braces are part of that same form.
         if (written.Initializer is null)
-            return EditResult.Refused(
-                $"The {argumentName} here has no object initializer to set '{member}' in. "
-                + "Adding one would change how this file is written.");
+        {
+            var at = written.ArgumentList?.Span.End ?? written.Type.Span.End;
+            return Insert(source, at, $" {{ {member} = {value} }}", text, path);
+        }
 
         var assignment = written.Initializer.Expressions
             .OfType<AssignmentExpressionSyntax>()
@@ -1399,9 +1420,8 @@ public sealed class DesignSession
     {
         if (creation is null) return null;
         if (model.GetTypeInfo(creation).Type is not INamedTypeSymbol type) return null;
-        // A value the author wrote WITHOUT an initializer has nowhere to put a member, and adding one
-        // would rewrite the form they chose. The rows are still listed, and each says so.
-        var reachable = creation.Initializer is not null;
+        // Written with `new`, so the braces are how this form is spelled: they can be added.
+        var reachable = true;
 
         var members = new List<NodeProperty>();
         foreach (var member in Inherited(type).OfType<IPropertySymbol>())
@@ -1420,8 +1440,8 @@ public sealed class DesignSession
                 assignment is null ? "unset" : "initializer",
                 assignment?.Right.ToString(),
                 reachable,
-                reachable ? null : $"This {type.Name} is written without an initializer to set it in.",
-                OptionsFor(member.Type),
+                null,
+                OptionsFor(member.Type, assignment?.Right, model),
                 Summary(member)));
         }
 
@@ -1522,6 +1542,34 @@ public sealed class DesignSession
     }
 
     /// <summary>An enum's members — the closed set a panel offers instead of a text box.</summary>
+    /// <summary>
+    /// The closed set a value may take, WIDENED by what is written there.
+    /// <para>
+    /// Half the framework's tokens are not enums at all. <c>Space</c> is a static class of
+    /// <c>const float</c>, so a <c>float gap</c> parameter is typed as a number and a panel reading
+    /// only the type offers a number box — for a value that must come off a 4dp scale. The written
+    /// expression is what says otherwise: <c>Space.S3</c> names a member of a static class, and every
+    /// sibling of the same type is a value that belongs in that slot.
+    /// </para>
+    /// </summary>
+    private static string[]? OptionsFor(ITypeSymbol type, ExpressionSyntax? written, SemanticModel model)
+    {
+        if (OptionsFor(type) is { } members) return members;
+
+        if (written is not MemberAccessExpressionSyntax access) return null;
+        if (model.GetSymbolInfo(access).Symbol is not IFieldSymbol field) return null;
+        if (!field.IsStatic || field.ContainingType is not { IsStatic: true } scale) return null;
+
+        var siblings = scale.GetMembers().OfType<IFieldSymbol>()
+            .Where(sibling => sibling.IsStatic
+                              && sibling.DeclaredAccessibility == Accessibility.Public
+                              && SymbolEqualityComparer.Default.Equals(sibling.Type, field.Type))
+            .Select(sibling => $"{scale.Name}.{sibling.Name}")
+            .ToArray();
+
+        return siblings.Length > 1 ? siblings : null;
+    }
+
     private static string[]? OptionsFor(ITypeSymbol type)
     {
         var underlying = type is INamedTypeSymbol { Name: "Nullable" } nullable && nullable.TypeArguments.Length == 1
