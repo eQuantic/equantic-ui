@@ -74,6 +74,13 @@ while (await input.ReadLineAsync() is { } line)
                 Require(parameters.Origin, "origin"),
                 parameters.Index ?? 0),
 
+            "moveAcross" => session.MoveAcross(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin"),
+                Require(parameters.Target, "target"),
+                parameters.Index ?? 0),
+
             "removeChild" => session.RemoveChild(
                 Require(parameters.Path, "path"),
                 parameters.Text ?? "",

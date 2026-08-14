@@ -213,6 +213,13 @@ export class Sidecar {
     return this.send('moveChild', { path, text, origin, delta, buffers });
   }
 
+  /** A node leaving its own container for another list, both in the same file. */
+  moveAcross(
+    path: string, text: string, origin: string, target: string, index: number, buffers: OpenBuffer[],
+  ): Promise<EditResult> {
+    return this.send('moveAcross', { path, text, origin, target, index, buffers });
+  }
+
   /** Where a drag ends: `index` is the position the node ends up at in the finished list, not the gap
    * it was dropped into. */
   reorderChild(path: string, text: string, origin: string, index: number, buffers: OpenBuffer[]): Promise<EditResult> {

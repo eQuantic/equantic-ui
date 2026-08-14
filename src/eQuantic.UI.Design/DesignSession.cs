@@ -605,6 +605,24 @@ public sealed class DesignSession
 
         var tree = CSharpSyntaxTree.ParseText(text, path: path);
         var source = tree.GetText();
+
+        return (tree, source, Find(tree, source, origin), Swap(_current!, tree).GetSemanticModel(tree));
+    }
+
+    /// <summary>
+    /// The construction an origin names, in a tree already parsed.
+    /// <para>
+    /// Separate from <see cref="Locate"/> because an edit with two ends — moving a node from one
+    /// container into another — has to resolve both in the SAME tree. Parsing twice gives two nodes
+    /// that describe the same text and are not each other, so "is this the list it is already in?"
+    /// answers no and the move writes a duplicate.
+    /// </para>
+    /// </summary>
+    private static SyntaxNode? Find(SyntaxTree tree, SourceText source, string origin)
+    {
+        var parts = origin.Split('|');
+        if (parts.Length != 3) return null;
+
         var (startLine, startCharacter) = ParsePosition(parts[1]);
         var (endLine, endCharacter) = ParsePosition(parts[2]);
         if (startLine >= source.Lines.Count || endLine >= source.Lines.Count) return null;
@@ -618,12 +636,10 @@ public sealed class DesignSession
         // returns the OUTERMOST of a tie — so the walk up landed on `Add(…)`, whose symbol returns
         // void. The panel then introduced a FormInput as "Void" and offered to edit `child`, the
         // Add parameter. Every node that is a call's only argument had this.
-        var construction = tree.GetRoot()
+        return tree.GetRoot()
             .FindNode(TextSpan.FromBounds(start, end), getInnermostNodeForTie: true)
             .AncestorsAndSelf()
             .FirstOrDefault(n => n is ObjectCreationExpressionSyntax or InvocationExpressionSyntax);
-
-        return (tree, source, construction, Swap(_current!, tree).GetSemanticModel(tree));
     }
 
     /// <summary>Where a node sits among its parent's declarative children, and how many there are —
@@ -786,9 +802,183 @@ public sealed class DesignSession
     /// a node it does not recognise.</summary>
     private static string Where(SourceText source, TextSpan span, string origin)
     {
-        var start = source.Lines.GetLinePosition(span.Start);
-        var end = source.Lines.GetLinePosition(span.End);
+        // Clamped rather than trusted: this is arithmetic over a text that was just rewritten, and a
+        // span past the end would throw where the whole point is to hand back a coordinate.
+        var start = source.Lines.GetLinePosition(Math.Clamp(span.Start, 0, source.Length));
+        var end = source.Lines.GetLinePosition(Math.Clamp(span.End, 0, source.Length));
         return $"{origin.Split('|')[0]}|{start.Line}:{start.Character}|{end.Line}:{end.Character}";
+    }
+
+    /// <summary>
+    /// Moves a node out of one container's children and into another's.
+    /// <para>
+    /// A reorder cannot express this: the node leaves one list and joins a different one, which is a
+    /// removal and an insertion. They are written as ONE replacement spanning both — not because the
+    /// region between them is interesting, but because one span is one <c>WorkspaceEdit</c> and
+    /// therefore one Ctrl+Z, and because two edits into the same document raise an ordering question
+    /// that this simply does not have.
+    /// </para>
+    /// <para>
+    /// The moved text is re-indented to its new depth. It is otherwise carried across verbatim — which
+    /// is what makes the compile guard the real fence here: a node written against a local of the
+    /// method it came from stops compiling in its new home, and the refusal quotes the compiler rather
+    /// than inventing a rule.
+    /// </para>
+    /// </summary>
+    public EditResult MoveAcross(string path, string text, string origin, string target, int index)
+    {
+        if (_compilation is null) throw new InvalidOperationException("initialize first");
+
+        if (!SamePath(origin.Split('|')[0], target.Split('|')[0]))
+        {
+            return EditResult.Refused(
+                "That container is written in another file. Moving a node between files would edit two "
+                + "of them at once, which is not done for you.");
+        }
+
+        if (Locate(path, text, origin) is not var (tree, source, construction, model) || construction is null)
+            return EditResult.Refused("That element's origin does not name anything in this file.");
+
+        if (construction.Parent is not ExpressionElementSyntax element
+            || element.Parent is not CollectionExpressionSyntax from)
+        {
+            return EditResult.Refused(
+                "This node is not an element of a [ … ] list, so there is nothing to move it out of.");
+        }
+
+        // The same tree, so the two ends of this edit are comparable as nodes rather than as text.
+        if (Find(tree, source, target) is not { } container)
+            return EditResult.Refused("That container's origin does not name anything in this file.");
+
+        if (model.GetSymbolInfo(container).Symbol is not IMethodSymbol symbol)
+            return EditResult.Refused("The compiler cannot resolve that container.");
+
+        var arguments = container switch
+        {
+            ObjectCreationExpressionSyntax creation => creation.ArgumentList?.Arguments,
+            InvocationExpressionSyntax invocation => invocation.ArgumentList.Arguments,
+            _ => null,
+        };
+
+        if (ChildrenList(symbol, arguments) is not { } into)
+        {
+            return EditResult.Refused(InsertRefusal(symbol, arguments)
+                ?? $"{symbol.Name} does not take a list of children.");
+        }
+
+        if (into == from)
+            return EditResult.Refused("It is already in that list — that is a reorder, not a move.");
+
+        // Into its own subtree the node would have to contain itself. The syntax says so before any
+        // of the text arithmetic below could produce something incoherent.
+        if (element.Span.Contains(container.Span))
+            return EditResult.Refused("A node cannot be moved inside itself.");
+
+        // The re-indented text is what actually gets WRITTEN, so it is what the landed span has to be
+        // measured against. Measuring the original overshoots by exactly the indentation the move
+        // removed, and an origin that overshoots resolves to the smallest node containing it — the
+        // new parent. The panel would then edit the container the node was just dropped into.
+        var snippet = Reindented(
+            source, element, source.ToString(element.Span),
+            Indentation(source, element.SpanStart), ListIndentation(source, into));
+        var removal = Removal(source, from, element);
+        var (at, addition, offset) = Addition(source, into, index, snippet);
+
+        if (removal.Contains(at) && at != removal.Start)
+            return EditResult.Refused("That list is inside the node being moved.");
+
+        // One contiguous region covering both ends, rewritten. The text between them is reproduced
+        // exactly — this is a single replacement for the editor's sake, not a rewrite of what it spans.
+        var changes = new[] { new TextChange(removal, ""), new TextChange(new TextSpan(at, 0), addition) };
+        var after = source.WithChanges(changes);
+
+        var region = TextSpan.FromBounds(Math.Min(removal.Start, at), Math.Max(removal.End, at));
+        var shifted = TextSpan.FromBounds(region.Start, region.End + addition.Length - removal.Length);
+
+        return Guarded(
+            source, region, after.ToString(shifted), text, path,
+            Where(after, new TextSpan(
+                (at < removal.Start ? at : at - removal.Length) + offset, snippet.Length), origin));
+    }
+
+    /// <summary>The span a child occupies INCLUDING one separator — the comma after it, or the comma
+    /// before it when it is last. Shared by remove and by move, which take the same bite.</summary>
+    private static TextSpan Removal(
+        SourceText source, CollectionExpressionSyntax list, ExpressionElementSyntax element)
+    {
+        var index = list.Elements.IndexOf(element);
+        var separators = list.Elements.GetSeparators().ToArray();
+
+        if (index + 1 < list.Elements.Count)
+            return TextSpan.FromBounds(element.SpanStart, list.Elements[index + 1].SpanStart);
+
+        // The last of several: back to the comma before it, so none is left orphaned.
+        if (index > 0) return TextSpan.FromBounds(separators[index - 1].SpanStart, element.Span.End);
+
+        // The ONLY one, and every list in this repo is written with a trailing comma — so taking the
+        // element alone leaves `[ , ]`, which does not parse. Taking the comma too leaves `[ ]`.
+        return TextSpan.FromBounds(
+            element.SpanStart, separators.Length > 0 ? separators[0].Span.End : element.Span.End);
+    }
+
+    /// <summary>
+    /// Where a new element goes in a list and the text that puts it there, with the offset of the
+    /// element itself inside that text — which is what says where the node LANDED once it is written.
+    /// </summary>
+    private static (int At, string Text, int Offset) Addition(
+        SourceText source, CollectionExpressionSyntax list, int index, string snippet)
+    {
+        var elements = list.Elements;
+        if (elements.Count == 0) return (list.OpenBracketToken.Span.End, snippet, 0);
+
+        var position = Math.Clamp(index, 0, elements.Count);
+        var indent = Indentation(source, elements[Math.Min(position, elements.Count - 1)].SpanStart);
+
+        return position == elements.Count
+            ? (elements[^1].Span.End, $",\n{indent}{snippet}", 2 + indent.Length)
+            : (elements[position].SpanStart, $"{snippet},\n{indent}", 0);
+    }
+
+    /// <summary>The indentation the children of a list are written at — its first element's, or the
+    /// line the list opens on when it has none.</summary>
+    private static string ListIndentation(SourceText source, CollectionExpressionSyntax list) =>
+        Indentation(source, list.Elements.Count == 0 ? list.SpanStart : list.Elements[0].SpanStart);
+
+    /// <summary>
+    /// The same text at a new depth. The first line carries no indentation of its own — a span starts
+    /// at the token — so only the continuation lines are re-based, and only where they actually begin
+    /// with the depth they came from. Anything deeper keeps its own nesting, which is the whole point
+    /// of moving the prefix rather than trimming each line.
+    /// </summary>
+    private static string Reindented(
+        SourceText source, SyntaxNode element, string moved, string was, string now)
+    {
+        if (was == now || was.Length == 0) return moved;
+
+        // A line that BEGINS inside a token spanning a line break is not layout. The leading
+        // whitespace of a verbatim or raw string literal is part of what the component renders, and
+        // re-basing it changes the text on the screen — invisibly, because the file still compiles
+        // and the compile guard has nothing to object to.
+        var literals = element.DescendantTokens()
+            .Where(token => token.Text.Contains('\n'))
+            .Select(token => token.Span)
+            .ToArray();
+
+        var original = moved.Split('\n');
+        var lines = (string[])original.Clone();
+        var offset = element.SpanStart;
+
+        for (var i = 0; i < original.Length; i++)
+        {
+            var inside = literals.Any(span => span.Start < offset && offset < span.End);
+            if (i > 0 && !inside && original[i].StartsWith(was, StringComparison.Ordinal))
+                lines[i] = now + original[i][was.Length..];
+
+            // Advanced by the ORIGINAL line, which is what the spans above are measured against.
+            offset += original[i].Length + 1;
+        }
+
+        return string.Join('\n', lines);
     }
 
     /// <summary>
@@ -811,18 +1001,9 @@ public sealed class DesignSession
             return EditResult.Refused("This node is not an element of a [ … ] list, so there is nothing to remove it from.");
         }
 
-        var index = list.Elements.IndexOf(element);
-        var separators = list.Elements.GetSeparators().ToArray();
-
         // Up to the NEXT element when there is one, so the line and its indentation go together;
         // back to the previous separator when this is the last, so no comma is orphaned.
-        var span = index + 1 < list.Elements.Count
-            ? TextSpan.FromBounds(element.SpanStart, list.Elements[index + 1].SpanStart)
-            : index > 0
-                ? TextSpan.FromBounds(separators[index - 1].SpanStart, element.Span.End)
-                : TextSpan.FromBounds(element.SpanStart, element.Span.End);
-
-        return Guarded(source, span, "", text, path);
+        return Guarded(source, Removal(source, list, element), "", text, path);
     }
 
     /// <summary>
@@ -939,22 +1120,10 @@ public sealed class DesignSession
                 ?? $"{symbol.Name} does not take a list of children.");
         }
 
-        var elements = children.Elements;
-        var position = Math.Clamp(index, 0, elements.Count);
-
-        // The indentation of the element it is going beside, so the inserted line reads as one the
-        // author wrote rather than one a tool dropped in.
-        var anchor = elements.Count == 0 ? null : elements[Math.Min(position, elements.Count - 1)];
-        var indent = anchor is null ? "" : Indentation(source, anchor.SpanStart);
-
-        if (elements.Count == 0)
-        {
-            return Guarded(source, new TextSpan(children.OpenBracketToken.Span.End, 0), snippet, text, path);
-        }
-
-        return position == elements.Count
-            ? Guarded(source, new TextSpan(elements[^1].Span.End, 0), $",\n{indent}{snippet}", text, path)
-            : Guarded(source, new TextSpan(elements[position].SpanStart, 0), $"{snippet},\n{indent}", text, path);
+        // Indented like the element it lands beside, so the new line reads as one the author wrote
+        // rather than one a tool dropped in.
+        var (at, addition, _) = Addition(source, children, index, snippet);
+        return Guarded(source, new TextSpan(at, 0), addition, text, path);
     }
 
     /// <summary>The whitespace at the start of the line a position sits on.</summary>

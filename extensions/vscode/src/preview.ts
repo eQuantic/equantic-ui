@@ -220,7 +220,7 @@ export class PreviewPanel {
   private onWebviewMessage(
     message: {
       type: string; detail?: string; origin?: string; property?: string; value?: string;
-      options?: string[]; index?: number; delta?: number;
+      options?: string[]; index?: number; delta?: number; target?: string;
     },
   ): void {
     if (message.type === 'ready') this.announceReady();
@@ -234,6 +234,8 @@ export class PreviewPanel {
       void this.arrange(message.origin, message.delta);
     } else if (message.type === 'reorder' && message.origin && typeof message.index === 'number') {
       void this.reorder(message.origin, message.index);
+    } else if (message.type === 'moveTo' && message.origin && message.target && typeof message.index === 'number') {
+      void this.moveAcross(message.origin, message.target, message.index);
     } else if (message.type === 'ask' && message.origin) {
       void this.answer(message.origin);
     }
@@ -258,6 +260,28 @@ export class PreviewPanel {
       this.post({ type: 'known', origin, node: node === '' ? undefined : node });
     } catch (error) {
       this.log(`ask failed: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * A drag that left its own container: the node joins a different list.
+   * <para>
+   * A removal and an insertion, and therefore the first edit with two ends — written by the host as
+   * ONE replacement spanning both, so it is still one Ctrl+Z. What may be carried across is decided
+   * by the compiler: a node written against a local of the method it came from does not compile in
+   * its new home, and the refusal quotes that rather than inventing a rule.
+   * </para>
+   */
+  private async moveAcross(origin: string, target: string, index: number): Promise<void> {
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) return;
+
+    try {
+      const edit = await this.sidecar.moveAcross(
+        span.path, await this.textOf(span.path), origin, target, index, this.buffers());
+      await this.applyMove(span.path, origin, edit, 'that move was refused');
+    } catch (error) {
+      this.log(`move failed: ${(error as Error).message}`);
     }
   }
 
@@ -323,7 +347,30 @@ export class PreviewPanel {
       vscode.Uri.file(path),
       new vscode.Range(edit.startLine, edit.startColumn, edit.endLine, edit.endColumn),
       edit.newText);
-    return vscode.workspace.applyEdit(workspaceEdit);
+
+    if (!(await vscode.workspace.applyEdit(workspaceEdit))) return false;
+    this.settle();
+    return true;
+  }
+
+  /**
+   * The window between an applied edit and the frame that reflects it.
+   * <para>
+   * Every origin in the rendered tree names a span in the text as it WAS. An edit that adds or removes
+   * lines moves everything between its two ends, so until the next render a click on the canvas asks
+   * about coordinates that now hold a different node — and answers about it, confidently. The canvas
+   * is told to stop offering anything origin-derived, and the recompile is brought forward from the
+   * typing debounce so the pause is as short as a compile.
+   * </para>
+   */
+  private settle(): void {
+    this.post({ type: 'settling' });
+    if (this.compileTimer) clearTimeout(this.compileTimer);
+    if (this.diagnoseTimer) clearTimeout(this.diagnoseTimer);
+    this.compileTimer = undefined;
+    this.diagnoseTimer = undefined;
+    void this.publishDiagnostics();
+    void this.refresh();
   }
 
   /**
@@ -952,6 +999,8 @@ export class PreviewPanel {
     e.preventDefault();
     e.stopPropagation();
     if (suppressClick) { suppressClick = false; return; }
+    // Selecting on a stale tree reveals, and then EDITS, whatever moved into those coordinates.
+    if (settling) return;
     const found = stamped(e.target);
     if (found) select(found);
   }, true);
@@ -964,6 +1013,8 @@ export class PreviewPanel {
   const known = new Map();
   let hovered = null;
   let hoverTimer = 0;
+  /** True between an applied edit and the frame that reflects it — see the host's settle(). */
+  let settling = false;
 
   function knownOf(element) {
     const origin = element && element.getAttribute && element.getAttribute('data-eq-origin');
@@ -979,6 +1030,7 @@ export class PreviewPanel {
 
   function forget() {
     known.clear();
+    settling = false;
     hovered = null;
     hideInserts();
     caret.classList.remove('visible');
@@ -990,6 +1042,8 @@ export class PreviewPanel {
    * and means none of them. */
   function hovering(element) {
     hovered = element;
+    // Not while the tree is stale: every answer would be about whatever now sits at those coordinates.
+    if (settling) return;
     drawInserts(element);
     if (hoverTimer) clearTimeout(hoverTimer);
     hoverTimer = setTimeout(() => {
@@ -1012,11 +1066,19 @@ export class PreviewPanel {
    * flex, a Grid is grid and a Stack is absolute, and all three answer this the same way once they
    * are on screen.
    */
-  function axisOf(children) {
-    if (children.length < 2) return 'y';
-    const first = children[0].getBoundingClientRect();
-    const second = children[1].getBoundingClientRect();
-    return (second.left >= first.right - 1 && second.top < first.bottom) ? 'x' : 'y';
+  function axisOf(container, children) {
+    if (children.length >= 2) {
+      const first = children[0].getBoundingClientRect();
+      const second = children[1].getBoundingClientRect();
+      return (second.left >= first.right - 1 && second.top < first.bottom) ? 'x' : 'y';
+    }
+
+    // One box says nothing about direction, and defaulting to 'y' reads a Row's drop position off
+    // the pointer's Y — a coordinate that means nothing there. With no result to read, ask the layout
+    // itself. This is the one place the CSS is consulted, because it is the only thing that knows.
+    const style = getComputedStyle(container);
+    if (style.display.indexOf('flex') >= 0) return style.flexDirection.indexOf('row') === 0 ? 'x' : 'y';
+    return style.display.indexOf('grid') >= 0 ? 'x' : 'y';
   }
 
   /**
@@ -1038,12 +1100,15 @@ export class PreviewPanel {
     const children = stampedChildren(container);
     if (children.length !== list.childCount) return null;
 
-    return { container: container, children: children, index: node.siblingIndex, axis: axisOf(children) };
+    return {
+      container: container, children: children, index: node.siblingIndex,
+      axis: axisOf(container, children),
+    };
   }
 
   function drawInserts(element) {
     hideInserts();
-    if (!inspecting || drag) return;
+    if (!inspecting || drag || settling) return;
 
     const place = placeIn(element);
     if (!place) return;
@@ -1079,16 +1144,43 @@ export class PreviewPanel {
   /** Started only where the host has already said the node is an element of a list. A drag that could
    * not possibly land is a drag that should never begin. */
   function beginDrag(event, element) {
-    if (!element) return;
+    if (!element || settling) return;
     const place = placeIn(element);
     if (!place) return;
 
     drag = {
+      element: element,
       origin: element.getAttribute('data-eq-origin'),
       name: element.getAttribute('data-eq-component') || 'this',
-      from: place.index, container: place.container, children: place.children, axis: place.axis,
-      x: event.clientX, y: event.clientY, armed: false, slot: null,
+      from: place.index, source: place.container,
+      place: null, x: event.clientX, y: event.clientY, armed: false, slot: null,
     };
+  }
+
+  /**
+   * The list under the pointer, when there is one this tool may write into.
+   *
+   * Recomputed on every move rather than fixed at the start, which is what lets a child leave the
+   * container it was written in. The pointer is either over a child of the list or over the
+   * container's own padding, so both are tried, nearest first.
+   */
+  function containerAt(target) {
+    const found = stamped(target);
+    if (!found) return null;
+
+    for (const candidate of [found, stampedParent(found)]) {
+      if (!candidate) continue;
+      const node = knownOf(candidate);
+      // Never asked. A drag lasts long enough for the answer to arrive and be used on a later move,
+      // so this asks straight away rather than waiting for the pointer to settle.
+      if (node === undefined) { ask(candidate); continue; }
+      if (!node || node.childCount < 0) continue;
+
+      const children = stampedChildren(candidate);
+      if (children.length !== node.childCount) continue;
+      return { container: candidate, children: children, axis: axisOf(candidate, children) };
+    }
+    return null;
   }
 
   function updateDrag(event) {
@@ -1100,42 +1192,69 @@ export class PreviewPanel {
       document.body.classList.add('eq-dragging');
     }
 
-    const box = drag.container.getBoundingClientRect();
-    const inside = event.clientX >= box.left && event.clientX <= box.right
-      && event.clientY >= box.top && event.clientY <= box.bottom;
+    const found = containerAt(event.target);
+    // Into itself or into its own subtree there is no coherent answer, and the host says so too.
+    drag.place = found && !drag.element.contains(found.container) ? found : null;
+    drag.slot = drag.place ? slotAt(event, drag.place) : null;
 
-    // Within its own list, for now. Moving a node to a DIFFERENT parent is a remove and an insert of
-    // its own text, which is a bigger edit than a reorder and refuses for its own reasons — so the
-    // caret goes away and says why instead of implying a drop that would not happen.
-    drag.slot = inside ? slotAt(event) : null;
     if (drag.slot === null) {
       caret.classList.remove('visible');
-      say('outside its list', event.clientX, event.clientY);
+      say('no list here', event.clientX, event.clientY);
       return;
     }
 
-    drawCaret(drag.slot);
-    const landing = drag.slot > drag.from ? drag.slot - 1 : drag.slot;
-    say(drag.name + ' → ' + (landing + 1) + ' of ' + drag.children.length, event.clientX, event.clientY);
+    drawCaret(drag.slot, drag.place);
+    // Leaving its own list, the node is added to the other one; staying, it is taken out first, so
+    // everything after the gap it left shifts up by one.
+    const home = drag.place.container === drag.source;
+    const landing = home && drag.slot > drag.from ? drag.slot - 1 : drag.slot;
+    const total = home ? drag.place.children.length : drag.place.children.length + 1;
+    const where = home ? '' : 'into ' + (drag.place.container.getAttribute('data-eq-component') || 'list') + ' ';
+    say(drag.name + ' → ' + where + (landing + 1) + ' of ' + total, event.clientX, event.clientY);
   }
 
   /** How many children the pointer has passed the middle of — which is the gap it is over. */
-  function slotAt(event) {
-    const position = drag.axis === 'x' ? event.clientX : event.clientY;
-    let slot = 0;
-    for (const child of drag.children) {
-      const box = child.getBoundingClientRect();
-      if (position > (drag.axis === 'x' ? box.left + box.width / 2 : box.top + box.height / 2)) slot++;
+  function slotAt(event, place) {
+    if (place.children.length === 0) return 0;
+
+    // The NEAREST child, then which side of it. Projecting the pointer onto one axis instead counts
+    // the children on every other line when a row wraps, or every other row of a grid, and lands the
+    // node in a gap nobody pointed at.
+    let best = 0;
+    let nearest = Infinity;
+    for (let i = 0; i < place.children.length; i++) {
+      const box = place.children[i].getBoundingClientRect();
+      const dx = Math.max(box.left - event.clientX, 0, event.clientX - box.right);
+      const dy = Math.max(box.top - event.clientY, 0, event.clientY - box.bottom);
+      const distance = dx * dx + dy * dy;
+      if (distance < nearest) { nearest = distance; best = i; }
     }
-    return slot;
+
+    const box = place.children[best].getBoundingClientRect();
+    const past = place.axis === 'x'
+      ? event.clientX > box.left + box.width / 2
+      : event.clientY > box.top + box.height / 2;
+    return past ? best + 1 : best;
   }
 
-  function drawCaret(slot) {
-    const box = drag.container.getBoundingClientRect();
-    const before = slot > 0 ? drag.children[slot - 1].getBoundingClientRect() : null;
-    const after = slot < drag.children.length ? drag.children[slot].getBoundingClientRect() : null;
+  function drawCaret(slot, place) {
+    const box = place.container.getBoundingClientRect();
+    const before = slot > 0 ? place.children[slot - 1].getBoundingClientRect() : null;
+    const after = slot < place.children.length ? place.children[slot].getBoundingClientRect() : null;
 
-    if (drag.axis === 'x') {
+    if (place.children.length === 0) {
+      // Nothing to draw between. The caret takes the container's own middle, which is where the first
+      // child will appear — and without this the two branches below dereference a neighbour that does
+      // not exist, throwing a TypeError that the window handler turns into a WIPED preview.
+      caret.style.left = box.left + 'px';
+      caret.style.top = (box.top + box.height / 2 - 1) + 'px';
+      caret.style.width = box.width + 'px';
+      caret.style.height = '2px';
+      caret.classList.add('visible');
+      return;
+    }
+
+    if (place.axis === 'x') {
       const x = before && after ? (before.right + after.left) / 2 : (after ? after.left : before.right);
       caret.style.left = (x - 1) + 'px';
       caret.style.top = box.top + 'px';
@@ -1166,13 +1285,20 @@ export class PreviewPanel {
     document.body.classList.remove('eq-dragging');
     if (!finished || !finished.armed) return false;
 
-    // The GAP it was dropped into, which is what this side actually saw. Turning that into the
-    // position the node ends up at is the host's arithmetic, where a test can reach it.
-    //
-    // Both gaps beside a node mean "where it already is", and the host refuses those with a sentence —
-    // correctly, but a warning popup that says "you put it back" is noise, so a drop that changes
-    // nothing is not sent at all.
-    if (finished.slot !== null && finished.slot !== finished.from && finished.slot !== finished.from + 1) {
+    if (finished.slot === null || !finished.place) return true;
+
+    // Both sides send the GAP the node was dropped into, which is what this side actually saw.
+    // Turning that into a position is the host's arithmetic, where a test can reach it.
+    if (finished.place.container !== finished.source) {
+      vscode.postMessage({
+        type: 'moveTo',
+        origin: finished.origin,
+        target: finished.place.container.getAttribute('data-eq-origin'),
+        index: finished.slot,
+      });
+    } else if (finished.slot !== finished.from && finished.slot !== finished.from + 1) {
+      // Both gaps beside a node mean "where it already is". The host refuses those with a sentence —
+      // correctly, but a warning that says "you put it back" is noise, so it is not sent at all.
       vscode.postMessage({ type: 'reorder', origin: finished.origin, index: finished.slot });
     }
     return true;
@@ -1477,6 +1603,12 @@ export class PreviewPanel {
       // The pointer may still be on it: the answer arrived after the hover that asked for it, which
       // is the whole reason it was asked in advance.
       if (hovered) drawInserts(hovered);
+    } else if (payload.type === 'settling') {
+      settling = true;
+      hideInserts();
+      caret.classList.remove('visible');
+      drag = null;
+      document.body.classList.remove('eq-dragging');
     } else if (payload.type === 'reselect') {
       // The node moved, so the origin the panel was holding now names its old neighbour.
       selectedOrigin = payload.origin;

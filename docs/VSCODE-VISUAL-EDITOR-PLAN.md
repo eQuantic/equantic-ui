@@ -348,6 +348,34 @@ And one bug this closed on the way: an origin is a span, so a move invalidates t
 holding — asking about it afterwards described **the sibling it had just been swapped with**. Edits
 that move a node now answer with where it landed, and the selection follows it there.
 
+### Phase 8 — out of one container and into another ✅ done
+
+A reorder cannot express this: the node leaves one list and joins a different one, which is a removal
+**and** an insertion. Written as ONE replacement spanning both — not because the text between them is
+interesting, but because one span is one `WorkspaceEdit` and therefore one Ctrl+Z, and because two
+edits into the same document raise an ordering question this simply does not have.
+
+The drop target is now recomputed from the pointer on every move rather than fixed when the drag
+starts, so the caret follows into whatever list it is over. Refused, visibly, for: a node into its own
+subtree, a container that takes no list, a list in another file (that would edit two documents at
+once), and the list it is already in — which is a reorder.
+
+**What may be carried across is decided by the compiler, not by a rule.** The moved text is
+re-indented to its new depth and otherwise moved verbatim, so a node written against a local of the
+method it came from stops compiling in its new home — and `Guarded` refuses with the compiler's own
+sentence (`CS0103 The name 'label' does not exist…`). There is no list anywhere of what is portable.
+
+Three defects fell out of writing the tests, and two were live:
+
+- **`RemoveChild` broke a list with one child.** Every list in this repo is written with a trailing
+  comma, so taking the element alone left `[ , ]`, which does not parse. The existing test emptied a
+  slot in a list of four, where the comma *before* it is taken instead — so the bug sat behind the
+  panel's own remove button.
+- **`Locate` parses a fresh tree per call**, so resolving two origins gave two nodes describing the
+  same text that were not each other. "Is this the list it is already in?" answered no, and the move
+  wrote a duplicate. Both ends now resolve in one tree.
+- The compiler's real refusal was being masked by the first bug's syntax error.
+
 ---
 
 ## The seam, tested

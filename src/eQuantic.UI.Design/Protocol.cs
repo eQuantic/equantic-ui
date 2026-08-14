@@ -34,6 +34,9 @@ public sealed record DesignParams
     /// <summary>An origin string a rendered element carried back (classify).</summary>
     [JsonPropertyName("origin")] public string? Origin { get; init; }
 
+    /// <summary>The container a node is being moved INTO, as its own origin (moveAcross).</summary>
+    [JsonPropertyName("target")] public string? Target { get; init; }
+
     /// <summary>How far to move a child: -1 is up, +1 is down (moveChild).</summary>
     [JsonPropertyName("delta")] public int? Delta { get; init; }
 
