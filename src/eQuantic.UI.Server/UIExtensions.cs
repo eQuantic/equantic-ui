@@ -73,6 +73,12 @@ public static class UIExtensions
             registration(services);
         }
 
+        // Provenance on every response — a startup filter, so no Program.cs has to remember a
+        // middleware call and even the static bundles carry it. See PoweredByHeader for why the
+        // value is the name alone.
+        if (!options.DisablePoweredByHeader)
+            services.AddTransient<Microsoft.AspNetCore.Hosting.IStartupFilter, PoweredByHeader>();
+
         services.AddSingleton(options);
         services.AddSingleton<IServerActionRegistry>(sp =>
         {
@@ -1000,6 +1006,20 @@ public class UIOptions
     public UIOptions ConfigureHtmlShell(Action<HtmlShellOptions> configure)
     {
         configure(HtmlShell);
+        return this;
+    }
+
+    /// <summary>
+    /// Turns off the <c>x-powered-by: eQuantic.UI</c> response header. It is ON by default —
+    /// provenance, name only, no version — and this exists for the app whose hardening checklist
+    /// flags any x-powered-by at all.
+    /// </summary>
+    public bool DisablePoweredByHeader { get; set; }
+
+    /// <summary>Fluent spelling of <see cref="DisablePoweredByHeader"/>.</summary>
+    public UIOptions WithoutPoweredByHeader()
+    {
+        DisablePoweredByHeader = true;
         return this;
     }
 
