@@ -188,11 +188,30 @@ nothing had updated — `SegmentedControl` deliberately became a radiogroup (`ro
 An explicit role overrides the implicit one, so the locator matched nothing. Updated to the contract
 the component actually promises.
 
-### Phase 3 — click-to-select
+### Phase 3 — click-to-select 🔄 core done, tiers ahead
 
-`postMessage` bridge, gated to design mode. Walk up to the nearest origin-bearing ancestor — a
-`Button` is `button > div > div > span`, so 1:1 DOM↔node is wrong. Classify each node by asking
-Roslyn whether its origin has a loop/conditional/lambda ancestor **within** the Build method:
+`postMessage` bridge, gated to an **Inspect mode** rather than a modifier: the preview is a running
+app, and a click that both pressed a button and moved the editor's cursor would be two gestures
+wearing one costume. With inspect on, pointer events are taken in the capture phase and the app never
+sees them. Hovering frames the element; clicking opens the file the origin names and puts the
+selection on the exact expression.
+
+**Proved in a browser**, over the rendered `PaymentsPage`: **356 simulated clicks** — each one a real
+`elementFromPoint` hit at an element's centre, then the walk-up — **356 resolved**, **58 distinct
+origins**. Twenty of those spans were applied back to the source and every one landed on a
+construction: `new Button("Export", …)`, `new Text(day.Label, …)` from inside the chart's loop,
+`HeaderTitle(theme)` and `KpiGrid(theme, columns: 4)` (helper calls that return nodes, stamped at the
+call site), and spans in `ConsoleShell.cs` — **a different file from the one being previewed**, which
+is the payoff of stamping at the construction: you land where the thing is actually written.
+
+The walk-up is not optional: a `Button` is `button > div > div > span`, so the clicked node is
+usually not the stamped one. 1:1 DOM↔node would select nothing most of the time.
+
+Fixed on the way: an origin built from a relative source path came out relative, and `Uri.file` of a
+relative path opens nothing. Origins are rooted at the stamp now, guarded by a test.
+
+**Still ahead in this phase** — the tiers. Classify each node by asking Roslyn whether its origin has
+a loop/conditional/lambda ancestor **within** the Build method:
 
 | Tier | Canvas affordance |
 |---|---|
@@ -200,8 +219,9 @@ Roslyn whether its origin has a loop/conditional/lambda ancestor **within** the 
 | **Derived** — inside a loop or conditional | select · inspect · edit the source expression · no structural insert |
 | **Foreign** — another method or file | select · "defined in `EntryRow()` → jump" |
 
-**Exit:** an automated test clicks ≥20 distinct elements across `PaymentsPage` and `DeclarativeScreen`
-and asserts each resolved span's source text contains the expected constructor or factory name.
+Without them, clicking a loop-generated row still sends you to the right line — it just does not say
+*why* three hundred rows share one. The tiers are what stop a later phase from offering to "delete
+this row" when there is no such thing to delete.
 
 ### Phase 4 — read-only inspector
 

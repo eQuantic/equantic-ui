@@ -30,7 +30,27 @@ public sealed record DesignParams
     /// <summary>The EDITOR'S buffer, which is the point: unsaved text is what the author is looking
     /// at, and a preview built from disk shows them the file they already changed.</summary>
     [JsonPropertyName("text")] public string? Text { get; init; }
+
+    /// <summary>An origin string a rendered element carried back (classify).</summary>
+    [JsonPropertyName("origin")] public string? Origin { get; init; }
 }
+
+/// <summary>
+/// What may be DONE with a selected node, which is not the same question as where it came from.
+/// <para>
+/// A row built five hundred times inside a <c>foreach</c> has one source site and no separate
+/// existence; a node returned by a helper method is written somewhere else entirely. An editor that
+/// offered "delete this row" for either would corrupt a file, so the canvas has to know which it is
+/// looking at and say so.
+/// </para>
+/// </summary>
+public sealed record OriginTier(
+    /// <summary>literal · derived · foreign.</summary>
+    [property: JsonPropertyName("tier")] string Tier,
+    /// <summary>One sentence for the reader, naming the construct or the member.</summary>
+    [property: JsonPropertyName("reason")] string Reason,
+    /// <summary>The member the origin sits in, when it is not the previewed Build.</summary>
+    [property: JsonPropertyName("member")] string? Member);
 
 /// <summary>One thing the compiler had to say, anchored to the span that caused it.</summary>
 public sealed record DesignMark(

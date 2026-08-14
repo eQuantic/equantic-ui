@@ -144,8 +144,63 @@ export class PreviewPanel {
     void this.panel.webview.postMessage(message);
   }
 
-  private onWebviewMessage(message: { type: string; detail?: string }): void {
+  private onWebviewMessage(message: { type: string; detail?: string; origin?: string }): void {
     if (message.type === 'threw') this.log(`preview threw: ${message.detail ?? ''}`);
+    else if (message.type === 'select' && message.origin) void this.revealSource(message.origin);
+  }
+
+  /**
+   * A pixel, answered with the C# that built it: open the file the origin names and put the
+   * selection on the exact expression.
+   *
+   * The file is often NOT the one being previewed — a page composes components that live beside it,
+   * and their nodes carry their own file's spans. That is a feature of stamping at the construction:
+   * you land where the thing is actually written.
+   */
+  private async revealSource(origin: string): Promise<void> {
+    const span = PreviewPanel.parseOrigin(origin);
+    if (!span) {
+      this.log(`ignored an unparseable origin: ${origin}`);
+      return;
+    }
+
+    try {
+      const document = await vscode.workspace.openTextDocument(vscode.Uri.file(span.path));
+      const editor = await vscode.window.showTextDocument(document, {
+        // Beside the preview, not on top of it — the whole point is seeing both.
+        viewColumn: vscode.ViewColumn.One,
+        preserveFocus: false,
+        preview: false,
+      });
+      editor.selection = new vscode.Selection(span.start, span.end);
+      editor.revealRange(new vscode.Range(span.start, span.end), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+    } catch (error) {
+      this.log(`could not reveal ${span.path}: ${(error as Error).message}`);
+    }
+
+    // Then say what KIND of node it is. Sent back separately rather than asked on hover: this is a
+    // round trip, and one per pointer move would be a request storm for an answer nobody read.
+    try {
+      const tier = await this.sidecar.classify(this.document.uri.fsPath, this.document.getText(), origin);
+      this.post({ type: 'tier', tier: tier.tier, reason: tier.reason });
+    } catch (error) {
+      this.log(`classify failed: ${(error as Error).message}`);
+    }
+  }
+
+  /** `path|startLine:startColumn|endLine:endColumn`, zero-based — the editor's own coordinates. */
+  private static parseOrigin(origin: string): { path: string; start: vscode.Position; end: vscode.Position } | undefined {
+    const parts = origin.split('|');
+    if (parts.length !== 3) return undefined;
+
+    const position = (value: string): vscode.Position | undefined => {
+      const [line, column] = value.split(':').map(Number);
+      return Number.isFinite(line) && Number.isFinite(column) ? new vscode.Position(line, column) : undefined;
+    };
+
+    const start = position(parts[1]);
+    const end = position(parts[2]);
+    return start && end ? { path: parts[0], start, end } : undefined;
   }
 
   /**
@@ -180,6 +235,40 @@ export class PreviewPanel {
     white-space: pre-wrap; display: none;
   }
   #notice.visible { display: block; }
+  /* The selection chrome lives OUTSIDE #app so it survives a remount, and is pointer-transparent so
+     it never becomes the thing a click lands on. */
+  #outline {
+    position: fixed; pointer-events: none; display: none; z-index: 2;
+    border: 1px solid var(--vscode-focusBorder, #0078d4);
+    background: color-mix(in srgb, var(--vscode-focusBorder, #0078d4) 12%, transparent);
+  }
+  #outline.visible { display: block; }
+  /* The tier is drawn, not only written: a solid frame is a node you may edit where it stands, a
+     dashed one comes from a loop or a branch, a dotted one is written in another member entirely. */
+  #outline.derived { border-style: dashed; }
+  #outline.foreign { border-style: dotted; opacity: 0.75; }
+  #tier {
+    position: fixed; left: 8px; bottom: 8px; right: 8px; z-index: 3; display: none;
+    font: 11px/1.5 var(--vscode-font-family, sans-serif);
+    padding: 6px 9px; border-radius: 4px;
+    background: var(--vscode-editorWidget-background, #252526);
+    color: var(--vscode-editorWidget-foreground, #ccc);
+    border: 1px solid var(--vscode-editorWidget-border, #454545);
+  }
+  #tier.visible { display: block; }
+  #tier b { color: var(--vscode-textLink-foreground, #4daafc); }
+  #inspect {
+    position: fixed; top: 8px; right: 8px; z-index: 3;
+    font: 11px/1 var(--vscode-font-family, sans-serif);
+    padding: 5px 9px; border-radius: 4px; cursor: pointer;
+    border: 1px solid var(--vscode-button-border, transparent);
+    background: var(--vscode-button-secondaryBackground, #3a3d41);
+    color: var(--vscode-button-secondaryForeground, #fff);
+  }
+  #inspect[aria-pressed="true"] {
+    background: var(--vscode-button-background, #0078d4);
+    color: var(--vscode-button-foreground, #fff);
+  }
   .eq-preview-error {
     margin: 0; padding: 20px; white-space: pre-wrap;
     font: 13px/1.7 var(--vscode-editor-font-family, ui-monospace, monospace);
@@ -189,6 +278,9 @@ export class PreviewPanel {
 </head>
 <body>
 <div id="app"></div>
+<div id="outline"></div>
+<button id="inspect" type="button" aria-pressed="false" title="Click an element to reveal the C# that built it">Inspect</button>
+<div id="tier"></div>
 <pre id="notice"></pre>
 <script nonce="${nonce}">
 (function () {
@@ -245,9 +337,85 @@ export class PreviewPanel {
     }
   }
 
+  // ---- inspect: a click on a pixel, answered with the C# expression that built it ----------------
+  //
+  // A MODE, not a modifier. The preview is a running app: its buttons do things, and a click that
+  // both pressed a button and moved the editor's cursor would be two gestures wearing one costume.
+  // With inspect on, the app stops receiving pointer events entirely — capture-phase and
+  // preventDefault, so nothing downstream sees the click either.
+  const inspect = document.getElementById('inspect');
+  const outline = document.getElementById('outline');
+  let inspecting = false;
+
+  function setInspecting(on) {
+    inspecting = on;
+    inspect.setAttribute('aria-pressed', String(on));
+    if (!on) outline.classList.remove('visible');
+  }
+
+  inspect.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setInspecting(!inspecting);
+  });
+
+  // The nearest ancestor that KNOWS where it came from. A component is several elements deep — a
+  // Button is button > div > div > span — so the clicked node is usually not the stamped one, and
+  // treating DOM and node as 1:1 selects nothing most of the time.
+  function stamped(target) {
+    let node = target;
+    while (node && node !== document.body) {
+      if (node.getAttribute && node.getAttribute('data-eq-origin')) return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function frame(element) {
+    const box = element.getBoundingClientRect();
+    outline.style.left = box.left + 'px';
+    outline.style.top = box.top + 'px';
+    outline.style.width = box.width + 'px';
+    outline.style.height = box.height + 'px';
+    outline.classList.add('visible');
+  }
+
+  document.addEventListener('pointermove', (e) => {
+    if (!inspecting) return;
+    const found = stamped(e.target);
+    if (found) frame(found);
+    else outline.classList.remove('visible');
+  }, true);
+
+  const tier = document.getElementById('tier');
+
+  document.addEventListener('click', (e) => {
+    if (!inspecting || e.target === inspect) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const found = stamped(e.target);
+    if (!found) return;
+    // The frame is drawn NOW and re-dressed when the tier comes back, so the click feels answered
+    // before the round trip finishes.
+    frame(found);
+    outline.classList.remove('derived', 'foreign');
+    tier.classList.remove('visible');
+    vscode.postMessage({ type: 'select', origin: found.getAttribute('data-eq-origin') });
+  }, true);
+
   window.addEventListener('message', (event) => {
     const payload = event.data;
-    if (payload.type === 'render') void render(payload);
+    // The outline framed an element of the PREVIOUS tree; after a recompile that rectangle means
+    // nothing. The next pointer move draws a true one.
+    if (payload.type === 'render') {
+      outline.classList.remove('visible');
+      tier.classList.remove('visible');
+      void render(payload);
+    } else if (payload.type === 'tier') {
+      if (payload.tier !== 'literal') outline.classList.add(payload.tier);
+      tier.innerHTML = '<b>' + payload.tier + '</b> — ';
+      tier.appendChild(document.createTextNode(payload.reason));
+      tier.classList.add('visible');
+    }
     else if (payload.type === 'stale') {
       // The last good render stays on screen. A blank frame while you are mid-word is worse than a
       // slightly old one with a line telling you what is wrong.

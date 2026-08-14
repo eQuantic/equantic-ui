@@ -40,6 +40,11 @@ while (await input.ReadLineAsync() is { } line)
                 Require(parameters.Path, "path"),
                 parameters.Text ?? ""),
 
+            "classify" => session.Classify(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                Require(parameters.Origin, "origin")),
+
             "theme" => session.Theme(),
 
             "shutdown" => "bye",

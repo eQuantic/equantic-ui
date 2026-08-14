@@ -19,6 +19,18 @@ export interface InitializeResult {
   elapsedMs: number;
 }
 
+/**
+ * What may be DONE with a selected node, which is not the same question as where it came from.
+ * `literal` is written unconditionally in Build; `derived` is inside a loop, a conditional or a
+ * callback, so it has no separate existence to move or delete; `foreign` is written in another
+ * member or another file.
+ */
+export interface OriginTier {
+  tier: 'literal' | 'derived' | 'foreign';
+  reason: string;
+  member: string | null;
+}
+
 export interface CompileResult {
   success: boolean;
   js: string;
@@ -113,6 +125,10 @@ export class Sidecar {
 
   compile(path: string, text: string): Promise<CompileResult> {
     return this.send('compile', { path, text });
+  }
+
+  classify(path: string, text: string, origin: string): Promise<OriginTier> {
+    return this.send('classify', { path, text, origin });
   }
 
   theme(): Promise<string> {

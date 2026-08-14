@@ -4,6 +4,7 @@ using eQuantic.UI.Compiler;
 using eQuantic.UI.Compiler.Services;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Design;
 
@@ -128,6 +129,94 @@ public sealed class DesignSession
         }
 
         return marks.ToArray();
+    }
+
+    /// <summary>
+    /// What may be done with the node an origin names — see <see cref="OriginTier"/>.
+    /// <para>
+    /// This is computed, not guessed: the origin is an exact span, so the question "is there a loop
+    /// or a conditional between this expression and the Build method it lives in" has a real answer
+    /// from the syntax tree. Structural correlation could never answer it, which is why the tiers
+    /// wait on origins rather than the other way round.
+    /// </para>
+    /// </summary>
+    public OriginTier Classify(string path, string text, string origin)
+    {
+        var parts = origin.Split('|');
+        if (parts.Length != 3) return new OriginTier("foreign", "This element carries no readable origin.", null);
+
+        // Another FILE is foreign before anything is parsed: the buffer in hand is not its source.
+        if (!SamePath(parts[0], path))
+        {
+            var file = Path.GetFileName(parts[0]);
+            return new OriginTier("foreign", $"Defined in {file}, which is not the file being previewed.", file);
+        }
+
+        var tree = CSharpSyntaxTree.ParseText(text, path: path);
+        var root = tree.GetRoot();
+        var source = tree.GetText();
+
+        var (line, character) = ParsePosition(parts[1]);
+        if (line >= source.Lines.Count) return new OriginTier("foreign", "This origin is past the end of the file.", null);
+
+        var position = source.Lines[line].Start + character;
+        if (position > source.Length) return new OriginTier("foreign", "This origin is past the end of the file.", null);
+
+        var node = root.FindToken(position).Parent;
+        if (node is null) return new OriginTier("foreign", "Nothing in this file sits at that position.", null);
+
+        // A LOCAL FUNCTION is its own member for this purpose: a node built there is written once and
+        // reached by a call, exactly like a helper method.
+        foreach (var ancestor in node.AncestorsAndSelf())
+        {
+            switch (ancestor)
+            {
+                case LocalFunctionStatementSyntax local:
+                    return new OriginTier("foreign",
+                        $"Built by the local function {local.Identifier.Text}(), not here.", local.Identifier.Text);
+
+                case ForEachStatementSyntax:
+                case ForStatementSyntax:
+                case WhileStatementSyntax:
+                case DoStatementSyntax:
+                    return new OriginTier("derived",
+                        "Built inside a loop — every repetition comes from this one expression, so there is no single row to move or delete.",
+                        null);
+
+                case IfStatementSyntax:
+                case SwitchStatementSyntax:
+                case SwitchExpressionSyntax:
+                case ConditionalExpressionSyntax:
+                    return new OriginTier("derived",
+                        "Built inside a conditional — it exists only when that branch is taken.", null);
+
+                case SimpleLambdaExpressionSyntax:
+                case ParenthesizedLambdaExpressionSyntax:
+                case AnonymousMethodExpressionSyntax:
+                    return new OriginTier("derived",
+                        "Built inside a callback — it exists only when that callback runs.", null);
+
+                case MethodDeclarationSyntax method:
+                    return method.Identifier.Text == "Build"
+                        ? new OriginTier("literal", "Built unconditionally — safe to edit in place.", null)
+                        : new OriginTier("foreign",
+                            $"Built by {method.Identifier.Text}(), not by Build().", method.Identifier.Text);
+
+                case PropertyDeclarationSyntax property:
+                    return new OriginTier("foreign",
+                        $"Built by the {property.Identifier.Text} property, not by Build().", property.Identifier.Text);
+            }
+        }
+
+        return new OriginTier("foreign", "Built outside any member this tool can place.", null);
+    }
+
+    private static (int Line, int Character) ParsePosition(string value)
+    {
+        var parts = value.Split(':');
+        return parts.Length == 2 && int.TryParse(parts[0], out var line) && int.TryParse(parts[1], out var character)
+            ? (line, character)
+            : (0, 0);
     }
 
     private static Compilation Swap(Compilation compilation, SyntaxTree tree)

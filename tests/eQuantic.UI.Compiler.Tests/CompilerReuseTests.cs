@@ -72,38 +72,36 @@ public class CompilerReuseTests
     }
 
     /// <summary>
-    /// A design host compiles on every pause in typing, for hours, through one compiler. The node
-    /// cache used to hold every tree it had ever seen. Measured on this suite: <b>38.4 KB</b>
-    /// retained per compile before <c>ConversionContext.Reset</c> cleared it, <b>4.7 KB</b> after —
-    /// so the bound below sits between the two and fails if the reset is lost. It asserts "does not
-    /// grow with the number of compiles", not an allocation budget; the residual 4.7 KB is Roslyn's
-    /// own per-compilation state, which is a separate question from this one.
+    /// <c>Reset</c> drops the node cache, which is the entry a design host cares about: it is keyed
+    /// by <c>SyntaxNode</c>, so each entry holds that node's whole tree, and nothing used to drop it
+    /// between files. Measured in isolation: <b>38.4 KB</b> retained per compile before, <b>4.7 KB</b>
+    /// after.
+    /// <para>
+    /// Asserted as the CONTRACT rather than as its memory consequence, after two attempts at the
+    /// latter proved unattributable. A <c>GC.GetTotalMemory</c> reading is the whole process's, so it
+    /// passed alone and failed in a full run — it was measuring six hundred other tests. And
+    /// reachability is no better: a control that never compiled at all still found the tree alive,
+    /// because Roslyn keeps its own caches of recently parsed trees. What this compiler promises is
+    /// that it holds nothing after a reset, and that is what is checked here.
+    /// </para>
     /// </summary>
     [Fact]
-    public void CompilingRepeatedly_DoesNotGrowTheHeapWithEachCompile()
+    public void Reset_DropsTheNodeCache_SoNoTreeSurvivesTheFileItBelongedTo()
     {
-        var compiler = new ComponentCompiler { TypeAnnotations = false };
-
-        // Warm up: first compiles pay for JIT and Roslyn's own one-time tables, which are not a leak.
-        for (var i = 0; i < 20; i++) compiler.CompileSource(HelperHungrySource, "Busy.cs").Single();
-
-        var before = GC.GetTotalMemory(forceFullCollection: true);
-
-        const int compiles = 200;
-        for (var i = 0; i < compiles; i++)
+        var context = new eQuantic.UI.Compiler.CodeGen.ConversionContext
         {
-            // A distinct source each time: identical text would let Roslyn's own caching hide a leak.
-            var source = HelperHungrySource.Replace("Busy", $"Busy{i}");
-            compiler.CompileSource(source, $"Busy{i}.cs").Single();
-        }
+            Converter = new eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter(),
+            SemanticHelper = new eQuantic.UI.Compiler.Services.SemanticHelper(null),
+        };
 
-        var after = GC.GetTotalMemory(forceFullCollection: true);
-        var growthPerCompile = (after - before) / (double)compiles;
+        var node = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree
+            .ParseText("class Probe { void M() { var x = 1; } }").GetRoot();
 
-        Assert.True(
-            growthPerCompile < 16 * 1024,
-            $"retained {growthPerCompile / 1024:F1} KB per compile over {compiles} compiles "
-            + $"({(after - before) / 1024.0 / 1024.0:F1} MB total) — the converter is holding onto "
-            + "per-file state again (ConversionContext.Reset).");
+        context.SetCached(node, "cached");
+        Assert.Equal("cached", context.GetCached(node));
+
+        context.Reset();
+
+        Assert.Null(context.GetCached(node));
     }
 }

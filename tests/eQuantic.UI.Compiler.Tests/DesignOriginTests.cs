@@ -150,6 +150,35 @@ public class DesignOriginTests
         Assert.StartsWith("/tmp/Probe.cs|15:", loopTextOrigin);
     }
 
+    /// <summary>
+    /// An origin names a file an EDITOR can open. A relative path would resolve against whatever
+    /// working directory that editor happens to have — not the compiler's — so a stamp built from a
+    /// relative source path still has to come out rooted.
+    /// </summary>
+    [Fact]
+    public void AnOriginNamesAFullPath_EvenWhenTheSourceWasGivenARelativeOne()
+    {
+        var compiler = new ComponentCompiler { TypeAnnotations = false, DesignMode = true };
+        compiler.SetProjectCompilation(CSharpCompilation.Create(
+            "RelativeProbe",
+            [CSharpSyntaxTree.ParseText(Source, path: "Screens/Probe.cs")],
+            References,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable)));
+
+        var js = string.Join("\n", compiler.CompileSource(Source, "Screens/Probe.cs")
+            .Where(r => r.Success)
+            .Select(r => r.TypeScript));
+
+        var paths = Regex.Matches(js, @"\$eq\.origin\([^""]*""([^|]+)\|")
+            .Select(m => m.Groups[1].Value)
+            .Distinct()
+            .ToArray();
+
+        Assert.NotEmpty(paths);
+        Assert.All(paths, path => Assert.True(Path.IsPathRooted(path), $"'{path}' is not rooted"));
+    }
+
     /// <summary>Wrapping must not change what an expression MEANS: the wrapper returns the node, so
     /// a construction still composes into whatever consumed it.</summary>
     [Fact]

@@ -405,8 +405,18 @@ public class CSharpToJsConverter
         var span = expression.GetLocation().GetLineSpan();
         if (!span.IsValid) return emitted;
 
+        // FULL path: the origin is opened by an editor, and a relative one resolves against whatever
+        // that editor's working directory happens to be — which is not where the compiler was run.
+        // A caller is free to hand us a relative path; the stamp must still name a file.
+        var file = expression.SyntaxTree.FilePath;
+        if (file.Length > 0)
+        {
+            try { file = Path.GetFullPath(file); }
+            catch (Exception) { /* an unrooted or malformed path stays as it came */ }
+        }
+
         var origin = string.Concat(
-            expression.SyntaxTree.FilePath, "|",
+            file, "|",
             span.StartLinePosition.Line.ToString(), ":", span.StartLinePosition.Character.ToString(), "|",
             span.EndLinePosition.Line.ToString(), ":", span.EndLinePosition.Character.ToString());
 
