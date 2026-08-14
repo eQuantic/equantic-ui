@@ -379,6 +379,21 @@ export class PreviewPanel {
   }
 
   /**
+   * The panel goes on talking about the SAME node after an edit inside it.
+   * <para>
+   * An origin is a span, and an edit within a node changes its length. Unsetting a member shortens it,
+   * so the span the panel is holding runs past its end — and a span that overshoots resolves to the
+   * smallest node CONTAINING it, which is the parent. Without this the panel would quietly start
+   * describing, and then editing, the container of the thing it was asked about.
+   * </para>
+   */
+  private async follow(origin: string, edit: EditResult): Promise<void> {
+    const landed = edit.origin ?? origin;
+    if (landed !== origin) this.post({ type: 'reselect', origin: landed });
+    await this.describe(landed);
+  }
+
+  /**
    * An edit that MOVED the selected node, followed by the selection.
    * <para>
    * The origin the panel was holding is a span, and after the move those coordinates hold the sibling
@@ -399,19 +414,22 @@ export class PreviewPanel {
    * open, and a quick pick that waits on a round trip feels like a stall. Keyed by element type
    * because a Grid's `columns` is offered GridTracks and a Column's `children` is offered components.
    */
-  private readonly palettes = new Map<string, PaletteEntry[]>();
+  private components: PaletteEntry[] | undefined;
 
   private async paletteFor(
     origin: string, list: string | undefined, elementType: string | undefined,
   ): Promise<PaletteEntry[]> {
-    const key = elementType ?? '#components';
-    const cached = this.palettes.get(key);
-    if (cached) return cached;
+    // Only the COMPONENT surface is cached. A value palette is resolved from the origin, so a stale
+    // one falls back to the component surface — and a fallback cached under the element type would
+    // then answer for that type for the rest of the session. It is one round trip on an explicit
+    // click; the surface is the one worth keeping.
+    if (elementType === undefined && this.components) return this.components;
 
     const span = PreviewPanel.parseOrigin(origin);
     const entries = await this.sidecar.palette(
       span?.path, span ? await this.textOf(span.path) : undefined, origin, list);
-    this.palettes.set(key, entries);
+
+    if (elementType === undefined) this.components = entries;
     return entries;
   }
 
@@ -423,7 +441,7 @@ export class PreviewPanel {
     try {
       const edit = await this.sidecar.unsetProperty(
         span.path, await this.textOf(span.path), origin, property, this.buffers());
-      if (await this.applyEdit(span.path, edit, 'that was refused')) await this.describe(origin);
+      if (await this.applyEdit(span.path, edit, 'that was refused')) await this.follow(origin, edit);
     } catch (error) {
       this.log(`unset failed: ${(error as Error).message}`);
     }
@@ -437,7 +455,7 @@ export class PreviewPanel {
     try {
       const edit = await this.sidecar.removeAt(
         span.path, await this.textOf(span.path), origin, list, index, this.buffers());
-      if (await this.applyEdit(span.path, edit, 'that was refused')) await this.describe(origin);
+      if (await this.applyEdit(span.path, edit, 'that was refused')) await this.follow(origin, edit);
     } catch (error) {
       this.log(`remove failed: ${(error as Error).message}`);
     }
@@ -486,18 +504,7 @@ export class PreviewPanel {
       const edit = await this.sidecar.insertChild(
         span.path, await this.textOf(span.path), origin, index, pick.entry.snippet, this.buffers(), list);
 
-      if (!edit.applied) {
-        void vscode.window.showWarningMessage(`eQuantic UI: ${edit.reason ?? 'that insertion was refused'}`);
-        return;
-      }
-
-      const workspaceEdit = new vscode.WorkspaceEdit();
-      workspaceEdit.replace(
-        vscode.Uri.file(span.path),
-        new vscode.Range(edit.startLine, edit.startColumn, edit.endLine, edit.endColumn),
-        edit.newText);
-
-      if (await vscode.workspace.applyEdit(workspaceEdit)) await this.describe(origin);
+      if (await this.applyEdit(span.path, edit, 'that insertion was refused')) await this.follow(origin, edit);
     } catch (error) {
       this.log(`insert failed: ${(error as Error).message}`);
     }

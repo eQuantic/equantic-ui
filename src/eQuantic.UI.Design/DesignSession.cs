@@ -464,7 +464,7 @@ public sealed class DesignSession
         // `style.Padding` — a member of the value an argument carries. See SetNested.
         if (property.Split('.') is [var argumentName, var member])
         {
-            return SetNested(source, arguments, symbol, argumentName, member, value, text, path);
+            return SetNested(source, arguments, symbol, argumentName, member, value, text, path, construction, origin);
         }
 
         // 1. An argument already written — replace just its expression, so trivia and the name colon
@@ -478,7 +478,7 @@ public sealed class DesignSession
         if (parameterIndex >= 0 && arguments is { } list
             && ArgumentFor(list, symbol.Parameters[parameterIndex], parameterIndex) is { } written)
         {
-            return Replace(source, written.Expression.Span, value, text, path);
+            return Replace(source, written.Expression.Span, value, text, path, construction, origin);
         }
 
         // 2. A member already in an object initializer.
@@ -486,7 +486,7 @@ public sealed class DesignSession
         if (initializer?.Expressions.OfType<AssignmentExpressionSyntax>()
                 .FirstOrDefault(a => a.Left.ToString() == property) is { } assignment)
         {
-            return Replace(source, assignment.Right.Span, value, text, path);
+            return Replace(source, assignment.Right.Span, value, text, path, construction, origin);
         }
 
         // 3. A constructor parameter the call omitted — added NAMED, and placed before a trailing
@@ -498,12 +498,12 @@ public sealed class DesignSession
 
             if (children is not null)
             {
-                return Insert(source, children.SpanStart, addition + ", ", text, path);
+                return Insert(source, children.SpanStart, addition + ", ", text, path, construction, origin);
             }
 
             return existing.Count == 0
-                ? Insert(source, construction.Span.End - 1, addition, text, path)
-                : Insert(source, existing[^1].Span.End, ", " + addition, text, path);
+                ? Insert(source, construction.Span.End - 1, addition, text, path, construction, origin)
+                : Insert(source, existing[^1].Span.End, ", " + addition, text, path, construction, origin);
         }
 
         // 4. A member of an initializer that is already there — appended, not invented.
@@ -516,8 +516,8 @@ public sealed class DesignSession
         {
             var last = open.Initializer.Expressions.LastOrDefault();
             return last is null
-                ? Insert(source, open.Initializer.OpenBraceToken.Span.End, $" {property} = {value}", text, path)
-                : Insert(source, last.Span.End, $", {property} = {value}", text, path);
+                ? Insert(source, open.Initializer.OpenBraceToken.Span.End, $" {property} = {value}", text, path, construction, origin)
+                : Insert(source, last.Span.End, $", {property} = {value}", text, path, construction, origin);
         }
 
         // 5. A member of a `new X(…)` written without an initializer — so give it one.
@@ -532,7 +532,7 @@ public sealed class DesignSession
             && Settable(symbol.ContainingType, property))
         {
             return Insert(source, bare.ArgumentList?.Span.End ?? bare.Type.Span.End,
-                $" {{ {property} = {value} }}", text, path);
+                $" {{ {property} = {value} }}", text, path, construction, origin);
         }
 
         return EditResult.Refused(
@@ -559,7 +559,8 @@ public sealed class DesignSession
     /// </summary>
     private EditResult SetNested(
         SourceText source, SeparatedSyntaxList<ArgumentSyntax>? arguments, IMethodSymbol symbol,
-        string argumentName, string member, string value, string text, string path)
+        string argumentName, string member, string value, string text, string path,
+        SyntaxNode construction, string origin)
     {
         if (arguments is not { } list) return EditResult.Refused("That construction takes no arguments.");
 
@@ -577,27 +578,57 @@ public sealed class DesignSession
         if (written.Initializer is null)
         {
             var at = written.ArgumentList?.Span.End ?? written.Type.Span.End;
-            return Insert(source, at, $" {{ {member} = {value} }}", text, path);
+            return Insert(source, at, $" {{ {member} = {value} }}", text, path, construction, origin);
         }
 
         var assignment = written.Initializer.Expressions
             .OfType<AssignmentExpressionSyntax>()
             .FirstOrDefault(a => a.Left.ToString() == member);
 
-        if (assignment is not null) return Guarded(source, assignment.Right.Span, value, text, path);
+        if (assignment is not null)
+            return Replace(source, assignment.Right.Span, value, text, path, construction, origin);
 
         // Appended to the initializer that is already there — never one invented for the purpose.
         var last = written.Initializer.Expressions.LastOrDefault();
         return last is null
-            ? Guarded(source, new TextSpan(written.Initializer.OpenBraceToken.Span.End, 0), $" {member} = {value}", text, path)
-            : Guarded(source, new TextSpan(last.Span.End, 0), $", {member} = {value}", text, path);
+            ? Insert(source, written.Initializer.OpenBraceToken.Span.End, $" {member} = {value}", text, path, construction, origin)
+            : Insert(source, last.Span.End, $", {member} = {value}", text, path, construction, origin);
     }
 
-    private EditResult Replace(SourceText source, Microsoft.CodeAnalysis.Text.TextSpan span, string value, string text, string path) =>
-        Guarded(source, span, value, text, path);
+    private EditResult Replace(
+        SourceText source, Microsoft.CodeAnalysis.Text.TextSpan span, string value, string text, string path,
+        SyntaxNode? node = null, string? origin = null) =>
+        Guarded(source, span, value, text, path, Moved(source, span, value, node, origin));
 
-    private EditResult Insert(SourceText source, int position, string value, string text, string path) =>
-        Guarded(source, new Microsoft.CodeAnalysis.Text.TextSpan(position, 0), value, text, path);
+    private EditResult Insert(
+        SourceText source, int position, string value, string text, string path,
+        SyntaxNode? node = null, string? origin = null) =>
+        Guarded(source, new Microsoft.CodeAnalysis.Text.TextSpan(position, 0), value, text, path,
+            Moved(source, new Microsoft.CodeAnalysis.Text.TextSpan(position, 0), value, node, origin));
+
+    /// <summary>
+    /// Where the edited node ENDS UP when the edit happens INSIDE it.
+    /// <para>
+    /// An origin is a span, and an edit within a node changes the node's length: unsetting a member
+    /// shortens it, so the span the caller is holding now runs past its end — and a span that
+    /// overshoots resolves to the smallest node CONTAINING it, which is the parent. The panel would
+    /// quietly start describing, and then editing, the container of the thing it was asked about.
+    /// </para>
+    /// <para>
+    /// The start never moves (the edit is inside), so only the end shifts, by exactly the difference
+    /// in length. Nothing is computed when the caller did not say which node it was editing.
+    /// </para>
+    /// </summary>
+    private static string? Moved(
+        SourceText source, Microsoft.CodeAnalysis.Text.TextSpan edit, string value, SyntaxNode? node, string? origin)
+    {
+        if (node is null || origin is null) return null;
+        if (!node.Span.Contains(edit.Start)) return null;
+
+        var after = source.Replace(edit, value);
+        var end = node.Span.End + value.Length - edit.Length;
+        return Where(after, Microsoft.CodeAnalysis.Text.TextSpan.FromBounds(node.SpanStart, Math.Max(node.SpanStart, end)), origin);
+    }
 
     /// <summary>
     /// The edit, checked before it is offered: the whole file is re-parsed with the change applied,
@@ -1047,7 +1078,7 @@ public sealed class DesignSession
 
         // Up to the NEXT element when there is one, so the line and its indentation go together;
         // back to the previous separator when this is the last, so no comma is orphaned.
-        return Guarded(source, Removal(list.Elements, element), "", text, path);
+        return Guarded(source, Removal(list.Elements, element), "", text, path);   // the node itself GOES
     }
 
     /// <summary>
@@ -1081,7 +1112,8 @@ public sealed class DesignSession
         if (index < 0 || index >= written.Elements.Count)
             return EditResult.Refused($"`{list}` has {written.Elements.Count} entries, so there is no {index}.");
 
-        return Guarded(source, Removal(written.Elements, written.Elements[index]), "", text, path);
+        var bite = Removal(written.Elements, written.Elements[index]);
+        return Guarded(source, bite, "", text, path, Moved(source, bite, "", construction, origin));
     }
 
     /// <summary>
@@ -1223,7 +1255,7 @@ public sealed class DesignSession
         // Indented like the element it lands beside, so the new line reads as one the author wrote
         // rather than one a tool dropped in.
         var (at, addition, _) = Addition(source, children, index, snippet);
-        return Guarded(source, new TextSpan(at, 0), addition, text, path);
+        return Insert(source, at, addition, text, path, construction, origin);
     }
 
     /// <summary>What a named list's elements are, when the caller named one and it resolves.</summary>
@@ -1252,6 +1284,16 @@ public sealed class DesignSession
     /// </summary>
     private static PaletteEntry[] ValuePalette(ITypeSymbol type)
     {
+        // A list of strings or of numbers is offered a VALUE, not the type's static surface. Scanning
+        // `string` for static members returning string offers Concat, Copy, Empty, Format, Intern and
+        // Join — none of which is what anyone adding an item to a list meant.
+        if (type.SpecialType != SpecialType.None)
+        {
+            return Literal(type, type.Name) is { } literal
+                ? [new PaletteEntry(type.Name, literal, null, "value")]
+                : [];
+        }
+
         var entries = new List<PaletteEntry>();
 
         foreach (var member in type.GetMembers())
@@ -1509,7 +1551,8 @@ public sealed class DesignSession
             .FirstOrDefault(a => a.Left.ToString() == member);
         if (assignment is null) return EditResult.Refused($"'{member}' is not set here.");
 
-        return Guarded(source, Removal(written.Initializer.Expressions, (ExpressionSyntax)assignment), "", text, path);
+        var bite = Removal(written.Initializer.Expressions, (ExpressionSyntax)assignment);
+        return Guarded(source, bite, "", text, path, Moved(source, bite, "", construction, origin));
     }
 
     /// <summary>Whether a name is a member this tool may write into an object initializer: settable,

@@ -239,6 +239,31 @@ public sealed class ValueMemberTests : IDisposable
         Style.Members.Should().NotContain(member => member.Name == "EqualityContract");
     }
 
+    /// <summary>
+    /// An edit INSIDE a node changes its length, so the span the panel is holding no longer matches
+    /// it: unsetting a member shortens the node, the old span overshoots, and a span that overshoots
+    /// resolves to the smallest node CONTAINING it — the parent. Every in-place edit therefore says
+    /// where the node now ends.
+    /// </summary>
+    [Fact]
+    public void AnEditInsideANode_SaysWhereThatNodeNowEnds()
+    {
+        var edit = _session.UnsetProperty(_probe, Source, TheBox, "style.Padding");
+
+        edit.Applied.Should().BeTrue(edit.Reason);
+        edit.Origin.Should().NotBeNull();
+
+        var after = Apply(Source, edit);
+        // The same node it was asked about — a Box with a style — and not the method around it.
+        _session.Inspect(_probe, after, edit.Origin!)!.Component.Should().Be("Box");
+
+        // A DIFFERENT span from the one that was handed in: the node ends earlier than it did, which
+        // is the whole reason the caller cannot go on using what it was holding. (The origins in this
+        // probe are short fragments, so they do not overshoot; the compiler stamps the FULL
+        // construction, and there the old end lands past the node and resolves to its parent.)
+        edit.Origin.Should().NotBe(TheBox);
+    }
+
     [Fact]
     public void UnsettingSomethingThatIsNotSet_IsRefusedRatherThanWritingNothing()
     {
