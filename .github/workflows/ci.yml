@@ -59,6 +59,36 @@ jobs:
           path: src/eQuantic.UI.Runtime/dist/
 
   # Build platform-specific runtime packages
+  package-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Builds the .vsix, and then checks the two ways it can be quietly broken: a .vscodeignore that
+      # leaves the design host out (the extension installs, activates, and fails on the first
+      # preview), and a host that was published against a different shape of the protocol. The
+      # second check SPAWNS the packaged host and speaks to it.
+      - name: Package the VS Code extension
+        working-directory: extensions/vscode
+        run: |
+          npm ci --no-audit --no-fund
+          npm run package
+
+      - name: Upload the extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: equantic-ui-vsix
+          path: extensions/vscode/equantic-ui.vsix
+
   build-platform-runtimes:
     needs: build-runtime
     runs-on: ${{ matrix.os }}

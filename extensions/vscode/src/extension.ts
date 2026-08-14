@@ -44,12 +44,16 @@ function resolveSidecar(context: vscode.ExtensionContext): string {
   if (configured) return configured;
 
   const bundled = path.join(context.extensionPath, 'host', 'eqdesign.dll');
-  if (fs.existsSync(bundled)) return bundled;
-
   // Developing the extension from the repo: src/eQuantic.UI.Design builds beside extensions/vscode.
-  const fromRepo = path.join(
-    context.extensionPath, '..', '..', 'src', 'eQuantic.UI.Design', 'bin', 'Debug', 'net10.0', 'eqdesign.dll');
-  return path.resolve(fromRepo);
+  const fromRepo = path.resolve(path.join(
+    context.extensionPath, '..', '..', 'src', 'eQuantic.UI.Design', 'bin', 'Debug', 'net10.0', 'eqdesign.dll'));
+
+  // In DEVELOPMENT the repo's own build wins. Packaging leaves a Release host in host/, and preferring
+  // it afterwards would run yesterday's host against today's source — silently, and only until
+  // something the protocol gained since then is asked for.
+  if (context.extensionMode === vscode.ExtensionMode.Development && fs.existsSync(fromRepo)) return fromRepo;
+
+  return fs.existsSync(bundled) ? bundled : fromRepo;
 }
 
 async function hostFor(context: vscode.ExtensionContext, layout: ProjectLayout): Promise<Sidecar> {

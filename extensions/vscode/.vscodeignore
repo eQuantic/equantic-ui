@@ -1,0 +1,12 @@
+# What does NOT travel. Everything else does — including host/, which is the whole point of packaging.
+src/**
+out/test/**
+scripts/**
+tsconfig.json
+.eslintrc*
+**/*.map
+**/*.ts
+!host/**/*.ts
+node_modules/**
+.vscode-test/**
+*.vsix

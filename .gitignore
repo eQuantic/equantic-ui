@@ -55,3 +55,7 @@ src/eQuantic.UI.Runtime.*/tools/bun/bun.exe
 # Playwright e2e output
 tests/e2e/playwright-report/
 tests/e2e/test-results/
+
+# The VS Code extension's packaging output: 30 MB of published host, and the archive itself.
+extensions/vscode/host/
+extensions/vscode/*.vsix

@@ -464,6 +464,33 @@ and Escape lets go — first of the selection, then of the mode. All of it respe
 pointer does: nothing structural while the tree is settling, and nothing at all when the pointer is
 over the panel.
 
+### Phase 13 — installable ✅ done
+
+Until now the extension resolved the design host out of the repository's own build output, so it
+worked for whoever had cloned the repository and for nobody else. `npm run package` produces a
+`.vsix`: **10.7 MB**, 158 files, with the host published into it.
+
+Framework-dependent on purpose. A self-contained publish is ~70 MB per platform and would have to ship
+three of them, and this is a tool for people writing a .NET application — the one dependency it assumes
+is the one they are already using.
+
+Two things that would otherwise be found by a user rather than by us:
+
+- **The host is checked into the archive, and then RUN.** `verify-package.mjs` reads the entry list out
+  of the zip itself (its central directory, thirty lines, no dependency) rather than asking the tool
+  that wrote it what it thinks it wrote — then spawns the packaged host and speaks its protocol,
+  asserting an unknown method comes back as an error for the right id. A `.vscodeignore` that drops the
+  host produces an extension that installs, activates, and fails on the first preview.
+- **In development the repo's build wins.** Packaging leaves a Release host in `host/`, and preferring
+  it afterwards would run yesterday's host against today's source — silently, until something the
+  protocol has gained since is asked for. `ExtensionMode.Development` decides.
+
+CI packages it on every push and keeps the `.vsix` as an artifact.
+
+The readme is what the Marketplace shows, and it still said "simple extension providing snippets" —
+rewritten, and its claims checked against the manifest, which caught it advertising an `eq-style`
+snippet that does not exist.
+
 ---
 
 ## The seam, tested
