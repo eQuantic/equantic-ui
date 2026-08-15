@@ -57,11 +57,11 @@ public class ListHandoffFidelityTests
     /// <summary>
     /// The hairline continues the text edge of the row ABOVE it: 16 + leading + gap. Flat 16 put it
     /// under the icons, which is the one detail a designer spots from across the room.
-    /// </summary>
-    /// <summary>
+    /// <para>
     /// The two conventional slots answer for themselves: an Icon carries its size and an Avatar its
     /// tier. Asking the app for a number it already wrote into the slot is how a 40dp avatar ends up
     /// with a hairline 16dp short — which is what the gallery golden caught.
+    /// </para>
     /// </summary>
     [Fact]
     public void TheDividerStartsWhereTheRowsTextDoes()

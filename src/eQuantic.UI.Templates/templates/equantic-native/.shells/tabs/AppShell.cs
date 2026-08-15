@@ -45,10 +45,10 @@ public sealed class AppShell : StatefulComponent
             .With(Box(new BoxStyle { Width = SizeValue.Fill, Background = theme.Surface },
                 SafeArea(BottomNavigation(Destinations, _destination, Go), SafeEdges.Bottom)));
 
+        // The rail brings its own fill and its own trailing edge — nothing to wrap it in.
         var wide = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill }
-            .With(Box(new BoxStyle { Height = SizeValue.Fill, Background = theme.Surface },
-                SafeArea(NavigationRail(Destinations, _destination, Go),
-                    SafeEdges.Start | SafeEdges.Bottom)))
+            .With(SafeArea(NavigationRail(Destinations, _destination, Go),
+                SafeEdges.Start | SafeEdges.Bottom))
             .With(Flexible(Screen()));
 
         return Box(new BoxStyle

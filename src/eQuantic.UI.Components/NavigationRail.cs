@@ -70,7 +70,8 @@ public sealed class NavigationRail : StatelessComponent
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
 
-        var destinations = new Column(gap: Space.S3)
+        // C16's own gap, not the bar's: a rail stacks its cells 8 apart.
+        var destinations = new Column(gap: Space.S2)
         {
             Width = SizeValue.Fill,
             Cross = CrossAlign.Center,
@@ -84,22 +85,36 @@ public sealed class NavigationRail : StatelessComponent
             var glyph = isActive && item.SelectedIcon is { } filled ? filled : item.Icon;
             var tint = isActive ? primary.OnSubtle : theme.TextMuted;
 
-            var icon = new Icon(glyph, IconSize.Md, tint);
+            // C16's figures, which are NOT the bar's: a rail's glyph is Dense 20 in a 52×30 pill
+            // under a Caption 12 label, where the bar draws Md 24 in 56×26 under an 11/700 one.
+            // Built from the bar, the rail was the bar stood on its side — the same class of
+            // mistake as reading a sibling's spec for a component that has its own.
+            var icon = new Icon(glyph, IconSize.Dense, tint);
             var iconNode = item.BadgeCount > 0 ? Badge.Over(icon, item.BadgeCount) : (VisualNode)icon;
 
             var pill = new Box(new BoxStyle
             {
-                Width = 56,
-                Height = 26,
+                Width = 52,
+                Height = 30,
                 Background = isActive ? primary.Subtle : null,
                 CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             }, iconNode.Centered());
 
-            var column = new Column(gap: 2) { Cross = CrossAlign.Center };
-            column.Add(pill);
-            column.Add(new Text(item.Label, TypeRole.Caption, tint, maxLines: 1)
+            // The cell is 80×56 and the HIT is the whole cell, so the pressable wraps the cell and
+            // not just the pill and its label.
+            var column = new Column(gap: 2)
             {
-                StyleOverride = new TypeStyle(11, 14, FontWeight.Bold, 0.1f, 1.3f),
+                Width = SizeValue.Fill,
+                Height = 56,
+                Main = MainAlign.Center,
+                Cross = CrossAlign.Center,
+            };
+            column.Add(pill);
+            column.Add(new Text(item.Label, TypeRole.Caption,
+                tint, maxLines: 1)
+            {
+                // Selection is also a WEIGHT here (C16: label 700 when selected), not only a tint.
+                StyleOverride = isActive ? new TypeStyle(12, 16, FontWeight.Bold, 0, 1.3f) : null,
             });
 
             destinations.Add(new Pressable(column, OnSelect is null ? null : () => OnSelect(index))
@@ -116,7 +131,7 @@ public sealed class NavigationRail : StatelessComponent
         // The ALIGNMENT belongs to the outer column: it is the one with the rail's full height, so it
         // is the only one with slack to distribute. Setting it on the destinations (which hug their
         // content) would centre nothing at all.
-        var rail = new Column(gap: Space.S3)
+        var rail = new Column(gap: Space.S2)
         {
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
@@ -132,6 +147,12 @@ public sealed class NavigationRail : StatelessComponent
             Height = SizeValue.Fill,
             Padding = EdgeInsets.Symmetric(0, Space.S3),
             Background = theme.Surface,
+            // C16: a 1dp Border on the TRAILING edge. It is what separates the rail from the content
+            // beside it — without it, a rail on a Surface page has no edge at all, and every shell
+            // that wanted one drew its own (the sample and both template shells did exactly that).
+            BorderWidth = 1,
+            BorderColor = theme.Border,
+            BorderSides = BorderSides.End,
         }, rail);
     }
 }

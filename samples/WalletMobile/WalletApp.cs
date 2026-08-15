@@ -298,13 +298,9 @@ public sealed class WalletApp : StatefulComponent
             _tab,
             Go);
 
-        return new Box(new BoxStyle
-        {
-            Height = SizeValue.Fill,
-            Background = theme.Surface,
-            BorderWidth = 1,
-            BorderColor = theme.Border,
-        }, new SafeArea(rail, SafeEdges.Start | SafeEdges.Bottom));
+        // The rail paints its own fill and its own trailing edge (C16) — this used to wrap it in a
+        // bordered Box, which drew the framework's line a second time.
+        return new SafeArea(rail, SafeEdges.Start | SafeEdges.Bottom);
     }
 
     /// <summary>What a destination DOES, written once for both shells.</summary>
