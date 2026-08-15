@@ -42,6 +42,7 @@ import type {
   ColorValue,
   ComponentNode,
   DrawingNode,
+  VectorGradientValue,
   VectorPaintValue,
   CornerRadiiValue,
   EdgeInsetsValue,
@@ -1383,6 +1384,54 @@ function lowerGlyph(
  * Mirror of the C# `LowerDrawing`. The shapes the file left as `currentColor` stay the WORD, so the
  * `color` on the wrapper answers them — that is what makes a monochrome mark follow the theme.
  */
+/** Whether a paint is a run of colours rather than one — the twin of `VectorPaint.IsGradient`. */
+function isGradient(value: VectorPaintValue): boolean {
+  return (value.kind === 'linearGradient' || value.kind === 'radialGradient') && !!value.gradient;
+}
+
+/**
+ * A gradient's id, byte for byte with the C# realizer: the FNV hash of everything that makes the
+ * run what it is. Content-addressed rather than counted — SSR and this twin do not agree about how
+ * many drawings came before, and a mismatched id repaints every path that names it.
+ */
+export function gradientId(run: VectorGradientValue): string {
+  let text = `${run.userSpace ? 'u' : 'o'}|${num(run.x1)},${num(run.y1)},${num(run.x2)},${num(run.y2)},${num(run.radius)}`;
+  for (const stop of run.stops) text += `|${num(stop.offset)}:${hex(stop.color)}`;
+  return `eq-g-${hashDeclaration(text)}`;
+}
+
+/** One paint server, in SVG's own words — the twin of the C# GradientElement. */
+function gradientElement(id: string, paint: VectorPaintValue): HtmlNode {
+  const run = paint.gradient!;
+  const radial = paint.kind === 'radialGradient';
+  const attributes: Record<string, string | undefined> = { id };
+  if (radial) {
+    attributes['cx'] = num(run.x1);
+    attributes['cy'] = num(run.y1);
+    attributes['r'] = num(run.radius);
+  } else {
+    attributes['x1'] = num(run.x1);
+    attributes['y1'] = num(run.y1);
+    attributes['x2'] = num(run.x2);
+    attributes['y2'] = num(run.y2);
+  }
+  if (run.userSpace) attributes['gradientUnits'] = 'userSpaceOnUse';
+
+  return {
+    tag: radial ? 'radialGradient' : 'linearGradient',
+    attributes,
+    events: {},
+    children: run.stops.map((stop) => {
+      const stopAttributes: Record<string, string | undefined> = {
+        offset: num(stop.offset),
+        'stop-color': hex({ ...stop.color, a: 255 }),
+      };
+      if (stop.color.a < 255) stopAttributes['stop-opacity'] = num(stop.color.a / 255);
+      return { tag: 'stop', attributes: stopAttributes, events: {}, children: [] };
+    }),
+  };
+}
+
 function lowerDrawing(node: DrawingNode): HtmlNode {
   const artwork = node.artwork;
   const attributes: Record<string, string | undefined> = {
@@ -1400,13 +1449,36 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
   else attributes['aria-hidden'] = 'true';
 
   const paint = (value: VectorPaintValue): string =>
-    value.kind === 'inherit' ? 'currentColor' : value.kind === 'solid' ? hex(value.color) : 'none';
+    value.kind === 'inherit'
+      ? 'currentColor'
+      : value.kind === 'solid'
+        ? hex(value.color)
+        : isGradient(value)
+          ? `url(#${gradientId(value.gradient!)})`
+          : 'none';
+
+  // Every run the artwork paints with, declared once, in first-use order — the C# realizer keys the
+  // same map by the same id, so the two markups match and hydration patches nothing.
+  const runs = new Map<string, VectorPaintValue>();
+  for (const shape of artwork.shapes ?? [])
+    for (const value of [shape.fill, shape.stroke])
+      if (isGradient(value) && !runs.has(gradientId(value.gradient!)))
+        runs.set(gradientId(value.gradient!), value);
+
+  const defs: HtmlNode[] = runs.size === 0
+    ? []
+    : [{
+        tag: 'defs',
+        attributes: {},
+        events: {},
+        children: [...runs].map(([id, value]) => gradientElement(id, value)),
+      }];
 
   return {
     tag: 'svg',
     attributes,
     events: {},
-    children: (artwork.shapes ?? []).map((shape) => {
+    children: [...defs, ...(artwork.shapes ?? []).map((shape) => {
       const shapeAttributes: Record<string, string | undefined> = {
         d: shape.path,
         fill: paint(shape.fill),
@@ -1427,7 +1499,7 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
       if (shape.evenOdd) shapeAttributes['fill-rule'] = 'evenodd';
       if (shape.opacity < 1) shapeAttributes['opacity'] = num(shape.opacity);
       return { tag: 'path', attributes: shapeAttributes, events: {}, children: [] };
-    }),
+    })],
   };
 }
 

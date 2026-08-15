@@ -191,23 +191,30 @@ public class SvgDocumentTests
     }
 
     /// <summary>
-    /// The fence, drawn where a reader can see it. A gradient, a mask or a font is not expressible
-    /// in this model, so those shapes arrive MISSING rather than filled with a colour nobody chose.
+    /// The fence, drawn where a reader can see it — and moved, once, when a gradient stopped being
+    /// outside it. A run of colours is now understood; a font and a pattern still are not, so those
+    /// shapes arrive MISSING rather than filled with something nobody chose.
     /// </summary>
     [Fact]
     public void WhatTheSubsetCannotExpressIsDroppedRatherThanHalfDrawn()
     {
         var drawing = Parse("""
             <svg viewBox="0 0 10 10">
-              <defs><linearGradient id="g"><stop offset="0" stop-color="#fff"/></linearGradient></defs>
+              <defs>
+                <linearGradient id="g"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#000000"/></linearGradient>
+                <pattern id="p"><rect width="1" height="1" fill="#ff0000"/></pattern>
+              </defs>
               <path d="M0 0h1" fill="url(#g)"/>
+              <path d="M0 2h1" fill="url(#p)"/>
               <text x="0" y="9">not a drawing</text>
               <path d="M0 1h1" fill="#123456"/>
             </svg>
             """);
 
-        drawing.Shapes.Should().ContainSingle("the gradient-filled shape and the text are dropped");
-        drawing.Shapes[0].Fill.Color.Should().Be(Color.FromRgb(0x12, 0x34, 0x56));
+        drawing.Shapes.Should().HaveCount(2,
+            "the gradient is understood; the patterned shape and the text are not drawings this model can carry");
+        drawing.Shapes[0].Fill.Kind.Should().Be(VectorPaintKind.LinearGradient);
+        drawing.Shapes[1].Fill.Color.Should().Be(Color.FromRgb(0x12, 0x34, 0x56));
     }
 
     /// <summary>Comments, declarations, namespace prefixes and entities are what a real exported

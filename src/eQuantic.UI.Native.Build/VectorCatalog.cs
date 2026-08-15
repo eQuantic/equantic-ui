@@ -134,8 +134,23 @@ public static class VectorCatalog
         VectorPaintKind.Inherit when paint.Color.A == 255 => "VectorPaint.Inherit",
         VectorPaintKind.Inherit =>
             $"new VectorPaint(VectorPaintKind.Inherit, Color.FromRgba(0, 0, 0, {paint.Color.A}))",
+        VectorPaintKind.LinearGradient or VectorPaintKind.RadialGradient when paint.Gradient is { } run =>
+            $"VectorPaint.Gradients(VectorPaintKind.{paint.Kind}, {Gradient(run)})",
         _ => "VectorPaint.None",
     };
+
+    /// <summary>
+    /// A run of colours, written as the constructor a person could have typed. The stops are a
+    /// collection expression rather than a helper: what an artwork's gradient IS belongs in the
+    /// diff, so a designer changing a stop sees the colour change and not a call change.
+    /// </summary>
+    private static string Gradient(VectorGradient run)
+    {
+        var stops = string.Join(", ", run.Stops.Select(stop =>
+            $"new VectorStop({Number(stop.Offset)}f, Color.FromRgba({stop.Color.R}, {stop.Color.G}, {stop.Color.B}, {stop.Color.A}))"));
+        return $"new VectorGradient({Number(run.X1)}f, {Number(run.Y1)}f, {Number(run.X2)}f, "
+            + $"{Number(run.Y2)}f, {Number(run.Radius)}f, {(run.UserSpace ? "true" : "false")}, [{stops}])";
+    }
 
     /// <summary>
     /// A file path as a C# member: <c>brand/logo-dark.svg</c> → <c>BrandLogoDark</c>. Folders are

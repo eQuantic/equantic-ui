@@ -1308,10 +1308,80 @@ export class Vector extends VisualNode {
   }
 }
 
+/** Mirror of the C# `VectorStop` — where a colour sits along a gradient's run. */
+export interface VectorStopValue {
+  offset: number;
+  color: ColorValue;
+}
+
+/**
+ * Mirror of the C# `VectorGradient`, kept in the SVG's own terms: `userSpace` false (the default)
+ * means the coordinates are FRACTIONS of the shape's box, true means they are on the viewBox grid.
+ * A linear run goes (x1,y1) → (x2,y2); a radial one is centred at (x1,y1) with `radius`.
+ */
+export interface VectorGradientValue {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  radius: number;
+  userSpace: boolean;
+  stops: VectorStopValue[];
+}
+
+/**
+ * Mirror of the C# `VectorStop` — CLASS and not only a shape, because a compiled page writes
+ * `new VectorStop(...)`: the artwork catalog an app generates from its own `.svg` files is C# the
+ * transpiler turns into these calls.
+ */
+export class VectorStop {
+  offset: number;
+  color: ColorValue;
+
+  constructor(offset: number, color: ColorValue, config?: EqConfig) {
+    this.offset = offset;
+    this.color = color;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `VectorGradient`, in the SVG's own terms — see `VectorGradientValue`. */
+export class VectorGradient {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  radius: number;
+  userSpace: boolean;
+  stops: VectorStop[];
+
+  constructor(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    radius: number,
+    userSpace: boolean,
+    stops: VectorStop[],
+    config?: EqConfig,
+  ) {
+    this.x1 = x1;
+    this.y1 = y1;
+    this.x2 = x2;
+    this.y2 = y2;
+    this.radius = radius;
+    this.userSpace = userSpace;
+    this.stops = stops;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `VectorPaint`. */
 export class VectorPaint {
   kind: string;
   color: ColorValue;
+  /** The run this paint is, when it is one — null for every other kind. */
+  gradient: VectorGradientValue | null = null;
 
   constructor(kind: string, color: ColorValue, config?: EqConfig) {
     this.kind = kind;
@@ -1330,6 +1400,17 @@ export class VectorPaint {
 
   static solid(color: ColorValue): VectorPaint {
     return new VectorPaint('solid', color);
+  }
+
+  /** A run between colours: the kind says linear or radial, the gradient says the rest. */
+  static gradients(kind: string, gradient: VectorGradientValue): VectorPaint {
+    const first = gradient.stops.length > 0 ? gradient.stops[0].color : { r: 0, g: 0, b: 0, a: 0 };
+    return new VectorPaint(kind, first, { gradient });
+  }
+
+  /** Whether this paint is a run of colours rather than one. */
+  isGradient(): boolean {
+    return (this.kind === 'linearGradient' || this.kind === 'radialGradient') && this.gradient !== null;
   }
 }
 

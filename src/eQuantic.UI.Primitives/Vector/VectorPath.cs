@@ -220,6 +220,44 @@ public static class VectorPath
     /// returns the ORIGINAL string untouched — the common case by far, and re-serializing it would
     /// trade exact author data for rounded numbers to say the same thing.
     /// </summary>
+    /// <summary>
+    /// The box a path occupies on the drawing's own grid — every point it names, control points
+    /// included. Conservative on purpose: a curve stays inside the hull of its control points, and
+    /// the alternative (subdividing every cubic to find the tight box) buys a fraction of a percent
+    /// for a gradient's placement and costs a solver.
+    /// <para>
+    /// It exists because SVG's DEFAULT gradient units are fractions of the shape's own box, so a
+    /// target that paints the run itself has to know where that box is. The web never asks: the
+    /// browser owns the answer there.
+    /// </para>
+    /// </summary>
+    public static (float MinX, float MinY, float MaxX, float MaxY) Bounds(string data)
+    {
+        var (minX, minY, maxX, maxY) = (float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
+        var seen = false;
+
+        void Include(VectorPoint point)
+        {
+            seen = true;
+            minX = MathF.Min(minX, point.X);
+            minY = MathF.Min(minY, point.Y);
+            maxX = MathF.Max(maxX, point.X);
+            maxY = MathF.Max(maxY, point.Y);
+        }
+
+        foreach (var segment in Parse(data))
+        {
+            if (segment.Verb == VectorVerb.Close) continue;
+            if (segment.Verb == VectorVerb.Cubic)
+            {
+                Include(segment.C1);
+                Include(segment.C2);
+            }
+            Include(segment.End);
+        }
+        return seen ? (minX, minY, maxX, maxY) : (0, 0, 0, 0);
+    }
+
     public static string Transform(string data, VectorTransform transform) =>
         transform.IsIdentity ? data : Serialize(Parse(data), transform);
 

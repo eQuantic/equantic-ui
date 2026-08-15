@@ -1,5 +1,6 @@
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Native.Engine.Reference;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Native.Shell.Apple;
 using eQuantic.UI.Primitives;
@@ -137,4 +138,39 @@ public class DrawingTests
 
     private static bool Ink(TextRaster raster, int x, int y) =>
         raster.Alpha[y * raster.Width + x] > 8;
+
+    /// <summary>
+    /// The run, painted. A display-list assertion says the paint is a gradient; this says what a
+    /// person sees — the plate running dark to bright across the mark, and the bead lit from its
+    /// own centre. Both come out of the mask the rasterizer already made, filled by the engine.
+    /// </summary>
+    [Fact]
+    public void AGradientMarkPaints()
+    {
+        var artwork = SvgDocument.Parse(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 240 80\">"
+            + "<defs>"
+            + "<linearGradient id=\"plate\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">"
+            + "<stop offset=\"0\" stop-color=\"#1E1B4B\"/><stop offset=\"1\" stop-color=\"#4338CA\"/>"
+            + "</linearGradient>"
+            + "<radialGradient id=\"bead\" cx=\"35%\" cy=\"30%\" r=\"70%\">"
+            + "<stop offset=\"0\" stop-color=\"#C7D2FE\"/><stop offset=\"1\" stop-color=\"#6366F1\"/>"
+            + "</radialGradient>"
+            + "</defs>"
+            + "<rect x=\"0\" y=\"0\" width=\"240\" height=\"80\" rx=\"16\" fill=\"url(#plate)\"/>"
+            + "<circle cx=\"56\" cy=\"40\" r=\"24\" fill=\"url(#bead)\"/>"
+            + "</svg>");
+
+        var host = new PhotonHost(new Drawing(artwork, 240), PhotonTheme.Instance, ThemeMode.Light, 260, 100)
+        {
+            IconRasterizer = new CoreGraphicsIconRasterizer(),
+        };
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+
+        using var backend = new ReferenceBackend();
+        using var surface = backend.CreateSurface(260, 100);
+        backend.Render(builder.Build(), surface);
+        Golden.GoldenImage.Match(surface, "drawing-gradient");
+    }
 }

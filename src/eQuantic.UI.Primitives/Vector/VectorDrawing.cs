@@ -15,7 +15,43 @@ public enum VectorPaintKind : byte
 
     /// <summary>A literal color the artwork chose for itself.</summary>
     Solid = 2,
+
+    /// <summary>A run between colors along an axis — SVG's <c>linearGradient</c>. The geometry and
+    /// the stops live in <see cref="VectorPaint.Gradient"/>.</summary>
+    LinearGradient = 3,
+
+    /// <summary>A run outward from a center — SVG's <c>radialGradient</c>.</summary>
+    RadialGradient = 4,
 }
+
+/// <summary>One stop of a gradient: where it sits along the run (0 to 1) and the color there.</summary>
+public readonly record struct VectorStop(float Offset, Color Color);
+
+/// <summary>
+/// A gradient paint server, kept in the SVG's OWN terms rather than resolved at parse time: where
+/// the run starts and ends is a question about the shape it fills, and the shape's box is not known
+/// until a realizer places the drawing.
+/// <para>
+/// <see cref="UserSpace"/> is the distinction SVG draws with <c>gradientUnits</c>: false (the
+/// default, <c>objectBoundingBox</c>) makes the coordinates FRACTIONS of the shape's own box; true
+/// (<c>userSpaceOnUse</c>) makes them coordinates on the drawing's viewBox grid. A realizer that
+/// collapsed the two would put the run in the right direction and the wrong place.
+/// </para>
+/// <para>
+/// A LINEAR gradient runs from (<see cref="X1"/>, <see cref="Y1"/>) to (<see cref="X2"/>,
+/// <see cref="Y2"/>); a RADIAL one is centered there with <see cref="Radius"/>, and ignores the end
+/// point. Which one it is comes from the paint's own <see cref="VectorPaintKind"/>, so this carries
+/// no second discriminator.
+/// </para>
+/// </summary>
+public readonly record struct VectorGradient(
+    float X1,
+    float Y1,
+    float X2,
+    float Y2,
+    float Radius,
+    bool UserSpace,
+    IReadOnlyList<VectorStop> Stops);
 
 /// <summary>
 /// A fill or a stroke. Three states rather than a nullable color, because "no paint" and "the
@@ -24,6 +60,18 @@ public enum VectorPaintKind : byte
 public readonly record struct VectorPaint(VectorPaintKind Kind, Color Color)
 {
     public static readonly VectorPaint None = new(VectorPaintKind.None, default);
+
+    /// <summary>The run this paint is, when it is one. Null for every other kind — the kind is what
+    /// says whether to look, and a gradient without stops is not a gradient.</summary>
+    public VectorGradient? Gradient { get; init; }
+
+    /// <summary>A run between colors. The kind says linear or radial; the geometry and the stops
+    /// say the rest.</summary>
+    public static VectorPaint Gradients(VectorPaintKind kind, VectorGradient gradient) =>
+        new(kind, gradient.Stops.Count > 0 ? gradient.Stops[0].Color : Color.Transparent)
+        {
+            Gradient = gradient,
+        };
 
     /// <summary>Tinted at full strength. `Inherit` at a fraction is this with a lower alpha —
     /// <c>new VectorPaint(VectorPaintKind.Inherit, Color.Black.WithOpacity(0.55f))</c>, where only
@@ -39,6 +87,9 @@ public readonly record struct VectorPaint(VectorPaintKind Kind, Color Color)
     public Color Resolve(Color tint) => Kind switch
     {
         VectorPaintKind.Solid => Color,
+        // A gradient asked for as ONE colour is its first stop: the answer a target gives when it
+        // can only fill flat, and the one every fallback in both realizers already spells.
+        VectorPaintKind.LinearGradient or VectorPaintKind.RadialGradient => Color,
         // The tint answers WHICH colour; the paint still owns how much of it — `fill-opacity` on a
         // `currentColor` shape would otherwise be dropped, and a subtitle drawn at full strength
         // is a different logo.
@@ -48,6 +99,11 @@ public readonly record struct VectorPaint(VectorPaintKind Kind, Color Color)
 
     /// <summary>The alpha this paint applies on top of whatever colour it resolves to.</summary>
     public float Alpha => Kind == VectorPaintKind.None ? 0 : Color.A / 255f;
+
+    /// <summary>Whether this paint is a run of colors rather than one — what a realizer branches on
+    /// before it reads <see cref="Gradient"/>.</summary>
+    public bool IsGradient =>
+        Kind is VectorPaintKind.LinearGradient or VectorPaintKind.RadialGradient && Gradient is not null;
 }
 
 /// <summary>
@@ -56,9 +112,9 @@ public readonly record struct VectorPaint(VectorPaintKind Kind, Color Color)
 /// <c>&lt;circle&gt;</c> is path data, and a group's transform is BAKED into the data rather than
 /// carried, so both realizers draw the same numbers.
 /// <para>
-/// A shape has at most one fill and one stroke, which is the fence this model draws around SVG:
-/// gradients, patterns, masks and filters are not expressible here and are dropped at parse time
-/// rather than half-rendered.
+/// A shape has at most one fill and one stroke, each of them flat, tinted, or a GRADIENT. Patterns,
+/// masks and filters are still not expressible here and are dropped at parse time rather than
+/// half-rendered.
 /// </para>
 /// </summary>
 public readonly record struct VectorShape(

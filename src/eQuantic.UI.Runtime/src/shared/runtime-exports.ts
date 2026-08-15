@@ -71,8 +71,10 @@ export {
   Vector,
   Drawing,
   VectorDrawing,
+  VectorGradient,
   VectorPaint,
   VectorShape,
+  VectorStop,
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';
 export { Navigator } from '../router/navigator';

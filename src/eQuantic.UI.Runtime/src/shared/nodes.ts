@@ -709,11 +709,33 @@ export interface VectorNode extends VisualNodeValue {
 /** `VectorPaintKind` transpiles to camelCase member strings. */
 export type { VectorPaintKindValue } from './enums.generated';
 
-/** Mirrors `VectorPaint`: three states, because "not painted" and "painted in whatever tints me"
- * are different answers and a null cannot be both. */
+/** One stop of a gradient: where it sits along the run (0 to 1) and the colour there. */
+export interface VectorStopValue {
+  offset: number;
+  color: ColorValue;
+}
+
+/**
+ * Mirrors `VectorGradient`, in the SVG's own terms. `userSpace` false (the default) makes the
+ * coordinates FRACTIONS of the shape's own box; true makes them coordinates on the viewBox grid.
+ * A linear run goes (x1,y1) → (x2,y2); a radial one is centred at (x1,y1) with `radius`.
+ */
+export interface VectorGradientValue {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  radius: number;
+  userSpace: boolean;
+  stops: VectorStopValue[];
+}
+
+/** Mirrors `VectorPaint`: not painted, painted in whatever tints me, a colour of its own, or a RUN
+ * of colours — each a different answer, and a null could only have been one of them. */
 export interface VectorPaintValue {
   kind: VectorPaintKindValue;
   color: ColorValue;
+  gradient?: VectorGradientValue | null;
 }
 
 /** One shape of a drawing — path data on the artwork's own grid, plus how it paints. */

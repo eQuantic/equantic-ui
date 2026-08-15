@@ -744,6 +744,15 @@ public static class WebRealizer
         if (drawing.Label is { } label) svg.RawAttributes["aria-label"] = label;
         else svg.RawAttributes["aria-hidden"] = "true";
 
+        // Every run the artwork paints with, declared once and referenced by the shapes. The id is
+        // the hash of the gradient ITSELF, so two shapes sharing a run share a def — and so that a
+        // second drawing carrying the same run lands on the same id, which is a duplicate the
+        // document can afford: identical content, and `url(#id)` resolves to the first either way.
+        var defs = new RealizedElement("defs");
+        foreach (var gradient in Gradients(drawing.Artwork))
+            defs.Children.Add(GradientElement(gradient.Key, gradient.Value));
+        if (defs.Children.Count > 0) svg.Children.Add(defs);
+
         foreach (var shape in drawing.Artwork.Shapes)
         {
             var path = new RealizedElement("path");
@@ -774,8 +783,94 @@ public static class WebRealizer
     {
         VectorPaintKind.Inherit => "currentColor",
         VectorPaintKind.Solid => CssColor(paint.Color),
+        VectorPaintKind.LinearGradient or VectorPaintKind.RadialGradient when paint.Gradient is { } run
+            => $"url(#{GradientId(run)})",
         _ => "none",
     };
+
+    /// <summary>
+    /// The runs a drawing paints with, keyed by the id the shapes will name. Ordered by first use
+    /// so the markup reads in the order the artwork does, and deduplicated because the id IS the
+    /// content: two shapes with the same run declare it once.
+    /// </summary>
+    private static Dictionary<string, VectorPaint> Gradients(VectorDrawing artwork)
+    {
+        var runs = new Dictionary<string, VectorPaint>(StringComparer.Ordinal);
+        foreach (var shape in artwork.Shapes)
+        {
+            foreach (var paint in (VectorPaint[])[shape.Fill, shape.Stroke])
+            {
+                if (!paint.IsGradient) continue;
+                runs.TryAdd(GradientId(paint.Gradient!.Value), paint);
+            }
+        }
+        return runs;
+    }
+
+    /// <summary>
+    /// A gradient's id: the FNV hash of everything that makes it what it is. Content-addressed
+    /// rather than counted, for the reason every other generated id here is — a counter depends on
+    /// how many drawings came before, and SSR and the client twin do not agree about that.
+    /// <para>
+    /// PUBLIC because it is a promise to the other producer rather than an implementation detail:
+    /// the client twin computes the same string from the same run, and a cross-pin fixture holds
+    /// the two to it.
+    /// </para>
+    /// </summary>
+    public static string GradientId(VectorGradient run)
+    {
+        var text = new System.Text.StringBuilder();
+        text.Append(run.UserSpace ? 'u' : 'o').Append('|')
+            .Append(TokenCss.Number(run.X1)).Append(',').Append(TokenCss.Number(run.Y1)).Append(',')
+            .Append(TokenCss.Number(run.X2)).Append(',').Append(TokenCss.Number(run.Y2)).Append(',')
+            .Append(TokenCss.Number(run.Radius));
+        foreach (var stop in run.Stops)
+            text.Append('|').Append(TokenCss.Number(stop.Offset)).Append(':').Append(CssColor(stop.Color));
+        return $"eq-g-{StyleAtomizer.Hash(text.ToString())}";
+    }
+
+    /// <summary>
+    /// One paint server, in SVG's own words. The stop's alpha rides <c>stop-opacity</c> rather than
+    /// an 8-digit colour: that is the spelling every renderer agrees on, and the one a designer sees
+    /// when they open the file again.
+    /// </summary>
+    private static HtmlElement GradientElement(string id, VectorPaint paint)
+    {
+        var run = paint.Gradient!.Value;
+        var radial = paint.Kind == VectorPaintKind.RadialGradient;
+        var element = new RealizedElement(radial ? "radialGradient" : "linearGradient");
+        var attributes = new Dictionary<string, string> { ["id"] = id };
+        if (radial)
+        {
+            attributes["cx"] = TokenCss.Number(run.X1);
+            attributes["cy"] = TokenCss.Number(run.Y1);
+            attributes["r"] = TokenCss.Number(run.Radius);
+        }
+        else
+        {
+            attributes["x1"] = TokenCss.Number(run.X1);
+            attributes["y1"] = TokenCss.Number(run.Y1);
+            attributes["x2"] = TokenCss.Number(run.X2);
+            attributes["y2"] = TokenCss.Number(run.Y2);
+        }
+        // The default is objectBoundingBox and SVG's own, so only the other one is written.
+        if (run.UserSpace) attributes["gradientUnits"] = "userSpaceOnUse";
+        element.RawAttributes = attributes;
+
+        foreach (var stop in run.Stops)
+        {
+            var child = new RealizedElement("stop");
+            var stopAttributes = new Dictionary<string, string>
+            {
+                ["offset"] = TokenCss.Number(stop.Offset),
+                ["stop-color"] = CssColor(Primitives.Color.FromRgb(stop.Color.R, stop.Color.G, stop.Color.B)),
+            };
+            if (stop.Color.A < 255) stopAttributes["stop-opacity"] = TokenCss.Number(stop.Color.A / 255f);
+            child.RawAttributes = stopAttributes;
+            element.Children.Add(child);
+        }
+        return element;
+    }
 
     /// <summary>
     /// A literal artwork colour, which is NOT a token: it is what the designer drew, and it does

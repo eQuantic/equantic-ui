@@ -91,7 +91,10 @@ public sealed class ReferenceBackend : IRenderBackend
         // A GRADIENT tint (spec: gradient text) evaluates per pixel through the normative
         // Paint.ColorAt — the same function the SDF path uses, so a gradient over glyph coverage
         // and a gradient over a rrect fill can never disagree. A solid tint hoists out of the loop.
-        var gradientTint = command.Paint.Kind == PaintKind.LinearGradient;
+        // ANY run, not just the linear one: artwork brought the radial through the same door
+        // gradient text came through, and asking only about linear left a radial-filled shape
+        // painted flat in its first stop — a fill that looks deliberate and is not.
+        var gradientTint = command.Paint.Kind != PaintKind.Solid;
         var tint = command.Paint.Color;
 
         for (var py = y0; py < y1; py++)

@@ -156,12 +156,21 @@ float4 textured_fragment(float4 position: SV_Position) : SV_Target
         if (coverage <= 0.0) discard;
     }
 
-    // GRADIENT TINT (gradient text): the axis rides `radii` and the second stop `colorB` — both
-    // slots the textured path never used, so this needed no uniform re-layout. The lerp is the
-    // SAME sRGB-space interpolation Paint.ColorAt performs, so a gradient over glyph coverage and
-    // a gradient over an rrect fill cannot disagree.
+    // GRADIENT TINT (gradient text, and artwork's own runs): the geometry rides `radii` and the
+    // second stop `colorB` — both slots the textured path never used, so this needed no uniform
+    // re-layout. `flags.y` says WHICH run: 1 linear, 2 elliptical radial, the same two the SDF
+    // path draws. The interpolation is the SAME sRGB-space lerp Paint.ColorAt performs, so a run
+    // over glyph coverage, a run over artwork and a run over an rrect fill cannot disagree.
     float4 srgb = u.colorA;
-    if (u.flags.y > 0.5)
+    if (u.flags.y > 1.5)
+    {
+        // radii.xy = centre, radii.zw = the (x, y) radii — normalized elliptical distance.
+        float dx = u.radii.z <= 0.0 ? 0.0 : (local.x - u.radii.x) / u.radii.z;
+        float dy = u.radii.w <= 0.0 ? 0.0 : (local.y - u.radii.y) / u.radii.w;
+        float t = clamp(sqrt(dx * dx + dy * dy), 0.0, 1.0);
+        srgb = lerp(u.colorA, u.colorB, t);
+    }
+    else if (u.flags.y > 0.5)
     {
         float2 axis = u.radii.zw - u.radii.xy;
         float len2 = dot(axis, axis);

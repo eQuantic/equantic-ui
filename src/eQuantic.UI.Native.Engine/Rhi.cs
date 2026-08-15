@@ -463,15 +463,25 @@ public sealed class RhiRenderer : IDisposable
                 // The textured path reuses free slots rather than growing the block: the texture
                 // size rides `Gradient`, and a GRADIENT TINT (gradient text) rides `Radii` (axis)
                 // + `ColorB` (second stop) — neither is read by the textured entry points.
-                var gradientTint = command.Paint.Kind == PaintKind.LinearGradient;
-                if (gradientTint)
+                // WHICH run, not merely whether: 1 linear, 2 radial. A radial used to arrive as a
+                // zero here and paint flat in its first stop — invisible on text, which only ever
+                // asked for linear, and immediately visible the day artwork brought a radial in.
+                var gradientTint = command.Paint.Kind switch
                 {
+                    PaintKind.LinearGradient => 1f,
+                    PaintKind.RadialGradient => 2f,
+                    _ => 0f,
+                };
+                if (gradientTint > 0)
+                {
+                    // Linear: the axis ends. Radial: the centre and the two radii — the same four
+                    // floats reinterpreted, exactly as Paint does.
                     textured.Radii = new Float4(
                         command.Paint.GradientStart.X, command.Paint.GradientStart.Y,
                         command.Paint.GradientEnd.X, command.Paint.GradientEnd.Y);
                 }
                 textured.Gradient = new Float4(data.Width, data.Height, 0, 0);
-                textured.Flags = new Float4(0, gradientTint ? 1 : 0, command.Clip is null ? 0 : 1, 0);
+                textured.Flags = new Float4(0, gradientTint, command.Clip is null ? 0 : 1, 0);
 
                 var kind = data.Format == TextureFormat.Rgba8 ? RhiPipelineKind.TexturedRgba : RhiPipelineKind.TexturedA8;
                 if (activeKind != kind)

@@ -13,11 +13,14 @@ namespace eQuantic.UI.Primitives;
 /// <c>none</c>, <c>currentColor</c>, and the basic named set.
 /// </para>
 /// <para>
-/// DROPPED, deliberately and silently: <c>defs</c>, gradients, patterns, <c>clipPath</c>,
-/// <c>mask</c>, <c>filter</c>, <c>use</c>, <c>image</c>, and <c>text</c> — every one of them either
-/// needs a paint server this model has no room for, or needs a font, and half-rendering artwork is
-/// worse than a fence a reader can see. A file that leans on them arrives with those shapes
-/// missing rather than wrong.
+/// GRADIENTS are understood: <c>linearGradient</c> and <c>radialGradient</c> with their stops, in
+/// either units, read in a pass of their own so a fill may name one declared after it.
+/// </para>
+/// <para>
+/// DROPPED, deliberately and silently: patterns, <c>clipPath</c>, <c>mask</c>, <c>filter</c>,
+/// <c>use</c>, <c>image</c>, and <c>text</c> — every one of them either needs a paint server this
+/// model has no room for, or needs a font, and half-rendering artwork is worse than a fence a
+/// reader can see. A shape whose fill names one of them arrives unpainted rather than wrong.
 /// </para>
 /// <para>
 /// A group's <c>transform</c> is BAKED into the path data it wraps rather than carried, because the
@@ -26,8 +29,10 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public static class SvgDocument
 {
-    /// <summary>Elements whose entire SUBTREE is skipped: they describe paint or geometry this
-    /// model cannot carry, and their children are not drawings in their own right.</summary>
+    /// <summary>Elements whose entire SUBTREE is skipped by the SHAPE pass: they describe paint or
+    /// geometry that is not a drawing in its own right. The gradients are in this list and still
+    /// understood — <see cref="CollectGradients"/> reads them in a pass of its own, and here they
+    /// must be stepped over so their stops never become shapes.</summary>
     private static readonly HashSet<string> Skipped =
         ["defs", "clipPath", "mask", "filter", "symbol", "marker", "pattern", "text", "style",
          "linearGradient", "radialGradient", "metadata", "title", "desc"];
@@ -36,6 +41,10 @@ public static class SvgDocument
     {
         if (string.IsNullOrWhiteSpace(svg)) return VectorDrawing.Empty;
 
+        // The paint servers first, in a pass of their own: SVG lets a fill name a gradient that is
+        // declared AFTER it, and a single forward walk would answer "unknown" for exactly the files
+        // an exporter writes (defs at the end is a common shape).
+        var gradients = CollectGradients(svg);
         var shapes = new List<VectorShape>();
         var inherited = new Stack<PaintState>();
         var state = PaintState.Root;
@@ -98,14 +107,14 @@ public static class SvgDocument
                 if (seenSvg) continue;   // a nested <svg> re-frames its children: out of subset
                 seenSvg = true;
                 (minX, minY, width, height) = ViewBox(attributes);
-                state = state.Inherit(attributes);
+                state = state.Inherit(attributes, gradients);
                 continue;
             }
 
             if (name == "g")
             {
                 inherited.Push(state);
-                state = state.Inherit(attributes);
+                state = state.Inherit(attributes, gradients);
                 // A group that is not closed (self-closing <g/>) has nothing inside it to inherit.
                 if (selfClosing && inherited.Count > 0) state = inherited.Pop();
                 continue;
@@ -114,7 +123,7 @@ public static class SvgDocument
             var data = PathDataOf(name, attributes);
             if (data.Length == 0) continue;
 
-            var shapeState = state.Inherit(attributes);
+            var shapeState = state.Inherit(attributes, gradients);
             var path = VectorPath.Transform(data, shapeState.Transform);
             // A shape with neither paint draws nothing — usually a hit-test rect an exporter left
             // behind. Dropping it keeps the raster count honest on the native side.
@@ -234,7 +243,7 @@ public static class SvgDocument
         public static readonly PaintState Root = new(
             VectorTransform.Identity, VectorPaint.Solid(Color.Black), VectorPaint.None, 1, false, 1);
 
-        public PaintState Inherit(Dictionary<string, string> attributes)
+        public PaintState Inherit(Dictionary<string, string> attributes, GradientTable gradients)
         {
             var next = this;
             if (attributes.TryGetValue("transform", out var transform))
@@ -245,9 +254,9 @@ public static class SvgDocument
             var properties = Style(attributes);
 
             if (Property(attributes, properties, "fill") is { } fill)
-                next = next with { Fill = ParsePaint(fill) };
+                next = next with { Fill = ParsePaint(fill, gradients) };
             if (Property(attributes, properties, "stroke") is { } stroke)
-                next = next with { Stroke = ParsePaint(stroke) };
+                next = next with { Stroke = ParsePaint(stroke, gradients) };
             if (Property(attributes, properties, "stroke-width") is { } strokeWidth
                 && TryFloat(strokeWidth, out var pen))
                 next = next with { StrokeWidth = pen };
@@ -338,15 +347,172 @@ public static class SvgDocument
         return result;
     }
 
-    private static VectorPaint ParsePaint(string text)
+    private static VectorPaint ParsePaint(string text, GradientTable gradients)
     {
         var value = text.Trim();
         if (value.Length == 0 || value == "none" || value == "transparent") return VectorPaint.None;
         if (value == "currentColor" || value == "inherit") return VectorPaint.Inherit;
-        // A paint server (`url(#gradient)`) is out of subset: the shape is dropped rather than
-        // filled with a colour nobody chose.
-        if (value.StartsWith("url(", StringComparison.OrdinalIgnoreCase)) return VectorPaint.None;
+        // A paint SERVER — `url(#id)`. A gradient this reader collected answers with itself; a
+        // pattern, or a gradient with no stops, still answers None, which is what every paint
+        // server used to answer.
+        if (value.StartsWith("url(", StringComparison.OrdinalIgnoreCase))
+        {
+            var id = ReferencedId(value);
+            return id is not null && gradients.TryGetValue(id, out var found) && found.Gradient.Stops.Count > 0
+                ? VectorPaint.Gradients(found.Kind, found.Gradient)
+                : VectorPaint.None;
+        }
         return VectorPaint.Solid(ParseColor(value));
+    }
+
+    /// <summary>The paint servers this reader understood, by id, and which KIND each one is — the
+    /// kind lives on the paint rather than in the gradient, so the table carries both.</summary>
+    private sealed class GradientTable : Dictionary<string, (VectorPaintKind Kind, VectorGradient Gradient)>
+    {
+        public GradientTable() : base(StringComparer.Ordinal) { }
+    }
+
+    /// <summary>
+    /// Every <c>linearGradient</c> and <c>radialGradient</c> in the document, read before any shape
+    /// asks for one.
+    /// <para>
+    /// Fences, each of them silent and deliberate: <c>gradientTransform</c> (the run would be in
+    /// the right direction and the wrong place, which is worse than a plain one), <c>spreadMethod</c>
+    /// other than pad, and a radial's focal point (<c>fx</c>/<c>fy</c>). <c>href</c> is followed for
+    /// the STOPS, which is what an exporter uses it for — a gradient that borrows only its geometry
+    /// is not a shape this reader has met.
+    /// </para>
+    /// </summary>
+    private static GradientTable CollectGradients(string svg)
+    {
+        var table = new GradientTable();
+        var inherits = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        string? openId = null;
+        var stops = new List<VectorStop>();
+        var i = 0;
+        while (i < svg.Length)
+        {
+            if (svg[i] != '<') { i++; continue; }
+            if (svg.AsSpan(i).StartsWith("<!--"))
+            {
+                var comment = svg.IndexOf("-->", i, StringComparison.Ordinal);
+                i = comment < 0 ? svg.Length : comment + 3;
+                continue;
+            }
+
+            var closing = i + 1 < svg.Length && svg[i + 1] == '/';
+            var tagEnd = svg.IndexOf('>', i);
+            if (tagEnd < 0) break;
+            var selfClosing = tagEnd > i && svg[tagEnd - 1] == '/';
+            var inner = svg.Substring(i + (closing ? 2 : 1), tagEnd - i - (closing ? 2 : 1) - (selfClosing ? 1 : 0));
+            i = tagEnd + 1;
+
+            var name = ElementName(inner);
+            if (name.Length == 0) continue;
+
+            if (closing)
+            {
+                if (openId is not null && (name == "linearGradient" || name == "radialGradient"))
+                {
+                    Close(openId, stops);
+                    openId = null;
+                }
+                continue;
+            }
+
+            if (name is "linearGradient" or "radialGradient")
+            {
+                var attributes = Attributes(inner);
+                if (!attributes.TryGetValue("id", out var id) || id.Length == 0) continue;
+
+                var radial = name == "radialGradient";
+                var userSpace = attributes.TryGetValue("gradientUnits", out var units)
+                    && units.Trim() == "userSpaceOnUse";
+                var gradient = radial
+                    ? new VectorGradient(
+                        Coordinate(attributes, "cx", 0.5f), Coordinate(attributes, "cy", 0.5f),
+                        0, 0, Coordinate(attributes, "r", 0.5f), userSpace, [])
+                    : new VectorGradient(
+                        Coordinate(attributes, "x1", 0), Coordinate(attributes, "y1", 0),
+                        Coordinate(attributes, "x2", 1), Coordinate(attributes, "y2", 0),
+                        0, userSpace, []);
+
+                table[id] = (radial ? VectorPaintKind.RadialGradient : VectorPaintKind.LinearGradient, gradient);
+                if (Referenced(attributes) is { } from) inherits[id] = from;
+
+                if (selfClosing) continue;   // its stops, if any, are the ones it borrows
+                openId = id;
+                stops = [];
+                continue;
+            }
+
+            if (name == "stop" && openId is not null)
+            {
+                var attributes = Attributes(inner);
+                var style = Style(attributes);
+                var offset = Coordinate(attributes, "offset", stops.Count == 0 ? 0 : 1);
+                var color = Property(attributes, style, "stop-color") is { } paint
+                    ? ParseColor(paint.Trim())
+                    : Color.Black;
+                if (Property(attributes, style, "stop-opacity") is { } opacity
+                    && TryFloat(opacity, out var alpha))
+                    color = color.WithOpacity(Math.Clamp(alpha, 0, 1));
+                stops.Add(new VectorStop(Math.Clamp(offset, 0, 1), color));
+            }
+        }
+
+        if (openId is not null) Close(openId, stops);
+
+        // `href` last, when every gradient it could name has been read: a borrowed stop list is
+        // still a stop list, and an exporter writes the pair in either order.
+        foreach (var (id, from) in inherits)
+        {
+            if (!table.TryGetValue(id, out var borrower) || borrower.Gradient.Stops.Count > 0) continue;
+            if (!table.TryGetValue(from, out var lender) || lender.Gradient.Stops.Count == 0) continue;
+            table[id] = (borrower.Kind, borrower.Gradient with { Stops = lender.Gradient.Stops });
+        }
+        return table;
+
+        void Close(string id, List<VectorStop> collected)
+        {
+            if (collected.Count == 0 || !table.TryGetValue(id, out var entry)) return;
+            table[id] = (entry.Kind, entry.Gradient with { Stops = collected });
+        }
+    }
+
+    /// <summary>The id a gradient borrows from, in either spelling.</summary>
+    private static string? Referenced(Dictionary<string, string> attributes)
+    {
+        foreach (var name in (string[])["href", "xlink:href"])
+            if (attributes.TryGetValue(name, out var value) && value.TrimStart().StartsWith('#'))
+                return value.Trim().TrimStart('#');
+        return null;
+    }
+
+    /// <summary>
+    /// A gradient coordinate. A percentage is a fraction of the same thing the number is measured
+    /// against, so both spellings collapse here — which is exactly right for the default
+    /// (objectBoundingBox) units, and the documented limit for userSpaceOnUse, where a percentage
+    /// means a fraction of the VIEWPORT this reader is not looking at.
+    /// </summary>
+    private static float Coordinate(Dictionary<string, string> attributes, string name, float fallback)
+    {
+        if (!attributes.TryGetValue(name, out var raw)) return fallback;
+        var text = raw.Trim();
+        var percent = text.EndsWith('%');
+        if (percent) text = text[..^1];
+        return TryFloat(text, out var value) ? (percent ? value / 100f : value) : fallback;
+    }
+
+    /// <summary>The id inside <c>url(#name)</c>, however it was quoted.</summary>
+    private static string? ReferencedId(string value)
+    {
+        var open = value.IndexOf('(');
+        var close = value.LastIndexOf(')');
+        if (open < 0 || close <= open) return null;
+        var id = value.Substring(open + 1, close - open - 1).Trim().Trim('"', '\'').TrimStart('#');
+        return id.Length == 0 ? null : id;
     }
 
     private static Color ParseColor(string value)

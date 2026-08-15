@@ -110,7 +110,8 @@ export type VariantValue =
   'primary' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'link' | 'success' | 'warning'
   | 'info' | 'tertiary';
 
-export type VectorPaintKindValue = 'none' | 'inherit' | 'solid';
+export type VectorPaintKindValue =
+  'none' | 'inherit' | 'solid' | 'linearGradient' | 'radialGradient';
 
 export type VectorVerbValue = 'move' | 'line' | 'cubic' | 'close';
 
