@@ -3,7 +3,11 @@ name: CI
 on:
   push:
     branches: ["main"]
-    tags: ["v*"]
+    # `v*` is the framework's release; `ext-v*` is the extension's. The second is not a prefix of the
+    # first ON PURPOSE — a tag named `vscode-v0.2.0` matched `v*` and ran the framework's packing with
+    # VERSION="scode-v0.2.0". Renaming it fixed that and broke this: with only `v*` here, an `ext-v*`
+    # tag triggered nothing at all.
+    tags: ["v*", "ext-v*"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
