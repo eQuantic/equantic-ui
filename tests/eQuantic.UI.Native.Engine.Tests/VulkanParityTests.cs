@@ -34,9 +34,6 @@ public class VulkanParityTests : IClassFixture<VulkanFixture>
     /// fast-math <c>pow</c> variance across GPU families, never for geometry drift.</summary>
     private const int MaxChannelDiff = 4;
 
-    /// <summary>Pixels allowed beyond the golden harness's ±2 (AA edges, gradient rounding), as a fraction.</summary>
-    private const double MaxLoosePixelFraction = 0.01;
-
     private readonly VulkanFixture _vulkan;
 
     public VulkanParityTests(VulkanFixture vulkan) => _vulkan = vulkan;
@@ -52,7 +49,8 @@ public class VulkanParityTests : IClassFixture<VulkanFixture>
         var referencePixels = Render(referenceBackend, displayList);
         var vulkanPixels = Render(_vulkan.Backend, displayList);
 
-        AssertFuzzyEqual(name, referencePixels, vulkanPixels);
+        GpuParity.AssertFuzzyEqual(
+            "Vulkan", name, GoldenScenes.Width, GoldenScenes.Height, referencePixels, vulkanPixels);
     }
 
     [SkippableFact]
@@ -77,42 +75,4 @@ public class VulkanParityTests : IClassFixture<VulkanFixture>
         return pixels;
     }
 
-    private static void AssertFuzzyEqual(string name, byte[] reference, byte[] vulkan)
-    {
-        var maxDiff = 0;
-        var loosePixels = 0;
-        var worstPixel = -1;
-        for (var i = 0; i < reference.Length; i += 4)
-        {
-            var pixelMax = 0;
-            for (var c = 0; c < 4; c++)
-            {
-                var diff = Math.Abs(reference[i + c] - vulkan[i + c]);
-                if (diff > pixelMax) pixelMax = diff;
-            }
-            if (pixelMax > maxDiff)
-            {
-                maxDiff = pixelMax;
-                worstPixel = i / 4;
-            }
-            if (pixelMax > 2) loosePixels++;
-        }
-
-        var totalPixels = reference.Length / 4;
-        var looseFraction = loosePixels / (double)totalPixels;
-        if (maxDiff <= MaxChannelDiff && looseFraction <= MaxLoosePixelFraction) return;
-
-        var artifactDir = Path.Combine(Path.GetTempPath(), "photon-vulkan-parity-failures");
-        Directory.CreateDirectory(artifactDir);
-        var referencePath = Path.Combine(artifactDir, name + ".reference.png");
-        var vulkanPath = Path.Combine(artifactDir, name + ".vulkan.png");
-        File.WriteAllBytes(referencePath, PngCodec.Encode(GoldenScenes.Width, GoldenScenes.Height, reference));
-        File.WriteAllBytes(vulkanPath, PngCodec.Encode(GoldenScenes.Width, GoldenScenes.Height, vulkan));
-
-        throw new Xunit.Sdk.XunitException(
-            $"Vulkan render of '{name}' diverges from the Reference: max channel diff {maxDiff} " +
-            $"(cap {MaxChannelDiff}) at pixel ({worstPixel % GoldenScenes.Width}, {worstPixel / GoldenScenes.Width}); " +
-            $"{loosePixels}/{totalPixels} pixels ({looseFraction:P2}) beyond ±2 (cap {MaxLoosePixelFraction:P0}).\n" +
-            $"  reference: {referencePath}\n  vulkan: {vulkanPath}");
-    }
 }
