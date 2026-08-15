@@ -66,16 +66,19 @@ npm run package      # compiles, publishes the design host into host/, writes eq
 `npm run package` writes the `.vsix`; putting it on the Marketplace needs two things this repository
 deliberately does not carry:
 
-- **A publisher, and a trusted publishing policy.** CI has a `publish-extension` job, gated on a
-  `vscode-v*` tag, that publishes with `vsce publish --oidc`: the workflow asks GitHub for a token
-  addressed to `marketplace.visualstudio.com` and trades it for a short-lived Marketplace credential,
-  so **nothing is stored anywhere**. It needs a trusted publishing policy on the Marketplace naming
-  this repository and this workflow, and `id-token: write` on the job, which it has. A `VSCE_PAT`
-  secret still works and is used when set — but Marketplace personal access tokens **retire on
-  2026-12-01**, so the path with no secret is the one that keeps working. (The Entra ID / managed
-  identity flow Microsoft documents is the **Azure Pipelines** answer to the same problem; on GitHub
-  Actions, OIDC is.) Either way the job publishes the archive the packaging job already verified
-  rather than rebuilding one.
+- **A publisher, and a credential.** CI has a `publish-extension` job, gated on a `vscode-v*` tag,
+  which publishes the archive the packaging job already verified rather than rebuilding one. It takes
+  either credential and needs one:
+  - `VSCE_PAT` — a Marketplace personal access token. One secret, nothing else to set up, and it
+    **retires on 2026-12-01**.
+  - `AZURE_CLIENT_ID` + `AZURE_TENANT_ID` + `AZURE_SUBSCRIPTION_ID` — Microsoft Entra with workload
+    identity federation. The job signs the Azure CLI in with `azure/login`, and `vsce publish
+    --azure-credential` takes its token from there. Nothing is stored, but the identity has to be
+    created in Azure and added to the publisher as a member.
+
+  Trusted publishing (`vsce publish --oidc`), which would need neither, is documented on the tool's
+  **main branch** and is not in the released CLI — 3.9.2 answers `unknown option '--oidc'`. When it
+  ships, it replaces both of these with four lines.
 The icon comes from `assets/equantic-vscode-icon.png` and is copied in on every package, because a
 second copy is a thing that drifts — this one was a stale 100×100 within the same minute the source
 was corrected. The Marketplace requires PNG at 128×128 or larger and prohibits SVG, so `npm run

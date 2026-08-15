@@ -60,3 +60,7 @@ tests/e2e/test-results/
 extensions/vscode/host/
 extensions/vscode/*.vsix
 extensions/vscode/icon.png
+
+# Only the marker, never the packages a local build drops there.
+artifacts/packages/*
+!artifacts/packages/.gitkeep
