@@ -2,7 +2,8 @@ using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Components;
 
-/// <summary>Divider inset (spec A7): full-bleed, leading 16 (lists), middle 16 (card interiors).</summary>
+/// <summary>Divider inset (spec A7): full-bleed, leading (lists — 16, or further in when the row
+/// above has a leading slot), middle 16 (card interiors).</summary>
 public enum DividerInset : byte
 {
     None = 0,
@@ -32,6 +33,16 @@ public sealed class Divider : StatelessComponent
     public DividerInset Inset { get; init; }
     public DividerAxis Axis { get; init; }
 
+    /// <summary>
+    /// How far in the LINE starts, for <see cref="DividerInset.Leading"/>. Null is the plain 16.
+    /// <para>
+    /// A list whose rows carry a leading slot needs the hairline to begin where the TEXT does —
+    /// 16 + leading + gap, the handoff's B2 rule — or it cuts across the icons and reads as a
+    /// mistake. <see cref="List"/> passes the row's own figure; nothing else needs to.
+    /// </para>
+    /// </summary>
+    public float? LeadingInset { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var line = new Box(new BoxStyle
@@ -44,7 +55,7 @@ public sealed class Divider : StatelessComponent
         if (Inset == DividerInset.None) return line;
 
         var padding = Inset == DividerInset.Leading
-            ? new EdgeInsets(Space.S4, 0, 0, 0)
+            ? new EdgeInsets(LeadingInset ?? Space.S4, 0, 0, 0)
             : EdgeInsets.Symmetric(Space.S4, 0);
         return new Box(new BoxStyle { Width = SizeValue.Fill, Padding = padding }, line);
     }

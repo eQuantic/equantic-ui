@@ -66,7 +66,7 @@ npm run package      # compiles, publishes the design host into host/, writes eq
 `npm run package` writes the `.vsix`; putting it on the Marketplace needs two things this repository
 deliberately does not carry:
 
-- **A publisher, and a credential.** CI has a `publish-extension` job, gated on a `vscode-v*` tag,
+- **A publisher, and a credential.** CI has a `publish-extension` job, gated on an `ext-v*` tag,
   which publishes the archive the packaging job already verified rather than rebuilding one. It takes
   either credential and needs one:
   - `VSCE_PAT` — a Marketplace personal access token. One secret, nothing else to set up, and it
