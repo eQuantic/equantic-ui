@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Text;
 
@@ -24,9 +25,7 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
         // the instance — `this._findText` — and a `function` declaration rebinds `this` to
         // undefined in a module, so every capture read as a TypeError the first time it ran.
         var parameters = string.Join(", ", localFn.ParameterList.Parameters
-            .Select(p => context.TypeAnnotations
-                ? $"{p.Identifier.Text.ToJsIdentifier()}: {TypeScriptEmitter.CSharpTypeToTypeScript(p.Type?.ToString())}"
-                : p.Identifier.Text.ToJsIdentifier()));
+            .Select(p => Parameter(p, context)));
 
         var sb = new StringBuilder();
         sb.Append($"const {name} = ({parameters}) => ");
@@ -46,6 +45,34 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
         // not — without it the next statement runs on and the module fails to parse.
         sb.Append(';');
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// One parameter, with everything C# lets it carry. The DEFAULT was dropped here while the
+    /// method emitter has always kept it, so a local function written `Pane(title, body, leading =
+    /// null)` emitted three REQUIRED parameters and every two-argument call site stopped
+    /// type-checking — TS2554, from source that compiles in C#.
+    /// <para>
+    /// The three shapes match <c>TypeScriptEmitter.ParamWithDefault</c> deliberately: a `null`
+    /// default becomes `?:` rather than `= undefined` (that is what the annotation is FOR, and it
+    /// keeps the twin idiomatic), `params` becomes a rest parameter, and anything else keeps its
+    /// converted value.
+    /// </para>
+    /// </summary>
+    private static string Parameter(ParameterSyntax parameter, ConversionContext context)
+    {
+        var name = parameter.Identifier.Text.ToJsIdentifier();
+        var type = TypeScriptEmitter.CSharpTypeToTypeScript(parameter.Type?.ToString());
+        var rest = parameter.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.ParamsKeyword));
+        var name_ = context.TypeAnnotations ? $"{name}: {type}" : name;
+
+        if (rest) return $"...{name_}";
+        if (parameter.Default is null) return name_;
+
+        var value = context.Converter.ConvertExpression(parameter.Default.Value);
+        if (value is "undefined" or "null")
+            return context.TypeAnnotations ? $"{name}?: {type}" : $"{name} = {value}";
+        return $"{name_} = {value}";
     }
 
     public int Priority => 10;

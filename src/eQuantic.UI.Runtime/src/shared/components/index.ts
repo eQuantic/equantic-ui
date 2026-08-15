@@ -57,6 +57,7 @@ export { IconButton } from './IconButton';
 export { IndentationFoldProvider } from './IndentationFoldProvider';
 export { JsonLanguage } from './JsonLanguage';
 export { List } from './List';
+export { ListDetail } from './ListDetail';
 export { ListItem } from './ListItem';
 export { ListView } from './ListView';
 export { Markdown } from './Markdown';

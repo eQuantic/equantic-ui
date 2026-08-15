@@ -7,53 +7,35 @@ namespace EQuanticNativeApp;
 /// the one where a phone and a tablet genuinely disagree about what should be on screen.
 /// <para>
 /// One piece of state answers both: WHICH item is chosen. On a phone that is a place — nothing
-/// chosen means the list, something chosen means the detail, and the back button un-chooses. Past
-/// 840dp it is only a highlight, because both panes are already visible and there is nowhere to
-/// navigate to. Same field, same handler, two readings of it.
+/// chosen means the list, something chosen means the detail, and back un-chooses. Past 840dp it is
+/// only a highlight, because both panes are already visible and there is nowhere to navigate to.
+/// </para>
+/// <para>
+/// The <c>ListDetail</c> component owns that rule, so this file is the DATA and nothing else: no
+/// width test, no listener, no second layout to keep in step. Grow it by replacing
+/// <see cref="Inbox.Items"/> with your own source — a <c>[ServerAction]</c> on the web, your own
+/// service on the device.
 /// </para>
 /// </summary>
 public sealed class AppShell : StatefulComponent
 {
     private int? _selected;
 
-    public override VisualNode Build(ComponentContext context)
-    {
-        var theme = context.Theme;
-
-        // Compact: one pane at a time. The list IS the screen until something is chosen.
-        var phone = _selected is { } chosen
-            ? new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill }
-                .With(new AppBar(Inbox.Items[chosen].Title)
-                {
-                    Leading = IconButton(Icons.ChevronLeft, "Back",
-                        onPressed: () => SetState(() => _selected = null)),
-                })
-                .With(Flexible(Inbox.Detail(theme, chosen)))
-            : new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill }
-                .With(AppBar("Inbox"))
-                .With(Flexible(Inbox.List(_selected, Choose)));
-
-        // Expanded: both panes, and the chosen row stays lit while its detail is read. Nothing is
-        // chosen on a phone until the user picks; here the first item is, because an empty right
-        // pane on a wide screen is a design that starts by showing nothing.
-        var wide = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill }
-            .With(Box(new BoxStyle { Width = 360, Height = SizeValue.Fill },
-                new Column(gap: 0) { Height = SizeValue.Fill }
-                    .With(AppBar("Inbox"))
-                    .With(Flexible(Inbox.List(_selected ?? 0, Choose)))))
-            .With(Divider(axis: DividerAxis.Vertical))
-            .With(Flexible(new Column(gap: 0) { Height = SizeValue.Fill }
-                .With(AppBar(Inbox.Items[_selected ?? 0].Title))
-                .With(Flexible(Inbox.Detail(theme, _selected ?? 0)))));
-
-        return Box(new BoxStyle
+    public override VisualNode Build(ComponentContext context) =>
+        Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
-            Background = theme.Background,
+            Background = context.Theme.Background,
         },
-        SafeArea(AdaptiveNode(phone, medium: null, expanded: wide), SafeEdges.Top));
-    }
-
-    private void Choose(int index) => SetState(() => _selected = index);
+        SafeArea(new ListDetail(
+            list: Inbox.List(_selected, index => SetState(() => _selected = index)),
+            detail: _selected is { } chosen ? Inbox.Detail(context.Theme, chosen) : null,
+            onBack: () => SetState(() => _selected = null))
+        {
+            ListTitle = "Inbox",
+            Title = _selected is { } open ? Inbox.Items[open].Title : null,
+            Placeholder = EmptyState(Icons.Mail, "Pick a message",
+                "Choose one on the left and it opens here."),
+        }, SafeEdges.Top));
 }

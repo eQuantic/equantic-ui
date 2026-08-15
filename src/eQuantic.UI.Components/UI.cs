@@ -354,6 +354,12 @@ public static class UI
     public static ListView ListView(int count, float itemExtent, Func<int, VisualNode> itemBuilder) =>
         new ListView(count, itemExtent, itemBuilder);
 
+    /// <summary>A list beside a detail on a wide window, one pane at a time on a phone (spec B4).
+    /// The titles, the wide placeholder and the threshold are init slots.</summary>
+    public static ListDetail ListDetail(VisualNode list, VisualNode? detail = null,
+        Action? onBack = null) =>
+        new ListDetail(list, detail, onBack);
+
     /// <summary>Modal dialog with its action row.</summary>
     public static Dialog Dialog(string title, string body, DialogAction[] actions,
         bool dismissible = false, Action? onDismiss = null) =>

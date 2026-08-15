@@ -15,11 +15,15 @@ namespace eQuantic.UI.Components;
 /// convention, and it sits above the destinations rather than among them.
 /// </para>
 /// <para>
-/// v1 fences: the destinations start at the TOP (Material's own default; centring them under a
-/// header waits on an enum property crossing to the twin as its union rather than as a bare string,
-/// which is a transpiler slice of its own), the trailing shadow joins the engine shadow primitive,
-/// and the start safe-area inset (a landscape phone's notch sits exactly here) joins the host
-/// insets, both of those shared with the bar.
+/// The destinations sit where <see cref="Alignment"/> says, Material's TOP by default. It is the
+/// vocabulary's own <see cref="MainAlign"/> rather than a rail-shaped enum of its own: the rail
+/// forwards it straight into the column that lays the destinations out, which is exactly the shape
+/// that needed a component's enum property to cross to the twin as a UNION instead of as a bare
+/// string — the fence this replaces, and the work that lifted it.
+/// </para>
+/// <para>
+/// v1 fences: the trailing shadow joins the engine shadow primitive, and the start safe-area inset
+/// (a landscape phone's notch sits exactly here) joins the host insets, both shared with the bar.
 /// </para>
 /// </summary>
 public sealed class NavigationRail : StatelessComponent
@@ -49,9 +53,17 @@ public sealed class NavigationRail : StatelessComponent
     public int Selected { get; init; }
     public Action<int>? OnSelect { get; init; }
 
-    /// <summary>The rail's header — a FAB or a menu IconButton by convention. Null leaves the
-    /// destinations at the top, which is where a rail without a header starts.</summary>
+    /// <summary>The rail's header — a FAB or a menu IconButton by convention. It sits ABOVE the
+    /// destinations rather than among them, whatever <see cref="Alignment"/> says.</summary>
     public VisualNode? Leading { get; init; }
+
+    /// <summary>
+    /// Where the destinations sit along the rail. <see cref="MainAlign.Start"/> (the top) is
+    /// Material's default and what a rail without a header wants; <see cref="MainAlign.Center"/> is
+    /// what a rail WITH one usually wants, so the header reads as a header and not as a fourth
+    /// destination.
+    /// </summary>
+    public MainAlign Alignment { get; init; } = MainAlign.Start;
 
     public override VisualNode Build(ComponentContext context)
     {
@@ -101,11 +113,15 @@ public sealed class NavigationRail : StatelessComponent
             });
         }
 
+        // The ALIGNMENT belongs to the outer column: it is the one with the rail's full height, so it
+        // is the only one with slack to distribute. Setting it on the destinations (which hug their
+        // content) would centre nothing at all.
         var rail = new Column(gap: Space.S3)
         {
             Width = SizeValue.Fill,
             Height = SizeValue.Fill,
             Cross = CrossAlign.Center,
+            Main = Alignment,
         };
         if (Leading is { } leading) rail.Add(leading);
         rail.Add(destinations);

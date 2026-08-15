@@ -66,5 +66,15 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("Spreadsheet", Culture)!; }
         }
+
+        internal static string Back
+        {
+            get { return ResourceManager.GetString("Back", Culture)!; }
+        }
+
+        internal static string NothingSelected
+        {
+            get { return ResourceManager.GetString("NothingSelected", Culture)!; }
+        }
     }
 }

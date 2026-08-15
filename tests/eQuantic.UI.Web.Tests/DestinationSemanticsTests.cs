@@ -84,6 +84,26 @@ public class DestinationSemanticsTests
         destination.Attributes.Should().NotContainKey("aria-selected");
     }
 
+    /// <summary>
+    /// The rail's destinations sit where the app says. It takes the vocabulary's own MainAlign and
+    /// forwards it into the laying-out column — the case that needed a component's enum property to
+    /// reach the twin as a union, which is why the knob waited for that work and not for a design.
+    /// </summary>
+    [Theory]
+    [InlineData(MainAlign.Start, "flex-start")]
+    [InlineData(MainAlign.Center, "center")]
+    [InlineData(MainAlign.End, "flex-end")]
+    public void TheRailsDestinationsSitWhereTheAppSays(MainAlign alignment, string css)
+    {
+        var html = WebRealizer.Lower(new NavigationRail(Items, 0) { Alignment = alignment },
+            Theme).Render();
+
+        // The alignment rides the column that owns the rail's full height — the only one with slack.
+        Walk(html).Select(node => node.Attributes.GetValueOrDefault("style", ""))
+            .Should().Contain(style => style.Contains($"justify-content: {css}")
+                && style.Contains("flex-direction: column"));
+    }
+
     /// <summary>A sidebar of LINKS is the web's own navigation idiom, and the case
     /// <c>aria-current="page"</c> was invented for. Same claim, third shape.</summary>
     [Fact]

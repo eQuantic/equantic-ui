@@ -8,10 +8,12 @@
  */
 
 export const sdkNeutralStrings: Record<string, string> = {
+  'Back': "Back",
   'ClearSearch': "Clear search",
   'Dismiss': "Dismiss",
   'Find': "Find",
   'NextMatch': "Next match",
+  'NothingSelected': "Nothing selected",
   'PreviousMatch': "Previous match",
   'Remove': "Remove",
   'SearchPlaceholder': "Search\u2026",

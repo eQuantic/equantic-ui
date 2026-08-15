@@ -39,4 +39,8 @@ public static class SdkStrings
 
     /// <summary>The sheet surface's accessible name when the app supplies none.</summary>
     public static string Spreadsheet => SdkResources.Spreadsheet;
+
+    // ListDetail's compact pane: going back to the list, and the wide pane with nothing chosen.
+    public static string Back => SdkResources.Back;
+    public static string NothingSelected => SdkResources.NothingSelected;
 }

@@ -198,8 +198,10 @@ like at a given width, and what a device can do that a phone cannot.
   `AdaptiveNode` were already realized on both targets (build-time media queries on web, re-layout
   on Photon); 2026-08-14 added the missing half of the vocabulary, `NavigationRail`, so one
   `NavItem` list feeds a bar under a phone and a rail down the leading edge of a tablet with no
-  listener and no second state. Two goldens pin both. What is still ahead here is a two-pane
-  list-detail pattern.
+  listener and no second state. Two goldens pin both. 2026-08-15 closed the rest: `ListDetail` is
+  the two-pane pattern as a COMPONENT (the app owns the data, the component owns the rule — the
+  first component in the catalog that is itself adaptive), and the rail's alignment knob landed now
+  that a component's enum property crosses to the twin as a union rather than a bare string.
 - **F1 — pre-built shells in the templates: SHIPPED (2026-08-15).**
   `dotnet new equantic-native --shell blank|tabs|drawer|list-detail` and
   `equantic-app --shell blank|topnav|dashboard`, as a `dotnet new` CHOICE parameter on the existing
@@ -207,8 +209,8 @@ like at a given width, and what a device can do that a phone cannot.
   write-once thesis on the first screen a developer sees). Every shape is adaptive, which
   demonstrates the promise in the first 30 seconds of a new project, and the shape lives in ONE
   file: `Program.cs` says `UseRoot<AppShell>()` whichever was picked, and on the web a shell is an
-  ordinary component with a generated factory. `--shell list-detail` also answers the two-pane gap
-  named above — as template code an app OWNS, not yet as a framework component.
+  ordinary component with a generated factory. `--shell list-detail` scaffolds the two-pane
+  shape, and calls the `ListDetail` component above rather than reimplementing it.
   A compile guard per shape (`NativeTemplateShellTests`, `TemplateSourceTests`) runs the real
   Roslyn compilation with the SDK's implicit usings, so a wrong overload fails on the push instead
   of on a tag, on three operating systems, after a full pack.

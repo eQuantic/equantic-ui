@@ -26,4 +26,10 @@
   <data name="Spreadsheet" xml:space="preserve">
     <value>Hoja de cálculo</value>
   </data>
+  <data name="Back" xml:space="preserve">
+    <value>Atrás</value>
+  </data>
+  <data name="NothingSelected" xml:space="preserve">
+    <value>Nada seleccionado</value>
+  </data>
 </root>

@@ -26,4 +26,10 @@
   <data name="Spreadsheet" xml:space="preserve">
     <value>Planilha</value>
   </data>
+  <data name="Back" xml:space="preserve">
+    <value>Voltar</value>
+  </data>
+  <data name="NothingSelected" xml:space="preserve">
+    <value>Nada selecionado</value>
+  </data>
 </root>

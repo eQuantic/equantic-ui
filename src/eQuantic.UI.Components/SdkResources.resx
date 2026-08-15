@@ -33,4 +33,10 @@
   <data name="Spreadsheet" xml:space="preserve">
     <value>Spreadsheet</value>
   </data>
+  <data name="Back" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="NothingSelected" xml:space="preserve">
+    <value>Nothing selected</value>
+  </data>
 </root>

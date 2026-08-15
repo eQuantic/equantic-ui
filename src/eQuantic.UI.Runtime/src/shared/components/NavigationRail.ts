@@ -1,4 +1,4 @@
-import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconsValue, NavItem, Pressable, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class NavigationRail extends StatelessComponent {
     declare $items: NavItem[];
@@ -7,18 +7,20 @@ export class NavigationRail extends StatelessComponent {
     declare selected: number;
     declare onSelect: any;
     declare leading: any;
+    declare alignment: MainAlignValue;
     constructor(items?: any, selected?: any, onSelect: any = null, props?: any) {
         super();
         if (items !== undefined) this.items = items;
         if (selected !== undefined) this.selected = selected;
         if (onSelect !== undefined) this.onSelect = onSelect;
         if (this.selected === undefined) this.selected = 0;
+        if (this.alignment === undefined) this.alignment = 'start';
         this.items = items;this.selected = selected;this.onSelect = onSelect;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let primary = theme.colors('primary');let destinations = new Column(12, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'center' });for (let i = 0; i < this.items.length; i++) {let item = this.items[i];let isActive = i === this.selected;let index = i;let filled: any; let glyph: IconsValue = isActive && (filled = item.selectedIcon) != null ? filled : item.icon;let tint = isActive ? primary.onSubtle : theme.textMuted;let icon = new Icon(glyph, 24, tint);let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;let pill = new Box(new BoxStyle({ width: 56, height: 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')) }), iconNode.centered());let column = new Column(2, 'start', 'stretch', false, null, null, { cross: 'center' });column.add(pill);column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, { styleOverride: new TypeStyle(11, 14, 'bold', 0.1, 1.3) }));destinations.add(new Pressable(column, this.onSelect == null ? null : () => this.onSelect(index), { label: item.label, pressedBackground: theme.surfaceSubtle, role: 'destination', selected: isActive }));}let rail = new Column(12, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center' });let leading: any; if ((leading = this.leading) != null) rail.add(leading);rail.add(destinations);return new Box(new BoxStyle({ width: 80, height: SizeValue.fill, padding: EdgeInsets.symmetric(0, 12), background: theme.surface }), rail);
+        let theme = context.theme;let primary = theme.colors('primary');let destinations = new Column(12, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'center' });for (let i = 0; i < this.items.length; i++) {let item = this.items[i];let isActive = i === this.selected;let index = i;let filled: any; let glyph: IconsValue = isActive && (filled = item.selectedIcon) != null ? filled : item.icon;let tint = isActive ? primary.onSubtle : theme.textMuted;let icon = new Icon(glyph, 24, tint);let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;let pill = new Box(new BoxStyle({ width: 56, height: 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')) }), iconNode.centered());let column = new Column(2, 'start', 'stretch', false, null, null, { cross: 'center' });column.add(pill);column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, { styleOverride: new TypeStyle(11, 14, 'bold', 0.1, 1.3) }));destinations.add(new Pressable(column, this.onSelect == null ? null : () => this.onSelect(index), { label: item.label, pressedBackground: theme.surfaceSubtle, role: 'destination', selected: isActive }));}let rail = new Column(12, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: this.alignment });let leading: any; if ((leading = this.leading) != null) rail.add(leading);rail.add(destinations);return new Box(new BoxStyle({ width: 80, height: SizeValue.fill, padding: EdgeInsets.symmetric(0, 12), background: theme.surface }), rail);
     }
 
 }

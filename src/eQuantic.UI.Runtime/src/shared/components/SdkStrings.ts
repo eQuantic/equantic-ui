@@ -8,5 +8,7 @@ export class SdkStrings {
     static get previousMatch(): string { return $eq.str("SdkResources", "PreviousMatch"); }
     static get nextMatch(): string { return $eq.str("SdkResources", "NextMatch"); }
     static get spreadsheet(): string { return $eq.str("SdkResources", "Spreadsheet"); }
+    static get back(): string { return $eq.str("SdkResources", "Back"); }
+    static get nothingSelected(): string { return $eq.str("SdkResources", "NothingSelected"); }
 }
 
