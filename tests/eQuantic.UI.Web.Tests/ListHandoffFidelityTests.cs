@@ -58,21 +58,41 @@ public class ListHandoffFidelityTests
     /// The hairline continues the text edge of the row ABOVE it: 16 + leading + gap. Flat 16 put it
     /// under the icons, which is the one detail a designer spots from across the room.
     /// </summary>
-    [Theory]
-    [InlineData(24, "52px")]   // Icon Md — 16 + 24 + 12
-    [InlineData(40, "68px")]   // Avatar  — 16 + 40 + 12
-    public void TheDividerStartsWhereTheRowsTextDoes(float leadingWidth, string inset)
+    /// <summary>
+    /// The two conventional slots answer for themselves: an Icon carries its size and an Avatar its
+    /// tier. Asking the app for a number it already wrote into the slot is how a 40dp avatar ends up
+    /// with a hairline 16dp short — which is what the gallery golden caught.
+    /// </summary>
+    [Fact]
+    public void TheDividerStartsWhereTheRowsTextDoes()
+    {
+        static string Inset(VisualNode leading) =>
+            Walk(Render(new List([
+                new ListItem("Wi-Fi", "Photon-5G") { Leading = leading },
+                new ListItem("Notifications"),
+            ]))).Select(StyleOf).First(style => style.Contains("padding: 0 0 0 "));
+
+        // 16 + 24 + 12, from the Icon's own size.
+        Inset(new Icon(Icons.Info, 24, Theme.TextSecondary)).Should().Contain("padding: 0 0 0 52px");
+        // 16 + 40 + 12, from the Avatar's tier — nobody had to say 40.
+        Inset(new Avatar("AB", SizeVariant.Large)).Should().Contain("padding: 0 0 0 68px");
+    }
+
+    /// <summary>A slot the app built itself cannot be measured before layout, so THAT one is asked
+    /// for — and only that one.</summary>
+    [Fact]
+    public void AHandBuiltSlotIsTakenOnTrust()
     {
         var html = Render(new List([
-            new ListItem("Wi-Fi", "Photon-5G")
+            new ListItem("Wi-Fi")
             {
-                Leading = new Icon(Icons.Info, 24, Theme.TextSecondary),
-                LeadingWidth = leadingWidth,
+                Leading = new Box(new BoxStyle { Width = 56, Height = 56 }),
+                LeadingWidth = 56,
             },
             new ListItem("Notifications"),
         ]));
 
-        Walk(html).Select(StyleOf).Should().Contain(style => style.Contains($"padding: 0 0 0 {inset}"));
+        Walk(html).Select(StyleOf).Should().Contain(style => style.Contains("padding: 0 0 0 84px"));
     }
 
     /// <summary>A list with no leading slots keeps the plain 16 — there is nothing to clear.</summary>

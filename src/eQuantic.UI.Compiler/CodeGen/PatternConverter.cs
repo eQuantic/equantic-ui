@@ -198,7 +198,13 @@ public static class PatternConverter
     private static string PositionalAccess(string access, int i, IReadOnlyList<string>? names)
         => names != null && i < names.Count ? $"{access}.{names[i]}" : $"{access}[{i}]";
 
-    private static string TypeCheck(TypeSyntax typeSyntax, string access, ConversionContext context)
+    /// <summary>
+    /// The one type test. Public because the binary <c>x is Type</c> form is a separate strategy and
+    /// used to carry its OWN copy of this rule — a copy that never learned about vocabulary classes,
+    /// which is exactly how one of the two answers went stale without anyone noticing. One rule, one
+    /// place, both callers.
+    /// </summary>
+    public static string TypeCheck(TypeSyntax typeSyntax, string access, ConversionContext context)
     {
         switch (typeSyntax.ToString())
         {
@@ -208,27 +214,36 @@ public static class PatternConverter
             case "bool" or "boolean": return $"typeof {access} === 'boolean'";
         }
 
-        // A class that lowers to a REAL JS class supports `instanceof` — today that is the component
-        // model (`UiComponent`-derived: shared components and pages), which the reconciler's
-        // `AdoptConfig(UiComponent next)` pattern-matches on. Everything else keeps the null-check:
-        // enums lower to string literals, value types to plain config objects, exceptions to Error.
+        // A class that lowers to a REAL JS class supports `instanceof`. That is the whole VOCABULARY
+        // — every `VisualNode` is an `export class` in the runtime, components included (UiComponent
+        // derives from VisualNode). Everything else keeps the null-check: enums lower to string
+        // literals, value types to plain config objects, exceptions to Error.
+        //
+        // It used to be components ONLY, and the fallback is where that hurt: `leading switch { Icon
+        // icon => …, Avatar avatar => … }` emitted `_s != null` for the Icon arm, so the FIRST arm
+        // matched everything and the Avatar arm was dead code. A wrong answer with no diagnostic —
+        // caught by tsc complaining about `.size` on a VisualNode, which is luck, not a net.
         if (context.SemanticHelper.Knows(typeSyntax)
             && context.SemanticModel?.GetSymbolInfo(typeSyntax).Symbol is INamedTypeSymbol
             {
                 TypeKind: TypeKind.Class
-            } named && DerivesFromUiComponent(named))
+            } named && LowersToAJsClass(named))
         {
+            // The name has to reach the import list, or the module references a free variable.
+            context.UsedRuntimeTypes.Add(named.Name);
             return $"{access} instanceof {named.Name}";
         }
 
         return $"{access} != null";
     }
 
-    private static bool DerivesFromUiComponent(INamedTypeSymbol type)
+    /// <summary>Whether this class exists as a real class on the other side — every vocabulary node
+    /// does, which is what makes <c>instanceof</c> the honest test for it.</summary>
+    private static bool LowersToAJsClass(INamedTypeSymbol type)
     {
         for (var baseType = type.BaseType; baseType != null; baseType = baseType.BaseType)
         {
-            if (baseType.Name == "UiComponent"
+            if (baseType.Name is "VisualNode" or "UiComponent"
                 && baseType.ContainingNamespace?.ToDisplayString() == "eQuantic.UI.Primitives")
             {
                 return true;

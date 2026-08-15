@@ -30,9 +30,11 @@ public sealed class ListItem : StatelessComponent
     /// How wide the <see cref="Leading"/> slot is (dp), which is what puts the divider below this row
     /// under its TEXT rather than across its icon — the handoff's B2 rule, 16 + leading + gap.
     /// <para>
-    /// 24 unless said otherwise, the Icon Md convention. An <c>Avatar</c> is 40, and a slot the app
-    /// built itself is whatever it built: the component holds a <see cref="VisualNode"/> and cannot
-    /// measure it before layout, so this is the one number it has to be told.
+    /// Only needed for a slot the app BUILT ITSELF. The two conventional ones answer for themselves:
+    /// an <see cref="Icon"/> carries its size and an <see cref="Avatar"/> its tier, and the row reads
+    /// them. Defaulting a 40dp avatar to the 24dp icon figure is a hairline 16dp short of where it
+    /// belongs — which is precisely what the gallery golden caught, so the number is derived where it
+    /// can be and asked for only where it cannot.
     /// </para>
     /// </summary>
     public float LeadingWidth { get; init; } = 24;
@@ -71,7 +73,17 @@ public sealed class ListItem : StatelessComponent
 
     /// <summary>Where this row's TEXT starts, and so where the divider under it begins: the row's own
     /// padding, plus the leading slot and the gap after it when there is one.</summary>
-    internal float ContentInset => Leading is null ? Space.S4 : Space.S4 + LeadingWidth + Space.S3;
+    internal float ContentInset =>
+        Leading is null ? Space.S4 : Space.S4 + SlotWidth(Leading, LeadingWidth) + Space.S3;
+
+    /// <summary>The leading slot's width, DERIVED for the two conventional slots and taken on trust
+    /// for anything else. A component that can read the number should not ask for it.</summary>
+    private static float SlotWidth(VisualNode leading, float declared) => leading switch
+    {
+        Icon icon => icon.Size,
+        Avatar avatar => Sizing.Avatar(avatar.Size),
+        _ => declared,
+    };
 
     public override VisualNode Build(ComponentContext context)
     {

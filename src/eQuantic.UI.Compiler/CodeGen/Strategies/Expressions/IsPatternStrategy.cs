@@ -73,24 +73,16 @@ public class IsPatternStrategy : IConversionStrategy
         if (node is BinaryExpressionSyntax binary)
         {
             var expr = context.Converter.ConvertExpression(binary.Left);
-            // Handle binary 'is Type': x is string
-            // Right is usually TypeSyntax
-            var typeName = binary.Right.ToString();
-            return ConvertTypeCheck(typeName, expr);
+            // `x is Type` asks the SAME question a type pattern does, so it gets the same answer
+            // from the same place. It used to carry a copy of the rule that stopped at the
+            // primitives and answered `!= null` for everything else — so `node is Icon` was true for
+            // any non-null node, silently.
+            if (binary.Right is TypeSyntax typeSyntax)
+                return PatternConverter.TypeCheck(typeSyntax, expr, context);
+            return $"{expr} != null";
         }
 
         throw new InvalidOperationException($"Invalid node type for IsPatternStrategy: {node.GetType().Name}");
-    }
-
-    private static string ConvertTypeCheck(string type, string varName)
-    {
-        return type switch
-        {
-            "string" => $"typeof {varName} === 'string'",
-            "int" or "double" or "float" or "long" or "decimal" or "number" => $"typeof {varName} === 'number'",
-            "bool" or "boolean" => $"typeof {varName} === 'boolean'",
-            _ => $"{varName} != null" // Default for objects/unknowns is null check
-        };
     }
 
     public int Priority => 10;
