@@ -526,6 +526,8 @@ export interface LinkNode extends VisualNodeValue {
   label?: string | null;
   /** Keeps the reader where they are instead of starting the new page at its top (C# twin). */
   keepsPosition?: boolean;
+  /** This link points at the page the reader is ON — aria-current="page" (C# twin). */
+  current?: boolean;
 }
 
 /** Gestures v2: vertical drag-to-dismiss — the child follows a downward drag; releasing past the

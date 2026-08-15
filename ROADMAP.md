@@ -111,8 +111,11 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
   layout (reconcile-on-navigate), route guards, `<Link>` with hover/focus prefetch, route-based
   code-splitting, scroll restoration. Demonstrated end-to-end by `samples/DefaultUIDashboard`.
   → see `docs/PHASE-2-CLIENT-ROUTER-PLAN.md`.
-- **Phase 3 — Hot reload with state preservation**: replace full reload with module/state-preserving
-  reload; sub-second feedback loop.
+- **Phase 3 — Hot reload with state preservation** — **✅ complete on both targets**: the web
+  replays page state over a mounted tree (`HotReloadService`, an SSE channel with ping and
+  reconnect) and the native side applies in-process under `dotnet watch` (`PhotonHotReload`, with
+  per-generation caches on the render thread). The piece that took the longest was not the reload
+  but WAKING the window.
 - **Phase 4 — Forms & validation engine** — **✅ complete**: the model in Primitives (dirty/touched
   as separate questions, `Error` vs `VisibleError`, cross-field and conditional rules), the thin
   `FormInput`/`FormSubmit` surface, async submit through Server Actions with the server's verdict
@@ -125,7 +128,10 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
   pinned on both producers), and the NATIVE half now matches: every shell has its bridge over the
   one target-neutral semantics tree (macOS `NSAccessibility`, iOS `UIAccessibility` elements,
   Android's virtual `AccessibilityNodeInfo` hierarchy), each proved by asking the platform rather
-  than the tree. Remaining: variant coverage, a component test harness.
+  than the tree. 2026-08-15 closed the last named gap: a navigation now says WHERE YOU ARE
+  (`PressableRole.Destination` / `Link.Current` → `aria-current="page"`, the Selected trait on both
+  mobiles), which no existing role could express. Remaining: variant coverage, a component test
+  harness.
 - **Phase 6 — First-party embedded CSS engine** + documented provider contract. **Normative
   (2026-07-03): the embedded CSS follows exactly the same design system as mobile** — the Photon
   Design System, generated at build time from the shared `eQuantic.UI.Primitives` tokens (single
@@ -194,11 +200,18 @@ like at a given width, and what a device can do that a phone cannot.
   `NavItem` list feeds a bar under a phone and a rail down the leading edge of a tablet with no
   listener and no second state. Two goldens pin both. What is still ahead here is a two-pane
   list-detail pattern.
-- **F1 — pre-built shells in the templates.** `dotnet new equantic-native --shell blank|tabs|drawer|
-  list-detail` and `equantic-app --shell blank|topnav|dashboard`, as a `dotnet new` CHOICE parameter
-  on the existing two templates rather than one template per shape (a template per form factor would
-  deny the write-once thesis on the first screen a developer sees). The generated shell is adaptive
-  by default, which demonstrates the framework's promise in the first 30 seconds of a new project.
+- **F1 — pre-built shells in the templates: SHIPPED (2026-08-15).**
+  `dotnet new equantic-native --shell blank|tabs|drawer|list-detail` and
+  `equantic-app --shell blank|topnav|dashboard`, as a `dotnet new` CHOICE parameter on the existing
+  two templates rather than one template per shape (a template per form factor would deny the
+  write-once thesis on the first screen a developer sees). Every shape is adaptive, which
+  demonstrates the promise in the first 30 seconds of a new project, and the shape lives in ONE
+  file: `Program.cs` says `UseRoot<AppShell>()` whichever was picked, and on the web a shell is an
+  ordinary component with a generated factory. `--shell list-detail` also answers the two-pane gap
+  named above — as template code an app OWNS, not yet as a framework component.
+  A compile guard per shape (`NativeTemplateShellTests`, `TemplateSourceTests`) runs the real
+  Roslyn compilation with the SDK's implicit usings, so a wrong overload fails on the push instead
+  of on a tag, on three operating systems, after a full pack.
 - **F2 — Wear OS.** Wear is Android, so the Android shell is the base. What it needs: a round safe
   area (`isScreenRound` is a configuration answer, not a guess), a size class BELOW Compact (a watch
   is ~200dp and the smallest class today starts where a phone starts), rotary input from the crown

@@ -84,6 +84,11 @@ public sealed class BottomNavigation : StatelessComponent
             {
                 Label = item.Label,
                 PressedBackground = theme.SurfaceSubtle,
+                // The pill and the tint say "you are here" to everyone who can see them. This says
+                // it to everyone else: aria-current="page" on the web, the selected trait on both
+                // mobiles.
+                Role = PressableRole.Destination,
+                Selected = isActive,
             }));
         }
 

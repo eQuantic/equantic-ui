@@ -1879,6 +1879,16 @@ public static class WebRealizer
             element.TabIndex = -1;
         }
 
+        // A navigation destination keeps its Tab stop (a nav is a list of links, not a composite)
+        // and says WHERE YOU ARE, which is the one thing aria-pressed/selected/checked cannot say.
+        // Only the current one carries the attribute: aria-current="false" on the others is legal
+        // and pure noise, and every destination announcing "not current" is worse than silence.
+        if (pressable.Role == PressableRole.Destination)
+        {
+            element.AriaPressed = null;
+            if (pressable.Selected == true) element.AriaCurrent = "page";
+        }
+
         // A check states its state as an ATTRIBUTE, never in the name — a name that changes when
         // the state does reads as a different control. Unlike a radio it keeps its own Tab stop
         // (the button element already is one): a checkbox is not one choice of a composite.
@@ -1951,6 +1961,9 @@ public static class WebRealizer
         //
         // App-internal destinations only: an absolute URL belongs to somebody else's server.
         if (link.Destination.StartsWith('/')) element.RawAttributes["data-prefetch"] = "";
+        // The page you are ON. Only the current link carries it — aria-current="false" on the other
+        // nine is legal, useless, and read out loud.
+        if (link.Current) element.AriaCurrent = "page";
         if (LowerNode(link.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         return element;

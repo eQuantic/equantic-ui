@@ -5,6 +5,10 @@ using eQuantic.UI.Primitives;
 /// <summary>
 /// The Photon entry point: CreateApp declares the app, the platform head (generated per target)
 /// runs it. `dotnet run` opens a real window on this machine; the same code builds for phones.
+/// <para>
+/// It names <c>AppShell</c> and nothing else, whichever <c>--shell</c> scaffolded it — swapping the
+/// shape of the app is one file, never this one.
+/// </para>
 /// </summary>
 public partial class Program
 {
@@ -20,6 +24,6 @@ public partial class Program
             photon.Height = 620;
         });
 
-        return builder.Build().UseRoot<HomeScreen>();
+        return builder.Build().UseRoot<AppShell>();
     }
 }

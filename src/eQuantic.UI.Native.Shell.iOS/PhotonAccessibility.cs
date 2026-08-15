@@ -122,6 +122,9 @@ internal sealed class PhotonAccessibility
             _ => UIAccessibilityTrait.StaticText,
         };
         if (node.Disabled) traits |= UIAccessibilityTrait.NotEnabled;
+        // The destination the user is ON. A check never gets this trait (its state is its VALUE),
+        // which is why the flag is separate from Checked rather than another value of it.
+        if (node.Current) traits |= UIAccessibilityTrait.Selected;
         return traits;
     }
 

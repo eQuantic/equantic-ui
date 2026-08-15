@@ -80,7 +80,7 @@ export type PointerCursorValue =
 export type PresenceMotionValue = 'fade' | 'slideUp';
 
 export type PressableRoleValue =
-  'button' | 'radio' | 'checkbox' | 'switch' | 'tab' | 'menuItem' | 'option';
+  'button' | 'radio' | 'checkbox' | 'switch' | 'tab' | 'menuItem' | 'option' | 'destination';
 
 export type ScrollAxisValue = 'vertical' | 'horizontal' | 'both';
 

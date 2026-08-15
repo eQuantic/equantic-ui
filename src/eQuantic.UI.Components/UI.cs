@@ -343,6 +343,17 @@ public static class UI
     public static Drawer Drawer(VisualNode content, bool open, Action? onDismiss = null) =>
         new Drawer(content, open, onDismiss);
 
+    /// <summary>The bar across the top of a screen (spec B3) — Leading and Actions are init slots.</summary>
+    public static AppBar AppBar(string title) => new AppBar(title);
+
+    /// <summary>One row of a list (spec B7) — the slots (Leading, Trailing) are init properties.</summary>
+    public static ListItem ListItem(string title, string? subtitle = null, Action? onPressed = null) =>
+        new ListItem(title, subtitle, onPressed);
+
+    /// <summary>A list built ON DEMAND from an index, for a collection too long to materialize.</summary>
+    public static ListView ListView(int count, float itemExtent, Func<int, VisualNode> itemBuilder) =>
+        new ListView(count, itemExtent, itemBuilder);
+
     /// <summary>Modal dialog with its action row.</summary>
     public static Dialog Dialog(string title, string body, DialogAction[] actions,
         bool dismissible = false, Action? onDismiss = null) =>

@@ -29,6 +29,17 @@ public sealed class ListItem : StatelessComponent
     /// <summary>Trailing slot — Caption meta, chevron Icon, Switch or Checkbox.</summary>
     public VisualNode? Trailing { get; init; }
 
+    /// <summary>
+    /// This row is the DESTINATION the user is on — a drawer's nav list, a list-detail's chosen
+    /// item. It tints the row and states it as <c>aria-current="page"</c> (the selected trait on
+    /// the mobiles), because a navigation whose active row is a fill colour is a navigation a
+    /// screen-reader user walks blind.
+    /// <para>
+    /// Only meaningful with <see cref="OnPressed"/>: an inert row is not somewhere you can be.
+    /// </para>
+    /// </summary>
+    public bool Selected { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
@@ -55,6 +66,7 @@ public sealed class ListItem : StatelessComponent
         {
             Width = SizeValue.Fill,
             MinHeight = Subtitle is null ? 52 : 68,
+            Background = Selected ? theme.Colors(Variant.Primary).Subtle : null,
         }, row);
 
         return OnPressed is null
@@ -64,6 +76,10 @@ public sealed class ListItem : StatelessComponent
                 Disabled = Disabled,
                 Label = Title,
                 PressedBackground = theme.SurfaceSubtle,
+                // Stated only when the row IS one: a plain list row that announced "not current"
+                // for every entry would be noise on every list in the app.
+                Role = Selected ? PressableRole.Destination : PressableRole.Button,
+                Selected = Selected ? true : null,
             };
     }
 }

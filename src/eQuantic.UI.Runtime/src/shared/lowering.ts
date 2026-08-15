@@ -684,6 +684,8 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   if (node.keepsPosition) anchor.attributes['data-eq-keep-position'] = '';
   // WARM ON HOVER (C# twin): app-internal destinations only — an absolute URL is somebody else's.
   if (node.destination.startsWith('/')) anchor.attributes['data-prefetch'] = '';
+  // The page you are ON (C# twin): only the current link says so.
+  if (node.current === true) anchor.attributes['aria-current'] = 'page';
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) anchor.children.push(child);
   return anchor;
@@ -2098,6 +2100,11 @@ function lowerPressable(
     node.attributes['aria-checked'] =
       pressable.mixed && pressable.role === 'checkbox' ? 'mixed'
       : pressable.selected === true ? 'true' : 'false';
+  } else if (pressable.role === 'destination') {
+    // Where you ARE, which pressed/selected/checked cannot say. Keeps its Tab stop (a nav is a
+    // list of links), and only the current one carries the attribute — every destination
+    // announcing "not current" is worse than silence.
+    if (pressable.selected === true) node.attributes['aria-current'] = 'page';
   } else if (pressable.selected !== undefined && pressable.selected !== null) {
     node.attributes['aria-pressed'] = pressable.selected ? 'true' : 'false';
   }

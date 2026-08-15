@@ -272,7 +272,9 @@ public static class ConsoleShell
             Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
         }, row);
 
-        return new Link(entry.Href, box) { Label = entry.Label };
+        // The fill and the tint say "you are here" to everyone who can see them; Current says it to
+        // everyone else, as aria-current="page".
+        return new Link(entry.Href, box) { Label = entry.Label, Current = current };
     }
 
     /// <summary>

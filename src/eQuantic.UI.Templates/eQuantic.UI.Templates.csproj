@@ -23,6 +23,14 @@
   <!-- Stamp the CURRENT framework version into the template's global.json, then pack the stamped
        copy. The template source keeps a placeholder, so there is no per-release hand edit. -->
   <Target Name="StampTemplateVersion" BeforeTargets="_GetPackageFiles;GenerateNuspec">
+    <!--
+      WIPE FIRST. This copies INTO a directory it does not own the history of, so a template file
+      that was renamed or deleted stayed behind and kept shipping: moving Pages/HomePage.cs under
+      .shells/ left the old copy in the package, which scaffolds a SECOND [Page("/")] into every
+      project and fails the user's first build. A stale file in an incremental output is invisible
+      here — the pack succeeds and the nupkg is simply wrong.
+    -->
+    <RemoveDir Directories="$(IntermediateOutputPath)stamped" />
     <ItemGroup>
       <_TemplateFile Include="templates/**/*" />
     </ItemGroup>

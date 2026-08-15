@@ -863,6 +863,19 @@ public sealed class Link : VisualNode
     /// </para>
     /// </summary>
     public bool KeepsPosition { get; init; }
+
+    /// <summary>
+    /// This link points at the page the reader is ON — a sidebar's active row, a top bar's current
+    /// section. The canonical <c>aria-current="page"</c>, and the web twin of
+    /// <see cref="PressableRole.Destination"/>: a navigation that marks its active entry with a fill
+    /// colour has told everyone who can see the colour and nobody else.
+    /// <para>
+    /// Left alone on ordinary links, and deliberately not a nullable: a link either is the current
+    /// page or is not, and every other link in a page saying "not current" is noise a screen reader
+    /// reads out loud.
+    /// </para>
+    /// </summary>
+    public bool Current { get; init; }
 }
 
 /// <summary>
@@ -1159,6 +1172,21 @@ public enum PressableRole : byte
     /// <c>aria-selected</c> — an option is picked, like a tab — and out of the Tab order for the
     /// same reason a menu item is.</summary>
     Option = 6,
+
+    /// <summary>
+    /// One destination of a navigation — a bar's tab, a rail's stop, a drawer's row. The third
+    /// spelling of "this one of the set is the active one", and the one the others cannot say: a
+    /// destination is not PRESSED (it does not toggle), not CHECKED (nothing is being chosen), and
+    /// not SELECTED (a tab switches a panel; a destination changes where you ARE). The web word is
+    /// <c>aria-current="page"</c>, and both mobile bridges report it as the node's selected state,
+    /// which is the closest thing each platform has.
+    /// <para>
+    /// It keeps its own Tab stop, unlike <see cref="Tab"/> and <see cref="Radio"/>: a navigation is
+    /// a list of links, not a composite with one entry point, and a keyboard user reaching the bar
+    /// expects to walk it.
+    /// </para>
+    /// </summary>
+    Destination = 7,
 }
 
 /// <summary>One inline run of a rich <see cref="Text"/> (see <see cref="Text.Spans"/>): its own

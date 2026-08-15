@@ -5,11 +5,77 @@
   "identity": "eQuantic.UI.NativeApp",
   "name": "eQuantic.UI native app (Photon)",
   "shortName": "equantic-native",
-  "description": "A write-once eQuantic.UI NATIVE app: the same C# components, rendered by the Photon GPU engine in a real window — no web view. Run it with `dotnet run`.",
+  "description": "A write-once eQuantic.UI NATIVE app: the same C# components, rendered by the Photon GPU engine in a real window — no web view. Pick a starting shape with --shell. Run it with `dotnet run`.",
   "tags": {
     "language": "C#",
     "type": "project"
   },
   "sourceName": "EQuanticNativeApp",
-  "preferNameDirectory": true
+  "preferNameDirectory": true,
+  "symbols": {
+    "shell": {
+      "type": "parameter",
+      "datatype": "choice",
+      "defaultValue": "blank",
+      "description": "The navigation shape the app starts from. Every one of them is adaptive: the same C# serves a phone and a tablet, and Program.cs names AppShell whichever you pick.",
+      "choices": [
+        {
+          "choice": "blank",
+          "description": "One screen and a counter — the write-once claim, and nothing to delete."
+        },
+        {
+          "choice": "tabs",
+          "description": "Destinations in a bottom bar, standing up as a navigation rail past 600dp."
+        },
+        {
+          "choice": "drawer",
+          "description": "A sliding panel on a phone, docked beside the content past 840dp."
+        },
+        {
+          "choice": "list-detail",
+          "description": "One pane at a time on a phone, two side by side on a tablet."
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "source": "./",
+      "target": "./",
+      "exclude": [
+        ".shells/**",
+        "**/[Bb]in/**",
+        "**/[Oo]bj/**",
+        ".template.config/**/*",
+        "**/*.filelist",
+        "**/*.user",
+        "**/*.lock.json"
+      ]
+    },
+    {
+      "source": ".shells/blank/",
+      "target": "./",
+      "condition": "(shell == 'blank')"
+    },
+    {
+      "source": ".shells/tabs/",
+      "target": "./",
+      "condition": "(shell == 'tabs')"
+    },
+    {
+      "source": ".shells/drawer/",
+      "target": "./",
+      "condition": "(shell == 'drawer')"
+    },
+    {
+      "source": ".shells/list-detail/",
+      "target": "./",
+      "condition": "(shell == 'list-detail')"
+    },
+    {
+      "source": ".shells/_destinations/",
+      "target": "./",
+      "condition": "(shell == 'tabs' || shell == 'drawer')"
+    }
+  ]
 }

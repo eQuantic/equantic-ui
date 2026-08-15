@@ -5,11 +5,63 @@
   "identity": "eQuantic.UI.App",
   "name": "eQuantic.UI web app",
   "shortName": "equantic-app",
-  "description": "A write-once eQuantic.UI app: C# components compiled to JavaScript at build time — no Node, no bundlers. Run it with `dotnet run`.",
+  "description": "A write-once eQuantic.UI app: C# components compiled to JavaScript at build time — no Node, no bundlers. Pick a starting shape with --shell. Run it with `dotnet run`.",
   "tags": {
     "language": "C#",
     "type": "project"
   },
   "sourceName": "EQuanticApp",
-  "preferNameDirectory": true
+  "preferNameDirectory": true,
+  "symbols": {
+    "shell": {
+      "type": "parameter",
+      "datatype": "choice",
+      "defaultValue": "blank",
+      "description": "The layout the app starts from. A shell here is an ordinary component every page composes — there is no Layout type to register.",
+      "choices": [
+        {
+          "choice": "blank",
+          "description": "One page and a counter — the write-once claim, and nothing to delete."
+        },
+        {
+          "choice": "topnav",
+          "description": "A header with links across the top, and a second route to prove the router."
+        },
+        {
+          "choice": "dashboard",
+          "description": "A sidebar past 840dp, the same sections wrapped under the header below it."
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "source": "./",
+      "target": "./",
+      "exclude": [
+        ".shells/**",
+        "**/[Bb]in/**",
+        "**/[Oo]bj/**",
+        ".template.config/**/*",
+        "**/*.filelist",
+        "**/*.user",
+        "**/*.lock.json"
+      ]
+    },
+    {
+      "source": ".shells/blank/",
+      "target": "./",
+      "condition": "(shell == 'blank')"
+    },
+    {
+      "source": ".shells/topnav/",
+      "target": "./",
+      "condition": "(shell == 'topnav')"
+    },
+    {
+      "source": ".shells/dashboard/",
+      "target": "./",
+      "condition": "(shell == 'dashboard')"
+    }
+  ]
 }

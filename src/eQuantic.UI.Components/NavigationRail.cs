@@ -94,6 +94,10 @@ public sealed class NavigationRail : StatelessComponent
             {
                 Label = item.Label,
                 PressedBackground = theme.SurfaceSubtle,
+                // The bar's twin in this too: a destination states WHERE YOU ARE, and a rail that
+                // said it only in a tint would be the same bar with a different silence.
+                Role = PressableRole.Destination,
+                Selected = isActive,
             });
         }
 

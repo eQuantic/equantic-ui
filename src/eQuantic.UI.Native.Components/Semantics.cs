@@ -48,7 +48,12 @@ public readonly record struct SemanticNode(
     string? Value,
     bool Disabled,
     SemanticCheck? Checked = null,
-    bool? Expanded = null);
+    bool? Expanded = null,
+    /// <summary>This is the destination the user is ON — the web's <c>aria-current="page"</c>. Each
+    /// bridge reports it with the nearest thing its platform has, which on both mobiles is the
+    /// SELECTED trait; a bar whose active stop is only a tint colour is a bar a screen-reader user
+    /// walks blind.</summary>
+    bool Current = false);
 
 /// <summary>
 /// Derives the SEMANTICS TREE from a realized frame: the page layout plus every overlay layout
@@ -95,13 +100,14 @@ public static class SemanticsTree
                 };
                 nodes.Add(new(role, node.Path ?? "", node.Bounds,
                     pressable.Label ?? TextWithin(node), null, pressable.Disabled, check,
-                    pressable.Expanded));
+                    pressable.Expanded,
+                    pressable.Role == PressableRole.Destination && pressable.Selected == true));
                 return;
             }
 
             case Link link:
                 nodes.Add(new(SemanticRole.Link, node.Path ?? "", node.Bounds,
-                    link.Label ?? TextWithin(node), null, false));
+                    link.Label ?? TextWithin(node), null, false, Current: link.Current));
                 return;
 
             case TextEntry entry:
