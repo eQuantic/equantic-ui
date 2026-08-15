@@ -574,6 +574,11 @@ public static class UIExtensions
         foreach (var tag in shell.DefaultMetadata.Tags) metadata.AddOrUpdate(tag);
         var seo = new SeoBuilder(metadata);
 
+        // The translation group, BEFORE the page speaks: an app-wide policy is a default, and a
+        // page with something better to say (a slug that is not a translation of this one) writes
+        // its own Alternate and wins by key.
+        AddAlternateLinks(context, options, seo);
+
         // Attempt SSR if page name is provided and SSR is enabled
         var ssrContent = "<div class=\"loading\">Loading...</div>";
         var ssrEnabled = false;
@@ -784,6 +789,55 @@ public static class UIExtensions
         context.Response.ContentType = "text/html";
         await context.Response.WriteAsync(html);
     }
+    /// <summary>
+    /// The page's <c>rel="alternate" hreflang</c> set, from the app's URL policy and the languages
+    /// it advertises.
+    /// <para>
+    /// Three rules the standard imposes, all of them enforced here rather than left to the app:
+    /// the set includes the page ITSELF (a group that omits the current page is discarded whole),
+    /// every URL is ABSOLUTE (a relative hreflang is dropped silently), and <c>x-default</c> names
+    /// the default culture's URL, which is where a visitor whose language matched nothing lands.
+    /// </para>
+    /// <para>
+    /// Nothing is emitted when the app declared no policy, or when it has a single culture: a
+    /// translation group of one says the page exists in no other language, which is a claim, not
+    /// an absence.
+    /// </para>
+    /// </summary>
+    private static void AddAlternateLinks(HttpContext context, UIOptions options, SeoBuilder seo)
+    {
+        if (options.AlternateUrl is not { } policy) return;
+
+        var localization = context.RequestServices
+            .GetService<Microsoft.Extensions.Options.IOptions<RequestLocalizationOptions>>()?.Value;
+        // The app's own list first, the container's second: `app.UseRequestLocalization(o => …)`
+        // builds its options INLINE and registers nothing, so the container answers with the
+        // invariant default — a single culture, and a head that comes out empty without saying why.
+        var cultures = (options.AlternateCultures
+                ?? localization?.SupportedUICultures?.Select(culture => culture.Name).ToList()
+                ?? [])
+            .Where(name => name.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (cultures.Count < 2) return;
+
+        foreach (var culture in cultures)
+        {
+            if (policy(new AlternateRequest(culture, context.Request)) is not { Length: > 0 } url) continue;
+            seo.Alternate(culture, AlternateUrls.Absolute(context.Request, url));
+        }
+
+        // x-default follows the app's OWN default when the middleware shared one — the same question
+        // it already answered for a request that matched nothing — and otherwise the FIRST language
+        // the app named, because the order it writes them in is the order it means them.
+        var fallback = localization?.DefaultRequestCulture.UICulture.Name is { Length: > 0 } named
+            && cultures.Contains(named, StringComparer.OrdinalIgnoreCase)
+                ? named
+                : cultures[0];
+        if (policy(new AlternateRequest(fallback, context.Request)) is { Length: > 0 } defaultUrl)
+            seo.AlternateDefault(AlternateUrls.Absolute(context.Request, defaultUrl));
+    }
+
 }
 
 /// <summary>
@@ -820,6 +874,7 @@ public static class ThemeCookie
             _ => declared,
         };
 }
+
 
 public class UIOptions
 {
@@ -913,6 +968,51 @@ public class UIOptions
         ThemeCookie = null;
         return this;
     }
+
+    /// <summary>
+    /// How this page is reached in each of the app's other languages. Set it and every rendered
+    /// page carries its own <c>rel="alternate" hreflang</c> set — one link per supported culture,
+    /// the page ITSELF among them, plus <c>x-default</c> — instead of each page spelling the group
+    /// out by hand and drifting the day a language is added.
+    /// <para>
+    /// The cultures come from the app's own <c>RequestLocalization</c>, because that is where a
+    /// .NET app already declares them; the SDK ships no second list to keep in step. An app that
+    /// never wired localization has one language, and one language has no alternates.
+    /// </para>
+    /// <para>
+    /// The delegate answers a URL, absolute or rooted, or NULL when the page has no version in
+    /// that language — a group that promises a translation which 404s is worse than a smaller
+    /// group. <see cref="AlternateUrls"/> has the two common shapes ready.
+    /// </para>
+    /// <para>
+    /// NAME THE LANGUAGES unless the app shares its localization options through DI. The middleware
+    /// overload every sample uses — <c>app.UseRequestLocalization(o => …)</c> — builds its options
+    /// INLINE and registers nothing, so asking the container answers with the invariant default and
+    /// the head comes out empty. An app that calls
+    /// <c>services.Configure&lt;RequestLocalizationOptions&gt;(…)</c> and then
+    /// <c>app.UseRequestLocalization()</c> can leave this out and keep one list.
+    /// </para>
+    /// <example>
+    /// <code>
+    /// options.UseAlternateLinks(AlternateUrls.PathPrefix(), "en", "pt-BR", "es");
+    /// options.UseAlternateLinks(r => r.Culture == "pt-BR" ? $"/pt{r.Request.Path}" : r.Request.Path);
+    /// </code>
+    /// </example>
+    /// </summary>
+    public UIOptions UseAlternateLinks(Func<AlternateRequest, string?> url, params string[] cultures)
+    {
+        AlternateUrl = url;
+        AlternateCultures = cultures.Length > 0 ? cultures : null;
+        return this;
+    }
+
+    /// <summary>The alternate-URL policy, or null when the app never set one. See
+    /// <see cref="UseAlternateLinks"/>.</summary>
+    public Func<AlternateRequest, string?>? AlternateUrl { get; private set; }
+
+    /// <summary>The languages the group advertises, when the app named them here. Null means
+    /// "ask the app's RequestLocalization" — see <see cref="UseAlternateLinks"/>.</summary>
+    public IReadOnlyList<string>? AlternateCultures { get; private set; }
 
     /// <summary>
     /// Pin the app to one light/dark mode instead of following the operating system.

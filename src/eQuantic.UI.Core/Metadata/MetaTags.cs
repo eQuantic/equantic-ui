@@ -40,18 +40,37 @@ public class LinkTag : MetaTag
     public string Href { get; }
     public string? Type { get; }
 
-    public override string Key => $"link:{Rel}";
+    /// <summary>
+    /// The language this link points AT — <c>hreflang</c>, the attribute that turns a set of
+    /// <c>rel="alternate"</c> links into a translation group a search engine can read. Null for
+    /// every other kind of link, which is most of them.
+    /// </summary>
+    public string? Hreflang { get; }
 
-    public LinkTag(string rel, string href, string? type = null)
+    /// <summary>
+    /// What makes this tag the same tag. A page has ONE canonical, so <c>rel</c> alone identifies
+    /// it; it has one alternate PER LANGUAGE, so an alternate is identified by both. Keying every
+    /// link by rel alone is what collapsed a translation group into a single link, which is the
+    /// one shape of this feature that is worse than not having it: a group of one says the page
+    /// exists in no other language.
+    /// </summary>
+    public override string Key => Hreflang is null ? $"link:{Rel}" : $"link:{Rel}:{Hreflang}";
+
+    public LinkTag(string rel, string href, string? type = null, string? hreflang = null)
     {
         Rel = rel;
         Href = href;
         Type = type;
+        Hreflang = hreflang;
     }
 
-    public override string Render() 
+    public override string Render()
     {
         var typeAttr = string.IsNullOrEmpty(Type) ? "" : $" type=\"{HttpUtility.HtmlAttributeEncode(Type)}\"";
-        return $"<link rel=\"{HttpUtility.HtmlAttributeEncode(Rel)}\" href=\"{HttpUtility.HtmlAttributeEncode(Href)}\"{typeAttr}>";
+        var langAttr = string.IsNullOrEmpty(Hreflang)
+            ? ""
+            : $" hreflang=\"{HttpUtility.HtmlAttributeEncode(Hreflang)}\"";
+        return $"<link rel=\"{HttpUtility.HtmlAttributeEncode(Rel)}\"{langAttr} "
+            + $"href=\"{HttpUtility.HtmlAttributeEncode(Href)}\"{typeAttr}>";
     }
 }

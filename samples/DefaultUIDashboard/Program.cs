@@ -17,6 +17,11 @@ builder.Services.AddUI(options =>
            // wired to the router, and IAnalytics armed for every page. One container per APP —
            // per-route variation is what the container's own triggers are for.
            .UseGtm("GTM-EQDEMO1")
+           // The translation group in every page's head. This sample negotiates the culture from
+           // the query and the cookie (below), so the alternates carry it the same way — a site
+           // serving each language on its own path says PathPrefix() instead, and one whose
+           // translations are separate pages answers with its own lambda.
+           .UseAlternateLinks(AlternateUrls.QueryString(), "en", "pt-BR", "es")
            .ConfigureHtmlShell(shell =>
            {
                shell.SetTitle("eQuantic Console")
