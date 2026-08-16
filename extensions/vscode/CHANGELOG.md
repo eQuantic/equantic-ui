@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **State survives a recompile.** Click a counter to 7, edit the file, and the preview repaints with
+  the new code and the count still 7 — the page's own fields are carried through the same door the
+  SSR handoff uses, and a renamed page still starts fresh.
 - **Native (Photon) projects preview too.** The design host compiles them against the reference list
   the native SDK now writes, and the extension bundles the browser runtime they don't carry. The
   toolbar says what it is looking at — *native project · web realizer* — and opens in the phone shell,

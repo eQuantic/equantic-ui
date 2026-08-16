@@ -574,6 +574,30 @@ default, not a cage: once a hand touches the selector, the project stops having 
 Proof, end to end: the design host initialized against WalletMobile's new reference list (205 refs,
 14 files) and compiled the real 686-line imperative `WalletApp` to 55 KB of JavaScript, zero marks.
 
+### Phase 17 — state survives the recompile ✅ done
+
+Every recompile remounted fresh, so a counter clicked to 7 went back to 0 on the next keystroke — the
+single most irritating thing about actually using the preview. The fix rides the framework's own
+mechanic: capture the page's fields, remount, and hand them back through `window.__INITIAL_STATE__`,
+the same door the SSR handoff and the framework's hot reload already use. Guarded by class name the
+way the boot guards by URL, so a renamed page starts fresh instead of inheriting a stranger's fields.
+
+The proof falsified the first TWO implementations before passing, which is why it exists:
+
+- Copying the boot's capture verbatim (`_state` bag only) carried **nothing** — a write-once page
+  keeps no `_state` bag; its C# fields compile to plain instance fields. The framework's own hot
+  reload shares this gap.
+- Probing `runtime.StatefulComponent` for "framework keys" probed the WRONG class — the compiled page
+  extends the *shared* base — and let `_lifecycleMounted: true` through, which silences a fresh
+  instance's `OnMount`.
+
+The capture that ships probes **the instance's own prototype chain**: a sacrificial instance of the
+page's direct base, constructed AND mounted (half the framework's keys only appear at mount), says
+which keys are the framework's; everything else on the instance is the author's. Proven in a real
+Chromium through the exact blob-import path the webview uses: click to 2 → remount with carry → still
+2, and the capture is exactly `{"_count":2}`; remount without carry → 0, so the assertion cannot pass
+on persistence the component had on its own.
+
 ---
 
 ## The seam, tested

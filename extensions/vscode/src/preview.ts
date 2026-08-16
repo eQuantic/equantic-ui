@@ -1129,6 +1129,79 @@ export class PreviewPanel {
   /** The last frame that mounted. A format change re-mounts it: density is read while a component
    * BUILDS, so it is baked into the tree and a stylesheet cannot change it afterwards. */
   let lastFrame = null;
+  /** The instance on screen — kept so its state can be carried into the next mount. */
+  let mountedInstance = null;
+  let mountedClass = '';
+
+  /**
+   * The instance fields the framework did not put there, probed rather than listed.
+   *
+   * A write-once page keeps no _state bag: its C# fields compile to plain instance fields, so the
+   * only way to tell the author's _count from the base class's _renderManager is to ask the base
+   * what IT contributes — a sacrificial instance of each exported base, keys unioned. A hand-written
+   * list of internals would be stale on the first field the runtime grows.
+   */
+  function probeFrameworkKeys() {
+    if (!mountedInstance || !mountedInstance.constructor) return null;
+    const Base = Object.getPrototypeOf(mountedInstance.constructor);
+    if (typeof Base !== 'function' || !Base.prototype) return null;
+
+    // The keys the page's OWN base contributes, probed off a sacrificial instance — constructed AND
+    // mounted, because half of them (_lifecycleMounted, the invalidation hook) only appear at mount,
+    // and carrying _lifecycleMounted=true into a fresh instance silences its OnMount. The base is
+    // taken from the instance's prototype chain rather than from a runtime export, because guessing
+    // the export probes a DIFFERENT class and lets every one of its keys through.
+    const keys = new Set(['_state']);
+    try {
+      const probe = new (class extends Base { build() { return null; } getVirtualNode() { return null; } })();
+      for (const key of Object.keys(probe)) keys.add(key);
+      try {
+        probe.mount(document.createElement('div'));
+      } catch (ignored) { /* a null build may refuse to mount; construction keys still count */ }
+      for (const key of Object.keys(probe)) keys.add(key);
+    } catch (ignored) {
+      return null;
+    }
+    return keys;
+  }
+
+  /**
+   * What the page on screen holds: the author's own instance fields, plus the _state bag when there
+   * is one (Core stateful pages). Functions never travel — a captured closure would still see the
+   * OLD module.
+   */
+  function captureState() {
+    try {
+      if (!mountedInstance) return null;
+      const frameworkKeys = probeFrameworkKeys();
+      if (!frameworkKeys) return null;
+      const data = {};
+      let any = false;
+
+      for (const key of Object.keys(mountedInstance)) {
+        const value = mountedInstance[key];
+        if (frameworkKeys.has(key) || typeof value === 'function') continue;
+        data[key] = value;
+        any = true;
+      }
+
+      const state = mountedInstance._state;
+      if (state) {
+        for (const key of Object.keys(state)) {
+          const value = state[key];
+          if (typeof value === 'function') continue;
+          if (key === '_component' || key === '_context' || key === '_needsRender') continue;
+          data[key] = value;
+          any = true;
+        }
+      }
+
+      return any ? data : null;
+    } catch (ignored) {
+      // Carrying nothing is a fresh mount, which is what every recompile was until now.
+      return null;
+    }
+  }
 
   async function render(payload) {
     notice.classList.remove('visible');
@@ -1160,8 +1233,20 @@ export class PreviewPanel {
         report('Nothing to mount:', 'the compiled module has no export named ' + payload.className);
         return;
       }
+      // What the outgoing page held, re-entering through the SAME door the SSR handoff uses
+      // (__INITIAL_STATE__ -> adoptServerState / the stateful page's own merge). Guarded by class
+      // name the way the boot guards by URL: a renamed page must start fresh, not inherit fields
+      // from a stranger that happens to spell them the same.
+      const carried = mountedClass === payload.className ? captureState() : null;
+      if (carried) window.__INITIAL_STATE__ = carried;
+
       app.replaceChildren();
-      new Component().mount(app);
+      mountedInstance = new Component();
+      mountedClass = payload.className;
+      mountedInstance.mount(app);
+      // Consumed once, whoever consumed it: a payload left behind would leak into the NEXT page
+      // someone previews in this panel.
+      delete window.__INITIAL_STATE__;
       // After mount: the stamped elements only exist once the component has rendered, and the gates
       // only exist once something has asked for them.
       describeTree();
