@@ -191,7 +191,10 @@ export class PreviewPanel {
     }
 
     this.lastGood = result;
-    this.post({ type: 'render', js: result.js, className: result.className, theme: this.theme, runtime: this.runtimeUri });
+    this.post({
+      type: 'render', js: result.js, className: result.className, theme: this.theme,
+      runtime: this.runtimeUri, target: this.layout.target,
+    });
     this.log(`compiled ${result.className} in ${result.elapsedMs} ms (round trip ${Date.now() - started} ms, ${result.js.length} B)`);
   }
 
@@ -1130,6 +1133,7 @@ export class PreviewPanel {
   async function render(payload) {
     notice.classList.remove('visible');
     lastFrame = payload;
+    adoptTarget(payload.target);
 
     // The bare specifier has no import map behind it here, so it is pointed straight at the
     // runtime the project's own build produced.
@@ -1301,9 +1305,31 @@ export class PreviewPanel {
   ];
 
   let formatId = 'fill';
+  /** What the project builds FOR — arrives with the first frame, decides the starting format. */
+  let projectTarget = 'unknown';
+  /** Once someone has chosen a format, the project's default stops overriding them. */
+  let formatChosen = false;
 
   function format() {
     return FORMATS.find((entry) => entry.id === formatId) || FORMATS[0];
+  }
+
+  /**
+   * A NATIVE project opens in the phone shell, because that is the shape it ships in — showing it
+   * stretched across a desktop panel first would be the preview leading with a layout the app never
+   * has. The choice is a default, not a cage: the selector still offers everything, and once a hand
+   * has touched it the project stops having an opinion.
+   */
+  function adoptTarget(target) {
+    if (target) projectTarget = target;
+    if (projectTarget === 'native' && !formatChosen && formatId === 'fill') {
+      formatId = 'phone';
+      formatSelect.value = formatId;
+      applyFormat();
+    } else {
+      note.textContent = noteText();
+      note.title = noteTitle();
+    }
   }
 
   /** What the framework would call this width — its own vocabulary, not a device name. */
@@ -1359,15 +1385,8 @@ export class PreviewPanel {
     app.style.width = chosen.width > 0 ? chosen.width + 'px' : '';
     app.style.height = chosen.height > 0 ? chosen.height + 'px' : '';
 
-    const at = sizeClass(chosen.width);
-    note.textContent = at
-      ? at + ' width \u00B7 ' + chosen.density + ' density \u00B7 web realizer'
-      : '';
-    note.title = at
-      ? 'The screen is rendered by the WEB realizer at this size, with the size class and density a '
-        + 'target of this shape would have. It is the same component tree the native target builds, '
-        + 'not a frame from the native engine.'
-      : '';
+    note.textContent = noteText();
+    note.title = noteTitle();
 
     applyWidth();
     // Density is read while a component BUILDS, so it is baked into the tree: a stylesheet cannot
@@ -1375,7 +1394,25 @@ export class PreviewPanel {
     if (lastFrame) void render(lastFrame);
   }
 
-  formatSelect.addEventListener('change', () => { formatId = formatSelect.value; applyFormat(); });
+  function noteText() {
+    const at = sizeClass(format().width);
+    const project = projectTarget === 'native' ? 'native project' : projectTarget === 'web' ? 'web project' : '';
+    const sized = at ? at + ' width \u00B7 ' + format().density + ' density \u00B7 web realizer' : '';
+    return project && sized ? project + ' \u00B7 ' + sized : project || sized;
+  }
+
+  function noteTitle() {
+    if (projectTarget !== 'native') return noteText() ? 'Rendered by the web realizer.' : '';
+    return 'This project ships through the native (Photon) engine. The preview renders the SAME '
+      + 'abstract component tree through the web realizer, at the size class and density a target of '
+      + 'this shape would have \u2014 it is not a frame from the native engine.';
+  }
+
+  formatSelect.addEventListener('change', () => {
+    formatChosen = true;
+    formatId = formatSelect.value;
+    applyFormat();
+  });
 
   for (const entry of FORMATS) {
     const option = document.createElement('option');

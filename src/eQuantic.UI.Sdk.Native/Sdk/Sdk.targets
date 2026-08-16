@@ -132,6 +132,21 @@
         <_EqCapabilityPlist>$(_EqIconDir)/Capabilities.plist</_EqCapabilityPlist>
     </PropertyGroup>
 
+    <!-- The MSBuild-resolved reference list, for TOOLING rather than for eqc: the native SDK never
+         transpiles, but the VS Code design host builds a Roslyn compilation of the project and needs
+         the exact assemblies csc compiles against — without them named arguments are emitted in
+         syntactic order, silently. Same file, same rules as the web SDK's: the item comes from
+         FindReferenceAssembliesForReferences (declared as a dependency, since standalone invocations
+         see it empty otherwise), and an empty set is never worth writing over a good one. -->
+    <Target Name="EQuanticDesignRefs" AfterTargets="Compile"
+        DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences">
+        <MakeDir Directories="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)" />
+        <WriteLinesToFile File="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)equantic.refs.txt"
+            Lines="@(ReferencePathWithRefAssemblies)"
+            Overwrite="true" WriteOnlyWhenDifferent="true"
+            Condition="'@(ReferencePathWithRefAssemblies)' != ''" />
+    </Target>
+
     <Target Name="EQuanticCapabilityManifest" AfterTargets="Compile"
             Condition="'$(_EqPlatform)' == 'ios' AND Exists('$(_EqIconToolDir)eqicon.dll')">
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; capabilities --assembly &quot;@(IntermediateAssembly)&quot; --plist &quot;$(_EqCapabilityPlist)&quot;"

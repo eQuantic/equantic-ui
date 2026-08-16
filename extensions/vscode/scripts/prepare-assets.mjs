@@ -10,7 +10,7 @@
  * The Marketplace requires PNG, at least 128x128, and prohibits SVG. That rule is checked HERE, where
  * it can still stop the build, rather than by an upload that fails after a tag has been pushed.
  */
-import { copyFileSync, existsSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -42,4 +42,19 @@ if (width < 128 || height < 128) {
 }
 
 copyFileSync(source, target);
-console.log(`prepare-assets: icon ok (${width}x${height}, ${bytes.length} bytes)`);
+
+// The browser runtime, bundled as a FALLBACK. A web project carries its own in wwwroot/_equantic —
+// that one always wins, because it matches the project's SDK version exactly. A NATIVE project has no
+// wwwroot at all: its components are the same write-once C#, but nothing in its build produces the
+// web runtime the preview mounts them with. Without this copy, a native project's preview dies on
+// "runtime.js is missing" — an instruction no amount of building can satisfy.
+const runtimeSource = resolve(extension, '../../src/eQuantic.UI.Server/wwwroot/runtime.js');
+const runtimeDir = join(extension, 'runtime');
+if (!existsSync(runtimeSource)) {
+  console.error(`prepare-assets: ${runtimeSource} is not there — build src/eQuantic.UI.Server once.`);
+  process.exit(1);
+}
+mkdirSync(runtimeDir, { recursive: true });
+copyFileSync(runtimeSource, join(runtimeDir, 'runtime.js'));
+
+console.log(`prepare-assets: icon ok (${width}x${height}, ${bytes.length} bytes); runtime bundled`);

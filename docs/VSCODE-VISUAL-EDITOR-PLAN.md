@@ -546,6 +546,34 @@ It is the web realizer showing the same component tree at that size, with the si
 that shape of target would have — which, given the SDK's promise, is the same tree the native target
 builds. The bar says "web realizer" for exactly that reason.
 
+### Phase 16 — a native project previews too ✅ done
+
+Edgar asked for the preview to recognise whether a project is web or native. Detection alone would
+have decorated a lie: a NATIVE project could not preview at all, and its refusal — "build the project
+once" — was an instruction no amount of building could satisfy, because the native SDK never wrote
+`equantic.refs.txt` and a native project has no `wwwroot/runtime.js`.
+
+Three small pieces made it true instead:
+
+- **The native SDK writes the reference list** (`EQuanticDesignRefs`, for tooling — it still never
+  runs eqc). Same rules the web SDK learned the hard way: the item comes from
+  `FindReferenceAssembliesForReferences`, declared as a dependency, and an empty set is never written
+  over a good one.
+- **The extension bundles the browser runtime as a fallback.** A web project's own copy always wins
+  (it matches the project's SDK version); the bundled one exists for projects that legitimately have
+  none. Dev mode prefers the repository's build, same as the design host.
+- **`detectTarget` reads the .csproj text** — the SDK attribute, the `<Sdk>` element, or the local
+  `Sdk.props` import. Native is tested FIRST, because `eQuantic.UI.Sdk.Native` contains
+  `eQuantic.UI.Sdk` — the same prefix trap that once put the extension's release tag through the
+  framework's pipeline.
+
+The toolbar says what it is looking at — *native project · compact width · comfortable density · web
+realizer* — and a native project opens in the phone shell, because that is the shape it ships in. A
+default, not a cage: once a hand touches the selector, the project stops having an opinion.
+
+Proof, end to end: the design host initialized against WalletMobile's new reference list (205 refs,
+14 files) and compiled the real 686-line imperative `WalletApp` to 55 KB of JavaScript, zero marks.
+
 ---
 
 ## The seam, tested

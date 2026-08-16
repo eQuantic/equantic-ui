@@ -62,6 +62,9 @@ const required = [
   // Without it the listing shows a grey placeholder, which is a thing nobody notices until it is
   // published.
   'extension/icon.png',
+  // The fallback browser runtime for NATIVE projects, which have no wwwroot of their own. Without it
+  // a native project's preview fails on an instruction no amount of building can satisfy.
+  'extension/runtime/runtime.js',
 ];
 
 const missing = required.filter((name) => !names.includes(name));

@@ -73,6 +73,20 @@ function resolveSidecar(context: vscode.ExtensionContext): string {
   return fs.existsSync(bundled) ? bundled : fromRepo;
 }
 
+/**
+ * The fallback browser runtime, for projects with no wwwroot of their own (native ones). Same rule as
+ * the design host: in development the repository's build wins, so a packaged copy from yesterday
+ * cannot quietly answer for today's runtime source.
+ */
+function bundledRuntime(context: vscode.ExtensionContext): string {
+  const fromRepo = path.resolve(path.join(
+    context.extensionPath, '..', '..', 'src', 'eQuantic.UI.Server', 'wwwroot', 'runtime.js'));
+  if (context.extensionMode === vscode.ExtensionMode.Development && fs.existsSync(fromRepo)) return fromRepo;
+
+  const bundled = path.join(context.extensionPath, 'runtime', 'runtime.js');
+  return fs.existsSync(bundled) ? bundled : fromRepo;
+}
+
 async function hostFor(context: vscode.ExtensionContext, layout: ProjectLayout): Promise<Sidecar> {
   const existing = hosts.get(layout.dir);
   if (existing) return existing;
@@ -108,7 +122,10 @@ async function openPreview(context: vscode.ExtensionContext): Promise<void> {
   }
 
   try {
-    const layout = resolveLayout(editor.document.uri.fsPath, vscode.workspace.getConfiguration('equanticUI').get<string>('runtimePath', ''));
+    const layout = resolveLayout(
+      editor.document.uri.fsPath,
+      vscode.workspace.getConfiguration('equanticUI').get<string>('runtimePath', ''),
+      bundledRuntime(context));
     const sidecar = await hostFor(context, layout);
 
     const panel = new PreviewPanel(
