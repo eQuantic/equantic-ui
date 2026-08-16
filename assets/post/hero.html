@@ -1,0 +1,204 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>eQuantic.UI hero</title>
+<style>
+  /* Colors are the PhotonTheme dark tokens, verbatim from
+     src/eQuantic.UI.Primitives/Theme/PhotonTheme.cs */
+  :root {
+    --bg:        #0C0F13;
+    --surface:   #14181E;
+    --subtle:    #1C232B;
+    --border:    #2A323D;
+    --border-2:  #3D4754;
+    --text:      #F2F4F7;
+    --text-2:    #AEB7C2;
+    --muted:     #8B95A3;
+    --blue:      #5CA2E8;   /* Primary.Base dark, brand #0050A0 */
+    --blue-deep: #0050A0;
+    --green:     #85C05E;   /* brand #80B85C */
+    --amber:     #E5A55C;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1600px; height: 900px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Liberation Sans", "DejaVu Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 60px 42px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* a soft brand glow, kept very low so it reads as depth and not as decoration */
+  body::before {
+    content: "";
+    position: absolute;
+    width: 900px; height: 900px;
+    left: -280px; top: -420px;
+    background: radial-gradient(circle, rgba(0,80,160,.30), transparent 62%);
+    pointer-events: none;
+  }
+  body::after {
+    content: "";
+    position: absolute;
+    width: 760px; height: 760px;
+    right: -300px; bottom: -400px;
+    background: radial-gradient(circle, rgba(128,184,92,.14), transparent 62%);
+    pointer-events: none;
+  }
+
+  header { display: flex; align-items: center; justify-content: space-between; z-index: 1; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand img { width: 40px; height: 40px; }
+  .brand b { font-size: 25px; font-weight: 700; letter-spacing: -.2px; }
+  .brand b span { color: var(--blue); font-weight: 400; }
+  .tag {
+    font-size: 15px; color: var(--muted); letter-spacing: .3px;
+    border: 1px solid var(--border); border-radius: 999px; padding: 7px 16px;
+  }
+
+  h1 {
+    z-index: 1;
+    margin-top: 34px;
+    font-size: 54px; line-height: 1.1; font-weight: 700; letter-spacing: -1.4px;
+  }
+  h1 .dim { color: var(--text-2); font-weight: 400; }
+  h1 .accent { color: var(--blue); }
+
+  main { z-index: 1; display: flex; gap: 40px; margin-top: 32px; height: 486px; flex: none; align-items: stretch; }
+
+  /* ---- code panel ---- */
+  .code {
+    width: 838px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .code .bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,.02);
+  }
+  .code .bar i {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--border-2); display: block;
+  }
+  .code .bar span { margin-left: 8px; font-size: 15px; color: var(--muted); }
+  .code pre {
+    padding: 24px 30px;
+    font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
+    font-size: 19px; line-height: 1.6;
+    white-space: pre; flex: 1;
+  }
+  .k  { color: var(--blue); }            /* keyword */
+  .t  { color: var(--green); }           /* type */
+  .s  { color: var(--amber); }           /* string */
+  .a  { color: var(--text-2); }          /* attribute */
+  .p  { color: var(--muted); }           /* punctuation, dim */
+  .m  { color: var(--text); }            /* member */
+
+  /* ---- targets ---- */
+  .targets { flex: 1; display: flex; flex-direction: column; gap: 22px; position: relative; }
+  .card {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 26px 28px;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .card .chip {
+    align-self: flex-start;
+    font-size: 13.5px; font-weight: 700; letter-spacing: 1.4px;
+    padding: 6px 13px; border-radius: 7px;
+  }
+  .card.web   .chip { background: rgba(92,162,232,.15);  color: var(--blue);  }
+  .card.nat   .chip { background: rgba(133,192,94,.15);  color: var(--green); }
+  .card h2 { font-size: 27px; font-weight: 700; margin-top: 16px; letter-spacing: -.4px; }
+  .card ul { list-style: none; margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
+  .card li { font-size: 17.5px; color: var(--text-2); line-height: 1.35; padding-left: 20px; position: relative; }
+  .card li::before {
+    content: ""; position: absolute; left: 2px; top: 9px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--border-2);
+  }
+  .card .no { color: var(--muted); }
+
+  /* the split arrow drawn between the two columns */
+  .split { position: absolute; left: -40px; top: 50%; transform: translateY(-50%); height: 100%; }
+
+  footer {
+    z-index: 1; margin-top: auto;
+    display: flex; align-items: baseline; justify-content: space-between;
+  }
+  footer .claim { font-size: 25px; letter-spacing: -.3px; }
+  footer .claim b { font-weight: 700; }
+  footer .claim span { color: var(--muted); }
+  footer .meta { font-size: 16px; color: var(--muted); letter-spacing: .3px; }
+</style>
+
+<header>
+  <div class="brand">
+    <img src="data:image/png;base64,LOGO_B64" alt="">
+    <b>eQuantic<span>.UI</span></b>
+  </div>
+  <div class="tag">0.2 preview · MIT · .NET 10</div>
+</header>
+
+<h1>One component class.<br><span class="dim">A web page </span><span class="accent">and</span><span class="dim"> a native screen.</span></h1>
+
+<main>
+  <div class="code">
+    <div class="bar"><i></i><i></i><i></i><span>HomePage.cs</span></div>
+<pre><span class="a">[Page(<span class="s">"/"</span>)]</span>
+<span class="k">public sealed class</span> <span class="t">HomePage</span> : <span class="t">StatefulComponent</span>
+<span class="p">{</span>
+    <span class="k">private int</span> _count<span class="p">;</span>
+
+    <span class="k">public override</span> <span class="t">VisualNode</span> <span class="m">Build</span>(<span class="t">ComponentContext</span> context) =&gt;
+        <span class="m">Column</span>(gap: <span class="t">Space</span>.S4, children: [
+            <span class="m">Text</span>(<span class="s">$"Count: {_count}"</span>, <span class="t">TypeRole</span>.Display),
+            <span class="m">Button</span>(<span class="s">"Increment"</span>, onPressed: () =&gt;
+                <span class="m">SetState</span>(() =&gt; _count++)),
+        ]);
+<span class="p">}</span></pre>
+  </div>
+
+  <div class="targets">
+    <svg class="split" width="40" viewBox="0 0 40 480" preserveAspectRatio="none" fill="none">
+      <path d="M0 240 H18 M18 240 V120 H40 M18 240 V360 H40" stroke="#3D4754" stroke-width="3" vector-effect="non-scaling-stroke"/>
+      
+      
+    </svg>
+
+    <div class="card web">
+      <div class="chip">WEB</div>
+      <h2>A server-rendered page</h2>
+      <ul>
+        <li>Hydrates, then routes on the client</li>
+        <li>Split per route, atomic CSS generated for you</li>
+        <li class="no">A ~110 KB runtime, not a megabyte one. No WASM boot.</li>
+      </ul>
+    </div>
+
+    <div class="card nat">
+      <div class="chip">NATIVE</div>
+      <h2>macOS · iOS · Android</h2>
+      <ul>
+        <li>Drawn on the GPU by our own engine: Metal, Vulkan</li>
+        <li>Camera, location, biometrics and secure storage injected</li>
+        <li class="no">No WebView. No Skia.</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="claim"><b>C# in.</b> <span>No JavaScript, no CSS, no Node toolchain.</span></div>
+  <div class="meta">ui.equantic.tech</div>
+</footer>

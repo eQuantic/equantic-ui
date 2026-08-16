@@ -23,8 +23,14 @@ any more and the only people who would see the plug are the mods.
 Three rules for all of them:
 
 1. **Say it's yours in the first line.** Every one of these subs punishes hiding it more than the plug.
-2. **Attach a GIF**: the same component in a browser tab and in a native window, edited once, hot
-   reloading in both. That is the whole thesis in one image, and it is what makes a post travel.
+2. **Attach an image.** `assets/post/hero.png` is ready to use: the real code, the two targets, in
+   the framework's own dark tokens (regenerate with `assets/post/render.sh` after editing
+   `hero.html`). It is a designed graphic and deliberately not dressed up as a screen capture,
+   because a post whose whole argument is "check these claims yourself" cannot afford a mocked-up
+   screenshot.
+   **A GIF of the real thing beats it**, and only you can record one: the same component in a
+   browser tab and in a native window, edited once, hot reloading in both. That is the whole thesis
+   in one image, and it is what makes a post travel.
 3. **Stay for three hours.** Reddit ranks on early engagement, and section 4 is there so you can
    answer fast.
 
