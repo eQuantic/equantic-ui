@@ -93,6 +93,10 @@ public sealed class Chip : StatelessComponent
                 Label = Label,
                 // Spec B8 pressed: fill shift (SurfaceSubtle ↔ Pressed-subtle).
                 PressedBackground = Selected ? primary.Pressed.WithOpacity(0.24f) : theme.SurfaceSubtle,
+                // B8: a filter chip is a TOGGLE button — "Income, filter, selected". A filter chip
+                // always carries selection (that is what makes it a filter), so false is the honest
+                // answer for an unselected one rather than silence.
+                Selected = Selected,
             }
             : box;
     }

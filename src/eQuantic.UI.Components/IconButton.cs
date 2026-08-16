@@ -113,6 +113,12 @@ public sealed class IconButton : StatelessComponent
             Disabled = Disabled,
             Label = Label,
             PressedBackground = Disabled ? null : pressedFill,
+            // A TOGGLE says so (handoff A13: "role toggle button, announces selected"). The glyph
+            // swap and the Primary tint are the whole story for anyone who can see them, and nothing
+            // at all for anyone who cannot — `Selected` reached the paint and stopped there.
+            // Null when the button does not toggle: "not pressed" on every plain IconButton in an
+            // app is noise, and it is a different claim from "toggles, currently off".
+            Selected = SelectedGlyph is null && !Selected ? null : Selected,
         };
     }
 }
