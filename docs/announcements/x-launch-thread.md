@@ -14,6 +14,12 @@ image decide everything, and nobody reads a paragraph they did not choose to ope
 
 - **Attach `assets/post/hero.png` to post 1.** On X the image is the hook, not the text. Alt text is
   written out in section 3 below; fill it in, both because it is right and because it is indexed.
+  The same file serves Reddit: it is 16:9, which is exactly what X shows for a landscape image, and
+  rendered down to a 600px feed width the headline, both card headings and the footer claim stay
+  readable (the code becomes texture, which is the right thing to lose first).
+  What does break it is a SQUARE crop: centred, "One component class" arrives as "nent class." and
+  the logo is gone. So never let a surface centre-crop it, and if one does, ask for a 1:1 or 4:5
+  variant with the content re-laid out rather than shipping the beheaded version.
 - **Keep post 1 free of links.** X ranks link posts lower, so the link goes in the last post of the
   thread, where the people who read that far are the ones who would click anyway.
 - **Write the whole thread before posting.** Posting the first one and typing the rest live means the
