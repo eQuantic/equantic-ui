@@ -18,7 +18,7 @@ any more and the only people who would see the plug are the mods.
 | 1 | **r/dotnet** | Post A. The exact audience: teams that already write C# and feel the Blazor/MAUI gap. |
 | 2 | **r/csharp** | Post A, same as is. |
 | 3 | **r/webdev** | Post B, on **Showoff Saturday** (self-promotion is restricted there; check the sidebar that week). |
-| 4 | **Show HN** / **r/programming** | Post A. "Compiles to JS, not WASM" carries on its own. |
+| 4 | **Show HN** / **r/programming** | Post A. The "no WASM, no Node, our own GPU engine" angle carries on its own. |
 
 Three rules for all of them:
 
@@ -34,10 +34,17 @@ Three rules for all of them:
 
 ### Title
 
-`I built a C# UI framework that compiles to JavaScript at build time (no WASM) and renders native on Metal/Vulkan (0.2 preview)`
+`A UI framework where you write C# and never touch JavaScript, CSS or a Node toolchain: one component class is a web page and a native GPU screen (0.2 preview)`
 
 Alternative, if you'd rather be judged on evidence than on description:
-`Our docs site is a C# app compiled to plain JavaScript. Here's the framework behind it`
+`Our docs site is a C# app with no JavaScript, no CSS and no npm in its repo. Here's the framework behind it`
+
+> **On naming the output.** The SDK exists to hide the JavaScript, so the pitch shouldn't hand it the
+> lead role: what you're selling is C# in, and a small ordinary page out. Say what the browser gets
+> (nothing to download, no WASM boot) instead of how it's produced. The mechanism isn't a secret and
+> the answer is in section 4 for the moment somebody asks, which they will within minutes. That order
+> matters: mentioning JavaScript only as something the developer never writes reinforces the promise,
+> while leading with it undermines it.
 
 ### Body
 
@@ -45,12 +52,16 @@ Alternative, if you'd rather be judged on evidence than on description:
 
 My project, flagging that up front.
 
-**eQuantic.UI**: you write components in C# and the build transpiles them to JavaScript. No WASM, no
-runtime to download. The same component classes render natively on macOS, iOS and Android through
-our own Metal/Vulkan engine (no WebView, no Skia).
+**eQuantic.UI**: you write components in C#, and that is the entire surface. No markup language, no
+CSS, no JavaScript, no `package.json`. The build produces a server-rendered web app, and the same
+component classes render natively on macOS, iOS and Android through our own Metal/Vulkan engine (no
+WebView, no Skia).
 
-The itch: Blazor keeps me in C# but ships megabytes, MAUI is a second codebase, and any JS framework
-means a second language plus a Node toolchain to maintain.
+What the browser gets is an ordinary page: nothing to download before it runs, no WASM boot, split
+per route. The only prerequisite on your machine is the .NET 10 SDK.
+
+The itch: Blazor keeps me in C# but ships megabytes to the browser, MAUI is a second codebase from
+the web one, and a JS framework means a second language plus a toolchain to maintain.
 
 ```csharp
 [Page("/", Title = "MyApp")]
@@ -75,13 +86,10 @@ Two things you can check instead of taking my word for it:
 - the playground runs the real compiler in your browser: https://ui.equantic.tech/playground
 - https://ui.equantic.tech is itself built with it, from the published NuGet packages
 
-The only prerequisite is the .NET 10 SDK. Bun ships inside the packages, so there is no Node, no npm
-and no bundler config in your repo.
-
 It's a 0.2 preview, MIT. No global state solution yet, no server push, and native means mobile plus
 macOS (no Windows or Linux shell). Happy to go into any of it below.
 
-One thing I'd like to know: which C# construct would you throw at the transpiler first to see if it
+One thing I'd like to know: which C# construct would you throw at the compiler first to see if it
 breaks?
 
 ---
@@ -96,9 +104,13 @@ conversation you want, and every answer is a conformance case you didn't have.
 Different room: this audience doesn't care about Blazor's payload, it cares what lands in the browser.
 Be explicit that it's for .NET teams, because trying to convert React developers is how these die.
 
+This is the one place to name the output plainly and early. Not as the pitch, but because a sub full
+of people who will open the network tab reads any vagueness about what ships as a dodge. Said in one
+disarming parenthesis it costs nothing and buys the room.
+
 ### Title
 
-`Showoff Saturday: a UI framework where you author components in C# and the build emits plain JavaScript (no WASM, no Node)`
+`Showoff Saturday: a framework where the whole app is C#, with no CSS and no npm in the repo, and what ships is an ordinary server-rendered page`
 
 ### Body
 
@@ -106,10 +118,10 @@ Be explicit that it's for .NET teams, because trying to convert React developers
 
 My project, flagging that up front.
 
-**eQuantic.UI** compiles C# components to JavaScript at build time. What the browser gets is ordinary
-JS: server-rendered HTML, a ~110 KB gzipped runtime, code split per route, hydrated on the client.
-No Node, npm or bundler config in the repo either, since the bundler (Bun) ships inside the NuGet
-package.
+**eQuantic.UI**: the entire app is C#. No CSS, no `package.json`, no bundler config in the repo. What
+ships is unremarkable, which is the point: server-rendered HTML, a ~110 KB gzipped runtime, split per
+route, hydrated on the client. (Yes, the build emits JavaScript. You just never write it, read it, or
+debug it: errors surface as C# stack traces.)
 
 The part that might interest you even if you never touch C#: **there is no CSS to author.**
 Components declare typed values (spacing, color tokens, type roles) and the compiler lowers each one
@@ -141,10 +153,11 @@ What's worth deciding early is where your business logic lives. Whatever you pic
 validation, pricing, permissions and the data model behind an API you own: that's the part you'd
 otherwise rewrite when the web version happens.
 
-(Aside, if your backend is .NET: I build eQuantic.UI, which compiles C# components to JS for the web
-and renders them on GPU for mobile from the same source. It's a 0.2 preview, so I won't suggest you
-bet a product on it… but if "one language, both targets" is what you're after, it's a real
-implementation of it: https://ui.equantic.tech/playground)
+(Aside, if your backend is .NET: I build eQuantic.UI, where one C# component class becomes both a web
+page and a GPU-rendered mobile screen, with camera, location, biometrics and secure storage as
+injected services. It's a 0.2 preview, so I won't suggest you bet a product on it… but if "one
+language, both targets" is what you're after, it's a real implementation of it:
+https://ui.equantic.tech/playground)
 
 ---
 
@@ -153,10 +166,16 @@ implementation of it: https://ui.equantic.tech/playground)
 This is where the detail goes. Don't paste verbatim: react to what the person actually said.
 
 **"So it's Blazor?"**
-No. Blazor WASM ships the .NET runtime to the browser and runs C# there. eQuantic compiles your C# to
-JavaScript at build time: no .NET in the browser, nothing to download beyond ordinary JS, no WASM
-startup. The trade is the inverse: Blazor runs the whole BCL, I run a defined subset enforced by
-build errors.
+No. Blazor WASM ships the .NET runtime to the browser and runs C# there. Here your components are
+compiled ahead of time into plain JS modules: no .NET in the browser, nothing to download before the
+page runs, no WASM startup. The trade is the inverse: Blazor runs the whole BCL, I run a defined
+subset enforced by build errors.
+
+**"So it does compile to JavaScript. Why isn't that the headline?"**
+Because it's the mechanism, not the deal. What you get is C# in and a small ordinary page out, and
+the emitted modules are a build artifact you don't open, the same way you don't read IL. It isn't
+hidden and I'll answer anything about it, including where the abstraction leaks. It just isn't what
+the framework is for.
 
 **"Why not Uno or Avalonia?"**
 Both are good and both take the opposite bet on the web: their web target is WASM and their authoring
