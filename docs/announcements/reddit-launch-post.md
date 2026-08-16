@@ -3,6 +3,10 @@
 Copy-paste ready. Everything below the horizontal rules is post copy; the surrounding notes are
 for the poster, not for publishing.
 
+Claims here are drawn from the repo and the wiki, and section 5 lists what to re-verify before
+posting. Rule of thumb: if a number isn't in the wiki with a `Since` mark or measurable from a
+build, don't put it in a post.
+
 ---
 
 ## 0. Where to post (read this first)
@@ -16,9 +20,9 @@ Recommended order:
 | # | Target | Why | Which draft |
 |---|--------|-----|-------------|
 | 1 | **r/dotnet** | The exact audience: people who already have C# teams and feel the Blazor/MAUI gap this framework was built around. Most likely to give real technical feedback. | Post A |
-| 2 | **r/csharp** | Same audience, more language-focused — lead with the transpiler and the conformance harness. | Post A (swap the opening paragraph for the transpiler angle) |
+| 2 | **r/csharp** | Same audience, more language-focused — lead with the transpiler and the conformance harness. | Post A (swap the opening for the transpiler angle) |
 | 3 | **r/webdev** | Big, but JS-first and skeptical of "C# for the web". Self-promotion is restricted here — check the current rules and post on **Showoff Saturday**. | Post B |
-| 4 | **Hacker News (Show HN)** / **r/programming** | Where the "compiles to JS, not WASM" and "own GPU engine, no Skia" angles carry on their own. | Post A, trimmed |
+| 4 | **Hacker News (Show HN)** / **r/programming** | Where "compiles to JS, not WASM" and "our own Metal/Vulkan engine, no Skia" carry on their own. | Post A, trimmed |
 
 Rules change; read the sidebar of each sub the day you post. Disclose that it is your project in the
 first line everywhere — every one of these communities punishes the omission far harder than the plug.
@@ -26,10 +30,11 @@ first line everywhere — every one of these communities punishes the omission f
 **Attach a visual.** The single highest-leverage thing in the whole post is a GIF of the *same* C#
 component running in a browser tab and in a native GPU window side by side, edited once and hot
 reloading in both. That image is the entire thesis, and it is what makes a post travel. A wall of
-text without it will underperform a mediocre post that has one.
+text without it will underperform a mediocre post that has one. Second best: the VS Code extension
+preview updating from an unsaved buffer as you type.
 
-**Be there for the first three hours.** Reddit ranks on early engagement, and section 4 below exists
-so you can answer the predictable comments fast and well.
+**Be there for the first three hours.** Reddit ranks on early engagement, and section 4 exists so
+you can answer the predictable comments fast and well.
 
 ---
 
@@ -37,12 +42,13 @@ so you can answer the predictable comments fast and well.
 
 ### Title options
 
-1. `I built a C# UI framework that compiles to JavaScript at build time (no WASM) and renders native through its own GPU engine — 0.2 preview` ← **recommended**
+1. `I built a C# UI framework that compiles to JavaScript at build time (no WASM) and renders native through its own Metal/Vulkan engine — 0.2 preview` ← **recommended**
 2. `eQuantic.UI: write components once in C#, get a real web app and a real native app (dev preview, MIT)`
-3. `Two years on a C#→JS compiler and a Metal/Vulkan UI engine, so one component class can be both a web page and a native screen`
+3. `Our docs site is a C# app compiled to plain JavaScript — here's the framework behind it`
 
-Option 1 states the two non-obvious technical claims in the title, which is what earns the click from
-this audience. Option 3 works if you want the personal-story framing — it does well on r/csharp.
+Option 1 states the two non-obvious technical claims in the title, which is what earns the click
+from this audience. Option 3 leads with the proof instead of the pitch and is the strongest if you
+want to be judged on evidence rather than description.
 
 ### Body
 
@@ -55,8 +61,12 @@ build time** — no WASM, no multi-megabyte runtime to download. On macOS, iOS a
 component classes render through **Photon**, our own GPU engine on Metal and Vulkan — no WebView, no
 Skia.
 
-If you want to see it before installing anything, the playground compiles C# in the browser with the
-same compiler the build uses: **https://ui.equantic.tech/playground**
+Two things you can check before reading further, because they're worth more than my description:
+
+- The playground compiles C# in your browser with the same `eqc` the build uses:
+  **https://ui.equantic.tech/playground**
+- **https://ui.equantic.tech** is itself an eQuantic.UI app, built from the published NuGet packages.
+  It's there partly as a standing proof that a consumer's build works from nothing but nuget.org.
 
 **Why I built it**
 
@@ -93,8 +103,8 @@ same way it checks the rest of your code. On the web those values are lowered to
 CSS classes (the hundredth card adds zero bytes of CSS); on native the same values become GPU paint,
 and no CSS exists on that path at all.
 
-That class above is a server-rendered, hydrated web page **and** a native screen. Which one you get is
-a project setting, not a rewrite.
+That class is a server-rendered, hydrated web page **and** a native screen. Which one you get is a
+project setting, not a rewrite.
 
 **How the build works**
 
@@ -107,7 +117,9 @@ dotnet build
 ```
 
 The only prerequisite is the **.NET 10 SDK**. Bun ships inside the NuGet packages, so there is no
-Node, no npm and no bundler config anywhere in your repo.
+Node, no npm and no bundler config anywhere in your repo. When you genuinely need a JS library, you
+declare it in the `.csproj` — `<BunPackage Include="dayjs" Version="1.11.13" />` — and the SDK
+installs it with the embedded Bun. Still no `package.json`.
 
 **The part I care about most: the transpiler is not allowed to guess**
 
@@ -131,37 +143,65 @@ Things with no JS equivalent (pointers, `goto`, client-side `System.IO` or `Http
 build with a canonical message pointing at the C# line, and tell you to move the work behind a
 `[ServerAction]`.
 
+**Hardware, without a per-platform branch**
+
+The machine's capabilities are services taken through a constructor — `ICamera`, `ILocation`,
+`IPhotoLibrary`, `IBiometrics`, `IMotionSensor`, `INetworkStatus`, `ITextClipboard`, `IAppStorage`,
+`ISecretStore` — realized per host and **null when the host doesn't have one**, so a component
+handles absence instead of receiving a stub that fails later at a worse moment. During SSR every one
+of them resolves to an absent realization rather than a fake, so the page still server-renders and
+the real capability replaces the fallback on the first client render.
+
+Storage is the example I'd point at if you only read one design decision: `IAppStorage` is
+`localStorage` on the web, `NSUserDefaults` on Apple, `SharedPreferences` on Android — and secrets
+are a **different interface**, because an API where safety is a `secure: true` argument is an API
+where safety is one forgotten argument away from a token in `localStorage`. On the web
+`ISecretStore` resolves to `null`, since the browser has no vault and pretending otherwise would be
+worse than saying so.
+
 **What works today**
 
-- Web: SSR + hydration, client-side router with per-route code splitting, forms and validation
-  (including a `[FormModel]` bridge that reads your existing DataAnnotations), Server Actions
-  (typed RPC — `[ServerAction]` methods are an allowlist, with `[Authorize]` RBAC enforced before
-  execution), SEO metadata, real 404/500 pages.
-- Native: GPU windows on macOS, iOS and Android — real text through CoreText, keyboard with a single
-  focus order, IME composition, gestures, clipboard, and accessibility bridged to VoiceOver,
-  UIAccessibility and Android's `AccessibilityNodeInfo` from one shared semantics tree.
+- **Web**: SSR + hydration, client-side router with per-route code splitting, forms and validation
+  (with a `[FormModel]` bridge that reads your existing DataAnnotations), Server Actions (typed RPC —
+  `[ServerAction]` is an allowlist, `[Authorize]` RBAC enforced before execution), SEO metadata,
+  Next.js-style server-side image optimization, real 404/500 pages.
+- **Native**: GPU windows on macOS, iOS and Android — real text through CoreText, keyboard with a
+  single focus order, IME composition, gestures, clipboard, and accessibility bridged to VoiceOver,
+  UIAccessibility and Android's `AccessibilityNodeInfo` from one shared semantics tree. The GPU
+  backends are driven through slim typed `objc_msgSend`/P-Invoke bindings — no binding framework, no
+  C shims, no third-party packages.
+- **Pixel parity is tested, not asserted**: a CPU reference rasterizer is the normative ground truth,
+  and Metal and Vulkan are held to it across a shared golden-image catalog.
 - **Hot reload on both targets** — save the file, the browser page and the native window update in
   place and keep their state.
+- **A VS Code extension** where the preview is the real web realizer running the real compiled
+  module, compiled from the **buffer you're typing in** rather than the file on disk (p50 293 ms on a
+  662-line page, full 316-reference project). Click an element to select the C# expression that built
+  it; the property panel edits that expression through Roslyn rewrites.
 - Localization from ordinary `.resx` — the compiler rewrites resource accessors into a runtime lookup
   and emits per-culture catalogs, so you localize like any .NET app and never see a JS catalog.
-- 50+ components, plus some heavyweights authored once and running on both targets: a spreadsheet with
-  Excel-grade selection, in-cell editing, fill handle and TSV clipboard that round-trips with Excel; a
-  code editor with incremental highlighting; a virtualized list.
+- 50+ components, plus heavyweights authored once and running on both targets: a spreadsheet with
+  Excel-grade selection, in-cell editing, fill handle and TSV clipboard that round-trips with Excel;
+  a code editor with incremental highlighting; a recycling `ListView`; Markdown and Mermaid rendered
+  by the design system itself (no mermaid.js).
 
 **What it honestly is not, yet**
 
 - **0.2 preview.** The API surface moves between previews. Don't start a client project on it this
   month.
-- **No global state management** — component-local `SetState` only. Signals/context are the next
-  phase, and it's the gap I hear about most.
-- **Native means macOS, iOS and Android.** There is no Windows or Linux desktop shell yet (the Vulkan
-  backend is there, the shell isn't).
-- **Some browser-only concerns still lack C# abstractions** — clipboard and file upload have surfaces,
-  but things like observers and storage are still on the list. That matters because "you never touch
-  JS" is only true if the framework covers them.
+- **No global state management** — component-local `SetState` only. Signals/context are next, and
+  it's the gap I hear about most.
+- **Server Actions are request/response.** No server push yet; `[ServerEvent]` over SignalR is on the
+  roadmap, so if you need live updates today you'd be polling.
+- **Native means macOS, iOS and Android.** No Windows or Linux desktop shell (the Vulkan backend
+  exists, the shell doesn't). On Photon, `Image` still renders a placeholder — decode/upload is the
+  remaining texture consumer.
+- **C# stack mapping is member-level**, not statement-level. The error overlay is source-map aware and
+  shows you C#, but it points at the member, not the line inside it.
 - **Web performance is not yet measured in CI.** The native side has a frame-allocation perf harness
-  with regression ceilings; the web side does not have enforced bundle budgets yet. I'd rather say
-  that than quote a benchmark I haven't automated.
+  with regression ceilings; the web side has code splitting and tree-shaking but no enforced bundle
+  budgets. I'd rather say that than quote a benchmark I haven't automated.
+- The VS Code extension packages as a `.vsix` and **isn't on the Marketplace yet**.
 - It's a small team. That's a real risk factor for anyone evaluating it, and I'd rather you weigh it
   now than discover it later.
 
@@ -174,7 +214,8 @@ dotnet new equantic-native -n MyApp     # a real GPU window
 cd MyApp && dotnet run
 ```
 
-MIT. Published on nuget.org as `0.2.0-preview.*`. Playground: https://ui.equantic.tech/playground
+MIT. Published on nuget.org as `0.2.0-preview.*`. Docs are in the wiki (every page in English and
+Portuguese, because the framework's own localization is what produced them).
 
 **What I'd genuinely like feedback on**
 
@@ -192,7 +233,7 @@ Happy to answer anything, including the uncomfortable questions.
 ## 2. Post B — r/webdev (Showoff Saturday)
 
 Same project, different room. This audience does not care about Blazor's payload; it cares about what
-lands in the browser and what it costs to maintain. Lead there, keep it shorter, and be explicit that
+lands in the browser and what it costs to maintain. Lead there, keep it short, and be explicit that
 it's for .NET teams — trying to convert JS developers is how these posts die.
 
 ### Title
@@ -208,7 +249,9 @@ My project, and I'm the author — flagging that up front.
 **eQuantic.UI** compiles C# UI components to JavaScript at build time. What the browser gets is
 ordinary JS: server-rendered HTML, a ~110 KB gzipped runtime, code split per route, hydrated on the
 client. No WASM, no multi-megabyte runtime download, and no Node/npm/bundler config in the repo — the
-bundler (Bun) ships inside the NuGet package, so `dotnet build` is the whole toolchain.
+bundler (Bun) ships inside the NuGet package, so `dotnet build` is the whole toolchain. If you do need
+an npm package, you declare it in the project file and the embedded Bun installs it; there's still no
+`package.json`.
 
 The part that might interest this sub even if you never touch C#: **there is no CSS to author.**
 Components declare typed values — spacing, color tokens, type roles — and the compiler lowers each
@@ -224,16 +267,18 @@ Column(gap: Space.S4, children: [
 ```
 
 The same component classes also render natively on macOS/iOS/Android through our own Metal/Vulkan
-engine — not a WebView — which is the reason the styling layer is typed values instead of CSS strings
-in the first place.
+engine — not a WebView — which is why the styling layer is typed values instead of CSS strings in the
+first place.
 
-You can run it in the browser without installing anything: https://ui.equantic.tech/playground
+Two things you can poke at without installing anything: the playground runs the real compiler in your
+browser (https://ui.equantic.tech/playground), and https://ui.equantic.tech is itself built with the
+framework from the published packages, so the network tab is a fair test of what it actually ships.
 
-**Honest scope:** it's a 0.2 preview, MIT, the API moves between releases, there's no global state
-solution yet, and it is aimed squarely at teams that already write C#. If you're happy in React, this
-solves a problem you don't have — I'm posting it for the "our backend is .NET and we'd rather not run
-two stacks" crowd, and because the compiler and the GPU engine were interesting enough to build that
-I think they're interesting to look at.
+**Honest scope:** 0.2 preview, MIT, the API moves between releases, no global state solution yet, no
+server push yet, and it's aimed squarely at teams that already write C#. If you're happy in React,
+this solves a problem you don't have — I'm posting it for the "our backend is .NET and we'd rather not
+run two stacks" crowd, and because the compiler and the GPU engine were interesting enough to build
+that I think they're interesting to look at.
 
 Feedback on the web side especially welcome — bundle size, hydration behaviour, anything you'd measure
 before trusting it.
@@ -250,37 +295,39 @@ gets read as a sales pitch and is downvoted accordingly — and it would be bad 
 ---
 
 If you already know React Native, use React Native. For a two-person project where one of you is a
-junior and the goal is a shipped product, familiarity beats architecture every time, and Expo will
-get you to Android, iOS and a web build with one codebase today.
+junior and the goal is a shipped product, familiarity beats architecture every time, and Expo will get
+you to Android, iOS and a web build with one codebase today.
 
 The thing worth thinking about ahead of time is where your business logic lives. Whatever you pick for
 UI, keep validation, pricing, permissions and the data model out of the components and behind an API
-you own — that's the part you'll otherwise rewrite when the web version happens.
+you own — that's the part you'd otherwise rewrite when the web version happens.
 
 (Different-stack aside, if your backend is .NET: I build eQuantic.UI, which compiles C# components to
-JS for the web and renders them natively on GPU for mobile from the same source. It's a 0.2 preview,
-so I'm not going to suggest you bet a product on it — but if the "one language, both targets" idea is
-what you're after, it's a real implementation of it: https://ui.equantic.tech/playground)
+JS for the web and renders them natively on GPU for mobile from the same source, with camera,
+location, biometrics and secure storage as injected services that are simply null where a host doesn't
+have them. It's a 0.2 preview, so I'm not going to suggest you bet a product on it — but if "one
+language, both targets" is what you're after, it's a real implementation of it:
+https://ui.equantic.tech/playground)
 
 ---
 
 ## 4. Comment-defence kit
 
-Short, honest answers, written before the thread heats up. Do not paste them verbatim into every
-reply — react to what the person actually said.
+Short, honest answers, written before the thread heats up. Don't paste them verbatim into every reply
+— react to what the person actually said.
 
 **"So it's Blazor?"**
 No. Blazor WASM ships the .NET runtime to the browser and executes C# there. eQuantic compiles your
 C# to JavaScript at build time — there is no .NET in the browser, nothing to download beyond ordinary
-JS, and no WASM startup cost. The trade is the inverse: Blazor runs the whole BCL and I run a defined
-subset, enforced by a conformance harness and build errors.
+JS, and no WASM startup cost. The trade is the inverse: Blazor runs the whole BCL, I run a defined
+subset enforced by a conformance harness and build errors.
 
 **"Why not Uno Platform or Avalonia?"**
 Both are good, and both take the opposite bet on the web: their web target is WASM, and their
 authoring model is XAML-descended. eQuantic emits JavaScript, and authoring is plain C# expressions
 with typed styles — no XAML, no CSS. On native they render through Skia; we wrote our own Metal/Vulkan
 engine specifically to avoid inheriting a foreign canvas's semantics. If you want maturity today,
-those are the mature ones. I'm not going to pretend otherwise at 0.2.
+those are the mature ones, and I'm not going to pretend otherwise at 0.2.
 
 **"Another framework, why?"**
 Fair. The specific gap: no existing option lets a .NET team write one component and get both a small
@@ -294,16 +341,31 @@ miscompile — that's the whole design. Pointers, `goto`, and client-side `Syste
 the notable exclusions; data access goes through `[ServerAction]`. Send me a snippet that fails and it
 becomes a conformance case.
 
+**"Can it use the camera / GPS / Face ID / secure storage?"**
+Yes — capabilities are services taken through a constructor and realized per host, and they resolve to
+`null` where a host has none, so absence is something your code handles rather than something that
+throws later. Secrets are deliberately a separate interface from ordinary storage, and on the web that
+one resolves to null: the browser has no vault, and a store any script on the origin can read is not
+one.
+
+**"Does it do real-time / websockets?"**
+Not yet. Server Actions are request/response today; server push (`[ServerEvent]` over SignalR) is on
+the roadmap. If your app is live-updating, that's a real gap right now.
+
+**"What if I need a JS library?"**
+`<BunPackage Include="chart.js" Version="…" />` in the `.csproj`, installed by the embedded Bun at
+build. No `package.json`, no Node. That's how the chart and Lottie integrations work.
+
 **"Is the GPU engine actually not Skia / not a WebView?"**
-Correct — Metal and Vulkan backends over a shared RHI, with a CPU reference backend as the normative
-one that both are held to within ±1 LSB, and shaders precompiled offline from Slang to SPIR-V and
-metallib. The engine source is in the repo; `src/eQuantic.UI.Native.Engine.Metal` and
-`.Vulkan` are the two backends.
+Correct — Metal and Vulkan backends over a shared RHI, with a scalar CPU rasterizer as the normative
+reference both are held to across a shared golden-image catalog, and shaders precompiled offline from
+Slang to SPIR-V and metallib. The engine source is in the repo:
+`src/eQuantic.UI.Native.Engine.Metal` and `.Vulkan`.
 
 **"Proprietary engine but MIT license?"**
-"Proprietary" there means we wrote it rather than wrapping someone else's — it's ours, and it's MIT
-in the same repo as everything else. Poor word choice on our part; the whole thing is open source.
-*(Consider fixing that wording in the README before posting — it will be asked.)*
+"Proprietary" there means we wrote it rather than wrapping someone else's — it's ours, and it's MIT in
+the same repo as everything else. Poor word choice on our part; the whole thing is open source.
+*(Worth fixing that wording in the README and wiki before posting — it will be asked.)*
 
 **"Production ready?"**
 No. 0.2 preview, the surface moves between previews, and I'll tell anyone evaluating it for client
@@ -312,19 +374,27 @@ limits.
 
 **"How big is the runtime really?"**
 Around 110 KB gzipped for the core runtime, plus your page bundle, split per route. Measure it
-yourself — it's in `wwwroot/_equantic/` after any build, and I'd rather you check than take my number.
+yourself — it's in `wwwroot/_equantic/` after any build, and the docs site runs on the published
+packages if you'd rather just open the network tab.
 
 **"How do I debug it? Do I end up in JavaScript?"**
-Source maps to the original C#, and the error overlay shows the C# stack trace. It's genuinely the
-weakest link in the chain of promises — if it breaks down for you, that's the bug report I most want.
+The error overlay is source-map aware — it fetches each bundle's `.js.map` and shows you a C# stack
+trace. The honest limit is that mapping is **member-level** today, so it names the method, not the
+statement inside it. Statement-level density is on the roadmap.
+
+**"How do I know the docs match the code?"**
+Every wiki feature carries the release it shipped in, derived from git rather than written from
+memory, and a test fails the build when the human-readable mark and the machine-readable one
+disagree. It's not proof, but it's the reason I'll quote a `Since` version and not a vibe.
 
 **"Who is behind this / what if you stop?"**
 A small team. It's MIT and self-contained (the toolchain is embedded, there's no service to shut off),
 but I won't pretend the bus factor is anything but a real consideration.
 
 **"Show me a real app."**
-The repo has three samples: a dashboard on the web track, a desktop Photon app and a mobile wallet.
-The playground is the fastest look, since it runs the real compiler in the browser.
+The docs site itself, built from the published packages. Beyond that the repo has three samples: a web
+dashboard, a desktop Photon app and a mobile wallet. The playground is the fastest look, since it runs
+the real compiler in the browser.
 
 ---
 
@@ -335,8 +405,8 @@ wrong figure costs more credibility than the figure was worth.
 
 - [ ] **Runtime size.** The README says ~85 KB gzipped; the runtime artifact currently in the repo
       (`src/eQuantic.UI.Server/wwwroot/runtime.js`) measures **111 KB gzipped**. Measure your release
-      build and make the README, CLAUDE.md and the post all say the same real number. The drafts above
-      say ~110 KB.
+      build and make the README, CLAUDE.md and the post all say the same real number. The drafts say
+      ~110 KB.
 - [ ] **The GitHub repo and wiki are publicly visible.** Open every link from the post in a
       logged-out browser. A 404 on the repo link in the first ten minutes is fatal to the thread.
 - [ ] **The playground works on a phone.** Most of Reddit will open it on one. If it doesn't, either
@@ -344,8 +414,12 @@ wrong figure costs more credibility than the figure was worth.
 - [ ] **`dotnet new install eQuantic.UI.Templates` works from a clean machine** with only the .NET 10
       SDK, following the quick start exactly as written. Someone will try it within the hour, and
       "it doesn't build" as the top comment ends the post.
-- [ ] **Component count** — the drafts say "50+", which matches the 56 files in
+- [ ] **The docs-site-runs-on-published-packages claim is currently true.** It's the strongest line in
+      the post; make sure the deployed site isn't pinned to a stale or local build.
+- [ ] **Component count** — the drafts say "50+", matching the 56 files in
       `src/eQuantic.UI.Components`. Update if you count differently.
+- [ ] **The VS Code timing** (271 ms activation, p50 293 ms per edit) is from the wiki's measurement on
+      `samples/DefaultUIDashboard`. Only quote it if it still reproduces.
 - [ ] **The GIF exists and is under Reddit's size limit** (upload directly, not as an external link).
 - [ ] **Self-authorship disclosed in the first line** of every version.
 - [ ] You have a free evening. Posting and disappearing is worse than not posting.
