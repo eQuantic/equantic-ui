@@ -22,7 +22,13 @@ any more and the only people who would see the plug are the mods.
 
 Three rules for all of them:
 
-1. **Say it's yours in the first line.** Every one of these subs punishes hiding it more than the plug.
+1. **Say it's yours in the title and the first line, and flair it.** Every one of these subs punishes
+   hiding it more than the plug. r/dotnet warns on submit if it reads the post as self-promotion, and
+   the fix is the **Promotion** flair it offers right there: the sub does not forbid showing your own
+   work, it requires the label. Never click past that warning unedited.
+   The half a flair cannot fix is a participation clause, where a sub asks that self-promotion not be
+   your only activity. Read the rule in the sidebar; if your account has no history there, comment on
+   a few threads first or send modmail asking whether a flaired post is welcome.
 2. **Attach an image.** `assets/post/hero.png` is ready to use: the real code, the two targets, in
    the framework's own dark tokens (regenerate with `assets/post/render.sh` after editing
    `hero.html`). It is a designed graphic and deliberately not dressed up as a screen capture,
@@ -40,10 +46,15 @@ Three rules for all of them:
 
 ### Title
 
-`A UI framework where you write C# and never touch JavaScript, CSS or a Node toolchain: one component class is a web page and a native GPU screen (0.2 preview)`
+`One C# class, a web page and a native GPU screen: the UI framework I've been building (0.2 preview)`
 
 Alternative, if you'd rather be judged on evidence than on description:
 `Our docs site is a C# app with no JavaScript, no CSS and no npm in its repo. Here's the framework behind it`
+
+Keep it near 100 characters. The longer version this replaced ran to seven lines on a phone and
+pushed the image off the screen before anyone had read a word. "I've been building" is doing a second
+job besides brevity: it puts the authorship disclosure in the title itself, which is the half of a
+self-promotion rule that a flair cannot cover.
 
 > **On naming the output.** The SDK exists to hide the JavaScript, so the pitch shouldn't hand it the
 > lead role: what you're selling is C# in, and a small ordinary page out. Say what the browser gets
@@ -116,7 +127,7 @@ disarming parenthesis it costs nothing and buys the room.
 
 ### Title
 
-`Showoff Saturday: a framework where the whole app is C#, with no CSS and no npm in the repo, and what ships is an ordinary server-rendered page`
+`Showoff Saturday: the whole app is C#, no CSS or npm in the repo, and what ships is an ordinary page`
 
 ### Body
 
@@ -274,4 +285,9 @@ One wrong number costs more credibility than the number was worth.
 - [ ] **The VS Code timing** (p50 293 ms) is the wiki's measurement on `samples/DefaultUIDashboard`.
       Only quote it if it still reproduces.
 - [ ] **The GIF is uploaded to Reddit directly**, not linked externally.
+- [ ] **The Promotion flair is selected** (r/dotnet) or the sub's equivalent, and authorship is stated
+      in the title as well as the first line. Reddit warns on submit when it reads a post as
+      self-promotion; submitting flagged and unflaired is how a launch post dies in ten minutes.
+- [ ] **The title fits in roughly 100 characters.** Check it on a phone: seven lines of title push the
+      image below the fold before anyone has read a word.
 - [ ] You have a free evening.
