@@ -43,6 +43,13 @@ public sealed record DesignParams
     /// <summary>Where in a children list to insert — 0 is before the first (insertChild).</summary>
     [JsonPropertyName("index")] public int? Index { get; init; }
 
+    /// <summary>The frame size a native render is asked for (renderNative).</summary>
+    [JsonPropertyName("width")] public int? Width { get; init; }
+    [JsonPropertyName("height")] public int? Height { get; init; }
+
+    /// <summary>comfortable · compact — the density the frame is rendered at (renderNative).</summary>
+    [JsonPropertyName("density")] public string? Density { get; init; }
+
     /// <summary>Which list of the call is meant — <c>children</c> unless something else is named.</summary>
     [JsonPropertyName("list")] public string? List { get; init; }
 
@@ -210,6 +217,24 @@ public sealed record OriginTier(
     [property: JsonPropertyName("reason")] string Reason,
     /// <summary>The member the origin sits in, when it is not the previewed Build.</summary>
     [property: JsonPropertyName("member")] string? Member);
+
+/// <summary>
+/// One Photon frame, or the reason there is none. The pixels come back as a base64 PNG: the protocol
+/// is one JSON object per line, and 20 KB of image inside a string is cheaper than a second channel.
+/// </summary>
+public sealed record NativeFrameResult(
+    [property: JsonPropertyName("success")] bool Success,
+    [property: JsonPropertyName("png")] string? Png,
+    [property: JsonPropertyName("width")] int Width,
+    [property: JsonPropertyName("height")] int Height,
+    /// <summary>Whether real text metrics were available — false means placeholder boxes, and the
+    /// panel says so rather than letting the frame quietly lie about typography.</summary>
+    [property: JsonPropertyName("textService")] bool TextService,
+    [property: JsonPropertyName("reason")] string? Reason,
+    [property: JsonPropertyName("elapsedMs")] int ElapsedMs)
+{
+    public static NativeFrameResult Refused(string reason) => new(false, null, 0, 0, false, reason, 0);
+}
 
 /// <summary>One thing the compiler had to say, anchored to the span that caused it.</summary>
 public sealed record DesignMark(

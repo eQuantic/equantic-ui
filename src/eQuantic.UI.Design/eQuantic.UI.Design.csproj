@@ -18,6 +18,10 @@
              client, or every component that reads a token renders unthemed (and some throw). -->
         <ProjectReference Include="..\eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
         <ProjectReference Include="..\eQuantic.UI.Material\eQuantic.UI.Material.csproj" />
+        <!-- The render CHILD travels with the host: eqphoton.dll lands beside eqdesign.dll in every
+             build and publish, so "next to my own assembly" is the one place it ever needs looking
+             for. -->
+        <ProjectReference Include="..\eQuantic.UI.Design.Photon\eQuantic.UI.Design.Photon.csproj" />
     </ItemGroup>
 
 </Project>

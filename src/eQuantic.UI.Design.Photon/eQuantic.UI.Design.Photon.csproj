@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- Spawned BY the design host, one short-lived process per frame: it loads and RUNS the
+             user's compiled page, and a Build() that loops forever must take this process down,
+             never the host that owns the preview. -->
+        <IsPackable>false</IsPackable>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>eqphoton</AssemblyName>
+        <InvariantGlobalization>true</InvariantGlobalization>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+        <!-- The write-once component library is what every user page is MADE of, and it has to be the
+             EXECUTABLE copy: the reference list carries ref assemblies, which load for metadata and
+             throw BadImageFormatException the moment a Button is constructed. -->
+        <ProjectReference Include="..\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+        <ProjectReference Include="..\eQuantic.UI.Native.Components\eQuantic.UI.Native.Components.csproj" />
+        <ProjectReference Include="..\eQuantic.UI.Native.Engine\eQuantic.UI.Native.Engine.csproj" />
+        <ProjectReference Include="..\eQuantic.UI.Native.Engine.Reference\eQuantic.UI.Native.Engine.Reference.csproj" />
+        <!-- Text is the shell's job everywhere in Photon; headless on a Mac it is CoreText, exactly
+             as eqicon renders app icons. Other platforms fall back to the measurer-less path. -->
+        <ProjectReference Include="..\eQuantic.UI.Native.Shell.Apple\eQuantic.UI.Native.Shell.Apple.csproj" />
+    </ItemGroup>
+
+</Project>

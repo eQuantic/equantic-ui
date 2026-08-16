@@ -231,7 +231,7 @@ export class PreviewPanel {
   private onWebviewMessage(
     message: {
       type: string; detail?: string; origin?: string; property?: string; value?: string;
-      nodes?: unknown[]; truncated?: boolean;
+      nodes?: unknown[]; truncated?: boolean; width?: number; height?: number; density?: string;
       options?: string[]; index?: number; delta?: number; target?: string; list?: string; on?: boolean;
       elementType?: string;
     },
@@ -262,6 +262,36 @@ export class PreviewPanel {
       void this.moveAcross(message.origin, message.target, message.index);
     } else if (message.type === 'ask' && message.origin) {
       void this.answer(message.origin);
+    } else if (message.type === 'photonFrame') {
+      void this.photonFrame(message.width ?? 390, message.height ?? 844, message.density ?? 'comfortable');
+    }
+  }
+
+  /**
+   * One Photon frame of the current buffer — the native engine's own picture of this page.
+   * <para>
+   * The REAL compilation is emitted and run in a disposable child process (a Build() that hangs
+   * takes down the child, never the host), realized by PhotonHost and rasterized by the Reference
+   * backend — the engine's normative pixel source, which the GPU parity gates are measured against.
+   * </para>
+   */
+  private async photonFrame(width: number, height: number, density: string): Promise<void> {
+    try {
+      const frame = await this.sidecar.renderNative(
+        this.document.uri.fsPath, this.document.getText(), width, height, density, this.buffers());
+
+      if (!frame.success || !frame.png) {
+        this.post({ type: 'photonFailed', reason: frame.reason ?? 'the renderer failed' });
+        return;
+      }
+
+      this.log(`photon frame: ${frame.width}x${frame.height} in ${frame.elapsedMs} ms`);
+      this.post({
+        type: 'photon', png: frame.png, width: frame.width, height: frame.height,
+        textService: frame.textService,
+      });
+    } catch (error) {
+      this.post({ type: 'photonFailed', reason: (error as Error).message });
     }
   }
 
@@ -850,6 +880,33 @@ export class PreviewPanel {
   .eq-plus:hover { background: var(--vscode-focusBorder, #0078d4); color: var(--vscode-button-foreground, #fff); }
   .eq-plus:focus-visible { outline: 1px solid var(--vscode-focusBorder, #0078d4); }
 
+  /* The Photon frame: a PICTURE from the native engine, shown over the live canvas until dismissed
+     or until the next recompile replaces the page it depicts. Visibly a different thing from the
+     live preview — its own bar says whose pixels these are. */
+  #photon-view {
+    position: fixed; inset: 0; z-index: 8; display: none; flex-direction: column;
+    background: var(--vscode-editorWidget-background, #252526);
+  }
+  #photon-view.visible { display: flex; }
+  #photon-bar {
+    flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px; height: 26px;
+    border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,0.35));
+    color: var(--vscode-descriptionForeground, #9d9d9d);
+    font: 11px/1.4 var(--vscode-font-family, sans-serif);
+  }
+  #photon-note { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #photon-bar button.icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 22px; height: 20px; padding: 0; border: none; border-radius: 4px;
+    background: transparent; color: var(--vscode-icon-foreground, #c5c5c5); cursor: pointer;
+  }
+  #photon-bar button.icon:hover { background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31)); }
+  #photon-stage { flex: 1 1 auto; overflow: auto; display: flex; justify-content: center; padding: 14px 0; }
+  #photon-image {
+    align-self: flex-start; border-radius: 4px;
+    box-shadow: 0 0 0 1px rgba(128,128,128,0.35), 0 10px 30px rgba(0,0,0,0.35);
+  }
+
   /* On every element, not only on body: the app draws its own cursors, and a button under the hand
      that still says "click me" mid-drag is telling the truth about the wrong gesture. */
   body.eq-dragging, body.eq-dragging * { cursor: grabbing !important; }
@@ -1023,10 +1080,27 @@ export class PreviewPanel {
   </button>
   <span class="sep"></span>
   <select id="bar-format" title="The size the screen is shown at"></select>
+  <button class="icon" id="bar-photon" type="button" title="Render a Photon frame" aria-label="Render a Photon frame">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 1.8l5.4 3.1v6.2L8 14.2l-5.4-3.1V4.9L8 1.8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      <path d="M8 8l5.4-3.1M8 8L2.6 4.9M8 8v6.2" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+    </svg>
+  </button>
   <span class="grow"></span>
   <span class="note" id="bar-note"></span>
 </div>
 <div id="stage"><div id="frame"><div id="app"></div></div></div>
+<div id="photon-view">
+  <div id="photon-bar">
+    <span id="photon-note"></span>
+    <button class="icon" id="photon-close" type="button" title="Back to the live preview" aria-label="Back to the live preview">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <div id="photon-stage"><img id="photon-image" alt="Photon frame"></div>
+</div>
 <div id="outline"></div>
 <div id="badge"></div>
 <div id="caret"></div>
@@ -1506,6 +1580,33 @@ export class PreviewPanel {
     formatSelect.appendChild(option);
   }
   formatSelect.value = formatId;
+
+  // ---- the Photon frame ----------------------------------------------------------------------
+  const photonView = document.getElementById('photon-view');
+  const photonImage = document.getElementById('photon-image');
+  const photonNote = document.getElementById('photon-note');
+  const photonButton = document.getElementById('bar-photon');
+
+  photonButton.addEventListener('click', () => {
+    photonButton.disabled = true;
+    photonButton.title = 'Rendering\u2026';
+    const chosen = format();
+    vscode.postMessage({
+      type: 'photonFrame',
+      width: chosen.width || 390,
+      height: chosen.height || 844,
+      density: chosen.density || 'comfortable',
+    });
+  });
+
+  function photonDone() {
+    photonButton.disabled = false;
+    photonButton.title = 'Render a Photon frame';
+  }
+
+  document.getElementById('photon-close').addEventListener('click', () => {
+    photonView.classList.remove('visible');
+  });
 
   // ---- the keyboard --------------------------------------------------------------------------
   //
@@ -2479,7 +2580,9 @@ export class PreviewPanel {
       outline.classList.remove('visible');
       badge.classList.remove('visible');
       // Everything the canvas had learned was about spans in the PREVIOUS text. Keeping any of it
-      // would draw a control for a child that has since moved, or gone.
+      // would draw a control for a child that has since moved, or gone — and a Photon still of the
+      // previous page would sit on top of the new one claiming to be it.
+      photonView.classList.remove('visible');
       forget();
       void render(payload);
     } else if (payload.type === 'selected') {
@@ -2496,6 +2599,19 @@ export class PreviewPanel {
       // the same door — the outline, the panel and the editor's cursor all follow.
       const found = app.querySelector('[data-eq-origin="' + payload.origin.replace(/"/g, '\\"') + '"]');
       if (found) select(found);
+    } else if (payload.type === 'photon') {
+      photonDone();
+      photonImage.src = 'data:image/png;base64,' + payload.png;
+      photonImage.style.width = payload.width + 'px';
+      photonNote.textContent = 'Photon \u00B7 ' + payload.width + '\u00D7' + payload.height
+        + ' \u00B7 Reference rasterizer' + (payload.textService ? '' : ' \u00B7 placeholder text metrics');
+      photonNote.title = 'Rendered by the native engine\u2019s normative CPU rasterizer, against which '
+        + 'the Metal and Vulkan backends are pinned. A still frame: interactions stay on the live preview.';
+      photonView.classList.add('visible');
+    } else if (payload.type === 'photonFailed') {
+      photonDone();
+      notice.textContent = 'Photon frame: ' + payload.reason;
+      notice.classList.add('visible');
     } else if (payload.type === 'settling') {
       settling = true;
       hideInserts();

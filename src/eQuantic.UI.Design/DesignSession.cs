@@ -34,6 +34,9 @@ public sealed class DesignSession
     /// actually answered against. Equal to <see cref="_compilation"/> until something is open.</summary>
     private Compilation? _current;
     private string _projectDir = "";
+    /// <summary>The MSBuild-resolved reference list — kept for the render child, whose user assembly
+    /// resolves its dependencies from exactly this list.</summary>
+    private string? _refsFile;
 
     /// <summary>Emitted JS per dependency FILE, keyed by path and invalidated by write time — a page's
     /// neighbours do not change while you are typing in the page.</summary>
@@ -99,11 +102,23 @@ public sealed class DesignSession
         // What <ImplicitUsings> and the SDK put in every file without an import. Without these the
         // semantic model rejects List<T>, LINQ and the whole declarative factory surface, and every
         // call falls back to the no-model path — which emits plausible, wrong JavaScript.
-        sources.AddRange(ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(projectDir));
+        //
+        // From the SAME intermediate directory as the reference list, never from all of obj/: a
+        // multi-TFM native project has one GlobalUsings.g.cs PER target, and the Android one says
+        // `global using Android.*` — which poisons a net10.0 compilation with a namespace its
+        // references do not have, and Emit refuses the whole assembly over a file nobody is editing.
+        var pinned = string.IsNullOrEmpty(refsFile) ? null : Path.GetDirectoryName(refsFile);
+        var globalUsings = pinned is not null
+            ? Directory.GetFiles(pinned, "*.GlobalUsings.g.cs", SearchOption.TopDirectoryOnly)
+            : [];
+        sources.AddRange(globalUsings.Length > 0
+            ? globalUsings
+            : ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(projectDir));
         sources.AddRange(string.IsNullOrEmpty(generatedDir)
             ? ProjectCompilationHelper.GetCompilerGeneratedFiles(projectDir)
             : ProjectCompilationHelper.GetCompilerGeneratedFiles(projectDir, generatedDir));
 
+        _refsFile = refsFile;
         var references = ReadReferences(refsFile);
 
         // A degraded reference set is the one failure that produces WRONG OUTPUT WITH NO ERROR:
@@ -689,6 +704,117 @@ public sealed class DesignSession
         var start = source.Lines.GetLinePosition(span.Start);
         var end = source.Lines.GetLinePosition(span.End);
         return new EditResult(true, null, start.Line, start.Character, end.Line, end.Character, value, movedTo);
+    }
+
+    /// <summary>
+    /// ONE Photon frame of the page in <paramref name="path"/>, rendered by a child process.
+    /// <para>
+    /// The buffer's REAL compilation — not the eqc transpile — is emitted to a temp assembly and
+    /// handed to <c>eqphoton</c>, which loads it, instantiates the page, and rasterizes it through
+    /// the Reference backend (the engine's normative pixel source, the one the GPU parity gates are
+    /// measured against). A child process, and not politeness: the page's <c>Build()</c> is the
+    /// user's code, and a loop that never returns must take down something disposable, never the
+    /// host that owns the preview. The timeout here is that promise.
+    /// </para>
+    /// </summary>
+    public NativeFrameResult RenderNative(string path, string text, int width, int height, string? density)
+    {
+        if (_current is null) throw new InvalidOperationException("initialize first");
+
+        var tree = CSharpSyntaxTree.ParseText(text, path: path);
+        var compilation = Swap(_current, tree);
+        var model = compilation.GetSemanticModel(tree);
+
+        // The page: the first non-abstract class in THIS file whose base chain reaches VisualNode.
+        // Same question the web compile answers, asked of the semantic model rather than of eqc.
+        INamedTypeSymbol? page = null;
+        foreach (var declaration in tree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>())
+        {
+            if (model.GetDeclaredSymbol(declaration) is not { IsAbstract: false } symbol) continue;
+            for (var baseType = symbol.BaseType; baseType is not null; baseType = baseType.BaseType)
+            {
+                if (baseType.Name == "VisualNode") { page = symbol; break; }
+            }
+            if (page is not null) break;
+        }
+
+        var work = Path.Combine(Path.GetTempPath(), "eqphoton-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(work);
+        try
+        {
+            // Emit FIRST, even when no page was found: a buffer with a broken base clause has no
+            // resolvable component either, and "no component here" about a file that merely does not
+            // compile sends the author hunting for the wrong problem.
+            var assemblyPath = Path.Combine(work, "page.dll");
+            var emitted = compilation.Emit(assemblyPath);
+            if (!emitted.Success)
+            {
+                var error = emitted.Diagnostics.FirstOrDefault(d => d.Severity == DiagnosticSeverity.Error);
+                return NativeFrameResult.Refused(error is null
+                    ? "The project did not compile."
+                    : $"The project did not compile: {error.Id} {error.GetMessage()}");
+            }
+
+            if (page is null)
+                return NativeFrameResult.Refused("This file declares no component — nothing here derives from VisualNode.");
+
+            var renderer = Path.Combine(AppContext.BaseDirectory, "eqphoton.dll");
+            if (!File.Exists(renderer))
+                return NativeFrameResult.Refused($"The Photon renderer is missing at {renderer}.");
+
+            var pngPath = Path.Combine(work, "frame.png");
+            var fullName = page.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                .Replace("global::", "", StringComparison.Ordinal);
+
+            var watch = Stopwatch.StartNew();
+            using var child = Process.Start(new ProcessStartInfo("dotnet")
+            {
+                ArgumentList =
+                {
+                    renderer,
+                    "--assembly", assemblyPath,
+                    "--type", fullName,
+                    "--out", pngPath,
+                    "--width", width.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    "--height", height.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    "--density", density ?? "comfortable",
+                    "--refs", _refsFile ?? "",
+                },
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            })!;
+
+            // The whole reason this is a process: the user's Build() may never return, and ten
+            // seconds of nothing is an answer — "your page hung", said to the panel, with the host
+            // still alive behind it.
+            if (!child.WaitForExit(TimeSpan.FromSeconds(10)))
+            {
+                child.Kill(entireProcessTree: true);
+                return NativeFrameResult.Refused(
+                    "The page did not produce a frame within 10 seconds — its Build() may not be returning.");
+            }
+
+            if (child.ExitCode != 0 || !File.Exists(pngPath))
+            {
+                var reason = child.StandardError.ReadToEnd().Trim();
+                return NativeFrameResult.Refused(reason.Length > 0 ? reason : "The Photon renderer failed.");
+            }
+
+            var status = child.StandardOutput.ReadToEnd();
+            watch.Stop();
+
+            return new NativeFrameResult(
+                true,
+                Convert.ToBase64String(File.ReadAllBytes(pngPath)),
+                width, height,
+                status.Contains("\"text\":true", StringComparison.Ordinal),
+                null,
+                (int)watch.ElapsedMilliseconds);
+        }
+        finally
+        {
+            try { Directory.Delete(work, recursive: true); } catch { /* temp cleanup is best-effort */ }
+        }
     }
 
     /// <summary>The construction an origin names, with the model that can answer for it.</summary>

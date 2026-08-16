@@ -113,6 +113,13 @@ while (await input.ReadLineAsync() is { } line)
                 Require(parameters.Snippet, "snippet"),
                 parameters.List),
 
+            "renderNative" => session.RenderNative(
+                Require(parameters.Path, "path"),
+                parameters.Text ?? "",
+                parameters.Width ?? 390,
+                parameters.Height ?? 844,
+                parameters.Density),
+
             "theme" => session.Theme(),
 
             "shutdown" => "bye",

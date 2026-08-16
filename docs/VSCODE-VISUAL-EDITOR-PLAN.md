@@ -598,6 +598,45 @@ Chromium through the exact blob-import path the webview uses: click to 2 → rem
 2, and the capture is exactly `{"_count":2}`; remount without carry → 0, so the assertion cannot pass
 on persistence the component had on its own.
 
+### Phase 18 — a Photon frame, from the engine itself ✅ done
+
+The native preview's first slice: a toolbar button renders the CURRENT BUFFER through the native
+engine and shows the frame — the real `WalletApp`, Ana Beatriz's balance card, the PIX rows, the
+bottom navigation, in 337 ms.
+
+The chain: the buffer's REAL compilation (not the eqc transpile) is emitted to a temp assembly and
+handed to **`eqphoton`**, a short-lived child process that loads it, constructs the page, realizes it
+with `PhotonHost`, rasterizes through the **Reference** backend (the engine's normative pixel source,
+which the GPU parity gates are pinned against — `TreeGpuParityTests` is why this frame is an honest
+picture of what Metal draws), and writes a PNG the host hands back as base64. CoreText supplies real
+glyphs on macOS; elsewhere the frame says *placeholder text metrics* rather than lying about type.
+
+**A child process is the design.** The page's `Build()` is the user's code; a `while(true)` in it
+takes down a disposable child after ten seconds and comes back as a sentence — a test pins exactly
+that, along with the PNG's real IHDR dimensions and the compiler's words for a broken buffer.
+
+Construction is the DI container's job done without the container, in the order a person would try:
+parameterless; else the constructor with the fewest unsatisfied parameters — defaults, then an
+implementation from the USER'S OWN assembly (WalletMobile's `WalletLedger` carries the demo data its
+screens are designed around), then a benign `DispatchProxy` stub whose every member answers default
+(enough for `configuration["key"]` to answer null and let the page take its own fallback), then null.
+`ComponentBoundary.Diagnostics` is armed, so a page that still throws renders the framework's own
+diagnostic surface naming the component and the exception.
+
+Three real-world defects fell out of rendering the REAL app rather than a probe:
+
+- **Multi-TFM global usings poisoned the compilation.** The host swept `*.GlobalUsings.g.cs` from all
+  of `obj/`, including the Android TFM's `global using Android.*` — Emit refused the whole assembly
+  over a file nobody was editing. Global usings now come from the SAME intermediate directory as the
+  reference list.
+- **The reference list is ref assemblies.** Metadata-only skeletons that load fine and throw
+  `BadImageFormatException` the moment a Button is constructed. eqphoton now ships the executable
+  component library, and its resolver maps `obj/…/ref/` → `bin/…` and `ref/` → `lib/` before falling
+  back.
+- `DispatchProxy.Create<T, TProxy>` has two generic parameters; reflection passed one, the stub was
+  silently null, and the page NRE'd on `configuration["screen"]`. The non-generic
+  `Create(Type, Type)` overload does the job with no reflection at all.
+
 ---
 
 ## The seam, tested

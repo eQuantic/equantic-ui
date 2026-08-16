@@ -110,6 +110,18 @@ export interface OpenBuffer {
   text: string;
 }
 
+/** One Photon frame, or the reason there is none. */
+export interface NativeFrameResult {
+  success: boolean;
+  png: string | null;
+  width: number;
+  height: number;
+  /** False means placeholder text metrics — the frame must say so rather than lie about type. */
+  textService: boolean;
+  reason: string | null;
+  elapsedMs: number;
+}
+
 export interface CompileResult {
   success: boolean;
   js: string;
@@ -274,6 +286,13 @@ export class Sidecar {
 
   removeChild(path: string, text: string, origin: string, buffers: OpenBuffer[]): Promise<EditResult> {
     return this.send('removeChild', { path, text, origin, buffers });
+  }
+
+  /** One Photon frame of the buffer, rendered by the eqphoton child process. */
+  renderNative(
+    path: string, text: string, width: number, height: number, density: string, buffers: OpenBuffer[],
+  ): Promise<NativeFrameResult> {
+    return this.send('renderNative', { path, text, width, height, density, buffers });
   }
 
   theme(): Promise<string> {

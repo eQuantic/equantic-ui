@@ -65,6 +65,9 @@ const required = [
   // The fallback browser runtime for NATIVE projects, which have no wwwroot of their own. Without it
   // a native project's preview fails on an instruction no amount of building can satisfy.
   'extension/runtime/runtime.js',
+  // The Photon render child. Without it the design host refuses every native frame with "the Photon
+  // renderer is missing" — an install-time defect that must fail the package, not the user.
+  'extension/host/eqphoton.dll',
 ];
 
 const missing = required.filter((name) => !names.includes(name));
