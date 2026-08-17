@@ -110,6 +110,17 @@ export interface OpenBuffer {
   text: string;
 }
 
+/** One node of a rendered Photon frame: where it came from, and where it landed. */
+export interface NativeNode {
+  /** The C# span that built it — the same origin string the whole selection pipeline runs on. */
+  o: string;
+  n: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 /** One Photon frame, or the reason there is none. */
 export interface NativeFrameResult {
   success: boolean;
@@ -120,6 +131,8 @@ export interface NativeFrameResult {
   textService: boolean;
   reason: string | null;
   elapsedMs: number;
+  /** The hit map, in paint order: the last entry containing a point is the topmost thing under it. */
+  nodes: NativeNode[] | null;
 }
 
 export interface CompileResult {

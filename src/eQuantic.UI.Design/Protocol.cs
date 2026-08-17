@@ -231,10 +231,23 @@ public sealed record NativeFrameResult(
     /// panel says so rather than letting the frame quietly lie about typography.</summary>
     [property: JsonPropertyName("textService")] bool TextService,
     [property: JsonPropertyName("reason")] string? Reason,
-    [property: JsonPropertyName("elapsedMs")] int ElapsedMs)
+    [property: JsonPropertyName("elapsedMs")] int ElapsedMs,
+    /// <summary>The frame's hit map: every laid-out node that knows the C# that built it, with its
+    /// absolute bounds, in paint order — so a click on the PICTURE resolves to a file and a span with
+    /// no process left alive to ask.</summary>
+    [property: JsonPropertyName("nodes")] NativeNode[]? Nodes = null)
 {
     public static NativeFrameResult Refused(string reason) => new(false, null, 0, 0, false, reason, 0);
 }
+
+/// <summary>One node of a rendered Photon frame: where it came from, and where it landed.</summary>
+public sealed record NativeNode(
+    [property: JsonPropertyName("o")] string Origin,
+    [property: JsonPropertyName("n")] string Name,
+    [property: JsonPropertyName("x")] float X,
+    [property: JsonPropertyName("y")] float Y,
+    [property: JsonPropertyName("w")] float Width,
+    [property: JsonPropertyName("h")] float Height);
 
 /// <summary>One thing the compiler had to say, anchored to the span that caused it.</summary>
 public sealed record DesignMark(

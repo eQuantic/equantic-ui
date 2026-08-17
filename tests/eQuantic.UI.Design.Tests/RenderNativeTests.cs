@@ -98,6 +98,36 @@ public sealed class RenderNativeTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// The hit map that makes the frame clickable: every rendered node carries the C# span that
+    /// built it, and that origin is the SAME identity the inspector answers to — so a click on the
+    /// picture and a click on the living web canvas open the same panel, reveal the same line.
+    /// </summary>
+    [Fact]
+    public void TheFrameCarriesAHitMap_WhoseOriginsAnswerToTheInspector()
+    {
+        var frame = _session.RenderNative(_probe, Source, 390, 844, "comfortable");
+
+        frame.Success.Should().BeTrue(frame.Reason);
+        frame.Nodes.Should().NotBeNullOrEmpty("a frame nobody can click is a screenshot, not a canvas");
+        frame.Nodes.Should().OnlyContain(node => node.Origin.StartsWith(_probe),
+            "every origin must point into the buffer that was rendered");
+        frame.Nodes.Should().OnlyContain(node => node.Width > 0 && node.Height > 0,
+            "a zero-sized entry could never be hit, so it has no business on the map");
+
+        // Paint order is the hit-test's contract: the map must not be empty of nesting — the page
+        // Box comes before the Column it contains, so "last containing the point" finds the child.
+        var box = frame.Nodes!.First(node => node.Name == "Box");
+        var text = frame.Nodes!.First(node => node.Name == "Text");
+        Array.IndexOf(frame.Nodes, box).Should().BeLessThan(Array.IndexOf(frame.Nodes, text));
+
+        // The full circle, the thing the whole feature hangs on: a node picked off the map, its
+        // origin handed to the inspector, and the inspector describing that same component.
+        var inspected = _session.Inspect(_probe, Source, text.Origin);
+        inspected.Should().NotBeNull();
+        inspected!.Component.Should().Be("Text");
+    }
+
     /// <summary>The frame shows the BUFFER, not the file: the same reason the whole design host
     /// exists. A hostile-looking probe: the text differs from what is on disk.</summary>
     [Fact]

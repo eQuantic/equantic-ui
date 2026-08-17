@@ -6,6 +6,10 @@
   through Photon's normative rasterizer — real glyphs, real theme, the exact pixels the GPU backends
   are pinned against — in a disposable child process, so a page that hangs comes back as a sentence
   instead of a hung preview.
+- **The Photon frame is clickable.** Every rendered node carries the C# span that built it, so a
+  click on the picture finds the topmost component under the cursor, marks it on the frame, opens
+  the inspector and reveals the exact line — the same selection the web canvas answers with,
+  because it is the same identity.
 - **State survives a recompile.** Click a counter to 7, edit the file, and the preview repaints with
   the new code and the count still 7 — the page's own fields are carried through the same door the
   SSR handoff uses, and a renamed page still starts fresh.

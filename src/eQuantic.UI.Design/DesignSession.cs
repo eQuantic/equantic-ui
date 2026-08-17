@@ -745,6 +745,25 @@ public sealed class DesignSession
             // Emit FIRST, even when no page was found: a buffer with a broken base clause has no
             // resolvable component either, and "no component here" about a file that merely does not
             // compile sends the author hunting for the wrong problem.
+            //
+            // Emitted in DESIGN MODE: every node construction in the project's own sources is
+            // rewritten to stamp the C# span that built it — the same identity the web canvas runs
+            // on, which is what lets a click on the rendered frame land on a file and a selection.
+            // Spans are computed against the PRISTINE compilation before any tree is replaced, so a
+            // rewritten neighbour can never shift them.
+            var rewritten = new List<(SyntaxTree Old, SyntaxTree New)>();
+            foreach (var candidate in compilation.SyntaxTrees)
+            {
+                if (string.IsNullOrEmpty(candidate.FilePath)) continue;
+                if (!candidate.FilePath.StartsWith(_projectDir, StringComparison.OrdinalIgnoreCase)) continue;
+                if (candidate.FilePath.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
+                        StringComparison.OrdinalIgnoreCase)) continue;
+
+                var root = OriginRewriter.Rewrite(candidate, compilation.GetSemanticModel(candidate));
+                if (root != candidate.GetRoot()) rewritten.Add((candidate, candidate.WithRootAndOptions(root, candidate.Options)));
+            }
+            foreach (var (oldTree, newTree) in rewritten) compilation = compilation.ReplaceSyntaxTree(oldTree, newTree);
+
             var assemblyPath = Path.Combine(work, "page.dll");
             var emitted = compilation.Emit(assemblyPath);
             if (!emitted.Success)
@@ -803,13 +822,22 @@ public sealed class DesignSession
             var status = child.StandardOutput.ReadToEnd();
             watch.Stop();
 
+            // The frame's hit map: every laid-out node that knows where it came from, in paint order.
+            // Written by the child beside the PNG, because the child dies right after — a click later
+            // cannot ask it anything, so everything a click needs travels with the frame.
+            var nodesPath = Path.Combine(work, "nodes.json");
+            var nodes = File.Exists(nodesPath)
+                ? System.Text.Json.JsonSerializer.Deserialize<NativeNode[]>(File.ReadAllText(nodesPath))
+                : null;
+
             return new NativeFrameResult(
                 true,
                 Convert.ToBase64String(File.ReadAllBytes(pngPath)),
                 width, height,
                 status.Contains("\"text\":true", StringComparison.Ordinal),
                 null,
-                (int)watch.ElapsedMilliseconds);
+                (int)watch.ElapsedMilliseconds,
+                nodes);
         }
         finally
         {

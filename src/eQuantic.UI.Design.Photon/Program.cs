@@ -155,12 +155,13 @@ if (OperatingSystem.IsMacOS())
 // (a lazy section, a computed field) is in the tree by the second — the same settle the macOS
 // screenshot runner gives a page.
 var builder = new DisplayListBuilder();
+RealizeResult? realized = null;
 try
 {
     for (var frame = 0; frame < 2; frame++)
     {
         builder = new DisplayListBuilder();
-        host.RenderFrame(builder, frame * 16f);
+        realized = host.RenderFrame(builder, frame * 16f);
     }
 }
 catch (Exception ex)
@@ -178,6 +179,36 @@ backend.Render(builder.Build(), surface);
 var rgba = new byte[(int)width * (int)height * 4];
 surface.ReadPixelsSrgb(rgba);
 File.WriteAllBytes(outPath, PngCodec.Encode((int)width, (int)height, rgba));
+
+// The frame's HIT MAP, written beside the PNG: every laid-out node that knows the C# that built it,
+// with its absolute bounds, in paint order — parents before children, later siblings later, so "the
+// last entry containing the point" is the topmost thing under a click. It travels as a file because
+// this process is already dead by the time anyone clicks.
+if (realized is not null)
+{
+    var nodes = new List<object>();
+    void Walk(eQuantic.UI.Native.Framework.LayoutNode node)
+    {
+        var origin = node.Source.Origin;
+        if (origin is not null)
+        {
+            nodes.Add(new
+            {
+                o = origin,
+                n = node.Source.OriginLabel ?? node.Source.GetType().Name,
+                x = node.Bounds.X, y = node.Bounds.Y, w = node.Bounds.Width, h = node.Bounds.Height,
+            });
+        }
+        foreach (var child in node.Children) Walk(child);
+    }
+
+    Walk(realized.Root);
+    foreach (var overlay in realized.OverlayRoots ?? []) Walk(overlay);
+
+    File.WriteAllText(
+        Path.Combine(Path.GetDirectoryName(outPath)!, "nodes.json"),
+        System.Text.Json.JsonSerializer.Serialize(nodes));
+}
 
 // The one line the parent reads.
 static object? Construct(Type type, Assembly userAssembly, int depth)

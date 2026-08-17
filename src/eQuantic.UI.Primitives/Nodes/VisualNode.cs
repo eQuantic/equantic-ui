@@ -45,6 +45,30 @@ public abstract class VisualNode
     public string? OriginLabel { get; init; }
 
     /// <summary>
+    /// Stamps <see cref="Origin"/> on a node that is already built — the C# twin of the JS emitter's
+    /// <c>$eq.origin(…)</c>, called only by code a DESIGN-MODE emission injected. Reflection because
+    /// the property is init-only ON PURPOSE: authors must not write it, and a tool that rewrites the
+    /// compilation is not an author.
+    /// <para>
+    /// First stamp wins. The innermost expression executes first, so a construction's own exact span
+    /// is already on the node by the time the helper call wrapping an ENCLOSING expression — a
+    /// factory, a helper method returning the same instance — sees it. Overwriting here would replace
+    /// the precise span with the caller's.
+    /// </para>
+    /// </summary>
+    public static class DesignOrigin
+    {
+        private static readonly System.Reflection.PropertyInfo OriginProperty =
+            typeof(VisualNode).GetProperty(nameof(Origin))!;
+
+        public static T Stamp<T>(T node, string origin) where T : VisualNode
+        {
+            if (node.Origin is null) OriginProperty.SetValue(node, origin);
+            return node;
+        }
+    }
+
+    /// <summary>
     /// Overrides the parent flex container's <see cref="FlexNode.Cross"/> for THIS child only
     /// (spec S1 — the CSS <c>align-self</c> twin). <c>null</c> = follow the container. Ignored
     /// outside a Row/Column.

@@ -288,7 +288,7 @@ export class PreviewPanel {
       this.log(`photon frame: ${frame.width}x${frame.height} in ${frame.elapsedMs} ms`);
       this.post({
         type: 'photon', png: frame.png, width: frame.width, height: frame.height,
-        textService: frame.textService,
+        textService: frame.textService, nodes: frame.nodes ?? [],
       });
     } catch (error) {
       this.post({ type: 'photonFailed', reason: (error as Error).message });
@@ -902,9 +902,24 @@ export class PreviewPanel {
   }
   #photon-bar button.icon:hover { background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31)); }
   #photon-stage { flex: 1 1 auto; overflow: auto; display: flex; justify-content: center; padding: 14px 0; }
+  #photon-canvas { position: relative; align-self: flex-start; }
   #photon-image {
-    align-self: flex-start; border-radius: 4px;
+    display: block; border-radius: 4px; cursor: crosshair;
     box-shadow: 0 0 0 1px rgba(128,128,128,0.35), 0 10px 30px rgba(0,0,0,0.35);
+  }
+  /* The same selection language the live canvas speaks: a frame around the node, its name above. */
+  #photon-mark {
+    position: absolute; display: none; pointer-events: none;
+    border: 1px solid var(--vscode-focusBorder, #0078d4);
+    background: color-mix(in srgb, var(--vscode-focusBorder, #0078d4) 12%, transparent);
+  }
+  #photon-mark.visible { display: block; }
+  #photon-mark::after {
+    content: attr(data-name);
+    position: absolute; top: -18px; left: -1px; padding: 1px 6px; border-radius: 3px;
+    font: 10px/1.4 var(--vscode-font-family, sans-serif); white-space: nowrap;
+    background: var(--vscode-focusBorder, #0078d4);
+    color: var(--vscode-button-foreground, #fff);
   }
 
   /* On every element, not only on body: the app draws its own cursors, and a button under the hand
@@ -1099,7 +1114,7 @@ export class PreviewPanel {
       </svg>
     </button>
   </div>
-  <div id="photon-stage"><img id="photon-image" alt="Photon frame"></div>
+  <div id="photon-stage"><div id="photon-canvas"><img id="photon-image" alt="Photon frame"><div id="photon-mark"></div></div></div>
 </div>
 <div id="outline"></div>
 <div id="badge"></div>
@@ -1586,6 +1601,36 @@ export class PreviewPanel {
   const photonImage = document.getElementById('photon-image');
   const photonNote = document.getElementById('photon-note');
   const photonButton = document.getElementById('bar-photon');
+
+  /** The frame's hit map, in paint order — the LAST entry containing a point is the topmost. */
+  let photonNodes = [];
+  const photonMark = document.getElementById('photon-mark');
+
+  document.getElementById('photon-image').addEventListener('click', (event) => {
+    // 1:1 by construction — the img's width is set to the frame's pixel width — so a click's offset
+    // IS a frame coordinate, no scaling arithmetic to get wrong.
+    const box = event.target.getBoundingClientRect();
+    const x = event.clientX - box.left;
+    const y = event.clientY - box.top;
+
+    let hit = null;
+    for (const node of photonNodes) {
+      if (x >= node.x && x <= node.x + node.w && y >= node.y && y <= node.y + node.h) hit = node;
+    }
+    if (!hit) return;
+
+    photonMark.style.left = hit.x + 'px';
+    photonMark.style.top = hit.y + 'px';
+    photonMark.style.width = hit.w + 'px';
+    photonMark.style.height = hit.h + 'px';
+    photonMark.setAttribute('data-name', hit.n);
+    photonMark.classList.add('visible');
+
+    // The SAME door a click on the live canvas opens: the origin walks through revealSource and the
+    // inspector, so the panel, the layers list and the editor's cursor all follow — the picture and
+    // the living page answer identically because they carry the same identity.
+    vscode.postMessage({ type: 'select', origin: hit.o });
+  });
 
   photonButton.addEventListener('click', () => {
     photonButton.disabled = true;
@@ -2601,6 +2646,8 @@ export class PreviewPanel {
       if (found) select(found);
     } else if (payload.type === 'photon') {
       photonDone();
+      photonNodes = payload.nodes || [];
+      photonMark.classList.remove('visible');
       photonImage.src = 'data:image/png;base64,' + payload.png;
       photonImage.style.width = payload.width + 'px';
       photonNote.textContent = 'Photon \u00B7 ' + payload.width + '\u00D7' + payload.height
