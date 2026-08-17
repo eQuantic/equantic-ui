@@ -1,3 +1,6 @@
+using eQuantic.UI.Components;
+using static eQuantic.UI.Components.UI;
+using eQuantic.UI.Primitives;
 using EQuanticNativeApp.Resources;
 
 namespace EQuanticNativeApp;

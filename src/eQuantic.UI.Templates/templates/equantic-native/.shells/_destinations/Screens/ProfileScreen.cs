@@ -1,3 +1,7 @@
+using eQuantic.UI.Components;
+using static eQuantic.UI.Components.UI;
+using eQuantic.UI.Primitives;
+
 namespace EQuanticNativeApp.Screens;
 
 /// <summary>The third destination — a settings list, the shape every app grows. Each row is a

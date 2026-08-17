@@ -1,3 +1,7 @@
+using eQuantic.UI.Components;
+using static eQuantic.UI.Components.UI;
+using eQuantic.UI.Primitives;
+
 namespace EQuanticNativeApp.Screens;
 
 /// <summary>The two panes, and the data behind them. Replace <see cref="Items"/> with your own
