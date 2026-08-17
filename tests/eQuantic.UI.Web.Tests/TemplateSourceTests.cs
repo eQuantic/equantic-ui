@@ -10,11 +10,18 @@ namespace eQuantic.UI.Web.Tests;
 /// The scaffolded app, checked WITHOUT scaffolding it.
 ///
 /// <para>
-/// The SDK injects the write-once aliases and the declarative factory surface into every file
-/// (Sdk.props). A template that also declares one of them by hand is a duplicate — `CS1537: the
-/// using alias appeared previously` — and the ONLY thing that ever noticed was the release gate, on
-/// a tag, after a full build on three operating systems. That is a very slow way to learn that
+/// An SDK injects some usings into every file of a consumer's project (Sdk.props). A template that
+/// also declares one of THOSE by hand is a duplicate — `CS1537: the using alias appeared
+/// previously` — and the ONLY thing that ever noticed was the release gate, on a tag, after a full
+/// build on three operating systems. That is a very slow way to learn that
 /// `dotnet new equantic-app` no longer compiles.
+/// </para>
+/// <para>
+/// WHICH usings those are is a question for the SDK, not a list kept here: the web SDK injects the
+/// factory surface and the two aliases, the native one injects neither, and so a native screen
+/// declares them itself and is right to. Reading the props is what keeps the guard honest the day
+/// that changes — a list written down here failed the native template for doing the only thing that
+/// compiles there.
 /// </para>
 /// </summary>
 public class TemplateSourceTests
@@ -29,29 +36,52 @@ public class TemplateSourceTests
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
             .ToArray();
 
-    /// <summary>What Sdk.props puts in every file of every consumer's project, without an import.</summary>
-    private static readonly (string Pattern, string Name)[] ImplicitUsings =
+    /// <summary>
+    /// The three a file could redeclare, each paired with the <c>Sdk.props</c> line that would be
+    /// injecting it. The props are ASKED, per template, so this stays a description of what is true
+    /// rather than a memory of what was.
+    /// </summary>
+    private static readonly (string Pattern, string Name, string Injection)[] ImplicitUsings =
     [
-        (@"^\s*using\s+StatefulComponent\s*=", "StatefulComponent alias"),
-        (@"^\s*using\s+StatelessComponent\s*=", "StatelessComponent alias"),
-        (@"^\s*using\s+static\s+eQuantic\.UI\.Components\.UI\s*;", "the UI factory surface"),
+        (@"^\s*using\s+StatefulComponent\s*=", "StatefulComponent alias",
+            @"Using\s+Include=""eQuantic\.UI\.Primitives\.StatefulComponent"""),
+        (@"^\s*using\s+StatelessComponent\s*=", "StatelessComponent alias",
+            @"Using\s+Include=""eQuantic\.UI\.Primitives\.StatelessComponent"""),
+        (@"^\s*using\s+static\s+eQuantic\.UI\.Components\.UI\s*;", "the UI factory surface",
+            @"Using\s+Include=""eQuantic\.UI\.Components\.UI"""),
     ];
 
+    /// <summary>
+    /// The SDK a project scaffolded from this template runs on. Only the native project template
+    /// gets the native SDK; everything else here — the web app template and the item templates —
+    /// is web.
+    /// </summary>
+    private static string SdkPropsFor(string path) =>
+        Path.Combine(RepoRoot(), "src",
+            path.Contains($"{Path.DirectorySeparatorChar}equantic-native{Path.DirectorySeparatorChar}")
+                ? "eQuantic.UI.Sdk.Native"
+                : "eQuantic.UI.Sdk",
+            "Sdk", "Sdk.props");
+
     [Fact]
-    public void No_template_source_redeclares_what_the_SDK_already_injects()
+    public void No_template_source_redeclares_what_ITS_SDK_already_injects()
     {
         var offenders = new List<string>();
         foreach (var path in TemplateSources())
         {
             var text = File.ReadAllText(path);
-            foreach (var (pattern, name) in ImplicitUsings)
+            var props = File.ReadAllText(SdkPropsFor(path));
+            foreach (var (pattern, name, injection) in ImplicitUsings)
             {
+                // An SDK that does not inject it leaves the file to declare it, and the file must.
+                if (!Regex.IsMatch(props, injection)) continue;
+
                 if (Regex.IsMatch(text, pattern, RegexOptions.Multiline))
                     offenders.Add($"{Path.GetFileName(path)} declares {name}");
             }
         }
 
-        offenders.Should().BeEmpty("the SDK injects these implicitly — declaring one again is CS1537 "
+        offenders.Should().BeEmpty("an SDK that injects these makes a second declaration CS1537 "
             + "in the first project a newcomer scaffolds");
     }
 
