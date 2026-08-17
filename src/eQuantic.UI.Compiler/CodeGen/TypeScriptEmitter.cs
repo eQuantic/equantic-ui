@@ -1723,9 +1723,13 @@ public class TypeScriptEmitter
                 defaultValue is null ? null : _converter.ConvertExpression(defaultValue), isRest);
         }));
         var methodName = method.Name.ToCamelCase();
-        
-        // Lifecycle mapping
-        if (method.Name == "OnMount") methodName = "onInit";
+
+        // The lifecycle keeps its own name across the crossing. It used to arrive as `onInit`, from
+        // the days when the only base was the legacy page state, and that name is the reason
+        // OnMount had never once run on the web: `SharedStatefulComponent` — what every write-once
+        // component extends — declares `onMount`, calls it from `notifyMounted`, and has no
+        // `onInit` at all, so the override landed on nothing. The legacy `onInit` is also skipped
+        // for any page that HYDRATED, which is every server-rendered page there is.
         
         var returnType = CSharpTypeToTypeScript(method.ReturnType ?? "void");
         

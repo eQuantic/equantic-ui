@@ -69,6 +69,53 @@ public class ConstructorInjectionTests
         page.Should().NotContain("library?: any", "nobody passes a photo library to a page");
     }
 
+    /// <summary>
+    /// The clock crosses like any other capability, and the SUBSCRIPTION crosses with it: a
+    /// component that starts a timer in OnMount and disposes it in OnUnmount must arrive in the
+    /// browser having done both, or every page navigation leaves a timer running against a
+    /// component nobody can see.
+    /// </summary>
+    [Fact]
+    public void AClockSubscription_CrossesWithItsDisposal()
+    {
+        var ticking = Transpile("""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class TickingPage : StatefulComponent
+            {
+                private readonly IClock _clock;
+                private IDisposable? _tick;
+                private int _step;
+
+                public TickingPage(IClock clock)
+                {
+                    _clock = clock;
+                }
+
+                protected override void OnMount() =>
+                    _tick = _clock.Every(TimeSpan.FromMilliseconds(1700),
+                        () => SetState(() => _step = (_step + 1) % 4));
+
+                protected override void OnUnmount() => _tick?.Dispose();
+
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text($"step {_step}", TypeRole.BodyM);
+            }
+            """);
+
+        ticking.Should().Contain("$eq.services.resolve('IClock')");
+        ticking.Should().Contain("onMount()");
+        ticking.Should().Contain(".every(");
+        ticking.Should().Contain("onUnmount()");
+        ticking.Should().Contain(".dispose()");
+        // The interval is the runtime's TimeSpan, which is what the web realization reads the
+        // milliseconds off. A bare number here would mean the two sides disagree about the unit.
+        ticking.Should().Contain("timeSpan.fromMilliseconds(1700)");
+    }
+
     [Fact]
     public void TheResolvedModule_ImportsTheRuntimeNamespaceItUses()
     {

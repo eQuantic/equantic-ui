@@ -71,6 +71,10 @@ public sealed class PhotonApplicationBuilder
         // The light/dark hand, present on every head unless the app brought its own. The runner
         // attaches it to the window's host after Build — services exist before any window does.
         _host.Services.TryAddSingleton<IThemeController, PhotonThemeController>();
+        // TIME, the same way: a component that advances itself asks for IClock and gets .NET's own
+        // timer here. Nothing about it is Photon's — the engine's loop already presents when state
+        // changed, so a tick has nothing to schedule with the renderer.
+        _host.Services.TryAddSingleton<IClock, PhotonClock>();
         // The culture hand, same shape: the runner resolves the PLATFORM's locale and applies it
         // here before the first frame; an app that wants to force a culture applies over it.
         //

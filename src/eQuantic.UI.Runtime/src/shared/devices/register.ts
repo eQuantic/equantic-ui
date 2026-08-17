@@ -9,6 +9,7 @@ import { WebPhotoLibrary } from './photo-library';
 import { WebTextClipboard } from './text-clipboard';
 import { WebCultureController } from './culture-controller';
 import { WebAnalytics } from './analytics';
+import { WebClock } from './clock';
 import { WebThemeController } from './theme-controller';
 
 /**
@@ -41,6 +42,9 @@ export function registerDeviceCapabilities(): void {
   // server through its own cookie, and the component asking never learns either half.
   services.registerSingleton('ICultureController', () => new WebCultureController());
   services.registerSingleton('ITextClipboard', () => new WebTextClipboard());
+  // TIME as a capability: a carousel that advances itself asks for this the way a photo picker asks
+  // for the library, and never learns that here it is one setInterval.
+  services.registerSingleton('IClock', () => new WebClock());
   // Analytics: registered even without an installer — a page that tracks must RESOLVE something,
   // and the realization itself goes quiet when no collector declared itself (__EQ_ANALYTICS__).
   services.registerSingleton('IAnalytics', () => new WebAnalytics());

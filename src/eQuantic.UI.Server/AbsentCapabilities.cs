@@ -132,6 +132,17 @@ internal static class AbsentCapabilities
         }
     }
 
+    /// <summary>
+    /// A clock that never ticks, which is the truth rather than a gap: a server renders ONE frame
+    /// and sends it, so there is no later for a periodic callback to arrive in. What the visitor
+    /// gets is the first paint the component was built with, and the ticking starts when the page
+    /// hydrates in their browser.
+    /// </summary>
+    internal sealed class Clock : IClock
+    {
+        public IDisposable Every(TimeSpan interval, Action onTick) => NoSubscription.Instance;
+    }
+
     /// <summary>Analytics during server rendering: a no-op, and not an apology — analytics
     /// describes what a USER did, and SSR is not a user. A page that tracks on the server would
     /// count its own crawlers.</summary>

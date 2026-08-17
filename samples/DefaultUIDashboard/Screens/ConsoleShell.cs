@@ -53,6 +53,7 @@ public static class ConsoleShell
     [
         new(Icons.Plus, "Declarative", "/declarative"),
         new(Icons.Info, "Markdown", "/markdown"),
+        new(Icons.Refresh, "Time", "/clock"),
     ];
 
     /// <summary>
