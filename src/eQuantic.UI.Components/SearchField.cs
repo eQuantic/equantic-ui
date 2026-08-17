@@ -46,11 +46,28 @@ public sealed class SearchField : StatelessComponent
         }, 1));
         if (Query.Length > 0)
         {
+            // B10: "glyph 20 in Full circle, hit 48". It was a bare Pressable around the glyph, so
+            // the hit rect WAS the 20dp glyph — a target you have to aim at, on the one control a
+            // one-handed user pokes at while walking.
+            //
+            // The circle takes the pill's whole height and, horizontally, the §08 minimum. The
+            // vertical falls 8dp short of 48 because the pill is 40 tall and nothing can escape it:
+            // Touch.MinTarget's own doc says "the framework expands hit-slop symmetrically" and NO
+            // realizer implements that — a framework-wide gap this component cannot close alone, and
+            // the reason Slider and PageIndicator each size their own target by hand.
+            var side = Sizing.Height(SizeVariant.Medium, context.Density);
             row.Add(new Pressable(
-                new Icon(Icons.Close, IconSize.Dense, theme.TextMuted),
+                new Box(new BoxStyle
+                {
+                    Width = Touch.MinTarget,
+                    Height = side,
+                    CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
+                    Hover = new StyleDiff { Background = theme.SurfaceSubtle.MidpointWith(theme.Border) },
+                }, new Icon(Icons.Close, IconSize.Dense, theme.TextMuted).Centered()),
                 () => OnChanged?.Invoke(""))
             {
                 Label = SdkStrings.ClearSearch,
+                PressedBackground = theme.Border,
             });
         }
 

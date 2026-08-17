@@ -1371,8 +1371,12 @@ function lowerGlyph(
   } else {
     attributes['fill'] = 'currentColor';
   }
-  if (label) attributes['aria-label'] = label;
-  else attributes['aria-hidden'] = 'true';
+  // A10 (C# twin): a labelled glyph announces as an IMAGE — a name with no role is a name the
+  // accessibility tree cannot place.
+  if (label) {
+    attributes['aria-label'] = label;
+    attributes['role'] = 'img';
+  } else attributes['aria-hidden'] = 'true';
 
   return {
     tag: 'svg',

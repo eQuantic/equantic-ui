@@ -113,6 +113,15 @@ public sealed class ListItem : StatelessComponent
             Width = SizeValue.Fill,
             MinHeight = MinHeight,
             Background = Selected ? theme.Colors(Variant.Primary).Subtle : null,
+            // §10, pointer-only (both realizers keep it off touch): an interactive row washes under
+            // the cursor. Every sibling row-like surface already did this — Menu, Table, DataTable,
+            // Accordion — and a list was the one that did not.
+            //
+            // NOT on a selected row: its fill IS the state, and washing it to SurfaceSubtle would
+            // erase the selection for exactly as long as the pointer sits on it.
+            Hover = OnPressed is null || Selected
+                ? null
+                : new StyleDiff { Background = theme.SurfaceSubtle },
         }, row);
 
         return OnPressed is null

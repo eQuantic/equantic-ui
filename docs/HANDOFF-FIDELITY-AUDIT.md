@@ -19,6 +19,30 @@ limit. So:
 `documented-deviation` means the component's own doc comment names and justifies the
 difference. Those are review items, not bugs.
 
+## Closed since the audit ran
+
+Each of these has a test that names its handoff block, so the figure cannot drift back.
+
+| Block | What was wrong | Where |
+| --- | --- | --- |
+| B2 ListItem | 52/68 heights only; divider inset a flat 16 instead of 16 + leading + gap | `ListHandoffFidelityTests` |
+| C16 NavigationRail | the bar's metrics (56×26, Md 24, 11/700) and no trailing edge | `NavigationHandoffFidelityTests` |
+| A13 IconButton · B8 Chip | `Selected` changed the paint and never reached `Pressable.Selected`, so no `aria-pressed` | `ToggleHandoffFidelityTests` |
+| B2 ListItem · B8 Chip | no §10 hover on an interactive row or on any chip kind | `PointerContractFidelityTests` |
+| B10 SearchField | the clear affordance was a 20dp glyph with a 20dp hit rect | `PointerContractFidelityTests` |
+| A10 Icon | a labelled glyph carried a name and no `role="img"` | `DestinationSemanticsTests` |
+| A11 Image | no `case Image` in the native semantics walk — alt text was silent on Photon | `GraphicSemanticsTests` |
+
+### Found while fixing, not by the audit
+
+**Hit slop is a promise nothing keeps.** `Touch.MinTarget`'s own doc says "visuals may be smaller —
+the framework expands hit-slop symmetrically", and no realizer implements it: `grep` for
+`MinTarget`/`HitTarget` outside `Tokens.cs` finds only components sizing their own target by hand
+(`Slider.cs:98`, `PageIndicator.cs:88`, and now `SearchField`). Every small pressable that does NOT
+do that by hand ships with its visual as its hit rect. That is a framework-wide §08 gap, larger than
+any row in this file, and it is why the search field's clear button reaches 48 across and stops at
+the pill's 40 down.
+
 ## Visible — a user or a designer can see this
 
 83 rows.

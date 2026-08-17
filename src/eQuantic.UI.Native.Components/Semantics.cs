@@ -146,6 +146,15 @@ public static class SemanticsTree
                 nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
                     label, null, false));
                 return;
+
+            // A11, and the same rule one node over: alt text is what an image says. This case was
+            // simply absent, so a photo with alt text emitted NOTHING on Photon and was invisible to
+            // VoiceOver and TalkBack — while the web has carried <img alt> all along. An empty alt is
+            // HTML's own way of saying decorative, and stays silent here too.
+            case Primitives.Image { Alt.Length: > 0 } image:
+                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
+                    image.Alt, null, false));
+                return;
         }
 
         foreach (var child in node.Children)

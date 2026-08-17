@@ -76,6 +76,19 @@ public sealed class Chip : StatelessComponent
             });
         }
 
+        // §10 hover, pointer-only. B8's rule is "quiet chips = SurfaceSubtle, filled chips =
+        // fill→pressed midpoint", and for a chip the quiet half of that rule collapses: a chip
+        // ALREADY rests on SurfaceSubtle, so washing it there is a no-op. The palette's next step is
+        // the midpoint toward Border, which is quiet, visible, and derived rather than invented.
+        // A selected filter rests on Primary-subtle, so its step goes toward Primary itself.
+        // Only pressable kinds hover at all — a Tag is an annotation, and a cursor over a label that
+        // reacts is a promise of a press that never comes.
+        var hoverFill = Kind == ChipKind.Filter && OnPressed != null
+            ? Selected
+                ? primary.Subtle.MidpointWith(primary.Base)
+                : theme.SurfaceSubtle.MidpointWith(theme.Border)
+            : (ColorToken?)null;
+
         var box = new Box(new BoxStyle
         {
             Height = Sizing.Height(SizeVariant.Small, context.Density),
@@ -84,6 +97,7 @@ public sealed class Chip : StatelessComponent
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             BorderWidth = Kind == ChipKind.Filter && Selected ? 1f : 0f,
             BorderColor = primary.Base,
+            Hover = hoverFill is null ? null : new StyleDiff { Background = hoverFill },
         }, content);
 
         // Filter chips toggle; Tags are static annotations; Input chips act through the remove glyph.

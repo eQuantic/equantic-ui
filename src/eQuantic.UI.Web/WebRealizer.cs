@@ -916,7 +916,16 @@ public static class WebRealizer
         {
             svg.RawAttributes["fill"] = "currentColor";
         }
-        if (label is { }) svg.RawAttributes["aria-label"] = label;
+        if (label is { })
+        {
+            // A10: "with label → image role". An aria-label on a bare <svg> gives the node a NAME
+            // and no role, so a screen reader announces the words and cannot say what they belong
+            // to — some read it as a group, some as nothing. The native bridges have emitted
+            // SemanticRole.Image for a labelled glyph since the a11y pass (Semantics.cs), so this was
+            // also the web disagreeing with its own twin.
+            svg.RawAttributes["aria-label"] = label;
+            svg.RawAttributes["role"] = "img";
+        }
         else svg.RawAttributes["aria-hidden"] = "true";
 
         var glyphPath = new RealizedElement("path");

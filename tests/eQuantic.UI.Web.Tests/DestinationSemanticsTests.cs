@@ -119,6 +119,28 @@ public class DestinationSemanticsTests
             "the other nine links in a sidebar have nothing to announce");
     }
 
+    /// <summary>A10: a labelled glyph announces as an IMAGE. An aria-label with no role gives the node
+    /// a NAME the accessibility tree cannot place — and the native bridges have reported
+    /// SemanticRole.Image for a labelled glyph since the a11y pass, so the web was also disagreeing
+    /// with its own twin.</summary>
+    [Fact]
+    public void ALabelledGlyphAnnouncesAsAnImage()
+    {
+        var labelled = Walk(WebRealizer.Lower(
+                new Icon(Icons.Heart, IconSize.Md, label: "Favourite"), Theme).Render())
+            .Single(node => node.Tag == "svg");
+        var decorative = Walk(WebRealizer.Lower(
+                new Icon(Icons.Heart, IconSize.Md), Theme).Render())
+            .Single(node => node.Tag == "svg");
+
+        labelled.Attributes["role"].Should().Be("img");
+        labelled.Attributes["aria-label"].Should().Be("Favourite");
+        // Decoration says nothing and takes no role: an img with no name is a worse answer than
+        // being hidden, because a reader stops on it and has nothing to read.
+        decorative.Attributes.Should().NotContainKey("role");
+        decorative.Attributes["aria-hidden"].Should().Be("true");
+    }
+
     /// <summary>A drawer's nav row is the same fact in a different shape — and an ORDINARY list row
     /// must stay silent about it, or every list in the app grows a claim it never made.</summary>
     [Fact]
