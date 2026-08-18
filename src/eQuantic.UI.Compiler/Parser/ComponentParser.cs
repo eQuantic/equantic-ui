@@ -678,19 +678,6 @@ public class ComponentParser
             definition.Constructors.Add(primaryDef);
         }
 
-        /// <summary>
-        /// Whether an interface parameter is a DEPENDENCY rather than a shape data arrives in.
-        /// <para>
-        /// The runtime's own interfaces are not dependencies: `IReadOnlyList&lt;AccordionItem&gt;` is
-        /// how a component receives its items, and an Accordion resolving its rows from a container
-        /// is nonsense — which is exactly what the first version of this rule did, and what the
-        /// committed transpilation caught within the hour.
-        /// </para>
-        /// </summary>
-        static bool IsDependency(ITypeSymbol service) =>
-            service.ContainingNamespace?.ToDisplayString() is { } space
-            && !space.StartsWith("System", StringComparison.Ordinal);
-
         // The parameter, and whether it is a dependency. Asked of the MODEL rather than guessed from
         // the name: `IPhotoLibrary` looks like an interface and so does a class somebody called
         // that, and only one of them belongs in the container.
@@ -705,11 +692,15 @@ public class ComponentParser
 
             if (param.Type is not null
                 && TryGetSemanticModel(param.SyntaxTree) is { } model
-                && model.GetTypeInfo(param.Type).Type is { TypeKind: TypeKind.Interface } service
-                && IsDependency(service))
+                && model.GetTypeInfo(param.Type).Type is { } service
+                && CapabilityRule.IsDependency(service))
             {
                 described.IsService = true;
                 described.ServiceKey = service.Name;
+                // Whether the component can work without it, which decides what an ABSENT capability
+                // does: hand over null as the author allowed, or say which one is missing.
+                if (model.GetDeclaredSymbol(param) is { } parameter)
+                    described.IsRequiredService = CapabilityRule.IsRequired(parameter);
             }
 
             return described;

@@ -290,10 +290,20 @@ public class ObjectCreationStrategy : IConversionStrategy
     {
         var args = creation.ArgumentList!.Arguments;
         var converted = args.Select(a => context.Converter.ConvertExpression(a.Expression)).ToList();
-        if (!args.Any(a => a.NameColon != null)) return converted;
+        var symbol = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
 
-        if (context.SemanticHelper.GetSymbol(creation) is not IMethodSymbol ctor)
-            return converted;
+        // A COMPONENT's constructor loses its dependencies on the way out — the emitted one resolves
+        // them from the container instead — so every argument standing in a dependency's place has
+        // to go with them, or the ones after it slide into the wrong parameters. That was
+        // `new Quark(clock, mood, size)` arriving as `(mood = clock, size = 'happy')`, which is not
+        // a type error in either language and shows up as `dp.toFixed is not a function`.
+        //
+        // It runs through the SLOT path rather than beside it, so the drop is by PARAMETER and the
+        // form a developer chose — positional, named, mixed, or omitted — cannot change the answer.
+        var dropping = symbol is not null && DeclaresDependency(symbol);
+        if (!dropping && !args.Any(a => a.NameColon != null)) return converted;
+
+        if (symbol is not { } ctor) return converted;
 
         var slots = new string?[ctor.Parameters.Length];
         for (var i = 0; i < args.Count; i++)
@@ -308,11 +318,31 @@ public class ObjectCreationStrategy : IConversionStrategy
             if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = converted[i];
         }
 
-        var lastSet = Array.FindLastIndex(slots, s => s != null);
+        // A dependency slot is not filled with a default — it is REMOVED, because the parameter
+        // it stood in front of is gone from the emitted signature too.
+        var keep = Enumerable.Range(0, slots.Length)
+            .Where(i => !(dropping && CapabilityRule.IsDependency(ctor.Parameters[i].Type)))
+            .ToList();
+
+        var lastSet = keep.FindLastIndex(i => slots[i] != null);
         var ordered = new List<string>();
-        for (var i = 0; i <= lastSet; i++)
-            ordered.Add(slots[i] ?? ParameterDefaultLiteral(ctor.Parameters[i]));
+        for (var k = 0; k <= lastSet; k++)
+            ordered.Add(slots[keep[k]] ?? ParameterDefaultLiteral(ctor.Parameters[keep[k]]));
         return ordered;
+    }
+
+    /// <summary>
+    /// Whether this constructor belongs to a COMPONENT and declares a dependency — the only case
+    /// where the emitted signature differs from the one the call site was written against.
+    /// </summary>
+    private static bool DeclaresDependency(IMethodSymbol ctor) =>
+        IsComponent(ctor.ContainingType) && ctor.Parameters.Any(p => CapabilityRule.IsDependency(p.Type));
+
+    private static bool IsComponent(INamedTypeSymbol? symbol)
+    {
+        for (var b = symbol; b is not null; b = b.BaseType)
+            if (b.Name is "StatelessComponent" or "StatefulComponent" or "UiComponent") return true;
+        return false;
     }
 
     /// <summary>The TS literal for a parameter's C# default value — enum members lower to their

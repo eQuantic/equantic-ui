@@ -61,6 +61,33 @@ public class ConstructorInjectionTests
     }
 
     /// <summary>
+    /// The same, for a fixture that declares SEVERAL types — eqc answers with one module per type,
+    /// and a test about a call site wants the module the call site is in without having to know
+    /// which one that is.
+    /// </summary>
+    private static string TranspileAll(string source)
+    {
+        var tree = CSharpSyntaxTree.ParseText(source, path: "DependentPage.cs");
+        var usings = CSharpSyntaxTree.ParseText(
+            "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
+            path: "GlobalUsings.g.cs");
+
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path));
+
+        var compilation = CSharpCompilation.Create("Injection", [tree, usings], references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        return string.Join("\n", compiler.CompileSource(source, "DependentPage.cs")
+            .Select(result => result.TypeScript));
+    }
+
+    /// <summary>
     /// The capability a component asks for ITSELF, in the hook that has no context.
     ///
     /// <para>
@@ -274,4 +301,173 @@ public class ConstructorInjectionTests
         component.Should().NotContain("$eq.services.resolve");
         component.Should().Contain("rows?: any").And.Contain("counts?: any");
     }
+
+    /// <summary>
+    /// A component that DECLARES a capability loses it from the emitted constructor — so every
+    /// argument standing in its place has to go too, or the ones after it slide into the wrong
+    /// parameters. `new Probe(clock, "a", 1)` arriving as `("a" = clock, 1 = "a")` is not a type
+    /// error in either language; it surfaced as `dp.toFixed is not a function`, three layers away.
+    /// <para>
+    /// Thousands of people will write this constructor thousands of ways, so the drop is by
+    /// PARAMETER and not by position: whichever form the call site chose, the same argument goes.
+    /// </para>
+    /// </summary>
+    [Theory]
+    // Capability first, the rest positional.
+    [InlineData("new Probe(null!, \"a\", 1)", "new Probe('a', 1)")]
+    // Capability in the MIDDLE — the case a positional drop by index gets wrong.
+    [InlineData("new Middle(\"a\", null!, 1)", "new Middle('a', 1)")]
+    // Named, and reordered against the declaration.
+    [InlineData("new Middle(after: 1, before: \"a\", clock: null!)", "new Middle('a', 1)")]
+    // A trailing default the caller omitted stays omitted.
+    [InlineData("new Middle(\"a\", null!)", "new Middle('a')")]
+    // TWO capabilities, one at each end.
+    [InlineData("new Pair(null!, \"a\", null!)", "new Pair('a')")]
+    public void AConstructionSiteDropsTheCapabilityWhicheverWayItIsWritten(string written, string expected)
+    {
+        var section = TranspileAll($$"""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class Probe(IClock clock, string label, int n = 0) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Button(title: label);
+            }
+
+            public sealed class Middle(string before, IClock clock, int after = 3) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Button(title: before);
+            }
+
+            public sealed class Pair(IClock clock, string label, INetworkStatus net) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Button(title: label);
+            }
+
+            public sealed class Host : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => {{written}};
+            }
+            """);
+
+        section.Should().Contain(expected);
+    }
+
+    /// <summary>
+    /// The STATIC resolver, written by hand. It is public API in Primitives — a component reaches
+    /// for it where it has neither a context nor a constructor to take one through — and it names a
+    /// class the browser has never heard of, so without a mapping the module fails to load whole.
+    /// <para>
+    /// Pinned on its own because the case that motivated it no longer exercises it: a generated
+    /// factory writes `new Quark(CapabilityScope.Resolve&lt;IClock&gt;()!, …)` and the argument is
+    /// now DROPPED before it is emitted. Nothing else would fail if the mapping were deleted.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheStaticResolver_CrossesToTheSameRegistry()
+    {
+        var page = Transpile("""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class Ambient : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    CapabilityScope.Resolve<IClock>() is null
+                        ? new Text("no clock", TypeRole.BodyM)
+                        : new Text("ticking", TypeRole.BodyM);
+            }
+            """);
+
+        page.Should().Contain("$eq.services.resolve('IClock')");
+        page.Should().NotContain("CapabilityScope",
+            "the browser has no such class, and a module naming it fails to load whole");
+    }
+
+    /// <summary>
+    /// A capability the component said it CANNOT work without — `IClock`, not `IClock?`. On a target
+    /// that has none, the answer has to be a sentence naming it, at the seam. Otherwise undefined
+    /// travels into the component and fails at some member access that never mentions capabilities,
+    /// and the person reading the stack is on the one target where the screen does not work.
+    /// </summary>
+    [Fact]
+    public void ARequiredCapability_SaysWhichOneIsMissing()
+    {
+        var section = Transpile("""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class Needy(IClock clock) : StatefulComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text("x", TypeRole.BodyM);
+            }
+            """);
+
+        section.Should().Contain("$eq.services.resolve('IClock')");
+        section.Should().Contain("throw new Error(");
+        section.Should().Contain("Needy needs IClock");
+    }
+
+    /// <summary>
+    /// And the component that declared it copes — `IClock?` — is left to cope. Reading a nullable
+    /// parameter as a demand would turn a working app into a throwing one, on the target where the
+    /// author already decided what absence means.
+    /// </summary>
+    [Fact]
+    public void ANullableCapability_IsHandedOverAsItComes()
+    {
+        var section = Transpile("""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class Relaxed(IClock? clock) : StatefulComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text("x", TypeRole.BodyM);
+            }
+            """);
+
+        section.Should().Contain("$eq.services.resolve('IClock')");
+        section.Should().NotContain("throw new Error(");
+    }
+
+    /// <summary>
+    /// The guard the drop needs, and the one the rule was written for: a System interface is NOT a
+    /// dependency. `IReadOnlyList&lt;T&gt;` is how a component receives its items, and an Accordion
+    /// resolving its rows from a container is nonsense — so that argument must survive, or the drop
+    /// silently deletes the component's data.
+    /// </summary>
+    [Fact]
+    public void ASystemInterfaceIsData_AndSurvivesTheDrop()
+    {
+        var section = TranspileAll("""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class Listing(IReadOnlyList<string> rows, IClock clock) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Button(title: rows.Count.ToString());
+            }
+
+            public sealed class Host : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Listing(new List<string>(), null!);
+            }
+            """);
+
+        // The rows stay; only the clock goes.
+        section.Should().Contain("new Listing([])");
+    }
+
 }

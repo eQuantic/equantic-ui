@@ -68,6 +68,39 @@ public class AppFactorySurfaceGeneratorTests
         source.Should().NotContain("Card(string title)\n", "the narrow overload is not the one mirrored");
     }
 
+    /// <summary>
+    /// A capability never reaches the factory's signature: whoever composes a component in the
+    /// middle of a tree has no container to reach into, and the framework already knows where to
+    /// find one. What the factory passes says whether the component can cope without it — a
+    /// nullable parameter gets whatever the scope has, a non-nullable one gets a sentence naming
+    /// what is missing instead of a null travelling into the component.
+    /// </summary>
+    [Fact]
+    public void ACapability_LeavesTheSignature_AndComesFromTheScope()
+    {
+        var (source, diagnostics) = Run("""
+            using eQuantic.UI.Primitives;
+
+            namespace Demo;
+
+            public sealed class Ticker(IClock clock, string label) : StatefulComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(label);
+            }
+
+            public sealed class Relaxed(IClock? clock, string label) : StatefulComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(label);
+            }
+            """);
+
+        diagnostics.Should().BeEmpty();
+        source.Should().Contain("Ticker(string label)", "the caller composes it, and has no clock to give");
+        source.Should().Contain("CapabilityScope.Require<global::eQuantic.UI.Primitives.IClock>(\"Ticker\")");
+        source.Should().Contain("CapabilityScope.Resolve<global::eQuantic.UI.Primitives.IClock>()",
+            "a component that declared it copes is left to cope");
+    }
+
     [Fact]
     public void TheSurface_IsInScopeWithoutAnImport()
     {

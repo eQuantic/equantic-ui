@@ -283,6 +283,13 @@ public class ParameterDefinition
     /// </summary>
     public bool IsService { get; set; }
 
+    /// <summary>
+    /// Whether the component declared it cannot work without this capability (`IClock` rather than
+    /// `IClock?`). An absent one is then a mistake worth naming — on the target where it is absent,
+    /// at the seam, instead of a null that fails somewhere inside the component's own code.
+    /// </summary>
+    public bool IsRequiredService { get; set; }
+
     /// <summary>The interface's own name — the key both sides agree on, since a C# type does not
     /// exist at run time in the browser but its name does.</summary>
     public string? ServiceKey { get; set; }

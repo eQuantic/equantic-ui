@@ -70,24 +70,57 @@ public class ClockTests
     public void ASectionResolvesItsCapability_InOnMount()
     {
         var clock = new FakeClock();
-        CapabilityScope.Current = type => type == typeof(IClock) ? clock : null;
-        try
-        {
-            var section = new TickingSection();
-            section.NotifyMounted();
-            clock.Subscriptions.Should().Be(1, "the hook is where the subscription starts");
+        // The shortcut the framework offers for exactly this: one capability, over whatever else is
+        // in force, put back on dispose. The hand-written resolver it replaces answered null to
+        // every OTHER capability and had to be undone in a finally.
+        using var scope = CapabilityScope.With<IClock>(clock);
 
-            clock.Tick();
-            clock.Tick();
-            section.Step.Should().Be(2);
+        var section = new TickingSection();
+        section.NotifyMounted();
+        clock.Subscriptions.Should().Be(1, "the hook is where the subscription starts");
 
-            section.NotifyUnmounted();
-            clock.Subscriptions.Should().Be(0, "and OnUnmount still owns letting go");
-        }
-        finally
+        clock.Tick();
+        clock.Tick();
+        section.Step.Should().Be(2);
+
+        section.NotifyUnmounted();
+        clock.Subscriptions.Should().Be(0, "and OnUnmount still owns letting go");
+    }
+
+    /// <summary>
+    /// The shortcut's own contract: it composes over what is already in force rather than replacing
+    /// it, and disposing puts back exactly what was there. A test that armed a bare resolver made
+    /// every other capability answer null, and a test that forgot to undo it handed the next one a
+    /// fake it never asked for.
+    /// </summary>
+    [Fact]
+    public void ScopingOneCapability_LeavesTheOthersAlone()
+    {
+        var outer = new FakeClock();
+        using (CapabilityScope.With<IClock>(outer))
         {
-            CapabilityScope.Current = null;
+            var inner = new FakeClock();
+            using (CapabilityScope.With<INetworkStatus>(new OfflineStatus()))
+            {
+                CapabilityScope.Resolve<IClock>().Should().BeSameAs(outer,
+                    "the outer scope keeps answering what the inner one does not");
+                CapabilityScope.Resolve<INetworkStatus>().Should().NotBeNull();
+            }
+
+            CapabilityScope.Resolve<INetworkStatus>().Should().BeNull("the inner scope is over");
+            CapabilityScope.Resolve<IClock>().Should().BeSameAs(outer);
+            _ = inner;
         }
+
+        CapabilityScope.Resolve<IClock>().Should().BeNull("and so is the outer one");
+    }
+
+    /// <summary>A stand-in for a capability that is not a clock — the test is about the scope.</summary>
+    private sealed class OfflineStatus : INetworkStatus
+    {
+        public NetworkState Current => NetworkState.Offline;
+        public IDisposable Subscribe(Action<NetworkState> onChanged) => new NoSubscription();
+        private sealed class NoSubscription : IDisposable { public void Dispose() { } }
     }
 
     /// <summary>A target without the capability answers null, and a component that asked for one

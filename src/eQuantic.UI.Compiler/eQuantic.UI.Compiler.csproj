@@ -27,4 +27,10 @@
     </None>
   </ItemGroup>
 
+
+    <ItemGroup>
+        <!-- The dependency rule, shared with the other assembly rather than written twice: these two
+             cannot reference each other, and a rule that drifts here moves constructor arguments. -->
+        <Compile Include="../Shared/CapabilityRule.cs" Link="Shared/CapabilityRule.cs" />
+    </ItemGroup>
 </Project>

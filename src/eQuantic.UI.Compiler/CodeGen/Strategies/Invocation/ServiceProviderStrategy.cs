@@ -32,6 +32,11 @@ public class ServiceProviderStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
 
+        // `CapabilityScope.Resolve<T>()` — the STATIC resolver, which is what a generated factory
+        // reaches for: it has no component and no context to ask. Without this the emitted factory
+        // imports a name the runtime does not export and the module fails to load whole.
+        if (IsCapabilityScope(invocation, context)) return true;
+
         var methodName = memberAccess.Name.Identifier.Text;
         if (methodName is not ("GetService" or "GetRequiredService"))
             return false;
@@ -58,6 +63,14 @@ public class ServiceProviderStrategy : IConversionStrategy
 
         // Allow fallback - these method names are specific enough
         return true;
+    }
+
+    /// <summary>The static resolver on CapabilityScope — same registry, no receiver to speak of.</summary>
+    private static bool IsCapabilityScope(InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol symbol) return false;
+        if (symbol.Name != "Resolve") return false;
+        return symbol.ContainingType?.ToDisplayString() == "eQuantic.UI.Primitives.CapabilityScope";
     }
 
     /// <summary>The component's OWN capability accessor — declared on UiComponent, so a call with
@@ -92,7 +105,9 @@ public class ServiceProviderStrategy : IConversionStrategy
         // receiver, or through `this` — and only the MODEL says which method that is, so a `this.`
         // call the model cannot resolve (the playground compiles a buffer alone) keeps the receiver
         // it was written with rather than being rewritten on a guess.
-        if (invocation.Expression is SimpleNameSyntax || IsComponentCapability(invocation, context))
+        if (invocation.Expression is SimpleNameSyntax
+            || IsComponentCapability(invocation, context)
+            || IsCapabilityScope(invocation, context))
         {
             var capability = CapabilityName(invocation);
             if (capability is null)

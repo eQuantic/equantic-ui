@@ -96,9 +96,21 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         source.AppendLine("{");
         foreach (var component in byName.Values.OrderBy(c => c.Name, System.StringComparer.Ordinal))
         {
-            var parameters = string.Join(", ", component.Parameters.Select(p =>
-                p.Default is null ? $"{p.Type} {p.Name}" : $"{p.Type} {p.Name} = {p.Default}"));
-            var arguments = string.Join(", ", component.Parameters.Select(p => p.Name));
+            // A CAPABILITY never reaches the signature: a caller composing a component has no
+            // container to reach into, and eqc already resolves it on the other side. The factory
+            // asks the same scope the SSR pipeline arms, so both targets construct alike.
+            var parameters = string.Join(", ", component.Parameters
+                .Where(p => !p.IsDependency)
+                .Select(p => p.Default is null ? $"{p.Type} {p.Name}" : $"{p.Type} {p.Name} = {p.Default}"));
+            // A capability the component declared it CANNOT work without is required by name: a
+            // target that does not have it gets a sentence saying which one and where, instead of a
+            // null that travels into the component and fails somewhere inside it. One the component
+            // declared nullable is handed over as it comes — that is the author saying they cope.
+            var arguments = string.Join(", ", component.Parameters.Select(p => p.IsDependency
+                ? (p.IsRequired
+                    ? $"global::eQuantic.UI.Primitives.CapabilityScope.Require<{p.Type}>(\"{component.Name}\")"
+                    : $"global::eQuantic.UI.Primitives.CapabilityScope.Resolve<{p.Type}>()")
+                : p.Name));
             source.AppendLine($"    /// <summary>Builds a <see cref=\"{component.Name}\"/>.</summary>");
             // Qualified on the RIGHT of `new` only: the factory's own name shadows the type inside
             // this class, so `new Panel(…)` here would bind to the method and not compile.
@@ -130,7 +142,7 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
     private sealed class Component
     {
         public Component(string ns, string name, string fullName, int electedCount,
-            List<(string Type, string Name, string? Default)> parameters, Location location)
+            List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired)> parameters, Location location)
         {
             Namespace = ns; Name = name; FullName = fullName;
             ElectedCount = electedCount; Parameters = parameters; Location = location;
@@ -141,7 +153,7 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         /// <summary>Globally qualified, so the factory body is never ambiguous.</summary>
         public string FullName { get; }
         public int ElectedCount { get; }
-        public List<(string Type, string Name, string? Default)> Parameters { get; }
+        public List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired)> Parameters { get; }
         public Location Location { get; }
     }
 
@@ -175,7 +187,9 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             .Select(p => (
                 Type: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 Name: p.Name,
-                Default: DefaultLiteral(p)))
+                Default: DefaultLiteral(p),
+                IsDependency: CapabilityRule.IsDependency(p.Type),
+                IsRequired: CapabilityRule.IsRequired(p)))
             .ToList();
 
         return new Component(

@@ -42,4 +42,57 @@ public static class CapabilityScope
     /// <summary>The capability, or null when this target does not have it — or when nothing armed a
     /// resolver, which is the case in a plain unit test.</summary>
     public static T? Resolve<T>() where T : class => Current?.Invoke(typeof(T)) as T;
+
+    /// <summary>
+    /// The capability a component said it cannot work without — <c>IClock</c> rather than
+    /// <c>IClock?</c> in its constructor. Absent here is a mistake, and this is where saying so is
+    /// still cheap: the alternative is a null travelling into the component and failing later,
+    /// inside code that never mentions capabilities at all.
+    /// <para>
+    /// The message names the capability, the component asking, and both ways out — because the
+    /// person reading it is usually on the target that does not have it, wondering why the same
+    /// screen works elsewhere.
+    /// </para>
+    /// </summary>
+    /// <summary>
+    /// Arms ONE capability for as long as the returned handle lives, over whatever is already in
+    /// force — a test hands a fake clock, a preview hands a stub clipboard, and everything else
+    /// keeps answering the way it did.
+    /// <para>
+    /// The ceremony it replaces is the reason it exists: <c>Current = type =&gt; type ==
+    /// typeof(IClock) ? clock : null</c> answers null to every OTHER capability the component might
+    /// ask for, and it has to be undone by hand — a test that forgets leaves the next one resolving
+    /// against a fake it never asked for. Nesting composes, and disposing restores exactly what was
+    /// there before.
+    /// </para>
+    /// <example><code>
+    /// using var _ = CapabilityScope.With&lt;IClock&gt;(fake);
+    /// </code></example>
+    /// </summary>
+    public static IDisposable With<T>(T capability) where T : class
+    {
+        var outer = Current;
+        Current = type => type == typeof(T) ? capability : outer?.Invoke(type);
+        return new Restore(outer);
+    }
+
+    /// <summary>Puts back exactly what was in force, once. A `using` that runs twice — a nested
+    /// scope disposed by hand and again by its block — must not resurrect an older resolver.</summary>
+    private sealed class Restore(Func<Type, object?>? outer) : IDisposable
+    {
+        private bool _done;
+
+        public void Dispose()
+        {
+            if (_done) return;
+            _done = true;
+            Current = outer;
+        }
+    }
+
+    public static T Require<T>(string component) where T : class =>
+        Resolve<T>() ?? throw new InvalidOperationException(
+            $"{component} needs {typeof(T).Name}, and this target has none. Register it with the "
+            + $"host, or declare the parameter as {typeof(T).Name}? if the component can work "
+            + "without it.");
 }

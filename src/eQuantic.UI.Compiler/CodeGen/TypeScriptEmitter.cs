@@ -352,6 +352,22 @@ public class TypeScriptEmitter
                                     ? $"this.{service.Name.ToCamelCase()}"
                                     : $"const {service.Name.ToCamelCase()}";
                                 c.Raw($"{target} = {Eq.ResolveService}('{service.ServiceKey}');");
+
+                                // The twin of CapabilityScope.Require: a component that declared it
+                                // cannot work without this one says so HERE, where the capability is
+                                // missing, rather than letting undefined travel into its own code and
+                                // fail at a member access that never mentions capabilities. The two
+                                // targets have to agree about this, or the browser is the lenient one
+                                // and the bug only exists there.
+                                if (service.IsRequiredService)
+                                {
+                                    var name = service.Name.ToCamelCase();
+                                    var read = ctorDef.IsPrimaryConstructor ? $"this.{name}" : name;
+                                    c.Raw($"if ({read} === undefined || {read} === null) throw new Error("
+                                        + $"'{component.Name} needs {service.ServiceKey}, and this target has none. "
+                                        + $"Register it with the host, or declare the parameter as {service.ServiceKey}? "
+                                        + "if the component can work without it.');");
+                                }
                             }
                             foreach (var param in passed)
                             {
