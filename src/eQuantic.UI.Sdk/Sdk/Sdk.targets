@@ -15,6 +15,30 @@
     <PropertyGroup Condition="'$(EqcCliPath)' == '' And Exists('$(_SourceBuildDirDebug)eqc.dll')">
         <EqcCliPath>$(_SourceBuildDirDebug)eqc.dll</EqcCliPath>
     </PropertyGroup>
+
+    <!--
+        A build from THIS repository's own tree — the samples, the site, a scaffold under test —
+        runs the compiler the WORKING TREE describes, never the copy staged beside the SDK by the
+        last pack. That copy is a build artifact and is happily days old: the dashboard sample spent
+        a day emitting yesterday's JavaScript and reading as proof of today's, which is the one
+        thing a sample must never do. A consumer restoring from NuGet has no source tree here, so
+        none of this applies to them and the staged tools stay exactly what they run.
+    -->
+    <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)../../eQuantic.Build/eQuantic.Build.csproj')">
+        <_EqSourceTree>true</_EqSourceTree>
+    </PropertyGroup>
+
+    <Target Name="EQuanticToolsFromSource" Condition="'$(_EqSourceTree)' == 'true'"
+        BeforeTargets="CompileEQuanticUI;EQuanticVectors;EQuanticWebAppIcon">
+        <MSBuild Projects="$(MSBuildThisFileDirectory)../../eQuantic.Build/eQuantic.Build.csproj"
+            Targets="Restore;Build" Properties="Configuration=$(Configuration)" />
+        <MSBuild Projects="$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/eQuantic.UI.Native.Build.csproj"
+            Targets="Restore;Build" Properties="Configuration=$(Configuration)" />
+        <PropertyGroup>
+            <EqcCliPath>$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/$(Configuration)/net10.0/eqc.dll</EqcCliPath>
+            <_EqIconToolDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
+        </PropertyGroup>
+    </Target>
     <PropertyGroup>
         <_EqOsArch Condition="'$(_EqOsArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_EqOsArch>
         <_EqIsArm64 Condition="'$(_EqOsArch)' == 'Arm64'">true</_EqIsArm64>
