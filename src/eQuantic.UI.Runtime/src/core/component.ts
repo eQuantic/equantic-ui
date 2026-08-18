@@ -154,8 +154,24 @@ export abstract class StatelessComponent extends Component {
     return this._renderManager.getCurrentNode();
   }
 
-  /** Stateless components hold no lifecycle/DOM ownership to release on navigation away. */
-  disposeQuietly(): void {}
+  /**
+   * A stateless page has no lifecycle of its own. It does own a STORE, and that changed what this
+   * method owes: since the reconciler pass (W6) a stateless page retains the nested stateful
+   * components it built, so what it holds on navigation away is a set of components that each have
+   * an `onMount` that ran and an `onUnmount` that is owed.
+   *
+   * Left unsaid, the page went and its components stayed: a section subscribed to a device kept
+   * its subscription, and every `setState` from that dead component drew it back into the page the
+   * visitor had navigated to. So the previous page's section reappeared over the new one, its title
+   * running into the new title, and one more timer stayed alive for every visit.
+   *
+   * `_mounted` goes false for the same reason the stateful page sets it: anything already queued
+   * must flush into nothing rather than into a page that is no longer on screen.
+   */
+  disposeQuietly(): void {
+    this._mounted = false;
+    this._instances.unmountAll();
+  }
 
   getVirtualNode(): HtmlNode {
     return this.render();
@@ -422,7 +438,19 @@ export abstract class SharedStatefulComponent extends Component {
     this.onMount();
   }
 
-  /** The pair — also idempotent, and a no-op for an instance that never entered the tree. */
+  /**
+   * The pair — also idempotent, and a no-op for an instance that never entered the tree.
+   *
+   * Everything this component RETAINED leaves with it. On Photon one store belongs to the host, so
+   * a pass that drops a subtree unmounts every instance in it whatever its depth; on the web each
+   * component keeps its own store, and without this line the teardown reached only the direct
+   * children. A component two levels down never heard that it left: whatever it subscribed to in
+   * `onMount` went on running, and its `setState` drew it back into the page the visitor had
+   * navigated to. One timer per visit, kept alive by the subscription that outlived its component.
+   *
+   * The component's own `onUnmount` runs FIRST, which is the order a single store produces too:
+   * parents are resolved before their children in a pass, so they leave in that order as well.
+   */
   notifyUnmounted(): void {
     if (!this._lifecycleMounted) return;
     this._lifecycleMounted = false;
