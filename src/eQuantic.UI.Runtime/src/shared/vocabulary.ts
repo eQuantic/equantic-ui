@@ -1389,14 +1389,15 @@ export class VectorPaint {
     if (config) Object.assign(this, config);
   }
 
-  static none(): VectorPaint {
-    return new VectorPaint('none', { r: 0, g: 0, b: 0, a: 0 });
-  }
+  // FIELDS, because that is what they are in C# — `public static readonly VectorPaint None`. eqc
+  // emits the access the declaration implies, so a method here handed the component the FUNCTION:
+  // the realizer read `kind` off it, found undefined, and drew nothing. It rendered perfectly from
+  // the server, where the fields are real, and vanished on hydration. (`solid`/`gradients` stay
+  // methods — they are methods in C# too, and they take arguments.)
+  static readonly none = new VectorPaint('none', { r: 0, g: 0, b: 0, a: 0 });
 
   /** Tinted at full strength; a fraction of the tint is this with a lower alpha. */
-  static inherit(): VectorPaint {
-    return new VectorPaint('inherit', { r: 0, g: 0, b: 0, a: 255 });
-  }
+  static readonly inherit = new VectorPaint('inherit', { r: 0, g: 0, b: 0, a: 255 });
 
   static solid(color: ColorValue): VectorPaint {
     return new VectorPaint('solid', color);
@@ -1426,7 +1427,7 @@ export class VectorShape {
   constructor(
     path: string,
     fill: VectorPaint,
-    stroke: VectorPaint = VectorPaint.none(),
+    stroke: VectorPaint = VectorPaint.none,
     strokeWidth = 1,
     evenOdd = false,
     opacity = 1,
