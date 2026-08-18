@@ -1406,6 +1406,80 @@ export function gradientId(run: VectorGradientValue): string {
   return `eq-g-${hashDeclaration(text)}`;
 }
 
+/**
+ * Every gradient the DOCUMENT paints with, in one container — the twin of the C# GradientSink, and
+ * the same shape the atomic styles use: adopt what the server left, add only what is missing.
+ *
+ * A `<defs>` inside each drawing deduplicates within that drawing and nowhere else, and an
+ * AdaptiveNode puts every arm in the page: `url(#id)` binds to the FIRST in document order, which
+ * is the arm the media query hides, and a paint server that is not rendered paints nothing.
+ *
+ * Creating a SECOND container would bring the bug back through the other door — two defs with one
+ * id — so the server's is adopted when it is there, and its ids are seeded as already-known.
+ */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const knownGradients = new Set<string>();
+let gradientDefs: Element | null = null;
+
+function gradientRegistry(): Element | null {
+  if (typeof document === 'undefined') return null;
+  // Cached, but only while it is still IN the document: a detached container answers appendChild
+  // happily and paints nothing, which is the silent half of this whole class of bug.
+  if (gradientDefs?.isConnected) return gradientDefs;
+  gradientDefs = null;
+
+  let container = document.getElementById('eq-vectors');
+  if (container) {
+    for (const declared of container.querySelectorAll('[id]')) knownGradients.add(declared.id);
+  } else {
+    // Nothing in this document declares anything yet, whatever an older one did.
+    knownGradients.clear();
+    container = document.createElementNS(SVG_NS, 'svg') as unknown as HTMLElement;
+    // setAttribute, not `.id =`: an SVG element's id is an attribute like any other, and assigning
+    // the property is not the same thing everywhere.
+    container.setAttribute('id', 'eq-vectors');
+    container.setAttribute('width', '0');
+    container.setAttribute('height', '0');
+    container.setAttribute('aria-hidden', 'true');
+    // Out of flow and zero-sized, NEVER display:none — see above.
+    container.setAttribute('style', 'position:absolute;overflow:hidden');
+    document.body.appendChild(container);
+  }
+
+  gradientDefs = container.querySelector('defs');
+  if (!gradientDefs) {
+    // A container with no defs is a container that declares nothing: whatever was believed known
+    // is not in this document.
+    knownGradients.clear();
+    for (const declared of container.querySelectorAll('[id]')) knownGradients.add(declared.id);
+    gradientDefs = document.createElementNS(SVG_NS, 'defs');
+    container.appendChild(gradientDefs);
+  }
+  return gradientDefs;
+}
+
+/** Declares one run for the document, once. Content-addressed id, so a repeat is a no-op. */
+function ensureGradient(id: string, paint: VectorPaintValue): void {
+  // The registry is asked FIRST: what is "already known" is only true of the document that holds
+  // the container, and this set outlives it. Checking the set first meant a container that had gone
+  // away was never rebuilt — every gradient after that was believed declared and was not.
+  const defs = gradientRegistry();
+  if (!defs) return;
+  if (knownGradients.has(id)) return;
+  knownGradients.add(id);
+  defs.appendChild(domFromNode(gradientElement(id, paint)));
+}
+
+/** The HtmlNode the twin already builds, as real SVG DOM — namespaced, or the browser treats a
+ * `<linearGradient>` as an unknown HTML element and the paint never resolves. */
+function domFromNode(node: HtmlNode): Element {
+  const element = document.createElementNS(SVG_NS, node.tag);
+  for (const [name, value] of Object.entries(node.attributes))
+    if (value !== undefined) element.setAttribute(name, value);
+  for (const child of node.children) element.appendChild(domFromNode(child as HtmlNode));
+  return element;
+}
+
 /** One paint server, in SVG's own words — the twin of the C# GradientElement. */
 function gradientElement(id: string, paint: VectorPaintValue): HtmlNode {
   const run = paint.gradient!;
@@ -1471,7 +1545,13 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
       if (isGradient(value) && !runs.has(gradientId(value.gradient!)))
         runs.set(gradientId(value.gradient!), value);
 
-  const defs: HtmlNode[] = runs.size === 0
+  // With a document, the runs go to its ONE container; without one — a unit test, a lowering asked
+  // for its shape rather than for a page — they stay inline, exactly as the C# realizer does when
+  // no sink is armed.
+  const inDocument = typeof document !== 'undefined';
+  if (inDocument) for (const [id, value] of runs) ensureGradient(id, value);
+
+  const defs: HtmlNode[] = runs.size === 0 || inDocument
     ? []
     : [{
         tag: 'defs',

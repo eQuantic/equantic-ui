@@ -25,6 +25,72 @@ public class VectorGradientTests
                 yield return descendant;
     }
 
+    /// <summary>
+    /// The same artwork twice, on one page. Each drawing used to carry its own <c>&lt;defs&gt;</c>,
+    /// so the document held N identical definitions of one id — and <c>url(#id)</c> binds to the
+    /// FIRST in document order. With an AdaptiveNode putting every arm in the page, that first one
+    /// is inside the arm the media query hides, and a paint server that is not rendered paints
+    /// nothing: the shape came out unfilled on the layout it was written for.
+    /// </summary>
+    [Fact]
+    public void TheSameRunTwice_IsDeclaredOnceForTheDocument()
+    {
+        var sink = new GradientSink();
+        GradientSink.Ambient = sink;
+        try
+        {
+            var page = new Column(gap: 0);
+            page.Add(new Drawing(Sky(), 100, 100));
+            page.Add(new Drawing(Sky(), 100, 100));
+            var rendered = Render(page);
+
+            Walk(rendered).Where(node => node.Tag == "defs").Should().BeEmpty(
+                "a drawing no longer carries the document's paint servers");
+
+            var container = WebRealizer.Lower(new Box(), Theme) is not null
+                ? sink.Container().Render()
+                : throw new InvalidOperationException();
+
+            var declared = Walk(container)
+                .Where(node => node.Tag is "linearGradient" or "radialGradient")
+                .Select(node => node.Attributes["id"])
+                .ToList();
+
+            declared.Should().OnlyHaveUniqueItems("the id IS the content, so a repeat is the same def");
+            declared.Should().HaveCount(2, "the artwork has two runs, and it was drawn twice");
+        }
+        finally
+        {
+            GradientSink.Ambient = null;
+        }
+    }
+
+    /// <summary>
+    /// The container has to be RENDERED to be usable. `display:none` is what broke this in the
+    /// first place — a paint server inside one is not rendered, and referencing it paints nothing —
+    /// so the container is zero-sized and out of flow instead, and aria-hidden keeps it out of the
+    /// accessibility tree without taking it out of the render tree.
+    /// </summary>
+    [Fact]
+    public void TheContainer_IsOutOfFlowRatherThanHidden()
+    {
+        var sink = new GradientSink();
+        sink.Add("eq-g-test", new VectorPaint(VectorPaintKind.LinearGradient, Primitives.Color.Black)
+        {
+            Gradient = new VectorGradient(0, 0, 0, 1, 0, false,
+                [new VectorStop(0, Primitives.Color.Black), new VectorStop(1, Primitives.Color.White)]),
+        });
+
+        var container = sink.Container().Render();
+
+        container.Attributes["id"].Should().Be("eq-vectors");
+        container.Attributes["aria-hidden"].Should().Be("true");
+        var style = container.Attributes.TryGetValue("style", out var value) ? value : string.Empty;
+        style.Replace(" ", string.Empty).Should().Contain("position:absolute")
+            .And.NotContain("display:none",
+            "a paint server that is not rendered paints nothing — that is the bug, not the fix");
+    }
+
     /// <summary>Defs AFTER the shapes on purpose: an exporter writes them in either order, and a
     /// single forward pass would have answered "unknown" for half the files in the world.</summary>
     private static VectorDrawing Sky() => SvgDocument.Parse("""

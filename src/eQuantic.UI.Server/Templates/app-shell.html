@@ -63,6 +63,12 @@
     <body>
         <div id="app" data-ssr="{{SsrEnabled}}">{{SsrContent}}</div>
 
+        <!-- Every gradient this page paints with, declared once for the document. A SIBLING of
+             #app, never a child: the reconciler owns what is inside #app and would remove a node
+             its tree does not know about. Zero-sized and out of flow, never display:none — a paint
+             server that is not rendered paints nothing, which is the bug this exists to fix. -->
+        {{?VectorDefs}}{{VectorDefs}}{{/VectorDefs}}
+
         <!-- eQuantic.UI Runtime (Static Asset) -->
         <script>
             window.__EQ_CONFIG = {{ConfigJson}};

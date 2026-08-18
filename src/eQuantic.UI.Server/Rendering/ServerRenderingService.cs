@@ -196,6 +196,9 @@ public class ServerRenderingService : IServerRenderingService
                 // assets and its atomic rules, per navigation.
                 var assets = new AssetCollection();
                 var html = string.Empty;
+                // Declared out here for the same reason the html is: a page that did not draw has
+                // no paint servers to declare, and the result is built past the end of this block.
+                string? vectorDefs = null;
                 if (draw)
                 {
                     CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
@@ -205,6 +208,10 @@ public class ServerRenderingService : IServerRenderingService
                     // component — collects its atomic rules into this one per-page set.
                     var styles = new Web.StyleSink();
                     Web.StyleSink.Ambient = styles;
+                    // The same shape, for the same reason, one layer over: every gradient the page
+                    // paints with, declared ONCE for the document instead of once per drawing.
+                    var gradients = new Web.GradientSink();
+                    Web.GradientSink.Ambient = gradients;
                     // Armed the same way and for the same reason: a component that throws is
                     // contained to its own subtree instead of turning this request into a 500.
                     // Development quotes the exception in the panel; production says only that a
@@ -219,6 +226,7 @@ public class ServerRenderingService : IServerRenderingService
                     finally
                     {
                         Web.StyleSink.Ambient = null;
+                        Web.GradientSink.Ambient = null;
                         Primitives.ComponentBoundary.Report = null;
                     }
 
@@ -228,6 +236,9 @@ public class ServerRenderingService : IServerRenderingService
                     {
                         assets.Add(new InlineStyleAsset(styles.Css, "eq-atomic"));
                     }
+
+                    // The page's own paint servers, rendered the same way the page was.
+                    if (!gradients.IsEmpty) vectorDefs = RenderComponent(gradients.Container());
                 }
 
                 // Serialize state for hydration. A WRITE-ONCE page carries its state in its OWN
@@ -261,7 +272,7 @@ public class ServerRenderingService : IServerRenderingService
                     : 200;
 
                 return ServerRenderResult.Ok(html, metadata, serializedState,
-                    assets.HasAssets ? assets : null, status);
+                    assets.HasAssets ? assets : null, status, vectorDefs);
             }
             finally
             {

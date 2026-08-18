@@ -745,13 +745,27 @@ public static class WebRealizer
         else svg.RawAttributes["aria-hidden"] = "true";
 
         // Every run the artwork paints with, declared once and referenced by the shapes. The id is
-        // the hash of the gradient ITSELF, so two shapes sharing a run share a def — and so that a
-        // second drawing carrying the same run lands on the same id, which is a duplicate the
-        // document can afford: identical content, and `url(#id)` resolves to the first either way.
-        var defs = new RealizedElement("defs");
-        foreach (var gradient in Gradients(drawing.Artwork))
-            defs.Children.Add(GradientElement(gradient.Key, gradient.Value));
-        if (defs.Children.Count > 0) svg.Children.Add(defs);
+        // the hash of the gradient ITSELF, so two shapes sharing a run share a def.
+        //
+        // WHERE that def goes is the document's business, not this drawing's. Inline, a second
+        // drawing with the same run declares the same id again, and `url(#id)` binds to the first in
+        // DOCUMENT order — which, once an AdaptiveNode puts every arm in the page, is the arm the
+        // media query hides. A paint server in a display:none subtree is not rendered, so the shape
+        // came out unpainted on the layout it was meant for. With a sink armed the runs go to the
+        // page's one container instead; without one — a drawing realized alone, a unit test — they
+        // stay inline, because there is no document to put a container in.
+        if (GradientSink.Ambient is { } sink)
+        {
+            foreach (var gradient in Gradients(drawing.Artwork))
+                sink.Add(gradient.Key, gradient.Value);
+        }
+        else
+        {
+            var defs = new RealizedElement("defs");
+            foreach (var gradient in Gradients(drawing.Artwork))
+                defs.Children.Add(GradientElement(gradient.Key, gradient.Value));
+            if (defs.Children.Count > 0) svg.Children.Add(defs);
+        }
 
         foreach (var shape in drawing.Artwork.Shapes)
         {
@@ -827,6 +841,33 @@ public static class WebRealizer
         foreach (var stop in run.Stops)
             text.Append('|').Append(TokenCss.Number(stop.Offset)).Append(':').Append(CssColor(stop.Color));
         return $"eq-g-{StyleAtomizer.Hash(text.ToString())}";
+    }
+
+    /// <summary>
+    /// Every run the DOCUMENT paints with, in one container the whole page references. See
+    /// <see cref="GradientSink"/> for why it stopped living inside each drawing.
+    /// </summary>
+    internal static HtmlElement GradientContainer(IReadOnlyDictionary<string, VectorPaint> runs)
+    {
+        var svg = new RealizedElement("svg")
+        {
+            Id = GradientSink.ContainerId,
+            Style = new HtmlStyle
+            {
+                // Out of flow and zero-sized — NOT display:none, which is what makes a paint server
+                // unusable and is the bug this replaces.
+                Position = Core.Position.Absolute,
+                Width = "0",
+                Height = "0",
+                Overflow = "hidden",
+            },
+            RawAttributes = new Dictionary<string, string> { ["aria-hidden"] = "true" },
+        };
+
+        var defs = new RealizedElement("defs");
+        foreach (var run in runs) defs.Children.Add(GradientElement(run.Key, run.Value));
+        svg.Children.Add(defs);
+        return svg;
     }
 
     /// <summary>

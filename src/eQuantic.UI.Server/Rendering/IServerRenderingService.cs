@@ -119,11 +119,24 @@ public sealed class ServerRenderResult
     public int StatusCode { get; private init; } = 200;
 
     /// <summary>
+    /// The page's paint servers, as markup for the BODY — every gradient the render referenced,
+    /// declared once for the document. Null when the page drew none. It rides beside the html
+    /// rather than inside it because <c>#app</c>'s children belong to the reconciler, and an svg is
+    /// not allowed in the head where the assets go.
+    /// </summary>
+    public string? VectorDefs { get; private init; }
+
+    /// <summary>
     /// Creates a successful render result.
     /// </summary>
     public static ServerRenderResult Ok(string html, MetadataCollection? metadata = null,
-        string? serializedState = null, AssetCollection? assets = null, int statusCode = 200) =>
-        new(true, html, metadata, null, serializedState, assets) { StatusCode = statusCode };
+        string? serializedState = null, AssetCollection? assets = null, int statusCode = 200,
+        string? vectorDefs = null) =>
+        new(true, html, metadata, null, serializedState, assets)
+        {
+            StatusCode = statusCode,
+            VectorDefs = vectorDefs,
+        };
 
     /// <summary>
     /// Creates a failed render result.

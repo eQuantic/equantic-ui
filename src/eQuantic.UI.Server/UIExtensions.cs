@@ -582,6 +582,9 @@ public static class UIExtensions
 
         // Attempt SSR if page name is provided and SSR is enabled
         var ssrContent = "<div class=\"loading\">Loading...</div>";
+        // The page's paint servers, if it drew any — see GradientSink for why they are not inside
+        // each drawing any more.
+        string? vectorDefs = null;
         var ssrEnabled = false;
         string? serializedState = null;
 
@@ -596,6 +599,7 @@ public static class UIExtensions
                     if (result.Success && result.Html != null)
                     {
                         ssrContent = result.Html;
+                        vectorDefs = result.VectorDefs;
                         ssrEnabled = true;
                         serializedState = result.SerializedState;
 
@@ -673,6 +677,7 @@ public static class UIExtensions
                             if (result.Success && result.Html != null)
                             {
                                 ssrContent = result.Html;
+                        vectorDefs = result.VectorDefs;
                                 ssrEnabled = true;
                                 if (!string.IsNullOrEmpty(result.Metadata?.Title)) metadata.Title = result.Metadata.Title;
                             }
@@ -709,6 +714,7 @@ public static class UIExtensions
                              pageName = errorPageName;
                              pageValue = $"'{pageName}'";
                              ssrContent = result.Html;
+                        vectorDefs = result.VectorDefs;
                              ssrEnabled = true; // Enabled for the error page
                              if (!string.IsNullOrEmpty(result.Metadata?.Title)) metadata.Title = result.Metadata.Title;
                          }
@@ -773,6 +779,7 @@ public static class UIExtensions
                .Set("HeadTags", string.Join("\n    ", headTags))
                .Set("SsrEnabled", ssrEnabled.ToString().ToLowerInvariant())
                .Set("SsrContent", ssrContent)
+               .SetOrEmpty("VectorDefs", vectorDefs)
                .Set("ConfigJson", configJson)
                .Set("IsDevelopmentBool", isDevelopment ? "true" : "false")
                .SetOrEmpty("InitialState", serializedState != null ? $"window.__INITIAL_STATE__ = {serializedState};" : null)
