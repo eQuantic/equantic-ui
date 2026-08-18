@@ -397,13 +397,44 @@ jobs:
 
           dotnet new install "$FEED"/eQuantic.UI.Templates.*.nupkg
 
-          dotnet new equantic-app -n GateWeb
-          (cd GateWeb && cp ../nuget.config . && dotnet build -c Release && dotnet publish -c Release -o publish)
-          test -f GateWeb/publish/wwwroot/_equantic/runtime.js
+          # WHICH shapes to gate is asked of the template, never kept in a list here. Only the
+          # default shell was ever built, so `--shell dashboard` and `--shell topnav` — and all four
+          # native shapes — reached strangers having been compiled by nobody. A list in this file
+          # would be one more thing for the author of a new shell to remember, in the file they are
+          # least likely to open; the `--shell <a|b|c>` line is what a user reads anyway.
+          shells() {
+            dotnet new "$1" --help | grep -oE -- '--shell <[^>]+>' | head -1 \
+              | sed -E 's/.*<([^>]+)>.*/\1/' | tr '|' ' '
+          }
+
+          WEB_SHELLS="$(shells equantic-app)"
+          # A gate that walks nothing passes for the wrong reason, and would go on passing.
+          test -n "$WEB_SHELLS"
+          echo "Web shapes: $WEB_SHELLS"
+
+          for shape in $WEB_SHELLS; do
+            # Dashes are legal in a project name and not in a namespace — the shape names them.
+            name="GateWeb$(echo "$shape" | tr -d '-')"
+            dotnet new equantic-app -n "$name" --shell "$shape"
+            (cd "$name" && cp ../nuget.config . && dotnet build -c Release)
+          done
+
+          # PUBLISH once, on the first shape: the runtime lands through one target for every shell,
+          # so publishing each of them buys the same assertion three times over.
+          FIRST="GateWeb$(echo "$WEB_SHELLS" | awk '{print $1}' | tr -d '-')"
+          (cd "$FIRST" && dotnet publish -c Release -o publish)
+          test -f "$FIRST"/publish/wwwroot/_equantic/runtime.js
 
           if [ "$RUNNER_OS" = "macOS" ]; then
-            dotnet new equantic-native -n GateNative
-            (cd GateNative && cp ../nuget.config . && dotnet build -c Release)
+            NATIVE_SHELLS="$(shells equantic-native)"
+            test -n "$NATIVE_SHELLS"
+            echo "Native shapes: $NATIVE_SHELLS"
+
+            for shape in $NATIVE_SHELLS; do
+              name="GateNative$(echo "$shape" | tr -d '-')"
+              dotnet new equantic-native -n "$name" --shell "$shape"
+              (cd "$name" && cp ../nuget.config . && dotnet build -c Release)
+            done
           fi
 
           echo "Template gate green on $RUNNER_OS."

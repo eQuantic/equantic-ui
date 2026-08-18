@@ -183,6 +183,37 @@ public class TemplateSourceTests
             manifest.Should().Contain($"\"choice\": \"{shape}\"");
     }
 
+    /// <summary>
+    /// Both templates, both directions: a shape on disk that the manifest never offers is
+    /// unreachable, and a choice the manifest offers with no folder behind it scaffolds an empty
+    /// project. Neither fails anywhere else — the release gate asks the TEMPLATE what it offers, so
+    /// a shell missing from the manifest is a shell the gate never walks and nobody hears about.
+    /// </summary>
+    [Theory]
+    [InlineData("equantic-app")]
+    [InlineData("equantic-native")]
+    public void Every_shape_a_template_offers_is_on_disk_and_the_other_way_round(string template)
+    {
+        var root = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Templates", "templates", template);
+        var manifest = File.ReadAllText(Path.Combine(root, ".template.config", "template.json"));
+
+        // `_`-prefixed folders are shared parts a shape includes, not shapes themselves.
+        var onDisk = Directory.GetDirectories(Path.Combine(root, ".shells"))
+            .Select(Path.GetFileName)
+            .Where(name => !name!.StartsWith('_'))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        var offered = Regex.Matches(manifest, @"""choice"":\s*""([^""]+)""")
+            .Select(match => match.Groups[1].Value)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        onDisk.Should().NotBeEmpty($"{template} has to have shapes at all");
+        offered.Should().BeEquivalentTo(onDisk,
+            $"`dotnet new {template} --shell` offers exactly what is there to scaffold");
+    }
+
     private static IEnumerable<MetadataReference> PlatformReferences() =>
         ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
