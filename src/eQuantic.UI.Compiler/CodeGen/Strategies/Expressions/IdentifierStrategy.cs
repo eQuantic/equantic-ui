@@ -51,6 +51,15 @@ public class IdentifierStrategy : IConversionStrategy
                 || (symbol.Kind == SymbolKind.Parameter && !symbol.IsPrimaryConstructorParameter()))
                 return name.ToJsIdentifier();
 
+            // A LOCAL FUNCTION is a function in SCOPE, not a member — whatever its containing type
+            // says. It compiles to a `const` arrow beside the code that calls it, so a reference to
+            // it is the name: `this.row` reads it off an object that never had it, and the `.bind`
+            // below then throws on `undefined` where the C# ran perfectly. Only the browser sees it
+            // (the server runs the C#), which is the worst place for a difference to live.
+            // InvocationStrategy already excludes local functions on three paths; this is the fourth.
+            if (symbol is IMethodSymbol { MethodKind: MethodKind.LocalFunction })
+                return name.ToCamelCase().ToJsIdentifier();
+
             if (symbol.Kind == SymbolKind.Field || symbol.Kind == SymbolKind.Property || symbol.Kind == SymbolKind.Method)
             {
                 // A STATIC member is reached through the class, not the instance: a bare `Items` reference

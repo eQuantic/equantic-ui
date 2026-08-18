@@ -482,7 +482,19 @@ public class CSharpToJsConverter
     {
         var sb = new StringBuilder();
         sb.Append("{"); // Use standard formatting
-        foreach (var stmt in block.Statements)
+        // C# HOISTS a local function: a screen can write `Items.Select(Row)` and declare
+        // `VisualNode Row(…)` under the return, and the CLR neither knows nor cares. A `const`
+        // arrow is not hoisted, so emitted in place it sits in its temporal dead zone at the moment
+        // the code above reads it — dead code, and a ReferenceError in the browser while the server
+        // renders the same source perfectly.
+        // So the declarations LEAD the block, in source order. Their bodies only dereference at CALL
+        // time, which is why one that captures a local declared further down still reads it (and C#
+        // already refuses a call before that local is assigned).
+        foreach (var stmt in block.Statements.Where(statement => statement is LocalFunctionStatementSyntax))
+        {
+            sb.Append(ConvertStatement(stmt));
+        }
+        foreach (var stmt in block.Statements.Where(statement => statement is not LocalFunctionStatementSyntax))
         {
              sb.Append(ConvertStatement(stmt));
         }

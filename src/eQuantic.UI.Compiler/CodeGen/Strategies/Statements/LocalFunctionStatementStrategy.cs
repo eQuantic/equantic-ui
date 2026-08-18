@@ -15,11 +15,11 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
     public string Convert(StatementSyntax node, ConversionContext context)
     {
         var localFn = (LocalFunctionStatementSyntax)node;
-        var name = localFn.Identifier.Text;
-        if (!string.IsNullOrEmpty(name) && char.IsUpper(name[0]))
-        {
-            name = char.ToLower(name[0]) + name.Substring(1);
-        }
+        // The SAME pair of transformations the reference applies (IdentifierStrategy): camelCase,
+        // then the JS-identifier rename. Hand-lowercasing here is how the declaration and the
+        // reference drift — and a local function called `Delete` emitted `const delete = …`, which
+        // is not a name JS will take at all.
+        var name = localFn.Identifier.Text.ToCamelCase().ToJsIdentifier();
 
         // TYPED, and an ARROW rather than a `function`. A C# local function inside a method can use
         // the instance — `this._findText` — and a `function` declaration rebinds `this` to
