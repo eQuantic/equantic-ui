@@ -343,8 +343,15 @@ public class TypeScriptEmitter
                                 // the resolve line shipped, the import did not, and the page died on
                                 // "$eq is not defined" the moment it constructed.
                                 component.UsedHelpers.Add(Eq.Import);
-                                c.Raw($"const {service.Name.ToCamelCase()} = "
-                                    + $"{Eq.ResolveService}('{service.ServiceKey}');");
+                                // WHERE it lands is the constructor's form. An explicit ctor's body
+                                // does its own wiring (`_clock = clock`), so a local is what it
+                                // reads. A PRIMARY constructor's parameter is an implicit field and
+                                // members reference it as `this.clock`, so a local would leave that
+                                // field undefined and the dependency unreachable from Build.
+                                var target = ctorDef!.IsPrimaryConstructor
+                                    ? $"this.{service.Name.ToCamelCase()}"
+                                    : $"const {service.Name.ToCamelCase()}";
+                                c.Raw($"{target} = {Eq.ResolveService}('{service.ServiceKey}');");
                             }
                             foreach (var param in passed)
                             {

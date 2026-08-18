@@ -662,14 +662,18 @@ public class ComponentParser
         // `this.`. (Records route through RecordTypeEmitter, not here.)
         if (classDecl.ParameterList is { Parameters.Count: > 0 } primary)
         {
-            var primaryDef = new MethodDefinition { Name = classDecl.Identifier.Text, ReturnType = "void" };
+            var primaryDef = new MethodDefinition
+            {
+                Name = classDecl.Identifier.Text, ReturnType = "void", IsPrimaryConstructor = true,
+            };
             foreach (var param in primary.Parameters)
             {
-                primaryDef.Parameters.Add(new ParameterDefinition
-                {
-                    Name = param.Identifier.ValueText,
-                    Type = param.Type?.ToString() ?? "object"
-                });
+                // Described exactly as an explicit constructor's parameters are. Building the
+                // definition by hand here is how a DEPENDENCY stopped being one: a section written
+                // `PairLoop(IClock clock)` emitted `if (clock !== undefined) this.clock = clock`,
+                // and since nobody composing it in the middle of a tree passes a clock, the field
+                // was undefined and the component was inert — in silence, on one target.
+                primaryDef.Parameters.Add(Describe(param));
             }
             definition.Constructors.Add(primaryDef);
         }

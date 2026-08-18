@@ -60,6 +60,48 @@ public class ConstructorInjectionTests
         return compiler.CompileSource(source, "DependentPage.cs").Single().TypeScript;
     }
 
+    /// <summary>
+    /// The same capability, taken by a PRIMARY constructor, in a component that sits in the middle
+    /// of a tree rather than at a route.
+    ///
+    /// <para>
+    /// A page gets its dependencies because something constructs it and passes them. A section does
+    /// not: it is composed as `PairLoop()` by whoever draws it, so if the transpiler treats the
+    /// parameter as an argument the caller forgot, the field is undefined and the component is
+    /// silently inert — a timer that never ticks, a diagram that never moves. A dependency is not
+    /// something the caller passes, whichever constructor form declares it.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void APrimaryConstructorDependency_IsResolved_AtAnyDepth()
+    {
+        var section = Transpile("""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class TickingSection(IClock clock) : StatefulComponent
+            {
+                private IDisposable? _tick;
+                private int _step;
+
+                protected override void OnMount() =>
+                    _tick = clock.Every(TimeSpan.FromSeconds(1), () => SetState(() => _step++));
+
+                protected override void OnUnmount() => _tick?.Dispose();
+
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text($"step {_step}", TypeRole.BodyM);
+            }
+            """);
+
+        section.Should().Contain("$eq.services.resolve('IClock')",
+            "the container answers for it, exactly as ActivatorUtilities does natively");
+        section.Should().NotContain("if (clock !== undefined)",
+            "treating it as a forgotten argument is what makes the section inert in silence");
+    }
+
     [Fact]
     public void ADependency_IsResolved_NotPassedIn()
     {

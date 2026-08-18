@@ -232,6 +232,11 @@ public class MethodDefinition
     /// <summary>The body block — works for constructors too (whose declaration isn't a
     /// <see cref="MethodDeclarationSyntax"/>), so the emitter can transpile and run a ctor's body.</summary>
     public Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax? BodyNode { get; set; }
+    /// <summary>
+    /// A C# 12 PRIMARY constructor, whose parameters are implicit fields rather than locals: members
+    /// read them as <c>this.name</c>, so whatever the constructor puts in one has to land there.
+    /// </summary>
+    public bool IsPrimaryConstructor { get; set; }
 }
 
 /// <summary>
