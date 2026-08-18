@@ -61,6 +61,49 @@ public class ConstructorInjectionTests
     }
 
     /// <summary>
+    /// The capability a component asks for ITSELF, in the hook that has no context.
+    ///
+    /// <para>
+    /// OnMount is where a subscription belongs — it runs once, on the instance that stays, and
+    /// pairs with OnUnmount. It receives no ComponentContext, so until the component itself could
+    /// resolve, the only way to reach a capability at depth was inside Build behind a run-once
+    /// flag: the subscription lived in the method the framework calls repeatedly.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AComponentResolvesItsOwnCapability_WhereThereIsNoContext()
+    {
+        var section = Transpile("""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class TickingSection : StatefulComponent
+            {
+                private IDisposable? _tick;
+                private int _step;
+
+                protected override void OnMount() =>
+                    _tick = GetService<IClock>()?.Every(TimeSpan.FromSeconds(1),
+                        () => SetState(() => _step++));
+
+                protected override void OnUnmount() => _tick?.Dispose();
+
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text($"step {_step}", TypeRole.BodyM);
+            }
+            """);
+
+        // The same registry a constructor dependency comes from — there is one place a capability
+        // lives on this target, and both ways of asking have to reach it.
+        section.Should().Contain("$eq.services.resolve('IClock')");
+        section.Should().NotContain("this.getService(",
+            "the component's JS class has no such method — that call would throw where the C# ran");
+        section.Should().Contain("onMount()");
+    }
+
+    /// <summary>
     /// The same capability, taken by a PRIMARY constructor, in a component that sits in the middle
     /// of a tree rather than at a route.
     ///

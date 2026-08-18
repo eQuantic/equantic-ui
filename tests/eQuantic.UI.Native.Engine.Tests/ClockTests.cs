@@ -40,6 +40,70 @@ public class ClockTests
         }
     }
 
+    /// <summary>
+    /// The same carousel, composed by whoever draws it rather than handed anything: it asks for the
+    /// clock where it needs it. A section in the middle of a tree has no constructor the router
+    /// fills, so this is the shape that actually occurs — and until GetService existed on the
+    /// component, it had to ask inside Build (the one method the framework calls repeatedly) behind
+    /// a run-once flag.
+    /// </summary>
+    private sealed class TickingSection : Primitives.StatefulComponent
+    {
+        private IDisposable? _subscription;
+        private int _step;
+
+        internal int Step => _step;
+
+        protected override void OnMount() =>
+            _subscription = GetService<IClock>()
+                ?.Every(TimeSpan.FromMilliseconds(1700), () => SetState(() => _step++));
+
+        protected override void OnUnmount() => _subscription?.Dispose();
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Primitives.Text($"step {_step}", TypeRole.BodyM, context.Theme.TextPrimary);
+    }
+
+    /// <summary>OnMount is where a subscription belongs, and it has no context — so the capability
+    /// has to be reachable from the component itself, through whatever the host armed.</summary>
+    [Fact]
+    public void ASectionResolvesItsCapability_InOnMount()
+    {
+        var clock = new FakeClock();
+        CapabilityScope.Current = type => type == typeof(IClock) ? clock : null;
+        try
+        {
+            var section = new TickingSection();
+            section.NotifyMounted();
+            clock.Subscriptions.Should().Be(1, "the hook is where the subscription starts");
+
+            clock.Tick();
+            clock.Tick();
+            section.Step.Should().Be(2);
+
+            section.NotifyUnmounted();
+            clock.Subscriptions.Should().Be(0, "and OnUnmount still owns letting go");
+        }
+        finally
+        {
+            CapabilityScope.Current = null;
+        }
+    }
+
+    /// <summary>A target without the capability answers null, and a component that asked for one
+    /// simply does not tick — the contract's own answer rather than a crash.</summary>
+    [Fact]
+    public void ASectionWithNoCapability_MountsAnyway()
+    {
+        CapabilityScope.Current = null;
+        var section = new TickingSection();
+
+        var mount = () => section.NotifyMounted();
+
+        mount.Should().NotThrow();
+        section.Step.Should().Be(0);
+    }
+
     /// <summary>A carousel, in miniature: it subscribes when it enters the tree, advances on every
     /// tick, and lets go when it leaves.</summary>
     private sealed class Ticking(IClock clock) : Primitives.StatefulComponent

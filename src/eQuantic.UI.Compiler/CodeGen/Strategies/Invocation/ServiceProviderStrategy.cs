@@ -9,6 +9,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Invocation;
 /// - GetService&lt;T&gt;() → getService('T')
 /// - GetRequiredService&lt;T&gt;() → getRequiredService('T')
 /// - GetService(typeof(T)) → getService('T')
+/// <para>
+/// …and the same call with NO receiver, which is the component's own
+/// <c>UiComponent.GetService&lt;T&gt;()</c> — what <c>OnMount</c> uses, having no context to ask.
+/// That one cannot go through a receiver at all: it resolves from the browser's registry, the same
+/// place a constructor dependency comes from.
+/// </para>
 /// </summary>
 public class ServiceProviderStrategy : IConversionStrategy
 {
@@ -16,6 +22,12 @@ public class ServiceProviderStrategy : IConversionStrategy
     {
         if (node is not InvocationExpressionSyntax invocation)
             return false;
+
+        // No receiver: `GetService<IClock>()` inside a component. Only the model can tell that from
+        // any other method of that name, and without one there is nothing to go on — the playground
+        // compiles a buffer alone, and a bare name there stays an ordinary call.
+        if (invocation.Expression is SimpleNameSyntax)
+            return IsComponentCapability(invocation, context);
 
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return false;
@@ -39,16 +51,62 @@ public class ServiceProviderStrategy : IConversionStrategy
                    containingType == "eQuantic.UI.Core.RenderContext" ||
                    containingType.EndsWith(".RenderContext") ||
                    containingType == "eQuantic.UI.Primitives.ComponentContext" ||
-                   containingType.EndsWith(".ComponentContext");
+                   containingType.EndsWith(".ComponentContext") ||
+                   // `this.GetService<T>()` inside a component — the same accessor as the bare call.
+                   containingType == "eQuantic.UI.Primitives.UiComponent";
         }
 
         // Allow fallback - these method names are specific enough
         return true;
     }
 
+    /// <summary>The component's OWN capability accessor — declared on UiComponent, so a call with
+    /// no receiver (or through `this`) inside a component is this one and nothing else.</summary>
+    private static bool IsComponentCapability(InvocationExpressionSyntax invocation,
+        ConversionContext context)
+    {
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol symbol) return false;
+        if (symbol.Name is not ("GetService" or "GetRequiredService")) return false;
+        return symbol.ContainingType?.ToDisplayString() == "eQuantic.UI.Primitives.UiComponent";
+    }
+
+    /// <summary>The type argument of a `GetService&lt;T&gt;()`, by its simple name — the key the
+    /// registry is keyed by on every target.</summary>
+    private static string? CapabilityName(InvocationExpressionSyntax invocation)
+    {
+        var name = invocation.Expression as SimpleNameSyntax
+            ?? (invocation.Expression as MemberAccessExpressionSyntax)?.Name;
+        if (name is not GenericNameSyntax generic || generic.TypeArgumentList.Arguments.Count == 0)
+            return null;
+
+        var typeName = generic.TypeArgumentList.Arguments[0].ToString();
+        return typeName.Contains('.') ? typeName.Split('.')[^1] : typeName;
+    }
+
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
+
+        // The component's own accessor: it reads the same registry a constructor dependency is
+        // resolved from, so OnMount and the constructor find the same capability. Written with no
+        // receiver, or through `this` — and only the MODEL says which method that is, so a `this.`
+        // call the model cannot resolve (the playground compiles a buffer alone) keeps the receiver
+        // it was written with rather than being rewritten on a guess.
+        if (invocation.Expression is SimpleNameSyntax || IsComponentCapability(invocation, context))
+        {
+            var capability = CapabilityName(invocation);
+            if (capability is null)
+            {
+                context.Report(node, ConversionSeverity.Error, "EQ2111",
+                    "GetService needs its type argument to cross — the registry is keyed by the "
+                    + "interface NAME, and there is nothing to key on here.");
+                return "null";
+            }
+
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.ResolveService}('{capability}')";
+        }
+
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var methodName = memberAccess.Name.Identifier.Text;

@@ -119,6 +119,25 @@ public abstract class UiComponent : VisualNode
     public virtual void AdoptConfig(UiComponent next)
     {
     }
+
+    /// <summary>
+    /// A capability, from anywhere in the component — including where there is no context to ask.
+    /// <see cref="ComponentContext.GetService{T}"/> is the same answer for code that has one; this
+    /// is for <c>OnMount</c>, <c>OnUnmount</c> and event handlers, which do not.
+    /// <para>
+    /// Without it, a component that subscribes to a device had to do it inside <c>Build</c> behind
+    /// a run-once flag, because Build is where the context arrives — so the subscription lived in
+    /// the one method the framework calls repeatedly, and the pairing with <c>OnUnmount</c> read as
+    /// an accident. The lifecycle hook is the right place, and this is what it was missing.
+    /// </para>
+    /// <para>
+    /// Null when this target does not have the capability, which every caller has to handle anyway.
+    /// Resolves through <see cref="CapabilityScope"/>, armed by whoever owns the surface: the SSR
+    /// pipeline points it at the request's container, a Photon host at the shell's, and on the web
+    /// the transpiled call reads the browser's own registry.
+    /// </para>
+    /// </summary>
+    protected T? GetService<T>() where T : class => CapabilityScope.Resolve<T>();
 }
 
 /// <summary>A component fully described by its constructor inputs — same contract as the web SDK's.</summary>
