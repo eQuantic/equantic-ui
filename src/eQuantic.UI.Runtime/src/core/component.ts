@@ -342,6 +342,13 @@ export abstract class StatefulComponent extends Component {
       this._state?.onDispose();
       this._mounted = false;
     }
+    // Its own state was released above; the components it RETAINED are a separate debt. A page
+    // keeps nested stateful components across its re-renders, and each of them has an onMount that
+    // ran, so leaving the tree is owed to every one of them — not only to the page. Left unpaid, a
+    // section that subscribed to a device keeps drawing itself into the page the visitor moved to.
+    // Outside `_mounted` on purpose: a page disposed twice must not skip the store the second time
+    // because the first pass already flipped the flag.
+    this._instances.unmountAll();
   }
 
   _scheduleRender(): void {
