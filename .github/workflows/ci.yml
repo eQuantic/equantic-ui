@@ -322,8 +322,22 @@ jobs:
   # GitHub Packages is a convenience feed for every main push — a light ubuntu job so the heavy
   # macOS build job never dies on the upload (exit 137).
   publish-github:
-    needs: build-packages
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [build-packages, gate-templates]
+    # On a TAG this waits for the gate, as nuget.org already does. It did not, so a release whose
+    # templates failed to scaffold still landed here: preview.31 sat on this feed carrying a broken
+    # template while the public feed correctly never got it, and the two had to be reconciled by
+    # hand. A feed that can disagree with the other one is worse than a slow feed.
+    #
+    # On an ordinary main push the gate does not run at all (it is tag-only) and this must still
+    # publish — a SKIPPED dependency skips the job under the default rule, which is why the results
+    # are named one by one instead. `always()` reaches this condition even when a need was skipped;
+    # build-packages is then required explicitly, because always() would otherwise publish the
+    # packages a failed build never produced.
+    if: |
+      always()
+      && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && needs.build-packages.result == 'success'
+      && (needs.gate-templates.result == 'success' || needs.gate-templates.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       packages: write
