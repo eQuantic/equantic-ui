@@ -56,6 +56,15 @@ public class FormatSubsetTests
 
     private static readonly string[] DateSpecs = ["d", "D", "t", "T", "g", "G", "M", "Y", "yyyy-MM-dd"];
 
+    /// <summary>
+    /// The specifiers an INVARIANT conversion is written for: a number a machine reads — a CSS
+    /// length, a key, a value on the wire — which has to keep its shape whoever is reading the
+    /// page. Currency and percent are absent on purpose: .NET's invariant currency symbol is the
+    /// generic sign, and Intl has no notion of a currency without a country, so an invariant `C2`
+    /// is a promise neither side can keep.
+    /// </summary>
+    private static readonly string[] InvariantSpecs = ["", "N0", "N2", "F2", "F0", "0.##", "0.0"];
+
     /// <summary>ICU's non-breaking spaces, folded — see the type's remarks.</summary>
     internal static string Normalize(string value) =>
         value.Replace(' ', ' ').Replace(' ', ' ');
@@ -107,6 +116,17 @@ public class FormatSubsetTests
                     .Append(spec).Append('|')
                     .Append(Normalize(Moment.ToString(spec, culture))).Append('\n');
         }
+
+        // The INVARIANT section: no culture installed against it, because that is the point — the
+        // client replays these with pt-BR active and must produce these strings anyway.
+        foreach (var value in Numbers)
+            foreach (var spec in InvariantSpecs)
+                builder.Append("inv|")
+                    .Append(value.ToString(CultureInfo.InvariantCulture)).Append('|')
+                    .Append(spec).Append('|')
+                    .Append(Normalize(spec.Length == 0
+                        ? value.ToString(CultureInfo.InvariantCulture)
+                        : value.ToString(spec, CultureInfo.InvariantCulture))).Append('\n');
 
         var actual = builder.ToString();
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_FORMAT_FIXTURE") == "1")

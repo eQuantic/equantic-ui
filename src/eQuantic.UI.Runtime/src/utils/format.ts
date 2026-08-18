@@ -13,6 +13,30 @@
  */
 
 import { activeCurrency, activePattern, formatLocale } from './culture';
+
+/**
+ * .NET's InvariantCulture, as the closest thing Intl has to one: a "." decimal point and a ","
+ * group separator, which is what en-US gives. There is no invariant LOCALE in Intl, so the
+ * conversion is named here rather than guessed at six call sites.
+ */
+const INVARIANT_LOCALE = 'en-US';
+
+/**
+ * Depth rather than a flag: `format` can be reached again from inside a formatter, and a plain
+ * boolean would be cleared by the inner call while the outer one still needed it. Safe without a
+ * lock because nothing in this file awaits — a formatter runs to completion before anything else.
+ */
+let invariantDepth = 0;
+
+/**
+ * The locale every formatter in this file reads. It is the ACTIVE format culture, except while an
+ * explicitly invariant conversion is being formatted — `value.ToString("0.##",
+ * CultureInfo.InvariantCulture)`, which an author writes precisely so the number does NOT follow
+ * whoever is reading it.
+ */
+function activeFormatLocale(): string | undefined {
+  return invariantDepth > 0 ? INVARIANT_LOCALE : formatLocale();
+}
 import { DateTime as DotNetDateTime } from './datetime';
 import { round } from './dotnet-math';
 
@@ -34,9 +58,22 @@ function asJsDate(value: unknown): Date | null {
  * @param value The value to format
  * @param format The format string (e.g. "C2", "N0", "yyyy-MM-dd")
  * @param alignment Optional alignment width
+ * @param invariant Format against the INVARIANT culture rather than the active one — what
+ *   `ToString(CultureInfo.InvariantCulture)` asks for, and the shape a number written for a
+ *   machine (a CSS length, a key, a wire value) has to keep whoever is reading the page.
  */
-export function format(value: any, format: string | null, alignment?: number): string {
+export function format(value: any, format: string | null, alignment?: number,
+                       invariant?: boolean): string {
   if (value === null || value === undefined) return '';
+  if (invariant) invariantDepth++;
+  try {
+    return formatCore(value, format, alignment);
+  } finally {
+    if (invariant) invariantDepth--;
+  }
+}
+
+function formatCore(value: any, format: string | null, alignment?: number): string {
 
   let result = String(value);
 
@@ -78,7 +115,7 @@ function formatCustomNumber(value: number, format: string): string {
   const maximumFractionDigits = (fractionPart.match(/[0#]/g) ?? []).length;
   const minimumIntegerDigits = Math.max(1, (wholePart.match(/0/g) ?? []).length);
 
-  return value.toLocaleString(formatLocale(), {
+  return value.toLocaleString(activeFormatLocale(), {
     minimumIntegerDigits,
     minimumFractionDigits,
     maximumFractionDigits: Math.max(minimumFractionDigits, maximumFractionDigits),
@@ -94,7 +131,7 @@ function formatCustomNumber(value: number, format: string): string {
  */
 function formatCurrency(value: number, precision: number): string {
   const currency = activeCurrency();
-  const locale = formatLocale();
+  const locale = activeFormatLocale();
   const rounded = round(value, precision);
   if (currency !== null) {
     return rounded.toLocaleString(locale, {
@@ -123,7 +160,7 @@ function formatNumber(value: number, format: string): string {
   const specifier = format[0].toUpperCase();
   const digits = format.slice(1);
   const precision = digits.length > 0 ? parseInt(digits) : 2;
-  const locale = formatLocale();
+  const locale = activeFormatLocale();
 
   switch (specifier) {
     case 'C': // Currency
@@ -202,7 +239,7 @@ const DATE_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
 /** One `Intl` part, for the NAMES a pattern cannot spell — months, weekdays, the AM/PM designator.
  * `Intl` is exactly right about these, in every culture, which is why they are not in the patterns. */
 function namePart(value: Date, options: Intl.DateTimeFormatOptions, type: string): string {
-  const parts = new Intl.DateTimeFormat(formatLocale(), options).formatToParts(value);
+  const parts = new Intl.DateTimeFormat(activeFormatLocale(), options).formatToParts(value);
   return parts.find((part) => part.type === type)?.value ?? '';
 }
 
@@ -280,7 +317,7 @@ function formatDate(value: Date, format: string): string {
     // Every role must have travelled; a half-known composite would print half a date.
     if (patterns.every((pattern) => pattern !== null))
       return patterns.map((pattern) => renderPattern(value, pattern as string)).join(' ');
-    return new Intl.DateTimeFormat(formatLocale(), DATE_STYLES[format]).format(value);
+    return new Intl.DateTimeFormat(activeFormatLocale(), DATE_STYLES[format]).format(value);
   }
 
   // A custom picture — `yyyy-MM-dd HH:mm`. Culture-independent by construction: the author wrote
@@ -326,7 +363,7 @@ function general(value: unknown): string {
   if (value === null || value === undefined) return '';
   if (typeof value === 'number') {
     // .NET's default ("G") does not group; it only swaps the decimal separator.
-    return value.toLocaleString(formatLocale(), {
+    return value.toLocaleString(activeFormatLocale(), {
       useGrouping: false,
       maximumFractionDigits: 20,
     });

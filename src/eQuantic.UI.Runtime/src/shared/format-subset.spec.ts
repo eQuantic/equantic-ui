@@ -32,15 +32,34 @@ interface Case {
   expected: string;
 }
 
+/** A row of the INVARIANT section: no culture, because the whole claim is that it does not matter. */
+interface InvariantCase {
+  value: string;
+  spec: string;
+  expected: string;
+}
+
 /** The catalog a culture would carry in production: its currency code and its own date patterns,
  * both written by the build from the same .NET source this fixture was generated from. */
 type CultureFacts = Record<string, string>;
 
-function parseFixture(): { facts: Record<string, CultureFacts>; cases: Case[] } {
+function parseFixture(): {
+  facts: Record<string, CultureFacts>;
+  cases: Case[];
+  invariant: InvariantCase[];
+} {
   const facts: Record<string, CultureFacts> = {};
   const cases: Case[] = [];
+  const invariant: InvariantCase[] = [];
   for (const line of fixture.split('\n')) {
     if (line.length === 0) continue;
+    // Four fields, not five: an invariant row has no culture column, and reading it as one put the
+    // VALUE where the culture belongs and shifted every field after it.
+    if (line.startsWith('inv|')) {
+      const [, value, spec, ...rest] = line.split('|');
+      invariant.push({ value, spec, expected: rest.join('|') });
+      continue;
+    }
     if (line.startsWith('culture ')) {
       // Split on the FIRST space only: a pattern is full of spaces ("dddd, MMMM d, yyyy"), and
       // splitting on all of them silently truncated every culture's date facts.
@@ -64,7 +83,7 @@ function parseFixture(): { facts: Record<string, CultureFacts>; cases: Case[] } 
     const [kind, culture, value, spec, ...rest] = line.split('|');
     cases.push({ kind: kind as Case['kind'], culture, value, spec, expected: rest.join('|') });
   }
-  return { facts, cases };
+  return { facts, cases, invariant };
 }
 
 /** The date arrives as LOCAL parts, exactly as the C# side wrote them — a fixture that crossed a
@@ -77,7 +96,7 @@ function localDate(iso: string): Date {
 }
 
 describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => {
-  const { facts, cases } = parseFixture();
+  const { facts, cases, invariant } = parseFixture();
 
   it('covers every culture in the fixture', () => {
     expect(Object.keys(facts).length).toBeGreaterThan(2);
@@ -118,4 +137,28 @@ describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => 
       expect(mismatches).toEqual([]);
     });
   }
+
+  /**
+   * `ToString(CultureInfo.InvariantCulture)` — what an author writes for a number a MACHINE reads,
+   * so that a CSS length or a key keeps its shape whoever is reading the page. The proof is the
+   * hostile one: pt-BR is installed and active, and every one of these still has to come out with
+   * a dot, matching what real .NET produced on the other side of the fixture.
+   */
+  it('formats invariantly even with another culture installed', () => {
+    installCulture('pt-BR', 'pt-BR', facts['pt-BR']);
+    expect(invariant.length).toBeGreaterThan(10);
+
+    const mismatches: string[] = [];
+    for (const testCase of invariant) {
+      const value = Number(testCase.value);
+      // No specifier is `String(x)` — which is what the transpiler emits for the same shape, and
+      // is already .NET's invariant rendering of a number.
+      const actual = normalize(
+        testCase.spec.length === 0 ? String(value) : format(value, testCase.spec, undefined, true),
+      );
+      if (actual !== testCase.expected)
+        mismatches.push(`${testCase.value}:${testCase.spec} → "${actual}" ≠ "${testCase.expected}"`);
+    }
+    expect(mismatches).toEqual([]);
+  });
 });
