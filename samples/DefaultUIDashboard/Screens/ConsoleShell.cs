@@ -24,7 +24,29 @@ public sealed record ShellActions(
     // drawer is up — the same controlled contract Drawer itself states. Defaulted so a screen
     // that never renders compact pays nothing.
     bool NavOpen = false,
-    Action? OnToggleNav = null);
+    Action? OnToggleNav = null,
+    // Whether the TOOLBAR's page affordances belong to this route. Search and "New payment" are
+    // the payments screen's own; a demo route that drew them would offer a button that does
+    // nothing, which teaches worse than not drawing it.
+    bool HasPageActions = true)
+{
+    /// <summary>
+    /// The frame for a screen that owns no toolbar actions of its own — every demo route. It still
+    /// owns the compact drawer, because whether the nav is up is page state wherever the page is.
+    /// </summary>
+    public static ShellActions Quiet(bool navOpen, Action onToggleNav) =>
+        new(OnOpenPalette: () => { },
+            OnNewPayment: () => { },
+            OnQueryChanged: _ => { },
+            OnAccountMenu: _ => { },
+            OnHelp: _ => { },
+            Query: string.Empty,
+            Sandbox: false,
+            OnToggleSandbox: () => { },
+            NavOpen: navOpen,
+            OnToggleNav: onToggleNav,
+            HasPageActions: false);
+}
 
 /// <summary>
 /// The console's persistent frame: a sidebar of destinations on the left, a toolbar across the top,
@@ -54,6 +76,10 @@ public static class ConsoleShell
         new(Icons.Plus, "Declarative", "/declarative"),
         new(Icons.Info, "Markdown", "/markdown"),
         new(Icons.Refresh, "Time", "/clock"),
+        // Declared screens that the nav never listed: reachable only by typing the address, which
+        // is the same defect as advertising a route that 404s, pointing the other way.
+        new(Icons.Check, "Forms", "/form"),
+        new(Icons.Search, "Localization", "/i18n"),
     ];
 
     /// <summary>
@@ -64,6 +90,21 @@ public static class ConsoleShell
     /// sidebar riding a Drawer the page opens. Each branch builds its own nodes: a branch is a
     /// mount, and a shared instance across branches is the bug AdaptiveNode's contract names.
     /// </summary>
+    /// <summary>
+    /// The frame for a DEMO screen: the same sidebar and breadcrumb the payments route has, minus
+    /// the toolbar affordances that belong to that route.
+    /// <para>
+    /// Every page wraps itself — the framework has no separate layout, and it needs none: the
+    /// reconciler matches the frame position for position across a navigation, so the sidebar's
+    /// nodes are never rebuilt and the page in the middle is all that changes. A screen that did
+    /// NOT wrap rendered as a bare middle with no way back to anywhere, which is what this fixes.
+    /// </para>
+    /// </summary>
+    public static VisualNode Frame(IAppTheme theme, string activeHref, string title, VisualNode page,
+        bool navOpen, Action onToggleNav) =>
+        Wrap(theme, activeHref, [new Crumb("Workspace", "/"), new Crumb(title)], page,
+            ShellActions.Quiet(navOpen, onToggleNav));
+
     public static VisualNode Wrap(IAppTheme theme, string activeHref, IReadOnlyList<Crumb> crumbs,
         VisualNode page, ShellActions actions)
     {
@@ -137,10 +178,13 @@ public static class ConsoleShell
         row.Add(new IconButton(Icons.Menu, "Navigation", IconButtonKind.Standard, SizeVariant.Small)
         { OnPressed = actions.OnToggleNav });
         row.Add(new Flexible(new Breadcrumb(crumbs), 1));
-        row.Add(new IconButton(Icons.Search, "Search payments", IconButtonKind.Standard, SizeVariant.Small)
-        { OnPressed = actions.OnOpenPalette });
-        row.Add(new IconButton(Icons.Plus, "New payment", IconButtonKind.Filled, SizeVariant.Small)
-        { OnPressed = actions.OnNewPayment });
+        if (actions.HasPageActions)
+        {
+            row.Add(new IconButton(Icons.Search, "Search payments", IconButtonKind.Standard, SizeVariant.Small)
+            { OnPressed = actions.OnOpenPalette });
+            row.Add(new IconButton(Icons.Plus, "New payment", IconButtonKind.Filled, SizeVariant.Small)
+            { OnPressed = actions.OnNewPayment });
+        }
 
         return new Box(new BoxStyle
         {
@@ -342,8 +386,9 @@ public static class ConsoleShell
         };
         row.Add(new Breadcrumb(crumbs));
         row.Add(new Spacer(1));
-        row.Add(new Box(new BoxStyle { Width = 240 },
-            new SearchField(actions.Query, actions.OnQueryChanged, placeholder: "Search payments…")));
+        if (actions.HasPageActions)
+            row.Add(new Box(new BoxStyle { Width = 240 },
+                new SearchField(actions.Query, actions.OnQueryChanged, placeholder: "Search payments…")));
 
         // A Menu owns its own open/close and dismisses on an outside tap, so the frame states WHAT
         // the entries are and nothing about when the panel is up.
@@ -362,11 +407,12 @@ public static class ConsoleShell
             actions.OnHelp)
         { Placement = AnchorPlacement.BottomEnd });
 
-        row.Add(new Button("New payment", Variant.Primary, SizeVariant.Small)
-        {
-            Leading = CuratedIcons.Resolve(Icons.Plus),
-            OnPressed = actions.OnNewPayment,
-        });
+        if (actions.HasPageActions)
+            row.Add(new Button("New payment", Variant.Primary, SizeVariant.Small)
+            {
+                Leading = CuratedIcons.Resolve(Icons.Plus),
+                OnPressed = actions.OnNewPayment,
+            });
 
         return new Box(new BoxStyle
         {

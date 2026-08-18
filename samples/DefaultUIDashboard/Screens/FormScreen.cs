@@ -64,7 +64,19 @@ public sealed class FormScreen : StatefulComponent
             : [];
     }
 
-    public override VisualNode Build(ComponentContext context)
+    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
+    private bool _navOpen;
+
+    /// <summary>
+    /// The frame, then this screen inside it. Every route wraps itself: there is no separate
+    /// layout, and none is needed — the reconciler matches the frame position for position across
+    /// a navigation, so the sidebar is never rebuilt and only the middle changes.
+    /// </summary>
+    public override VisualNode Build(ComponentContext context) =>
+        ConsoleShell.Frame(context.Theme, "/form", "Forms", Content(context),
+            _navOpen, () => SetState(() => _navOpen = !_navOpen));
+
+    private VisualNode Content(ComponentContext context)
     {
         // Resolved here and held for the handlers — the pattern every capability consumer uses:
         // the page asks by interface, and never learns that on this app the listener happens to

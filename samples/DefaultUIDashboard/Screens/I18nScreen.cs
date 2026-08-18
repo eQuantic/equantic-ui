@@ -3,6 +3,8 @@ using eQuantic.UI.Components;
 using eQuantic.UI.Core;
 using eQuantic.UI.Primitives;
 
+using eQuantic.Console;
+
 namespace DefaultUIDashboard.Screens;
 
 /// <summary>
@@ -37,7 +39,19 @@ public sealed class I18nScreen : StatefulComponent
         new("es", "Español"),
     ];
 
-    public override VisualNode Build(ComponentContext context)
+    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
+    private bool _navOpen;
+
+    /// <summary>
+    /// The frame, then this screen inside it. Every route wraps itself: there is no separate
+    /// layout, and none is needed — the reconciler matches the frame position for position across
+    /// a navigation, so the sidebar is never rebuilt and only the middle changes.
+    /// </summary>
+    public override VisualNode Build(ComponentContext context) =>
+        ConsoleShell.Frame(context.Theme, "/i18n", "Localization", Content(context),
+            _navOpen, () => SetState(() => _navOpen = !_navOpen));
+
+    private VisualNode Content(ComponentContext context)
     {
         var theme = context.Theme;
 

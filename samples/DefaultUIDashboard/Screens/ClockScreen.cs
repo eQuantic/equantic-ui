@@ -42,7 +42,19 @@ public sealed class ClockScreen : StatefulComponent
 
     protected override void OnUnmount() => _tick?.Dispose();
 
-    public override VisualNode Build(ComponentContext context)
+    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
+    private bool _navOpen;
+
+    /// <summary>
+    /// The frame, then this screen inside it. Every route wraps itself: there is no separate
+    /// layout, and none is needed — the reconciler matches the frame position for position across
+    /// a navigation, so the sidebar is never rebuilt and only the middle changes.
+    /// </summary>
+    public override VisualNode Build(ComponentContext context) =>
+        ConsoleShell.Frame(context.Theme, "/clock", "Time", Content(context),
+            _navOpen, () => SetState(() => _navOpen = !_navOpen));
+
+    private VisualNode Content(ComponentContext context)
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
@@ -77,6 +89,48 @@ public sealed class ClockScreen : StatefulComponent
                 TypeRole.BodyM, theme.TextSecondary),
             track,
             Text($"{_seconds}s since this page hydrated", TypeRole.BodyM, theme.TextMuted),
+            Gap(Space.S2),
+            new Pulse(),
         ]));
+    }
+}
+
+/// <summary>
+/// The same reaction to time, from a component NOBODY hands anything to. The page above takes its
+/// clock in a constructor because the router fills it; this one is composed as <c>new Pulse()</c> in
+/// the middle of a tree, so it asks for the capability itself — in <c>OnMount</c>, which has no
+/// context, which is exactly why <c>UiComponent.GetService</c> exists.
+/// <para>
+/// If it ever stops blinking while the row above keeps walking, the capability stopped being
+/// reachable from the hook, and no unit test would have to be believed over the page.
+/// </para>
+/// </summary>
+public sealed class Pulse : StatefulComponent
+{
+    private IDisposable? _tick;
+    private bool _lit;
+
+    protected override void OnMount() =>
+        _tick = GetService<IClock>()?.Every(TimeSpan.FromMilliseconds(600),
+            () => SetState(() => _lit = !_lit));
+
+    protected override void OnUnmount() => _tick?.Dispose();
+
+    public override VisualNode Build(ComponentContext context)
+    {
+        var theme = context.Theme;
+        var primary = theme.Colors(Variant.Primary);
+
+        return Row(gap: Space.S2, cross: CrossAlign.Center, children: [
+            Box(new BoxStyle
+            {
+                Width = 12,
+                Height = 12,
+                Background = _lit ? primary.Base : theme.SurfaceSubtle,
+                CornerRadius = new CornerRadii(Radius.Full),
+            }),
+            Text("a nested section, on the clock it asked for itself",
+                TypeRole.Caption, theme.TextMuted),
+        ]);
     }
 }
