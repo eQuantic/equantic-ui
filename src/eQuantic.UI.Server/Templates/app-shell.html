@@ -11,12 +11,23 @@
              one viewport tall whose single child (the page root) stretches to it. A page root
              asking Height=Fill gets the viewport here exactly as it gets the window on native. -->
         <style>
-            /* Exact height, not min: an APP page (root Height=Fill → height:100%) resolves to
-               exactly one viewport and scrolls INTERNALLY; a DOCUMENT page (auto-height root)
-               overflows this frame visibly and the body scrolls, as it always did. The child
-               min-height:0 is what lets an app page's root obey its 100% instead of its content. */
-            #app { height: 100vh; height: 100dvh; display: grid; }
-            #app > * { min-height: 0; }
+            /* The frame is exactly one viewport, and the ROW is pinned to it so a percentage
+               height inside resolves against the viewport and not against whatever the content
+               came to. An APP page (root Height=Fill → height:100%) therefore resolves to exactly
+               one viewport and scrolls INTERNALLY; a DOCUMENT page (auto-height root) grows past
+               the frame and the body scrolls, as it always did.
+
+               The root is START-aligned, not stretched, and given min-height:100% instead: the two
+               together mean "at least the frame, and free to be taller". Stretching it to a
+               definite viewport height was the same thing for a short page and a bug for a tall
+               one — a stretched root cannot exceed the frame, so its content had to be absorbed by
+               its children, and any child whose overflow is not visible (Clip=true) has an
+               automatic minimum size of ZERO and was crushed to nothing. It cost this site its
+               whole hero: rendered, correct, clipped to a 0px-tall box. min-height:0 was what
+               allowed that, and 100% does the job it was there for without allowing it. */
+            #app { height: 100vh; height: 100dvh; display: grid; grid-template-rows: 100vh;
+                   grid-template-rows: 100dvh; align-items: start; }
+            #app > * { min-height: 100%; }
         </style>
         {{?BaseStyles}}
         <style>
