@@ -45,6 +45,30 @@ public class ComponentCompiler
 
     private readonly Dictionary<string, AggregatedResource> _resourceUses = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Track L D3: aggregate the rewritten resx reads — catalogs are emitted from exactly this set,
+    /// so call sites and catalogs cannot disagree.
+    /// <para>
+    /// Every emit path drains through HERE, and that is the whole point of the method existing. The
+    /// record, plain-class and static-helper branches each RETURN before the component path's tail,
+    /// so while this was a loop down there, a string read from a static helper or a data record was
+    /// rewritten to a catalog lookup at the call site and then left out of the catalog: the server
+    /// rendered it correctly and the browser could not switch it. The identical mistake had already
+    /// been made with source maps on the same three branches (see <see cref="AttachSourceMap"/>) —
+    /// anything that must happen for EVERY compiled file belongs in a method the branches call, not
+    /// in the tail one of them reaches.
+    /// </para>
+    /// </summary>
+    private void CollectResourceUses(IEnumerable<Services.ResourceUse> uses)
+    {
+        foreach (var use in uses)
+        {
+            if (!_resourceUses.TryGetValue(use.Id, out var aggregated))
+                _resourceUses.Add(use.Id, aggregated = new AggregatedResource(use.Id, use.DesignerPath));
+            aggregated.Keys.Add(use.Key);
+        }
+    }
+
     /// <summary>Every resource class the compiled tree read, with the keys it read — the CLI
     /// drains this into wwwroot/_equantic/strings/{culture}.json after the last file.</summary>
     public IReadOnlyCollection<AggregatedResource> ResourceUses => _resourceUses.Values;
@@ -190,6 +214,7 @@ public class ComponentCompiler
                 // for a consumer that runs the module directly, and nothing upstream would notice.
                 result.TypeScript = new RecordTypeEmitter(recordConverter)
                     .EmitModule(component.ValueTypeSyntax, TypeAnnotations);
+                CollectResourceUses(recordConverter.ResourceUses);
                 result.Success = true;
                 return result;
             }
@@ -200,6 +225,7 @@ public class ComponentCompiler
             {
                 var pm = component.SyntaxTree != null ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree) : null;
                 result.TypeScript = _tsEmitter.EmitPlainClassModule(plainClass, pm);
+                CollectResourceUses(_tsEmitter.GetLastResourceUses());
                 AttachSourceMap(result, component);
                 result.Success = true;
                 return result;
@@ -211,6 +237,7 @@ public class ComponentCompiler
             {
                 var sm = component.SyntaxTree != null ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree) : null;
                 result.TypeScript = _tsEmitter.EmitStaticHelperModule(staticClass, sm);
+                CollectResourceUses(_tsEmitter.GetLastResourceUses());
                 AttachSourceMap(result, component);
                 result.Success = true;
                 return result;
@@ -261,14 +288,7 @@ public class ComponentCompiler
                     result.Warnings.Add(entry);
             }
 
-            // Track L D3: aggregate the rewritten resx reads — catalogs are emitted from exactly
-            // this set, so call sites and catalogs cannot disagree.
-            foreach (var use in _tsEmitter.GetLastResourceUses())
-            {
-                if (!_resourceUses.TryGetValue(use.Id, out var aggregated))
-                    _resourceUses.Add(use.Id, aggregated = new AggregatedResource(use.Id, use.DesignerPath));
-                aggregated.Keys.Add(use.Key);
-            }
+            CollectResourceUses(_tsEmitter.GetLastResourceUses());
 
             if (result.Errors.Count > 0)
             {

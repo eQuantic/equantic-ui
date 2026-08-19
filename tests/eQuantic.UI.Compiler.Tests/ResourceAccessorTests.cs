@@ -69,6 +69,99 @@ public class ResourceAccessorTests
         return compiler.CompileSource(componentSource, "Page.cs").Single();
     }
 
+    /// <summary>The same compile, keeping the compiler — the catalog is aggregated ON it, across
+    /// files, so a test about what ships has to look at the compiler and not at one result.</summary>
+    private static ComponentCompiler CompileForCatalogue(string source)
+    {
+        var trees = new List<Microsoft.CodeAnalysis.SyntaxTree>
+        {
+            CSharpSyntaxTree.ParseText(source, path: "Helper.cs"),
+            CSharpSyntaxTree.ParseText(DesignerSource, path: "Resources/Strings.Designer.cs"),
+        };
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
+            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+        var compilation = CSharpCompilation.Create("L3", trees, references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+        Assert.Empty(compilation.GetDiagnostics()
+            .Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString()));
+
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        foreach (var result in compiler.CompileSource(source, "Helper.cs"))
+            Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        return compiler;
+    }
+
+    private static IEnumerable<string> KeysFor(ComponentCompiler compiler, string id) =>
+        compiler.ResourceUses.Where(r => r.Id == id).SelectMany(r => r.Keys);
+
+    /// <summary>
+    /// A key read from a STATIC HELPER reaches the catalog. It did not: the static-helper branch
+    /// returns before the component path's tail, where the aggregation used to live, so the call
+    /// site was rewritten to <c>$eq.str</c> and the key then left out of the catalog it looks up
+    /// in. Server render correct, browser unable to switch language — the worst shape of bug,
+    /// because every check that reads the served HTML passes.
+    /// </summary>
+    [Fact]
+    public void KeyReadFromAStaticHelper_ReachesTheCatalogue()
+    {
+        var compiler = CompileForCatalogue("""
+            using Demo.Resources;
+            using eQuantic.UI.Primitives;
+
+            namespace Demo;
+
+            public static class Copy
+            {
+                public static VisualNode Lead() => new Text(Strings.Hero_Title, TypeRole.BodyM);
+            }
+            """);
+
+        Assert.Contains("Hero.Title", KeysFor(compiler, "Strings"));
+    }
+
+    /// <summary>A key read from a PLAIN CLASS reaches the catalog — same branch, same defect.</summary>
+    [Fact]
+    public void KeyReadFromAPlainClass_ReachesTheCatalogue()
+    {
+        var compiler = CompileForCatalogue("""
+            using Demo.Resources;
+
+            namespace Demo;
+
+            public sealed class Menu
+            {
+                public string Label => Strings.Greeting;
+            }
+            """);
+
+        Assert.Contains("Greeting", KeysFor(compiler, "Strings"));
+    }
+
+    /// <summary>And from a RECORD, whose module is emitted by a converter of its own — so it is
+    /// not enough for the branches to reach the same method, they have to hand it their own
+    /// converter's uses.</summary>
+    [Fact]
+    public void KeyReadFromARecord_ReachesTheCatalogue()
+    {
+        var compiler = CompileForCatalogue("""
+            using Demo.Resources;
+
+            namespace Demo;
+
+            public sealed record Entry(string Id)
+            {
+                public string Title => Strings.Hero_Title;
+            }
+            """);
+
+        Assert.Contains("Hero.Title", KeysFor(compiler, "Strings"));
+    }
+
     private const string PageSource = """
         using Demo.Resources;
         using eQuantic.UI.Primitives;
