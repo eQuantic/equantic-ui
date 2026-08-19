@@ -1665,6 +1665,13 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
             // opacity creates a stacking context that CSS would otherwise paint above every plain
             // sibling drawn after it (a blurred scrim covering its own dialog).
             'z-index': `${i + 1}`,
+            // A cell whose LAYER is intangible is intangible too (C# twin). The cell stretches to
+            // the whole stack and carries the layer's z-index, so a closed Drawer — a bare Box, see
+            // paintsNothing — covered the viewport with an invisible interactive rectangle.
+            'pointer-events':
+              (child as BoxNode).nodeKind === 'box' && paintsNothing(child as BoxNode)
+                ? 'none'
+                : undefined,
           },
           [lowered],
         ),
@@ -1702,6 +1709,18 @@ function cssCursor(cursor: string): string {
     default:
       return cursor; // pointer, text, crosshair — already the CSS keyword
   }
+}
+
+/** The twin of C# `WebRealizer.PaintsNothing`: a box with no content and nothing painted. */
+function paintsNothing(box: BoxNode): boolean {
+  const style = box.style ?? ({} as BoxStyleValue);
+  return !box.child
+    && !style.background
+    && !style.gradient
+    && !style.glow
+    && !style.pattern
+    && !(style.borderWidth && style.borderWidth > 0)
+    && !(style.elevation && style.elevation > 0);
 }
 
 function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
@@ -1787,6 +1806,12 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     transition: style.transition ? transitionValue(style.transition) : undefined,
     // The CSS cursor mirror — the C# enum's camelCase member names lower to the CSS keywords.
     cursor: style.cursor && style.cursor !== 'default' ? cssCursor(style.cursor) : undefined,
+    // "Draw nothing" has to mean "intercept nothing" (C# twin: WebRealizer.PaintsNothing). A closed
+    // Drawer returns a bare Box, and inside a Stack that box is stretched to the whole cell and
+    // given the layer's z-index: it covered the viewport with an invisible, fully interactive
+    // rectangle, so on a phone the shell's own menu button could not be tapped. The element stays
+    // (child counts feed `> :first-child` mechanics); only its ability to be a target goes.
+    'pointer-events': paintsNothing(box) ? 'none' : undefined,
   };
 
   // ELEVATION DECIDES WHAT IS ON TOP, not just how deep the shadow is (C# twin). A raised surface

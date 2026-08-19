@@ -286,6 +286,12 @@ public static class WebRealizer
                         // A grid item takes z-index without needing `position` — this is what keeps
                         // a filtered child from jumping above the siblings drawn after it.
                         ZIndex = depth.ToString(),
+                        // …and a cell whose LAYER is intangible has to be intangible too. The cell
+                        // stretches to the whole stack and carries the layer's z-index, so a closed
+                        // Drawer (a bare Box, see PaintsNothing) covered the viewport with an
+                        // invisible interactive rectangle: on a phone the shell's own menu button
+                        // could not be tapped. Marking only the inner box left the cell in the way.
+                        PointerEvents = child is Box bare && PaintsNothing(bare) ? "none" : null,
                     },
                 };
                 cell.Children.Add(lowered);
@@ -1275,6 +1281,31 @@ public static class WebRealizer
         return pair;
     }
 
+    /// <summary>
+    /// A box that paints NOTHING and holds nothing is the vocabulary's way of saying "draw nothing"
+    /// — `if (!Open) return new Box();` in Drawer, `if (field is null) return new Box();` in
+    /// FormInput, and the same line in the docs for a capability a target does not have.
+    /// <para>
+    /// Saying it must also mean "intercept nothing". Inside a Stack the element is stretched to the
+    /// whole cell and given the layer's z-index, so a CLOSED drawer covered the viewport with an
+    /// invisible, fully interactive rectangle: on a phone the shell's own menu button could not be
+    /// tapped, and every tap landed on a layer that was not there. Programmatic clicks in tests hit
+    /// the element directly, which is why nothing noticed.
+    /// </para>
+    /// <para>
+    /// The ELEMENT stays: removing it would change child counts, and the pressed/focus mechanics
+    /// select `> :first-child`. Only its ability to be a target goes.
+    /// </para>
+    /// </summary>
+    private static bool PaintsNothing(Box box) =>
+        box.Child is null
+        && box.Style.Background is null
+        && box.Style.Gradient is null
+        && box.Style.Glow is null
+        && box.Style.Pattern is null
+        && box.Style.BorderWidth == 0
+        && box.Style.Elevation == 0;
+
     private static HtmlElement LowerBox(Box box, ComponentContext context)
     {
         var style = box.Style;
@@ -1346,6 +1377,8 @@ public static class WebRealizer
                 Transition = style.Transition is { } transition ? TokenCss.Transition(transition) : null,
                 // The CSS cursor mirror (Photon twin: a cursor region the host answers from).
                 Cursor = style.Cursor != PointerCursor.Default ? TokenCss.Cursor(style.Cursor) : null,
+                // "Draw nothing" means intercept nothing — see PaintsNothing.
+                PointerEvents = PaintsNothing(box) ? "none" : null,
             },
         };
 

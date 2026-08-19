@@ -24,6 +24,12 @@ public class StackRealizerTests
         // hug children anchor at the 9-point alignment — the native MeasureStack contract).
         node.Children[0].Attributes["style"].Should().Contain(
             "display: flex; grid-area: 1 / 1; z-index: 1; justify-content: center; align-items: center; width: 100%; height: 100%");
+        // …and the cell of a layer that paints NOTHING is intangible. It stretches to the whole
+        // stack and carries the layer's z-index, so a closed Drawer — a bare Box — covered the
+        // viewport with an invisible interactive rectangle and the compact shell's own menu button
+        // could not be tapped. Only `element.click()` reached it, which is why the tests did not
+        // notice. CROSS-PINNED: stack.spec.ts asserts the same property on the same cell.
+        node.Children[0].Attributes["style"].Should().Contain("pointer-events: none");
         // CROSS-PIN: asserted verbatim by the TS lowering spec (hydration parity).
         node.Children[1].Attributes["style"].Should().Be("position: absolute; top: -4px; right: -4px; z-index: 2");
     }

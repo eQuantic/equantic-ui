@@ -11,9 +11,13 @@ describe('Stack (spec A3) client lowering', () => {
     const node = stack.render();
     expect(effectiveStyle(node)).toContain('display: grid');
     expect(effectiveStyle(node)).toContain('position: relative');
+    // `pointer-events: none` rides along because this layer is a BARE box: it paints nothing and
+    // holds nothing, so it intercepts nothing (see paintsNothing). A cell that stretches to the
+    // whole stack and takes the layer's z-index would otherwise cover everything under it with an
+    // invisible target — which is what a CLOSED Drawer did to the compact shell's own menu button.
     expect(effectiveStyle(node.children[0])).toContain(
       'align-items: center; display: flex; grid-area: 1 / 1; height: 100%; justify-content: center; ' +
-        'min-height: 0; min-width: 0; width: 100%',
+        'min-height: 0; min-width: 0; pointer-events: none; width: 100%',
     );
     // …and min-0 is load-bearing, not decoration: a grid item's automatic minimum size is its
     // min-content size, so a layer holding a horizontal scroller would size the track to the
