@@ -472,12 +472,6 @@ public class TypeScriptEmitter
             EmitStatefulComponent(component); // This method needs update to NOT use WriteLn manually if we want full builder purity, but for now we mix.
         }
 
-        // Transfer UsedHelpers from converter to component after all code generation
-        foreach (var helper in _converter.UsedHelpers)
-        {
-            component.UsedHelpers.Add(helper);
-        }
-
         // Generate component code without imports
         var componentCode = _builder.ToString();
 
@@ -495,6 +489,16 @@ public class TypeScriptEmitter
                     sourceNode: nested, export: false);
             }
             nestedCode = nb.ToString();
+        }
+
+        // The helpers the converter collected, transferred once ALL code is generated — the nested
+        // classes above included. Transferred before them, a `Copy.About` that reads a resx emitted
+        // `$eq.str(…)` into a module whose import line had already been decided without it: the
+        // browser answered "$eq is not defined" and the whole module failed to load, taking the page
+        // with it. The nested body is code like any other and registers what it needs.
+        foreach (var helper in _converter.UsedHelpers)
+        {
+            component.UsedHelpers.Add(helper);
         }
 
         // Generate imports based on populated UsedHelpers. The emitted body is the authority on what is
@@ -520,6 +524,15 @@ public class TypeScriptEmitter
     private string GenerateImports(ComponentDefinition component, string emittedBody)
     {
         var referenced = ReferencedIdentifiers(emittedBody);
+        // A type this module DECLARES is not a type this module imports. The nested `Copy` classes
+        // are emitted inline above the component, and the type scan cannot tell that from a type
+        // living in its own module, so it asked for `import { Copy } from "./Copy"` — a module
+        // nobody writes. The bundler inlines the local class and hides it; anything that does not
+        // bundle (tsc, a plain browser module) fails to resolve and takes the page with it.
+        var declaredHere = System.Text.RegularExpressions.Regex
+            .Matches(emittedBody, @"(?:^|\n)\s*(?:export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][A-Za-z0-9_$]*)")
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet();
         // Core runtime imports
         var coreImports = new HashSet<string> { "Component", "BuildContext", "HtmlElement" };
 
@@ -786,6 +799,10 @@ public class TypeScriptEmitter
             if (_dependencyResolver != null && !isEmittedType)
                 continue;
             if (!referenced.Contains(userComp))
+                continue;
+            // …and never a type this module DECLARES: the nested `Copy` classes are emitted inline
+            // above the component, so `from "./Copy"` names a module nobody writes.
+            if (declaredHere.Contains(userComp))
                 continue;
             importsBuilder.Import(new[] { userComp }, $"./{userComp}");
         }
