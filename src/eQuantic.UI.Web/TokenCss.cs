@@ -331,6 +331,29 @@ public static class PhotonCssGenerator
         css.AppendLine(".eq-pressable [disabled], .eq-pressable [aria-disabled=\"true\"] { pointer-events: none; }");
         css.AppendLine(".eq-pressable:focus-visible > :first-child { box-shadow: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
 
+        // HIT SLOP (spec §08). `Touch.MinTarget`'s own doc promised it — "visuals may be smaller, the
+        // framework expands hit-slop symmetrically" — and on the web nothing kept the promise: every
+        // small pressable shipped with its visual as its hit rect, and the components that cared
+        // (Slider, PageIndicator, SearchField's clear) each sized a target by hand. Photon has always
+        // done it in one place (PhotonRealizer.ExpandHitRect); this is the same contract, once, here.
+        //
+        // A PSEUDO-ELEMENT rather than padding: the target has to grow without moving anything, and
+        // padding is layout. It is centred on the control and at least the minimum on each side, so
+        // the growth is symmetric and needs to know nothing about the control's own size.
+        //
+        // Gated on a COARSE pointer, which is the browser answering the question Photon answers with
+        // Density: a pointer lands where it is aimed, and expanding a dense toolbar's buttons would
+        // grow each one into its neighbour. A finger gets the minimum, always.
+        css.AppendLine("@media (pointer: coarse) {");
+        // The containing block for the target below. It is the framework's own wrapper element, and
+        // an absolutely positioned descendant of a pressable anchoring to the pressable is the more
+        // correct answer anyway (a badge on a button); fixed layers are unaffected by `relative`.
+        css.AppendLine("  .eq-pressable { position: relative; }");
+        css.AppendLine("  .eq-pressable::after { content: \"\"; position: absolute; top: 50%; left: 50%; "
+            + $"width: 100%; height: 100%; min-width: {TokenCss.Px(Touch.MinTarget)}; min-height: {TokenCss.Px(Touch.MinTarget)}; "
+            + "transform: translate(-50%, -50%); }");
+        css.AppendLine("}");
+
         // Overlay layer (Phase C): the viewport-fixed stacking layer — composition (scrim,
         // centering) belongs to the component; only the layer mechanics live here. The single
         // grid cell hands the child the VIEWPORT'S size: a layer lays out against the viewport
