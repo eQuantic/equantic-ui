@@ -12,6 +12,28 @@
         <Nullable Condition="'$(Nullable)' == ''">enable</Nullable>
     </PropertyGroup>
 
+    <!-- The DECLARATIVE factory surface, available in every file without an import, exactly as on
+         web: Column(gap: Space.S3, children: [ Text("…"), Button("Up") ]) instead of `new`. A
+         screen is the same C# on both targets, and until now it was only the same until you wrote
+         the first one on native and had to import the surface by hand.
+         Opt out with <EQuanticImplicitFactoryUsing>false</EQuanticImplicitFactoryUsing>.
+         NOTE the shadowing this brings, which is the same on web and worth knowing once: a factory
+         hides its own TYPE inside a file that has the surface, so `Spacer.Fixed(34)` becomes
+         `Gap(34)` and `new Spacer(1)` becomes `Spacer(1)`. -->
+    <ItemGroup Condition="'$(EQuanticImplicitFactoryUsing)' != 'false'">
+        <Using Include="eQuantic.UI.Components.UI" Static="true" />
+    </ItemGroup>
+
+    <!--
+        The component bases, aliased for the same reason the web SDK aliases them: an app writes
+        `StatelessComponent` and means the Primitives one. There is no Core here to be ambiguous
+        with, so this is about the two targets reading identically rather than about resolution.
+    -->
+    <ItemGroup Condition="'$(EQuanticImplicitComponentAliases)' != 'false'">
+        <Using Include="eQuantic.UI.Primitives.StatefulComponent" Alias="StatefulComponent" />
+        <Using Include="eQuantic.UI.Primitives.StatelessComponent" Alias="StatelessComponent" />
+    </ItemGroup>
+
     <PropertyGroup>
         <_DevRootDir>$(MSBuildThisFileDirectory)../../</_DevRootDir>
         <IsEQuanticDevMode

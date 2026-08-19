@@ -262,7 +262,7 @@ public sealed class StudioShell : StatefulComponent
         };
         // The corner the SYSTEM owns: close/minimize/zoom float here (the window has no bar of
         // its own), and the navigation arrows sit immediately to their right, per the handoff.
-        row.Add(Spacer.Fixed(74));
+        row.Add(Gap(74));
         row.Add(new IconButton(Icons.ChevronLeft, "Back")
         {
             Size = SizeVariant.Small,
