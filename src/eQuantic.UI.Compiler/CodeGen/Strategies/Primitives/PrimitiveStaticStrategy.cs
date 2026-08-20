@@ -59,7 +59,7 @@ public class PrimitiveStaticStrategy : IConversionStrategy
 
         var emit = MethodTable(method.ContainingType.SpecialType, method.Name, args.Length)!;
         if (emit.Contains(Eq.Round)) context.UsedHelpers.Add(Eq.Import);
-        return string.Format(emit, args.Cast<object>().ToArray());
+        return TemplateFill.With(emit, args);
     }
 
     private static bool IsSmallInteger(SpecialType type) => type is SpecialType.System_Int32
@@ -157,6 +157,23 @@ public class PrimitiveStaticStrategy : IConversionStrategy
                 "IsSurrogate" when argCount == 1 => "/^[\\uD800-\\uDFFF]$/.test({0})",
                 // A char IS a one-character string on this side already.
                 "ToString" when argCount == 1 => "{0}",
+                "IsBetween" when argCount == 3 => "(($c, $lo, $hi) => $lo <= $c && $c <= $hi)({0}, {1}, {2})",
+                // Parse keeps its contract, throw included — silently accepting "ab" would be a lie.
+                "Parse" when argCount == 1 =>
+                    "(($s) => { if ($s.length !== 1) throw new Error('String must be exactly one character long.'); return $s; })({0})",
+                "ConvertFromUtf32" when argCount == 1 => "String.fromCodePoint({0})",
+                _ => null,
+            };
+        }
+
+        if (home == SpecialType.System_String)
+        {
+            return name switch
+            {
+                // Ordinal by definition — the one string comparison with an exact JS twin.
+                "CompareOrdinal" when argCount == 2 => "(($a, $b) => $a < $b ? -1 : $a > $b ? 1 : 0)({0}, {1})",
+                // The intern pool is an allocation concern; the string itself is the answer.
+                "Intern" when argCount == 1 => "{0}",
                 _ => null,
             };
         }

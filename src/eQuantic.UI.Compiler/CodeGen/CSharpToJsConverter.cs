@@ -196,6 +196,8 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<StringMethodStrategy>();
         _strategyRegistry.Register<StringStaticStrategy>(); // New Phase 7
         _strategyRegistry.Register<PrimitiveStaticStrategy>(); // .NET 7+ statics on the primitives themselves
+        _strategyRegistry.Register<BclSurfaceTailStrategy>();  // instance tail: Equals/String/Dictionary/List QoL
+        _strategyRegistry.Register<LinqSurfaceTailStrategy>(); // modern Enumerable tail (Append, Order, *By, …)
         _strategyRegistry.Register<ListMethodStrategy>();
         _strategyRegistry.Register<ArrayStaticStrategy>();
 
