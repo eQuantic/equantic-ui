@@ -37,13 +37,23 @@ public class OperatorsTests : StrategyTestBase
         Assert.StartsWith("String(123)", js);
     }
 
+    /// <summary>
+    /// `x as T` is null-on-mismatch, and it shares patterns' one type test (PatternConverter) so
+    /// `x as T` and `x is T` can never disagree. It was a passthrough that emitted plain `x` —
+    /// which made `if (x as Foo != null)` take the branch for ANY non-null x.
+    /// </summary>
     [Fact]
-    public void AsExpression_Passthrough()
+    public void AsExpression_EmitsTheSameTypeTestPatternsUse()
     {
-        var code = "x as string";
-        var js = Convert(code);
-        Assert.StartsWith("x", js);
-        Assert.DoesNotContain("as", js);
+        var js = Convert("x as string");
+        Assert.Equal("($as => typeof $as === 'string' ? $as : null)(x);", js);
+    }
+
+    [Fact]
+    public void AsExpression_NullableValueType_TestsTheUnderlyingType()
+    {
+        var js = Convert("x as int?");
+        Assert.Equal("($as => typeof $as === 'number' ? $as : null)(x);", js);
     }
 
     [Fact]
