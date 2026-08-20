@@ -15,8 +15,8 @@ public class ListStrategyTests
     [Fact]
     public void AddRange_MapsToPushSpread()
     {
-        var result = TestHelper.ConvertExpression("list.AddRange(items)");
-        result.Should().Be("this.list.push(...this.items)");
+        var result = TestHelper.ConvertExpression("list.AddRange(otherList)");
+        result.Should().Be("this.list.push(...this.otherList)");
     }
 
     [Fact]

@@ -148,7 +148,9 @@ public class __Conformance
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-        var converter = new CSharpToJsConverter();
+        // The conformance snippet is compiled with real references above, so the model is
+        // AUTHORITATIVE: an unbindable call in a conformance case is a broken case, never a guess.
+        var converter = new CSharpToJsConverter { SymbolsAreAuthoritative = true };
         converter.SetSemanticModel(compilation.GetSemanticModel(tree));
         return (tree, converter);
     }

@@ -12,7 +12,7 @@ public class CastStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "Cast");
+        return context.IsLinqMethod(node, "Cast");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

@@ -16,7 +16,7 @@ public class ChunkStrategy : IConversionStrategy
 
         var symbol = context.SemanticHelper.GetSymbol(invocation);
         if (symbol is IMethodSymbol ms && context.SemanticHelper.IsLinqExtension(ms.ContainingType)) return true;
-        return context.SemanticModel == null;
+        return symbol == null && context.CanGuess(node);
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

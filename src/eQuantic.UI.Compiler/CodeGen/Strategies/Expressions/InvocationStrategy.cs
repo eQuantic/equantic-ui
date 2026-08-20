@@ -198,18 +198,7 @@ public class InvocationStrategy : IConversionStrategy
                 return $"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({receiverFirst})";
             }
 
-            // Local method call (this.Method)
-            bool isLocal = false;
-            if (symbol != null && !symbol.IsStatic)
-            {
-                 isLocal = true; 
-            }
-            else if (context.SemanticModel == null && char.IsUpper(methodName[0])) 
-            {
-                isLocal = true; // Heuristic
-            }
-
-            ReportIfUntranslatable(symbol, invocation, context);
+            ReportIfUntranslatable(symbol, methodName, invocation, context);
             return $"{caller}.{methodName.ToCamelCase()}({args})";
         }
 
@@ -292,10 +281,16 @@ public class InvocationStrategy : IConversionStrategy
 
         if (needsThis)
         {
+            // A `?.`-shape call passes through here with a THROWAWAY result: the conditional-access
+            // strategy discards anything not starting with '.', then emits its own `?.name(…)`.
+            // Reporting on a transit that never ships poisoned real builds — `_tick?.Dispose()`
+            // raised EQ2004 while the emitted `?.dispose()` was the working translation.
+            if (!invocation.IsNullConditional())
+                ReportIfUntranslatable(symbol, methodName, invocation, context);
             return $"this.{methodName.ToCamelCase()}({args})";
         }
 
-        ReportIfUntranslatable(symbol, invocation, context);
+        ReportIfUntranslatable(symbol, methodName, invocation, context);
         return $"{methodName.ToCamelCase()}({args})";
     }
 
@@ -311,10 +306,27 @@ public class InvocationStrategy : IConversionStrategy
     /// metadata from somewhere the browser will never have — and that is the error.
     /// </para>
     /// </summary>
-    private static void ReportIfUntranslatable(IMethodSymbol? symbol, SyntaxNode node,
+    private static void ReportIfUntranslatable(IMethodSymbol? symbol, string methodName, SyntaxNode node,
         ConversionContext context)
     {
-        if (symbol is null) return;
+        if (symbol is null)
+        {
+            // An AUTHORITATIVE model knows this node and could not bind it. That is never a
+            // translation target — it is a missing reference or code that does not compile — and
+            // the camelCase guess the caller is about to emit is exactly how a missing ref once
+            // shipped `List.Add` as a JavaScript `.add` that died in the browser. Guessing stays
+            // legal where it is honest (see ConversionContext.CanGuess): snippet mode, rewritten
+            // nodes, and hosts that never promised a complete model.
+            if (!context.CanGuess(node))
+            {
+                context.Report(node, ConversionSeverity.Error, "EQ2006",
+                    $"'{methodName}' does not bind in the compiler's semantic model, so any translation "
+                    + "would be a guess. Either this code does not compile, or the compiler is missing "
+                    + "references/generated sources — the SDK passes them via --refs/--generated; a "
+                    + "custom host must do the same.");
+            }
+            return;
+        }
         // Calling a delegate IS a call — `OnChanged(value)` needs no translation.
         if (symbol.MethodKind is MethodKind.DelegateInvoke or MethodKind.LocalFunction) return;
 

@@ -60,7 +60,7 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
             }
 
             default:
-                return node.ToString();
+                return context.Unhandled(node, "DateTimeOffset");
         }
     }
 

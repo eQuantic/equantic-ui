@@ -11,7 +11,7 @@ public class ZipStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "Zip");
+        return context.IsLinqMethod(node, "Zip");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

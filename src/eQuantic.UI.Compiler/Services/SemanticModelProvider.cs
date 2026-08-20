@@ -36,6 +36,13 @@ public class SemanticModelProvider
         _projectCompilation = null;
     }
 
+    /// <summary>
+    /// Whether a host handed over the project's real compilation. With it, models are
+    /// AUTHORITATIVE (unbindable calls are build errors); without it, the minimal compilation
+    /// resolves almost nothing by construction, and name heuristics stay legal.
+    /// </summary>
+    public bool HasProjectCompilation => _projectCompilation != null;
+
     private void LoadStandardReferences()
     {
         var assemblies = new[]

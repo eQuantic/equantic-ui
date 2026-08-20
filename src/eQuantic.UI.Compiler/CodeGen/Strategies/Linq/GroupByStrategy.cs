@@ -12,7 +12,7 @@ public class GroupByStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "GroupBy");
+        return context.IsLinqMethod(node, "GroupBy");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

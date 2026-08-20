@@ -11,7 +11,7 @@ public class ConcatStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "Concat");
+        return context.IsLinqMethod(node, "Concat");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

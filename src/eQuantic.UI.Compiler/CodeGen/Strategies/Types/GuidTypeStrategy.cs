@@ -66,7 +66,7 @@ public class GuidTypeStrategy : IConversionStrategy
             }
         }
 
-        return node.ToString();
+        return context.Unhandled(node, "Guid");
     }
 
     public int Priority => 10;

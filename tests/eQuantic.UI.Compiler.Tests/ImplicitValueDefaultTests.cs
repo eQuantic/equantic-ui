@@ -38,6 +38,7 @@ public class ImplicitValueDefaultTests
     }
 
     private const string Source = """
+        using System;
         using eQuantic.UI.Primitives;
 
         namespace Demo;

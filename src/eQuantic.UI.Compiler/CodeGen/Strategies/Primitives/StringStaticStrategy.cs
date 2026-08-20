@@ -135,7 +135,7 @@ public class StringStaticStrategy : IConversionStrategy
             return $"({first} === {second})";
         }
 
-        return node.ToString();
+        return context.Unhandled(node, "static String");
     }
 
     public int Priority => 20;

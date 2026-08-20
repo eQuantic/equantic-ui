@@ -146,18 +146,24 @@ public class FailOnUnsupportedTests
     {
         // The `?.` shape used to be a dead end: the member sits in a MemberBindingExpression, no
         // strategy destructured it, and `Tags?.contains("a")` — a method no JS array has — only
-        // failed once a browser ran it. Both shapes name the same call.
+        // failed once a browser ran it. Both shapes name the same call. The receiver's STATIC type
+        // (IReadOnlyCollection — a HashSet satisfies it, and a JS Set has no `includes`) is what
+        // routes it through the shape-blind runtime helper rather than an array method.
         var js = TestHelper.ConvertExpression(expression, "System.Collections.Generic.IReadOnlyCollection<string>");
 
-        js.Should().Contain(".includes(");
-        js.Should().NotContain(".contains(");
+        js.Should().Contain("$eq.collections.contains(");
+        js.Should().NotContain(".contains(\"a\")");
     }
 
     [Fact]
-    public void NullConditionalContains_KeepsItsGuard()
+    public void NullConditionalContains_AnswersForNullItself()
     {
+        // No `?.` in the output and none needed: $eq.collections.contains(null, …) is false, which
+        // is exactly what the guarded C# call answers in boolean position. The helper owning the
+        // null case is the NullGuardAnswered contract — the chain must NOT re-prefix `?.` onto a
+        // translation that already names its receiver as an argument.
         TestHelper.ConvertExpression("Tags?.Contains(\"a\")",
                 "System.Collections.Generic.IReadOnlyCollection<string>")
-            .Should().Contain("?.", "the receiver may be null — that is the whole point of the operator");
+            .Should().Contain("$eq.collections.contains(");
     }
 }

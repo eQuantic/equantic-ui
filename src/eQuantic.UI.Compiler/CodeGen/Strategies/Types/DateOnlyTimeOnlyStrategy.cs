@@ -65,7 +65,7 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
             }
 
             default:
-                return node.ToString();
+                return context.Unhandled(node, "DateOnly/TimeOnly");
         }
     }
 

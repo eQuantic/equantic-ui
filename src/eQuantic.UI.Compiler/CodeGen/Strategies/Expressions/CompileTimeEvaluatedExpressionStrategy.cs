@@ -13,6 +13,11 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 public class CompileTimeEvaluatedExpressionStrategy : IConversionStrategy
 {
     private CompileTimeEvaluator? _evaluator;
+    // The evaluator binds to ONE semantic model. The strategy instance outlives the file it is
+    // converting (the converter registers it once and drives every component through it), so a
+    // `??=` pinned the FIRST file's model forever: every [CompileTimeEvaluate] expression in the
+    // second file onward silently failed evaluation and took the failure path.
+    private SemanticModel? _evaluatorModel;
 
     public int Priority => 100; // Higher priority to check before other strategies
 
@@ -31,18 +36,51 @@ public class CompileTimeEvaluatedExpressionStrategy : IConversionStrategy
         if (typeInfo.Type == null)
             return false;
 
-        return IsCompileTimeEvaluatable(typeInfo.Type);
+        if (!IsCompileTimeEvaluatable(typeInfo.Type))
+            return false;
+
+        // Claim the node only when the claim MEANS something: a successful evaluation, or a failure
+        // the attribute asked to handle here (Error/EmitNull). A failure whose configured fallback
+        // is "EmitRuntimeCode" is declined instead, so the normal pipeline emits the actual runtime
+        // code — the previous behaviour returned the raw C# text and called it a fallback.
+        _pendingNode = expression;
+        _pendingValue = Evaluator(context).TryEvaluate(expression);
+        if (_pendingValue != null) return true;
+
+        var config = GetEvaluationConfig(typeInfo.Type);
+        if (config.FallbackBehavior is "Error" or "EmitNull") return true;
+
+        if (config.WarnOnFailure)
+        {
+            Console.WriteLine(
+                $"Warning: Could not evaluate compile-time expression at {expression.GetLocation()}. " +
+                $"Falling back to runtime code. Expression: {expression}");
+        }
+        return false;
+    }
+
+    // CanConvert and Convert run back-to-back on the same node (FindStrategy → Convert), so the
+    // evaluation done while DECIDING is handed to the emission instead of running twice.
+    private ExpressionSyntax? _pendingNode;
+    private string? _pendingValue;
+
+    private CompileTimeEvaluator Evaluator(ConversionContext context)
+    {
+        if (_evaluator == null || !ReferenceEquals(_evaluatorModel, context.SemanticModel))
+        {
+            _evaluator = new CompileTimeEvaluator(context.SemanticModel!);
+            _evaluatorModel = context.SemanticModel;
+        }
+        return _evaluator;
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var expression = (ExpressionSyntax)node;
 
-        // Initialize evaluator if needed
-        _evaluator ??= new CompileTimeEvaluator(context.SemanticModel!);
-
-        // Try to evaluate the expression
-        var evaluatedValue = _evaluator.TryEvaluate(expression);
+        var evaluatedValue = ReferenceEquals(_pendingNode, expression)
+            ? _pendingValue
+            : Evaluator(context).TryEvaluate(expression);
 
         if (evaluatedValue != null)
         {
@@ -50,7 +88,8 @@ public class CompileTimeEvaluatedExpressionStrategy : IConversionStrategy
             return $"'{EscapeString(evaluatedValue)}'";
         }
 
-        // Evaluation failed - emit diagnostic and fall back
+        // Evaluation failed and the attribute asked for Error/EmitNull (EmitRuntimeCode never
+        // reaches Convert — CanConvert declines it so the normal pipeline emits the runtime code).
         var typeInfo = context.SemanticModel!.GetTypeInfo(expression);
         var config = GetEvaluationConfig(typeInfo.Type!);
 
@@ -100,19 +139,10 @@ public class CompileTimeEvaluatedExpressionStrategy : IConversionStrategy
             case "EmitNull":
                 return "''";  // Empty string
 
-            case "EmitRuntimeCode":
             default:
-                if (config.WarnOnFailure)
-                {
-                    Console.WriteLine(
-                        $"Warning: Could not evaluate compile-time expression at {expression.GetLocation()}. " +
-                        $"Falling back to runtime code. Expression: {expression}");
-                }
-
-                // Fall back to normal expression conversion
-                // Note: This may cause issues if the expression uses runtime values
-                // but it's better than failing completely
-                return expression.ToString();
+                // "EmitRuntimeCode" failures are declined in CanConvert so the normal pipeline
+                // emits the actual runtime code; anything still landing here is a bug, not a path.
+                return context.Unhandled(expression, "compile-time evaluation");
         }
     }
 

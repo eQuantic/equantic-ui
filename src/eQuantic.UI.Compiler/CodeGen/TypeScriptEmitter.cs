@@ -94,6 +94,13 @@ public class TypeScriptEmitter
     /// <summary>
     /// Sets the dependency resolver for automatic dependency detection
     /// </summary>
+    /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.SymbolsAreAuthoritative"/>.</summary>
+    public bool SymbolsAreAuthoritative
+    {
+        get => _converter.SymbolsAreAuthoritative;
+        set => _converter.SymbolsAreAuthoritative = value;
+    }
+
     public void SetDependencyResolver(ComponentDependencyResolver resolver)
     {
         _dependencyResolver = resolver;
@@ -1663,6 +1670,10 @@ public class TypeScriptEmitter
         _converter.UsedHelpers.Clear();
         _converter.UsedAppTypes.Clear();
         _converter.UsedRuntimeTypes.Clear();
+        // This module's diagnostics start at zero — without this, GetLastDiagnostics() after a
+        // plain-class/static-helper emit still carried the PREVIOUS component's entries, and now
+        // that ComponentCompiler drains every branch, a leak here would fail the wrong file.
+        _converter.ClearDiagnostics();
         var name = cls.Identifier.Text;
 
         // The BASE class travels. Dropping it is how `CSharpLanguage : CurlyBraceLanguage` came out

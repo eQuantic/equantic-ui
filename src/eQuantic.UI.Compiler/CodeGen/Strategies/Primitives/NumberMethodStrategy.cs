@@ -88,8 +88,8 @@ public class NumberMethodStrategy : IConversionStrategy
             
             return $"({varName} = {parsMethod}({input}), !isNaN({varName}))";
         }
-        
-        return node.ToString();
+
+        return context.Unhandled(node, "numeric Parse/TryParse");
     }
 
     public int Priority => 10;

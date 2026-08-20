@@ -108,7 +108,7 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
             }
 
             default:
-                return node.ToString();
+                return context.Unhandled(node, "Dictionary");
         }
     }
 

@@ -15,7 +15,7 @@ public class JoinStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "Join");
+        return context.IsLinqMethod(node, "Join");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

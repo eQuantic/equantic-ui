@@ -13,7 +13,7 @@ public class ToLookupStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "ToLookup");
+        return context.IsLinqMethod(node, "ToLookup");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

@@ -66,7 +66,7 @@ public class TimeSpanStrategy : ConversionStrategyBase
             }
 
             default:
-                return node.ToString();
+                return context.Unhandled(node, "TimeSpan");
         }
     }
 

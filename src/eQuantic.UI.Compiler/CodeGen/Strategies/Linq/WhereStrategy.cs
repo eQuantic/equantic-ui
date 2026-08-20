@@ -27,8 +27,9 @@ public class WhereStrategy : IConversionStrategy
             return true;
         }
 
-        // Fallback: If no semantic model or unresolved symbol, assume it's LINQ if the name matches
-        if (context.SemanticModel == null || symbol == null)
+        // Name decides ONLY where guessing is honest — see ConversionContext.CanGuess. Under an
+        // AUTHORITATIVE model, in-tree-but-unbindable is reported (EQ2006), never guessed.
+        if (symbol == null && context.CanGuess(node))
         {
             return true;
         }

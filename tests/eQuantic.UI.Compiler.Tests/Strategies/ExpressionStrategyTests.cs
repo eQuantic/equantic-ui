@@ -75,14 +75,14 @@ public class ExpressionStrategyTests
     public void ConditionalAccess_MemberAccess_MapsTo_OptionalChaining()
     {
         var result = TestHelper.ConvertExpression("user?.Name");
-        result.Should().Be("user?.name");
+        result.Should().Be("this.user?.name");
     }
 
     [Fact]
     public void ConditionalAccess_MethodCall_MapsTo_OptionalChaining()
     {
         var result = TestHelper.ConvertExpression("user?.GetName()");
-        result.Should().Be("user?.getName()");
+        result.Should().Be("this.user?.getName()");
     }
 
     [Fact]
@@ -96,14 +96,14 @@ public class ExpressionStrategyTests
     public void ConditionalAccess_Chained_MapsTo_OptionalChaining()
     {
         var result = TestHelper.ConvertExpression("user?.Address?.City");
-        result.Should().Be("user?.address?.city");
+        result.Should().Be("this.user?.address?.city");
     }
 
     [Fact]
     public void ConditionalAccess_WithNullCoalescing_MapsCorrectly()
     {
         var result = TestHelper.ConvertExpression("user?.Name ?? \"Unknown\"");
-        result.Should().Be("user?.name ?? 'Unknown'");
+        result.Should().Be("this.user?.name ?? 'Unknown'");
     }
 
     [Fact]

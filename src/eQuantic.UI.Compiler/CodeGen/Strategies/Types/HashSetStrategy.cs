@@ -95,7 +95,7 @@ public class HashSetStrategy : IConversionStrategy
             };
         }
 
-        return node.ToString();
+        return context.Unhandled(node, "HashSet");
     }
 
     public int Priority => 10;

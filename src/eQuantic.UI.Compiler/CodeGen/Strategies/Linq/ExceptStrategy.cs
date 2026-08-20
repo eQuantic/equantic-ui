@@ -12,7 +12,7 @@ public class ExceptStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "Except");
+        return context.IsLinqMethod(node, "Except");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

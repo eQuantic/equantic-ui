@@ -24,7 +24,7 @@ public class SelectManyStrategy : IConversionStrategy
         if (symbol is IMethodSymbol ms && context.SemanticHelper.IsLinqExtension(ms.ContainingType))
             return true;
 
-        if (context.SemanticModel == null || symbol == null)
+        if (symbol == null && context.CanGuess(node))
             return true;
 
         return false;

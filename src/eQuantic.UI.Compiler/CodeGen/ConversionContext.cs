@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -11,6 +12,39 @@ public class ConversionContext
     public SemanticModel? SemanticModel { get; set; }
     public required CSharpToJsConverter Converter { get; set; }
     public required SemanticHelper SemanticHelper { get; set; }
+
+    /// <summary>
+    /// The host PROMISED the semantic model is complete — the project's real references and
+    /// generated sources are in it (the SDK build, the design session). Under that promise, an
+    /// in-tree call the model cannot bind is a build error (EQ2006), never a name-guessed
+    /// translation: it means missing references or code that doesn't compile, and guessing there
+    /// is how `List.Add` once shipped as a JS `.add`. Left false (standalone/minimal-model hosts,
+    /// bare snippets), the name heuristics keep deciding exactly as they always have — that mode
+    /// resolves almost nothing by construction, so "unbound" carries no signal there.
+    /// </summary>
+    public bool SymbolsAreAuthoritative { get; set; }
+
+    /// <summary>
+    /// Whether a name heuristic is an HONEST basis for translating this node: the model cannot be
+    /// asked (none, or a strategy-rewrote node from no tree it knows), or the host never promised
+    /// the model was complete. When this is false, symbols are the only evidence that counts.
+    /// </summary>
+    public bool CanGuess(SyntaxNode node) => !SymbolsAreAuthoritative || !SemanticHelper.Knows(node);
+
+    /// <summary>
+    /// The gate the LINQ-family strategies share: the method NAME matches, and either the symbol
+    /// proves it is <c>System.Linq</c> or guessing is honest here (<see cref="CanGuess"/>).
+    /// </summary>
+    public bool IsLinqMethod(SyntaxNode node, string methodName)
+    {
+        if (node is not InvocationExpressionSyntax invocation) return false;
+        if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
+        if (memberAccess.Name.Identifier.Text != methodName) return false;
+
+        if (SemanticHelper.GetSymbol(node) is { } symbol)
+            return SemanticHelper.IsLinqExtension(symbol.ContainingType);
+        return CanGuess(node);
+    }
     public string? ExpectedType { get; set; }
     public string? CurrentClassName { get; set; }
 
@@ -51,6 +85,22 @@ public class ConversionContext
     {
         var pos = node.GetLocation().GetLineSpan().StartLinePosition;
         Diagnostics.Add(new ConversionDiagnostic(severity, code, message, pos.Line + 1, pos.Character + 1));
+    }
+
+    /// <summary>
+    /// A strategy CLAIMED this node and then met a form it has no emission for. The verbatim C# is
+    /// returned so the output shows what was meant, and the build FAILS — these tails used to return
+    /// the raw text with no diagnostic at all, the one path left that could still ship C# to the
+    /// browser after EQ1001–EQ1003 closed the no-strategy case.
+    /// </summary>
+    public string Unhandled(SyntaxNode node, string strategy)
+    {
+        var text = node.ToString();
+        var shown = text.Length > 80 ? text[..77] + "…" : text;
+        Report(node, ConversionSeverity.Error, "EQ1004",
+            $"'{shown}' matched the {strategy} translation, but this exact form has no JavaScript "
+            + "emission. Rewrite it in a transpilable form, or add the missing case to the strategy.");
+        return text;
     }
 
     public void ClearDiagnostics()

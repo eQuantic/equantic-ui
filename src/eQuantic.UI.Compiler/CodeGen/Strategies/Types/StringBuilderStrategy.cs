@@ -60,7 +60,7 @@ public class StringBuilderStrategy : ConversionStrategyBase
             }
 
             default:
-                return node.ToString();
+                return context.Unhandled(node, "StringBuilder");
         }
     }
 

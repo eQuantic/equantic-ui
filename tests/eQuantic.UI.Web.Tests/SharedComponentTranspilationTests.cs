@@ -173,7 +173,12 @@ public class SharedComponentTranspilationTests
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable));
 
-        var compiler = new ComponentCompiler();
+        // NOT authoritative, deliberately: this pipeline transpiles the LIBRARY's own sources with
+        // the library's dll among the references, so the file being compiled is source while its
+        // dependencies resolve from metadata — a `theme.Code(token.Kind)` whose argument is the
+        // source-tree type can never bind against the dll's overload. The model is structurally
+        // incomplete here; heuristics stay legal, and the byte-pins below are what guard emission.
+        var compiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
         compiler.SetProjectCompilation(compilation);
 
         var modules = new Dictionary<string, string>();

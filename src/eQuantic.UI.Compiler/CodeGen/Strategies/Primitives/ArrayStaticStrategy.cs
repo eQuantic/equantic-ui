@@ -46,7 +46,7 @@ public class ArrayStaticStrategy : IConversionStrategy
         var methodName = memberAccess.Name.Identifier.Text;
         var args = invocation.ArgumentList.Arguments;
 
-        if (args.Count == 0) return node.ToString();
+        if (args.Count == 0) return context.Unhandled(node, "static Array");
 
         var arrayArg = context.Converter.ConvertExpression(args[0].Expression);
 
@@ -145,7 +145,7 @@ public class ArrayStaticStrategy : IConversionStrategy
                 break;
         }
 
-        return node.ToString();
+        return context.Unhandled(node, "static Array");
     }
 
     public int Priority => 20; // Higher than StringStaticStrategy to handle static array methods

@@ -50,8 +50,9 @@ public class StringMethodStrategy : IConversionStrategy
                 return true;
         }
 
-        // Fallback heuristic when no semantic info
-        if (context.SemanticModel == null || symbol == null)
+        // Name decides ONLY where guessing is honest — see ConversionContext.CanGuess. Under an
+        // AUTHORITATIVE model, in-tree-but-unbindable is reported (EQ2006), never guessed.
+        if (symbol == null && context.CanGuess(node))
             return true;
 
         return false;

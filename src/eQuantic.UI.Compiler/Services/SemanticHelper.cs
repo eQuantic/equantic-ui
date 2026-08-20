@@ -92,17 +92,8 @@ public class SemanticHelper
         return value != null;
     }
 
-    public bool IsLinqMethod(SyntaxNode node, string methodName)
-    {
-        if (node is not Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax invocation) return false;
-        if (invocation.Expression is not Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax memberAccess) return false;
-        if (memberAccess.Name.Identifier.Text != methodName) return false;
-
-        var symbol = GetSymbol(node); // Invocation symbol (MethodSymbol)
-        if (symbol == null) return true; // Loose check if semantic model missing
-        
-        return IsLinqExtension(symbol.ContainingType);
-    }
+    // The LINQ name-gate moved to ConversionContext.IsLinqMethod: whether a NAME may decide is a
+    // policy question (CanGuess — authoritative model or not), and policy lives on the context.
 
     public bool IsStatic(SyntaxNode node)
     {

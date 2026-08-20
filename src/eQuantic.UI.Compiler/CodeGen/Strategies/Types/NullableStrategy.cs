@@ -78,7 +78,7 @@ public class NullableStrategy : IConversionStrategy
             }
 
             default:
-                return node.ToString();
+                return context.Unhandled(node, "Nullable");
         }
     }
 
@@ -88,9 +88,11 @@ public class NullableStrategy : IConversionStrategy
         if (type != null && type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
             return true;
 
-        // Shape fallback (no semantic model): trust the .HasValue/.Value shape. Deliberately NOT used
-        // for GetValueOrDefault, so Dictionary.GetValueOrDefault keeps working without a semantic model.
-        return allowShapeHeuristic && context.SemanticModel == null;
+        // Shape fallback ONLY where guessing is honest (see ConversionContext.CanGuess) AND the
+        // receiver's type did not resolve to something else — a RESOLVED non-Nullable receiver is
+        // semantic evidence against, never a shape to guess at. Deliberately NOT used for
+        // GetValueOrDefault, so Dictionary.GetValueOrDefault keeps working without a model.
+        return allowShapeHeuristic && type == null && context.CanGuess(receiver);
     }
 
     private static ITypeSymbol? UnderlyingType(ITypeSymbol? nullableType)

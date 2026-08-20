@@ -157,7 +157,7 @@ public class EnumMethodStrategy : IConversionStrategy
             return "false";
         }
 
-        return node.ToString();
+        return context.Unhandled(node, "Enum");
     }
 
     public int Priority => 10;

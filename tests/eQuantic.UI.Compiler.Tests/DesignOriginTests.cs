@@ -18,11 +18,15 @@ namespace eQuantic.UI.Compiler.Tests;
 /// </summary>
 public class DesignOriginTests
 {
+    // The canonical write-once shape (see samples): Components + Primitives, and NO
+    // `using eQuantic.UI.Core;` — importing Core makes StatefulComponent ambiguous (CS0104) and
+    // leaves Button unresolvable, which under an authoritative model is an EQ2006 build error
+    // rather than a shrug. The attribute is qualified for the same reason.
     private const string Source = """
-        using eQuantic.UI.Core;
+        using eQuantic.UI.Components;
         using eQuantic.UI.Primitives;
 
-        [Page("/probe")]
+        [eQuantic.UI.Core.Page("/probe")]
         public sealed class Probe : StatefulComponent
         {
             private int _count;

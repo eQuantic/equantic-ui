@@ -70,7 +70,7 @@ public class QueueStackStrategy : ConversionStrategyBase
             }
 
             default:
-                return node.ToString();
+                return context.Unhandled(node, "Queue/Stack");
         }
     }
 

@@ -61,7 +61,7 @@ public class IndexFromEndStrategy : IConversionStrategy
             }
         }
 
-        return node.ToString();
+        return context.Unhandled(node, "index-from-end");
     }
 
     public int Priority => 20; // Higher than ElementAccessStrategy

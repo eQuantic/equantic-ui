@@ -77,7 +77,7 @@ public class TaskMethodStrategy : IConversionStrategy
             return $"Promise.resolve({val})";
         }
 
-        return node.ToString();
+        return context.Unhandled(node, "Task");
     }
 
     public int Priority => 10;

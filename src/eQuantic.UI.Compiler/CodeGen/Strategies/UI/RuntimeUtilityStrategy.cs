@@ -63,7 +63,7 @@ public class RuntimeUtilityStrategy : IConversionStrategy
             : null;
 
         if (symbolInfo?.Symbol is not IMethodSymbol methodSymbol)
-            return invocation.ToString();
+            return context.Unhandled(invocation, "runtime utility");
 
         var typeName = methodSymbol.ContainingType.Name;
         var methodName = methodSymbol.Name;
@@ -88,8 +88,9 @@ public class RuntimeUtilityStrategy : IConversionStrategy
             return $"{receiver}.{tsMethodName}({arguments})";
         }
 
-        // Fallback
-        return invocation.ToString();
+        // A shape the two branches above don't cover — `builder?.When(…)` arrives as a member
+        // BINDING, not a member access — used to ship raw C# here.
+        return context.Unhandled(invocation, "runtime utility");
     }
 
     private string ConvertArguments(InvocationExpressionSyntax invocation, ConversionContext context)

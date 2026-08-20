@@ -208,7 +208,10 @@ The Roslyn-based compiler uses the **Strategy Pattern**:
    - `Linq/` - Where→filter, Select→map, First→find, Count→length
    - `Types/` - Enum, Guid, Nullable, Tuple
 5. **SourceMapGenerator** - V3 Source Maps for C# debugging in browser
-6. **TypeMappingRegistry** - Data-driven type/method translations
+6. **SemanticHelper** (`Services/SemanticHelper.cs`) - symbol-based decisions. The rule: name
+   heuristics are legal ONLY where the model cannot be asked (`Knows()` false — no model, or a
+   strategy-rewrote node); an in-tree call the model cannot bind is a build error (EQ2006), never
+   a guessed translation.
 
 **Supported C# Features:**
 - Expressions: Arithmetic, Logical, Ternary, Null-coalescing (`??`)

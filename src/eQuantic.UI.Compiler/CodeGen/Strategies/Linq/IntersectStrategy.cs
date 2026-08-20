@@ -12,7 +12,7 @@ public class IntersectStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "Intersect");
+        return context.IsLinqMethod(node, "Intersect");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

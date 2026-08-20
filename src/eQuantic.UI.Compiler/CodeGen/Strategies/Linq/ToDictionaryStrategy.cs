@@ -11,7 +11,7 @@ public class ToDictionaryStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "ToDictionary");
+        return context.IsLinqMethod(node, "ToDictionary");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

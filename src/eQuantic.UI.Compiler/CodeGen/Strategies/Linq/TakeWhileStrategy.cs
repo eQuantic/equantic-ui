@@ -18,7 +18,7 @@ public class TakeWhileStrategy : IConversionStrategy
         if (symbol is IMethodSymbol ms && context.SemanticHelper.IsLinqExtension(ms.ContainingType)) return true;
 
         // Fallback
-        return context.SemanticModel == null;
+        return symbol == null && context.CanGuess(node);
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

@@ -12,7 +12,7 @@ public class UnionStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "Union");
+        return context.IsLinqMethod(node, "Union");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

@@ -22,7 +22,6 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// </summary>
 public class CSharpToJsConverter
 {
-    private readonly TypeMappingRegistry _registry;
     private readonly StrategyRegistry _strategyRegistry;
     private readonly StatementStrategyRegistry _statementRegistry;
     private readonly ConversionContext _context;
@@ -30,8 +29,7 @@ public class CSharpToJsConverter
 
     public CSharpToJsConverter()
     {
-        _registry = new TypeMappingRegistry();
-        _context = new ConversionContext 
+        _context = new ConversionContext
         { 
             Converter = this,
             SemanticHelper = new SemanticHelper(null)
@@ -44,6 +42,16 @@ public class CSharpToJsConverter
     
     /// <summary>The model in force, for an emitter that must ASK what a default refers to.</summary>
     internal SemanticModel? Model => _semanticModel;
+
+    /// <summary>See <see cref="ConversionContext.SymbolsAreAuthoritative"/> — set true by hosts
+    /// that hand over the project's COMPLETE compilation (SDK build, design session, test
+    /// harnesses that compile their snippets). Survives <see cref="Reset"/>: it describes the
+    /// host, not the file.</summary>
+    public bool SymbolsAreAuthoritative
+    {
+        get => _context.SymbolsAreAuthoritative;
+        set => _context.SymbolsAreAuthoritative = value;
+    }
 
     public void SetSemanticModel(SemanticModel? semanticModel)
     {

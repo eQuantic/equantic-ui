@@ -102,7 +102,7 @@ public class DictionaryStrategy : IConversionStrategy
 
         // Handle method invocations
         if (node is not InvocationExpressionSyntax invocation)
-            return node.ToString();
+            return context.Unhandled(node, "Dictionary");
 
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;

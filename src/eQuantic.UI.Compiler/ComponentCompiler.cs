@@ -46,6 +46,38 @@ public class ComponentCompiler
     private readonly Dictionary<string, AggregatedResource> _resourceUses = new(StringComparer.Ordinal);
 
     /// <summary>
+    /// Transpilation diagnostics → build errors/warnings, for EVERY emit path. The record,
+    /// plain-class and static-helper branches each RETURN before the component path's tail, and all
+    /// three used to return without draining diagnostics — an EQ error raised while emitting a
+    /// record or a static helper never reached <see cref="CompilationResult.Errors"/>, so the build
+    /// SUCCEEDED around it. Same disease, third organ: source maps and resource uses had already
+    /// been fixed for these branches (see <see cref="CollectResourceUses"/>), and the rule stands —
+    /// anything that must happen for every compiled file belongs in a method the branches call.
+    /// </summary>
+    private static void CollectDiagnostics(CompilationResult result, string sourcePath,
+        IEnumerable<ConversionDiagnostic> diagnostics)
+    {
+        foreach (var diagnostic in diagnostics)
+        {
+            var entry = new CompilationError
+            {
+                Message = diagnostic.Message,
+                Code = diagnostic.Code,
+                SourcePath = sourcePath,
+                Line = diagnostic.Line,
+                Column = diagnostic.Column,
+            };
+            if (diagnostic.Severity == ConversionSeverity.Error)
+                result.Errors.Add(entry);
+            else
+                result.Warnings.Add(entry);
+        }
+
+        if (result.Errors.Count > 0)
+            result.Success = false;
+    }
+
+    /// <summary>
     /// Track L D3: aggregate the rewritten resx reads — catalogs are emitted from exactly this set,
     /// so call sites and catalogs cannot disagree.
     /// <para>
@@ -104,6 +136,60 @@ public class ComponentCompiler
     public void SetProjectCompilation(Compilation projectCompilation)
     {
         _semanticModelProvider.SetProjectCompilation(projectCompilation);
+    }
+
+    /// <summary>
+    /// Overrides the symbol regime the project compilation implies (see
+    /// <see cref="ConversionContext.SymbolsAreAuthoritative"/>). By default a project compilation
+    /// means AUTHORITATIVE — unbindable calls are EQ2006 build errors. The one host that must set
+    /// this to <c>false</c> is the library-self-transpile pipeline: there the file being compiled
+    /// is SOURCE while its dependencies resolve from the library's own dll, so cross-boundary
+    /// calls (a source-typed argument into a dll-declared method) can never fully bind — the model
+    /// is structurally incomplete, and "unbound" carries no signal.
+    /// </summary>
+    public bool? SymbolsAreAuthoritative { get; set; }
+
+    /// <summary>
+    /// The per-file version of the same demotion, detected rather than declared: an SDK app build
+    /// feeds the component LIBRARY's own sources through eqc while the library's dll sits among
+    /// the references, so every type in such a file exists TWICE — and a file whose own types are
+    /// duplicated can never fully bind (its statics resolve ambiguously; `Spacer.Fixed` inside
+    /// ListView.cs stops binding). For that file, "unbound" carries no signal, so it keeps the
+    /// heuristics. An APP's files are in no referenced dll, stay un-shadowed, and keep the full
+    /// EQ2006 protection.
+    /// </summary>
+    private static bool FileIsSelfShadowed(SemanticModel? model, SyntaxTree? tree)
+    {
+        if (model is null || tree is null) return false;
+
+        foreach (var declaration in tree.GetRoot().DescendantNodes()
+                     .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeDeclarationSyntax>())
+        {
+            // Top-level types only: a nested type's metadata name needs its parent chain, and the
+            // parent being shadowed already answers the question.
+            if (declaration.Parent is Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeDeclarationSyntax)
+                continue;
+            if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol declared)
+                continue;
+
+            var ns = declared.ContainingNamespace;
+            var fullName = ns is { IsGlobalNamespace: false }
+                ? ns.ToDisplayString() + "." + declared.MetadataName
+                : declared.MetadataName;
+            // Compilation.GetTypeByMetadataName cannot answer this — it PREFERS source, so the
+            // duplicate hides behind it. Ask each referenced assembly directly: the file's own
+            // type existing in a reference is the duplicate world, whatever name lookup prefers.
+            foreach (var reference in model.Compilation.References)
+            {
+                if (model.Compilation.GetAssemblyOrModuleSymbol(reference) is IAssemblySymbol assembly
+                    && assembly.GetTypeByMetadataName(fullName) is not null)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -204,10 +290,26 @@ public class ComponentCompiler
         
         try
         {
+            // Regime for every emit below: a host that handed over the project's compilation
+            // promised completeness, so unbindable calls are errors; the minimal fallback resolves
+            // almost nothing by construction, so heuristics stay legal there. A host may override
+            // (see the property) — the library-self-transpile pipeline must — and a file whose own
+            // types are duplicated by a reference demotes itself (see FileIsSelfShadowed).
+            var authoritative = SymbolsAreAuthoritative ?? _semanticModelProvider.HasProjectCompilation;
+            if (authoritative && component.SyntaxTree != null
+                && FileIsSelfShadowed(_semanticModelProvider.GetSemanticModel(component.SyntaxTree), component.SyntaxTree))
+            {
+                authoritative = false;
+            }
+            _tsEmitter.SymbolsAreAuthoritative = authoritative;
+
             // User value type (record/struct) — emit as a standalone named-class module.
             if (component.IsRecordType && component.ValueTypeSyntax != null)
             {
-                var recordConverter = new CSharpToJsConverter();
+                var recordConverter = new CSharpToJsConverter
+                {
+                    SymbolsAreAuthoritative = authoritative,
+                };
                 if (component.SyntaxTree != null)
                     recordConverter.SetSemanticModel(_semanticModelProvider.GetSemanticModel(component.SyntaxTree));
                 // TypeAnnotations flows here too: a record emitted as TypeScript is a parse error
@@ -216,6 +318,7 @@ public class ComponentCompiler
                     .EmitModule(component.ValueTypeSyntax, TypeAnnotations);
                 CollectResourceUses(recordConverter.ResourceUses);
                 result.Success = true;
+                CollectDiagnostics(result, component.SourcePath, recordConverter.Diagnostics);
                 return result;
             }
 
@@ -228,6 +331,7 @@ public class ComponentCompiler
                 CollectResourceUses(_tsEmitter.GetLastResourceUses());
                 AttachSourceMap(result, component);
                 result.Success = true;
+                CollectDiagnostics(result, component.SourcePath, _tsEmitter.GetLastDiagnostics());
                 return result;
             }
 
@@ -240,6 +344,7 @@ public class ComponentCompiler
                 CollectResourceUses(_tsEmitter.GetLastResourceUses());
                 AttachSourceMap(result, component);
                 result.Success = true;
+                CollectDiagnostics(result, component.SourcePath, _tsEmitter.GetLastDiagnostics());
                 return result;
             }
 
@@ -272,21 +377,7 @@ public class ComponentCompiler
 
             // Collect transpilation diagnostics (unconverted or impossible constructs). Errors fail
             // the build; warnings are surfaced but do not. Replaces silent verbatim fallbacks.
-            foreach (var diagnostic in _tsEmitter.GetLastDiagnostics())
-            {
-                var entry = new CompilationError
-                {
-                    Message = diagnostic.Message,
-                    Code = diagnostic.Code,
-                    SourcePath = component.SourcePath,
-                    Line = diagnostic.Line,
-                    Column = diagnostic.Column,
-                };
-                if (diagnostic.Severity == ConversionSeverity.Error)
-                    result.Errors.Add(entry);
-                else
-                    result.Warnings.Add(entry);
-            }
+            CollectDiagnostics(result, component.SourcePath, _tsEmitter.GetLastDiagnostics());
 
             CollectResourceUses(_tsEmitter.GetLastResourceUses());
 

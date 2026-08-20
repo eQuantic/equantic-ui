@@ -36,7 +36,7 @@ public class RegexStrategy : IConversionStrategy
             return $"new RegExp({pattern}).test({input})";
         }
 
-        return node.ToString();
+        return context.Unhandled(node, "Regex");
     }
 
     public int Priority => 10;

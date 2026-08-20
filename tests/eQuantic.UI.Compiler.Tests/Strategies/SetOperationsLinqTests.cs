@@ -17,9 +17,9 @@ public class SetOperationsLinqTests
     [Fact]
     public void Concat_WithInlineArray_MapsCorrectly()
     {
-        var result = TestHelper.ConvertExpression("list.Concat(new[] { 1, 2, 3 })");
+        var result = TestHelper.ConvertExpression("numbers.Concat(new[] { 1, 2, 3 })");
         // new[] { 1, 2, 3 } is converted to "new[] { 1, 2, 3 }" (not fully converted yet)
-        result.Should().Contain("[...this.list, ...");
+        result.Should().Contain("[...this.numbers, ...");
         result.Should().Contain("1, 2, 3");
     }
 
@@ -69,8 +69,8 @@ public class SetOperationsLinqTests
     public void Intersect_FindsCommonElements()
     {
         // Intersect should filter source by items that exist in other
-        var result = TestHelper.ConvertExpression("items.Intersect(list)");
-        result.Should().Contain("filter(x => this.list.includes(x))");
+        var result = TestHelper.ConvertExpression("items.Intersect(list1)");
+        result.Should().Contain("filter(x => this.list1.includes(x))");
     }
 
     [Fact]
@@ -94,8 +94,8 @@ public class SetOperationsLinqTests
     public void Except_ExcludesElements()
     {
         // Except should filter out items that exist in other
-        var result = TestHelper.ConvertExpression("items.Except(list)");
-        result.Should().Contain("filter(x => !this.list.includes(x))");
+        var result = TestHelper.ConvertExpression("items.Except(excludeList)");
+        result.Should().Contain("filter(x => !this.excludeList.includes(x))");
     }
 
     [Fact]
@@ -112,9 +112,9 @@ public class SetOperationsLinqTests
     public void CombinedSetOperations_MapsCorrectly()
     {
         // Union then Except
-        var result = TestHelper.ConvertExpression("list.Union(otherList).Except(items)");
+        var result = TestHelper.ConvertExpression("items.Union(list1).Except(excludeList)");
         result.Should().Contain("new Set");
-        result.Should().Contain("filter(x => !this.items.includes(x))");
+        result.Should().Contain("filter(x => !this.excludeList.includes(x))");
     }
 
     [Fact]

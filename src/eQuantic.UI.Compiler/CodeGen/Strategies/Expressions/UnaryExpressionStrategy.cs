@@ -41,7 +41,7 @@ public class UnaryExpressionStrategy : IConversionStrategy
             return $"{operand}{postfix.OperatorToken.Text}";
         }
 
-        return node.ToString();
+        return context.Unhandled(node, "unary operator");
     }
 
     public int Priority => 10;

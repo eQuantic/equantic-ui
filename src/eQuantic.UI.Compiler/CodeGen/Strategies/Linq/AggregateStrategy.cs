@@ -11,7 +11,7 @@ public class AggregateStrategy : IConversionStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        return context.SemanticHelper.IsLinqMethod(node, "Aggregate");
+        return context.IsLinqMethod(node, "Aggregate");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
