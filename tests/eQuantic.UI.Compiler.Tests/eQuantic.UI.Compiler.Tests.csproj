@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- The coverage tests enumerate C# 15 preview syntax types ([Experimental] in Roslyn 5.9) —
+         same deliberate acknowledgement the compiler itself makes. -->
+    <NoWarn>$(NoWarn);RSEXPERIMENTAL006</NoWarn>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
