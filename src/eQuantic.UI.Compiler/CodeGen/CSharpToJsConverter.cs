@@ -274,6 +274,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<Strategies.Linq.EnumerableFactoryStrategy>();
         _strategyRegistry.Register<Strategies.Types.WebPrimitiveStrategy>();
         _strategyRegistry.Register<GenericNameStrategy>();
+        _strategyRegistry.Register<ThisExpressionStrategy>();
         _strategyRegistry.Register<MemberAccessStrategy>();
         _strategyRegistry.Register<ElementAccessStrategy>();
         _strategyRegistry.Register<ObjectCreationStrategy>();
@@ -315,6 +316,7 @@ public class CSharpToJsConverter
         _statementRegistry.Register<UnsafeStatementStrategy>();
         _statementRegistry.Register<LabeledStatementStrategy>();
         _statementRegistry.Register<GotoStatementStrategy>();
+        _statementRegistry.Register<EmptyStatementStrategy>();
     }
 
     /// <summary>
