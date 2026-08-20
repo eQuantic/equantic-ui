@@ -195,6 +195,7 @@ public class CSharpToJsConverter
         // Primitive Type Strategies (Low Priority than new Invocation Strategies but higher than fallback)
         _strategyRegistry.Register<StringMethodStrategy>();
         _strategyRegistry.Register<StringStaticStrategy>(); // New Phase 7
+        _strategyRegistry.Register<PrimitiveStaticStrategy>(); // .NET 7+ statics on the primitives themselves
         _strategyRegistry.Register<ListMethodStrategy>();
         _strategyRegistry.Register<ArrayStaticStrategy>();
 
