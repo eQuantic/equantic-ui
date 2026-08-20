@@ -21,6 +21,25 @@ public class LambdaExpressionStrategy : IConversionStrategy
     {
         if (node is ParenthesizedLambdaExpressionSyntax parenthesized)
         {
+            // A lambda with `out`/`ref` parameters must honour the SAME callee contract methods do
+            // (see OutParameters): outs leave the signature and everything comes back in one
+            // {outs, $} object, because that is what every call site unwraps. C# 14's modifier-on-
+            // untyped-parameters (`(text, out result) => …`) made these easy to write — and the
+            // lambda used to keep its outs as plain parameters, so the unwrap read undefined.
+            var byReference = OutParameters.Of(parenthesized.ParameterList);
+            if (byReference.Count > 0)
+            {
+                var kept = string.Join(", ", parenthesized.ParameterList.Parameters
+                    .Where(p => !OutParameters.IsOut(p))
+                    .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
+                var isAsync = parenthesized.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
+                var inner = parenthesized.Block != null
+                    ? TrimBraces(context.Converter.ConvertBlock(parenthesized.Block))
+                    : $"return {context.Converter.ConvertExpression(parenthesized.ExpressionBody!)};";
+                var wrapped = OutParameters.WrapBody(inner, byReference, isAsync);
+                return $"{(isAsync ? "async " : "")}({kept}) => {{ {wrapped} }}";
+            }
+
             // The parameter TYPES come from the semantic model: a lambda handed to a config object
             // has nothing to infer from on the other side, and an untyped parameter is an error in
             // the runtime's own build rather than merely a missing type.
@@ -59,6 +78,15 @@ public class LambdaExpressionStrategy : IConversionStrategy
         var hoisted = PatternVariableScanner.Declarations(expression, context.TypeAnnotations);
         var converted = context.Converter.ConvertExpression(expression);
         return hoisted.Length == 0 ? converted : $"{{ {hoisted}return {converted}; }}";
+    }
+
+    /// <summary>The statements of a converted block, without its outer braces.</summary>
+    private static string TrimBraces(string block)
+    {
+        var trimmed = block.Trim();
+        return trimmed.StartsWith('{') && trimmed.EndsWith('}')
+            ? trimmed[1..^1].Trim()
+            : trimmed;
     }
 
     /// <summary>A parameter with its TS type, resolved through the model. Falls back to the bare

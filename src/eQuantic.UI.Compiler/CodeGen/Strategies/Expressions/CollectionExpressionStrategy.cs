@@ -24,7 +24,26 @@ public class CollectionExpressionStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var collection = (CollectionExpressionSyntax)node;
-        var elements = collection.Elements.Select(e => ConvertElement(e, context));
+
+        // C# 15 `with(…)` element: constructor arguments for the built collection. Capacity is a
+        // pre-allocation hint with no JS meaning — dropped. Anything else (a comparer, above all)
+        // CHANGES what the collection considers equal, and a JS array/Set has no such knob: that is
+        // an error, not a silent drop — `[with(OrdinalIgnoreCase), "Hello", "HELLO"]` keeping two
+        // elements instead of one is a wrong answer nothing would flag.
+        foreach (var with in collection.Elements.OfType<WithElementSyntax>())
+        {
+            if (!WithArgumentsAreSemanticFree(with, context))
+            {
+                context.Report(with, ConversionSeverity.Error, "EQ2007",
+                    "'with(…)' collection arguments beyond a capacity hint have no JavaScript "
+                    + "translation — a JS array/Set takes no constructor comparer. Drop the "
+                    + "argument, or build the collection explicitly.");
+            }
+        }
+
+        var elements = collection.Elements
+            .Where(element => element is not WithElementSyntax)
+            .Select(e => ConvertElement(e, context));
         var array = $"[{string.Join(", ", elements)}]";
 
         // What the expression is CONVERTED to, not what it looks like: a collection expression takes
@@ -53,8 +72,30 @@ public class CollectionExpressionStrategy : IConversionStrategy
         {
             ExpressionElementSyntax expr => context.Converter.ConvertExpression(expr.Expression),
             SpreadElementSyntax spread => $"...{context.Converter.ConvertExpression(spread.Expression)}",
-            _ => throw new NotSupportedException($"Unknown collection element: {element.GetType().Name}")
+            _ => context.Unhandled(element, "collection expression"),
         };
+    }
+
+    /// <summary>Whether every <c>with(…)</c> argument is a capacity-style hint (integral, or named
+    /// <c>capacity</c>) that dropping cannot change behaviour. A comparer is never that.</summary>
+    private static bool WithArgumentsAreSemanticFree(WithElementSyntax with, ConversionContext context)
+    {
+        foreach (var argument in with.ArgumentList.Arguments)
+        {
+            if (argument.NameColon?.Name.Identifier.Text == "capacity") continue;
+
+            var type = context.SemanticHelper.GetType(argument.Expression);
+            if (type?.SpecialType is SpecialType.System_Int32 or SpecialType.System_Int64
+                or SpecialType.System_UInt32 or SpecialType.System_Int16 or SpecialType.System_Byte)
+                continue;
+            if (type is null && argument.Expression is LiteralExpressionSyntax literal
+                && literal.IsKind(SyntaxKind.NumericLiteralExpression))
+                continue;
+
+            return false;
+        }
+
+        return true;
     }
 
     public int Priority => 10;

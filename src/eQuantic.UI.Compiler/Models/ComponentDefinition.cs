@@ -121,6 +121,10 @@ public class ComponentDefinition
     /// </summary>
     public bool IsRecordType { get; set; }
 
+    /// <summary>C# 15 <c>union Pet(Cat, Dog);</c> — emitted as a TS union alias module; the case
+    /// types ride in <see cref="ValueTypeSyntax"/>'s parameter list.</summary>
+    public bool IsUnionType { get; set; }
+
     /// <summary>
     /// The record/struct declaration syntax, when <see cref="IsRecordType"/> is true.
     /// </summary>

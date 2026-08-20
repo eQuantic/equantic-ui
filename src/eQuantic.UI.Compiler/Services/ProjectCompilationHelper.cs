@@ -74,6 +74,7 @@ public static class ProjectCompilationHelper
             .Where(File.Exists)
             .Select(file => CSharpSyntaxTree.ParseText(
                 File.ReadAllText(file),
+                ParseDefaults.Options,
                 path: file))
             .ToList();
 

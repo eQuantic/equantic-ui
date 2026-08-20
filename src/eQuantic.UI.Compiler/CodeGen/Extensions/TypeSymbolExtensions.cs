@@ -313,4 +313,28 @@ public static class TypeSymbolExtensions
         return numericKey || key == SpecialType.System_String
             || named.TypeArguments[0] is INamedTypeSymbol { TypeKind: TypeKind.Enum };
     }
+
+    /// <summary>
+    /// The declaring static class of a C# 14 extension-BLOCK member (<c>extension(T receiver) { … }</c>):
+    /// the member's containing type is Roslyn's unnamed extension grouping
+    /// (<see cref="INamedTypeSymbol.IsExtension"/>), and ITS parent is the class the emitter lowers
+    /// the member onto as a static. Null for every other kind of member — including classic
+    /// <c>this</c>-parameter extensions, which keep their own reduced-form path.
+    /// </summary>
+    public static INamedTypeSymbol? ExtensionBlockHome(this ISymbol? symbol) =>
+        symbol is { ContainingType: { IsExtension: true, ContainingType: { } home } } ? home : null;
+
+    /// <summary>
+    /// Registers a type name the conversion INTRODUCED into the output (the source never names the
+    /// extension home — the call is written on the receiver), in the bucket its namespace decides,
+    /// so the import scanner can see it. Same routing the static-call path uses.
+    /// </summary>
+    public static void RegisterIntroduced(this INamedTypeSymbol home, ConversionContext context)
+    {
+        var ns = home.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+        if (Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(ns))
+            context.UsedRuntimeTypes.Add(home.Name);
+        else
+            context.UsedAppTypes.Add(home.Name);
+    }
 }

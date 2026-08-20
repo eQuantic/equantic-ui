@@ -76,7 +76,7 @@ public sealed class DesignSession
         var current = _compilation;
         foreach (var entry in _open)
         {
-            current = Swap(current, CSharpSyntaxTree.ParseText(entry.Value, path: entry.Key));
+            current = Swap(current, CSharpSyntaxTree.ParseText(entry.Value, Compiler.Services.ParseDefaults.Options, path: entry.Key));
         }
 
         _current = current;
@@ -221,7 +221,7 @@ public sealed class DesignSession
     {
         if (_compilation is null) throw new InvalidOperationException("initialize first");
 
-        var tree = CSharpSyntaxTree.ParseText(text, path: path);
+        var tree = CSharpSyntaxTree.ParseText(text, Compiler.Services.ParseDefaults.Options, path: path);
         var compilation = Swap(_current!, tree);
 
         var marks = new List<DesignMark>();
@@ -268,7 +268,7 @@ public sealed class DesignSession
             return new OriginTier("foreign", $"Defined in {file}, which is not the file being previewed.", file);
         }
 
-        var tree = CSharpSyntaxTree.ParseText(text, path: path);
+        var tree = CSharpSyntaxTree.ParseText(text, Compiler.Services.ParseDefaults.Options, path: path);
         var root = tree.GetRoot();
         var source = tree.GetText();
 
@@ -721,7 +721,7 @@ public sealed class DesignSession
     {
         if (_current is null) throw new InvalidOperationException("initialize first");
 
-        var tree = CSharpSyntaxTree.ParseText(text, path: path);
+        var tree = CSharpSyntaxTree.ParseText(text, Compiler.Services.ParseDefaults.Options, path: path);
         var compilation = Swap(_current, tree);
         var model = compilation.GetSemanticModel(tree);
 
@@ -852,7 +852,7 @@ public sealed class DesignSession
         var parts = origin.Split('|');
         if (parts.Length != 3 || !SamePath(parts[0], path)) return null;
 
-        var tree = CSharpSyntaxTree.ParseText(text, path: path);
+        var tree = CSharpSyntaxTree.ParseText(text, Compiler.Services.ParseDefaults.Options, path: path);
         var source = tree.GetText();
 
         return (tree, source, Find(tree, source, origin), Swap(_current!, tree).GetSemanticModel(tree));

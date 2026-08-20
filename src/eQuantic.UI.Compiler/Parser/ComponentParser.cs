@@ -100,7 +100,10 @@ public class ComponentParser
     /// </summary>
     public IEnumerable<ComponentDefinition> ParseSource(string sourceCode, string sourcePath = "")
     {
-        var tree = CSharpSyntaxTree.ParseText(sourceCode, path: sourcePath);
+        // The provider knows which language version the surrounding compilation speaks — a tree
+        // that will JOIN it must speak the same one (mixed versions are an ArgumentException).
+        var options = _semanticModelProvider?.JoinOptions ?? Services.ParseDefaults.Options;
+        var tree = CSharpSyntaxTree.ParseText(sourceCode, options, path: sourcePath);
         var root = tree.GetCompilationUnitRoot();
         var results = new List<ComponentDefinition>();
         
@@ -141,6 +144,21 @@ public class ComponentParser
                     ValueTypeSyntax = typeDecl,
                 });
             }
+        }
+
+        // C# 15 unions: `union Pet(Cat, Dog);` — the case list rides in the declaration's parameter
+        // list, and ComponentCompiler emits the alias module (a TS union IS the faithful lowering).
+        foreach (var union in root.DescendantNodes().OfType<UnionDeclarationSyntax>())
+        {
+            results.Add(new ComponentDefinition
+            {
+                Name = union.Identifier.Text,
+                SourcePath = sourcePath,
+                SyntaxTree = tree,
+                Namespace = ns ?? "",
+                IsUnionType = true,
+                ValueTypeSyntax = union,
+            });
         }
 
         // Discover static utility classes (`static class Format { … }`) used from components — emitted as

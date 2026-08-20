@@ -1418,6 +1418,113 @@ public class TypeScriptEmitter
                 c.Raw($"{(m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")}"
                     + $"{(isAsync ? "async " : "")}{mn}{generics}({pars}) {{ {mbody} }}", m);
             }
+            EmitExtensionBlocks(cls, c);
+    }
+
+    /// <summary>
+    /// C# 14 extension blocks (<c>extension(T receiver) { … }</c>): every member lowers to a
+    /// STATIC on the declaring class with the receiver as the first parameter — the same lowering
+    /// classic extensions always had, now covering properties (a static call:
+    /// <c>SeqExtensions.isEmpty(sequence)</c>) and C# 15 extension indexers (<c>item(receiver, i)</c>).
+    /// A receiver-TYPE-only block declares static extension members; those take no receiver.
+    /// The call-site strategies route here by the member symbol's IsExtension containing type.
+    /// Before this, an extension block emitted NOTHING — the class shipped empty and every use
+    /// site died in the browser.
+    /// </summary>
+    private void EmitExtensionBlocks(ClassDeclarationSyntax cls, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        foreach (var block in cls.Members.OfType<ExtensionBlockDeclarationSyntax>())
+        {
+            var receiverParameter = block.ParameterList?.Parameters.FirstOrDefault();
+            var receiverName = receiverParameter?.Identifier.Text is { Length: > 0 } named
+                ? named.ToJsIdentifier()
+                : null;
+            var receiverType = receiverParameter?.Type is { } rt ? DeclaredType(rt) : "any";
+            string WithReceiver(string rest) => receiverName is null
+                ? rest
+                : rest.Length == 0 ? Param(receiverName, receiverType) : $"{Param(receiverName, receiverType)}, {rest}";
+
+            foreach (var member in block.Members)
+            {
+                switch (member)
+                {
+                    case PropertyDeclarationSyntax property:
+                    {
+                        var body = property.ExpressionBody?.Expression
+                            ?? property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get")?.ExpressionBody?.Expression;
+                        var getterBlock = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get")?.Body;
+                        if (body is null && getterBlock is null)
+                        {
+                            _converter.Report(property, ConversionSeverity.Error, "EQ2008",
+                                $"extension property '{property.Identifier.Text}' has no getter body the compiler can lower — auto-accessors have no store on a receiver.");
+                            break;
+                        }
+                        var text = body is not null ? ExpressionBodyReturn(body) : StripJsBraces(_converter.Convert(getterBlock!));
+                        c.Raw($"static {property.Identifier.Text.ToCamelCase()}({WithReceiver("")})"
+                            + $"{Annotation(DeclaredType(property.Type))} {{ {text} }}", property);
+                        ReportExtensionSetter(property.AccessorList?.Accessors, property.Identifier.Text);
+                        break;
+                    }
+
+                    case IndexerDeclarationSyntax indexer:
+                    {
+                        var body = indexer.ExpressionBody?.Expression
+                            ?? indexer.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get")?.ExpressionBody?.Expression;
+                        var getterBlock = indexer.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get")?.Body;
+                        var pars = string.Join(", ", indexer.ParameterList.Parameters
+                            .Select(pp => Param(pp.Identifier.Text.ToJsIdentifier(), DeclaredType(pp.Type))));
+                        if (body is null && getterBlock is null)
+                        {
+                            _converter.Report(indexer, ConversionSeverity.Error, "EQ2008",
+                                "extension indexer has no getter body the compiler can lower.");
+                            break;
+                        }
+                        var text = body is not null ? ExpressionBodyReturn(body) : StripJsBraces(_converter.Convert(getterBlock!));
+                        c.Raw($"static item({WithReceiver(pars)}){Annotation(DeclaredType(indexer.Type))} {{ {text} }}", indexer);
+                        ReportExtensionSetter(indexer.AccessorList?.Accessors, "this[]");
+                        break;
+                    }
+
+                    case MethodDeclarationSyntax method:
+                    {
+                        if (OutParameters.Of(method.ParameterList).Count > 0)
+                        {
+                            _converter.Report(method, ConversionSeverity.Error, "EQ2008",
+                                $"extension method '{method.Identifier.Text}' with out/ref parameters is not lowered yet.");
+                            break;
+                        }
+                        var pars = string.Join(", ", method.ParameterList.Parameters.Select(pp =>
+                            ParamWithDefault(pp.Identifier.Text.ToJsIdentifier(), DeclaredType(pp.Type),
+                                pp.Default is null ? null : _converter.ConvertExpression(pp.Default.Value),
+                                pp.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword))));
+                        var isAsync = method.ReturnType.ToString().StartsWith("Task")
+                            || method.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
+                        string body;
+                        if (method.Body != null) body = StripJsBraces(_converter.Convert(method.Body));
+                        else if (method.ExpressionBody != null) body = ExpressionBodyReturn(method.ExpressionBody.Expression);
+                        else break;
+                        body = OutParameters.HoistedLocals(method.Body ?? (SyntaxNode?)method.ExpressionBody) + body;
+                        c.Raw($"static {(isAsync ? "async " : "")}{method.Identifier.Text.ToCamelCase()}({WithReceiver(pars)}) {{ {body} }}", method);
+                        break;
+                    }
+
+                    default:
+                        _converter.Report(member, ConversionSeverity.Error, "EQ2008",
+                            $"extension member '{member.Kind()}' has no JavaScript lowering yet (operators and events pend).");
+                        break;
+                }
+            }
+        }
+    }
+
+    private void ReportExtensionSetter(IEnumerable<AccessorDeclarationSyntax>? accessors, string name)
+    {
+        if (accessors?.Any(a => a.Keyword.Text is "set" or "init") == true)
+        {
+            _converter.Report(accessors!.First(a => a.Keyword.Text is "set" or "init"),
+                ConversionSeverity.Error, "EQ2008",
+                $"extension setter on '{name}' is not lowered yet — assignment through an extension member has no call-site translation.");
+        }
     }
 
     /// <summary>

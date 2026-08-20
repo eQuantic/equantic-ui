@@ -63,7 +63,7 @@ public class ComponentDependencyResolver
         try
         {
             var code = File.ReadAllText(filePath);
-            var tree = CSharpSyntaxTree.ParseText(code, path: filePath);
+            var tree = CSharpSyntaxTree.ParseText(code, ParseDefaults.Options, path: filePath);
             var root = tree.GetRoot();
 
             // Discover user value types (records/structs) — emitted as named JS classes (so references

@@ -214,7 +214,41 @@ public class ComponentCompiler
     public IEnumerable<CompilationResult> CompileFile(string filePath)
     {
         var components = _parser.Parse(filePath);
-        return components.Select(Compile);
+        return CompileAll(components);
+    }
+
+    /// <summary>
+    /// Every parsed component through <see cref="Compile"/>, with one file-level check first: two
+    /// declarations of the SAME name (partial halves, above all — C# 13/14 partial properties,
+    /// constructors and events make them likely) each emit a WHOLE module today, and whichever
+    /// lands last silently wins. Until eqc merges partials, that is a build error, not a roulette.
+    /// Cross-FILE partials still pass through here unseen — each file compiles alone.
+    /// </summary>
+    private IEnumerable<CompilationResult> CompileAll(IEnumerable<ComponentDefinition> components)
+    {
+        var list = components.ToList();
+        var duplicated = list.GroupBy(c => c.Name, StringComparer.Ordinal)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var component in list)
+        {
+            var result = Compile(component);
+            if (duplicated.Contains(component.Name))
+            {
+                result.Success = false;
+                result.Errors.Add(new CompilationError
+                {
+                    Code = "EQ2009",
+                    SourcePath = component.SourcePath,
+                    Message = $"'{component.Name}' is declared more than once in this file (partial "
+                        + "declarations?). eqc emits one module per declaration and cannot merge "
+                        + "them yet — combine the members into a single declaration.",
+                });
+            }
+            yield return result;
+        }
     }
     
     /// <summary>
@@ -253,7 +287,7 @@ public class ComponentCompiler
     /// </summary>
     public IReadOnlyList<CompilationError> GetLanguageErrors(string sourceCode, string sourcePath = "")
     {
-        var tree = CSharpSyntaxTree.ParseText(sourceCode, path: sourcePath);
+        var tree = CSharpSyntaxTree.ParseText(sourceCode, _semanticModelProvider.JoinOptions, path: sourcePath);
         return _semanticModelProvider.GetLanguageDiagnostics(tree)
             .Select(diagnostic =>
             {
@@ -273,7 +307,7 @@ public class ComponentCompiler
     public IEnumerable<CompilationResult> CompileSource(string sourceCode, string sourcePath = "")
     {
         var components = _parser.ParseSource(sourceCode, sourcePath);
-        return components.Select(Compile);
+        return CompileAll(components);
     }
     
     /// <summary>
@@ -302,6 +336,27 @@ public class ComponentCompiler
                 authoritative = false;
             }
             _tsEmitter.SymbolsAreAuthoritative = authoritative;
+
+            // C# 15 union — a TS union alias module: implicit case conversions are no-ops in JS,
+            // and `pet switch { Dog d => …, Cat c => … }` already tests instanceof per case type.
+            if (component.IsUnionType
+                && component.ValueTypeSyntax is Microsoft.CodeAnalysis.CSharp.Syntax.UnionDeclarationSyntax union)
+            {
+                result.TypeScript = EmitUnionAlias(union, TypeAnnotations, out var unionError);
+                if (unionError is not null)
+                {
+                    result.Success = false;
+                    result.Errors.Add(new CompilationError
+                    {
+                        Code = "EQ2008",
+                        SourcePath = component.SourcePath,
+                        Message = unionError,
+                    });
+                    return result;
+                }
+                result.Success = true;
+                return result;
+            }
 
             // User value type (record/struct) — emit as a standalone named-class module.
             if (component.IsRecordType && component.ValueTypeSyntax != null)
@@ -415,6 +470,45 @@ public class ComponentCompiler
         return result;
     }
     
+    /// <summary>
+    /// The module a C# 15 union lowers to. The TYPE half is the TS union of the case types; the
+    /// CONST half exists so a value-level import of the name never dangles in plain-JS output
+    /// (type-only exports vanish there, and an `import { Pet }` against an empty module dies at
+    /// load). Case members beyond the case list (a union BODY) aren't lowered yet.
+    /// </summary>
+    private static string EmitUnionAlias(
+        Microsoft.CodeAnalysis.CSharp.Syntax.UnionDeclarationSyntax union,
+        bool typeAnnotations, out string? error)
+    {
+        error = null;
+        var cases = (union.ParameterList?.Parameters ?? default)
+            .Select(parameter => parameter.Type?.ToString() ?? "")
+            .Where(name => name.Length > 0)
+            .ToArray();
+        if (cases.Length == 0)
+        {
+            error = $"union '{union.Identifier.Text}' declares no case types the compiler can lower.";
+            return string.Empty;
+        }
+        if (union.Members.Count > 0)
+        {
+            error = $"union '{union.Identifier.Text}' declares members — union bodies are not lowered yet.";
+            return string.Empty;
+        }
+
+        var name = union.Identifier.Text;
+        var builder = new System.Text.StringBuilder();
+        if (typeAnnotations)
+        {
+            foreach (var caseType in cases)
+                builder.Append($"import {{ {caseType} }} from \"./{caseType}\";\n");
+            builder.Append('\n');
+            builder.Append($"export type {name} = {string.Join(" | ", cases)};\n");
+        }
+        builder.Append($"export const {name} = undefined;\n");
+        return builder.ToString();
+    }
+
     /// <summary>
     /// Compile every .cs file in a directory
     /// </summary>

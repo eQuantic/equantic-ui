@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -196,6 +197,18 @@ public class InvocationStrategy : IConversionStrategy
                 context.UsedAppTypes.Add(symbol.ContainingType.Name);
                 var receiverFirst = string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
                 return $"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({receiverFirst})";
+            }
+
+            // C# 14 extension-BLOCK method (`extension(T receiver) { … }`): the emitter lowers it
+            // to a static on the declaring class with the receiver first, and the call follows it
+            // there. A STATIC extension member (receiver-type-only block) takes no receiver.
+            if (symbol.ExtensionBlockHome() is { } extensionHome)
+            {
+                extensionHome.RegisterIntroduced(context);
+                var extensionArgs = symbol!.IsStatic
+                    ? args
+                    : string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
+                return $"{extensionHome.Name}.{methodName.ToCamelCase()}({extensionArgs})";
             }
 
             ReportIfUntranslatable(symbol, methodName, invocation, context);

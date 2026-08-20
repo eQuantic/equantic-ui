@@ -216,7 +216,17 @@ The Roslyn-based compiler uses the **Strategy Pattern**:
 **Supported C# Features:**
 - Expressions: Arithmetic, Logical, Ternary, Null-coalescing (`??`)
 - Control Flow: `if`, `switch`, `for`, `foreach`, `while`
-- Modern Patterns: Recursive, Property, Positional, Relational (C# 9-12)
+- Modern Patterns: Recursive, Property, Positional, Relational (C# 9-12); bare-type and
+  positional arms test by `instanceof` (in-source classes/records included)
+- C# 13: `params` collections, `System.Threading.Lock` (inert object), `\e`, dictionary-key
+  initializers as computed keys (`[^i] =` in initializers is fenced, EQ2008)
+- C# 14: null-conditional assignment (`a?.B = v`, guarded single-eval lowering), `field`-backed
+  properties, extension members (blocks lower to statics; call sites follow), out-lambdas with the
+  callee contract, `nameof(List<>)`; same-file partial declarations are fenced (EQ2009)
+- C# 15 (preview; eqc parses with `LanguageVersion.Preview` — see `Services/ParseDefaults`):
+  labeled `break`/`continue` (1:1 JS labels), collection-expression `with(...)` (capacity drops,
+  comparers are EQ2007), `union` declarations (TS union alias module), `closed` hierarchies,
+  extension indexers (`static item(receiver, …)`)
 - Resource Management: `using` statements and `using var`
 - Exceptions: `try-catch-finally`
 - LINQ: Direct conversion to JS equivalents

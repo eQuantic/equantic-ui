@@ -72,3 +72,113 @@ public class AssignmentExpressionStrategy : IConversionStrategy
 
     public int Priority => 10;
 }
+
+/// <summary>
+/// C# 14 null-conditional assignment: <c>a?.B = v</c>, <c>a?.B += v</c>, <c>a?[i] = v</c>. The
+/// PARSE shape is a conditional access whose WhenNotNull is the assignment (the target binding on
+/// the left), so <see cref="ConditionalAccessStrategy"/> owns the entry point. JavaScript rejects
+/// <c>?.</c> on an assignment target outright (SyntaxError — the whole emitted module dies), so
+/// the guard lowers to an arrow that evaluates the receiver exactly once and assigns only when it
+/// is non-null. The right side is evaluated ONLY behind the guard, which is the C# rule:
+/// <c>customer?.Order = GetCurrent()</c> must not call GetCurrent() for a null customer.
+/// </summary>
+internal static class NullConditionalAssignment
+{
+    /// <summary>The guarded lowering, or null when the target shape is one this does not model —
+    /// the caller reports EQ1004 instead of emitting broken JS.</summary>
+    public static string? Convert(ExpressionSyntax receiver, AssignmentExpressionSyntax assignment,
+        ConversionContext context, int depth = 0)
+    {
+        return Guarded(context.Converter.ConvertExpression(receiver), assignment, context, depth);
+    }
+
+    private static string? Guarded(string receiver, AssignmentExpressionSyntax assignment,
+        ConversionContext context, int depth)
+    {
+        var t = depth == 0 ? "$t" : $"$t{depth}";
+        var parameter = context.TypeAnnotations ? $"({t}: any)" : t;
+
+        var target = assignment.Left switch
+        {
+            MemberBindingExpressionSyntax binding => $"{t}.{binding.Name.Identifier.Text.ToCamelCase()}",
+            MemberAccessExpressionSyntax access when PathFromBinding(access) is { } path => $"{t}{path}",
+            ElementBindingExpressionSyntax element =>
+                $"{t}[{string.Join(", ", element.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)))}]",
+            _ => null,
+        };
+        if (target is null) return null;
+
+        var op = assignment.OperatorToken.Text;
+        var right = context.Converter.ConvertExpression(assignment.Right);
+        var targetType = context.SemanticHelper.GetType(assignment.Left);
+        return $"({parameter} => {t} == null ? null : ({AssignBody(target, op, right, targetType, context)}))({receiver})";
+    }
+
+    /// <summary>
+    /// The nested form <c>a?.b?.c = v</c>: the conditional TAIL is another conditional access
+    /// carrying the assignment. Guards the outer receiver, then recurses with <c>$t.b</c>.
+    /// </summary>
+    public static string? ConvertNested(ExpressionSyntax receiver,
+        ConditionalAccessExpressionSyntax tail, ConversionContext context, int depth = 0)
+    {
+        if (tail.Expression is not MemberBindingExpressionSyntax binding) return null;
+
+        var t = depth == 0 ? "$t" : $"$t{depth}";
+        var parameter = context.TypeAnnotations ? $"({t}: any)" : t;
+        var innerReceiver = $"{t}.{binding.Name.Identifier.Text.ToCamelCase()}";
+        var inner = tail.WhenNotNull switch
+        {
+            AssignmentExpressionSyntax assignment => Guarded(innerReceiver, assignment, context, depth + 1),
+            ConditionalAccessExpressionSyntax deeper => NestedFrom(innerReceiver, deeper, context, depth + 1),
+            _ => null,
+        };
+        if (inner is null) return null;
+
+        var outer = context.Converter.ConvertExpression(receiver);
+        return $"({parameter} => {t} == null ? null : {inner})({outer})";
+    }
+
+    private static string? NestedFrom(string receiver, ConditionalAccessExpressionSyntax tail,
+        ConversionContext context, int depth)
+    {
+        if (tail.Expression is not MemberBindingExpressionSyntax binding) return null;
+        var t = $"$t{depth}";
+        var parameter = context.TypeAnnotations ? $"({t}: any)" : t;
+        var innerReceiver = $"{t}.{binding.Name.Identifier.Text.ToCamelCase()}";
+        var inner = tail.WhenNotNull switch
+        {
+            AssignmentExpressionSyntax assignment => Guarded(innerReceiver, assignment, context, depth + 1),
+            ConditionalAccessExpressionSyntax deeper => NestedFrom(innerReceiver, deeper, context, depth + 1),
+            _ => null,
+        };
+        return inner is null ? null : $"({parameter} => {t} == null ? null : {inner})({receiver})";
+    }
+
+    /// <summary>The member path of a <c>?.</c> tail (<c>a?.B.C</c> → <c>.b.c</c>), rooted at the
+    /// binding; null when the chain roots anywhere else (a call, say — not an assignable target).</summary>
+    private static string? PathFromBinding(MemberAccessExpressionSyntax access)
+    {
+        var name = "." + access.Name.Identifier.Text.ToCamelCase();
+        return access.Expression switch
+        {
+            MemberBindingExpressionSyntax binding => "." + binding.Name.Identifier.Text.ToCamelCase() + name,
+            MemberAccessExpressionSyntax nested when PathFromBinding(nested) is { } inner => inner + name,
+            _ => null,
+        };
+    }
+
+    /// <summary>The assignment itself, with the same decimal-compound routing the plain path has —
+    /// a guarded `total += amount` on a decimal member must not become string glue.</summary>
+    private static string AssignBody(string target, string op, string right, ITypeSymbol? targetType,
+        ConversionContext context)
+    {
+        if (op.Length == 2 && op[1] == '=' && "+-*/".Contains(op[0]) && targetType.IsDecimal())
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var method = op[0] switch { '+' => "add", '-' => "sub", '*' => "mul", _ => "div" };
+            return $"{target} = {Eq.Dec}({target}).{method}({Eq.Dec}({right}))";
+        }
+
+        return $"{target} {op} {right}";
+    }
+}

@@ -28,6 +28,18 @@ public class MemberAccessStrategy : IConversionStrategy
         
         // Semantic check for DateTime.Now, Guid.Empty, etc.
         var symbol = context.SemanticHelper.GetSymbol(node);
+
+        // C# 14 extension PROPERTY (`sequence.IsEmpty` from an extension block): the emitter
+        // lowers it to a static call on the declaring class with the receiver as the argument —
+        // the read follows it there. Static extension properties take no receiver.
+        if (symbol is IPropertySymbol && symbol.ExtensionBlockHome() is { } extensionHome)
+        {
+            extensionHome.RegisterIntroduced(context);
+            return symbol.IsStatic
+                ? $"{extensionHome.Name}.{name.ToCamelCase()}()"
+                : $"{extensionHome.Name}.{name.ToCamelCase()}({expr})";
+        }
+
         if (symbol != null)
         {
             var containingType = symbol.ContainingType.ToDisplayString();

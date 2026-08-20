@@ -26,6 +26,12 @@ public class ObjectCreationStrategy : IConversionStrategy
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
+        // C# 13's `System.Threading.Lock` — single-threaded JS drops the lock STATEMENT's
+        // semantics already (the body just runs); the gate object itself is inert, and emitting
+        // `new Lock()` named a class no browser has.
+        if (context.SemanticHelper.GetType(node)?.ToDisplayString() == "System.Threading.Lock")
+            return "{}";
+
         if (node is ObjectCreationExpressionSyntax objCreation)
         {
             return ConvertExplicit(objCreation, context);

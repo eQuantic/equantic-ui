@@ -323,7 +323,7 @@ public class CSharpToJsConverter
     public string Convert(string code)
     {
         // String conversion fallback
-        var parsed = CSharpSyntaxTree.ParseText(code).GetRoot();
+        var parsed = CSharpSyntaxTree.ParseText(code, Services.ParseDefaults.Options).GetRoot();
         
         // Check for Global Statements (Top Level)
         var globalStatement = parsed.DescendantNodes().OfType<GlobalStatementSyntax>().FirstOrDefault();

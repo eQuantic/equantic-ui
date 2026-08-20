@@ -34,6 +34,12 @@ public static class PatternConverter
                 // crashed on `panel.Id` after `if (panel is null) return` didn't return.
                 if (constant.Expression is LiteralExpressionSyntax { RawKind: (int)SyntaxKind.NullLiteralExpression })
                     return $"{access} == null";
+                // `state switch { ClosedGate => … }` — a bare TYPE name PARSES as a constant
+                // pattern but BINDS as a type pattern. Emitted as `=== ClosedGate` it compared the
+                // value to the class object itself: always false, and the arm silently dead.
+                if (constant.Expression is TypeSyntax bareType
+                    && context.SemanticHelper.GetSymbol(constant.Expression) is INamedTypeSymbol)
+                    return TypeCheck(bareType, access, context);
                 return $"{access} === {context.Converter.ConvertExpression(constant.Expression)}";
 
             case RelationalPatternSyntax relational:
@@ -90,7 +96,10 @@ public static class PatternConverter
                     bindings.Add((r.Identifier.Text, access));
                 if (recursive.PositionalPatternClause != null)
                 {
-                    var names = PositionalNames(accessType);
+                    // The pattern's OWN type decides the deconstruction names — the governing
+                    // expression's static type may be the base (`GateState`), which deconstructs
+                    // nothing and left positional access as `[i]` on a plain object: undefined.
+                    var names = PositionalNames(PatternType(recursive, context) ?? accessType);
                     for (int i = 0; i < recursive.PositionalPatternClause.Subpatterns.Count; i++)
                         CollectBindings(recursive.PositionalPatternClause.Subpatterns[i].Pattern,
                             PositionalAccess(access, i, names), context, bindings);
@@ -123,13 +132,18 @@ public static class PatternConverter
         ConversionContext context, ITypeSymbol? accessType)
     {
         var checks = new List<string>();
-        if (recursive.Type != null || recursive.PropertyPatternClause != null
-            || recursive.PositionalPatternClause != null)
+        // `OpenGate(var percent)` — the pattern NAMES a type, and the test must be that type's,
+        // not a bare null-check: with two positional arms over a hierarchy, `!= null` made the
+        // first arm win every time. TypeCheck degrades to the null-check itself exactly where no
+        // stronger test exists, so this is never weaker than before.
+        if (recursive.Type is { } patternType)
+            checks.Add(TypeCheck(patternType, access, context));
+        else if (recursive.PropertyPatternClause != null || recursive.PositionalPatternClause != null)
             checks.Add($"{access} != null");
 
         if (recursive.PositionalPatternClause != null)
         {
-            var names = PositionalNames(accessType);
+            var names = PositionalNames(PatternType(recursive, context) ?? accessType);
             for (int i = 0; i < recursive.PositionalPatternClause.Subpatterns.Count; i++)
             {
                 var sub = BuildCondition(recursive.PositionalPatternClause.Subpatterns[i].Pattern,
@@ -195,6 +209,11 @@ public static class PatternConverter
     private static IReadOnlyList<string>? PositionalNames(ITypeSymbol? type)
         => type is { IsTupleType: false } ? type.DeconstructElementNames() : null;
 
+    /// <summary>The type a recursive pattern NAMES (<c>OpenGate(var p)</c> → OpenGate), resolved
+    /// through the model; null for type-less patterns or when the model cannot answer.</summary>
+    private static ITypeSymbol? PatternType(RecursivePatternSyntax recursive, ConversionContext context)
+        => recursive.Type is { } t ? context.SemanticHelper.GetSymbol(t) as ITypeSymbol : null;
+
     private static string PositionalAccess(string access, int i, IReadOnlyList<string>? names)
         => names != null && i < names.Count ? $"{access}.{names[i]}" : $"{access}[{i}]";
 
@@ -227,11 +246,25 @@ public static class PatternConverter
             && context.SemanticModel?.GetSymbolInfo(typeSyntax).Symbol is INamedTypeSymbol
             {
                 TypeKind: TypeKind.Class
-            } named && LowersToAJsClass(named))
+            } named)
         {
-            // The name has to reach the import list, or the module references a free variable.
-            context.UsedRuntimeTypes.Add(named.Name);
-            return $"{access} instanceof {named.Name}";
+            if (LowersToAJsClass(named))
+            {
+                // The name has to reach the import list, or the module references a free variable.
+                context.UsedRuntimeTypes.Add(named.Name);
+                return $"{access} instanceof {named.Name}";
+            }
+
+            // The APP's own classes and records are emitted as real JS classes too, so the honest
+            // test is the same `instanceof` — without it, `state switch { ClosedGate => …,
+            // OpenGate o => … }` emitted `!= null` for every arm and the FIRST one always won.
+            // Known caveat: a value that crossed the SERVER boundary as JSON is a plain object and
+            // fails instanceof — pattern-match client-constructed values, not raw prefetch payloads.
+            if (named.Locations.Any(location => location.IsInSource))
+            {
+                context.UsedAppTypes.Add(named.Name);
+                return $"{access} instanceof {named.Name}";
+            }
         }
 
         return $"{access} != null";

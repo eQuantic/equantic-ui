@@ -9,8 +9,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.9.0" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -19,6 +19,11 @@
     <Nullable>enable</Nullable>
     <PackageId>eQuantic.UI.Compiler</PackageId>
     <Description>Roslyn-based C# to TypeScript/JavaScript compiler for eQuantic.UI components.</Description>
+    <!-- The C# 15 preview syntax APIs (WithElementSyntax, Break/ContinueStatementSyntax.Name, …)
+         are [Experimental] in Roslyn 5.9. Understanding preview language IS this component's job —
+         eqc parses with LanguageVersion.Preview on purpose (see Services/ParseDefaults) — so the
+         experimental gate is acknowledged deliberately here, and nowhere else. -->
+    <NoWarn>$(NoWarn);RSEXPERIMENTAL006</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

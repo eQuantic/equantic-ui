@@ -20,6 +20,21 @@ public class ConditionalAccessStrategy : IConversionStrategy
     {
         var conditionalAccess = (ConditionalAccessExpressionSyntax)node;
 
+        // C# 14 null-conditional ASSIGNMENT parses as a conditional access whose WhenNotNull is
+        // the assignment itself (`a?.B = v` → ?.(a, ASSIGN(.B, v))) — and JS rejects `?.` on an
+        // assignment target outright, so this shape gets its own guarded lowering.
+        if (conditionalAccess.WhenNotNull is AssignmentExpressionSyntax conditionalAssignment)
+        {
+            return NullConditionalAssignment.Convert(conditionalAccess.Expression, conditionalAssignment, context)
+                ?? context.Unhandled(node, "null-conditional assignment");
+        }
+        if (conditionalAccess.WhenNotNull is ConditionalAccessExpressionSyntax assignmentTail
+            && CarriesAssignment(assignmentTail))
+        {
+            return NullConditionalAssignment.ConvertNested(conditionalAccess.Expression, assignmentTail, context)
+                ?? context.Unhandled(node, "null-conditional assignment");
+        }
+
         // Saved and restored around the conversion: a nested `a?.b(c?.d())` must not read the inner
         // chain's answer as its own.
         var outer = context.NullGuardAnswered;
@@ -114,6 +129,15 @@ public class ConditionalAccessStrategy : IConversionStrategy
         var args = argumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression));
         return string.Join(", ", args);
     }
+
+    /// <summary>Whether a nested <c>?.</c> chain ultimately carries an assignment (`a?.b?.c = v`).</summary>
+    private static bool CarriesAssignment(ConditionalAccessExpressionSyntax tail) =>
+        tail.WhenNotNull switch
+        {
+            AssignmentExpressionSyntax => true,
+            ConditionalAccessExpressionSyntax deeper => CarriesAssignment(deeper),
+            _ => false,
+        };
 
     public int Priority => 15; // Higher priority to intercept before MemberAccessStrategy
 }

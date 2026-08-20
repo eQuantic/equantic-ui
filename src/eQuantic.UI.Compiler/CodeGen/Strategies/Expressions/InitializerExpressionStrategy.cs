@@ -50,6 +50,28 @@ public class InitializerExpressionStrategy : IConversionStrategy
             {
                 if (expr is AssignmentExpressionSyntax assignment)
                 {
+                    // Indexer keys in an initializer (`["cs"] = CSharp`, `[TokenKind.X] = v`): a JS
+                    // COMPUTED key, with the key expression properly converted (an enum key lowers
+                    // to its member string, where the old raw text named a class that doesn't
+                    // exist). C# 13's from-the-END form (`[^1] = v`) means "mutate the EXISTING
+                    // member's tail", which an object literal cannot say — that one is fenced.
+                    if (assignment.Left is ImplicitElementAccessSyntax elementKey)
+                    {
+                        if (elementKey.ArgumentList.Arguments.Count != 1
+                            || elementKey.ArgumentList.Arguments[0].Expression
+                                is PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.IndexExpression })
+                        {
+                            context.Report(assignment, ConversionSeverity.Error, "EQ2008",
+                                "from-the-end indexer assignments inside initializers "
+                                + "(`X = { [^i] = v }`) are not lowered yet — assign after construction.");
+                            continue;
+                        }
+
+                        var key = context.Converter.ConvertExpression(elementKey.ArgumentList.Arguments[0].Expression);
+                        props.Add($"[{key}]: {context.Converter.ConvertExpression(assignment.Right)}");
+                        continue;
+                    }
+
                     var propName = assignment.Left.ToString();
                     var value = context.Converter.ConvertExpression(assignment.Right);
                     
