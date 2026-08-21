@@ -26,6 +26,24 @@ namespace eQuantic.UI.Generators;
 [Generator]
 public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// FullyQualifiedFormat drops the <c>?</c> on a nullable reference type, so a component
+    /// declaring <c>string? eyebrow = null</c> came out of here as <c>string eyebrow = null</c> —
+    /// CS8625 in every consumer with nullable enabled, in generated code they cannot edit, and a
+    /// hard build failure for anyone who treats warnings as errors. The signature also lied about
+    /// what the factory accepts.
+    /// </summary>
+    /// <summary>The type without its nullable annotation. A capability is resolved by its
+    /// interface — <c>Resolve&lt;IClock&gt;()</c>, never <c>Resolve&lt;IClock?&gt;()</c>, which is a
+    /// different call and says nothing the method's own return type does not already say.</summary>
+    private static string Unannotated(string type) =>
+        type.EndsWith("?", StringComparison.Ordinal) ? type.Substring(0, type.Length - 1) : type;
+
+    private static readonly SymbolDisplayFormat FullyQualifiedWithNullability =
+        SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+            SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions
+            | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
     private const string FactoryAttribute = "UiFactoryAttribute";
     private const string PageAttribute = "PageAttribute";
 
@@ -108,8 +126,8 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             // declared nullable is handed over as it comes — that is the author saying they cope.
             var arguments = string.Join(", ", component.Parameters.Select(p => p.IsDependency
                 ? (p.IsRequired
-                    ? $"global::eQuantic.UI.Primitives.CapabilityScope.Require<{p.Type}>(\"{component.Name}\")"
-                    : $"global::eQuantic.UI.Primitives.CapabilityScope.Resolve<{p.Type}>()")
+                    ? $"global::eQuantic.UI.Primitives.CapabilityScope.Require<{Unannotated(p.Type)}>(\"{component.Name}\")"
+                    : $"global::eQuantic.UI.Primitives.CapabilityScope.Resolve<{Unannotated(p.Type)}>()")
                 : p.Name));
             source.AppendLine($"    /// <summary>Builds a <see cref=\"{component.Name}\"/>.</summary>");
             // Qualified on the RIGHT of `new` only: the factory's own name shadows the type inside
@@ -185,7 +203,7 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
 
         var parameters = chosen.Parameters
             .Select(p => (
-                Type: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                Type: p.Type.ToDisplayString(FullyQualifiedWithNullability),
                 Name: p.Name,
                 Default: DefaultLiteral(p),
                 IsDependency: CapabilityRule.IsDependency(p.Type),

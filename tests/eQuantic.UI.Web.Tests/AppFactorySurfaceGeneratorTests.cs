@@ -36,6 +36,41 @@ public class AppFactorySurfaceGeneratorTests
         return (generated, result.Diagnostics);
     }
 
+    /// <summary>
+    /// A nullable parameter stays nullable in the factory. It did not: FullyQualifiedFormat drops
+    /// the <c>?</c>, so `string? eyebrow = null` was emitted as `string eyebrow = null` — CS8625
+    /// in every consumer with nullable enabled, raised against generated code they cannot edit,
+    /// and a build failure outright for anyone treating warnings as errors. The consumer site
+    /// carried eight of these.
+    /// </summary>
+    [Fact]
+    public void NullableParameter_KeepsItsAnnotation_AndTheOutputCompilesClean()
+    {
+        var (source, _) = Run("""
+            using eQuantic.UI.Primitives;
+
+            namespace Demo;
+
+            public sealed class Faq : StatelessComponent
+            {
+                public Faq(string? eyebrow = null, string? headline = null,
+                    (string Question, string Answer)[]? items = null, bool withContactRow = true)
+                {
+                    Eyebrow = eyebrow; Headline = headline; Items = items; WithContactRow = withContactRow;
+                }
+                public string? Eyebrow { get; init; }
+                public string? Headline { get; init; }
+                public (string Question, string Answer)[]? Items { get; init; }
+                public bool WithContactRow { get; init; }
+                public override VisualNode Build(ComponentContext context) => new Text(Eyebrow ?? "");
+            }
+            """);
+
+        source.Should().Contain("string? eyebrow = null");
+        source.Should().Contain("string? headline = null");
+        source.Should().NotContain("string eyebrow = null");
+    }
+
     private const string Card = """
         using eQuantic.UI.Primitives;
 
