@@ -2,24 +2,25 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
 using Microsoft.CodeAnalysis.CSharp;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
-public class LocalDeclarationStrategy : IStatementStrategy
+public class LocalDeclarationStrategy : IStatementIrStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is LocalDeclarationStatementSyntax;
     }
 
-    public string Convert(StatementSyntax node, ConversionContext context)
+    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
     {
         var decl = (LocalDeclarationStatementSyntax)node;
 
         // EVERY declarator: `float x0, y0, x1, y1;` is four variables, and emitting only the
         // first left `y0 is not defined` waiting at runtime — the mermaid layout was the first
         // shared code to write one and the first hydration to throw on it.
-        var statements = new List<string>();
+        var statements = new List<JsStatement>();
         foreach (var variable in decl.Declaration.Variables)
         {
             // A reserved JS word takes a trailing underscore — declaration and references go
@@ -27,21 +28,22 @@ public class LocalDeclarationStrategy : IStatementStrategy
             var name = variable.Identifier.Text.ToJsIdentifier();
             var patternVars = PatternVariableScanner.Declarations(variable.Initializer?.Value, context.TypeAnnotations);
             var init = variable.Initializer != null
-                ? context.Converter.ConvertExpression(variable.Initializer.Value)
-                : "null";
+                ? context.Converter.ConvertIr(variable.Initializer.Value)
+                : JsExpr.Literal("null");
 
             if (decl.UsingKeyword.IsKind(SyntaxKind.UsingKeyword))
             {
                 // For a 'using var', we should ideally wrap the remainder of the block.
                 // Since this strategy only sees the statement, we'll emit a declaration
                 // and a comment. The true 100% implementation requires block-aware conversion.
-                statements.Add($"{patternVars}const {name} = {init}; /* using */");
+                statements.Add($"{patternVars}const {name} = {JsExprWriter.Write(init)}; /* using */");
                 continue;
             }
 
-            statements.Add($"{patternVars}let {name}{Annotation(decl, variable, context)} = {init};");
+            statements.Add(JsStatement.Hoisted(patternVars,
+                JsStatement.Let(name, Annotation(decl, variable, context), init)));
         }
-        return string.Join("", statements);
+        return JsStatement.Sequence(statements);
     }
 
     /// <summary>

@@ -70,6 +70,17 @@ public class ConversionContext
     public string? ExpectedType { get; set; }
     public string? CurrentClassName { get; set; }
 
+    /// <summary>How statements are laid out — see <see cref="JsLayout"/>.</summary>
+    public JsLayout Layout { get; set; } = JsLayout.Compact;
+
+    /// <summary>
+    /// The block depth being converted, maintained by the converter while it descends. A statement
+    /// strategy still producing TEXT renders any nested block eagerly, through the string API, and
+    /// that render has to land at the depth the block will later be printed at — which is exactly
+    /// this, because a block is always printed where it was built.
+    /// </summary>
+    public int Depth { get; set; }
+
     /// <summary>
     /// Set while converting an ITERATOR method's body. A C# iterator yields a sequence, and every
     /// sequence in the emitted world is an ARRAY — so the method fills this buffer and returns it,
@@ -155,6 +166,7 @@ public class ConversionContext
         _cache.Clear();
         ExpectedType = null;
         IteratorBuffer = null;
+        Depth = 0;
     }
 
     // Cache to avoid reprocessing the same node multiple times. Keyed by SyntaxNode, so an entry

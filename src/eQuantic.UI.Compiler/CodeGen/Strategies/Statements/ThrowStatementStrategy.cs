@@ -1,32 +1,23 @@
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
-/// <summary>
-/// Strategy for throw statements.
-/// Handles:
-/// - throw new Exception("message");
-/// - throw ex;
-/// </summary>
-public class ThrowStatementStrategy : IStatementStrategy
+/// <summary><c>throw expr;</c>, and the bare rethrow <c>throw;</c>.</summary>
+public class ThrowStatementStrategy : IStatementIrStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is ThrowStatementSyntax;
     }
 
-    public string Convert(StatementSyntax node, ConversionContext context)
+    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
     {
         var throwStmt = (ThrowStatementSyntax)node;
-
-        if (throwStmt.Expression == null)
-        {
-            // Re-throw: throw;
-            return "throw;";
-        }
-
-        var exception = context.Converter.ConvertExpression(throwStmt.Expression);
-        return $"throw {exception};";
+        return JsStatement.Throw(throwStmt.Expression == null
+            ? null
+            : context.Converter.ConvertIr(throwStmt.Expression));
     }
 
     public int Priority => 0;

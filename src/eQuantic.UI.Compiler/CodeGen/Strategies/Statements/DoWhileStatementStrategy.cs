@@ -1,27 +1,23 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
-/// <summary>
-/// Strategy for do-while loop statements.
-/// Handles:
-/// - do { ... } while (condition);
-/// </summary>
-public class DoWhileStatementStrategy : IStatementStrategy
+/// <summary><c>do body while (cond);</c></summary>
+public class DoWhileStatementStrategy : IStatementIrStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is DoStatementSyntax;
     }
 
-    public string Convert(StatementSyntax node, ConversionContext context)
+    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
     {
         var doStmt = (DoStatementSyntax)node;
-        var condition = context.Converter.ConvertExpression(doStmt.Condition);
-        var body = context.Converter.Convert(doStmt.Statement);
-
-        return $"do {body} while ({condition});";
+        var condition = context.Converter.ConvertIr(doStmt.Condition);
+        var body = context.Converter.ConvertStatementIr(doStmt.Statement);
+        return JsStatement.DoWhile(body, condition);
     }
 
     public int Priority => 0;

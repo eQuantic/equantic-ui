@@ -517,10 +517,13 @@ public class CSharpToJsConverter
         return sb.Append('"').ToString();
     }
 
-    public string ConvertBlock(BlockSyntax block)
+    /// <summary>The block as text, laid out at the current depth — what a strategy still
+    /// producing text splices for a nested body.</summary>
+    public string ConvertBlock(BlockSyntax block) =>
+        JsStatementWriter.Write(ConvertBlockIr(block), _context.Layout, _context.Depth);
+
+    public JsStatement ConvertBlockIr(BlockSyntax block)
     {
-        var sb = new StringBuilder();
-        sb.Append("{"); // Use standard formatting
         // C# HOISTS a local function: a screen can write `Items.Select(Row)` and declare
         // `VisualNode Row(…)` under the return, and the CLR neither knows nor cares. A `const`
         // arrow is not hoisted, so emitted in place it sits in its temporal dead zone at the moment
@@ -529,34 +532,49 @@ public class CSharpToJsConverter
         // So the declarations LEAD the block, in source order. Their bodies only dereference at CALL
         // time, which is why one that captures a local declared further down still reads it (and C#
         // already refuses a call before that local is assigned).
-        foreach (var stmt in block.Statements.Where(statement => statement is LocalFunctionStatementSyntax))
+        var statements = new List<JsStatement>();
+        _context.Depth++;
+        try
         {
-            sb.Append(ConvertStatement(stmt));
+            foreach (var stmt in block.Statements.Where(statement => statement is LocalFunctionStatementSyntax))
+                statements.Add(ConvertStatementIr(stmt));
+            foreach (var stmt in block.Statements.Where(statement => statement is not LocalFunctionStatementSyntax))
+                statements.Add(ConvertStatementIr(stmt));
         }
-        foreach (var stmt in block.Statements.Where(statement => statement is not LocalFunctionStatementSyntax))
+        finally
         {
-             sb.Append(ConvertStatement(stmt));
+            _context.Depth--;
         }
-        sb.Append("}");
-        return sb.ToString();
+        return JsStatement.Block(statements);
     }
-    
-    public string ConvertStatement(StatementSyntax stmt)
+
+    /// <summary>The statement as text, laid out at the current depth.</summary>
+    public string ConvertStatement(StatementSyntax stmt) =>
+        JsStatementWriter.Write(ConvertStatementIr(stmt), _context.Layout, _context.Depth);
+
+    /// <summary>
+    /// The statement as IR. A strategy that has crossed over (<see cref="IStatementIrStrategy"/>)
+    /// builds a node; every other one still returns text, which becomes a raw statement spliced
+    /// verbatim — so its output is what it always was.
+    /// </summary>
+    public JsStatement ConvertStatementIr(StatementSyntax stmt)
     {
         var strategy = _statementRegistry.FindStrategy(stmt, _context);
         if (strategy != null)
         {
-            return strategy.Convert(stmt, _context);
+            return strategy is IStatementIrStrategy ir
+                ? ir.ConvertIr(stmt, _context)
+                : JsStatement.Raw(strategy.Convert(stmt, _context));
         }
-        
+
         if (stmt is BlockSyntax block)
         {
-            return ConvertBlock(block);
+            return ConvertBlockIr(block);
         }
 
         _context.Report(stmt, ConversionSeverity.Error, "EQ1002",
             $"C# statement '{stmt.Kind()}' has no transpilation strategy — it cannot be emitted as JavaScript. " +
             "Rewrite it in a transpilable form, or add a conversion strategy for this construct.");
-        return stmt.ToString();
+        return JsStatement.Raw(stmt.ToString());
     }
 }
