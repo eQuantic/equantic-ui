@@ -139,6 +139,27 @@ public class PrimitiveStaticStrategy : IConversionStrategy
             };
         }
 
+        if (home == SpecialType.System_Int64)
+        {
+            // A long IS a BigInt on this side, so the shared Math.* table cannot serve — BigInt
+            // has no Math. Arrows keep every argument single-evaluation; Sign answers a NUMBER
+            // (C#'s long.Sign returns int). The 64-bit BIT surface (RotateLeft, PopCount, …) and
+            // DivRem/BigMul stay deliberately fenced.
+            return name switch
+            {
+                "Abs" => "(($x) => $x < 0n ? -$x : $x)({0})",
+                "Max" when argCount == 2 => "(($a, $b) => $a > $b ? $a : $b)({0}, {1})",
+                "Min" when argCount == 2 => "(($a, $b) => $a < $b ? $a : $b)({0}, {1})",
+                "Clamp" when argCount == 3 => "(($v, $lo, $hi) => $v < $lo ? $lo : $v > $hi ? $hi : $v)({0}, {1}, {2})",
+                "Sign" => "(($x) => $x < 0n ? -1 : $x > 0n ? 1 : 0)({0})",
+                "IsPositive" => "({0} >= 0n)",
+                "IsNegative" => "({0} < 0n)",
+                "IsEvenInteger" => "({0} % 2n === 0n)",
+                "IsOddInteger" => "({0} % 2n !== 0n)",
+                _ => null,
+            };
+        }
+
         if (home == SpecialType.System_Char)
         {
             return name switch
@@ -222,6 +243,12 @@ public class PrimitiveStaticStrategy : IConversionStrategy
         {
             "MaxValue" => "32767",
             "MinValue" => "-32768",
+            _ => null,
+        },
+        SpecialType.System_Int64 => name switch
+        {
+            "MaxValue" => "9223372036854775807n",
+            "MinValue" => "-9223372036854775808n",
             _ => null,
         },
         SpecialType.System_Byte => name switch

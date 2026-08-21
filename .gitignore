@@ -45,6 +45,11 @@ npm-debug.log*
 # Test results
 TestResults/
 coverage/
+# …but the compiler's coverage INSTRUMENTS are source, not tool output: the generic rule above
+# silently swallowed the whole folder — two test files and the committed BCL baseline shipped in
+# no commit while their commit message said otherwise.
+!tests/eQuantic.UI.Compiler.Tests/Coverage/
+!tests/eQuantic.UI.Compiler.Tests/Coverage/**
 
 **/wwwroot/_equantic/*
 # Embedded bun: only the .zip is tracked; the extracted binary is produced at build time.

@@ -31,23 +31,46 @@ public class CompareToStrategy : IConversionStrategy
         var left = context.Converter.ConvertExpression(access.Expression);
         var right = context.Converter.ConvertExpression(invocation.ArgumentList.Arguments[0].Expression);
 
-        return ReceiverKind(invocation, context) == SpecialType.System_String
-            ? $"({left} < {right} ? -1 : {left} > {right} ? 1 : 0)"
-            : $"Math.sign({left} - {right})";
+        // Every form evaluates each operand exactly once: numbers subtract, everything ordered
+        // (strings ordinally, chars, Guids-as-strings, longs-as-BigInts) goes through a two-param
+        // arrow — the inline three-way used to read both operands twice. Booleans order
+        // false < true. (Number CompareTo keeps its known NaN caveat: C# orders NaN below
+        // everything; a subtraction answers NaN.)
+        var kind = ReceiverKind(invocation, context);
+        var template = kind switch
+        {
+            SpecialType.System_Boolean => "(($a, $b) => $a === $b ? 0 : $a ? 1 : -1)({0}, {1})",
+            SpecialType.System_Int32 => "Math.sign({0} - {1})",
+            // char.CompareTo is the raw code-unit SUBTRACTION — 'z'.CompareTo('a') is 25, not 1.
+            SpecialType.System_Char => "(($a, $b) => $a.charCodeAt(0) - $b.charCodeAt(0))({0}, {1})",
+            _ => "(($a, $b) => $a < $b ? -1 : $a > $b ? 1 : 0)({0}, {1})",
+        };
+        return TemplateFill.With(template, left, right);
     }
 
-    /// <summary>The receiver's primitive kind, or null when it is a type that carries its own
-    /// comparison (a record the compiler emits, an enum) and must keep the call.</summary>
+    /// <summary>The receiver's comparison FAMILY (subtraction, ordered, boolean), or null when it
+    /// is a type that carries its own comparison (a record the compiler emits, an enum) and must
+    /// keep the call.</summary>
     private static SpecialType? ReceiverKind(InvocationExpressionSyntax invocation, ConversionContext context)
     {
         var access = (MemberAccessExpressionSyntax)invocation.Expression;
         var type = context.SemanticHelper.GetType(access.Expression);
+        // Guid is deliberately ABSENT: Guid.CompareTo orders by the struct's COMPONENTS, which is
+        // not the string order a guid rides as here — a sort that disagrees across the seam is
+        // worse than a fence.
         return type?.SpecialType switch
         {
-            SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Double
-                or SpecialType.System_Single or SpecialType.System_Decimal or SpecialType.System_Int16
+            // Decimal is deliberately ABSENT: it rides as a runtime Decimal object, and the old
+            // subtraction claim answered Math.sign(object - object) = NaN, silently. Fenced until
+            // the Decimal twin grows a comparison.
+            SpecialType.System_Int32 or SpecialType.System_Double
+                or SpecialType.System_Single or SpecialType.System_Int16
                 or SpecialType.System_Byte => SpecialType.System_Int32,
+            // A long is a BigInt: subtraction answers a BigInt, so it takes the ordered arrow.
+            SpecialType.System_Int64 => SpecialType.System_String,
             SpecialType.System_String => SpecialType.System_String,
+            SpecialType.System_Char => SpecialType.System_Char,
+            SpecialType.System_Boolean => SpecialType.System_Boolean,
             _ => null,
         };
     }
