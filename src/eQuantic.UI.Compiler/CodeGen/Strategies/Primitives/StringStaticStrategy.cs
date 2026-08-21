@@ -24,12 +24,12 @@ public class StringStaticStrategy : IConversionStrategy
         var methodAccess = invocation.Expression as MemberAccessExpressionSyntax;
         if (methodAccess == null) return false;
 
-        var typeExpression = methodAccess.Expression.ToString();
         var methodName = methodAccess.Name.Identifier.Text;
-        
-        // Check for String.Method or System.String.Method
-        // Heuristic: "String" or "string"
-        if (typeExpression != "String" && typeExpression != "string" && typeExpression != "System.String")
+
+        // The receiver must BE System.String — a user type merely named String must not route here.
+        if (!context.ReceiverIsType(methodAccess.Expression,
+                named => named.SpecialType == SpecialType.System_String,
+                "String", "string", "System.String"))
             return false;
             
         return methodName switch

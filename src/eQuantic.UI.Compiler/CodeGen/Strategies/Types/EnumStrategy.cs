@@ -33,7 +33,11 @@ public class EnumStrategy : IConversionStrategy
             return symbol.Kind == SymbolKind.Field && symbol.ContainingType?.TypeKind == TypeKind.Enum;
         }
 
-        // Heuristic fallback — ONLY when there is no semantic info to rely on.
+        // Heuristic fallback — ONLY where guessing is honest (see ConversionContext.CanGuess).
+        // Under an authoritative model, an in-tree PascalCase access that did not bind must NOT
+        // become an enum-member string by shape: it is missing references or non-compiling code,
+        // and the member-access fallback reports it instead.
+        if (!context.CanGuess(node)) return false;
         var expr = memberAccess.Expression.ToString();
         bool isPascalCase = !expr.Contains('.') &&
                            !expr.StartsWith("this.") &&

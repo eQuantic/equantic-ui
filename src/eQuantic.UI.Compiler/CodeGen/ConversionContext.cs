@@ -32,6 +32,26 @@ public class ConversionContext
     public bool CanGuess(SyntaxNode node) => !SymbolsAreAuthoritative || !SemanticHelper.Knows(node);
 
     /// <summary>
+    /// The gate the static-surface strategies share: whether a member access's RECEIVER is the
+    /// intended TYPE — by symbol where the model can answer (so a user class that merely SHARES
+    /// the name never routes here), by text only where guessing is honest. In-tree but unbound
+    /// under an authoritative model is evidence AGAINST, exactly as everywhere else.
+    /// </summary>
+    public bool ReceiverIsType(ExpressionSyntax receiver,
+        Func<INamedTypeSymbol, bool> matches, params string[] textualNames)
+    {
+        if (SemanticHelper.Knows(receiver))
+        {
+            var symbol = SemanticHelper.GetSymbol(receiver);
+            if (symbol is INamedTypeSymbol named) return matches(named);
+            if (symbol is not null) return false;
+            if (!CanGuess(receiver)) return false;
+        }
+
+        return textualNames.Contains(receiver.ToString());
+    }
+
+    /// <summary>
     /// The gate the LINQ-family strategies share: the method NAME matches, and either the symbol
     /// proves it is <c>System.Linq</c> or guessing is honest here (<see cref="CanGuess"/>).
     /// </summary>

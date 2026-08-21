@@ -74,6 +74,8 @@ public class ThemeMethodCasingTests
         var code = "theme?.GetSize(Size.Medium)";
         var result = TestHelper.ConvertExpression(code);
 
-        result.Should().Be("theme?.getSize('medium')");
+        // `theme` binds to the harness property now, so the member read is `this.`-qualified and
+        // the enum argument resolves to its member string — both by symbol, no shape-guessing.
+        result.Should().Be("this.theme?.getSize('medium')");
     }
 }

@@ -92,6 +92,20 @@ public class MemberAccessStrategy : IConversionStrategy
             return $"{expr}.length";
         }
 
+        // The camelCase guess below is exactly the invocation fallback's story (EQ2006): an
+        // in-tree access an AUTHORITATIVE model could not bind is missing references or code that
+        // doesn't compile — before this, an unresolved PascalCase access could even fall into the
+        // enum shape-heuristic and ship as a member-name string. Guessing stays legal where it is
+        // honest: snippets, rewritten nodes, non-authoritative hosts.
+        if (symbol is null && !context.CanGuess(node))
+        {
+            context.Report(node, ConversionSeverity.Error, "EQ2006",
+                $"'{memberAccess.Name.Identifier.Text}' does not bind in the compiler's semantic model, "
+                + "so any translation would be a guess. Either this code does not compile, or the "
+                + "compiler is missing references/generated sources — the SDK passes them via "
+                + "--refs/--generated; a custom host must do the same.");
+        }
+
         name = name switch
         {
             "Length" => "length",

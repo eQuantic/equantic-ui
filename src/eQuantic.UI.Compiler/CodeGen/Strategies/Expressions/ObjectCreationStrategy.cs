@@ -62,6 +62,19 @@ public class ObjectCreationStrategy : IConversionStrategy
             typeName = aliasQualified.Name.ToString();
         var createdType = context.SemanticHelper.GetType(creation);
 
+        // An in-tree creation whose TYPE an authoritative model cannot bind is the same story as
+        // an unbound call (EQ2006): missing references or code that doesn't compile — emitting
+        // `new Whatever()` and inventing an import for it is how a typo shipped as a browser
+        // ReferenceError. Guessing stays legal where it is honest.
+        if (createdType is null or IErrorTypeSymbol && !context.CanGuess(creation.Type))
+        {
+            context.Report(creation, ConversionSeverity.Error, "EQ2006",
+                $"'{typeName}' does not bind in the compiler's semantic model, so `new {typeName}(…)` "
+                + "would be a guess. Either this code does not compile, or the compiler is missing "
+                + "references/generated sources — the SDK passes them via --refs/--generated; a "
+                + "custom host must do the same.");
+        }
+
         // `new T()` where T is a generic type parameter cannot be transpiled: JS erases generic type
         // arguments, so the concrete constructor is unknown at runtime (emitting `new T()` would throw
         // "T is not defined"). Fail the build with guidance instead of shipping broken code.

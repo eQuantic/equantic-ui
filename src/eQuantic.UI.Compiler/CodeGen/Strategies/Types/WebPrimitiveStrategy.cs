@@ -17,16 +17,16 @@ public class WebPrimitiveStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
         var name = memberAccess.Name.Identifier.Text;
-        var receiver = memberAccess.Expression.ToString();
 
-        if (receiver is "Uri" or "System.Uri")
+        if (name is "EscapeDataString" or "UnescapeDataString" or "EscapeUriString" or "UnescapeUriString")
         {
-            return name is "EscapeDataString" or "UnescapeDataString"
-                or "EscapeUriString" or "UnescapeUriString";
+            return context.ReceiverIsType(memberAccess.Expression,
+                named => named.ToDisplayString() == "System.Uri",
+                "Uri", "System.Uri");
         }
 
         // `Encoding.UTF8.GetBytes(s)` — the receiver is itself a member access.
-        return IsUtf8(memberAccess.Expression)
+        return IsUtf8(memberAccess.Expression, context)
                && name is "GetBytes" or "GetString" or "GetByteCount";
     }
 
@@ -39,7 +39,7 @@ public class WebPrimitiveStrategy : IConversionStrategy
             ? context.Converter.ConvertExpression(invocation.ArgumentList.Arguments[0].Expression)
             : "''";
 
-        if (IsUtf8(memberAccess.Expression))
+        if (IsUtf8(memberAccess.Expression, context))
         {
             return name switch
             {
@@ -59,9 +59,23 @@ public class WebPrimitiveStrategy : IConversionStrategy
         };
     }
 
-    private static bool IsUtf8(ExpressionSyntax expression) =>
-        expression.ToString() is "Encoding.UTF8" or "System.Text.Encoding.UTF8"
+    /// <summary>The receiver is Encoding.UTF8/ASCII — by SYMBOL where the model answers (a user
+    /// type merely named Encoding must not route here), by text only where guessing is honest.</summary>
+    private static bool IsUtf8(ExpressionSyntax expression, ConversionContext context)
+    {
+        if (context.SemanticHelper.Knows(expression))
+        {
+            var symbol = context.SemanticHelper.GetSymbol(expression);
+            if (symbol is IPropertySymbol or IFieldSymbol)
+                return symbol.Name is "UTF8" or "ASCII"
+                    && symbol.ContainingType?.ToDisplayString() == "System.Text.Encoding";
+            if (symbol is not null) return false;
+            if (!context.CanGuess(expression)) return false;
+        }
+
+        return expression.ToString() is "Encoding.UTF8" or "System.Text.Encoding.UTF8"
             or "Encoding.ASCII" or "System.Text.Encoding.ASCII";
+    }
 
     public int Priority => 12;
 }

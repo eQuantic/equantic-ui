@@ -132,6 +132,84 @@ public class SemanticHardeningTests
     }
 
     [Fact]
+    public void AUserTypeNamedLikeABclType_NeverRoutesThroughTheBclGate()
+    {
+        // `Array.Reverse(xs)` bound to the APP's own Array class must stay a static call on that
+        // class — the old TEXTUAL gate matched the name alone and emitted `xs.reverse()`, silently
+        // running the BCL translation against a user type.
+        var source = """
+            using eQuantic.UI.Primitives;
+
+            public static class Array
+            {
+                public static string Reverse(string value) => value;
+            }
+
+            public sealed class Probe : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var r = Array.Reverse("ab");
+                    return new Box();
+                }
+            }
+            """;
+
+        var probe = Compile(source, withProjectCompilation: true, component: "Probe");
+
+        Assert.True(probe.Success, string.Join("\n", probe.Errors.Select(e => e.Message)));
+        Assert.Contains("Array.reverse('ab')", probe.TypeScript);
+        Assert.DoesNotContain("'ab'.reverse", probe.TypeScript);
+    }
+
+    [Fact]
+    public void AnUnboundMemberAccess_UnderAnAuthoritativeModel_IsAnEQ2006Error()
+    {
+        // Worse than a wrong name: an unresolved PascalCase access used to fall into the ENUM
+        // shape-heuristic and ship as a member-name string.
+        var source = """
+            using eQuantic.UI.Primitives;
+
+            public sealed class Probe : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var v = Missing.Value;
+                    return new Box();
+                }
+            }
+            """;
+
+        var result = Compile(source, withProjectCompilation: true);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, e => e.Code == "EQ2006");
+        Assert.DoesNotContain("'value'", result.TypeScript);
+    }
+
+    [Fact]
+    public void AnUnboundCreation_UnderAnAuthoritativeModel_IsAnEQ2006Error()
+    {
+        var source = """
+            using eQuantic.UI.Primitives;
+
+            public sealed class Probe : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var v = new Missng();
+                    return new Box();
+                }
+            }
+            """;
+
+        var result = Compile(source, withProjectCompilation: true);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, e => e.Code == "EQ2006" && e.Message.Contains("Missng"));
+    }
+
+    [Fact]
     public void ARecordMethod_WithAnUntranslatableCall_FailsTheBuild()
     {
         // The record branch used to RETURN before diagnostics were drained, so an error raised

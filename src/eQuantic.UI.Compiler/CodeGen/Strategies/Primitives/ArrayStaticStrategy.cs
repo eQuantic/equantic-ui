@@ -29,14 +29,13 @@ public class ArrayStaticStrategy : IConversionStrategy
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
-        var typeExpression = memberAccess.Expression.ToString();
         var methodName = memberAccess.Name.Identifier.Text;
+        if (!SupportedMethods.Contains(methodName)) return false;
 
-        // Check for Array.Method or System.Array.Method
-        if (typeExpression != "Array" && typeExpression != "System.Array")
-            return false;
-
-        return SupportedMethods.Contains(methodName);
+        // The receiver must BE System.Array — a user type merely named Array must not route here.
+        return context.ReceiverIsType(memberAccess.Expression,
+            named => named.SpecialType == SpecialType.System_Array,
+            "Array", "System.Array");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

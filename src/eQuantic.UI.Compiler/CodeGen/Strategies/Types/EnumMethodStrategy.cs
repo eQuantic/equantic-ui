@@ -19,12 +19,12 @@ public class EnumMethodStrategy : IConversionStrategy
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
-        var expr = memberAccess.Expression.ToString();
         var name = memberAccess.Name.Identifier.Text;
+        if (name is not ("Parse" or "TryParse" or "GetValues" or "GetNames" or "IsDefined")) return false;
 
-        if (expr != "Enum" && expr != "System.Enum") return false;
-
-        return name is "Parse" or "TryParse" or "GetValues" or "GetNames" or "IsDefined";
+        return context.ReceiverIsType(memberAccess.Expression,
+            named => named.SpecialType == SpecialType.System_Enum,
+            "Enum", "System.Enum");
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

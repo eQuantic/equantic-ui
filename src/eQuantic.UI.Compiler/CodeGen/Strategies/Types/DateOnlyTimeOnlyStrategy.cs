@@ -77,21 +77,25 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
         var symbol = context.SemanticHelper.GetSymbol(ma);
         var bySymbol = symbol?.ContainingType != null ? KindOf(symbol.ContainingType) : null;
         if (bySymbol != null) return bySymbol;
-        return KindOfName(ma.Expression.ToString()); // static via type name (no semantic model)
+        // Type NAME only where guessing is honest — a user type named DateOnly must not route here.
+        return context.CanGuess(ma.Expression) ? KindOfName(ma.Expression.ToString()) : null;
     }
 
     private static string StaticKind(MemberAccessExpressionSyntax ma, ConversionContext context)
     {
         var symbol = context.SemanticHelper.GetSymbol(ma);
         var bySymbol = symbol?.ContainingType != null ? KindOf(symbol.ContainingType) : null;
-        return bySymbol ?? KindOfName(ma.Expression.ToString()) ?? "dateOnly";
+        return bySymbol
+            ?? (context.CanGuess(ma.Expression) ? KindOfName(ma.Expression.ToString()) : null)
+            ?? "dateOnly";
     }
 
     private static bool IsStaticAccess(MemberAccessExpressionSyntax ma, ConversionContext context)
     {
         var symbol = context.SemanticHelper.GetSymbol(ma);
         if (symbol != null) return symbol.IsStatic;
-        return KindOfName(ma.Expression.ToString()) != null; // "DateOnly"/"TimeOnly"
+        return context.CanGuess(ma.Expression)
+            && KindOfName(ma.Expression.ToString()) != null; // "DateOnly"/"TimeOnly"
     }
 
     private static string? KindOf(ITypeSymbol? type) => type?.ToDisplayString() switch

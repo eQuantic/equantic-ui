@@ -19,12 +19,13 @@ public class NumberMethodStrategy : IConversionStrategy
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
         
-        var type = memberAccess.Expression.ToString();
         var name = memberAccess.Name.Identifier.Text;
-        
-        if (!Types.Contains(type)) return false;
-        
-        return name is "Parse" or "TryParse";        
+        if (name is not ("Parse" or "TryParse")) return false;
+
+        return context.ReceiverIsType(memberAccess.Expression,
+            named => named.SpecialType is SpecialType.System_Int32 or SpecialType.System_Int64
+                or SpecialType.System_Double or SpecialType.System_Single or SpecialType.System_Decimal,
+            [.. Types]);
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)

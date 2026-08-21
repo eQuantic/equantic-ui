@@ -14,8 +14,10 @@ public class CharMethodStrategy : IConversionStrategy
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
-        var expr = memberAccess.Expression.ToString();
-        if (expr is not ("char" or "Char" or "System.Char")) return false;
+        if (!context.ReceiverIsType(memberAccess.Expression,
+                named => named.SpecialType == SpecialType.System_Char,
+                "char", "Char", "System.Char"))
+            return false;
 
         return memberAccess.Name.Identifier.Text is
             // The INVARIANT pair is the one a UI reaches for — a sort key, a lookup key — and it

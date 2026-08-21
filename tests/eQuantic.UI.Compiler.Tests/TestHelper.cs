@@ -55,6 +55,8 @@ public static class TestHelper
 
             public record DistinctPoint(int X);
 
+            public enum Size {{ Small, Medium, Large }}
+
             // Optional parameters a caller SKIPS by naming a later one — the shape every component
             // constructor has.
             public record Col(string Header, int Track, string Align = ""start"", bool Sortable = false);
@@ -87,6 +89,8 @@ public static class TestHelper
                 public TestClass item {{ get; set; }}
                 public string input {{ get; set; }}
                 public TestClass user {{ get; set; }}
+                public TestClass theme {{ get; set; }}
+                public string GetSize(Size size) => """";
                 public List<int> numbers {{ get; set; }}
                 public List<string> list1 {{ get; set; }}
                 public List<string> list2 {{ get; set; }}
@@ -119,7 +123,7 @@ public static class TestHelper
         var methodBody = tree.GetRoot()
             .DescendantNodes()
             .OfType<MethodDeclarationSyntax>()
-            .First()
+            .First(m => m.Identifier.Text == "Method")
             .Body;
 
         var stmt = methodBody!.Statements.First();
