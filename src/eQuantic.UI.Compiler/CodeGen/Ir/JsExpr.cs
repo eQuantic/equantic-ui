@@ -57,6 +57,17 @@ public abstract record JsExpr
     /// (text handed to an unmigrated consumer), re-derived where it can.</summary>
     public static JsExpr Group(JsExpr inner) => new JsGroup(inner);
 
+    /// <summary>
+    /// A translation written as a template over its parts — <c>{0}.normalize()</c>,
+    /// <c>({0} === {1})</c> — where the WRITER owns single evaluation: a part the template uses
+    /// more than once is bound exactly once (and a plain name or literal is simply inlined, a read
+    /// of those cannot be observed). The template text must be self-delimiting: a call, or wrapped
+    /// in its own parentheses. See <see cref="JsTemplate"/>.
+    /// </summary>
+    public static JsExpr Template(string template, params JsExpr[] parts) => new JsTemplate(template, parts);
+
+    public static JsExpr Template(string template, IReadOnlyList<JsExpr> parts) => new JsTemplate(template, parts);
+
     public static JsExpr Binary(JsExpr left, string op, JsExpr right) => new JsBinary(left, op, right);
 
     public static JsExpr Prefix(string op, JsExpr operand) => new JsUnary(op, operand, IsPrefix: true);
@@ -109,6 +120,22 @@ public sealed record JsCall(JsExpr Target, IReadOnlyList<JsExpr> Arguments) : Js
 public sealed record JsGroup(JsExpr Inner) : JsExpr
 {
     public override JsPrecedence Precedence => JsPrecedence.Primary;
+}
+
+/// <summary>
+/// A template over parts, with <c>{i}</c> holes. Before this, every table strategy that reused a
+/// receiver spelled the single-evaluation doctrine out by hand — <c>(($s) => $s === $s.normalize())({0})</c>
+/// — naming its own variables and getting the evaluation order right each time. Now the template
+/// just says what it computes, <c>{0} === {0}.normalize()</c>, and the writer decides what must be
+/// bound, in what order, and what can simply be inlined.
+/// <para>
+/// Self-delimiting by convention (a call-shaped text, or one wrapped in its own parentheses), so
+/// the node is safe in any position without the writer having to parse the template.
+/// </para>
+/// </summary>
+public sealed record JsTemplate(string Text, IReadOnlyList<JsExpr> Parts) : JsExpr
+{
+    public override JsPrecedence Precedence => JsPrecedence.Call;
 }
 
 public sealed record JsBinary(JsExpr Left, string Operator, JsExpr Right) : JsExpr

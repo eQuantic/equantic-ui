@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -17,7 +18,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 /// OrderBy already behaves.
 /// </para>
 /// </summary>
-public class LinqSurfaceTailStrategy : IConversionStrategy
+public class LinqSurfaceTailStrategy : IExpressionIrStrategy
 {
     public int Priority => 12;
 
@@ -31,21 +32,21 @@ public class LinqSurfaceTailStrategy : IConversionStrategy
             && context.SemanticHelper.IsLinqExtension(method.ContainingType);
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         invocation.TryGetInstanceCall(out var receiverSyntax, out var name);
 
-        var receiver = context.Converter.ConvertExpression(receiverSyntax);
+        var receiver = context.Converter.ConvertIr(receiverSyntax);
         var args = invocation.ArgumentList.Arguments
-            .Select(a => context.Converter.ConvertExpression(a.Expression))
+            .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToArray();
 
         var template = Template(name.Identifier.Text, args.Length)!;
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
 
-        // {0} is the receiver; {1}… the arguments.
-        return TemplateFill.With(template, new[] { receiver }.Concat(args).ToArray());
+        // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.
+        return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray());
     }
 
     private static string? Template(string name, int argCount) => (name, argCount) switch
@@ -58,9 +59,9 @@ public class LinqSurfaceTailStrategy : IConversionStrategy
         ("LongCount", 0) => $"{Eq.Long}({{0}}.length)",
         ("LongCount", 1) => $"{Eq.Long}({{0}}.filter({{1}}).length)",
         // SkipLast(0)/TakeLast(0) are the traps: slice(0, -0) is the EMPTY prefix and slice(-0)
-        // the WHOLE array — the arrow evaluates receiver and count once and sidesteps both.
-        ("SkipLast", 1) => "(($a, $n) => $a.slice(0, Math.max(0, $a.length - $n)))({0}, {1})",
-        ("TakeLast", 1) => "(($a, $n) => $n > 0 ? $a.slice(Math.max(0, $a.length - $n)) : [])({0}, {1})",
+        // the WHOLE array — computing the start explicitly sidesteps both.
+        ("SkipLast", 1) => "{0}.slice(0, Math.max(0, {0}.length - {1}))",
+        ("TakeLast", 1) => "({1} > 0 ? {0}.slice(Math.max(0, {0}.length - {1})) : [])",
         // Ordinal comparator, ascending/descending — the standing culture policy.
         ("Order", 0) => "[...{0}].sort(($a, $b) => $a < $b ? -1 : $a > $b ? 1 : 0)",
         ("OrderDescending", 0) => "[...{0}].sort(($a, $b) => $a < $b ? 1 : $a > $b ? -1 : 0)",

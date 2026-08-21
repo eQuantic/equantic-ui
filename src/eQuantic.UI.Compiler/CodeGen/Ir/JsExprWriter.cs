@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace eQuantic.UI.Compiler.CodeGen.Ir;
 
 /// <summary>
@@ -59,11 +61,55 @@ public static class JsExprWriter
         JsMember member => $"{Receiver(member.Target)}.{member.Name}",
         JsIndex index => $"{Receiver(index.Target)}[{Write(index.IndexExpression)}]",
         JsCall call => $"{Receiver(call.Target)}({string.Join(", ", call.Arguments.Select(Argument))})",
+        JsTemplate template => RenderTemplate(template),
         JsBinary binary => RenderBinary(binary),
         JsUnary unary => RenderUnary(unary),
         JsConditional conditional => RenderConditional(conditional),
         _ => throw new InvalidOperationException($"No writer for IR node {expr.GetType().Name}."),
     };
+
+    private static readonly Regex Hole = new(@"\{(\d)\}", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Single evaluation, decided here and nowhere else. A part the template mentions more than
+    /// once is bound to a parameter of an arrow and passed exactly once — unless it is a plain name
+    /// or a literal, whose repeated read no program can observe, in which case it is inlined. Once
+    /// any part is bound, every earlier part that could be observed is bound too, so the arguments
+    /// are still evaluated in the order C# evaluates them (receiver first, then each argument).
+    /// The fill is ONE pass — a part's text is never scanned for holes of its own.
+    /// </summary>
+    private static string RenderTemplate(JsTemplate template)
+    {
+        var parts = template.Parts;
+        var uses = new int[parts.Count];
+        foreach (Match match in Hole.Matches(template.Text))
+            uses[int.Parse(match.Groups[1].Value)]++;
+
+        var bound = new bool[parts.Count];
+        for (var i = 0; i < parts.Count; i++)
+            bound[i] = uses[i] > 1 && !IsInlinable(parts[i]);
+        var last = Array.LastIndexOf(bound, true);
+        for (var i = 0; i < last; i++)
+            bound[i] |= !IsInlinable(parts[i]);
+
+        var body = Hole.Replace(template.Text, match =>
+        {
+            var index = int.Parse(match.Groups[1].Value);
+            return bound[index] ? "$" + index : Write(parts[index], JsPrecedence.Opaque, null);
+        });
+        if (last < 0) return body;
+
+        var indexes = Enumerable.Range(0, parts.Count).Where(i => bound[i]).ToArray();
+        var names = string.Join(", ", indexes.Select(i => "$" + i));
+        var arguments = string.Join(", ", indexes.Select(i => Write(parts[i], JsPrecedence.Opaque, null)));
+        return $"(({names}) => {body})({arguments})";
+    }
+
+    /// <summary>A read nobody can observe happening twice: a bare name (locals and parameters
+    /// have no getters; <c>this</c> is a keyword) or a literal. A member read is NOT one — a
+    /// property getter may count its calls.</summary>
+    private static bool IsInlinable(JsExpr part) =>
+        part is JsLiteral || part is JsIdentifier { Name: var name } && !name.Contains('.');
 
     /// <summary>A receiver must be at least call-shaped; a bare number additionally needs
     /// parentheses, because <c>1.toString()</c> reads the dot as a decimal point.</summary>

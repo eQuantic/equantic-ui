@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
@@ -9,12 +10,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// primitives, the string members the dedicated strategy never grew, and the Dictionary/List
 /// quality-of-life members (capacity hints are honest no-ops — the same policy that drops a
 /// collection expression's <c>with(capacity:)</c>). Symbol-first, table-driven, single-evaluation
-/// only: receiver-reusing shapes go through an arrow. Deliberately absent, and therefore still
+/// only — the WRITER binds a reused receiver, the templates just name it. Deliberately absent, and therefore still
 /// visible in the audit baseline: <c>double.Equals</c> (NaN.Equals(NaN) is true — <c>===</c>
 /// would lie), <c>decimal.Equals</c> (Decimal objects), value-keyed dictionaries (they lower to
 /// $eq.collections.valueMap, not a plain object).
 /// </summary>
-public class BclSurfaceTailStrategy : IConversionStrategy
+public class BclSurfaceTailStrategy : IExpressionIrStrategy
 {
     public int Priority => 12;
 
@@ -27,19 +28,20 @@ public class BclSurfaceTailStrategy : IConversionStrategy
             && Template(method, name.Identifier.Text, invocation.ArgumentList.Arguments.Count) is not null;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         invocation.TryGetInstanceCall(out var receiverSyntax, out var name);
 
         var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
-        var receiver = context.Converter.ConvertExpression(receiverSyntax);
+        var receiver = context.Converter.ConvertIr(receiverSyntax);
         var args = invocation.ArgumentList.Arguments
-            .Select(a => context.Converter.ConvertExpression(a.Expression))
+            .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToArray();
 
+        // Templates say what they compute; the writer decides what to evaluate once.
         var template = Template(method, name.Identifier.Text, args.Length)!;
-        return TemplateFill.With(template, new[] { receiver }.Concat(args).ToArray());
+        return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray());
     }
 
     /// <summary>{0} = receiver, {1}… = arguments; null = not ours, stays fenced.</summary>
@@ -74,10 +76,10 @@ public class BclSurfaceTailStrategy : IConversionStrategy
             {
                 ("Clone", 0) => "{0}",
                 ("Normalize", 0) => "{0}.normalize()",
-                ("IsNormalized", 0) => "(($s) => $s === $s.normalize())({0})",
+                ("IsNormalized", 0) => "({0} === {0}.normalize())",
                 // Every .NET-recognized line ending becomes the eqc world's NewLine, '\n'.
                 ("ReplaceLineEndings", 0) => "{0}.replace(/\\r\\n|[\\r\\n\\u0085\\f\\u2028\\u2029]/g, '\\n')",
-                ("ReplaceLineEndings", 1) => "(($s, $r) => $s.replace(/\\r\\n|[\\r\\n\\u0085\\f\\u2028\\u2029]/g, $r))({0}, {1})",
+                ("ReplaceLineEndings", 1) => "{0}.replace(/\\r\\n|[\\r\\n\\u0085\\f\\u2028\\u2029]/g, {1})",
                 ("IndexOfAny", 1) =>
                     "(($s, $c) => { for (let $i = 0; $i < $s.length; $i++) if ($c.includes($s[$i])) return $i; return -1; })({0}, {1})",
                 ("IndexOfAny", 2) =>
@@ -96,7 +98,7 @@ public class BclSurfaceTailStrategy : IConversionStrategy
             return (name, argCount) switch
             {
                 ("TryAdd", 2) =>
-                    "(($d, $k, $v) => Object.prototype.hasOwnProperty.call($d, $k) ? false : ($d[$k] = $v, true))({0}, {1}, {2})",
+                    "(Object.prototype.hasOwnProperty.call({0}, {1}) ? false : ({0}[{1}] = {2}, true))",
                 ("ContainsValue", 1) => "Object.values({0}).includes({1})",
                 // Capacity hints have no JS meaning; EnsureCapacity ANSWERS a capacity, so the
                 // requested one is the honest value.
@@ -112,7 +114,7 @@ public class BclSurfaceTailStrategy : IConversionStrategy
             return (name, argCount) switch
             {
                 ("AsReadOnly", 0) => "{0}",
-                ("Slice", 2) => "(($a, $s, $n) => $a.slice($s, $s + $n))({0}, {1}, {2})",
+                ("Slice", 2) => "{0}.slice({1}, {1} + {2})",
                 ("EnsureCapacity", 1) => "{1}",
                 ("TrimExcess", 0) => "void 0",
                 _ => null,

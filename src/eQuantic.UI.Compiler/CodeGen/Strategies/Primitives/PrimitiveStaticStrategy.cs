@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
@@ -19,7 +20,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// <see cref="NumberMethodStrategy"/>.
 /// </para>
 /// </summary>
-public class PrimitiveStaticStrategy : IConversionStrategy
+public class PrimitiveStaticStrategy : IExpressionIrStrategy
 {
     public int Priority => 12;
 
@@ -43,7 +44,7 @@ public class PrimitiveStaticStrategy : IConversionStrategy
         }
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         if (node is MemberAccessExpressionSyntax access)
         {
@@ -54,12 +55,13 @@ public class PrimitiveStaticStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
         var args = invocation.ArgumentList.Arguments
-            .Select(a => context.Converter.ConvertExpression(a.Expression))
+            .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToArray();
 
+        // Templates say what they compute; the writer decides what to evaluate once.
         var emit = MethodTable(method.ContainingType.SpecialType, method.Name, args.Length)!;
         if (emit.Contains(Eq.Round)) context.UsedHelpers.Add(Eq.Import);
-        return TemplateFill.With(emit, args);
+        return JsExpr.Template(emit, args);
     }
 
     private static bool IsSmallInteger(SpecialType type) => type is SpecialType.System_Int32
@@ -147,11 +149,11 @@ public class PrimitiveStaticStrategy : IConversionStrategy
             // DivRem/BigMul stay deliberately fenced.
             return name switch
             {
-                "Abs" => "(($x) => $x < 0n ? -$x : $x)({0})",
-                "Max" when argCount == 2 => "(($a, $b) => $a > $b ? $a : $b)({0}, {1})",
-                "Min" when argCount == 2 => "(($a, $b) => $a < $b ? $a : $b)({0}, {1})",
-                "Clamp" when argCount == 3 => "(($v, $lo, $hi) => $v < $lo ? $lo : $v > $hi ? $hi : $v)({0}, {1}, {2})",
-                "Sign" => "(($x) => $x < 0n ? -1 : $x > 0n ? 1 : 0)({0})",
+                "Abs" => "({0} < 0n ? -{0} : {0})",
+                "Max" when argCount == 2 => "({0} > {1} ? {0} : {1})",
+                "Min" when argCount == 2 => "({0} < {1} ? {0} : {1})",
+                "Clamp" when argCount == 3 => "({0} < {1} ? {1} : {0} > {2} ? {2} : {0})",
+                "Sign" => "({0} < 0n ? -1 : {0} > 0n ? 1 : 0)",
                 "IsPositive" => "({0} >= 0n)",
                 "IsNegative" => "({0} < 0n)",
                 "IsEvenInteger" => "({0} % 2n === 0n)",
@@ -178,7 +180,7 @@ public class PrimitiveStaticStrategy : IConversionStrategy
                 "IsSurrogate" when argCount == 1 => "/^[\\uD800-\\uDFFF]$/.test({0})",
                 // A char IS a one-character string on this side already.
                 "ToString" when argCount == 1 => "{0}",
-                "IsBetween" when argCount == 3 => "(($c, $lo, $hi) => $lo <= $c && $c <= $hi)({0}, {1}, {2})",
+                "IsBetween" when argCount == 3 => "({1} <= {0} && {0} <= {2})",
                 // Parse keeps its contract, throw included — silently accepting "ab" would be a lie.
                 "Parse" when argCount == 1 =>
                     "(($s) => { if ($s.length !== 1) throw new Error('String must be exactly one character long.'); return $s; })({0})",
@@ -192,7 +194,7 @@ public class PrimitiveStaticStrategy : IConversionStrategy
             return name switch
             {
                 // Ordinal by definition — the one string comparison with an exact JS twin.
-                "CompareOrdinal" when argCount == 2 => "(($a, $b) => $a < $b ? -1 : $a > $b ? 1 : 0)({0}, {1})",
+                "CompareOrdinal" when argCount == 2 => "({0} < {1} ? -1 : {0} > {1} ? 1 : 0)",
                 // The intern pool is an allocation concern; the string itself is the answer.
                 "Intern" when argCount == 1 => "{0}",
                 _ => null,

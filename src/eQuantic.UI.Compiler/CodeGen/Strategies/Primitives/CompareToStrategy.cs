@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
@@ -14,7 +15,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// A user type keeps its own `compareTo` — the emitter gives it one.
 /// </para>
 /// </summary>
-public class CompareToStrategy : IConversionStrategy
+public class CompareToStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context) =>
         node is InvocationExpressionSyntax
@@ -24,28 +25,27 @@ public class CompareToStrategy : IConversionStrategy
         } invocation
         && ReceiverKind(invocation, context) is not null;
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var access = (MemberAccessExpressionSyntax)invocation.Expression;
-        var left = context.Converter.ConvertExpression(access.Expression);
-        var right = context.Converter.ConvertExpression(invocation.ArgumentList.Arguments[0].Expression);
+        var left = context.Converter.ConvertIr(access.Expression);
+        var right = context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression);
 
-        // Every form evaluates each operand exactly once: numbers subtract, everything ordered
-        // (strings ordinally, chars, Guids-as-strings, longs-as-BigInts) goes through a two-param
-        // arrow — the inline three-way used to read both operands twice. Booleans order
+        // Numbers subtract; everything ordered (strings ordinally, chars by code unit,
+        // longs-as-BigInts) is a three-way the WRITER evaluates once per operand. Booleans order
         // false < true. (Number CompareTo keeps its known NaN caveat: C# orders NaN below
         // everything; a subtraction answers NaN.)
         var kind = ReceiverKind(invocation, context);
         var template = kind switch
         {
-            SpecialType.System_Boolean => "(($a, $b) => $a === $b ? 0 : $a ? 1 : -1)({0}, {1})",
+            SpecialType.System_Boolean => "({0} === {1} ? 0 : {0} ? 1 : -1)",
             SpecialType.System_Int32 => "Math.sign({0} - {1})",
             // char.CompareTo is the raw code-unit SUBTRACTION — 'z'.CompareTo('a') is 25, not 1.
-            SpecialType.System_Char => "(($a, $b) => $a.charCodeAt(0) - $b.charCodeAt(0))({0}, {1})",
-            _ => "(($a, $b) => $a < $b ? -1 : $a > $b ? 1 : 0)({0}, {1})",
+            SpecialType.System_Char => "({0}.charCodeAt(0) - {1}.charCodeAt(0))",
+            _ => "({0} < {1} ? -1 : {0} > {1} ? 1 : 0)",
         };
-        return TemplateFill.With(template, left, right);
+        return JsExpr.Template(template, left, right);
     }
 
     /// <summary>The receiver's comparison FAMILY (subtraction, ordered, boolean), or null when it
