@@ -242,8 +242,7 @@ public static class PatternConverter
         // icon => …, Avatar avatar => … }` emitted `_s != null` for the Icon arm, so the FIRST arm
         // matched everything and the Avatar arm was dead code. A wrong answer with no diagnostic —
         // caught by tsc complaining about `.size` on a VisualNode, which is luck, not a net.
-        if (context.SemanticHelper.Knows(typeSyntax)
-            && context.SemanticModel?.GetSymbolInfo(typeSyntax).Symbol is INamedTypeSymbol
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol
             {
                 TypeKind: TypeKind.Class
             } named)

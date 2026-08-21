@@ -29,7 +29,7 @@ public class ConversionContext
     /// asked (none, or a strategy-rewrote node from no tree it knows), or the host never promised
     /// the model was complete. When this is false, symbols are the only evidence that counts.
     /// </summary>
-    public bool CanGuess(SyntaxNode node) => !SymbolsAreAuthoritative || !SemanticHelper.Knows(node);
+    public bool CanGuess(SyntaxNode node) => !SymbolsAreAuthoritative || !SemanticHelper.KnowsOrMapped(node);
 
     /// <summary>
     /// The gate the static-surface strategies share: whether a member access's RECEIVER is the
@@ -40,7 +40,7 @@ public class ConversionContext
     public bool ReceiverIsType(ExpressionSyntax receiver,
         Func<INamedTypeSymbol, bool> matches, params string[] textualNames)
     {
-        if (SemanticHelper.Knows(receiver))
+        if (SemanticHelper.KnowsOrMapped(receiver))
         {
             var symbol = SemanticHelper.GetSymbol(receiver);
             if (symbol is INamedTypeSymbol named) return matches(named);
@@ -146,6 +146,7 @@ public class ConversionContext
     public void Reset()
     {
         ClearDiagnostics();
+        SemanticHelper.ClearSynthetics();
         UsedHelpers.Clear();
         UsedAppTypes.Clear();
         UsedRuntimeTypes.Clear();

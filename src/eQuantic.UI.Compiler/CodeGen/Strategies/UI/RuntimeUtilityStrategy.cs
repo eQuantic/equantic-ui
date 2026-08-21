@@ -34,10 +34,7 @@ public class RuntimeUtilityStrategy : IConversionStrategy
         if (node is not InvocationExpressionSyntax invocation)
             return false;
 
-        var symbolInfo = context.SemanticHelper.Knows(invocation)
-            ? context.SemanticModel?.GetSymbolInfo(invocation)
-            : null;
-        if (symbolInfo?.Symbol is not IMethodSymbol methodSymbol)
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol methodSymbol)
             return false;
 
         var containingType = methodSymbol.ContainingType;
@@ -58,11 +55,7 @@ public class RuntimeUtilityStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
-        var symbolInfo = context.SemanticHelper.Knows(invocation)
-            ? context.SemanticModel?.GetSymbolInfo(invocation)
-            : null;
-
-        if (symbolInfo?.Symbol is not IMethodSymbol methodSymbol)
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol methodSymbol)
             return context.Unhandled(invocation, "runtime utility");
 
         var typeName = methodSymbol.ContainingType.Name;

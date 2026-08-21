@@ -58,6 +58,16 @@ public class BclSurfaceTailStrategy : IConversionStrategy
             return "({0} === {1})";
         }
 
+        // Dispose through the INTERFACE — the runtime's disposable contract is a `dispose()`
+        // method on every twin that hands one out (subscriptions, tickers), and the `using`
+        // statement already lowers to the same call. Bound to a CONCRETE type, Dispose translates
+        // through the normal member path instead.
+        if (name is "Dispose" && argCount == 0
+            && home.ToDisplayString() is "System.IDisposable" or "System.IAsyncDisposable")
+        {
+            return "{0}.dispose()";
+        }
+
         if (home.SpecialType == SpecialType.System_String)
         {
             return (name, argCount) switch

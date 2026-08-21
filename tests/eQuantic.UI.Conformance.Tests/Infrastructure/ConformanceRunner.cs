@@ -32,7 +32,9 @@ public static class ConformanceRunner
     {
         var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
         var types = Transpiler.EmitDeclaredRecordTypes(prelude);
-        var program = $"{BuildHelperImport(jsBlock + types)}{types}console.log(JSON.stringify((() => {jsBlock})()))";
+        // Top-level undefined canonicalizes to null: the transpiled world treats them as ONE
+        // (the `== null` doctrine), and C#'s side of a guarded chain answers null.
+        var program = $"{BuildHelperImport(jsBlock + types)}{types}console.log(JSON.stringify(((v) => v === undefined ? null : v)((() => {jsBlock})())))";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
@@ -50,7 +52,7 @@ public static class ConformanceRunner
     {
         var js = Transpiler.TranspileExpression(csharpExpression, prelude);
         var types = Transpiler.EmitDeclaredRecordTypes(prelude);
-        var program = $"{BuildHelperImport(js + types)}{types}console.log(JSON.stringify({js}))";
+        var program = $"{BuildHelperImport(js + types)}{types}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, prelude);

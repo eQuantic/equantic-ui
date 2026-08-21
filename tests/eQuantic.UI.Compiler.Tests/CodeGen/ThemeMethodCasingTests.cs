@@ -15,8 +15,9 @@ public class ThemeMethodCasingTests
         ";
         var result = TestHelper.ConvertCodeBlock(code);
 
-        // Just verify the pattern works
-        result.Should().Contain("theme?.toString()");
+        // The guarded ToString routes through the SAME strategy as the plain one now: a
+        // null-answering arrow over String($r), never a camelCase rename.
+        result.Should().Contain("$r == null ? null : String($r)");
     }
 
     [Fact]

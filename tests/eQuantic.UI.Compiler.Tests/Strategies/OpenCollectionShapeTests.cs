@@ -20,12 +20,15 @@ public class OpenCollectionShapeTests
     }
 
     [Fact]
-    public void Contains_UnderANullGuard_REPLACESTheGuardRatherThanHangingOffIt()
+    public void Contains_UnderANullGuard_KeepsTheGuardAroundTheHelper()
     {
-        // `this.selection?.contains(...)` is the shape that shipped: a member no Set and no array
-        // has, reached through a guard. The helper answers false for null, so it needs none.
+        // `this.selection?.contains(...)` is the shape that once shipped: a member no Set and no
+        // array has, reached through a guard. The guarded form now wraps the helper in a
+        // null-answering arrow — MORE faithful than the old bare helper, which answered false for
+        // a null receiver where C# answers null.
         var result = TestHelper.ConvertExpression("selection?.Contains(\"a\") == true");
-        result.Should().Be("$eq.collections.contains(this.selection, 'a') === true");
+        result.Should().Be(
+            "(($r) => $r == null ? null : $eq.collections.contains($r, 'a'))(this.selection) === true");
     }
 
     [Fact]

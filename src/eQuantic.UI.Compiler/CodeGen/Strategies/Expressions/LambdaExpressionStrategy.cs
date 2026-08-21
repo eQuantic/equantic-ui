@@ -97,7 +97,7 @@ public class LambdaExpressionStrategy : IConversionStrategy
         // GetSymbolInfo is for references, and asking it here came back empty every time.
         var declared = parameter.Type is { } syntax
             ? context.SemanticHelper.GetSymbol(syntax) as ITypeSymbol
-            : context.SemanticModel?.GetDeclaredSymbol(parameter) is IParameterSymbol symbol
+            : context.SemanticHelper.GetDeclaredSymbol(parameter) is IParameterSymbol symbol
                 ? symbol.Type
                 : null;
         if (declared is null || !context.TypeAnnotations) return name;

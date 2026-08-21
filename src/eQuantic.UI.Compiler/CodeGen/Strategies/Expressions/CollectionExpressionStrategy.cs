@@ -48,9 +48,7 @@ public class CollectionExpressionStrategy : IConversionStrategy
 
         // What the expression is CONVERTED to, not what it looks like: a collection expression takes
         // its shape from the target, exactly as it does in C#.
-        var target = context.SemanticHelper.Knows(collection)
-            ? context.SemanticModel!.GetTypeInfo(collection).ConvertedType
-            : null;
+        var target = context.SemanticHelper.GetConvertedType(collection);
         var definition = target?.OriginalDefinition?.ToString() ?? "";
 
         if (definition.StartsWith("System.Collections.Generic.SortedSet"))

@@ -267,8 +267,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         var args = creation.ArgumentList?.Arguments;
         if (args is not { Count: > 1 }) return null;
 
-        if (context.SemanticHelper.Knows(creation)
-            && context.SemanticModel?.GetSymbolInfo(creation).Symbol is IMethodSymbol ctor)
+        if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
         {
             for (var i = 0; i < args.Value.Count && i < ctor.Parameters.Length; i++)
             {

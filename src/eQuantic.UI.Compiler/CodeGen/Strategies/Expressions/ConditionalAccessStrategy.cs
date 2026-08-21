@@ -1,16 +1,31 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// Strategy for conditional access expressions (null-conditional operators).
-/// Handles:
-/// - ?. (conditional member access): a?.b -> a?.b
-/// - ?[] (conditional element access): a?[0] -> a?.[0]
+/// Null-conditional access — <c>a?.B</c>, <c>a?.M(x)</c>, <c>a?[i]</c>, and every chain hanging
+/// off one. ONE mechanism for all of them: the tail is rebuilt with its root binding replaced by
+/// an ordinary access on a <c>$r</c> receiver placeholder (<c>?.M(x)</c> → <c>$r.M(x)</c>), which
+/// every other strategy already understands, and the rebuilt nodes are mapped to their in-tree
+/// originals so the model keeps answering for them — symbols, receiver type, lambda parameters in
+/// the arguments. Then the receiver goes back in front: <c>$r.filter(p)</c> becomes
+/// <c>a?.filter(p)</c>; a translation that does not START with the placeholder (a helper call, a
+/// spread) is wrapped in a null-answering arrow instead.
+/// <para>
+/// Before this, the guarded shape was its own dialect: <c>?.M(x)</c> went to a camelCase rename
+/// because the real strategies only recognised <c>a.M(x)</c> — so <c>text?.ToUpper()</c> shipped
+/// as <c>?.toUpper()</c>, <c>items?.Where(p)</c> as <c>?.where(p)</c>, <c>list?.Count</c> as
+/// <c>?.count</c>, and a chain behind a guard could even emit <c>a?.this.trim()</c>. No diagnostic
+/// for any of it. The rewrite makes the guarded and plain shapes the SAME translation by
+/// construction.
+/// </para>
 /// </summary>
 public class ConditionalAccessStrategy : IConversionStrategy
 {
+    private const string Placeholder = "$r";
+
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is ConditionalAccessExpressionSyntax;
@@ -35,99 +50,113 @@ public class ConditionalAccessStrategy : IConversionStrategy
                 ?? context.Unhandled(node, "null-conditional assignment");
         }
 
+        var whenNotNull = conditionalAccess.WhenNotNull;
+        var rootBinding = RootBinding(whenNotNull);
+        if (rootBinding is null)
+            return context.Unhandled(node, "null-conditional access");
+
+        // The guarded member is as bindable as an unguarded one: unbound under an authoritative
+        // model is missing references or code that doesn't compile, and the rewritten copy below
+        // would otherwise translate by name. Same rule, same code, as the invocation fallback.
+        if (rootBinding is MemberBindingExpressionSyntax binding
+            && context.SemanticHelper.GetSymbol(binding) is null
+            && !context.CanGuess(binding))
+        {
+            context.Report(node, ConversionSeverity.Error, "EQ2006",
+                $"'{binding.Name.Identifier.Text}' does not bind in the compiler's semantic model, so any "
+                + "translation would be a guess. Either this code does not compile, or the compiler "
+                + "is missing references/generated sources — the SDK passes them via --refs/--generated; "
+                + "a custom host must do the same.");
+        }
+
+        var receiver = context.Converter.ConvertExpression(conditionalAccess.Expression);
+        var rebuilt = Rebuild(whenNotNull, rootBinding, conditionalAccess.Expression, context);
+
         // Saved and restored around the conversion: a nested `a?.b(c?.d())` must not read the inner
-        // chain's answer as its own.
+        // chain's flag as its own. The flag itself no longer decides the assembly — the shape of the
+        // translation does — but strategies still set it, and the outer chain must not inherit it.
         var outer = context.NullGuardAnswered;
         context.NullGuardAnswered = false;
-        var whenNotNull = ConvertWhenNotNull(conditionalAccess.WhenNotNull, context);
-        var answered = context.NullGuardAnswered;
+        var converted = context.Converter.ConvertExpression(rebuilt);
         context.NullGuardAnswered = outer;
 
-        // A translation that answers for null itself IS the whole chain — it named the receiver too.
-        if (answered) return whenNotNull;
-
-        var expression = context.Converter.ConvertExpression(conditionalAccess.Expression);
-        return $"{expression}{whenNotNull}";
+        // `$r.filter(p)` → `a?.filter(p)`; `$r[0]` → `a?.[0]`; `$r(x)` (a delegate's Invoke) →
+        // `a?.(x)`. Anything not rooted at the placeholder — `$eq.collections.contains($r, x)`,
+        // `[...$r, x]` — is wrapped so the receiver is still evaluated once and null still answers null.
+        if (converted.StartsWith(Placeholder + ".", StringComparison.Ordinal))
+            return $"{receiver}?.{converted[(Placeholder.Length + 1)..]}";
+        if (converted.StartsWith(Placeholder + "[", StringComparison.Ordinal)
+            || converted.StartsWith(Placeholder + "(", StringComparison.Ordinal))
+            return $"{receiver}?.{converted[Placeholder.Length..]}";
+        return $"(({Placeholder}) => {Placeholder} == null ? null : {converted})({receiver})";
     }
 
-    private string ConvertWhenNotNull(ExpressionSyntax whenNotNull, ConversionContext context)
+    /// <summary>The leftmost binding of the tail — the `.B` of `?.B.C(x)`, the `[i]` of `?[i]` —
+    /// which is where the receiver is implicitly attached. Null for a tail this does not model.</summary>
+    private static ExpressionSyntax? RootBinding(ExpressionSyntax tail)
     {
-        return whenNotNull switch
+        for (ExpressionSyntax current = tail; ;)
         {
-            // ?.member -> ?.member
-            MemberBindingExpressionSyntax memberBinding =>
-                $"?.{memberBinding.Name.Identifier.Text.ToCamelCase()}",
-
-            // ?[index] -> ?.[index] (JavaScript requires the dot)
-            ElementBindingExpressionSyntax elementBinding =>
-                $"?.[{ConvertArguments(elementBinding.ArgumentList, context)}]",
-
-            // ?.Method() — offered to the real strategies first (see InvocationShapeExtensions):
-            // one that understands the guarded shape answers with a LEADING dot, because the
-            // receiver is already on the page and repeating it would name it twice. Anything else
-            // keeps the plain rename, which is right for a call with no translation of its own.
-            InvocationExpressionSyntax invocation when invocation.Expression is MemberBindingExpressionSyntax mb =>
-                mb.Name.Identifier.Text == "Invoke"
-                    ? $"?.({ConvertArguments(invocation.ArgumentList, context)})"
-                    : Translated(invocation, context)
-                      ?? $"?.{mb.Name.Identifier.Text.ToCamelCase()}({ConvertArguments(invocation.ArgumentList, context)})",
-
-            // ?.member.property -> ?.member.property (e.g., theme?.Alert.Title)
-            MemberAccessExpressionSyntax memberAccess when memberAccess.Expression is MemberBindingExpressionSyntax binding =>
-                $"?.{binding.Name.Identifier.Text.ToCamelCase()}.{memberAccess.Name.Identifier.Text.ToCamelCase()}",
-
-            // ?.member.property.deeper -> chain after conditional (recursive)
-            MemberAccessExpressionSyntax memberAccess =>
-                $"?.{ConvertMemberChain(memberAccess, context)}",
-
-            // Nested conditional access: a?.b?.c - The nested expression (b) is a MemberBindingExpression
-            ConditionalAccessExpressionSyntax nested when nested.Expression is MemberBindingExpressionSyntax nestedMember =>
-                $"?.{nestedMember.Name.Identifier.Text.ToCamelCase()}{ConvertWhenNotNull(nested.WhenNotNull, context)}",
-
-            // Nested conditional access with identifier: for cases like user?.Address?.City
-            ConditionalAccessExpressionSyntax nested =>
-                $"?.{(nested.Expression.ToString()).ToCamelCase()}{ConvertWhenNotNull(nested.WhenNotNull, context)}",
-
-            // Fallback
-            _ => $"?.{context.Converter.ConvertExpression(whenNotNull)}"
-        };
+            switch (current)
+            {
+                case MemberBindingExpressionSyntax or ElementBindingExpressionSyntax:
+                    return current;
+                case InvocationExpressionSyntax invocation:
+                    current = invocation.Expression;
+                    continue;
+                case MemberAccessExpressionSyntax access:
+                    current = access.Expression;
+                    continue;
+                case ElementAccessExpressionSyntax element:
+                    current = element.Expression;
+                    continue;
+                case ConditionalAccessExpressionSyntax nested:
+                    current = nested.Expression;
+                    continue;
+                default:
+                    return null;
+            }
+        }
     }
 
     /// <summary>
-    /// The pipeline's answer for a guarded call, or null when nothing claimed it. The leading dot is
-    /// the contract: it says "I left the receiver to you", which is exactly what <c>?.</c> needs.
+    /// The tail with its root binding replaced by an access on the `$r` placeholder, every rebuilt
+    /// node mapped to its original (Roslyn's TrackNodes survives the ReplaceNode, so the mapping is
+    /// exact), and the placeholder carrying the receiver's TYPE so shape-dependent translations
+    /// (`.Count` on a Set, `Contains` on an open collection) still see what they need.
     /// </summary>
-    private static string? Translated(InvocationExpressionSyntax invocation, ConversionContext context)
+    private static ExpressionSyntax Rebuild(ExpressionSyntax tail, ExpressionSyntax rootBinding,
+        ExpressionSyntax receiverSyntax, ConversionContext context)
     {
-        var converted = context.Converter.ConvertExpression(invocation);
-        // Answered for null on its own: hand it back whole, receiver and all.
-        if (context.NullGuardAnswered) return converted;
-        return converted.StartsWith('.') ? "?" + converted : null;
-    }
+        var originals = tail.DescendantNodesAndSelf().ToArray();
+        var tracked = tail.TrackNodes(originals);
+        var trackedRoot = tracked.GetCurrentNode(rootBinding)!;
 
-    private string ConvertMemberChain(MemberAccessExpressionSyntax memberAccess, ConversionContext context)
-    {
-        var name = memberAccess.Name.Identifier.Text.ToCamelCase();
-        return memberAccess.Expression switch
+        var placeholder = SyntaxFactory.IdentifierName(Placeholder);
+        SyntaxNode replacement = trackedRoot switch
         {
-            MemberBindingExpressionSyntax binding =>
-                $"{binding.Name.Identifier.Text.ToCamelCase()}.{name}",
-            MemberAccessExpressionSyntax nested =>
-                $"{ConvertMemberChain(nested, context)}.{name}",
-            _ => $"{context.Converter.ConvertExpression(memberAccess.Expression)}.{name}"
+            MemberBindingExpressionSyntax member => SyntaxFactory.MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression, placeholder, member.Name),
+            ElementBindingExpressionSyntax element => SyntaxFactory.ElementAccessExpression(
+                placeholder, element.ArgumentList),
+            _ => throw new InvalidOperationException("root binding shape"),
         };
-    }
+        var rebuilt = tracked.ReplaceNode(trackedRoot, replacement);
 
-    private string ConvertArguments(BracketedArgumentListSyntax argumentList, ConversionContext context)
-    {
-        var args = argumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression));
-        return string.Join(", ", args);
-    }
+        foreach (var original in originals)
+        {
+            if (rebuilt.GetCurrentNode(original) is { } current)
+                context.SemanticHelper.MapSynthetic(current, original);
+        }
 
-    private string ConvertArguments(ArgumentListSyntax argumentList, ConversionContext context)
-    {
-        var args = argumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression));
-        return string.Join(", ", args);
+        // The replacement itself is untracked: find it through the placeholder and map it to the
+        // binding it replaced, so `GetSymbol(memberAccess)` answers the member's symbol.
+        var placed = rebuilt.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>()
+            .First(identifier => identifier.Identifier.Text == Placeholder);
+        if (placed.Parent is { } access) context.SemanticHelper.MapSynthetic(access, rootBinding);
+        context.SemanticHelper.MapType(placed, context.SemanticHelper.GetType(receiverSyntax));
+
+        return rebuilt;
     }
 
     /// <summary>Whether a nested <c>?.</c> chain ultimately carries an assignment (`a?.b?.c = v`).</summary>

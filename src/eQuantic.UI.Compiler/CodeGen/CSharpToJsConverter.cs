@@ -412,7 +412,7 @@ public class CSharpToJsConverter
             or ImplicitObjectCreationExpressionSyntax
             or InvocationExpressionSyntax)) return emitted;
 
-        var type = _context.SemanticModel?.GetTypeInfo(expression).Type;
+        var type = _context.SemanticHelper.GetType(expression);
         if (!type.IsVisualNode()) return emitted;
 
         var span = expression.GetLocation().GetLineSpan();
@@ -450,7 +450,7 @@ public class CSharpToJsConverter
         var name = type.Name;
         if (name is "VisualNode" or "UiComponent"
             && expression is InvocationExpressionSyntax
-            && _context.SemanticModel?.GetSymbolInfo(expression).Symbol is IMethodSymbol method)
+            && _context.SemanticHelper.GetSymbol(expression) is IMethodSymbol method)
         {
             name = $"{method.Name}()";
         }
