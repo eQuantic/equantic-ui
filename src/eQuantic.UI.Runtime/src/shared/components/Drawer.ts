@@ -14,12 +14,23 @@ export class Drawer extends StatelessComponent {
         if (this.open === undefined) this.open = false;
         if (this.edge === undefined) this.edge = 'start';
         if (this.width === undefined) this.width = 320;
-        this.content = content;this.open = open;this.onDismiss = onDismiss;
+        this.content = content;
+        this.open = open;
+        this.onDismiss = onDismiss;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;if (!this.open && !context.inFlow) return new Box();let layer = new Stack();layer.add(new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: theme.scrim })), this.onDismiss, { label: SdkStrings.dismiss }));let panel = new Box(new BoxStyle({ width: this.width, height: context.inFlow ? undefined : SizeValue.fill, background: theme.surface, elevation: 3, padding: EdgeInsets.all(16) }), this.content);if (context.inFlow) return panel;layer.add(this.edge === 'start' ? new Positioned(new Presence(panel), 0, null, 0, 0) : new Positioned(new Presence(panel), 0, 0, 0));let overlay = new Overlay(layer);let escape: any; return (escape = this.onDismiss) != null ? new Shortcut(overlay, KeyChord.escape, escape) : overlay;
+        let theme = context.theme;
+        if (!this.open && !context.inFlow) return new Box();
+        let layer = new Stack();
+        layer.add(new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: theme.scrim })), this.onDismiss, { label: SdkStrings.dismiss }));
+        let panel = new Box(new BoxStyle({ width: this.width, height: context.inFlow ? undefined : SizeValue.fill, background: theme.surface, elevation: 3, padding: EdgeInsets.all(16) }), this.content);
+        if (context.inFlow) return panel;
+        layer.add(this.edge === 'start' ? new Positioned(new Presence(panel), 0, null, 0, 0) : new Positioned(new Presence(panel), 0, 0, 0));
+        let overlay = new Overlay(layer);
+        let escape: any; 
+        return (escape = this.onDismiss) != null ? new Shortcut(overlay, KeyChord.escape, escape) : overlay;
     }
 
 }

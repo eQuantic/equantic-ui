@@ -9,23 +9,314 @@ export class MermaidLayout {
     static lifelineTop: number = 52;
     static messageGap: number = 44;
     static participantGap: number = 56;
-    static solve(graph: MermaidGraph) { return graph.kind === 'sequence' ? MermaidLayout.solveSequence(graph) : MermaidLayout.solveFlowchart(graph); }
-    static labelWidth(label: string, pad: number, min: number, max: number) { let w = label.length * 8 + pad;if (w < min) return min;if (w > max) return max;return w; }
-    static labelChipWidth(text: string) { return text.length * 7 + 20; }
-    static nodeWidth(node: MermaidNode) { if (node.shape === 'circle') return MermaidLayout.circleSide(node);if (node.shape === 'diamond') return MermaidLayout.diamondSide(node);return MermaidLayout.labelWidth(node.label, 32, 72, 280); }
-    static nodeHeightOf(node: MermaidNode) { if (node.shape === 'circle') return MermaidLayout.circleSide(node);if (node.shape === 'diamond') return MermaidLayout.diamondSide(node);return MermaidLayout.nodeHeight; }
-    static circleSide(node: MermaidNode) { return MermaidLayout.labelWidth(node.label, 24, 48, 130); }
-    static diamondSide(node: MermaidNode) { return MermaidLayout.labelWidth(node.label, 44, 76, 170); }
-    static solveFlowchart(graph: MermaidGraph) { let count = graph.nodes.length;let index: Record<string, number> = {};for (let i = 0; i < count; i++) index[graph.nodes[i].id] = i;let back = MermaidLayout.markBackEdges(graph, index, count);let rank = new Array(count).fill(0);for (let pass = 0; pass < count; pass++) {let changed = false;for (let e = 0; e < graph.edges.length; e++) {if (back[e]) continue;let edge = graph.edges[e];let from = index[edge.from];let to = index[edge.to];if (from === to) continue;if (rank[to] < rank[from] + 1) {rank[to] = rank[from] + 1;changed = true;}}if (!changed) break;}let rankCount = 0;for (let i = 0; i < count; i++) if (rank[i] + 1 > rankCount) rankCount = rank[i] + 1;let order: number[][] = [];for (let r = 0; r < rankCount; r++) order.push([]);for (let i = 0; i < count; i++) order[rank[i]].push(i);let position = new Array(count).fill(0);for (let r = 0; r < rankCount; r++) MermaidLayout.reposition(order[r], position);for (let r = 1; r < rankCount; r++) {MermaidLayout.sortByNeighbors(order[r], graph, index, position, true);MermaidLayout.reposition(order[r], position);}for (let r = rankCount - 2; r >= 0; r--) {MermaidLayout.sortByNeighbors(order[r], graph, index, position, false);MermaidLayout.reposition(order[r], position);}let mainSize = new Array(count).fill(0);let crossSize = new Array(count).fill(0);for (let i = 0; i < count; i++) {let node = graph.nodes[i];mainSize[i] = graph.vertical ? MermaidLayout.nodeHeightOf(node) : MermaidLayout.nodeWidth(node);crossSize[i] = graph.vertical ? MermaidLayout.nodeWidth(node) : MermaidLayout.nodeHeightOf(node);}let rankSpan = new Array(rankCount).fill(0);let rankThickness = new Array(rankCount).fill(0);for (let r = 0; r < rankCount; r++) {let span = 0;let thick = 0;for (const i of order[r]) {span += crossSize[i] + (span > 0 ? MermaidLayout.siblingGap : 0);if (mainSize[i] > thick) thick = mainSize[i];}rankSpan[r] = span;rankThickness[r] = thick;}let maxSpan = 0;for (let r = 0; r < rankCount; r++) if (rankSpan[r] > maxSpan) maxSpan = rankSpan[r];let gapAfter = new Array(rankCount).fill(0);for (let r = 0; r < rankCount; r++) gapAfter[r] = MermaidLayout.rankGap;if (!graph.vertical) {for (const edge of graph.edges) {if (edge.label.length === 0) continue;let lower = rank[index[edge.from]] < rank[index[edge.to]] ? rank[index[edge.from]] : rank[index[edge.to]];let needed = MermaidLayout.labelChipWidth(edge.label) + 24;if (lower >= 0 && lower < rankCount && gapAfter[lower] < needed) gapAfter[lower] = needed;}}let mainStart = new Array(rankCount).fill(0);let cursor = MermaidLayout.margin;for (let r = 0; r < rankCount; r++) {mainStart[r] = cursor;cursor += rankThickness[r] + gapAfter[r];}let crossCenter = new Array(count).fill(0);let mainCenter = new Array(count).fill(0);for (let r = 0; r < rankCount; r++) {let at = MermaidLayout.margin + (maxSpan - rankSpan[r]) / 2;for (const i of order[r]) {crossCenter[i] = at + crossSize[i] / 2;at += crossSize[i] + MermaidLayout.siblingGap;mainCenter[i] = mainStart[rank[i]] + rankThickness[rank[i]] / 2;}}let scene = new MermaidScene();for (let i = 0; i < count; i++) {let node = graph.nodes[i];let w = MermaidLayout.nodeWidth(node);let h = MermaidLayout.nodeHeightOf(node);let x = (graph.vertical ? crossCenter[i] : mainCenter[i]) - w / 2;let y = (graph.vertical ? mainCenter[i] : crossCenter[i]) - h / 2;scene.nodes.push(new MermaidPlacedNode({ node: node, x: x, y: y, w: w, h: h }));}for (const edge of graph.edges) {let from = scene.nodes[index[edge.from]];let to = scene.nodes[index[edge.to]];MermaidLayout.routeFlowEdge(scene, graph.vertical, from, to, edge);}let mainExtent = cursor - gapAfter[rankCount - 1] + MermaidLayout.margin;scene.width = graph.vertical ? maxSpan + MermaidLayout.margin * 2 : mainExtent;scene.height = graph.vertical ? mainExtent : maxSpan + MermaidLayout.margin * 2;return scene; }
-    static markBackEdges(graph: MermaidGraph, index: Record<string, any>, count: number) { let back = new Array(graph.edges.length).fill(false);let outgoing: number[][] = [];for (let i = 0; i < count; i++) outgoing.push([]);for (let e = 0; e < graph.edges.length; e++) {let edge = graph.edges[e];if (index[edge.from] === index[edge.to]) back[e] = true; else outgoing[index[edge.from]].push(e);}let state = new Array(count).fill(0);let stackNode: number[] = [];let stackNext: number[] = [];for (let root = 0; root < count; root++) {if (state[root] !== 0) continue;state[root] = 1;stackNode.push(root);stackNext.push(0);while (stackNode.length > 0) {let node = stackNode[stackNode.length - 1];let next = stackNext[stackNext.length - 1];if (next >= outgoing[node].length) {state[node] = 2;stackNode.splice(stackNode.length - 1, 1);stackNext.splice(stackNext.length - 1, 1);continue;}stackNext[stackNext.length - 1] = next + 1;let e = outgoing[node][next];let to = index[graph.edges[e].to];if (state[to] === 1) back[e] = true; else if (state[to] === 0) {state[to] = 1;stackNode.push(to);stackNext.push(0);}}}return back; }
-    static reposition(rankOrder: number[], position: number[]) { for (let k = 0; k < rankOrder.length; k++) position[rankOrder[k]] = k; }
-    static sortByNeighbors(rankOrder: number[], graph: MermaidGraph, index: Record<string, any>, position: number[], byPredecessors: boolean) { let sums = new Array(rankOrder.length).fill(0);let counts = new Array(rankOrder.length).fill(0);for (let k = 0; k < rankOrder.length; k++) {let node = rankOrder[k];let sum = 0;let n = 0;for (const edge of graph.edges) {let from = index[edge.from];let to = index[edge.to];let neighbor = -1;if (byPredecessors && to === node) neighbor = from;if (!byPredecessors && from === node) neighbor = to;if (neighbor < 0) continue;sum += position[neighbor];n++;}sums[k] = n === 0 ? position[node] : sum;counts[k] = n === 0 ? 1 : n;}for (let k = 1; k < rankOrder.length; k++) {let node = rankOrder[k];let sum = sums[k];let n = counts[k];let j = k - 1;while (j >= 0 && sums[j] * n > sum * counts[j]) {rankOrder[j + 1] = rankOrder[j];sums[j + 1] = sums[j];counts[j + 1] = counts[j];j--;}rankOrder[j + 1] = node;sums[j + 1] = sum;counts[j + 1] = n;} }
-    static routeFlowEdge(scene: MermaidScene, vertical: boolean, from: MermaidPlacedNode, to: MermaidPlacedNode, edge: MermaidEdge) { let x0 = null;let y0 = null;let x1 = null;let y1 = null;if (vertical) {x0 = from.x + from.w / 2;y0 = from.y + from.h;x1 = to.x + to.w / 2;y1 = to.y;} else {x0 = from.x + from.w;y0 = from.y + from.h / 2;x1 = to.x;y1 = to.y + to.h / 2;}let mid = vertical ? (y0 + y1) / 2 : (x0 + x1) / 2;if (vertical) {MermaidLayout.addCurve(scene, x0, y0, x0, mid, x1, mid, x1, y1);if (edge.arrow) scene.arrows.push(new MermaidArrowhead({ x: x1, y: y1, direction: y1 >= mid ? 0 : 2 }));if (edge.label.length > 0) scene.labels.push(new MermaidLabel({ text: edge.label, x: (x0 + x1) / 2, y: mid }));} else {MermaidLayout.addCurve(scene, x0, y0, mid, y0, mid, y1, x1, y1);if (edge.arrow) scene.arrows.push(new MermaidArrowhead({ x: x1, y: y1, direction: x1 >= mid ? 1 : 3 }));if (edge.label.length > 0) scene.labels.push(new MermaidLabel({ text: edge.label, x: mid, y: (y0 + y1) / 2 }));} }
-    static addCurve(scene: MermaidScene, x0: number, y0: number, c1x: number, c1y: number, c2x: number, c2y: number, x1: number, y1: number) { let sx = MermaidLayout.whole(x0);let sy = MermaidLayout.whole(y0);let k1x = MermaidLayout.whole(c1x);let k1y = MermaidLayout.whole(c1y);let k2x = MermaidLayout.whole(c2x);let k2y = MermaidLayout.whole(c2y);let ex = MermaidLayout.whole(x1);let ey = MermaidLayout.whole(y1);let minX = MermaidLayout.min4(sx, k1x, k2x, ex) - MermaidLayout.curvePad;let maxX = MermaidLayout.max4(sx, k1x, k2x, ex) + MermaidLayout.curvePad;let minY = MermaidLayout.min4(sy, k1y, k2y, ey) - MermaidLayout.curvePad;let maxY = MermaidLayout.max4(sy, k1y, k2y, ey) + MermaidLayout.curvePad;scene.curves.push(new MermaidCurve({ x: minX, y: minY, w: maxX - minX, h: maxY - minY, path: 'M ' + sx + ' ' + sy + ' C ' + k1x + ' ' + k1y + ', ' + k2x + ' ' + k2y + ', ' + ex + ' ' + ey, viewBox: minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY) })); }
-    static whole(v: number) { return (Math.trunc((v < 0 ? v - 0.5 : v + 0.5)) | 0); }
-    static min4(a: number, b: number, c: number, d: number) { let m = a < b ? a : b;if (c < m) m = c;return d < m ? d : m; }
-    static max4(a: number, b: number, c: number, d: number) { let m = a > b ? a : b;if (c > m) m = c;return d > m ? d : m; }
-    static addSegment(scene: MermaidScene, x0: number, y0: number, x1: number, y1: number) { if (x0 === x1 && y0 === y1) return;if (x0 === x1) {let top = y0 < y1 ? y0 : y1;let h = y0 < y1 ? y1 - y0 : y0 - y1;scene.segments.push(new MermaidSegment({ x: x0 - MermaidLayout.lineThickness / 2, y: top, w: MermaidLayout.lineThickness, h: h }));return;}let left = x0 < x1 ? x0 : x1;let w = x0 < x1 ? x1 - x0 : x0 - x1;scene.segments.push(new MermaidSegment({ x: left, y: y0 - MermaidLayout.lineThickness / 2, w: w, h: MermaidLayout.lineThickness })); }
-    static solveSequence(graph: MermaidGraph) { let scene = new MermaidScene();let centers: Record<string, number> = {};let at = MermaidLayout.margin;for (const participant of graph.nodes) {let w = MermaidLayout.labelWidth(participant.label, 28, 80, 220);scene.nodes.push(new MermaidPlacedNode({ node: participant, x: at, y: MermaidLayout.margin, w: w, h: MermaidLayout.nodeHeight }));centers[participant.id] = at + w / 2;at += w + MermaidLayout.participantGap;}let bottom = MermaidLayout.margin + MermaidLayout.lifelineTop + graph.messages.length * MermaidLayout.messageGap + MermaidLayout.margin;for (const placed of scene.nodes) {let x = placed.x + placed.w / 2;MermaidLayout.addSegment(scene, x, placed.y + placed.h, x, bottom - MermaidLayout.margin);}let y = MermaidLayout.margin + MermaidLayout.lifelineTop + MermaidLayout.messageGap / 2;for (const message of graph.messages) {let x0 = centers[message.from];let x1 = centers[message.to];if (x0 === x1) {MermaidLayout.addSegment(scene, x0, y - 12, x0 + 36, y - 12);MermaidLayout.addSegment(scene, x0 + 36, y - 12, x0 + 36, y);MermaidLayout.addSegment(scene, x0 + 36, y, x0, y);scene.arrows.push(new MermaidArrowhead({ x: x0, y: y, direction: 3 }));if (message.label.length > 0) scene.labels.push(new MermaidLabel({ text: message.label, x: x0 + 36 + 12, y: y - 12 }));} else {MermaidLayout.addSegment(scene, x0, y, x1, y);scene.arrows.push(new MermaidArrowhead({ x: x1, y: y, direction: x1 > x0 ? 1 : 3 }));if (message.label.length > 0) scene.labels.push(new MermaidLabel({ text: message.label, x: (x0 + x1) / 2, y: y - 12 }));}y += MermaidLayout.messageGap;}scene.width = at - MermaidLayout.participantGap + MermaidLayout.margin;scene.height = bottom;return scene; }
+    static solve(graph: MermaidGraph) {
+        return graph.kind === 'sequence' ? MermaidLayout.solveSequence(graph) : MermaidLayout.solveFlowchart(graph);
+    }
+    static labelWidth(label: string, pad: number, min: number, max: number) {
+        let w = label.length * 8 + pad;
+        if (w < min) return min;
+        if (w > max) return max;
+        return w;
+    }
+    static labelChipWidth(text: string) {
+        return text.length * 7 + 20;
+    }
+    static nodeWidth(node: MermaidNode) {
+        if (node.shape === 'circle') return MermaidLayout.circleSide(node);
+        if (node.shape === 'diamond') return MermaidLayout.diamondSide(node);
+        return MermaidLayout.labelWidth(node.label, 32, 72, 280);
+    }
+    static nodeHeightOf(node: MermaidNode) {
+        if (node.shape === 'circle') return MermaidLayout.circleSide(node);
+        if (node.shape === 'diamond') return MermaidLayout.diamondSide(node);
+        return MermaidLayout.nodeHeight;
+    }
+    static circleSide(node: MermaidNode) {
+        return MermaidLayout.labelWidth(node.label, 24, 48, 130);
+    }
+    static diamondSide(node: MermaidNode) {
+        return MermaidLayout.labelWidth(node.label, 44, 76, 170);
+    }
+    static solveFlowchart(graph: MermaidGraph) {
+        let count = graph.nodes.length;
+        let index: Record<string, number> = {};
+        for (let i = 0; i < count; i++) index[graph.nodes[i].id] = i;
+        let back = MermaidLayout.markBackEdges(graph, index, count);
+        let rank = new Array(count).fill(0);
+        for (let pass = 0; pass < count; pass++) {
+            let changed = false;
+            for (let e = 0; e < graph.edges.length; e++) {
+                if (back[e]) continue;
+                let edge = graph.edges[e];
+                let from = index[edge.from];
+                let to = index[edge.to];
+                if (from === to) continue;
+                if (rank[to] < rank[from] + 1) {
+                    rank[to] = rank[from] + 1;
+                    changed = true;
+                }
+            }
+            if (!changed) break;
+        }
+        let rankCount = 0;
+        for (let i = 0; i < count; i++) if (rank[i] + 1 > rankCount) rankCount = rank[i] + 1;
+        let order: number[][] = [];
+        for (let r = 0; r < rankCount; r++) order.push([]);
+        for (let i = 0; i < count; i++) order[rank[i]].push(i);
+        let position = new Array(count).fill(0);
+        for (let r = 0; r < rankCount; r++) MermaidLayout.reposition(order[r], position);
+        for (let r = 1; r < rankCount; r++) {
+            MermaidLayout.sortByNeighbors(order[r], graph, index, position, true);
+            MermaidLayout.reposition(order[r], position);
+        }
+        for (let r = rankCount - 2; r >= 0; r--) {
+            MermaidLayout.sortByNeighbors(order[r], graph, index, position, false);
+            MermaidLayout.reposition(order[r], position);
+        }
+        let mainSize = new Array(count).fill(0);
+        let crossSize = new Array(count).fill(0);
+        for (let i = 0; i < count; i++) {
+            let node = graph.nodes[i];
+            mainSize[i] = graph.vertical ? MermaidLayout.nodeHeightOf(node) : MermaidLayout.nodeWidth(node);
+            crossSize[i] = graph.vertical ? MermaidLayout.nodeWidth(node) : MermaidLayout.nodeHeightOf(node);
+        }
+        let rankSpan = new Array(rankCount).fill(0);
+        let rankThickness = new Array(rankCount).fill(0);
+        for (let r = 0; r < rankCount; r++) {
+            let span = 0;
+            let thick = 0;
+            for (const i of order[r]) {
+                span += crossSize[i] + (span > 0 ? MermaidLayout.siblingGap : 0);
+                if (mainSize[i] > thick) thick = mainSize[i];
+            }
+            rankSpan[r] = span;
+            rankThickness[r] = thick;
+        }
+        let maxSpan = 0;
+        for (let r = 0; r < rankCount; r++) if (rankSpan[r] > maxSpan) maxSpan = rankSpan[r];
+        let gapAfter = new Array(rankCount).fill(0);
+        for (let r = 0; r < rankCount; r++) gapAfter[r] = MermaidLayout.rankGap;
+        if (!graph.vertical) {
+            for (const edge of graph.edges) {
+                if (edge.label.length === 0) continue;
+                let lower = rank[index[edge.from]] < rank[index[edge.to]] ? rank[index[edge.from]] : rank[index[edge.to]];
+                let needed = MermaidLayout.labelChipWidth(edge.label) + 24;
+                if (lower >= 0 && lower < rankCount && gapAfter[lower] < needed) gapAfter[lower] = needed;
+            }
+        }
+        let mainStart = new Array(rankCount).fill(0);
+        let cursor = MermaidLayout.margin;
+        for (let r = 0; r < rankCount; r++) {
+            mainStart[r] = cursor;
+            cursor += rankThickness[r] + gapAfter[r];
+        }
+        let crossCenter = new Array(count).fill(0);
+        let mainCenter = new Array(count).fill(0);
+        for (let r = 0; r < rankCount; r++) {
+            let at = MermaidLayout.margin + (maxSpan - rankSpan[r]) / 2;
+            for (const i of order[r]) {
+                crossCenter[i] = at + crossSize[i] / 2;
+                at += crossSize[i] + MermaidLayout.siblingGap;
+                mainCenter[i] = mainStart[rank[i]] + rankThickness[rank[i]] / 2;
+            }
+        }
+        let scene = new MermaidScene();
+        for (let i = 0; i < count; i++) {
+            let node = graph.nodes[i];
+            let w = MermaidLayout.nodeWidth(node);
+            let h = MermaidLayout.nodeHeightOf(node);
+            let x = (graph.vertical ? crossCenter[i] : mainCenter[i]) - w / 2;
+            let y = (graph.vertical ? mainCenter[i] : crossCenter[i]) - h / 2;
+            scene.nodes.push(new MermaidPlacedNode({ node: node, x: x, y: y, w: w, h: h }));
+        }
+        for (const edge of graph.edges) {
+            let from = scene.nodes[index[edge.from]];
+            let to = scene.nodes[index[edge.to]];
+            MermaidLayout.routeFlowEdge(scene, graph.vertical, from, to, edge);
+        }
+        let mainExtent = cursor - gapAfter[rankCount - 1] + MermaidLayout.margin;
+        scene.width = graph.vertical ? maxSpan + MermaidLayout.margin * 2 : mainExtent;
+        scene.height = graph.vertical ? mainExtent : maxSpan + MermaidLayout.margin * 2;
+        return scene;
+    }
+    static markBackEdges(graph: MermaidGraph, index: Record<string, any>, count: number) {
+        let back = new Array(graph.edges.length).fill(false);
+        let outgoing: number[][] = [];
+        for (let i = 0; i < count; i++) outgoing.push([]);
+        for (let e = 0; e < graph.edges.length; e++) {
+            let edge = graph.edges[e];
+            if (index[edge.from] === index[edge.to]) back[e] = true; else outgoing[index[edge.from]].push(e);
+        }
+        let state = new Array(count).fill(0);
+        let stackNode: number[] = [];
+        let stackNext: number[] = [];
+        for (let root = 0; root < count; root++) {
+            if (state[root] !== 0) continue;
+            state[root] = 1;
+            stackNode.push(root);
+            stackNext.push(0);
+            while (stackNode.length > 0) {
+                let node = stackNode[stackNode.length - 1];
+                let next = stackNext[stackNext.length - 1];
+                if (next >= outgoing[node].length) {
+                    state[node] = 2;
+                    stackNode.splice(stackNode.length - 1, 1);
+                    stackNext.splice(stackNext.length - 1, 1);
+                    continue;
+                }
+                stackNext[stackNext.length - 1] = next + 1;
+                let e = outgoing[node][next];
+                let to = index[graph.edges[e].to];
+                if (state[to] === 1) back[e] = true; else if (state[to] === 0) {
+                    state[to] = 1;
+                    stackNode.push(to);
+                    stackNext.push(0);
+                }
+            }
+        }
+        return back;
+    }
+    static reposition(rankOrder: number[], position: number[]) {
+        for (let k = 0; k < rankOrder.length; k++) position[rankOrder[k]] = k;
+    }
+    static sortByNeighbors(rankOrder: number[], graph: MermaidGraph, index: Record<string, any>, position: number[], byPredecessors: boolean) {
+        let sums = new Array(rankOrder.length).fill(0);
+        let counts = new Array(rankOrder.length).fill(0);
+        for (let k = 0; k < rankOrder.length; k++) {
+            let node = rankOrder[k];
+            let sum = 0;
+            let n = 0;
+            for (const edge of graph.edges) {
+                let from = index[edge.from];
+                let to = index[edge.to];
+                let neighbor = -1;
+                if (byPredecessors && to === node) neighbor = from;
+                if (!byPredecessors && from === node) neighbor = to;
+                if (neighbor < 0) continue;
+                sum += position[neighbor];
+                n++;
+            }
+            sums[k] = n === 0 ? position[node] : sum;
+            counts[k] = n === 0 ? 1 : n;
+        }
+        for (let k = 1; k < rankOrder.length; k++) {
+            let node = rankOrder[k];
+            let sum = sums[k];
+            let n = counts[k];
+            let j = k - 1;
+            while (j >= 0 && sums[j] * n > sum * counts[j]) {
+                rankOrder[j + 1] = rankOrder[j];
+                sums[j + 1] = sums[j];
+                counts[j + 1] = counts[j];
+                j--;
+            }
+            rankOrder[j + 1] = node;
+            sums[j + 1] = sum;
+            counts[j + 1] = n;
+        }
+    }
+    static routeFlowEdge(scene: MermaidScene, vertical: boolean, from: MermaidPlacedNode, to: MermaidPlacedNode, edge: MermaidEdge) {
+        let x0 = null;
+        let y0 = null;
+        let x1 = null;
+        let y1 = null;
+        if (vertical) {
+            x0 = from.x + from.w / 2;
+            y0 = from.y + from.h;
+            x1 = to.x + to.w / 2;
+            y1 = to.y;
+        } else {
+            x0 = from.x + from.w;
+            y0 = from.y + from.h / 2;
+            x1 = to.x;
+            y1 = to.y + to.h / 2;
+        }
+        let mid = vertical ? (y0 + y1) / 2 : (x0 + x1) / 2;
+        if (vertical) {
+            MermaidLayout.addCurve(scene, x0, y0, x0, mid, x1, mid, x1, y1);
+            if (edge.arrow) scene.arrows.push(new MermaidArrowhead({ x: x1, y: y1, direction: y1 >= mid ? 0 : 2 }));
+            if (edge.label.length > 0) scene.labels.push(new MermaidLabel({ text: edge.label, x: (x0 + x1) / 2, y: mid }));
+        } else {
+            MermaidLayout.addCurve(scene, x0, y0, mid, y0, mid, y1, x1, y1);
+            if (edge.arrow) scene.arrows.push(new MermaidArrowhead({ x: x1, y: y1, direction: x1 >= mid ? 1 : 3 }));
+            if (edge.label.length > 0) scene.labels.push(new MermaidLabel({ text: edge.label, x: mid, y: (y0 + y1) / 2 }));
+        }
+    }
+    static addCurve(scene: MermaidScene, x0: number, y0: number, c1x: number, c1y: number, c2x: number, c2y: number, x1: number, y1: number) {
+        let sx = MermaidLayout.whole(x0);
+        let sy = MermaidLayout.whole(y0);
+        let k1x = MermaidLayout.whole(c1x);
+        let k1y = MermaidLayout.whole(c1y);
+        let k2x = MermaidLayout.whole(c2x);
+        let k2y = MermaidLayout.whole(c2y);
+        let ex = MermaidLayout.whole(x1);
+        let ey = MermaidLayout.whole(y1);
+        let minX = MermaidLayout.min4(sx, k1x, k2x, ex) - MermaidLayout.curvePad;
+        let maxX = MermaidLayout.max4(sx, k1x, k2x, ex) + MermaidLayout.curvePad;
+        let minY = MermaidLayout.min4(sy, k1y, k2y, ey) - MermaidLayout.curvePad;
+        let maxY = MermaidLayout.max4(sy, k1y, k2y, ey) + MermaidLayout.curvePad;
+        scene.curves.push(new MermaidCurve({ x: minX, y: minY, w: maxX - minX, h: maxY - minY, path: 'M ' + sx + ' ' + sy + ' C ' + k1x + ' ' + k1y + ', ' + k2x + ' ' + k2y + ', ' + ex + ' ' + ey, viewBox: minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY) }));
+    }
+    static whole(v: number) {
+        return (Math.trunc((v < 0 ? v - 0.5 : v + 0.5)) | 0);
+    }
+    static min4(a: number, b: number, c: number, d: number) {
+        let m = a < b ? a : b;
+        if (c < m) m = c;
+        return d < m ? d : m;
+    }
+    static max4(a: number, b: number, c: number, d: number) {
+        let m = a > b ? a : b;
+        if (c > m) m = c;
+        return d > m ? d : m;
+    }
+    static addSegment(scene: MermaidScene, x0: number, y0: number, x1: number, y1: number) {
+        if (x0 === x1 && y0 === y1) return;
+        if (x0 === x1) {
+            let top = y0 < y1 ? y0 : y1;
+            let h = y0 < y1 ? y1 - y0 : y0 - y1;
+            scene.segments.push(new MermaidSegment({ x: x0 - MermaidLayout.lineThickness / 2, y: top, w: MermaidLayout.lineThickness, h: h }));
+            return;
+        }
+        let left = x0 < x1 ? x0 : x1;
+        let w = x0 < x1 ? x1 - x0 : x0 - x1;
+        scene.segments.push(new MermaidSegment({ x: left, y: y0 - MermaidLayout.lineThickness / 2, w: w, h: MermaidLayout.lineThickness }));
+    }
+    static solveSequence(graph: MermaidGraph) {
+        let scene = new MermaidScene();
+        let centers: Record<string, number> = {};
+        let at = MermaidLayout.margin;
+        for (const participant of graph.nodes) {
+            let w = MermaidLayout.labelWidth(participant.label, 28, 80, 220);
+            scene.nodes.push(new MermaidPlacedNode({ node: participant, x: at, y: MermaidLayout.margin, w: w, h: MermaidLayout.nodeHeight }));
+            centers[participant.id] = at + w / 2;
+            at += w + MermaidLayout.participantGap;
+        }
+        let bottom = MermaidLayout.margin + MermaidLayout.lifelineTop + graph.messages.length * MermaidLayout.messageGap + MermaidLayout.margin;
+        for (const placed of scene.nodes) {
+            let x = placed.x + placed.w / 2;
+            MermaidLayout.addSegment(scene, x, placed.y + placed.h, x, bottom - MermaidLayout.margin);
+        }
+        let y = MermaidLayout.margin + MermaidLayout.lifelineTop + MermaidLayout.messageGap / 2;
+        for (const message of graph.messages) {
+            let x0 = centers[message.from];
+            let x1 = centers[message.to];
+            if (x0 === x1) {
+                MermaidLayout.addSegment(scene, x0, y - 12, x0 + 36, y - 12);
+                MermaidLayout.addSegment(scene, x0 + 36, y - 12, x0 + 36, y);
+                MermaidLayout.addSegment(scene, x0 + 36, y, x0, y);
+                scene.arrows.push(new MermaidArrowhead({ x: x0, y: y, direction: 3 }));
+                if (message.label.length > 0) scene.labels.push(new MermaidLabel({ text: message.label, x: x0 + 36 + 12, y: y - 12 }));
+            } else {
+                MermaidLayout.addSegment(scene, x0, y, x1, y);
+                scene.arrows.push(new MermaidArrowhead({ x: x1, y: y, direction: x1 > x0 ? 1 : 3 }));
+                if (message.label.length > 0) scene.labels.push(new MermaidLabel({ text: message.label, x: (x0 + x1) / 2, y: y - 12 }));
+            }
+            y += MermaidLayout.messageGap;
+        }
+        scene.width = at - MermaidLayout.participantGap + MermaidLayout.margin;
+        scene.height = bottom;
+        return scene;
+    }
 }
 

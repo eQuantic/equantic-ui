@@ -24,12 +24,22 @@ export class FormInput extends StatelessComponent {
         if (this.obscure === undefined) this.obscure = false;
         if (this.autofocus === undefined) this.autofocus = false;
         if (this.disabled === undefined) this.disabled = false;
-        this.form = form;this.name = name;this.label = label;this.placeholder = placeholder;this.helper = helper;this.leading = leading;this.size = size;
+        this.form = form;
+        this.name = name;
+        this.label = label;
+        this.placeholder = placeholder;
+        this.helper = helper;
+        this.leading = leading;
+        this.size = size;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(_context: BuildContext) {
-        let field = this.form.field(this.name);if (field == null) return new Box();return new TextInput(field.value, (value: string) => this.form.set(this.name, value), this.label, this.placeholder, this.helper, field.visibleError, this.leading, this.size, { obscure: this.obscure, autofocus: this.autofocus, disabled: this.disabled || this.form.submitting, onFocusChanged: (focused: boolean) => {if (!focused) this.form.touch(this.name);} });
+        let field = this.form.field(this.name);
+        if (field == null) return new Box();
+        return new TextInput(field.value, (value: string) => this.form.set(this.name, value), this.label, this.placeholder, this.helper, field.visibleError, this.leading, this.size, { obscure: this.obscure, autofocus: this.autofocus, disabled: this.disabled || this.form.submitting, onFocusChanged: (focused: boolean) => {
+            if (!focused) this.form.touch(this.name);
+        } });
     }
 
 }

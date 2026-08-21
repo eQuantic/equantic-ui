@@ -226,11 +226,7 @@ public class TypeScriptEmitter
                         {
                             _converter.SetCurrentClass(component.Name);
                             var jsBody = _converter.Convert(ctor.SyntaxNode.Body);
-                            jsBody = jsBody.Trim();
-                            if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
-                            {
-                                jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
-                            }
+                            jsBody = StripJsBraces(jsBody);
                             if (!string.IsNullOrWhiteSpace(jsBody))
                             {
                                 c.Raw(jsBody, ctor.SyntaxNode.Body);
@@ -261,11 +257,7 @@ public class TypeScriptEmitter
 
                             _converter.SetCurrentClass(component.Name);
                             var jsBody = _converter.Convert(component.BuildMethodNode.Body);
-                            jsBody = jsBody.Trim();
-                            if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
-                            {
-                                jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
-                            }
+                            jsBody = StripJsBraces(jsBody);
                             c.Raw(jsBody, component.BuildMethodNode.Body);
                         });
                     }
@@ -421,11 +413,7 @@ public class TypeScriptEmitter
                             // Use robust converter for stateless build body
                             _converter.SetCurrentClass(component.Name);
                             var jsBody = _converter.Convert(component.BuildMethodNode.Body);
-                            jsBody = jsBody.Trim();
-                            if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
-                            {
-                                jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
-                            }
+                            jsBody = StripJsBraces(jsBody);
                             c.Raw(jsBody, component.BuildMethodNode.Body);
                          }
                          else if (component.BuildMethodNode?.ExpressionBody != null)
@@ -1000,12 +988,7 @@ public class TypeScriptEmitter
                    // CodeBuilder Method adds "{ ... }". 
                    // So we need to strip first and last char of jsBody.
                    
-                   jsBody = jsBody.Trim();
-                   if (jsBody.StartsWith("{") && jsBody.EndsWith("}"))
-                   {
-                       jsBody = jsBody.Substring(1, jsBody.Length - 2).Trim();
-                   }
-                   c.Raw(jsBody, component.BuildMethodNode.Body);
+                   c.Raw(StripJsBraces(jsBody), component.BuildMethodNode.Body);
                 }
                 else if (component.BuildMethodNode?.ExpressionBody != null)
                 {
@@ -1106,11 +1089,30 @@ public class TypeScriptEmitter
 
     /// <summary>Unwrap a converted block body (`{ … }`) to its inner statements for inlining into an
     /// accessor / constructor.</summary>
+    /// <summary>
+    /// A block's CONTENTS, for a member whose braces the emitter writes itself. The converter lays
+    /// the block out with its statements one level in; here that level comes off again (the first
+    /// line is trimmed, every later line loses one indentation unit), so the contents start at
+    /// column zero and the builder's own indentation puts them where the member is.
+    /// </summary>
     private static string StripJsBraces(string js)
     {
         js = js.Trim();
         if (js.StartsWith("{") && js.EndsWith("}")) js = js.Substring(1, js.Length - 2).Trim();
-        return js;
+        var lines = js.Split('\n');
+        for (var i = 1; i < lines.Length; i++)
+            if (lines[i].StartsWith("    ", StringComparison.Ordinal)) lines[i] = lines[i][4..];
+        return string.Join("\n", lines);
+    }
+
+    /// <summary>A member body between its braces: empty stays <c>{}</c>; otherwise the contents
+    /// go one level in, one statement per line, the way a method body does.</summary>
+    private static string Braced(string body)
+    {
+        body = body.Trim();
+        if (body.Length == 0) return "{}";
+        var lines = body.Split('\n').Select(line => line.Length == 0 ? line : "    " + line);
+        return "{\n" + string.Join("\n", lines) + "\n}";
     }
 
     /// <summary>
@@ -1132,7 +1134,7 @@ public class TypeScriptEmitter
             if (node.ExpressionBody != null)
             {
                 _converter.SetCurrentClass(component.Name);
-                c.Raw($"{stat}get {name}() {{ {ExpressionBodyReturn(node.ExpressionBody.Expression)} }}", node);
+                c.Raw($"{stat}get {name}() {Braced(ExpressionBodyReturn(node.ExpressionBody.Expression))}", node);
                 continue;
             }
 
@@ -1166,7 +1168,7 @@ public class TypeScriptEmitter
                         var body = getter!.ExpressionBody != null
                             ? ExpressionBodyReturn(getter.ExpressionBody.Expression)
                             : StripJsBraces(_converter.Convert(getter.Body!));
-                        c.Raw($"{stat}get {name}() {{ {body} }}", getter);
+                        c.Raw($"{stat}get {name}() {Braced(body)}", getter);
                     }
                     if (setterHasBody)
                     {
@@ -1174,7 +1176,7 @@ public class TypeScriptEmitter
                         var body = setter!.ExpressionBody != null
                             ? ExpressionBodyStatement(setter.ExpressionBody.Expression)
                             : StripJsBraces(_converter.Convert(setter.Body!));
-                        c.Raw($"{stat}set {name}(value) {{ {body} }}", setter);
+                        c.Raw($"{stat}set {name}(value) {Braced(body)}", setter);
                     }
                     continue;
                 }
@@ -1293,7 +1295,7 @@ public class TypeScriptEmitter
                 var propertyType = DeclaredType(p.Type);
                 if (p.ExpressionBody != null)
                 {
-                    c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {{ {ExpressionBodyReturn(p.ExpressionBody.Expression)} }}", p);
+                    c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {Braced(ExpressionBodyReturn(p.ExpressionBody.Expression))}", p);
                 }
                 else if (p.AccessorList != null)
                 {
@@ -1314,9 +1316,9 @@ public class TypeScriptEmitter
 
                     var g = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
                     if (g?.ExpressionBody != null)
-                        c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {{ {ExpressionBodyReturn(g.ExpressionBody.Expression)} }}", g);
+                        c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {Braced(ExpressionBodyReturn(g.ExpressionBody.Expression))}", g);
                     else if (g?.Body != null)
-                        c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {{ {StripJsBraces(_converter.Convert(g.Body))} }}", g);
+                        c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {Braced(StripJsBraces(_converter.Convert(g.Body)))}", g);
                     else if (p.Initializer != null)
                         c.Field(pn, DeclaredType(p.Type),
                             _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()), p,
@@ -1352,9 +1354,9 @@ public class TypeScriptEmitter
                     var setter = p.AccessorList.Accessors
                         .FirstOrDefault(a => a.Keyword.Text is "set" or "init");
                     if (setter?.ExpressionBody != null)
-                        c.Raw($"{qualifier}set {pn}(value{Annotation(DeclaredType(p.Type))}) {{ {ExpressionBodyStatement(setter.ExpressionBody.Expression)} }}", setter);
+                        c.Raw($"{qualifier}set {pn}(value{Annotation(DeclaredType(p.Type))}) {Braced(ExpressionBodyStatement(setter.ExpressionBody.Expression))}", setter);
                     else if (setter?.Body != null)
-                        c.Raw($"{qualifier}set {pn}(value{Annotation(DeclaredType(p.Type))}) {{ {StripJsBraces(_converter.Convert(setter.Body))} }}", setter);
+                        c.Raw($"{qualifier}set {pn}(value{Annotation(DeclaredType(p.Type))}) {Braced(StripJsBraces(_converter.Convert(setter.Body)))}", setter);
                 }
             }
             // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
@@ -1408,7 +1410,7 @@ public class TypeScriptEmitter
                     _converter.SetIteratorBuffer(isIterator ? IteratorBufferName : null);
                     mbody = StripJsBraces(_converter.Convert(m.Body));
                     _converter.SetIteratorBuffer(null);
-                    if (isIterator) mbody = StripJsBraces(WrapIterator($"{{ {mbody} }}"));
+                    if (isIterator) mbody = WrapIterator(mbody);
                 }
                 else if (m.ExpressionBody != null) mbody = ExpressionBodyReturn(m.ExpressionBody.Expression);
                 else continue;
@@ -1416,7 +1418,7 @@ public class TypeScriptEmitter
                 mbody = OutParameters.HoistedLocals(m.Body ?? (SyntaxNode?)m.ExpressionBody) + mbody;
                 if (byReference.Count > 0) mbody = OutParameters.WrapBody(mbody, byReference, isAsync);
                 c.Raw($"{(m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")}"
-                    + $"{(isAsync ? "async " : "")}{mn}{generics}({pars}) {{ {mbody} }}", m);
+                    + $"{(isAsync ? "async " : "")}{mn}{generics}({pars}) {Braced(mbody)}", m);
             }
             EmitExtensionBlocks(cls, c);
     }
@@ -1461,7 +1463,7 @@ public class TypeScriptEmitter
                         }
                         var text = body is not null ? ExpressionBodyReturn(body) : StripJsBraces(_converter.Convert(getterBlock!));
                         c.Raw($"static {property.Identifier.Text.ToCamelCase()}({WithReceiver("")})"
-                            + $"{Annotation(DeclaredType(property.Type))} {{ {text} }}", property);
+                            + $"{Annotation(DeclaredType(property.Type))} {Braced(text)}", property);
                         ReportExtensionSetter(property.AccessorList?.Accessors, property.Identifier.Text);
                         break;
                     }
@@ -1480,7 +1482,7 @@ public class TypeScriptEmitter
                             break;
                         }
                         var text = body is not null ? ExpressionBodyReturn(body) : StripJsBraces(_converter.Convert(getterBlock!));
-                        c.Raw($"static item({WithReceiver(pars)}){Annotation(DeclaredType(indexer.Type))} {{ {text} }}", indexer);
+                        c.Raw($"static item({WithReceiver(pars)}){Annotation(DeclaredType(indexer.Type))} {Braced(text)}", indexer);
                         ReportExtensionSetter(indexer.AccessorList?.Accessors, "this[]");
                         break;
                     }
@@ -1504,7 +1506,7 @@ public class TypeScriptEmitter
                         else if (method.ExpressionBody != null) body = ExpressionBodyReturn(method.ExpressionBody.Expression);
                         else break;
                         body = OutParameters.HoistedLocals(method.Body ?? (SyntaxNode?)method.ExpressionBody) + body;
-                        c.Raw($"static {(isAsync ? "async " : "")}{method.Identifier.Text.ToCamelCase()}({WithReceiver(pars)}) {{ {body} }}", method);
+                        c.Raw($"static {(isAsync ? "async " : "")}{method.Identifier.Text.ToCamelCase()}({WithReceiver(pars)}) {Braced(body)}", method);
                         break;
                     }
 
@@ -1574,7 +1576,7 @@ public class TypeScriptEmitter
         var assign = " if (props && typeof props === 'object') Object.assign(this, props);";
         // A derived class must call super() before it touches `this`.
         var superCall = HasEmittedBase(cls) ? "super(); " : "";
-        c.Raw($"constructor({parameters}{config}) {{ {superCall}{initialisers}{body}{assign} }}",
+        c.Raw($"constructor({parameters}{config}) {Braced(superCall + initialisers + body + assign)}",
             ctor ?? (SyntaxNode)cls);
     }
 
@@ -1603,11 +1605,9 @@ public class TypeScriptEmitter
     /// Wraps a converted iterator body so it declares the buffer and returns it. The yields inside
     /// were already lowered to <c>_seq.push(…)</c>.
     /// </summary>
-    private static string WrapIterator(string jsBody)
-    {
-        var inner = StripJsBraces(jsBody);
-        return $"{{ const {IteratorBufferName} = []; {inner} return {IteratorBufferName}; }}";
-    }
+    /// <summary>An iterator's body fills a buffer and returns it — contents in, contents out.</summary>
+    private static string WrapIterator(string contents) =>
+        $"const {IteratorBufferName} = [];\n{contents}\nreturn {IteratorBufferName};";
 
     /// <summary>
     /// The TS annotation for a declared type, asking the semantic model what KIND of thing it is
@@ -1917,7 +1917,7 @@ public class TypeScriptEmitter
                 _converter.SetIteratorBuffer(isIterator ? IteratorBufferName : null);
                 jsBody = _converter.Convert(method.SyntaxNode.Body);
                 _converter.SetIteratorBuffer(null);
-                if (isIterator) jsBody = WrapIterator(jsBody);
+                if (isIterator) jsBody = Braced(WrapIterator(StripJsBraces(jsBody)));
             }
             else if (method.SyntaxNode.ExpressionBody != null)
             {
@@ -1925,7 +1925,7 @@ public class TypeScriptEmitter
                 // An expression body never reaches ReturnStatementStrategy, so nothing hoisted the
                 // `let` for a pattern variable bound in it — the converted condition assigned an
                 // undeclared name, which in a module (strict mode) throws ReferenceError.
-                jsBody = $"{{ {ExpressionBodyReturn(method.SyntaxNode.ExpressionBody.Expression)} }}";
+                jsBody = $"{Braced(ExpressionBodyReturn(method.SyntaxNode.ExpressionBody.Expression))}";
             }
             else
             {
@@ -1933,11 +1933,7 @@ public class TypeScriptEmitter
             }
             
             c.Method(methodName, parameters, isAsync, () => {
-                var body = jsBody.Trim();
-                if (body.StartsWith("{") && body.EndsWith("}"))
-                {
-                    body = body.Substring(1, body.Length - 2).Trim();
-                }
+                var body = StripJsBraces(jsBody);
                 body = OutParameters.HoistedLocals(method.SyntaxNode.Body
                     ?? (SyntaxNode?)method.SyntaxNode.ExpressionBody) + body;
                 if (byReference.Count > 0) body = OutParameters.WrapBody(body, byReference, isAsync);

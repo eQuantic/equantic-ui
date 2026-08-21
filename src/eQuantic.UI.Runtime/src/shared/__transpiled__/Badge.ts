@@ -18,12 +18,23 @@ export class Badge extends StatelessComponent {
         if (this.neutral === undefined) this.neutral = false;
         if (this.dot === undefined) this.dot = false;
         if (this.ring === undefined) this.ring = false;
-        this.count = count;this.max = max;this.variant = variant;
+        this.count = count;
+        this.max = max;
+        this.variant = variant;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let fill = this.neutral ? theme.surfaceSubtle : theme.colors(this.variant).base;let textColor = this.neutral ? theme.textSecondary : theme.colors(this.variant).onBase;if (this.dot) {return new Box(new BoxStyle({ width: this.ring ? 12 : 8, height: this.ring ? 12 : 8, background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.ring ? 2 : 0, borderColor: theme.surface }));}let label = this.count > this.max ? `${this.max}+` : `${this.count}`;let text = new Text(label, 'caption', textColor, 1, 'start', false, false, null, { styleOverride: new TypeStyle(10, 12, 'bold', 0, 1.3) });let content = text.centered();return new Box(new BoxStyle({ height: this.ring ? 20 : 16, minWidth: this.ring ? 20 : 16, padding: EdgeInsets.symmetric(4, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.ring ? 2 : 0, borderColor: theme.surface }), content);
+        let theme = context.theme;
+        let fill = this.neutral ? theme.surfaceSubtle : theme.colors(this.variant).base;
+        let textColor = this.neutral ? theme.textSecondary : theme.colors(this.variant).onBase;
+        if (this.dot) {
+            return new Box(new BoxStyle({ width: this.ring ? 12 : 8, height: this.ring ? 12 : 8, background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.ring ? 2 : 0, borderColor: theme.surface }));
+        }
+        let label = this.count > this.max ? `${this.max}+` : `${this.count}`;
+        let text = new Text(label, 'caption', textColor, 1, 'start', false, false, null, { styleOverride: new TypeStyle(10, 12, 'bold', 0, 1.3) });
+        let content = text.centered();
+        return new Box(new BoxStyle({ height: this.ring ? 20 : 16, minWidth: this.ring ? 20 : 16, padding: EdgeInsets.symmetric(4, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.ring ? 2 : 0, borderColor: theme.surface }), content);
     }
 
     static asDot(variant: VariantValue = 'destructive') {
@@ -31,7 +42,10 @@ export class Badge extends StatelessComponent {
     }
 
     static over(content: VisualNode, count: number) {
-        let stack = new Stack();stack.add(content);stack.add(new Positioned(new Badge(count, 99, 'destructive', { ring: true }), -4, -8));return stack;
+        let stack = new Stack();
+        stack.add(content);
+        stack.add(new Positioned(new Badge(count, 99, 'destructive', { ring: true }), -4, -8));
+        return stack;
     }
 
 }

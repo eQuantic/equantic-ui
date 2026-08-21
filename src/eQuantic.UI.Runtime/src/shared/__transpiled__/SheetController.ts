@@ -1,51 +1,303 @@
 import { CellRef, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetHistory, SheetMotionValue, SheetRange, TsvCodec } from "@equantic/runtime";
 export class SheetController {
-    constructor(rows: number = 1000, cols: number = 26, props?: any) { this._selection = new SheetRange(new CellRef(0, 0)); this._active = new CellRef(0, 0); this.document = new SheetDocument(rows, cols); if (props && typeof props === 'object') Object.assign(this, props); }
+    constructor(rows: number = 1000, cols: number = 26, props?: any) {
+        this._selection = new SheetRange(new CellRef(0, 0)); this._active = new CellRef(0, 0); this.document = new SheetDocument(rows, cols); if (props && typeof props === 'object') Object.assign(this, props);
+    }
     _selection: SheetRange;
     _active: CellRef;
     declare document: SheetDocument;
     history: SheetHistory = new SheetHistory();
     declare changed: ((sheetEdit: SheetEdit) => void) | null;
-    get selection(): SheetRange { return this._selection; }
-    set selection(value: SheetRange) { this._selection = new SheetRange(this.document.clamp(value.anchor), this.document.clamp(value.focus));this._active = this._selection.focus; }
-    get activeCell(): CellRef { return this._active; }
+    get selection(): SheetRange {
+        return this._selection;
+    }
+    set selection(value: SheetRange) {
+        this._selection = new SheetRange(this.document.clamp(value.anchor), this.document.clamp(value.focus));
+        this._active = this._selection.focus;
+    }
+    get activeCell(): CellRef {
+        return this._active;
+    }
     editing: boolean = false;
     draft: string = '';
     declare fillSource: SheetRange | null;
     declare fillTarget: SheetRange | null;
-    get filling(): boolean { return !(this.fillSource == null); }
-    move(dRow: number, dCol: number, motion: SheetMotionValue = 'cell', extend: boolean = false) { let from = this.activeCell;let landed = (() => { const _s = motion; if (_s === 'dataEdge') return this.dataEdge(from, dRow, dCol); if (_s === 'rowBoundary') return new CellRef(from.row, dCol < 0 ? 0 : this.document.cols - 1); if (_s === 'sheetBoundary') return dRow < 0 || dCol < 0 ? new CellRef(0, 0) : new CellRef(this.document.rows - 1, this.document.cols - 1); return new CellRef(from.row + dRow, from.col + dCol); })();landed = this.document.clamp(landed);this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);this._active = landed; }
-    dataEdge(from: CellRef, dRow: number, dCol: number) { let cell = from;let next = new CellRef(cell.row + dRow, cell.col + dCol);if (!this.inBounds(next)) return cell;if (this.document.hasValue(cell) && this.document.hasValue(next)) {while (this.inBounds(next) && this.document.hasValue(next)) {cell = next;next = new CellRef(cell.row + dRow, cell.col + dCol);}return cell;}cell = next;while (this.inBounds(cell) && !this.document.hasValue(cell)) cell = new CellRef(cell.row + dRow, cell.col + dCol);return this.inBounds(cell) ? cell : this.edge(from, dRow, dCol); }
-    edge(from: CellRef, dRow: number, dCol: number) { return new CellRef(dRow === 0 ? from.row : dRow < 0 ? 0 : this.document.rows - 1, dCol === 0 ? from.col : dCol < 0 ? 0 : this.document.cols - 1); }
-    inBounds(cell: CellRef) { return cell.row >= 0 && cell.row < this.document.rows && cell.col >= 0 && cell.col < this.document.cols; }
-    step(dRow: number, dCol: number) { if (this._selection.isSingleCell) {this.move(dRow, dCol);return;}let range = this._selection;let row = this._active.row;let col = this._active.col;if (dCol !== 0) {col += dCol;if (col > range.rightCol) {col = range.leftCol;row = row === range.bottomRow ? range.topRow : row + 1;} else if (col < range.leftCol) {col = range.rightCol;row = row === range.topRow ? range.bottomRow : row - 1;}} else {row += dRow;if (row > range.bottomRow) {row = range.topRow;col = col === range.rightCol ? range.leftCol : col + 1;} else if (row < range.topRow) {row = range.bottomRow;col = col === range.leftCol ? range.rightCol : col - 1;}}this._active = new CellRef(row, col); }
-    selectRows(fromRow: number, toRow: number) { this._selection = new SheetRange(new CellRef(fromRow, 0), new CellRef(toRow, this.document.cols - 1));this._active = new CellRef(fromRow, 0); }
-    selectCols(fromCol: number, toCol: number) { this._selection = new SheetRange(new CellRef(0, fromCol), new CellRef(this.document.rows - 1, toCol));this._active = new CellRef(0, fromCol); }
-    selectAll() { this._selection = new SheetRange(new CellRef(0, 0), new CellRef(this.document.rows - 1, this.document.cols - 1));this._active = new CellRef(0, 0); }
-    selectTo(cell: CellRef) { return this._selection = new SheetRange(this._selection.anchor, this.document.clamp(cell)); }
-    beginEdit(seed: string) { this.editing = true;this.draft = seed; }
-    typeIntoDraft(text: string) { return this.draft += text; }
-    eraseFromDraft() { if (this.draft.length > 0) this.draft = this.draft.slice(0, -1); }
-    commitEdit() { if (!this.editing) return false;let changed = this.setCell(this.activeCell, this.draft);this.editing = false;this.draft = '';return changed; }
-    cancelEdit() { this.editing = false;this.draft = ''; }
-    setCell(cell: CellRef, value: string) { cell = this.document.clamp(cell);let old = this.document.getCell(cell);if (old === value) return false;let edit = new SheetEdit({ kind: 'setCells', before: [new SheetCellSnapshot(cell, old)], after: [new SheetCellSnapshot(cell, value)], selectionBefore: this._selection, selectionAfter: this._selection });this.document.setCell(cell, value);this.commit(edit);return true; }
-    clearSelection() { let edit = new SheetEdit({ kind: 'setCells', selectionBefore: this._selection, selectionAfter: this._selection });for (let row = this._selection.topRow; row <= this._selection.bottomRow; row++) {for (let col = this._selection.leftCol; col <= this._selection.rightCol; col++) {let cell = new CellRef(row, col);let old = this.document.getCell(cell);if (old.length === 0) continue;edit.before.push(new SheetCellSnapshot(cell, old));edit.after.push(new SheetCellSnapshot(cell, ''));this.document.setCell(cell, '');}}if (edit.before.length === 0) return false;this.commit(edit);return true; }
-    insert(axis: SheetAxisValue, at: number, count: number = 1) { if (count < 1) return;let selectionBefore = this._selection;if (axis === 'rows') this.document.shiftRows(at, count); else this.document.shiftCols(at, count);this.commit(new SheetEdit({ kind: axis === 'rows' ? 'insertRows' : 'insertCols', at: at, count: count, selectionBefore: selectionBefore, selectionAfter: this._selection })); }
-    delete(axis: SheetAxisValue, at: number, count: number = 1) { if (count < 1) return;let selectionBefore = this._selection;let removed = axis === 'rows' ? this.document.shiftRows(at, -count) : this.document.shiftCols(at, -count);this.selection = this._selection;this.commit(new SheetEdit({ kind: axis === 'rows' ? 'deleteRows' : 'deleteCols', at: at, count: count, removed: removed, selectionBefore: selectionBefore, selectionAfter: this._selection })); }
-    resize(axis: SheetAxisValue, index: number, size: number) { let old = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index);if (Math.abs(old - size) < 0.01) return;if (axis === 'rows') this.document.setRowHeight(index, size); else this.document.setColWidth(index, size);this.commit(new SheetEdit({ kind: axis === 'rows' ? 'resizeRow' : 'resizeCol', at: index, oldSize: old, newSize: axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index), selectionBefore: this._selection, selectionAfter: this._selection })); }
-    copyTsv() { return TsvCodec.serialize(this.document, this._selection); }
-    pasteTsv(text: string) { let grid = TsvCodec.parse(text);if (grid.length === 0) return false;let origin = this._selection.topLeft;let maxCols = 0;for (const line of grid) maxCols = Math.max(maxCols, line.length);if (origin.row + grid.length > this.document.rows) this.document.rows = origin.row + grid.length;if (origin.col + maxCols > this.document.cols) this.document.cols = Math.min(origin.col + maxCols, 16384);let edit = new SheetEdit({ kind: 'setCells', selectionBefore: this._selection });for (let r = 0; r < grid.length; r++) {let line = grid[r];for (let c = 0; c < line.length; c++) {let cell = new CellRef(origin.row + r, origin.col + c);if (!this.inBounds(cell)) continue;let old = this.document.getCell(cell);if (old === line[c]) continue;edit.before.push(new SheetCellSnapshot(cell, old));edit.after.push(new SheetCellSnapshot(cell, line[c]));this.document.setCell(cell, line[c]);}}this._selection = new SheetRange(origin, this.document.clamp(new CellRef(origin.row + grid.length - 1, origin.col + maxCols - 1)));if (edit.before.length === 0) return false;edit.selectionAfter = this._selection;this.commit(edit);return true; }
-    beginFill() { this.fillSource = this._selection;this.fillTarget = null; }
-    updateFill(at: CellRef) { let source: any; if (!((source = this.fillSource) != null)) return;at = this.document.clamp(at);let dRow = at.row < source.topRow ? at.row - source.topRow : at.row > source.bottomRow ? at.row - source.bottomRow : 0;let dCol = at.col < source.leftCol ? at.col - source.leftCol : at.col > source.rightCol ? at.col - source.rightCol : 0;if (dRow === 0 && dCol === 0) {this.fillTarget = null;return;}this.fillTarget = Math.abs(dRow) >= Math.abs(dCol) ? dRow > 0 ? new SheetRange(new CellRef(source.bottomRow + 1, source.leftCol), new CellRef(at.row, source.rightCol)) : new SheetRange(new CellRef(at.row, source.leftCol), new CellRef(source.topRow - 1, source.rightCol)) : dCol > 0 ? new SheetRange(new CellRef(source.topRow, source.rightCol + 1), new CellRef(source.bottomRow, at.col)) : new SheetRange(new CellRef(source.topRow, at.col), new CellRef(source.bottomRow, source.leftCol - 1)); }
-    commitFill() { let source = this.fillSource;let target = this.fillTarget;this.fillSource = null;this.fillTarget = null;if (source == null || target == null) return false;let selectionBefore = this._selection;this._selection = new SheetRange(new CellRef(Math.min(source.topRow, target.topRow), Math.min(source.leftCol, target.leftCol)), new CellRef(Math.max(source.bottomRow, target.bottomRow), Math.max(source.rightCol, target.rightCol)));this._active = source.topLeft;return this.fill(source, target, selectionBefore); }
-    cancelFill() { this.fillSource = null;this.fillTarget = null; }
-    fill(source: SheetRange, target: SheetRange, selectionBefore: SheetRange | null = null) { let edit = new SheetEdit({ kind: 'setCells', selectionBefore: selectionBefore ?? this._selection });let sourceRows = source.bottomRow - source.topRow + 1;let sourceCols = source.rightCol - source.leftCol + 1;for (let row = target.topRow; row <= target.bottomRow; row++) {for (let col = target.leftCol; col <= target.rightCol; col++) {let cell = new CellRef(row, col);if (!this.inBounds(cell) || source.contains(cell)) continue;let from = new CellRef(source.topRow + SheetController.mod(row - source.topRow, sourceRows), source.leftCol + SheetController.mod(col - source.leftCol, sourceCols));let value = this.document.getCell(from);let old = this.document.getCell(cell);if (old === value) continue;edit.before.push(new SheetCellSnapshot(cell, old));edit.after.push(new SheetCellSnapshot(cell, value));this.document.setCell(cell, value);}}if (edit.before.length === 0) return false;edit.selectionAfter = this._selection;this.commit(edit);return true; }
-    static mod(value: number, size: number) { return (value % size + size) % size; }
-    fillDown() { let selection = this._selection;if (selection.topRow === selection.bottomRow) {if (selection.topRow === 0) return false;let above = new SheetRange(new CellRef(selection.topRow - 1, selection.leftCol), new CellRef(selection.topRow - 1, selection.rightCol));return this.fill(above, selection);}let first = new SheetRange(new CellRef(selection.topRow, selection.leftCol), new CellRef(selection.topRow, selection.rightCol));return this.fill(first, selection); }
-    fillRight() { let selection = this._selection;if (selection.leftCol === selection.rightCol) {if (selection.leftCol === 0) return false;let left = new SheetRange(new CellRef(selection.topRow, selection.leftCol - 1), new CellRef(selection.bottomRow, selection.leftCol - 1));return this.fill(left, selection);}let first = new SheetRange(new CellRef(selection.topRow, selection.leftCol), new CellRef(selection.bottomRow, selection.leftCol));return this.fill(first, selection); }
-    undo() { let edit = this.history.popUndo();if (edit == null) return false;this.apply(edit, false);this._selection = edit.selectionBefore;this._active = this._selection.focus;this.changed?.(edit);return true; }
-    redo() { let edit = this.history.popRedo();if (edit == null) return false;this.apply(edit, true);this._selection = edit.selectionAfter;this._active = this._selection.focus;this.changed?.(edit);return true; }
-    apply(edit: SheetEdit, forward: boolean) { switch (edit.kind) { case 'setCells': let cells = forward ? edit.after : edit.before; for (const snapshot of cells) this.document.setCell(snapshot.cell, snapshot.value); break; case 'insertRows': if (forward) this.document.shiftRows(edit.at, edit.count); else this.document.shiftRows(edit.at, -edit.count); break; case 'deleteRows': if (forward) this.document.shiftRows(edit.at, -edit.count); else {this.document.shiftRows(edit.at, edit.count);for (const snapshot of edit.removed) this.document.setCell(snapshot.cell, snapshot.value);} break; case 'insertCols': if (forward) this.document.shiftCols(edit.at, edit.count); else this.document.shiftCols(edit.at, -edit.count); break; case 'deleteCols': if (forward) this.document.shiftCols(edit.at, -edit.count); else {this.document.shiftCols(edit.at, edit.count);for (const snapshot of edit.removed) this.document.setCell(snapshot.cell, snapshot.value);} break; case 'resizeRow': this.document.setRowHeight(edit.at, forward ? edit.newSize : edit.oldSize); break; case 'resizeCol': this.document.setColWidth(edit.at, forward ? edit.newSize : edit.oldSize); break; } }
-    commit(edit: SheetEdit) { this.history.push(edit);this.changed?.(edit); }
+    get filling(): boolean {
+        return !(this.fillSource == null);
+    }
+    move(dRow: number, dCol: number, motion: SheetMotionValue = 'cell', extend: boolean = false) {
+        let from = this.activeCell;
+        let landed = (() => { const _s = motion; if (_s === 'dataEdge') return this.dataEdge(from, dRow, dCol); if (_s === 'rowBoundary') return new CellRef(from.row, dCol < 0 ? 0 : this.document.cols - 1); if (_s === 'sheetBoundary') return dRow < 0 || dCol < 0 ? new CellRef(0, 0) : new CellRef(this.document.rows - 1, this.document.cols - 1); return new CellRef(from.row + dRow, from.col + dCol); })();
+        landed = this.document.clamp(landed);
+        this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
+        this._active = landed;
+    }
+    dataEdge(from: CellRef, dRow: number, dCol: number) {
+        let cell = from;
+        let next = new CellRef(cell.row + dRow, cell.col + dCol);
+        if (!this.inBounds(next)) return cell;
+        if (this.document.hasValue(cell) && this.document.hasValue(next)) {
+            while (this.inBounds(next) && this.document.hasValue(next)) {
+                cell = next;
+                next = new CellRef(cell.row + dRow, cell.col + dCol);
+            }
+            return cell;
+        }
+        cell = next;
+        while (this.inBounds(cell) && !this.document.hasValue(cell)) cell = new CellRef(cell.row + dRow, cell.col + dCol);
+        return this.inBounds(cell) ? cell : this.edge(from, dRow, dCol);
+    }
+    edge(from: CellRef, dRow: number, dCol: number) {
+        return new CellRef(dRow === 0 ? from.row : dRow < 0 ? 0 : this.document.rows - 1, dCol === 0 ? from.col : dCol < 0 ? 0 : this.document.cols - 1);
+    }
+    inBounds(cell: CellRef) {
+        return cell.row >= 0 && cell.row < this.document.rows && cell.col >= 0 && cell.col < this.document.cols;
+    }
+    step(dRow: number, dCol: number) {
+        if (this._selection.isSingleCell) {
+            this.move(dRow, dCol);
+            return;
+        }
+        let range = this._selection;
+        let row = this._active.row;
+        let col = this._active.col;
+        if (dCol !== 0) {
+            col += dCol;
+            if (col > range.rightCol) {
+                col = range.leftCol;
+                row = row === range.bottomRow ? range.topRow : row + 1;
+            } else if (col < range.leftCol) {
+                col = range.rightCol;
+                row = row === range.topRow ? range.bottomRow : row - 1;
+            }
+        } else {
+            row += dRow;
+            if (row > range.bottomRow) {
+                row = range.topRow;
+                col = col === range.rightCol ? range.leftCol : col + 1;
+            } else if (row < range.topRow) {
+                row = range.bottomRow;
+                col = col === range.leftCol ? range.rightCol : col - 1;
+            }
+        }
+        this._active = new CellRef(row, col);
+    }
+    selectRows(fromRow: number, toRow: number) {
+        this._selection = new SheetRange(new CellRef(fromRow, 0), new CellRef(toRow, this.document.cols - 1));
+        this._active = new CellRef(fromRow, 0);
+    }
+    selectCols(fromCol: number, toCol: number) {
+        this._selection = new SheetRange(new CellRef(0, fromCol), new CellRef(this.document.rows - 1, toCol));
+        this._active = new CellRef(0, fromCol);
+    }
+    selectAll() {
+        this._selection = new SheetRange(new CellRef(0, 0), new CellRef(this.document.rows - 1, this.document.cols - 1));
+        this._active = new CellRef(0, 0);
+    }
+    selectTo(cell: CellRef) {
+        return this._selection = new SheetRange(this._selection.anchor, this.document.clamp(cell));
+    }
+    beginEdit(seed: string) {
+        this.editing = true;
+        this.draft = seed;
+    }
+    typeIntoDraft(text: string) {
+        return this.draft += text;
+    }
+    eraseFromDraft() {
+        if (this.draft.length > 0) this.draft = this.draft.slice(0, -1);
+    }
+    commitEdit() {
+        if (!this.editing) return false;
+        let changed = this.setCell(this.activeCell, this.draft);
+        this.editing = false;
+        this.draft = '';
+        return changed;
+    }
+    cancelEdit() {
+        this.editing = false;
+        this.draft = '';
+    }
+    setCell(cell: CellRef, value: string) {
+        cell = this.document.clamp(cell);
+        let old = this.document.getCell(cell);
+        if (old === value) return false;
+        let edit = new SheetEdit({ kind: 'setCells', before: [new SheetCellSnapshot(cell, old)], after: [new SheetCellSnapshot(cell, value)], selectionBefore: this._selection, selectionAfter: this._selection });
+        this.document.setCell(cell, value);
+        this.commit(edit);
+        return true;
+    }
+    clearSelection() {
+        let edit = new SheetEdit({ kind: 'setCells', selectionBefore: this._selection, selectionAfter: this._selection });
+        for (let row = this._selection.topRow; row <= this._selection.bottomRow; row++) {
+            for (let col = this._selection.leftCol; col <= this._selection.rightCol; col++) {
+                let cell = new CellRef(row, col);
+                let old = this.document.getCell(cell);
+                if (old.length === 0) continue;
+                edit.before.push(new SheetCellSnapshot(cell, old));
+                edit.after.push(new SheetCellSnapshot(cell, ''));
+                this.document.setCell(cell, '');
+            }
+        }
+        if (edit.before.length === 0) return false;
+        this.commit(edit);
+        return true;
+    }
+    insert(axis: SheetAxisValue, at: number, count: number = 1) {
+        if (count < 1) return;
+        let selectionBefore = this._selection;
+        if (axis === 'rows') this.document.shiftRows(at, count); else this.document.shiftCols(at, count);
+        this.commit(new SheetEdit({ kind: axis === 'rows' ? 'insertRows' : 'insertCols', at: at, count: count, selectionBefore: selectionBefore, selectionAfter: this._selection }));
+    }
+    delete(axis: SheetAxisValue, at: number, count: number = 1) {
+        if (count < 1) return;
+        let selectionBefore = this._selection;
+        let removed = axis === 'rows' ? this.document.shiftRows(at, -count) : this.document.shiftCols(at, -count);
+        this.selection = this._selection;
+        this.commit(new SheetEdit({ kind: axis === 'rows' ? 'deleteRows' : 'deleteCols', at: at, count: count, removed: removed, selectionBefore: selectionBefore, selectionAfter: this._selection }));
+    }
+    resize(axis: SheetAxisValue, index: number, size: number) {
+        let old = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index);
+        if (Math.abs(old - size) < 0.01) return;
+        if (axis === 'rows') this.document.setRowHeight(index, size); else this.document.setColWidth(index, size);
+        this.commit(new SheetEdit({ kind: axis === 'rows' ? 'resizeRow' : 'resizeCol', at: index, oldSize: old, newSize: axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index), selectionBefore: this._selection, selectionAfter: this._selection }));
+    }
+    copyTsv() {
+        return TsvCodec.serialize(this.document, this._selection);
+    }
+    pasteTsv(text: string) {
+        let grid = TsvCodec.parse(text);
+        if (grid.length === 0) return false;
+        let origin = this._selection.topLeft;
+        let maxCols = 0;
+        for (const line of grid) maxCols = Math.max(maxCols, line.length);
+        if (origin.row + grid.length > this.document.rows) this.document.rows = origin.row + grid.length;
+        if (origin.col + maxCols > this.document.cols) this.document.cols = Math.min(origin.col + maxCols, 16384);
+        let edit = new SheetEdit({ kind: 'setCells', selectionBefore: this._selection });
+        for (let r = 0; r < grid.length; r++) {
+            let line = grid[r];
+            for (let c = 0; c < line.length; c++) {
+                let cell = new CellRef(origin.row + r, origin.col + c);
+                if (!this.inBounds(cell)) continue;
+                let old = this.document.getCell(cell);
+                if (old === line[c]) continue;
+                edit.before.push(new SheetCellSnapshot(cell, old));
+                edit.after.push(new SheetCellSnapshot(cell, line[c]));
+                this.document.setCell(cell, line[c]);
+            }
+        }
+        this._selection = new SheetRange(origin, this.document.clamp(new CellRef(origin.row + grid.length - 1, origin.col + maxCols - 1)));
+        if (edit.before.length === 0) return false;
+        edit.selectionAfter = this._selection;
+        this.commit(edit);
+        return true;
+    }
+    beginFill() {
+        this.fillSource = this._selection;
+        this.fillTarget = null;
+    }
+    updateFill(at: CellRef) {
+        let source: any; 
+        if (!((source = this.fillSource) != null)) return;
+        at = this.document.clamp(at);
+        let dRow = at.row < source.topRow ? at.row - source.topRow : at.row > source.bottomRow ? at.row - source.bottomRow : 0;
+        let dCol = at.col < source.leftCol ? at.col - source.leftCol : at.col > source.rightCol ? at.col - source.rightCol : 0;
+        if (dRow === 0 && dCol === 0) {
+            this.fillTarget = null;
+            return;
+        }
+        this.fillTarget = Math.abs(dRow) >= Math.abs(dCol) ? dRow > 0 ? new SheetRange(new CellRef(source.bottomRow + 1, source.leftCol), new CellRef(at.row, source.rightCol)) : new SheetRange(new CellRef(at.row, source.leftCol), new CellRef(source.topRow - 1, source.rightCol)) : dCol > 0 ? new SheetRange(new CellRef(source.topRow, source.rightCol + 1), new CellRef(source.bottomRow, at.col)) : new SheetRange(new CellRef(source.topRow, at.col), new CellRef(source.bottomRow, source.leftCol - 1));
+    }
+    commitFill() {
+        let source = this.fillSource;
+        let target = this.fillTarget;
+        this.fillSource = null;
+        this.fillTarget = null;
+        if (source == null || target == null) return false;
+        let selectionBefore = this._selection;
+        this._selection = new SheetRange(new CellRef(Math.min(source.topRow, target.topRow), Math.min(source.leftCol, target.leftCol)), new CellRef(Math.max(source.bottomRow, target.bottomRow), Math.max(source.rightCol, target.rightCol)));
+        this._active = source.topLeft;
+        return this.fill(source, target, selectionBefore);
+    }
+    cancelFill() {
+        this.fillSource = null;
+        this.fillTarget = null;
+    }
+    fill(source: SheetRange, target: SheetRange, selectionBefore: SheetRange | null = null) {
+        let edit = new SheetEdit({ kind: 'setCells', selectionBefore: selectionBefore ?? this._selection });
+        let sourceRows = source.bottomRow - source.topRow + 1;
+        let sourceCols = source.rightCol - source.leftCol + 1;
+        for (let row = target.topRow; row <= target.bottomRow; row++) {
+            for (let col = target.leftCol; col <= target.rightCol; col++) {
+                let cell = new CellRef(row, col);
+                if (!this.inBounds(cell) || source.contains(cell)) continue;
+                let from = new CellRef(source.topRow + SheetController.mod(row - source.topRow, sourceRows), source.leftCol + SheetController.mod(col - source.leftCol, sourceCols));
+                let value = this.document.getCell(from);
+                let old = this.document.getCell(cell);
+                if (old === value) continue;
+                edit.before.push(new SheetCellSnapshot(cell, old));
+                edit.after.push(new SheetCellSnapshot(cell, value));
+                this.document.setCell(cell, value);
+            }
+        }
+        if (edit.before.length === 0) return false;
+        edit.selectionAfter = this._selection;
+        this.commit(edit);
+        return true;
+    }
+    static mod(value: number, size: number) {
+        return (value % size + size) % size;
+    }
+    fillDown() {
+        let selection = this._selection;
+        if (selection.topRow === selection.bottomRow) {
+            if (selection.topRow === 0) return false;
+            let above = new SheetRange(new CellRef(selection.topRow - 1, selection.leftCol), new CellRef(selection.topRow - 1, selection.rightCol));
+            return this.fill(above, selection);
+        }
+        let first = new SheetRange(new CellRef(selection.topRow, selection.leftCol), new CellRef(selection.topRow, selection.rightCol));
+        return this.fill(first, selection);
+    }
+    fillRight() {
+        let selection = this._selection;
+        if (selection.leftCol === selection.rightCol) {
+            if (selection.leftCol === 0) return false;
+            let left = new SheetRange(new CellRef(selection.topRow, selection.leftCol - 1), new CellRef(selection.bottomRow, selection.leftCol - 1));
+            return this.fill(left, selection);
+        }
+        let first = new SheetRange(new CellRef(selection.topRow, selection.leftCol), new CellRef(selection.bottomRow, selection.leftCol));
+        return this.fill(first, selection);
+    }
+    undo() {
+        let edit = this.history.popUndo();
+        if (edit == null) return false;
+        this.apply(edit, false);
+        this._selection = edit.selectionBefore;
+        this._active = this._selection.focus;
+        this.changed?.(edit);
+        return true;
+    }
+    redo() {
+        let edit = this.history.popRedo();
+        if (edit == null) return false;
+        this.apply(edit, true);
+        this._selection = edit.selectionAfter;
+        this._active = this._selection.focus;
+        this.changed?.(edit);
+        return true;
+    }
+    apply(edit: SheetEdit, forward: boolean) {
+        switch (edit.kind) { case 'setCells': let cells = forward ? edit.after : edit.before; for (const snapshot of cells) this.document.setCell(snapshot.cell, snapshot.value); break; case 'insertRows': if (forward) this.document.shiftRows(edit.at, edit.count); else this.document.shiftRows(edit.at, -edit.count); break; case 'deleteRows': if (forward) this.document.shiftRows(edit.at, -edit.count); else {
+            this.document.shiftRows(edit.at, edit.count);
+            for (const snapshot of edit.removed) this.document.setCell(snapshot.cell, snapshot.value);
+        } break; case 'insertCols': if (forward) this.document.shiftCols(edit.at, edit.count); else this.document.shiftCols(edit.at, -edit.count); break; case 'deleteCols': if (forward) this.document.shiftCols(edit.at, -edit.count); else {
+            this.document.shiftCols(edit.at, edit.count);
+            for (const snapshot of edit.removed) this.document.setCell(snapshot.cell, snapshot.value);
+        } break; case 'resizeRow': this.document.setRowHeight(edit.at, forward ? edit.newSize : edit.oldSize); break; case 'resizeCol': this.document.setColWidth(edit.at, forward ? edit.newSize : edit.oldSize); break; }
+    }
+    commit(edit: SheetEdit) {
+        this.history.push(edit);
+        this.changed?.(edit);
+    }
 }
 

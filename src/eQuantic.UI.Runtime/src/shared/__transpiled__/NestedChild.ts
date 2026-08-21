@@ -10,11 +10,15 @@ export class NestedChild extends SharedStatefulComponent {
     }
 
     build(_context: BuildContext) {
-        let column = new Column(8);column.add(new Text(`${this._label}:${this._count}`, 'caption'));column.add(new Button('Add', 'primary', 'medium', () => this.setState(() => this._count++)));return column;
+        let column = new Column(8);
+        column.add(new Text(`${this._label}:${this._count}`, 'caption'));
+        column.add(new Button('Add', 'primary', 'medium', () => this.setState(() => this._count++)));
+        return column;
     }
 
     adoptConfig(next: UiComponent) {
-        let fresh: any; if ((next instanceof NestedChild && (fresh = next, true))) this._label = fresh._label;
+        let fresh: any; 
+        if ((next instanceof NestedChild && (fresh = next, true))) this._label = fresh._label;
     }
 
 }

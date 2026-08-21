@@ -1,6 +1,8 @@
 import { TypeRoleValue } from "@equantic/runtime";
 export class MarkdownStyle {
-    constructor(props?: any) {  if (props && typeof props === 'object') Object.assign(this, props); }
+    constructor(props?: any) {
+        if (props && typeof props === 'object') Object.assign(this, props);
+    }
     heading1: TypeRoleValue = 'heading';
     heading2: TypeRoleValue = 'title';
     heading3: TypeRoleValue = 'titleSmall';

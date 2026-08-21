@@ -71,7 +71,7 @@ public class ConversionContext
     public string? CurrentClassName { get; set; }
 
     /// <summary>How statements are laid out — see <see cref="JsLayout"/>.</summary>
-    public JsLayout Layout { get; set; } = JsLayout.Compact;
+    public JsLayout Layout { get; set; } = JsLayout.Pretty;
 
     /// <summary>
     /// The block depth being converted, maintained by the converter while it descends. A statement

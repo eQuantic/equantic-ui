@@ -74,11 +74,14 @@ public class InterpolatedStringStrategy : IConversionStrategy
     /// braces that escape a literal brace in C# interpolation (<c>{{</c> -> <c>{</c>, <c>}}</c> -> <c>}</c>) —
     /// <c>ValueText</c> leaves these doubled. Then escape what a template literal treats specially: backslash
     /// (first, so we don't double-escape), backtick, and the <c>${</c> opener (done last so a <c>${</c>
-    /// produced by the brace collapse, e.g. from <c>$"${{x}}"</c>, is also neutralised).
+    /// produced by the brace collapse, e.g. from <c>$"${{x}}"</c>, is also neutralised). Line
+    /// breaks become escapes too: a template literal would take them raw, but then the emitted
+    /// line is no longer one line, and nothing that lays code out by lines could touch it.
     /// </summary>
     private static string EscapeForTemplate(string s) =>
         s.Replace("{{", "{").Replace("}}", "}")
-         .Replace("\\", "\\\\").Replace("`", "\\`").Replace("${", "\\${");
+         .Replace("\\", "\\\\").Replace("`", "\\`").Replace("${", "\\${")
+         .Replace("\r", "\\r").Replace("\n", "\\n");
 
     public int Priority => 10;
 }

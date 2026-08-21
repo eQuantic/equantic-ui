@@ -1,14 +1,34 @@
 import { $eq } from "@equantic/runtime";
 export class SdkStrings {
-    static get dismiss(): string { return $eq.str("SdkResources", "Dismiss"); }
-    static get remove(): string { return $eq.str("SdkResources", "Remove"); }
-    static get searchPlaceholder(): string { return $eq.str("SdkResources", "SearchPlaceholder"); }
-    static get clearSearch(): string { return $eq.str("SdkResources", "ClearSearch"); }
-    static get find(): string { return $eq.str("SdkResources", "Find"); }
-    static get previousMatch(): string { return $eq.str("SdkResources", "PreviousMatch"); }
-    static get nextMatch(): string { return $eq.str("SdkResources", "NextMatch"); }
-    static get spreadsheet(): string { return $eq.str("SdkResources", "Spreadsheet"); }
-    static get back(): string { return $eq.str("SdkResources", "Back"); }
-    static get nothingSelected(): string { return $eq.str("SdkResources", "NothingSelected"); }
+    static get dismiss(): string {
+        return $eq.str("SdkResources", "Dismiss");
+    }
+    static get remove(): string {
+        return $eq.str("SdkResources", "Remove");
+    }
+    static get searchPlaceholder(): string {
+        return $eq.str("SdkResources", "SearchPlaceholder");
+    }
+    static get clearSearch(): string {
+        return $eq.str("SdkResources", "ClearSearch");
+    }
+    static get find(): string {
+        return $eq.str("SdkResources", "Find");
+    }
+    static get previousMatch(): string {
+        return $eq.str("SdkResources", "PreviousMatch");
+    }
+    static get nextMatch(): string {
+        return $eq.str("SdkResources", "NextMatch");
+    }
+    static get spreadsheet(): string {
+        return $eq.str("SdkResources", "Spreadsheet");
+    }
+    static get back(): string {
+        return $eq.str("SdkResources", "Back");
+    }
+    static get nothingSelected(): string {
+        return $eq.str("SdkResources", "NothingSelected");
+    }
 }
 

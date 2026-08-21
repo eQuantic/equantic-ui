@@ -52,9 +52,9 @@ public class MissingStrategiesTests
     {
         var code = "lock(obj) { x = 1; }";
         var js = ConvertStatement(code);
-        // Should preserve block structure
+        // Should preserve block structure (layout aside: the writer puts statements on lines)
         var expected = "{x=1;}";
-        Assert.Contains(expected, js.Replace(" ", ""));
+        Assert.Contains(expected, System.Text.RegularExpressions.Regex.Replace(js, @"\s+", ""));
         Assert.DoesNotContain("lock", js);
     }
     

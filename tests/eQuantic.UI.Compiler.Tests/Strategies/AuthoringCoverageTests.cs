@@ -52,7 +52,7 @@ public class AuthoringCoverageTests
     {
         var ts = Ts("public class C : StatelessComponent { public int N { get; set; } public int Double => N * 2; " +
                     "public override IComponent Build(RenderContext c) => new Text(Double.ToString()); }");
-        ts.Should().Contain("get double() { return this.n * 2; }");
+        ts.Should().Contain("get double() {\n        return this.n * 2;\n    }");
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class AuthoringCoverageTests
     {
         var ts = Ts("public class C : StatelessComponent { public static string AppName => \"eQ\"; " +
                     "public override IComponent Build(RenderContext c) => new Text(AppName); }");
-        ts.Should().Contain("static get appName() { return 'eQ'; }");
+        ts.Should().Contain("static get appName() {\n        return 'eQ';\n    }");
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public class AuthoringCoverageTests
         var fmt = TsOf("Fmt", src);
         fmt.Should().Contain("export class Fmt");
         fmt.Should().Contain("static tag(n: number) {");
-        fmt.Should().Contain("static get prefix(): string { return 'P'; }");
+        fmt.Should().Contain("static get prefix(): string {\n        return 'P';\n    }");
         // The referencing component calls it statically (Fmt.tag), not as an instance method.
         TsOf("C", src).Should().Contain("Fmt.tag(3)");
     }

@@ -67,11 +67,16 @@ public class TypeScriptCodeBuilder
         Write(line);
     }
 
-    /// <summary>An EMPTY line carries no indentation — trailing whitespace is a diff nobody wants.</summary>
-    private void Write(string line)
+    /// <summary>Every line of the content takes the current indentation — a member body arrives
+    /// laid out in lines of its own. An EMPTY line carries none: trailing whitespace is a diff
+    /// nobody wants.</summary>
+    private void Write(string content)
     {
-        if (string.IsNullOrEmpty(line)) _writer.AppendLine();
-        else _writer.AppendLine(line);
+        foreach (var line in content.Split('\n'))
+        {
+            if (string.IsNullOrEmpty(line)) _writer.AppendLine();
+            else _writer.AppendLine(line);
+        }
     }
 
     private void RecordMapping(SyntaxNode node)

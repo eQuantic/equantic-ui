@@ -8,12 +8,18 @@ export class List extends StatelessComponent {
         if (items !== undefined) this.items = items;
         if (dividers !== undefined) this.dividers = dividers;
         if (this.dividers === undefined) this.dividers = false;
-        this.items = items;this.dividers = dividers;
+        this.items = items;
+        this.dividers = dividers;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(_context: BuildContext) {
-        let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });for (let i = 0; i < this.items.length; i++) {column.add(this.items[i]);if (this.dividers && i < this.items.length - 1) column.add(new Divider('leading', 'horizontal', { leadingInset: this.items[i].contentInset }));}return column;
+        let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
+        for (let i = 0; i < this.items.length; i++) {
+            column.add(this.items[i]);
+            if (this.dividers && i < this.items.length - 1) column.add(new Divider('leading', 'horizontal', { leadingInset: this.items[i].contentInset }));
+        }
+        return column;
     }
 
 }

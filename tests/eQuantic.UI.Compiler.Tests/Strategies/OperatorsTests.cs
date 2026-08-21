@@ -78,7 +78,7 @@ public class OperatorsTests : StrategyTestBase
         var code = "delegate(int x) { return x; }";
         var js = Convert(code);
         Assert.Contains("=>", js);
-        Assert.Contains("{return x;}", js);
+        Assert.Contains("{returnx;}", System.Text.RegularExpressions.Regex.Replace(js, @"\s+", ""));
     }
 
     [Fact]

@@ -17,7 +17,11 @@ export class FormSubmit extends StatelessComponent {
         if (this.variant === undefined) this.variant = 'primary';
         if (this.size === undefined) this.size = 'small';
         if (this.wide === undefined) this.wide = false;
-        this.form = form;this.label = label;this.onSubmit = onSubmit;this.variant = variant;this.size = size;
+        this.form = form;
+        this.label = label;
+        this.onSubmit = onSubmit;
+        this.variant = variant;
+        this.size = size;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 

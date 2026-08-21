@@ -81,7 +81,7 @@ public class CSharpVersionCoverageTests
 
         Assert.True(probe.Success);
         Assert.Contains("$message", probe.TypeScript);
-        Assert.Contains("set message(value) { this.$message = value ?? ''; }", probe.TypeScript);
+        Assert.Contains("set message(value) {\n        this.$message = value ?? '';\n    }", probe.TypeScript);
     }
 
     [Fact]

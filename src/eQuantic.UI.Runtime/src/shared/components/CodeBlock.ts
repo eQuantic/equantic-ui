@@ -40,12 +40,69 @@ export class CodeBlock extends StatelessComponent {
         if (this.viewportOffset === undefined) this.viewportOffset = 0;
         if (this.viewportHeight === undefined) this.viewportHeight = 0;
         if (this.viewportWidth === undefined) this.viewportWidth = 0;
-        this.document = CodeDocument.fromText(code);this.language = CodeLanguages.for(language);
+        this.document = CodeDocument.fromText(code);
+        this.language = CodeLanguages.for(language);
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let highlighter = this.highlighter ?? new CodeHighlighter(this.language);let metrics = this.metrics ?? CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);let style = metrics.style;let lineHeight = metrics.lineHeight;let gutterWidth = metrics.gutterWidth;let ink = this.inverse ? CodeBlock.codeInk : theme.textPrimary;let surface = this.inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;let [first, last] = this.window(lineHeight);let widest = 0;for (let index = 0; index < this.document.lineCount; index++) widest = Math.max(widest, this.document.line(index).length);let codeWidth = widest * metrics.columnWidth + metrics.columnWidth;let lines = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });if (first > 0) lines.add(Spacer.fixed(first * lineHeight));for (let index = first; index <= last; index++) {lines.add(this.lineRow(context, highlighter, index, style, lineHeight, gutterWidth, ink, theme));}if (last < this.document.lineCount - 1) lines.add(Spacer.fixed((this.document.lineCount - 1 - last) * lineHeight));let content: VisualNode = lines;if (this.decorations.length > 0) {let decorated = new Stack('topStart', { width: SizeValue.fill });let marks = new Stack('topStart', { width: SizeValue.fill });for (const decoration of this.decorations) {for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);}decorated.add(marks);decorated.add(lines);content = decorated;}let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(Math.max(codeWidth, this.viewportWidth)), padding: EdgeInsets.symmetric(0, 12) }), content);if (!this.standalone) return body;body = new ScrollView(body, 'horizontal', { width: SizeValue.fill });if (this.showLineNumbers) {let withGutter = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });withGutter.add(this.gutter(context));withGutter.add(new Flexible(body));body = withGutter;}if (this.maxHeight > 0) {body = new Box(new BoxStyle({ width: SizeValue.fill, maxHeight: this.maxHeight }), new ScrollView(body, 'vertical', { width: SizeValue.fill, onScrolled: this.onScrolled, onViewportChanged: this.onViewportChanged }));}let slab = new Box(new BoxStyle({ width: SizeValue.fill, background: surface, cornerRadius: new CornerRadii(theme.shape('medium')), clip: true }), body);if (this.caption == null && this.onCopy == null) return slab;let corner = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });corner.add(new Spacer(1));let caption: any; if ((caption = this.caption) != null) {corner.add(new Text(caption, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, { mono: true }));}let copy: any; if ((copy = this.onCopy) != null) {corner.add(new IconButton('copy', 'Copy code', 'standard', 'medium', null, { size: 'small', onPressed: copy }));}let layers = new Stack('topStart', { width: SizeValue.fill });layers.add(slab);layers.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), corner), 0, null, null, 0));return layers;
+        let theme = context.theme;
+        let highlighter = this.highlighter ?? new CodeHighlighter(this.language);
+        let metrics = this.metrics ?? CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);
+        let style = metrics.style;
+        let lineHeight = metrics.lineHeight;
+        let gutterWidth = metrics.gutterWidth;
+        let ink = this.inverse ? CodeBlock.codeInk : theme.textPrimary;
+        let surface = this.inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;
+        let [first, last] = this.window(lineHeight);
+        let widest = 0;
+        for (let index = 0; index < this.document.lineCount; index++) widest = Math.max(widest, this.document.line(index).length);
+        let codeWidth = widest * metrics.columnWidth + metrics.columnWidth;
+        let lines = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
+        if (first > 0) lines.add(Spacer.fixed(first * lineHeight));
+        for (let index = first; index <= last; index++) {
+            lines.add(this.lineRow(context, highlighter, index, style, lineHeight, gutterWidth, ink, theme));
+        }
+        if (last < this.document.lineCount - 1) lines.add(Spacer.fixed((this.document.lineCount - 1 - last) * lineHeight));
+        let content: VisualNode = lines;
+        if (this.decorations.length > 0) {
+            let decorated = new Stack('topStart', { width: SizeValue.fill });
+            let marks = new Stack('topStart', { width: SizeValue.fill });
+            for (const decoration of this.decorations) {
+                for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);
+            }
+            decorated.add(marks);
+            decorated.add(lines);
+            content = decorated;
+        }
+        let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(Math.max(codeWidth, this.viewportWidth)), padding: EdgeInsets.symmetric(0, 12) }), content);
+        if (!this.standalone) return body;
+        body = new ScrollView(body, 'horizontal', { width: SizeValue.fill });
+        if (this.showLineNumbers) {
+            let withGutter = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
+            withGutter.add(this.gutter(context));
+            withGutter.add(new Flexible(body));
+            body = withGutter;
+        }
+        if (this.maxHeight > 0) {
+            body = new Box(new BoxStyle({ width: SizeValue.fill, maxHeight: this.maxHeight }), new ScrollView(body, 'vertical', { width: SizeValue.fill, onScrolled: this.onScrolled, onViewportChanged: this.onViewportChanged }));
+        }
+        let slab = new Box(new BoxStyle({ width: SizeValue.fill, background: surface, cornerRadius: new CornerRadii(theme.shape('medium')), clip: true }), body);
+        if (this.caption == null && this.onCopy == null) return slab;
+        let corner = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });
+        corner.add(new Spacer(1));
+        let caption: any; 
+        if ((caption = this.caption) != null) {
+            corner.add(new Text(caption, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, { mono: true }));
+        }
+        let copy: any; 
+        if ((copy = this.onCopy) != null) {
+            corner.add(new IconButton('copy', 'Copy code', 'standard', 'medium', null, { size: 'small', onPressed: copy }));
+        }
+        let layers = new Stack('topStart', { width: SizeValue.fill });
+        layers.add(slab);
+        layers.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), corner), 0, null, null, 0));
+        return layers;
     }
 
     static of(document: CodeDocument, language: any) {
@@ -53,27 +110,80 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static metricsFor(context: any, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
-        let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });let gutter = showLineNumbers ? Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12 : 0;return new CodeMetrics(style, $eq.math.round(style.lineHeight * 1.15), context.monoAdvance(style), gutter);
+        let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
+        let gutter = showLineNumbers ? Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12 : 0;
+        return new CodeMetrics(style, $eq.math.round(style.lineHeight * 1.15), context.monoAdvance(style), gutter);
     }
 
     gutter(context: any) {
-        let theme = context.theme;let metrics = this.metrics ?? CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);let lineHeight = metrics.lineHeight;let [first, last] = this.window(lineHeight);let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fixed(metrics.gutterWidth) });column.add(Spacer.fixed(12));if (first > 0) column.add(Spacer.fixed(first * lineHeight));for (let index = first; index <= last; index++) column.add(this.gutterCell(index, metrics, theme));if (last < this.document.lineCount - 1) column.add(Spacer.fixed((this.document.lineCount - 1 - last) * lineHeight));return column;
+        let theme = context.theme;
+        let metrics = this.metrics ?? CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);
+        let lineHeight = metrics.lineHeight;
+        let [first, last] = this.window(lineHeight);
+        let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fixed(metrics.gutterWidth) });
+        column.add(Spacer.fixed(12));
+        if (first > 0) column.add(Spacer.fixed(first * lineHeight));
+        for (let index = first; index <= last; index++) column.add(this.gutterCell(index, metrics, theme));
+        if (last < this.document.lineCount - 1) column.add(Spacer.fixed((this.document.lineCount - 1 - last) * lineHeight));
+        return column;
     }
 
     gutterCell(index: number, metrics: CodeMetrics, theme: any) {
-        let numbers = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'end', cross: 'center' });let mark: any; if ((mark = this.markerFor(index)) != null) {numbers.add(new Box(new BoxStyle({ width: 7, height: 7, background: this.gutterColor(mark.kind, theme), cornerRadius: new CornerRadii(999) })));}numbers.add(new Text(String((this.firstLineNumber + index)), 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, { mono: true, tabular: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'regular' }) }));let cell = new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), padding: new EdgeInsets(0, 0, 12, 0), background: this.activeLine === index ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), numbers);let pressed: any; return (pressed = this.onGutterPressed) != null ? new Pressable(cell, () => pressed(index), { label: `Line ${this.firstLineNumber + index}` }) : cell;
+        let numbers = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'end', cross: 'center' });
+        let mark: any; 
+        if ((mark = this.markerFor(index)) != null) {
+            numbers.add(new Box(new BoxStyle({ width: 7, height: 7, background: this.gutterColor(mark.kind, theme), cornerRadius: new CornerRadii(999) })));
+        }
+        numbers.add(new Text(String((this.firstLineNumber + index)), 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, { mono: true, tabular: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'regular' }) }));
+        let cell = new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), padding: new EdgeInsets(0, 0, 12, 0), background: this.activeLine === index ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), numbers);
+        let pressed: any; 
+        return (pressed = this.onGutterPressed) != null ? new Pressable(cell, () => pressed(index), { label: `Line ${this.firstLineNumber + index}` }) : cell;
     }
 
     lineRow(_context: any, highlighter: CodeHighlighter, index: number, style: TypeStyle, lineHeight: number, _gutterWidth: number, ink: ColorToken, theme: any) {
-        let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: lineHeight, cross: 'center' });let code = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });let text = this.document.line(index);let tokens = highlighter.tokensFor(this.document, index);let at = 0;for (const token of tokens) {if (token.start > at) code.add(CodeBlock.run(text.slice(at, token.start), ink, style));code.add(CodeBlock.run(text.slice(token.start, Math.min(token.end, text.length)), this.inverse ? CodeBlock.inverseCode(token.kind, theme) : theme.code(token.kind), style));at = Math.min(token.end, text.length);}if (at < text.length) code.add(CodeBlock.run(text.slice(at), ink, style));if (text.length === 0) code.add(CodeBlock.run(' ', ink, style));row.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 0) }), code));let active = this.activeLine === index;if (!active) return row;let wash = this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle;return new Box(new BoxStyle({ width: SizeValue.fill, background: wash }), row);
+        let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: lineHeight, cross: 'center' });
+        let code = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
+        let text = this.document.line(index);
+        let tokens = highlighter.tokensFor(this.document, index);
+        let at = 0;
+        for (const token of tokens) {
+            if (token.start > at) code.add(CodeBlock.run(text.slice(at, token.start), ink, style));
+            code.add(CodeBlock.run(text.slice(token.start, Math.min(token.end, text.length)), this.inverse ? CodeBlock.inverseCode(token.kind, theme) : theme.code(token.kind), style));
+            at = Math.min(token.end, text.length);
+        }
+        if (at < text.length) code.add(CodeBlock.run(text.slice(at), ink, style));
+        if (text.length === 0) code.add(CodeBlock.run(' ', ink, style));
+        row.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 0) }), code));
+        let active = this.activeLine === index;
+        if (!active) return row;
+        let wash = this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle;
+        return new Box(new BoxStyle({ width: SizeValue.fill, background: wash }), row);
     }
 
     window(lineHeight: number) {
-        if (this.viewportHeight <= 0 || lineHeight <= 0) return [0, this.document.lineCount - 1];let margin = 8;let first = Math.max(0, (Math.trunc(Math.floor(this.viewportOffset / lineHeight)) | 0) - margin);let visible = (Math.trunc(Math.ceil(this.viewportHeight / lineHeight)) | 0) + margin * 2;return [first, Math.min(this.document.lineCount - 1, first + visible)];
+        if (this.viewportHeight <= 0 || lineHeight <= 0) return [0, this.document.lineCount - 1];
+        let margin = 8;
+        let first = Math.max(0, (Math.trunc(Math.floor(this.viewportOffset / lineHeight)) | 0) - margin);
+        let visible = (Math.trunc(Math.ceil(this.viewportHeight / lineHeight)) | 0) + margin * 2;
+        return [first, Math.min(this.document.lineCount - 1, first + visible)];
     }
 
     marks(decoration: CodeDecoration, metrics: CodeMetrics, theme: any) {
-        const _seq = []; let start = this.document.clamp(decoration.range.start);let end = this.document.clamp(decoration.range.end);let color = decoration.color ?? CodeBlock.defaultColor(decoration.kind, theme);if (this.inverse) color = new ColorToken(color.dark, color.dark);for (let line = start.line; line <= end.line; line++) {let from = line === start.line ? start.column : 0;let to = line === end.line ? end.column : this.document.line(line).length;if (to <= from) continue;let left = metrics.contentLeft + from * metrics.columnWidth;let top = line * metrics.lineHeight;let width = (to - from) * metrics.columnWidth;_seq.push((() => { const _s = decoration.kind; if (_s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if (_s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), top + metrics.lineHeight - 2, null, null, left); if (_s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), top + metrics.lineHeight / 2, null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());} return _seq;
+        const _seq = [];
+        let start = this.document.clamp(decoration.range.start);
+        let end = this.document.clamp(decoration.range.end);
+        let color = decoration.color ?? CodeBlock.defaultColor(decoration.kind, theme);
+        if (this.inverse) color = new ColorToken(color.dark, color.dark);
+        for (let line = start.line; line <= end.line; line++) {
+            let from = line === start.line ? start.column : 0;
+            let to = line === end.line ? end.column : this.document.line(line).length;
+            if (to <= from) continue;
+            let left = metrics.contentLeft + from * metrics.columnWidth;
+            let top = line * metrics.lineHeight;
+            let width = (to - from) * metrics.columnWidth;
+            _seq.push((() => { const _s = decoration.kind; if (_s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if (_s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), top + metrics.lineHeight - 2, null, null, left); if (_s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), top + metrics.lineHeight / 2, null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
+        }
+        return _seq;
     }
 
     static defaultColor(kind: CodeDecorationKindValue, theme: any) {
@@ -85,11 +195,13 @@ export class CodeBlock extends StatelessComponent {
     }
 
     markerFor(line: number) {
-        for (const marker of this.gutterMarkers) if (marker.line === line) return marker;return null;
+        for (const marker of this.gutterMarkers) if (marker.line === line) return marker;
+        return null;
     }
 
     gutterColor(kind: CodeGutterKindValue, theme: any) {
-        let token = CodeBlock.gutterToken(kind, theme);return this.inverse ? new ColorToken(token.dark, token.dark) : token;
+        let token = CodeBlock.gutterToken(kind, theme);
+        return this.inverse ? new ColorToken(token.dark, token.dark) : token;
     }
 
     static gutterToken(kind: CodeGutterKindValue, theme: any) {
@@ -109,7 +221,8 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static inverseCode(kind: CodeTokenKindValue, theme: any) {
-        let token = theme.code(kind);return new ColorToken(token.dark, token.dark);
+        let token = theme.code(kind);
+        return new ColorToken(token.dark, token.dark);
     }
 
 }

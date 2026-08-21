@@ -14,12 +14,18 @@ export class Popover extends StatelessComponent {
         if (onDismiss !== undefined) this.onDismiss = onDismiss;
         if (this.open === undefined) this.open = false;
         if (this.placement === undefined) this.placement = 'bottomStart';
-        this.trigger = trigger;this.content = content;this.open = open;this.onDismiss = onDismiss;
+        this.trigger = trigger;
+        this.content = content;
+        this.open = open;
+        this.onDismiss = onDismiss;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
-        let theme = context.theme;let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.all(12) }), this.content);if (context.inFlow) return panel;return new Anchored(this.trigger, panel, { placement: this.placement, open: this.open, onDismiss: this.onDismiss });
+        let theme = context.theme;
+        let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.all(12) }), this.content);
+        if (context.inFlow) return panel;
+        return new Anchored(this.trigger, panel, { placement: this.placement, open: this.open, onDismiss: this.onDismiss });
     }
 
 }
