@@ -1,5 +1,6 @@
 using eQuantic.UI.Codegen;
 using Microsoft.CodeAnalysis;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.Services;
 
@@ -55,6 +56,9 @@ public class TypeScriptCodeBuilder
         }
         Write("");
     }
+
+    /// <summary>How member bodies are laid out — the converter's layout, handed over by the emitter.</summary>
+    public JsLayout Layout { get; set; } = JsLayout.Pretty;
 
     public void Indent() => _writer.IndentLevel++;
 
@@ -137,6 +141,15 @@ public class TypeScriptCodeBuilder
         }
 
         public void Raw(string content, SyntaxNode? sourceNode = null) => _builder.Line(content, sourceNode);
+
+        /// <summary>A member through the member writer. <paramref name="separated"/> adds the blank
+        /// line the method family has always been followed by (the accessor family has not — the
+        /// layout is the emitter's to normalize, not this seam's).</summary>
+        public void Member(JsClassMember member, SyntaxNode? sourceNode = null, bool separated = false)
+        {
+            _builder.Line(JsMemberWriter.Write(member, _builder.Layout), sourceNode);
+            if (separated) _builder.Line("");
+        }
 
         /// <summary>A member with a body, and the blank line every member is followed by.</summary>
         private void Member(string signature, Action bodyAction, SyntaxNode? sourceNode)

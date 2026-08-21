@@ -102,6 +102,9 @@ public class CSharpToJsConverter
 
     public HashSet<string> UsedHelpers => _context.UsedHelpers;
 
+    /// <summary>The statement layout in force — what the emitter hands its builder.</summary>
+    public JsLayout Layout => _context.Layout;
+
     /// <summary>See <see cref="ConversionContext.UsedAppTypes"/> — output-introduced app-type names.</summary>
     public HashSet<string> UsedAppTypes => _context.UsedAppTypes;
 

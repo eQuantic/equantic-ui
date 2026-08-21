@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Models;
 using eQuantic.UI.Compiler.Services;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -126,7 +127,7 @@ public class TypeScriptEmitter
     {
         _converter.EmitTypeAnnotations(TypeAnnotations);
         _converter.EmitDesignOrigins(DesignMode);
-        _builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations };
+        _builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
         _semanticModel = semanticModel;
         _converter.SetSemanticModel(semanticModel);
         // Everything the PREVIOUS component left behind goes here — the node cache above all, which
@@ -476,7 +477,7 @@ public class TypeScriptEmitter
         var nestedCode = string.Empty;
         if (component.BuildMethodNode?.Parent is ClassDeclarationSyntax ownerClass)
         {
-            var nb = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations };
+            var nb = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
             foreach (var nested in ownerClass.Members.OfType<ClassDeclarationSyntax>()
                          .Where(n => n.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
             {
@@ -1105,15 +1106,13 @@ public class TypeScriptEmitter
         return string.Join("\n", lines);
     }
 
-    /// <summary>A member body between its braces: empty stays <c>{}</c>; otherwise the contents
-    /// go one level in, one statement per line, the way a method body does.</summary>
-    private static string Braced(string body)
-    {
-        body = body.Trim();
-        if (body.Length == 0) return "{}";
-        var lines = body.Split('\n').Select(line => line.Length == 0 ? line : "    " + line);
-        return "{\n" + string.Join("\n", lines) + "\n}";
-    }
+    private static string Braced(string body) => JsMemberWriter.Braced(body);
+
+    /// <summary>A member body as IR: the block itself when there is one and nothing reshapes it;
+    /// otherwise the text the emitter still assembles, as a raw statement the member writer places
+    /// one level in.</summary>
+    private JsStatement BodyOf(BlockSyntax? block, string? text) =>
+        block is not null && text is null ? _converter.ConvertBlockIr(block) : JsStatement.Raw(text ?? "");
 
     /// <summary>
     /// Emit a component's non-auto properties as real TS members: an expression-bodied or block-bodied
@@ -1134,7 +1133,7 @@ public class TypeScriptEmitter
             if (node.ExpressionBody != null)
             {
                 _converter.SetCurrentClass(component.Name);
-                c.Raw($"{stat}get {name}() {Braced(ExpressionBodyReturn(node.ExpressionBody.Expression))}", node);
+                c.Member(JsClassMember.Getter(stat, name, "", JsStatement.Raw(ExpressionBodyReturn(node.ExpressionBody.Expression))), node);
                 continue;
             }
 
@@ -1166,17 +1165,17 @@ public class TypeScriptEmitter
                     if (getterHasBody)
                     {
                         var body = getter!.ExpressionBody != null
-                            ? ExpressionBodyReturn(getter.ExpressionBody.Expression)
-                            : StripJsBraces(_converter.Convert(getter.Body!));
-                        c.Raw($"{stat}get {name}() {Braced(body)}", getter);
+                            ? JsStatement.Raw(ExpressionBodyReturn(getter.ExpressionBody.Expression))
+                            : _converter.ConvertBlockIr(getter.Body!);
+                        c.Member(JsClassMember.Getter(stat, name, "", body), getter);
                     }
                     if (setterHasBody)
                     {
                         // C# setters use the implicit `value` parameter, which survives conversion as-is.
                         var body = setter!.ExpressionBody != null
-                            ? ExpressionBodyStatement(setter.ExpressionBody.Expression)
-                            : StripJsBraces(_converter.Convert(setter.Body!));
-                        c.Raw($"{stat}set {name}(value) {Braced(body)}", setter);
+                            ? JsStatement.Raw(ExpressionBodyStatement(setter.ExpressionBody.Expression))
+                            : _converter.ConvertBlockIr(setter.Body!);
+                        c.Member(JsClassMember.Setter(stat, name, "value", body), setter);
                     }
                     continue;
                 }
@@ -1285,7 +1284,7 @@ public class TypeScriptEmitter
                 if (p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword))
                 {
                     if (CanDeclareTypeOnly)
-                        c.Raw($"abstract {p.Identifier.Text.ToCamelCase()}: {DeclaredType(p.Type)};", p);
+                        c.Member(JsClassMember.Field("abstract ", p.Identifier.Text.ToCamelCase(), $": {DeclaredType(p.Type)}"), p);
                     continue;
                 }
                 var pn = p.Identifier.Text.ToCamelCase();
@@ -1295,7 +1294,8 @@ public class TypeScriptEmitter
                 var propertyType = DeclaredType(p.Type);
                 if (p.ExpressionBody != null)
                 {
-                    c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {Braced(ExpressionBodyReturn(p.ExpressionBody.Expression))}", p);
+                    c.Member(JsClassMember.Getter(qualifier, pn, Annotation(propertyType),
+                        JsStatement.Raw(ExpressionBodyReturn(p.ExpressionBody.Expression))), p);
                 }
                 else if (p.AccessorList != null)
                 {
@@ -1308,7 +1308,7 @@ public class TypeScriptEmitter
                         var slotDefault = TypeDeclarationExtensions.DefaultFor(p.Type);
                         if (slotDefault == "null")
                         {
-                            if (CanDeclareTypeOnly) c.Raw($"declare {slot}: {DeclaredType(p.Type)};", p);
+                            if (CanDeclareTypeOnly) c.Member(JsClassMember.Field("declare ", slot, $": {DeclaredType(p.Type)}"), p);
                         }
                         else
                             c.Field(slot, DeclaredType(p.Type), slotDefault, p);
@@ -1316,9 +1316,10 @@ public class TypeScriptEmitter
 
                     var g = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
                     if (g?.ExpressionBody != null)
-                        c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {Braced(ExpressionBodyReturn(g.ExpressionBody.Expression))}", g);
+                        c.Member(JsClassMember.Getter(qualifier, pn, Annotation(propertyType),
+                            JsStatement.Raw(ExpressionBodyReturn(g.ExpressionBody.Expression))), g);
                     else if (g?.Body != null)
-                        c.Raw($"{qualifier}get {pn}(){Annotation(propertyType)} {Braced(StripJsBraces(_converter.Convert(g.Body)))}", g);
+                        c.Member(JsClassMember.Getter(qualifier, pn, Annotation(propertyType), _converter.ConvertBlockIr(g.Body)), g);
                     else if (p.Initializer != null)
                         c.Field(pn, DeclaredType(p.Type),
                             _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()), p,
@@ -1337,7 +1338,7 @@ public class TypeScriptEmitter
                             || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
                         if (defaulted == "null" && !isStaticProperty)
                         {
-                            if (CanDeclareTypeOnly) c.Raw($"declare {pn}: {DeclaredType(p.Type)};", p);
+                            if (CanDeclareTypeOnly) c.Member(JsClassMember.Field("declare ", pn, $": {DeclaredType(p.Type)}"), p);
                         }
                         else
                             c.Field(pn, DeclaredType(p.Type), defaulted, p, isStatic: isStaticProperty);
@@ -1354,9 +1355,11 @@ public class TypeScriptEmitter
                     var setter = p.AccessorList.Accessors
                         .FirstOrDefault(a => a.Keyword.Text is "set" or "init");
                     if (setter?.ExpressionBody != null)
-                        c.Raw($"{qualifier}set {pn}(value{Annotation(DeclaredType(p.Type))}) {Braced(ExpressionBodyStatement(setter.ExpressionBody.Expression))}", setter);
+                        c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
+                            JsStatement.Raw(ExpressionBodyStatement(setter.ExpressionBody.Expression))), setter);
                     else if (setter?.Body != null)
-                        c.Raw($"{qualifier}set {pn}(value{Annotation(DeclaredType(p.Type))}) {Braced(StripJsBraces(_converter.Convert(setter.Body)))}", setter);
+                        c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
+                            _converter.ConvertBlockIr(setter.Body)), setter);
                 }
             }
             // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
@@ -1417,8 +1420,9 @@ public class TypeScriptEmitter
                 // `out var x` at a CALL SITE inside this body needs `x` to exist before the call.
                 mbody = OutParameters.HoistedLocals(m.Body ?? (SyntaxNode?)m.ExpressionBody) + mbody;
                 if (byReference.Count > 0) mbody = OutParameters.WrapBody(mbody, byReference, isAsync);
-                c.Raw($"{(m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")}"
-                    + $"{(isAsync ? "async " : "")}{mn}{generics}({pars}) {Braced(mbody)}", m);
+                var modifiers = (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
+                    + (isAsync ? "async " : "");
+                c.Member(JsClassMember.Method(modifiers, mn, generics, pars, "", JsStatement.Raw(mbody)), m);
             }
             EmitExtensionBlocks(cls, c);
     }
@@ -1462,8 +1466,8 @@ public class TypeScriptEmitter
                             break;
                         }
                         var text = body is not null ? ExpressionBodyReturn(body) : StripJsBraces(_converter.Convert(getterBlock!));
-                        c.Raw($"static {property.Identifier.Text.ToCamelCase()}({WithReceiver("")})"
-                            + $"{Annotation(DeclaredType(property.Type))} {Braced(text)}", property);
+                        c.Member(JsClassMember.Method("static ", property.Identifier.Text.ToCamelCase(), "", WithReceiver(""),
+                            Annotation(DeclaredType(property.Type)), JsStatement.Raw(text)), property);
                         ReportExtensionSetter(property.AccessorList?.Accessors, property.Identifier.Text);
                         break;
                     }
@@ -1482,7 +1486,8 @@ public class TypeScriptEmitter
                             break;
                         }
                         var text = body is not null ? ExpressionBodyReturn(body) : StripJsBraces(_converter.Convert(getterBlock!));
-                        c.Raw($"static item({WithReceiver(pars)}){Annotation(DeclaredType(indexer.Type))} {Braced(text)}", indexer);
+                        c.Member(JsClassMember.Method("static ", "item", "", WithReceiver(pars),
+                            Annotation(DeclaredType(indexer.Type)), JsStatement.Raw(text)), indexer);
                         ReportExtensionSetter(indexer.AccessorList?.Accessors, "this[]");
                         break;
                     }
@@ -1506,7 +1511,8 @@ public class TypeScriptEmitter
                         else if (method.ExpressionBody != null) body = ExpressionBodyReturn(method.ExpressionBody.Expression);
                         else break;
                         body = OutParameters.HoistedLocals(method.Body ?? (SyntaxNode?)method.ExpressionBody) + body;
-                        c.Raw($"static {(isAsync ? "async " : "")}{method.Identifier.Text.ToCamelCase()}({WithReceiver(pars)}) {Braced(body)}", method);
+                        c.Member(JsClassMember.Method("static " + (isAsync ? "async " : ""), method.Identifier.Text.ToCamelCase(), "",
+                            WithReceiver(pars), "", JsStatement.Raw(body)), method);
                         break;
                     }
 
@@ -1576,7 +1582,7 @@ public class TypeScriptEmitter
         var assign = " if (props && typeof props === 'object') Object.assign(this, props);";
         // A derived class must call super() before it touches `this`.
         var superCall = HasEmittedBase(cls) ? "super(); " : "";
-        c.Raw($"constructor({parameters}{config}) {Braced(superCall + initialisers + body + assign)}",
+        c.Member(JsClassMember.Constructor($"{parameters}{config}", JsStatement.Raw(superCall + initialisers + body + assign)),
             ctor ?? (SyntaxNode)cls);
     }
 
@@ -1786,7 +1792,7 @@ public class TypeScriptEmitter
         // The BASE class travels. Dropping it is how `CSharpLanguage : CurlyBraceLanguage` came out
         // as an empty class that answered "tokenize is not a function" — from very far away from the
         // declaration that lost it.
-        var builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations };
+        var builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
         builder.Class(name, BaseClassOf(cls), c => EmitStaticMembers(cls, c, asStatic),
             isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();
@@ -1932,13 +1938,14 @@ public class TypeScriptEmitter
                 jsBody = "{}";
             }
             
-            c.Method(methodName, parameters, isAsync, () => {
-                var body = StripJsBraces(jsBody);
-                body = OutParameters.HoistedLocals(method.SyntaxNode.Body
-                    ?? (SyntaxNode?)method.SyntaxNode.ExpressionBody) + body;
-                if (byReference.Count > 0) body = OutParameters.WrapBody(body, byReference, isAsync);
-                c.Raw(body);
-            }, method.TypeParameters, sourceNode: method.SyntaxNode, isStatic: method.IsStatic);
+            var body = StripJsBraces(jsBody);
+            body = OutParameters.HoistedLocals(method.SyntaxNode.Body
+                ?? (SyntaxNode?)method.SyntaxNode.ExpressionBody) + body;
+            if (byReference.Count > 0) body = OutParameters.WrapBody(body, byReference, isAsync);
+            var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
+                ? $"<{string.Join(", ", typeParameters)}>" : "";
+            c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters, "",
+                JsStatement.Raw(body)), method.SyntaxNode, separated: true);
         }
         else
         {
@@ -1946,9 +1953,10 @@ public class TypeScriptEmitter
             var body = method.Body.Trim().TrimEnd(';');
             _converter.SetCurrentClass(className);
             var convertedExpr = _converter.Convert(body);
-            c.Method(methodName, parameters, isAsync, () => {
-                c.Raw($"return {convertedExpr};");
-            }, method.TypeParameters);
+            var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
+                ? $"<{string.Join(", ", typeParameters)}>" : "";
+            c.Member(JsClassMember.Method(asyncPrefix, methodName, generics, parameters, "",
+                JsStatement.Raw($"return {convertedExpr};")), separated: true);
         }
     }
     
