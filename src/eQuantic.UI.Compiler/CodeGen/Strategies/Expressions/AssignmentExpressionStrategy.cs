@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -12,14 +13,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// - x += y
 /// - (var a, var b) = (1, 2)
 /// </summary>
-public class AssignmentExpressionStrategy : IConversionStrategy
+public class AssignmentExpressionStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is AssignmentExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var assignment = (AssignmentExpressionSyntax)node;
 
@@ -42,12 +43,14 @@ public class AssignmentExpressionStrategy : IConversionStrategy
             }
         }
 
-        var left = context.Converter.ConvertExpression(assignment.Left);
-        var right = context.Converter.ConvertExpression(assignment.Right);
+        var leftIr = context.Converter.ConvertIr(assignment.Left);
+        var rightIr = context.Converter.ConvertIr(assignment.Right);
+        var left = JsExprWriter.Write(leftIr);
+        var right = JsExprWriter.Write(rightIr);
         var op = assignment.OperatorToken.Text;
 
         // Handle discard _ = ...
-        if (left == "_" || left == "this._") return right;
+        if (left == "_" || left == "this._") return rightIr;
 
         // If it's a declaration deconstruction, prefix with 'let ' if not already handled
         if (assignment.Left is DeclarationExpressionSyntax && !left.StartsWith("let "))
@@ -64,10 +67,12 @@ public class AssignmentExpressionStrategy : IConversionStrategy
         {
             context.UsedHelpers.Add(Eq.Import);
             var method = op[0] switch { '+' => "add", '-' => "sub", '*' => "mul", _ => "div" };
-            return $"{left} = {Eq.Dec}({left}).{method}({Eq.Dec}({right}))";
+            return JsExpr.Binary(leftIr, "=", JsExpr.Callish($"{Eq.Dec}({left}).{method}({Eq.Dec}({right}))"));
         }
 
-        return $"{left} {op} {right}";
+        // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
+        // an assignment used as an operand is fenced by whoever places it.
+        return JsExpr.Binary(leftIr, op, rightIr);
     }
 
     public int Priority => 10;

@@ -5,14 +5,14 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary><c>for (init; condition; incrementors) body</c>, 1:1.</summary>
-public class ForStatementStrategy : IStatementIrStrategy
+public class ForStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is ForStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var forStmt = (ForStatementSyntax)node;
         var declaration = ConvertDeclaration(forStmt, context);

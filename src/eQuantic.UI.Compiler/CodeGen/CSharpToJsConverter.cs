@@ -552,19 +552,13 @@ public class CSharpToJsConverter
     public string ConvertStatement(StatementSyntax stmt) =>
         JsStatementWriter.Write(ConvertStatementIr(stmt), _context.Layout, _context.Depth);
 
-    /// <summary>
-    /// The statement as IR. A strategy that has crossed over (<see cref="IStatementIrStrategy"/>)
-    /// builds a node; every other one still returns text, which becomes a raw statement spliced
-    /// verbatim — so its output is what it always was.
-    /// </summary>
+    /// <summary>The statement as IR — every statement strategy builds one.</summary>
     public JsStatement ConvertStatementIr(StatementSyntax stmt)
     {
         var strategy = _statementRegistry.FindStrategy(stmt, _context);
         if (strategy != null)
         {
-            return strategy is IStatementIrStrategy ir
-                ? ir.ConvertIr(stmt, _context)
-                : JsStatement.Raw(strategy.Convert(stmt, _context));
+            return strategy.Convert(stmt, _context);
         }
 
         if (stmt is BlockSyntax block)

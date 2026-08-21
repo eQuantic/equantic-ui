@@ -7,14 +7,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary><c>if</c>/<c>else</c>, an <c>else if</c> chain being an if in the else position.
 /// Pattern bindings of the condition hoist in front — see the note on scope below.</summary>
-public class IfStatementStrategy : IStatementIrStrategy
+public class IfStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is IfStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var ifStmt = (IfStatementSyntax)node;
         var condition = context.Converter.ConvertIr(ifStmt.Condition);

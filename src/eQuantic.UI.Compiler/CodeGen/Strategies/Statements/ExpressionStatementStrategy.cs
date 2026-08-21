@@ -8,14 +8,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// <summary>An expression used as a statement. `is` pattern bindings assign inside the converted
 /// expression — their `let`s hoist in front (C# scopes them to the enclosing block; see
 /// PatternVariableScanner).</summary>
-public class ExpressionStatementStrategy : IStatementIrStrategy
+public class ExpressionStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is ExpressionStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var exprStmt = (ExpressionStatementSyntax)node;
         var declarations = PatternVariableScanner.Declarations(exprStmt.Expression, context.TypeAnnotations);

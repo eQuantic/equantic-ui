@@ -1,24 +1,22 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
-/// <summary>
-/// Strategy for await expressions.
-/// Handles: await expr → await convertedExpr
-/// </summary>
-public class AwaitExpressionStrategy : IConversionStrategy
+/// <summary><c>await x</c> — a prefix operator at unary level, so <c>(await x).y</c> keeps its
+/// parentheses and <c>await x + 1</c> needs none, exactly as in C#.</summary>
+public class AwaitExpressionStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is AwaitExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var awaitExpr = (AwaitExpressionSyntax)node;
-        var expression = context.Converter.ConvertExpression(awaitExpr.Expression);
-        return $"await {expression}";
+        return JsExpr.Prefix("await", context.Converter.ConvertIr(awaitExpr.Expression));
     }
 
     public int Priority => 10;

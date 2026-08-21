@@ -5,14 +5,14 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary><c>continue;</c>, and C# 15's labeled <c>continue label;</c> — a JavaScript label 1:1.</summary>
-public class ContinueStatementStrategy : IStatementIrStrategy
+public class ContinueStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is ContinueStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var continueStatement = (ContinueStatementSyntax)node;
         return JsStatement.Continue(continueStatement.Name?.Identifier.Text);

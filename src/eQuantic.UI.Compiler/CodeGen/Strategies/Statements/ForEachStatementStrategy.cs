@@ -9,14 +9,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// <summary><c>foreach (var x in xs)</c> → <c>for (const x of xs)</c>; <c>await foreach</c> →
 /// <c>for await</c>. A dictionary enumerates through <c>$eq.entries</c>, since a transpiled
 /// Dictionary is a plain object and not iterable.</summary>
-public class ForEachStatementStrategy : IStatementIrStrategy
+public class ForEachStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is ForEachStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var foreachStmt = (ForEachStatementSyntax)node;
         var item = foreachStmt.Identifier.Text.ToJsIdentifier();

@@ -5,14 +5,14 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary><c>throw expr;</c>, and the bare rethrow <c>throw;</c>.</summary>
-public class ThrowStatementStrategy : IStatementIrStrategy
+public class ThrowStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is ThrowStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var throwStmt = (ThrowStatementSyntax)node;
         return JsStatement.Throw(throwStmt.Expression == null

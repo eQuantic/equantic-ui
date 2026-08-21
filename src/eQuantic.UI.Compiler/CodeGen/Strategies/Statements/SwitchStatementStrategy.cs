@@ -9,14 +9,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// (<c>const _s = …</c>), because JavaScript's switch has no patterns; the pattern's bindings are
 /// hoisted once for the whole chain and assigned inside each arm's condition.
 /// </summary>
-public class SwitchStatementStrategy : IStatementIrStrategy
+public class SwitchStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is SwitchStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var switchStmt = (SwitchStatementSyntax)node;
         var expr = context.Converter.ConvertIr(switchStmt.Expression);

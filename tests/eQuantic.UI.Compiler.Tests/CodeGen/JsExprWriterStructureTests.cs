@@ -90,6 +90,24 @@ public class JsExprWriterStructureTests
     }
 
     [Fact]
+    public void Assignment_ChainsRight_AndIsFencedAsAnOperand()
+    {
+        Write(JsExpr.Binary(Name("a"), "=", JsExpr.Binary(Name("b"), "=", Name("c")))).Should().Be("a = b = c");
+        Write(JsExpr.Binary(Name("t"), "+=", JsExpr.Conditional(Name("c"), Name("x"), Name("y")))).Should().Be("t += c ? x : y");
+        Write(JsExpr.Binary(JsExpr.Binary(Name("x"), "=", JsExpr.Literal("5")), "*", JsExpr.Literal("2"))).Should().Be("(x = 5) * 2");
+        Write(JsExpr.Binary(Name("a"), "=", JsExpr.Arrow("x", Name("x")))).Should().Be("a = (x) => x");
+    }
+
+    [Fact]
+    public void Await_IsAPrefixAtUnaryLevel()
+    {
+        Write(JsExpr.Binary(JsExpr.Prefix("await", Name("x")), "+", JsExpr.Literal("1"))).Should().Be("await x + 1");
+        Write(JsExpr.Member(JsExpr.Group(JsExpr.Prefix("await", Name("x"))), "y")).Should().Be("(await x).y");
+        Write(JsExpr.Prefix("await", JsExpr.Group(JsExpr.Binary(Name("a"), "??", Name("b"))))).Should().Be("await (a ?? b)");
+        Write(JsExpr.Prefix("await", JsExpr.Call(JsExpr.Member(Name("x"), "load")))).Should().Be("await x.load()");
+    }
+
+    [Fact]
     public void AStringIsOpaque_AndANodePrintsAsItsJavaScript()
     {
         JsExpr fromText = "a + b";

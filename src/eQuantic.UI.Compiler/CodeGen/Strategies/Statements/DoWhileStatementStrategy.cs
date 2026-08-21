@@ -5,14 +5,14 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary><c>do body while (cond);</c></summary>
-public class DoWhileStatementStrategy : IStatementIrStrategy
+public class DoWhileStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is DoStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var doStmt = (DoStatementSyntax)node;
         var condition = context.Converter.ConvertIr(doStmt.Condition);

@@ -7,14 +7,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary><c>return;</c> and <c>return expr;</c>, with any pattern bindings the expression
 /// introduces hoisted in front (C# scopes them to the enclosing block).</summary>
-public class ReturnStatementStrategy : IStatementIrStrategy
+public class ReturnStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is ReturnStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var retStmt = (ReturnStatementSyntax)node;
         if (retStmt.Expression == null) return JsStatement.Return(null);

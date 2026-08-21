@@ -25,6 +25,11 @@ public class StatementShapeConformanceTests
     // try/finally
     [InlineData("var r = 0; try { r = 1; } finally { r += 1; } return r;")]                                                            // 2
     [InlineData("var r = 0; try { throw new Exception(\"x\"); } catch (Exception e) { r = e.Message.Length; } return r;")]               // 1
+    // assignment as a node: chains, compound forms, and an assignment used as an operand
+    [InlineData("int a, b; a = b = 3; return a + b;")]                                                                  // 6
+    [InlineData("int x = 1; var r = (x = 5) * 2; return r + x;")]                                                       // 15
+    [InlineData("int t = 1; t += 2; t *= 3; t -= 1; return t;")]                                                         // 8
+    [InlineData("var xs = new List<int> { 1, 2, 3 }; int last; int i = 0; while ((last = xs[i]) < 3) i++; return last + i;")] // 5
     public void StatementShapes_MatchDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

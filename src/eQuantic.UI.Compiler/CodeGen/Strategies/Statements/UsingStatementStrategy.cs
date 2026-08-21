@@ -10,14 +10,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// <c>try</c>, and disposes in the <c>finally</c> — through the runtime's <c>dispose()</c>
 /// contract, guarded, since the value may not have one.
 /// </summary>
-public class UsingStatementStrategy : IStatementIrStrategy
+public class UsingStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is UsingStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var usingStmt = (UsingStatementSyntax)node;
         string resourceVar;

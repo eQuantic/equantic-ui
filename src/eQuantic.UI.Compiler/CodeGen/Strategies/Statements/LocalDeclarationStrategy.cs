@@ -6,14 +6,14 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
-public class LocalDeclarationStrategy : IStatementIrStrategy
+public class LocalDeclarationStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is LocalDeclarationStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var decl = (LocalDeclarationStatementSyntax)node;
 

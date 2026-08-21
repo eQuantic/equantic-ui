@@ -10,14 +10,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// (<see cref="ConversionContext.IteratorBuffer"/>): a yield pushes into it and a break returns it,
 /// since every sequence in the emitted world is an array. Without one, the JavaScript keyword.
 /// </summary>
-public class YieldStatementStrategy : IStatementIrStrategy
+public class YieldStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is YieldStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var yieldStmt = (YieldStatementSyntax)node;
         var buffer = context.IteratorBuffer;

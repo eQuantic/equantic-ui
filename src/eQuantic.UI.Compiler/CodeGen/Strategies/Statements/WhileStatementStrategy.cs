@@ -6,14 +6,14 @@ using eQuantic.UI.Compiler.Services;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary><c>while (cond) body</c>, pattern bindings of the condition hoisted in front.</summary>
-public class WhileStatementStrategy : IStatementIrStrategy
+public class WhileStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is WhileStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var whileStmt = (WhileStatementSyntax)node;
         var hoisted = PatternVariableScanner.Declarations(whileStmt.Condition, context.TypeAnnotations);

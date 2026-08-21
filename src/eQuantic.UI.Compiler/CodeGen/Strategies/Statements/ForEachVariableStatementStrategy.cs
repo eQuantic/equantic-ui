@@ -13,14 +13,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// <c>$eq.entries</c>, which yields pairs that destructure AND answer <c>.key</c>/<c>.value</c>,
 /// with numeric keys restored as numbers.
 /// </summary>
-public class ForEachVariableStatementStrategy : IStatementIrStrategy
+public class ForEachVariableStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is ForEachVariableStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var foreachStmt = (ForEachVariableStatementSyntax)node;
         var pattern = ConvertDesignation(foreachStmt.Variable);

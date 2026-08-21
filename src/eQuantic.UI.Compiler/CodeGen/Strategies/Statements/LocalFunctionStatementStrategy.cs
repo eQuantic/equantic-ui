@@ -12,14 +12,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// <c>this._findText</c> — and a <c>function</c> declaration rebinds <c>this</c> to undefined in
 /// a module, so every capture read as a TypeError the first time it ran.
 /// </summary>
-public class LocalFunctionStatementStrategy : IStatementIrStrategy
+public class LocalFunctionStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is LocalFunctionStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var localFn = (LocalFunctionStatementSyntax)node;
         // The SAME pair of transformations the reference applies (IdentifierStrategy): camelCase,

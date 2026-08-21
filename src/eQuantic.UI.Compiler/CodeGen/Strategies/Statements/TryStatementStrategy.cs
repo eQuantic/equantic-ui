@@ -9,7 +9,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// type is not a construct there — so a typed catch with no variable (<c>catch (OverflowException)</c>)
 /// and an untyped <c>catch</c> both use the optional catch binding.
 /// </summary>
-public class TryStatementStrategy : IStatementIrStrategy
+public class TryStatementStrategy : IStatementStrategy
 {
     public int Priority => 0;
 
@@ -18,7 +18,7 @@ public class TryStatementStrategy : IStatementIrStrategy
         return node is TryStatementSyntax;
     }
 
-    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var tryStmt = (TryStatementSyntax)node;
         var converter = context.Converter;
