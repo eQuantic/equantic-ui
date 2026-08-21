@@ -41,7 +41,7 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
 
         // Templates say what they compute; the writer decides what to evaluate once.
         var template = Template(method, name.Identifier.Text, args.Length)!;
-        return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray());
+        return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray(), context.TypeAnnotations);
     }
 
     /// <summary>{0} = receiver, {1}… = arguments; null = not ours, stays fenced.</summary>

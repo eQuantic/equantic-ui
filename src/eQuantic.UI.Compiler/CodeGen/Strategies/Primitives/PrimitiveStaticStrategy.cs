@@ -61,7 +61,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         // Templates say what they compute; the writer decides what to evaluate once.
         var emit = MethodTable(method.ContainingType.SpecialType, method.Name, args.Length)!;
         if (emit.Contains(Eq.Round)) context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Template(emit, args);
+        return JsExpr.Template(emit, args, context.TypeAnnotations);
     }
 
     private static bool IsSmallInteger(SpecialType type) => type is SpecialType.System_Int32

@@ -45,7 +45,7 @@ public class CompareToStrategy : IExpressionIrStrategy
             SpecialType.System_Char => "({0}.charCodeAt(0) - {1}.charCodeAt(0))",
             _ => "({0} < {1} ? -1 : {0} > {1} ? 1 : 0)",
         };
-        return JsExpr.Template(template, left, right);
+        return JsExpr.Template(template, new[] { left, right }, context.TypeAnnotations);
     }
 
     /// <summary>The receiver's comparison FAMILY (subtraction, ordered, boolean), or null when it

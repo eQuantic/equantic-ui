@@ -113,7 +113,7 @@ public static class JsExprWriter
         if (last < 0) return body;
 
         var indexes = Enumerable.Range(0, parts.Count).Where(i => bound[i]).ToArray();
-        var names = string.Join(", ", indexes.Select(i => "$" + i));
+        var names = string.Join(", ", indexes.Select(i => "$" + i + (template.Annotate ? ": any" : "")));
         var arguments = string.Join(", ", indexes.Select(i => Write(parts[i], JsPrecedence.Opaque, null)));
         return $"(({names}) => {body})({arguments})";
     }

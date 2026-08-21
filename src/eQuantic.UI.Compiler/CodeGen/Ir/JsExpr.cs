@@ -64,9 +64,15 @@ public abstract record JsExpr
     /// of those cannot be observed). The template text must be self-delimiting: a call, or wrapped
     /// in its own parentheses. See <see cref="JsTemplate"/>.
     /// </summary>
-    public static JsExpr Template(string template, params JsExpr[] parts) => new JsTemplate(template, parts);
+    public static JsExpr Template(string template, params JsExpr[] parts) => new JsTemplate(template, parts, false);
 
-    public static JsExpr Template(string template, IReadOnlyList<JsExpr> parts) => new JsTemplate(template, parts);
+    public static JsExpr Template(string template, IReadOnlyList<JsExpr> parts) => new JsTemplate(template, parts, false);
+
+    /// <summary>As <see cref="Template(string, JsExpr[])"/>, with <paramref name="annotate"/> saying
+    /// whether a bound parameter is typed (<c>($0: any)</c>) — required where the emitted file is
+    /// type-checked, since a strict TypeScript refuses an implicitly-any parameter.</summary>
+    public static JsExpr Template(string template, IReadOnlyList<JsExpr> parts, bool annotate) =>
+        new JsTemplate(template, parts, annotate);
 
     /// <summary>An arrow function with an expression body. The writer parenthesizes a body that
     /// is an object literal — <c>() => ({ a: 1 })</c> — because the bare braces would read as a
@@ -143,7 +149,7 @@ public sealed record JsGroup(JsExpr Inner) : JsExpr
 /// the node is safe in any position without the writer having to parse the template.
 /// </para>
 /// </summary>
-public sealed record JsTemplate(string Text, IReadOnlyList<JsExpr> Parts) : JsExpr
+public sealed record JsTemplate(string Text, IReadOnlyList<JsExpr> Parts, bool Annotate) : JsExpr
 {
     public override JsPrecedence Precedence => JsPrecedence.Call;
 }

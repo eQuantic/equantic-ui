@@ -73,6 +73,17 @@ public class JsTemplateTests
     }
 
     [Fact]
+    public void BoundParameters_AreAnnotated_WhereTheOutputIsTypeChecked()
+    {
+        // A strict TypeScript refuses an implicitly-any parameter (TS7006), so the arrow the
+        // writer introduces must type its own parameters where the file will be checked.
+        JsExprWriter.Write(JsExpr.Template("({0} === {0}.trim())", new[] { Call("f()") }, annotate: true))
+            .Should().Be("(($0: any) => ($0 === $0.trim()))(f())");
+        JsExprWriter.Write(JsExpr.Template("({0} === {0}.trim())", new[] { Call("f()") }, annotate: false))
+            .Should().Be("(($0) => ($0 === $0.trim()))(f())");
+    }
+
+    [Fact]
     public void ATemplate_IsSafeAsAnOperand_ByConvention()
     {
         // Self-delimiting text is the template author's contract; the node declares call-level

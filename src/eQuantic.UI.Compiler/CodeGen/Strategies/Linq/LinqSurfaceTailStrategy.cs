@@ -46,7 +46,7 @@ public class LinqSurfaceTailStrategy : IExpressionIrStrategy
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
 
         // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.
-        return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray());
+        return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray(), context.TypeAnnotations);
     }
 
     private static string? Template(string name, int argCount) => (name, argCount) switch
