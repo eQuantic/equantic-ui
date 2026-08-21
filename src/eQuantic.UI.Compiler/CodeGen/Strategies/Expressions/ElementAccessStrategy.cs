@@ -2,21 +2,23 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Services;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// Strategy for element access (indexers).
-/// Handles: dict[key], array[0]
+/// Indexing: <c>arr[i]</c>, with a multi-argument indexer becoming nested subscripts
+/// (<c>arr[1, 2]</c> → <c>arr[1][2]</c>). A C# 15 extension indexer lowers to the static
+/// <c>item(receiver, …)</c> the emitter writes on the declaring class.
 /// </summary>
-public class ElementAccessStrategy : IConversionStrategy
+public class ElementAccessStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is ElementAccessExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var elementAccess = (ElementAccessExpressionSyntax)node;
 
@@ -29,22 +31,16 @@ public class ElementAccessStrategy : IConversionStrategy
             var indexerArgs = string.Join(", ", elementAccess.ArgumentList.Arguments
                 .Select(a => context.Converter.ConvertExpression(a.Expression)));
             var receiver = context.Converter.ConvertExpression(elementAccess.Expression);
-            return $"{extensionHome.Name}.item({receiver}, {indexerArgs})";
+            return JsExpr.Callish($"{extensionHome.Name}.item({receiver}, {indexerArgs})");
         }
 
-        var expr = context.Converter.ConvertExpression(elementAccess.Expression);
-        
-        // Convert indexer arguments
-        // If multiple args: arr[1, 2] -> arr[1][2]
-        var args = elementAccess.ArgumentList.Arguments;
-        var sb = new System.Text.StringBuilder(expr);
-        
-        foreach (var arg in args)
+        // Each indexer argument is one subscript.
+        var indexed = context.Converter.ConvertIr(elementAccess.Expression);
+        foreach (var arg in elementAccess.ArgumentList.Arguments)
         {
-            sb.Append("[").Append(context.Converter.ConvertExpression(arg.Expression)).Append("]");
+            indexed = JsExpr.Index(indexed, context.Converter.ConvertIr(arg.Expression));
         }
-
-        return sb.ToString();
+        return indexed;
     }
 
     public int Priority => 1;

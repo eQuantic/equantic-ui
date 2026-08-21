@@ -1,35 +1,37 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// Strategy for literal expressions.
-/// Handles: string, int, bool, null literals
+/// Literals in their JavaScript spelling: single-quoted strings, <c>true</c>/<c>false</c>/<c>null</c>,
+/// numbers with the C# type suffixes stripped (<c>L</c> becomes a BigInt literal, <c>m</c> an exact
+/// Decimal through the runtime helper).
 /// </summary>
-public class LiteralExpressionStrategy : IConversionStrategy
+public class LiteralExpressionStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is LiteralExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var literal = (LiteralExpressionSyntax)node;
         return literal.Kind() switch
         {
-            SyntaxKind.StringLiteralExpression => $"'{EscapeString(literal.Token.ValueText)}'",
-            SyntaxKind.TrueLiteralExpression => "true",
-            SyntaxKind.FalseLiteralExpression => "false",
-            SyntaxKind.NullLiteralExpression => "null",
+            SyntaxKind.StringLiteralExpression => JsExpr.Literal($"'{EscapeString(literal.Token.ValueText)}'"),
+            SyntaxKind.TrueLiteralExpression => JsExpr.Literal("true"),
+            SyntaxKind.FalseLiteralExpression => JsExpr.Literal("false"),
+            SyntaxKind.NullLiteralExpression => JsExpr.Literal("null"),
             SyntaxKind.NumericLiteralExpression => ConvertNumericLiteral(literal.Token.Text, context),
-            _ => literal.Token.Text
+            _ => JsExpr.Literal(literal.Token.Text)
         };
     }
 
-    private static string ConvertNumericLiteral(string text, ConversionContext context)
+    private static JsExpr ConvertNumericLiteral(string text, ConversionContext context)
     {
         var isHexOrBinary = text.StartsWith("0x") || text.StartsWith("0X")
             || text.StartsWith("0b") || text.StartsWith("0B");
@@ -38,7 +40,7 @@ public class LiteralExpressionStrategy : IConversionStrategy
         if (!isHexOrBinary && text.Length > 0 && (text[^1] == 'm' || text[^1] == 'M'))
         {
             context.UsedHelpers.Add(Eq.Import);
-            return $"{Eq.Dec}(\"{text[..^1]}\")";
+            return JsExpr.Callish($"{Eq.Dec}(\"{text[..^1]}\")");
         }
 
         // Strip C# numeric type suffixes that aren't valid JS. Hex/binary keep their digits
@@ -51,10 +53,10 @@ public class LiteralExpressionStrategy : IConversionStrategy
         var suffix = text[noSuffix.Length..];
         if (suffix.IndexOfAny(new[] { 'L', 'l' }) >= 0)
         {
-            return $"{noSuffix}n";
+            return JsExpr.Literal($"{noSuffix}n");
         }
 
-        return noSuffix;
+        return JsExpr.Literal(noSuffix);
     }
 
     private static string EscapeString(string s)

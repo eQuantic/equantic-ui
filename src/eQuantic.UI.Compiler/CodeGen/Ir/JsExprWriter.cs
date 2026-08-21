@@ -20,6 +20,25 @@ public static class JsExprWriter
 
     private static string Write(JsExpr expr, JsPrecedence required, string? parentOperator)
     {
+        // The author's parentheses. Where the surroundings are unknown (text handed to an
+        // unmigrated consumer) or the inside is (opaque text), they stay exactly as written; where
+        // the writer can see both, they are re-derived like any other — which is how a redundant
+        // pair disappears and a needed pair is put back.
+        if (expr is JsGroup group)
+        {
+            // A self-delimiting inside (a name, a member chain, a call, a string) reads the same in
+            // every position, so its parentheses go even at the string seam. A number keeps them:
+            // `(1).toString()` parses, `1.toString()` does not.
+            var selfDelimiting = group.Inner.Precedence >= JsPrecedence.Call
+                                 && group.Inner is not JsLiteral { IsNumeric: true };
+            if (selfDelimiting) return Write(group.Inner, required, parentOperator);
+
+            var keep = required == JsPrecedence.Opaque || group.Inner.Precedence == JsPrecedence.Opaque;
+            return keep
+                ? $"({Write(group.Inner, JsPrecedence.Opaque, null)})"
+                : Write(group.Inner, required, parentOperator);
+        }
+
         var text = Render(expr);
 
         // Text of unknown shape governs itself: it carries whatever parentheses the string world
@@ -35,11 +54,26 @@ public static class JsExprWriter
     private static string Render(JsExpr expr) => expr switch
     {
         JsOpaque opaque => opaque.Text,
+        JsIdentifier identifier => identifier.Name,
+        JsLiteral literal => literal.Text,
+        JsMember member => $"{Receiver(member.Target)}.{member.Name}",
+        JsIndex index => $"{Receiver(index.Target)}[{Write(index.IndexExpression)}]",
+        JsCall call => $"{Receiver(call.Target)}({string.Join(", ", call.Arguments.Select(Argument))})",
         JsBinary binary => RenderBinary(binary),
         JsUnary unary => RenderUnary(unary),
         JsConditional conditional => RenderConditional(conditional),
         _ => throw new InvalidOperationException($"No writer for IR node {expr.GetType().Name}."),
     };
+
+    /// <summary>A receiver must be at least call-shaped; a bare number additionally needs
+    /// parentheses, because <c>1.toString()</c> reads the dot as a decimal point.</summary>
+    private static string Receiver(JsExpr target) =>
+        target is JsLiteral { IsNumeric: true }
+            ? $"({Write(target, JsPrecedence.Opaque, null)})"
+            : Write(target, JsPrecedence.Call, null);
+
+    /// <summary>An argument is fenced by its commas; only a sequence expression would need more.</summary>
+    private static string Argument(JsExpr argument) => Write(argument, JsPrecedence.Assignment, null);
 
     private static string RenderBinary(JsBinary binary)
     {

@@ -395,10 +395,8 @@ public class CSharpToJsConverter
         var strategy = _strategyRegistry.FindStrategy(expression, _context);
         if (strategy != null)
         {
-            // Stamping marks node CONSTRUCTIONS in design mode, and no construction shape has
-            // moved to the IR — so the migrated branch has nothing to stamp.
             var result = strategy is IExpressionIrStrategy ir
-                ? ir.ConvertIr(expression, _context)
+                ? StampIr(expression, ir.ConvertIr(expression, _context))
                 : JsExpr.Opaque(Stamp(expression, strategy.Convert(expression, _context)));
             _context.SetCached(expression, result);
             return result;
@@ -423,6 +421,16 @@ public class CSharpToJsConverter
     /// which costs identity and never produces a wrong answer.
     /// </para>
     /// </summary>
+    /// <summary>The IR form of <see cref="Stamp"/>: a construction that design mode wraps comes
+    /// back call-shaped (the origin wrapper IS a call); anything else is returned untouched.</summary>
+    private JsExpr StampIr(ExpressionSyntax expression, JsExpr emitted)
+    {
+        if (!_context.DesignMode) return emitted;
+        var text = JsExprWriter.Write(emitted);
+        var stamped = Stamp(expression, text);
+        return ReferenceEquals(stamped, text) ? emitted : JsExpr.Callish(stamped);
+    }
+
     private string Stamp(ExpressionSyntax expression, string emitted)
     {
         if (!_context.DesignMode) return emitted;

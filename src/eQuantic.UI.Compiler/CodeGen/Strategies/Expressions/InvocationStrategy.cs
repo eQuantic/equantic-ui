@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Services;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -16,7 +17,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// - General method calls
 /// Note: String and List methods are handled by dedicated strategies in Primitives/
 /// </summary>
-public class InvocationStrategy : IConversionStrategy
+public class InvocationStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -27,7 +28,7 @@ public class InvocationStrategy : IConversionStrategy
     /// The call itself, plus the unwrapping a call with `out`/`ref` arguments needs — see
     /// <see cref="OutParameters"/> for the shape and why it exists.
     /// </summary>
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var call = ConvertCall(invocation, context);
@@ -44,7 +45,7 @@ public class InvocationStrategy : IConversionStrategy
         var assignments = byReference
             .Where(entry => entry.Target.Length > 0)
             .Select(entry => $"{entry.Target} = $o.{entry.Field}, ");
-        return $"($o => ({string.Concat(assignments)}$o.$))({call})";
+        return JsExpr.Callish($"($o => ({string.Concat(assignments)}$o.$))({JsExprWriter.Write(call)})");
     }
 
     /// <summary>Each `out`/`ref` argument: what it assigns to, and the field of the result object it
@@ -80,7 +81,7 @@ public class InvocationStrategy : IConversionStrategy
         return result;
     }
 
-    private string ConvertCall(InvocationExpressionSyntax invocation, ConversionContext context)
+    private JsExpr ConvertCall(InvocationExpressionSyntax invocation, ConversionContext context)
     {
         var methodExpression = invocation.Expression;
         var methodName = methodExpression.ToString();
@@ -101,16 +102,17 @@ public class InvocationStrategy : IConversionStrategy
         // against the resolved signature).
         var symbol = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
 
-        // 1. Resolve Arguments
-        var argsList = new List<string>();
+        // 1. Resolve Arguments — as IR, so the writer fences each for argument position and the
+        // author's redundant parentheses around one go the way they go everywhere else.
+        var argsList = new List<JsExpr>();
         foreach (var arg in invocation.ArgumentList.Arguments)
         {
             // `out` is not passed IN — it comes back in the result object. `ref` is read before it
             // is written, so it stays an argument as well as a field of the result.
             if (arg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword)) continue;
             argsList.Add(arg.Expression is DeclarationExpressionSyntax declaration
-                ? declaration.Designation.ToString().ToJsIdentifier()
-                : context.Converter.ConvertExpression(arg.Expression));
+                ? JsExpr.Identifier(declaration.Designation.ToString().ToJsIdentifier())
+                : context.Converter.ConvertIr(arg.Expression));
         }
 
         // A `params` parameter is a REST parameter on the other side, so the two C# call forms
@@ -124,7 +126,7 @@ public class InvocationStrategy : IConversionStrategy
             && context.SemanticHelper.GetType(invocation.ArgumentList.Arguments[^1].Expression)
                 is IArrayTypeSymbol)
         {
-            argsList[^1] = $"...{argsList[^1]}";
+            argsList[^1] = JsExpr.Opaque($"...{JsExprWriter.WriteIn(argsList[^1], JsPrecedence.Assignment)}");
         }
 
         // NAMED arguments bind by NAME in C# but JS only has positions: reorder into the
@@ -133,7 +135,7 @@ public class InvocationStrategy : IConversionStrategy
         // icon and the wrong size, found on the header CTA).
         if (symbol != null && invocation.ArgumentList.Arguments.Any(a => a.NameColon != null))
         {
-            var slots = new string?[symbol.Parameters.Length];
+            var slots = new JsExpr?[symbol.Parameters.Length];
             var arguments = invocation.ArgumentList.Arguments;
             for (var i = 0; i < arguments.Count && i < argsList.Count; i++)
             {
@@ -148,21 +150,24 @@ public class InvocationStrategy : IConversionStrategy
                 if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = argsList[i];
             }
             var lastSet = Array.FindLastIndex(slots, s => s != null);
-            argsList = new List<string>();
+            argsList = new List<JsExpr>();
             for (var i = 0; i <= lastSet; i++)
-                argsList.Add(slots[i] ?? ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i]));
+                argsList.Add(slots[i] ?? JsExpr.Opaque(ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i])));
         }
-        var args = string.Join(", ", argsList);
+        var argIrs = argsList;
+        // The same arguments as text, for the template branches that splice them.
+        var args = string.Join(", ", argIrs.Select(a => JsExprWriter.WriteIn(a, JsPrecedence.Assignment)));
 
         // 4. General Method Call (Fallback)
         if (methodExpression is MemberAccessExpressionSyntax genAccess)
         {
-            var caller = context.Converter.ConvertExpression(genAccess.Expression);
+            var callerIr = context.Converter.ConvertIr(genAccess.Expression);
+            var caller = JsExprWriter.WriteIn(callerIr, JsPrecedence.Call);
 
             // Handle delegate/action Invoke() calls
             if (methodName == "Invoke")
             {
-                return $"{caller}({args})";
+                return JsExpr.Call(callerIr, argIrs);
             }
 
             // EXTENSION METHOD in reduced form (`node.Also(x => …)`): JS has no extensions, so the
@@ -178,7 +183,7 @@ public class InvocationStrategy : IConversionStrategy
                 // form survives as a reduced form. Importing the C#-side static class would ask
                 // for a file the runtime never emits.
                 if (IsRuntimeVocabulary(symbol.ContainingType))
-                    return $"{caller}.{methodName.ToCamelCase()}({args})";
+                    return JsExpr.Call(JsExpr.Member(callerIr, methodName.ToCamelCase()), argIrs);
 
                 // An extension declared OUTSIDE this compilation has no module to go home to:
                 // emitting `MemoryExtensions.startsWith(...)` names a class the bundle never
@@ -196,7 +201,7 @@ public class InvocationStrategy : IConversionStrategy
                 // syntax-walking import collector can't see it — register the name we introduced.
                 context.UsedAppTypes.Add(symbol.ContainingType.Name);
                 var receiverFirst = string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
-                return $"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({receiverFirst})";
+                return JsExpr.Callish($"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({receiverFirst})");
             }
 
             // C# 14 extension-BLOCK method (`extension(T receiver) { … }`): the emitter lowers it
@@ -208,11 +213,11 @@ public class InvocationStrategy : IConversionStrategy
                 var extensionArgs = symbol!.IsStatic
                     ? args
                     : string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
-                return $"{extensionHome.Name}.{methodName.ToCamelCase()}({extensionArgs})";
+                return JsExpr.Callish($"{extensionHome.Name}.{methodName.ToCamelCase()}({extensionArgs})");
             }
 
             ReportIfUntranslatable(symbol, methodName, invocation, context);
-            return $"{caller}.{methodName.ToCamelCase()}({args})";
+            return JsExpr.Call(JsExpr.Member(callerIr, methodName.ToCamelCase()), argIrs);
         }
 
         // Invoking a DELEGATE VALUE by bare name (`configure(node)`, `OnSelect(i)`): the invocation
@@ -227,8 +232,8 @@ public class InvocationStrategy : IConversionStrategy
             // it behaves like an instance field, so emitting it bare compiles and then throws a
             // ReferenceError the moment the callback runs — long after the page looked fine.
             if (delegateTarget.IsInScopeBinding())
-                return $"{delegateIdentifier.Identifier.Text}({args})";
-            return $"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}({args})";
+                return JsExpr.Callish($"{delegateIdentifier.Identifier.Text}({args})");
+            return JsExpr.Callish($"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}({args})");
         }
 
         // Direct invocation (Function() -> function())
@@ -252,7 +257,7 @@ public class InvocationStrategy : IConversionStrategy
                 context.UsedRuntimeTypes.Add(declaring.Name);
             else
                 context.UsedAppTypes.Add(declaring.Name);
-            return $"{declaring.Name}.{methodName.ToCamelCase()}({args})";
+            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.Name), methodName.ToCamelCase()), argIrs);
         }
 
         // STANDALONE factory calls (no semantic model — the playground's mode): nothing can RESOLVE
@@ -268,7 +273,7 @@ public class InvocationStrategy : IConversionStrategy
             && !EnclosingTypeDeclares(invocation, methodName))
         {
             context.UsedRuntimeTypes.Add("UI");
-            return $"UI.{methodName.ToCamelCase()}({args})";
+            return JsExpr.Call(JsExpr.Identifier("UI." + methodName.ToCamelCase()), argIrs);
         }
 
         // Use semantic resolution if available. Local functions are NOT members of `this` even
@@ -299,11 +304,11 @@ public class InvocationStrategy : IConversionStrategy
             // `_tick?.Dispose()` raised EQ2004 while the shipped translation was fine.
             if (!invocation.IsNullConditional())
                 ReportIfUntranslatable(symbol, methodName, invocation, context);
-            return $"this.{methodName.ToCamelCase()}({args})";
+            return JsExpr.Call(JsExpr.ThisMember(methodName.ToCamelCase()), argIrs);
         }
 
         ReportIfUntranslatable(symbol, methodName, invocation, context);
-        return $"{methodName.ToCamelCase()}({args})";
+        return JsExpr.Call(JsExpr.Identifier(methodName.ToCamelCase()), argIrs);
     }
 
     /// <summary>

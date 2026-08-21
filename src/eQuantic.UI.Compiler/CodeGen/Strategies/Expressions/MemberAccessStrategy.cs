@@ -2,30 +2,35 @@ using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// General strategy for member access.
-/// Handles property mapping (Length -> length) and standard naming conventions.
-/// Serves as a fallback after specialized strategies (Enum, Nullable).
+/// The fallback for <c>receiver.Member</c> once every dedicated strategy has declined: a handful of
+/// well-known statics (<c>DateTime.Now</c>, <c>Guid.Empty</c>), the type-dependent <c>Count</c>
+/// (<c>size</c> on a Set, <c>Object.keys().length</c> on a dictionary, <c>length</c> on a sequence),
+/// C# 14 extension properties lowered to their static home, and otherwise the camelCased member
+/// on the converted receiver — with a method group bound to that receiver.
 /// </summary>
-public class MemberAccessStrategy : IConversionStrategy
+public class MemberAccessStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is MemberAccessExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var memberAccess = (MemberAccessExpressionSyntax)node;
         var name = memberAccess.Name.Identifier.Text;
-        var expr = context.Converter.ConvertExpression(memberAccess.Expression);
+        var receiver = context.Converter.ConvertIr(memberAccess.Expression);
+        // The receiver's text, fenced for receiver position — what the template branches splice.
+        var expr = JsExprWriter.WriteIn(receiver, JsPrecedence.Call);
 
         // Convert C# properties to JS
         // Note: Specialized mappings (HasValue, Value) are handled by NullableStrategy
-        
+
         // Semantic check for DateTime.Now, Guid.Empty, etc.
         var symbol = context.SemanticHelper.GetSymbol(node);
 
@@ -35,9 +40,8 @@ public class MemberAccessStrategy : IConversionStrategy
         if (symbol is IPropertySymbol && symbol.ExtensionBlockHome() is { } extensionHome)
         {
             extensionHome.RegisterIntroduced(context);
-            return symbol.IsStatic
-                ? $"{extensionHome.Name}.{name.ToCamelCase()}()"
-                : $"{extensionHome.Name}.{name.ToCamelCase()}({expr})";
+            var home = JsExpr.Member(JsExpr.Identifier(extensionHome.Name), name.ToCamelCase());
+            return symbol.IsStatic ? JsExpr.Call(home) : JsExpr.Call(home, receiver);
         }
 
         if (symbol != null)
@@ -45,18 +49,18 @@ public class MemberAccessStrategy : IConversionStrategy
             var containingType = symbol.ContainingType.ToDisplayString();
             if (containingType == "System.DateTime" && (symbol.Name == "Now" || symbol.Name == "Today"))
             {
-                return "new Date()";
+                return JsExpr.Callish("new Date()");
             }
             if (containingType == "System.Guid" && symbol.Name == "Empty")
             {
-                return "''";
+                return JsExpr.Literal("''");
             }
         }
 
         // Heuristic fallback
-        if (expr == "DateTime" && (name == "Now" || name == "Today")) return "new Date()";
-        if (expr == "Guid" && name == "Empty") return "''";
-        if ((expr == "string" || expr == "String") && name == "Empty") return "''";
+        if (expr == "DateTime" && (name == "Now" || name == "Today")) return JsExpr.Callish("new Date()");
+        if (expr == "Guid" && name == "Empty") return JsExpr.Literal("''");
+        if ((expr == "string" || expr == "String") && name == "Empty") return JsExpr.Literal("''");
 
         // .Count is type-dependent: Set -> .size, Dictionary -> Object.keys(x).length,
         // List/array/ICollection -> .length.
@@ -66,11 +70,11 @@ public class MemberAccessStrategy : IConversionStrategy
             if (def.StartsWith("System.Collections.Generic.HashSet") ||
                 def.StartsWith("System.Collections.Generic.ISet") ||
                 def.StartsWith("System.Collections.Generic.IReadOnlySet"))
-                return $"{expr}.size";
+                return JsExpr.Member(receiver, "size");
             if (def.StartsWith("System.Collections.Generic.Dictionary") ||
                 def.StartsWith("System.Collections.Generic.IDictionary") ||
                 def.StartsWith("System.Collections.Generic.IReadOnlyDictionary"))
-                return $"Object.keys({expr}).length";
+                return JsExpr.Member(JsExpr.Call(JsExpr.Identifier("Object.keys"), receiver), "length");
 
             // Same coin toss as `Contains`: a receiver typed only as a collection may be a Set at
             // run time, whose count is `size`. `.length` on one is undefined — and `undefined > 0`
@@ -78,7 +82,7 @@ public class MemberAccessStrategy : IConversionStrategy
             if (context.SemanticHelper.GetType(memberAccess.Expression).HasOpenCollectionShape())
             {
                 context.UsedHelpers.Add(Eq.Import);
-                return $"{Eq.Count}({expr})";
+                return JsExpr.Call(JsExpr.Identifier(Eq.Count), receiver);
             }
 
             // A USER type with its own `Count` is not a collection — its property emits as
@@ -87,9 +91,9 @@ public class MemberAccessStrategy : IConversionStrategy
             // where guessing array is the useful default).
             var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
             if (receiverType is not null && receiverType.Locations.Any(location => location.IsInSource))
-                return $"{expr}.{name.ToCamelCase()}";
+                return JsExpr.Member(receiver, name.ToCamelCase());
 
-            return $"{expr}.length";
+            return JsExpr.Member(receiver, "length");
         }
 
         // The camelCase guess below is exactly the invocation fallback's story (EQ2006): an
@@ -113,23 +117,20 @@ public class MemberAccessStrategy : IConversionStrategy
             _ => name.ToCamelCase()
         };
 
-        if (string.IsNullOrEmpty(name)) return expr;
+        if (string.IsNullOrEmpty(name)) return receiver;
 
-        var result = $"{expr}.{name}";
+        var member = JsExpr.Member(receiver, name);
 
-        // If it's a method reference (not being called), add .bind(expr)
+        // A method REFERENCE (not being called) is a method group: bind it to its receiver.
         if (symbol is IMethodSymbol)
         {
-            var isDirectInvocation = memberAccess.Parent is InvocationExpressionSyntax invocation && 
+            var isDirectInvocation = memberAccess.Parent is InvocationExpressionSyntax invocation &&
                                   invocation.Expression == memberAccess;
-            
             if (!isDirectInvocation)
-            {
-                result += $".bind({expr})";
-            }
+                return JsExpr.Call(JsExpr.Member(member, "bind"), receiver);
         }
 
-        return result;
+        return member;
     }
 
     public int Priority => 0; // Low priority (fallback)

@@ -38,6 +38,16 @@ public class PrecedenceConformanceTests
     [InlineData("bool b = true; return (b ? 1 : 2) * 3;")]                                    // 3
     [InlineData("int x = 5; return -(-x);")]                                                  // 5
     [InlineData("return 100 / (2 + 3);")]                                                     // 20
+    // the author's parentheses, re-derived: redundant ones go, necessary ones stay, and the one
+    // JavaScript needs in front of a dot after a number is put in
+    [InlineData("int n = 3; return ((n)) + 1;")]                                                 // 4
+    [InlineData("var xs = new List<int> { 1, 2 }; return (xs).Count;")]                          // 2
+    [InlineData("var xs = new List<int> { 1, 2 }; return (xs.Count + 1) * 2;")]                  // 6
+    [InlineData("bool b = false; var a = new List<int> { 1 }; var c = new List<int> { 1, 2 }; return (b ? a : c).Count;")] // 2
+    [InlineData("return (1).ToString();")]                                                       // "1"
+    [InlineData("return (-1).ToString();")]                                                      // "-1"
+    [InlineData("return (2 + 3).ToString();")]                                                   // "5"
+    [InlineData("int[] arr = { 4, 5, 6 }; return (arr)[1] + (arr[2]);")]                         // 11
     public void OperatorComposition_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

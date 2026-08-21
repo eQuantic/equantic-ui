@@ -2,41 +2,46 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// Strategy for identifier names.
-/// Handles:
-/// - Local variables -> name
-/// - Properties/Fields -> this.name
-/// - Console -> console
+/// A bare name. The symbol decides what it reaches: a local/parameter/range variable is the name
+/// itself, an instance member is <c>this.member</c> (a method group additionally <c>.bind(this)</c>),
+/// a static member goes through its class, a local function is the <c>const</c> beside the caller.
+/// Without a symbol the shape decides — a leading underscore or a capital reads as a member — which
+/// is legal exactly where guessing is (see <c>ConversionContext.CanGuess</c>).
 /// </summary>
-public class IdentifierStrategy : IConversionStrategy
+public class IdentifierStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is IdentifierNameSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var identifier = (IdentifierNameSyntax)node;
         // ValueText strips the verbatim-identifier @ (C# `@checked` → JS `checked` — not reserved there).
         var name = identifier.Identifier.ValueText;
-        
+
         // Map 'Component' property (in State classes) to 'this._component'
-        if (name == "Component") return "this._component";
+        if (name == "Component") return JsExpr.ThisMember("_component");
 
         // Priority: Semantic Check > String Check (Fallback)
         var symbol = context.SemanticHelper.GetSymbol(identifier);
-        
-        // If it's a type symbol, return as is (to allow EnumStrategy to work)
-        if (symbol is ITypeSymbol || symbol is INamedTypeSymbol) return name;
 
-        if (context.SemanticHelper.IsSystemConsole(symbol)) return "console";
-        if (context.SemanticModel == null && name == "Console") return "console";
-        
+        // If it's a type symbol, return as is (to allow EnumStrategy to work)
+        if (symbol is ITypeSymbol || symbol is INamedTypeSymbol) return JsExpr.Identifier(name);
+
+        if (context.SemanticHelper.IsSystemConsole(symbol)) return JsExpr.Identifier("console");
+        if (context.SemanticModel == null && name == "Console") return JsExpr.Identifier("console");
+
+        // Is this identifier the `.Name` side of `other.Member`? Then the receiver already
+        // qualifies it, and only the member name is emitted.
+        var isMemberName = identifier.Parent is MemberAccessExpressionSyntax access && access.Name == identifier;
+
         // Resolve member access prefix (this.) using semantic model
         if (symbol != null)
         {
@@ -49,7 +54,7 @@ public class IdentifierStrategy : IConversionStrategy
             // through the JS-identifier rename, or a local called `new` would emit `new`.
             if (symbol.Kind is SymbolKind.Local or SymbolKind.RangeVariable
                 || (symbol.Kind == SymbolKind.Parameter && !symbol.IsPrimaryConstructorParameter()))
-                return name.ToJsIdentifier();
+                return JsExpr.Identifier(name.ToJsIdentifier());
 
             // A LOCAL FUNCTION is a function in SCOPE, not a member — whatever its containing type
             // says. It compiles to a `const` arrow beside the code that calls it, so a reference to
@@ -58,7 +63,7 @@ public class IdentifierStrategy : IConversionStrategy
             // (the server runs the C#), which is the worst place for a difference to live.
             // InvocationStrategy already excludes local functions on three paths; this is the fourth.
             if (symbol is IMethodSymbol { MethodKind: MethodKind.LocalFunction })
-                return name.ToCamelCase().ToJsIdentifier();
+                return JsExpr.Identifier(name.ToCamelCase().ToJsIdentifier());
 
             if (symbol.Kind == SymbolKind.Field || symbol.Kind == SymbolKind.Property || symbol.Kind == SymbolKind.Method)
             {
@@ -66,42 +71,31 @@ public class IdentifierStrategy : IConversionStrategy
                 // to `static Items` on `Widget` must emit `Widget.items`, never `this.items` (which the
                 // uppercase fallback below would otherwise produce, leaving the value undefined at runtime).
                 // This holds for a static METHOD passed as a delegate too (`onPressed: Helper` → the method
-                // group `Widget.helper`; no `.bind`, statics have no receiver). (When the identifier is the
-                // `.Name` side of `other.Member`, the receiver already qualifies it — emit just the member.)
+                // group `Widget.helper`; no `.bind`, statics have no receiver).
                 if (symbol.IsStatic && symbol.ContainingType != null)
                 {
-                    if (identifier.Parent is MemberAccessExpressionSyntax sma && sma.Name == identifier)
-                    {
-                        return name.ToCamelCase();
-                    }
-                    return $"{symbol.ContainingType.Name}.{name.ToCamelCase()}";
+                    return isMemberName
+                        ? JsExpr.Identifier(name.ToCamelCase())
+                        : JsExpr.Member(JsExpr.Identifier(symbol.ContainingType.Name), name.ToCamelCase());
                 }
 
                 // If it's a member of the current class and not static, add 'this.'
                 if (!symbol.IsStatic && symbol.ContainingType != null)
                 {
-                    // IMPROVEMENT: Check if the identifier is part of a member access already.
-                    // If it's 'other.Property', identifier 'Property' shouldn't get 'this.'
-                    if (identifier.Parent is MemberAccessExpressionSyntax ma && ma.Name == identifier)
-                    {
-                        return name.ToCamelCase();
-                    }
+                    if (isMemberName) return JsExpr.Identifier(name.ToCamelCase());
 
-                    var result = $"this.{name.ToCamelCase()}";
-                    
-                    // If it's a method reference (not being called), add .bind(this)
+                    var member = JsExpr.ThisMember(name.ToCamelCase());
+
+                    // A method REFERENCE (not being called) is a method group: bind it to the instance.
                     if (symbol is IMethodSymbol)
                     {
-                        var isDirectInvocation = identifier.Parent is InvocationExpressionSyntax invocation && 
+                        var isDirectInvocation = identifier.Parent is InvocationExpressionSyntax invocation &&
                                               invocation.Expression == identifier;
-                        
                         if (!isDirectInvocation)
-                        {
-                            result += ".bind(this)";
-                        }
+                            return JsExpr.Call(JsExpr.Member(member, "bind"), JsExpr.This);
                     }
 
-                    return result;
+                    return member;
                 }
             }
 
@@ -109,30 +103,27 @@ public class IdentifierStrategy : IConversionStrategy
             // it behaves like an instance field, so emit `this.<name>`.
             if (symbol.IsPrimaryConstructorParameter())
             {
-                if (identifier.Parent is MemberAccessExpressionSyntax pma && pma.Name == identifier)
-                    return name.ToCamelCase();
-                return $"this.{name.ToCamelCase()}";
+                return isMemberName
+                    ? JsExpr.Identifier(name.ToCamelCase())
+                    : JsExpr.ThisMember(name.ToCamelCase());
             }
         }
 
         // Fallback Heuristics
         if (name.StartsWith("_"))
         {
-            return $"this.{name}";
+            return JsExpr.ThisMember(name);
         }
-        
+
         // If it starts with Uppercase and not obviously a local/param, it's likely a property
         if (char.IsUpper(name[0]))
         {
-             // If parent is MemberAccess as the Name part, don't prefix
-            if (identifier.Parent is MemberAccessExpressionSyntax ma && ma.Name == identifier)
-            {
-                return name.ToCamelCase();
-            }
-            return $"this.{name.ToCamelCase()}";
+            return isMemberName
+                ? JsExpr.Identifier(name.ToCamelCase())
+                : JsExpr.ThisMember(name.ToCamelCase());
         }
-        
-        return name.ToJsIdentifier();
+
+        return JsExpr.Identifier(name.ToJsIdentifier());
     }
 
     public int Priority => 10;
