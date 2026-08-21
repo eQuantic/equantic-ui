@@ -39,6 +39,15 @@ public static class JsStatementWriter
         JsThrow { Value: null } => "throw;",
         JsThrow @throw => $"throw {JsExprWriter.Write(@throw.Value!)};",
         JsLet let => $"let {let.Name}{let.Annotation} = {JsExprWriter.Write(let.Initializer)};",
+        JsConst @const => $"const {@const.Name} = {JsExprWriter.Write(@const.Initializer)};",
+        JsHeaded headed => $"{headed.Head} {Compact(headed.Body)}",
+        JsTry @try => $"try {Compact(@try.Body)}"
+                      + string.Concat(@try.Catches.Select(c => $" catch{(c.Binding.Length == 0 ? "" : " " + c.Binding)} {Compact(c.Block)}"))
+                      + (@try.Finally is null ? "" : $" finally {Compact(@try.Finally)}"),
+        JsSwitch @switch => $"switch ({JsExprWriter.Write(@switch.Subject)}) {{"
+                            + string.Concat(@switch.Cases.Select(c =>
+                                string.Concat(c.Labels.Select(l => $" {l}:")) + string.Concat(c.Body.Select(b => " " + Compact(b)))))
+                            + " }",
         JsIf @if => $"if ({JsExprWriter.Write(@if.Condition)}) {Compact(@if.Then)}"
                     + (@if.Else is null ? "" : $" else {Compact(@if.Else)}"),
         JsWhile @while => $"while ({JsExprWriter.Write(@while.Condition)}) {Compact(@while.Body)}",
@@ -62,6 +71,11 @@ public static class JsStatementWriter
         JsBlock block => PrettyBlock(block, depth),
         JsIf @if => $"if ({JsExprWriter.Write(@if.Condition)}) {Pretty(@if.Then, depth)}"
                     + (@if.Else is null ? "" : $" else {Pretty(@if.Else, depth)}"),
+        JsHeaded headed => $"{headed.Head} {Pretty(headed.Body, depth)}",
+        JsTry @try => $"try {Pretty(@try.Body, depth)}"
+                      + string.Concat(@try.Catches.Select(c => $" catch{(c.Binding.Length == 0 ? "" : " " + c.Binding)} {Pretty(c.Block, depth)}"))
+                      + (@try.Finally is null ? "" : $" finally {Pretty(@try.Finally, depth)}"),
+        JsSwitch @switch => PrettySwitch(@switch, depth),
         JsWhile @while => $"while ({JsExprWriter.Write(@while.Condition)}) {Pretty(@while.Body, depth)}",
         JsDoWhile doWhile => $"do {Pretty(doWhile.Body, depth)} while ({JsExprWriter.Write(doWhile.Condition)});",
         _ => Compact(statement),
@@ -72,6 +86,22 @@ public static class JsStatementWriter
     {
         var rendered = statements.Select(s => Pretty(s, depth)).Where(text => text.Length > 0).ToList();
         return string.Join("\n" + Indent(depth), rendered);
+    }
+
+    /// <summary>Labels one level in, their statements one level further.</summary>
+    private static string PrettySwitch(JsSwitch @switch, int depth)
+    {
+        var builder = new StringBuilder();
+        builder.Append("switch (").Append(JsExprWriter.Write(@switch.Subject)).Append(") {");
+        foreach (var @case in @switch.Cases)
+        {
+            foreach (var label in @case.Labels)
+                builder.Append('\n').Append(Indent(depth + 1)).Append(label).Append(':');
+            var body = Lines(@case.Body, depth + 2);
+            if (body.Length > 0) builder.Append('\n').Append(Indent(depth + 2)).Append(body);
+        }
+        builder.Append('\n').Append(Indent(depth)).Append('}');
+        return builder.ToString();
     }
 
     private static string PrettyBlock(JsBlock block, int depth)

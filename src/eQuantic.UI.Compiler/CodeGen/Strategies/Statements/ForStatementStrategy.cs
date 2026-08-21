@@ -1,45 +1,33 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
-/// <summary>
-/// Strategy for classic for loop statements.
-/// Handles:
-/// - for (int i = 0; i &lt; n; i++) { ... }
-/// </summary>
-public class ForStatementStrategy : IStatementStrategy
+/// <summary><c>for (init; condition; incrementors) body</c>, 1:1.</summary>
+public class ForStatementStrategy : IStatementIrStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is ForStatementSyntax;
     }
 
-    public string Convert(StatementSyntax node, ConversionContext context)
+    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
     {
         var forStmt = (ForStatementSyntax)node;
-
-        // Convert declaration or initializers
         var declaration = ConvertDeclaration(forStmt, context);
-
-        // Convert condition
         var condition = forStmt.Condition != null
             ? context.Converter.ConvertExpression(forStmt.Condition)
             : "";
-
-        // Convert incrementors
         var incrementors = string.Join(", ",
             forStmt.Incrementors.Select(i => context.Converter.ConvertExpression(i)));
-
-        // Convert body
-        var body = context.Converter.Convert(forStmt.Statement);
-
-        return $"for ({declaration}; {condition}; {incrementors}) {body}";
+        var body = context.Converter.ConvertStatementIr(forStmt.Statement);
+        return JsStatement.Headed($"for ({declaration}; {condition}; {incrementors})", body);
     }
 
-    private string ConvertDeclaration(ForStatementSyntax forStmt, ConversionContext context)
+    private static string ConvertDeclaration(ForStatementSyntax forStmt, ConversionContext context)
     {
-        // Handle variable declaration: for (int i = 0; ...)
+        // for (int i = 0; ...)
         if (forStmt.Declaration != null)
         {
             var variables = forStmt.Declaration.Variables
@@ -54,7 +42,7 @@ public class ForStatementStrategy : IStatementStrategy
             return $"let {string.Join(", ", variables)}";
         }
 
-        // Handle initializer expressions: for (i = 0; ...)
+        // for (i = 0; ...)
         if (forStmt.Initializers.Count > 0)
         {
             return string.Join(", ",

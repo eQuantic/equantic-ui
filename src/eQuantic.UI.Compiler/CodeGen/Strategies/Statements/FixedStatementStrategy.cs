@@ -1,31 +1,21 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
-/// <summary>
-/// Strategy for Fixed statements.
-/// Handles: fixed(int* p = &x) { ... }
-/// Since JS doesn't support pointers/pinning, this treats it as a standard block 
-/// but warns about potential unsafe behavior mismatch.
-/// </summary>
-public class FixedStatementStrategy : IStatementStrategy
+/// <summary><c>fixed</c> pins memory, which has no meaning here: the body alone, marked.</summary>
+public class FixedStatementStrategy : IStatementIrStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is FixedStatementSyntax;
     }
 
-    public string Convert(StatementSyntax node, ConversionContext context)
-    {
-        var fixedStmt = (FixedStatementSyntax)node;
-        
-        // Convert the body
-        var body = context.Converter.ConvertStatement(fixedStmt.Statement);
-        
-        // Optional: Emit a comment warning
-        return $"/* fixed statement unwrapped */ {body}";
-    }
+    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context) =>
+        JsStatement.Sequence(
+            JsStatement.Raw("/* fixed statement unwrapped */"),
+            context.Converter.ConvertStatementIr(((FixedStatementSyntax)node).Statement));
 
     public int Priority => 10;
 }

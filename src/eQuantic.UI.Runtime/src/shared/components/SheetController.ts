@@ -287,13 +287,36 @@ export class SheetController {
         return true;
     }
     apply(edit: SheetEdit, forward: boolean) {
-        switch (edit.kind) { case 'setCells': let cells = forward ? edit.after : edit.before; for (const snapshot of cells) this.document.setCell(snapshot.cell, snapshot.value); break; case 'insertRows': if (forward) this.document.shiftRows(edit.at, edit.count); else this.document.shiftRows(edit.at, -edit.count); break; case 'deleteRows': if (forward) this.document.shiftRows(edit.at, -edit.count); else {
-            this.document.shiftRows(edit.at, edit.count);
-            for (const snapshot of edit.removed) this.document.setCell(snapshot.cell, snapshot.value);
-        } break; case 'insertCols': if (forward) this.document.shiftCols(edit.at, edit.count); else this.document.shiftCols(edit.at, -edit.count); break; case 'deleteCols': if (forward) this.document.shiftCols(edit.at, -edit.count); else {
-            this.document.shiftCols(edit.at, edit.count);
-            for (const snapshot of edit.removed) this.document.setCell(snapshot.cell, snapshot.value);
-        } break; case 'resizeRow': this.document.setRowHeight(edit.at, forward ? edit.newSize : edit.oldSize); break; case 'resizeCol': this.document.setColWidth(edit.at, forward ? edit.newSize : edit.oldSize); break; }
+        switch (edit.kind) {
+            case 'setCells':
+                let cells = forward ? edit.after : edit.before;
+                for (const snapshot of cells) this.document.setCell(snapshot.cell, snapshot.value);
+                break;
+            case 'insertRows':
+                if (forward) this.document.shiftRows(edit.at, edit.count); else this.document.shiftRows(edit.at, -edit.count);
+                break;
+            case 'deleteRows':
+                if (forward) this.document.shiftRows(edit.at, -edit.count); else {
+                    this.document.shiftRows(edit.at, edit.count);
+                    for (const snapshot of edit.removed) this.document.setCell(snapshot.cell, snapshot.value);
+                }
+                break;
+            case 'insertCols':
+                if (forward) this.document.shiftCols(edit.at, edit.count); else this.document.shiftCols(edit.at, -edit.count);
+                break;
+            case 'deleteCols':
+                if (forward) this.document.shiftCols(edit.at, -edit.count); else {
+                    this.document.shiftCols(edit.at, edit.count);
+                    for (const snapshot of edit.removed) this.document.setCell(snapshot.cell, snapshot.value);
+                }
+                break;
+            case 'resizeRow':
+                this.document.setRowHeight(edit.at, forward ? edit.newSize : edit.oldSize);
+                break;
+            case 'resizeCol':
+                this.document.setColWidth(edit.at, forward ? edit.newSize : edit.oldSize);
+                break;
+        }
     }
     commit(edit: SheetEdit) {
         this.history.push(edit);

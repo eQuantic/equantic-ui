@@ -35,6 +35,17 @@ public abstract record JsStatement
     public static JsStatement Let(string name, string annotation, JsExpr initializer) =>
         new JsLet(name, annotation, initializer);
 
+    public static JsStatement Const(string name, JsExpr initializer) => new JsConst(name, initializer);
+
+    /// <summary>A statement introduced by a head the writer does not model — <c>for (…)</c>,
+    /// <c>for (const x of xs)</c>, <c>label:</c> — followed by its body, laid out like any block.</summary>
+    public static JsStatement Headed(string head, JsStatement body) => new JsHeaded(head, body);
+
+    public static JsStatement Try(JsStatement body, IReadOnlyList<JsCatch> catches, JsStatement? @finally) =>
+        new JsTry(body, catches, @finally);
+
+    public static JsStatement Switch(JsExpr subject, IReadOnlyList<JsCase> cases) => new JsSwitch(subject, cases);
+
     public static JsStatement If(JsExpr condition, JsStatement then, JsStatement? otherwise) =>
         new JsIf(condition, then, otherwise);
 
@@ -64,6 +75,20 @@ public sealed record JsThrow(JsExpr? Value) : JsStatement;
 /// <summary><c>let name: annotation = initializer;</c> — the annotation text already carries its
 /// leading colon, or is empty.</summary>
 public sealed record JsLet(string Name, string Annotation, JsExpr Initializer) : JsStatement;
+
+public sealed record JsConst(string Name, JsExpr Initializer) : JsStatement;
+
+public sealed record JsHeaded(string Head, JsStatement Body) : JsStatement;
+
+/// <summary>A catch clause: its binding text (<c>(e: any)</c>, or empty for the bare form) and block.</summary>
+public sealed record JsCatch(string Binding, JsStatement Block);
+
+public sealed record JsTry(JsStatement Body, IReadOnlyList<JsCatch> Catches, JsStatement? Finally) : JsStatement;
+
+/// <summary>One switch section: its labels (<c>case 1</c>, <c>default</c>) and statements.</summary>
+public sealed record JsCase(IReadOnlyList<string> Labels, IReadOnlyList<JsStatement> Body);
+
+public sealed record JsSwitch(JsExpr Subject, IReadOnlyList<JsCase> Cases) : JsStatement;
 
 public sealed record JsIf(JsExpr Condition, JsStatement Then, JsStatement? Else) : JsStatement;
 

@@ -1,22 +1,19 @@
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
-/// <summary>
-/// A C# label survives as a JS label — same syntax, same meaning. C# 15's labeled
-/// <c>break</c>/<c>continue</c> (<c>break outer;</c>) target it exactly as JavaScript's do, so the
-/// pair translates 1:1 (see <see cref="BreakStatementStrategy"/>/<see cref="ContinueStatementStrategy"/>).
-/// A label whose only consumer would be <c>goto</c> is harmless in the output — <c>goto</c> itself
-/// stays a build error (EQ2002).
-/// </summary>
-public class LabeledStatementStrategy : IStatementStrategy
+/// <summary>A labeled statement — the target of C# 15's labeled <c>break</c>/<c>continue</c> —
+/// is a JavaScript label 1:1.</summary>
+public class LabeledStatementStrategy : IStatementIrStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context) => node is LabeledStatementSyntax;
 
-    public string Convert(StatementSyntax node, ConversionContext context)
+    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
     {
         var labeled = (LabeledStatementSyntax)node;
-        return $"{labeled.Identifier.Text}: {context.Converter.ConvertStatement(labeled.Statement)}";
+        return JsStatement.Headed($"{labeled.Identifier.Text}:", context.Converter.ConvertStatementIr(labeled.Statement));
     }
 
     public int Priority => 10;

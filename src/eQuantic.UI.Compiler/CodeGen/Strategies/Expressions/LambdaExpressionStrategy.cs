@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -10,14 +11,14 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// - (a, b) => { stmt; }
 /// - x => x + 1
 /// </summary>
-public class LambdaExpressionStrategy : IConversionStrategy
+public class LambdaExpressionStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is LambdaExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         if (node is ParenthesizedLambdaExpressionSyntax parenthesized)
         {
@@ -37,7 +38,7 @@ public class LambdaExpressionStrategy : IConversionStrategy
                     ? TrimBraces(context.Converter.ConvertBlock(parenthesized.Block))
                     : $"return {context.Converter.ConvertExpression(parenthesized.ExpressionBody!)};";
                 var wrapped = OutParameters.WrapBody(inner, byReference, isAsync);
-                return $"{(isAsync ? "async " : "")}({kept}) => {{ {wrapped} }}";
+                return JsExpr.ArrowBlock(kept, $"{{ {wrapped} }}", isAsync);
             }
 
             // The parameter TYPES come from the semantic model: a lambda handed to a config object
@@ -45,22 +46,22 @@ public class LambdaExpressionStrategy : IConversionStrategy
             // the runtime's own build rather than merely a missing type.
             var parameters = string.Join(", ", parenthesized.ParameterList.Parameters
                 .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
-            var body = parenthesized.Block != null
-                ? context.Converter.ConvertBlock(parenthesized.Block)
-                : ExpressionBody(parenthesized.ExpressionBody!, context);
-            return $"({parameters}) => {body}";
+            var isAsyncLambda = parenthesized.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
+            return parenthesized.Block != null
+                ? JsExpr.ArrowBlock(parameters, context.Converter.ConvertBlock(parenthesized.Block), isAsyncLambda)
+                : ExpressionBody(parameters, parenthesized.ExpressionBody!, isAsyncLambda, context);
         }
         
         if (node is SimpleLambdaExpressionSyntax simple)
         {
             var param = Typed(simple.Parameter.Identifier.Text.ToJsIdentifier(), simple.Parameter, context);
-            var body = simple.Block != null
-                ? context.Converter.ConvertBlock(simple.Block)
-                : ExpressionBody(simple.ExpressionBody!, context);
-            return $"({param}) => {body}";
+            var isAsyncLambda = simple.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
+            return simple.Block != null
+                ? JsExpr.ArrowBlock(param, context.Converter.ConvertBlock(simple.Block), isAsyncLambda)
+                : ExpressionBody(param, simple.ExpressionBody!, isAsyncLambda, context);
         }
         
-        return "() => {}";
+        return JsExpr.ArrowBlock("", "{}");
     }
 
     /// <summary>
@@ -73,11 +74,17 @@ public class LambdaExpressionStrategy : IConversionStrategy
     /// unchanged.
     /// </para>
     /// </summary>
-    private static string ExpressionBody(ExpressionSyntax expression, ConversionContext context)
+    /// <summary>An expression body stays an expression — the writer parenthesizes an object
+    /// literal there — unless it binds pattern variables, whose hoisted declarations need a block.</summary>
+    private static JsExpr ExpressionBody(string parameters, ExpressionSyntax expression, bool isAsync,
+        ConversionContext context)
     {
         var hoisted = PatternVariableScanner.Declarations(expression, context.TypeAnnotations);
-        var converted = context.Converter.ConvertExpression(expression);
-        return hoisted.Length == 0 ? converted : $"{{ {hoisted}return {converted}; }}";
+        var body = context.Converter.ConvertIr(expression);
+        if (hoisted.Length == 0) return JsExpr.Arrow(parameters, body, isAsync);
+
+        var block = JsStatement.Block(new[] { JsStatement.Raw(hoisted), JsStatement.Return(body) });
+        return JsExpr.ArrowBlock(parameters, JsStatementWriter.Write(block, context.Layout, context.Depth), isAsync);
     }
 
     /// <summary>The statements of a converted block, without its outer braces.</summary>

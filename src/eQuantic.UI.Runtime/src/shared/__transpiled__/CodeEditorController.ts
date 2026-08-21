@@ -232,16 +232,33 @@ export class CodeEditorController {
     }
     moveTo(from: CodePosition, motion: CodeMotionValue, direction: CodeDirectionValue, pageLines: number = 20) {
         let forward = direction === 'forward';
-        switch (motion) { case 'character': this._desiredColumn = -1; return forward ? this._document.next(from) : this._document.previous(from); case 'word': this._desiredColumn = -1; return this.wordStep(from, forward); case 'line': {
-            if (this._desiredColumn < 0) this._desiredColumn = from.column;
-            let line = Math.min(Math.max(from.line + (forward ? 1 : -1), 0), this._document.lineCount - 1);
-            let column = Math.min(this._desiredColumn, this._document.line(line).length);
-            return new CodePosition(line, column);
-        } case 'page': {
-            if (this._desiredColumn < 0) this._desiredColumn = from.column;
-            let line = Math.min(Math.max(from.line + (forward ? pageLines : -pageLines), 0), this._document.lineCount - 1);
-            return new CodePosition(line, Math.min(this._desiredColumn, this._document.line(line).length));
-        } case 'lineBoundary': this._desiredColumn = -1; return forward ? this._document.lineEnd(from) : this._document.lineStart(from); default: this._desiredColumn = -1; return forward ? this._document.end : CodePosition.start; }
+        switch (motion) {
+            case 'character':
+                this._desiredColumn = -1;
+                return forward ? this._document.next(from) : this._document.previous(from);
+            case 'word':
+                this._desiredColumn = -1;
+                return this.wordStep(from, forward);
+            case 'line':
+                {
+                    if (this._desiredColumn < 0) this._desiredColumn = from.column;
+                    let line = Math.min(Math.max(from.line + (forward ? 1 : -1), 0), this._document.lineCount - 1);
+                    let column = Math.min(this._desiredColumn, this._document.line(line).length);
+                    return new CodePosition(line, column);
+                }
+            case 'page':
+                {
+                    if (this._desiredColumn < 0) this._desiredColumn = from.column;
+                    let line = Math.min(Math.max(from.line + (forward ? pageLines : -pageLines), 0), this._document.lineCount - 1);
+                    return new CodePosition(line, Math.min(this._desiredColumn, this._document.line(line).length));
+                }
+            case 'lineBoundary':
+                this._desiredColumn = -1;
+                return forward ? this._document.lineEnd(from) : this._document.lineStart(from);
+            default:
+                this._desiredColumn = -1;
+                return forward ? this._document.end : CodePosition.start;
+        }
     }
     wordStep(from: CodePosition, forward: boolean) {
         let here = this._document.clamp(from);

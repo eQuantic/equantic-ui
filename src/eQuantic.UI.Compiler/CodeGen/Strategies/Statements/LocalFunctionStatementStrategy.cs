@@ -1,18 +1,25 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Text;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
-public class LocalFunctionStatementStrategy : IStatementStrategy
+/// <summary>
+/// A local function becomes a <c>const</c> arrow beside the code that calls it (the converter
+/// hoists these to the top of their block, since C# hoists local functions and a const is not).
+/// An ARROW rather than a <c>function</c>: a C# local function can use the instance —
+/// <c>this._findText</c> — and a <c>function</c> declaration rebinds <c>this</c> to undefined in
+/// a module, so every capture read as a TypeError the first time it ran.
+/// </summary>
+public class LocalFunctionStatementStrategy : IStatementIrStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is LocalFunctionStatementSyntax;
     }
 
-    public string Convert(StatementSyntax node, ConversionContext context)
+    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
     {
         var localFn = (LocalFunctionStatementSyntax)node;
         // The SAME pair of transformations the reference applies (IdentifierStrategy): camelCase,
@@ -20,44 +27,26 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
         // reference drift — and a local function called `Delete` emitted `const delete = …`, which
         // is not a name JS will take at all.
         var name = localFn.Identifier.Text.ToCamelCase().ToJsIdentifier();
-
-        // TYPED, and an ARROW rather than a `function`. A C# local function inside a method can use
-        // the instance — `this._findText` — and a `function` declaration rebinds `this` to
-        // undefined in a module, so every capture read as a TypeError the first time it ran.
         var parameters = string.Join(", ", localFn.ParameterList.Parameters
             .Select(p => Parameter(p, context)));
 
-        var sb = new StringBuilder();
-        sb.Append($"const {name} = ({parameters}) => ");
+        // The body, laid out where it was built; an expression body becomes a block with one
+        // return, so both forms read the same.
+        var block = localFn.Body != null
+            ? context.Converter.ConvertBlock(localFn.Body)
+            : JsStatementWriter.Write(
+                JsStatement.Block(new[]
+                {
+                    JsStatement.Return(context.Converter.ConvertIr(localFn.ExpressionBody!.Expression)),
+                }),
+                context.Layout, context.Depth);
 
-        if (localFn.Body != null)
-        {
-            sb.Append(context.Converter.ConvertBlock(localFn.Body));
-        }
-        else if (localFn.ExpressionBody != null)
-        {
-            sb.Append("{ return ");
-            sb.Append(context.Converter.ConvertExpression(localFn.ExpressionBody.Expression));
-            sb.Append("; }");
-        }
-
-        // An arrow is an ASSIGNMENT, so it ends in a semicolon where a `function` declaration did
-        // not — without it the next statement runs on and the module fails to parse.
-        sb.Append(';');
-        return sb.ToString();
+        return JsStatement.Const(name, JsExpr.ArrowBlock(parameters, block));
     }
 
     /// <summary>
-    /// One parameter, with everything C# lets it carry. The DEFAULT was dropped here while the
-    /// method emitter has always kept it, so a local function written `Pane(title, body, leading =
-    /// null)` emitted three REQUIRED parameters and every two-argument call site stopped
-    /// type-checking — TS2554, from source that compiles in C#.
-    /// <para>
-    /// The three shapes match <c>TypeScriptEmitter.ParamWithDefault</c> deliberately: a `null`
-    /// default becomes `?:` rather than `= undefined` (that is what the annotation is FOR, and it
-    /// keeps the twin idiomatic), `params` becomes a rest parameter, and anything else keeps its
-    /// converted value.
-    /// </para>
+    /// A parameter as TypeScript: typed when annotations are on, a <c>params</c> one as a rest
+    /// parameter, a defaulted one as optional (or with its default, where the value is a real one).
     /// </summary>
     private static string Parameter(ParameterSyntax parameter, ConversionContext context)
     {

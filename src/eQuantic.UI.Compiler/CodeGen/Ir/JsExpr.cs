@@ -68,6 +68,16 @@ public abstract record JsExpr
 
     public static JsExpr Template(string template, IReadOnlyList<JsExpr> parts) => new JsTemplate(template, parts);
 
+    /// <summary>An arrow function with an expression body. The writer parenthesizes a body that
+    /// is an object literal — <c>() => ({ a: 1 })</c> — because the bare braces would read as a
+    /// block, and the arrow would return undefined.</summary>
+    public static JsExpr Arrow(string parameters, JsExpr body, bool isAsync = false) =>
+        new JsArrow(parameters, body, null, isAsync);
+
+    /// <summary>An arrow function with a block body, already laid out at the depth it was built.</summary>
+    public static JsExpr ArrowBlock(string parameters, string block, bool isAsync = false) =>
+        new JsArrow(parameters, null, block, isAsync);
+
     public static JsExpr Binary(JsExpr left, string op, JsExpr right) => new JsBinary(left, op, right);
 
     public static JsExpr Prefix(string op, JsExpr operand) => new JsUnary(op, operand, IsPrefix: true);
@@ -136,6 +146,15 @@ public sealed record JsGroup(JsExpr Inner) : JsExpr
 public sealed record JsTemplate(string Text, IReadOnlyList<JsExpr> Parts) : JsExpr
 {
     public override JsPrecedence Precedence => JsPrecedence.Call;
+}
+
+/// <summary>An arrow function: <c>(parameters) => body</c>. Exactly one of <see cref="Body"/>
+/// (an expression) and <see cref="Block"/> (a block's text, laid out where it was built) is set.
+/// It binds at assignment level — the loosest expression there is — so any migrated parent that
+/// places one as an operand or a receiver fences it.</summary>
+public sealed record JsArrow(string Parameters, JsExpr? Body, string? Block, bool IsAsync) : JsExpr
+{
+    public override JsPrecedence Precedence => JsPrecedence.Assignment;
 }
 
 public sealed record JsBinary(JsExpr Left, string Operator, JsExpr Right) : JsExpr

@@ -62,11 +62,24 @@ public static class JsExprWriter
         JsIndex index => $"{Receiver(index.Target)}[{Write(index.IndexExpression)}]",
         JsCall call => $"{Receiver(call.Target)}({string.Join(", ", call.Arguments.Select(Argument))})",
         JsTemplate template => RenderTemplate(template),
+        JsArrow arrow => RenderArrow(arrow),
         JsBinary binary => RenderBinary(binary),
         JsUnary unary => RenderUnary(unary),
         JsConditional conditional => RenderConditional(conditional),
         _ => throw new InvalidOperationException($"No writer for IR node {expr.GetType().Name}."),
     };
+
+    private static string RenderArrow(JsArrow arrow)
+    {
+        var head = $"{(arrow.IsAsync ? "async " : "")}({arrow.Parameters}) => ";
+        if (arrow.Block is not null) return head + arrow.Block;
+
+        // An object literal as the body needs its own parentheses: `=> { a: 1 }` is a BLOCK with
+        // a label in it, and the arrow returns undefined — the shape `Select(s => new { … })`
+        // used to ship.
+        var body = Write(arrow.Body!, JsPrecedence.Assignment, null);
+        return body.StartsWith('{') ? $"{head}({body})" : head + body;
+    }
 
     private static readonly Regex Hole = new(@"\{(\d)\}", RegexOptions.Compiled);
 

@@ -1,33 +1,25 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary>
-/// Converts a <c>switch</c> statement. A switch over constant cases keeps the native JS <c>switch</c>
-/// (which supports fall-through). A switch that uses PATTERN labels (<c>case { … }:</c>, <c>case Type t:</c>,
-/// <c>case … when …:</c>) has no JS equivalent, so it is rewritten to an <c>if/else</c> chain in a block:
-/// the value is bound once to <c>_s</c>, each section becomes an arm whose condition is the OR of its
-/// labels (built by the shared <see cref="PatternConverter"/>), the variables a pattern binds are declared
-/// at the top of that arm, and the <c>default</c> section becomes the trailing <c>else</c>. A block (not an
-/// IIFE) is used so a <c>return</c> inside a case still returns from the enclosing method; <c>break</c> just
-/// exits the chain so it is dropped.
+/// <c>switch</c> statements. Constant labels only → a native JavaScript <c>switch</c>. Any
+/// pattern label (<c>case int n when n > 3:</c>) → an if/else chain over the subject bound once
+/// (<c>const _s = …</c>), because JavaScript's switch has no patterns; the pattern's bindings are
+/// hoisted once for the whole chain and assigned inside each arm's condition.
 /// </summary>
-public class SwitchStatementStrategy : IStatementStrategy
+public class SwitchStatementStrategy : IStatementIrStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is SwitchStatementSyntax;
     }
 
-    public string Convert(StatementSyntax node, ConversionContext context)
+    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context)
     {
         var switchStmt = (SwitchStatementSyntax)node;
-        var expr = context.Converter.ConvertExpression(switchStmt.Expression);
-
+        var expr = context.Converter.ConvertIr(switchStmt.Expression);
         var usesPatterns = switchStmt.Sections
             .SelectMany(s => s.Labels)
             .Any(l => l is CasePatternSwitchLabelSyntax);
@@ -37,31 +29,22 @@ public class SwitchStatementStrategy : IStatementStrategy
             : ConvertAsNativeSwitch(switchStmt, context, expr);
     }
 
-    private static string ConvertAsNativeSwitch(SwitchStatementSyntax switchStmt, ConversionContext context, string expr)
+    private static JsStatement ConvertAsNativeSwitch(SwitchStatementSyntax switchStmt, ConversionContext context, JsExpr expr)
     {
-        var sb = new StringBuilder();
-        sb.Append($"switch ({expr}) {{");
-        foreach (var section in switchStmt.Sections)
-        {
-            foreach (var label in section.Labels)
+        var cases = switchStmt.Sections.Select(section => new JsCase(
+            section.Labels.Select(label => label switch
             {
-                if (label is CaseSwitchLabelSyntax caseLabel)
-                    sb.Append($" case {context.Converter.ConvertExpression(caseLabel.Value)}:");
-                else if (label is DefaultSwitchLabelSyntax)
-                    sb.Append(" default:");
-            }
-            foreach (var stmt in section.Statements)
-                sb.Append(" " + context.Converter.Convert(stmt));
-        }
-        sb.Append(" }");
-        return sb.ToString();
+                CaseSwitchLabelSyntax caseLabel => $"case {context.Converter.ConvertExpression(caseLabel.Value)}",
+                _ => "default",
+            }).ToList(),
+            section.Statements.Select(context.Converter.ConvertStatementIr).ToList())).ToList();
+        return JsStatement.Switch(expr, cases);
     }
 
-    private static string ConvertAsIfChain(SwitchStatementSyntax switchStmt, string expr, ConversionContext context)
+    private static JsStatement ConvertAsIfChain(SwitchStatementSyntax switchStmt, JsExpr expr, ConversionContext context)
     {
         var governingType = context.SemanticHelper.GetType(switchStmt.Expression);
-
-        var arms = new List<(string Condition, string Body)>();
+        var arms = new List<(string Condition, JsStatement Body)>();
         var hoist = new List<string>();   // distinct bound names, hoisted once for the whole chain
         var seen = new HashSet<string>();
         SwitchSectionSyntax? defaultSection = null;
@@ -85,7 +68,6 @@ public class SwitchStatementStrategy : IStatementStrategy
 
                     case CasePatternSwitchLabelSyntax pat:
                         var cond = PatternConverter.BuildCondition(pat.Pattern, "_s", context, governingType);
-
                         var bindings = new List<(string Name, string Access)>();
                         PatternConverter.CollectBindings(pat.Pattern, "_s", context, bindings, governingType);
                         foreach (var b in bindings) if (seen.Add(b.Name)) hoist.Add(b.Name);
@@ -110,31 +92,24 @@ public class SwitchStatementStrategy : IStatementStrategy
             arms.Add((string.Join(" || ", labelConditions), ConvertSectionBody(section, context)));
         }
 
-        var sb = new StringBuilder();
-        sb.Append("{ ");
-        if (hoist.Count > 0) sb.Append($"let {string.Join(", ", hoist)}; ");
-        sb.Append($"const _s = {expr};");
-        for (var i = 0; i < arms.Count; i++)
-            sb.Append($" {(i == 0 ? "if" : "else if")} ({arms[i].Condition}) {{ {arms[i].Body}}}");
-        if (defaultSection != null)
-            sb.Append($" else {{ {ConvertSectionBody(defaultSection, context)}}}");
-        sb.Append(" }");
-        return sb.ToString();
+        // The chain, innermost first: the default is the last else, each arm an `else if` above it.
+        JsStatement? chain = defaultSection is null ? null : ConvertSectionBody(defaultSection, context);
+        for (var i = arms.Count - 1; i >= 0; i--)
+            chain = JsStatement.If(JsExpr.Opaque(arms[i].Condition), arms[i].Body, chain);
+
+        var statements = new List<JsStatement>();
+        if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {string.Join(", ", hoist)};"));
+        statements.Add(JsStatement.Const("_s", expr));
+        if (chain is not null) statements.Add(chain);
+        return JsStatement.Block(statements);
     }
 
-    /// <summary>Emits a section's statements, dropping <c>break;</c> (the if/else arms are mutually
-    /// exclusive, so an arm's body simply ends and control leaves the chain — there is nothing to break
-    /// out of). Pattern bindings are assigned in the arm condition, so the body just uses them.</summary>
-    private static string ConvertSectionBody(SwitchSectionSyntax section, ConversionContext context)
-    {
-        var sb = new StringBuilder();
-        foreach (var stmt in section.Statements)
-        {
-            if (stmt is BreakStatementSyntax) continue;
-            sb.Append(context.Converter.Convert(stmt) + " ");
-        }
-        return sb.ToString();
-    }
+    /// <summary>A section's statements as a block — minus the `break` that only C# needs.</summary>
+    private static JsStatement ConvertSectionBody(SwitchSectionSyntax section, ConversionContext context) =>
+        JsStatement.Block(section.Statements
+            .Where(stmt => stmt is not BreakStatementSyntax)
+            .Select(context.Converter.ConvertStatementIr)
+            .ToList());
 
     public int Priority => 0;
 }

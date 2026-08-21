@@ -1,28 +1,19 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
-/// <summary>
-/// Strategy for Lock statements.
-/// Handles: lock(obj) { ... } -> { ... } (No-op wrapper as JS is single threaded)
-/// </summary>
-public class LockStatementStrategy : IStatementStrategy
+/// <summary><c>lock (o) body</c> — single-threaded on the other side, so the body alone.</summary>
+public class LockStatementStrategy : IStatementIrStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is LockStatementSyntax;
     }
 
-    public string Convert(StatementSyntax node, ConversionContext context)
-    {
-        var lockStmt = (LockStatementSyntax)node;
-        // Ignore the lock object, just convert the body
-        // We wrap in a block to maintain scope if needed, or just emit the block
-        // Lock body is usually a Statement (Block or single statement)
-        
-        return context.Converter.ConvertStatement(lockStmt.Statement);
-    }
+    public JsStatement ConvertIr(StatementSyntax node, ConversionContext context) =>
+        context.Converter.ConvertStatementIr(((LockStatementSyntax)node).Statement);
 
     public int Priority => 10;
 }

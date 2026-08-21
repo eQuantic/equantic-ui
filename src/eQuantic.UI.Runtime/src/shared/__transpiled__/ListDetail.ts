@@ -29,7 +29,9 @@ export class ListDetail extends StatelessComponent {
             column.add(new Flexible(body));
             return column;
         };
-        const back = () => { return this.onBack == null ? null : new IconButton('chevronLeft', SdkStrings.back, 'standard', 'medium', this.onBack); };
+        const back = () => {
+            return this.onBack == null ? null : new IconButton('chevronLeft', SdkStrings.back, 'standard', 'medium', this.onBack);
+        };
         let chosen: any; 
         let compact = (chosen = this.detail) != null ? pane(this.title, chosen, back()) : pane(this.listTitle, this.list);
         let wide = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });

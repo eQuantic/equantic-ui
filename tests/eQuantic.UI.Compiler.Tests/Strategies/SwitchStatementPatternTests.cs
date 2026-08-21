@@ -39,7 +39,7 @@ public class SwitchStatementPatternTests
         ts.Should().Contain("typeof _s === 'number' && (n = _s, n > 0)");
         ts.Should().Contain("else if");
         ts.Should().Contain("typeof _s === 'string'");
-        ts.Should().Contain("else { return '?'; }");
+        System.Text.RegularExpressions.Regex.Replace(ts, @"\s+", "").Should().Contain("else{return'?';}");
         ts.Should().NotContain("switch (o)");                           // not a native switch
     }
 
