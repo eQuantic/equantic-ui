@@ -3,6 +3,7 @@ using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Async;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Special;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
@@ -94,7 +95,7 @@ public class SyntaxSurfaceCoverageTests
 
         // ---- Expressions: KNOWN-uncovered — dispatching one raises the generic error. Every entry
         // here is a visible candidate, not a shrug: promote it to a strategy or an EQ2xxx fence.
-        [typeof(QueryExpressionSyntax)] = new FailsWith("EQ1001"),          // LINQ query syntax — method syntax is covered
+        [typeof(QueryExpressionSyntax)] = new ByStrategy(typeof(QueryExpressionStrategy)), // from/where/orderby/select/group lower onto the method-syntax strategies; join/let/into/second-from are EQ2008
         [typeof(RefExpressionSyntax)] = new FailsWith("EQ1001"),            // `ref x` as a value
         [typeof(UnsafeExpressionSyntax)] = new FailsWith("EQ1001"),         // C# 15 unsafe(expr) — pointer territory
         [typeof(ImplicitStackAllocArrayCreationExpressionSyntax)] = new FailsWith("EQ1001"),

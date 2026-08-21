@@ -154,6 +154,7 @@ public class CSharpToJsConverter
         // LINQ Strategies
         _strategyRegistry.Register<SelectStrategy>();
         _strategyRegistry.Register<WhereStrategy>();
+        _strategyRegistry.Register<QueryExpressionStrategy>();
         _strategyRegistry.Register<FirstStrategy>();
         _strategyRegistry.Register<LastStrategy>();
         _strategyRegistry.Register<SingleStrategy>();

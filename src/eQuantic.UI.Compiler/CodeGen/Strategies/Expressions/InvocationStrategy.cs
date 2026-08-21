@@ -292,10 +292,11 @@ public class InvocationStrategy : IConversionStrategy
 
         if (needsThis)
         {
-            // A `?.`-shape call passes through here with a THROWAWAY result: the conditional-access
-            // strategy discards anything not starting with '.', then emits its own `?.name(…)`.
-            // Reporting on a transit that never ships poisoned real builds — `_tick?.Dispose()`
-            // raised EQ2004 while the emitted `?.dispose()` was the working translation.
+            // A call still in `?.` BINDING shape is a transit, never a translation: the
+            // conditional-access strategy rebuilds guarded chains on a `$r` placeholder before any
+            // strategy translates them, so a binding-shaped call only passes through here on the
+            // way to its own lowering. Reporting on such a transit once poisoned real builds —
+            // `_tick?.Dispose()` raised EQ2004 while the shipped translation was fine.
             if (!invocation.IsNullConditional())
                 ReportIfUntranslatable(symbol, methodName, invocation, context);
             return $"this.{methodName.ToCamelCase()}({args})";

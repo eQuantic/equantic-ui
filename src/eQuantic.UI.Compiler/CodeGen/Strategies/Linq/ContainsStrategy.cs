@@ -80,10 +80,7 @@ public class ContainsStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         invocation.TryGetInstanceCall(out var receiverExpression, out _);
 
-        // Under a `?.` the receiver is emitted by the conditional-access strategy, and repeating it
-        // here would name it twice; the guard it already wrote is what makes the call safe.
-        var guarded = invocation.IsNullConditional();
-        var caller = guarded ? "" : context.Converter.ConvertExpression(receiverExpression);
+        var caller = context.Converter.ConvertExpression(receiverExpression);
         var args = invocation.ArgumentList.Arguments;
 
         if (args.Count > 0)
@@ -101,16 +98,12 @@ public class ContainsStrategy : IConversionStrategy
 
             // Anything whose static type is a mere COLLECTION could be a HashSet at run time, and
             // a Set has no `includes` — the call returns undefined and the selection silently never
-            // matches. The helper asks the value what it is, and answers false for a null one, so
-            // under a `?.` it replaces the guard rather than hanging off it.
+            // matches. The helper asks the value what it is. (Under a `?.` this call arrives on the
+            // conditional-access strategy's `$r` placeholder, and that strategy wraps the helper in
+            // its own null-answering arrow — nothing guarded reaches here in binding shape.)
             if (context.SemanticHelper.GetType(receiverExpression).HasOpenCollectionShape())
             {
                 context.UsedHelpers.Add(Eq.Import);
-                if (guarded)
-                {
-                    context.NullGuardAnswered = true;
-                    caller = context.Converter.ConvertExpression(receiverExpression);
-                }
                 return $"{Eq.Contains}({caller}, {item})";
             }
 

@@ -153,7 +153,6 @@ public class ConversionContext
         _cache.Clear();
         ExpectedType = null;
         IteratorBuffer = null;
-        NullGuardAnswered = false;
     }
 
     // Cache to avoid reprocessing the same node multiple times. Keyed by SyntaxNode, so an entry
@@ -169,13 +168,6 @@ public class ConversionContext
     {
         _cache[node] = result;
     }
-
-    /// <summary>
-    /// Set by a strategy whose translation already NAMES its receiver and already answers for a null
-    /// one — a helper call rather than a member on the value. A <c>?.</c> in front of that would be
-    /// nonsense, so the conditional access steps aside and takes the call as the whole chain.
-    /// </summary>
-    public bool NullGuardAnswered { get; set; }
 
     /// <summary>
     /// DESIGN MODE: every node construction is wrapped so it carries the source span that built it

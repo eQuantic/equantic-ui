@@ -1,4 +1,6 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.Services;
 
@@ -59,6 +61,7 @@ public class SemanticHelper
 
     public ISymbol? GetSymbol(SyntaxNode node)
     {
+        if (_symbolOverrides.TryGetValue(node, out var overridden)) return overridden;
         node = Original(node);
         return Knows(node) ? _semanticModel!.GetSymbolInfo(node).Symbol : null;
     }
@@ -86,6 +89,27 @@ public class SemanticHelper
         return Knows(node) ? _semanticModel!.GetDeclaredSymbol(node) : null;
     }
 
+    /// <summary>The LINQ operator the model bound to a query clause — <c>where</c> answers Where,
+    /// each <c>orderby</c> ordering answers OrderBy/OrderByDescending/ThenBy/ThenByDescending,
+    /// <c>select</c>/<c>group…by</c> answer Select/GroupBy. Null where the model has no answer —
+    /// including the DEGENERATE final <c>select x</c> after other clauses, which C# elides, so a
+    /// null here is a lowering decision, not just ignorance. Original-aware: the clauses of a
+    /// query nested inside another rewrite still answer.</summary>
+    public IMethodSymbol? QueryOperator(SyntaxNode clauseOrOrdering)
+    {
+        clauseOrOrdering = Original(clauseOrOrdering);
+        if (!Knows(clauseOrOrdering)) return null;
+        return clauseOrOrdering switch
+        {
+            OrderingSyntax ordering => _semanticModel!.GetSymbolInfo(ordering).Symbol as IMethodSymbol,
+            SelectOrGroupClauseSyntax selectOrGroup =>
+                _semanticModel!.GetSymbolInfo(selectOrGroup).Symbol as IMethodSymbol,
+            QueryClauseSyntax clause =>
+                _semanticModel!.GetQueryClauseInfo(clause).OperationInfo.Symbol as IMethodSymbol,
+            _ => null,
+        };
+    }
+
     /// <summary>Whether the model can answer for this node — directly, or through its in-tree
     /// original. This is what "in-tree" means once rewriting is in play: a rewritten copy of an
     /// in-tree node is as known as the node it copies.</summary>
@@ -100,26 +124,45 @@ public class SemanticHelper
 
     private readonly Dictionary<SyntaxNode, ITypeSymbol> _typeOverrides = new(ReferenceEqualityComparer.Instance);
 
+    /// <summary>A SYMBOL answer for a synthetic node standing in for a binding the model made
+    /// SOMEWHERE ELSE — the query-syntax lowering builds <c>xs.Where(x => …)</c> invocations whose
+    /// operator the model bound to the query CLAUSE, not to any invocation node.</summary>
+    public void MapSymbol(SyntaxNode synthetic, ISymbol? symbol)
+    {
+        if (symbol is not null) _symbolOverrides[synthetic] = symbol;
+    }
+
+    private readonly Dictionary<SyntaxNode, ISymbol> _symbolOverrides = new(ReferenceEqualityComparer.Instance);
+
     /// <summary>
     /// The in-tree node a SYNTHETIC node stands for, or the node itself. A strategy that rewrites
     /// syntax (the null-conditional path turns <c>a?.M(x)</c> into <c>$r.M(x)</c> so every other
     /// strategy can translate it) registers the correspondence here, and the model keeps
     /// answering for the rewritten nodes — symbols, types, the lambda parameters inside their
-    /// arguments — instead of falling back to name heuristics.
+    /// arguments — instead of falling back to name heuristics. Chased to a fixpoint: a rewrite OF
+    /// a rewrite (a query nested in a query's source, a <c>?.</c> inside a <c>?.</c>) still lands
+    /// on the in-tree node.
     /// </summary>
-    public SyntaxNode Original(SyntaxNode node) =>
-        _originals.TryGetValue(node, out var original) ? original : node;
+    public SyntaxNode Original(SyntaxNode node)
+    {
+        while (_originals.TryGetValue(node, out var original)) node = original;
+        return node;
+    }
 
     private readonly Dictionary<SyntaxNode, SyntaxNode> _originals = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>Registers a rewritten node as standing for an in-tree one.</summary>
-    public void MapSynthetic(SyntaxNode synthetic, SyntaxNode original) => _originals[synthetic] = original;
+    public void MapSynthetic(SyntaxNode synthetic, SyntaxNode original)
+    {
+        if (!ReferenceEquals(synthetic, original)) _originals[synthetic] = original;
+    }
 
     /// <summary>Drops the synthetic correspondences of the previous emission.</summary>
     public void ClearSynthetics()
     {
         _originals.Clear();
         _typeOverrides.Clear();
+        _symbolOverrides.Clear();
     }
 
     /// <summary>

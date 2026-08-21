@@ -72,13 +72,7 @@ public class ConditionalAccessStrategy : IConversionStrategy
         var receiver = context.Converter.ConvertExpression(conditionalAccess.Expression);
         var rebuilt = Rebuild(whenNotNull, rootBinding, conditionalAccess.Expression, context);
 
-        // Saved and restored around the conversion: a nested `a?.b(c?.d())` must not read the inner
-        // chain's flag as its own. The flag itself no longer decides the assembly — the shape of the
-        // translation does — but strategies still set it, and the outer chain must not inherit it.
-        var outer = context.NullGuardAnswered;
-        context.NullGuardAnswered = false;
         var converted = context.Converter.ConvertExpression(rebuilt);
-        context.NullGuardAnswered = outer;
 
         // `$r.filter(p)` → `a?.filter(p)`; `$r[0]` → `a?.[0]`; `$r(x)` (a delegate's Invoke) →
         // `a?.(x)`. Anything not rooted at the placeholder — `$eq.collections.contains($r, x)`,
