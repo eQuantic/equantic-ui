@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -12,18 +13,22 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// - != -> !==
 /// - &&, || pass through
 /// </summary>
-public class BinaryExpressionStrategy : IConversionStrategy
+public class BinaryExpressionStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is BinaryExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var binary = (BinaryExpressionSyntax)node;
-        var left = context.Converter.ConvertExpression(binary.Left);
-        var right = context.Converter.ConvertExpression(binary.Right);
+        // Both forms of each operand: the IR for the composition at the tail (where the writer
+        // decides the punctuation) and its text for the branches that splice it into a template.
+        var leftIr = context.Converter.ConvertIr(binary.Left);
+        var rightIr = context.Converter.ConvertIr(binary.Right);
+        var left = JsExprWriter.Write(leftIr);
+        var right = JsExprWriter.Write(rightIr);
         var op = binary.OperatorToken.Text;
 
         // A USER-DEFINED operator: JavaScript cannot overload `+`, so the emitted class carries the
@@ -35,7 +40,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
             && RecordTypeEmitter.OperatorMethodName(op) is { } operatorMethod
             && declaring.Locations.Any(location => location.IsInSource))
         {
-            return $"{declaring.Name}.{operatorMethod}({left}, {right})";
+            return JsExpr.Callish($"{declaring.Name}.{operatorMethod}({left}, {right})");
         }
 
         // CHAR ARITHMETIC. A C# char in `+ - * / %` promotes to int and computes on the CODE
@@ -49,8 +54,8 @@ public class BinaryExpressionStrategy : IConversionStrategy
         {
             var leftIsChar = context.SemanticHelper.GetType(binary.Left) is { SpecialType: SpecialType.System_Char };
             var rightIsChar = context.SemanticHelper.GetType(binary.Right) is { SpecialType: SpecialType.System_Char };
-            if (leftIsChar) left = CharCode(binary.Left, left, context);
-            if (rightIsChar) right = CharCode(binary.Right, right, context);
+            if (leftIsChar) { left = CharCode(binary.Left, left, context); leftIr = JsExpr.Callish(left); }
+            if (rightIsChar) { right = CharCode(binary.Right, right, context); rightIr = JsExpr.Callish(right); }
         }
 
         // decimal is an exact base-10 type implemented by the runtime Decimal class; route its
@@ -60,7 +65,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
                 || context.SemanticHelper.GetType(binary.Right).IsDecimal()))
         {
             var decResult = ConvertDecimal(left, right, op, binary, context);
-            if (decResult != null) return decResult;
+            if (decResult != null) return JsExpr.Opaque(decResult);
         }
 
         // long/ulong are exact 64-bit via BigInt. Wrap operands in long() and use native BigInt
@@ -72,7 +77,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
         {
             context.UsedHelpers.Add(Eq.Import);
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
-            return $"({Eq.Long}({left}) {jsOp} {Eq.Long}({right}))";
+            return JsExpr.Opaque($"({Eq.Long}({left}) {jsOp} {Eq.Long}({right}))");
         }
 
         // Lifted Nullable<T> operators for primitive-numeric T (int/double/short/… — decimal and
@@ -88,7 +93,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
                 if (op is "<" or ">" or "<=" or ">=")
                 {
                     context.UsedHelpers.Add(Eq.Import);
-                    return $"{Eq.LiftCmp}({left}, {right}, (a, b) => a {op} b)";
+                    return JsExpr.Callish($"{Eq.LiftCmp}({left}, {right}, (a, b) => a {op} b)");
                 }
                 if (op is "+" or "-" or "*" or "/" or "%")
                 {
@@ -97,7 +102,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
                     var body = (op is "/" or "%") && context.SemanticHelper.GetType(binary).IsIntegral()
                         ? (op == "/" ? "Math.trunc(a / b)" : "(a % b)")
                         : $"a {op} b";
-                    return $"{Eq.LiftArith}({left}, {right}, (a, b) => {body})";
+                    return JsExpr.Callish($"{Eq.LiftArith}({left}, {right}, (a, b) => {body})");
                 }
                 // == != fall through: strict ===/!== already match .NET nullable equality
                 // (null===null is true; value===null is false).
@@ -110,8 +115,12 @@ public class BinaryExpressionStrategy : IConversionStrategy
         {
             var lt = context.SemanticHelper.GetType(binary.Left);
             var rt = context.SemanticHelper.GetType(binary.Right);
-            var dtResult = ConvertDateTimeOrTimeSpan(left, right, op, lt, rt);
-            if (dtResult != null) return dtResult;
+            // Several of these put an operand in RECEIVER position (`{left}.diff(…)`), where a
+            // loose operand rebinds silently: `a + b.diff(c)` is not `(a + b).diff(c)`.
+            var dtResult = ConvertDateTimeOrTimeSpan(
+                JsExprWriter.WriteIn(leftIr, JsPrecedence.Call),
+                JsExprWriter.WriteIn(rightIr, JsPrecedence.Call), op, lt, rt);
+            if (dtResult != null) return JsExpr.Opaque(dtResult);
         }
 
         // Records, structs and value tuples compare by VALUE in C# (not reference). Route ==/!= to the
@@ -122,7 +131,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
                 || context.SemanticHelper.GetType(binary.Right).IsStructuralValueType()))
         {
             context.UsedHelpers.Add(Eq.Import);
-            return op == "==" ? $"{Eq.Equals}({left}, {right})" : $"!{Eq.Equals}({left}, {right})";
+            return JsExpr.Opaque(op == "==" ? $"{Eq.Equals}({left}, {right})" : $"!{Eq.Equals}({left}, {right})");
         }
 
         // C# integer division truncates toward zero; JS `/` is always float division.
@@ -130,7 +139,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
         // (7 / 2 == 3, not 3.5). Chained divisions nest correctly.
         if (op == "/" && context.SemanticHelper.GetType(binary).IsIntegral())
         {
-            return $"Math.trunc({left} / {right})";
+            return JsExpr.Callish($"Math.trunc({left} / {right})");
         }
 
         // Convert C# operators to JS equivalents
@@ -151,7 +160,7 @@ public class BinaryExpressionStrategy : IConversionStrategy
             };
         }
 
-        return $"{left} {op} {right}";
+        return JsExpr.Binary(leftIr, op, rightIr);
     }
 
     /// <summary>

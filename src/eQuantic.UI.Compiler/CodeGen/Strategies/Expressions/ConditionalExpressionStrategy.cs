@@ -1,27 +1,28 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// Strategy for conditional expressions (ternary).
-/// Handles: condition ? a : b
+/// The ternary <c>c ? t : f</c>. C# and JavaScript agree on where it binds, so the node exists to
+/// let the writer protect it when a MIGRATED operator wraps it — a ternary spliced raw into
+/// arithmetic regroups silently.
 /// </summary>
-public class ConditionalExpressionStrategy : IConversionStrategy
+public class ConditionalExpressionStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is ConditionalExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var conditional = (ConditionalExpressionSyntax)node;
-        var condition = context.Converter.ConvertExpression(conditional.Condition);
-        var whenTrue = context.Converter.ConvertExpression(conditional.WhenTrue);
-        var whenFalse = context.Converter.ConvertExpression(conditional.WhenFalse);
-        
-        return $"{condition} ? {whenTrue} : {whenFalse}";
+        return JsExpr.Conditional(
+            context.Converter.ConvertIr(conditional.Condition),
+            context.Converter.ConvertIr(conditional.WhenTrue),
+            context.Converter.ConvertIr(conditional.WhenFalse));
     }
 
     public int Priority => 10;

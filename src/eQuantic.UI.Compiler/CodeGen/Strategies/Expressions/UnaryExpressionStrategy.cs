@@ -1,47 +1,43 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// Strategy for unary expressions (prefix and postfix).
-/// Handles:
-/// - Prefix: ++x, --x, !x, +x, -x
-/// - Postfix: x++, x--
+/// Prefix and postfix operators. As IR the operand's own binding is visible, so the writer keeps
+/// a negated negation from welding into the DECREMENT operator (<c>- -x</c> is not <c>--x</c>) and
+/// parenthesizes an operand looser than the operator.
 /// </summary>
-public class UnaryExpressionStrategy : IConversionStrategy
+public class UnaryExpressionStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is PrefixUnaryExpressionSyntax || node is PostfixUnaryExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         if (node is PrefixUnaryExpressionSyntax prefix)
         {
-            var operand = context.Converter.ConvertExpression(prefix.Operand);
-            var op = prefix.OperatorToken.Text;
-            return $"{op}{operand}";
+            return JsExpr.Prefix(prefix.OperatorToken.Text,
+                context.Converter.ConvertIr(prefix.Operand));
         }
-        
+
         if (node is PostfixUnaryExpressionSyntax postfix)
         {
-            var operand = context.Converter.ConvertExpression(postfix.Operand);
+            var operand = context.Converter.ConvertIr(postfix.Operand);
 
-            // C#'s null-forgiving `x!` is an ASSERTION, not an operation — it produces no code and
-            // means only "I know this is not null". TypeScript spells the same assertion the same
-            // way, so it survives there; JavaScript has no such syntax, and `x!.value` is a parse
-            // error that costs the whole module rather than the one expression.
-            if (postfix.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SuppressNullableWarningExpression))
-            {
-                return context.TypeAnnotations ? $"{operand}!" : operand;
-            }
+            // `x!` asserts non-null to the C# compiler and means nothing at runtime; it survives
+            // only where the output is still TypeScript being type-checked.
+            if (postfix.IsKind(SyntaxKind.SuppressNullableWarningExpression))
+                return context.TypeAnnotations ? JsExpr.Postfix(operand, "!") : operand;
 
-            return $"{operand}{postfix.OperatorToken.Text}";
+            return JsExpr.Postfix(operand, postfix.OperatorToken.Text);
         }
 
-        return context.Unhandled(node, "unary operator");
+        return JsExpr.Opaque(context.Unhandled(node, "unary operator"));
     }
 
     public int Priority => 10;

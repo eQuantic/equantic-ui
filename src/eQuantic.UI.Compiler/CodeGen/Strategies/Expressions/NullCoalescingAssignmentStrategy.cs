@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -8,7 +9,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// Strategy for null-coalescing assignment operator.
 /// Handles: x ??= y -> x = x ?? y (or x ?? (x = y))
 /// </summary>
-public class NullCoalescingAssignmentStrategy : IConversionStrategy
+public class NullCoalescingAssignmentStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -18,15 +19,16 @@ public class NullCoalescingAssignmentStrategy : IConversionStrategy
         return assignment.Kind() == SyntaxKind.CoalesceAssignmentExpression;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var assignment = (AssignmentExpressionSyntax)node;
         var left = context.Converter.ConvertExpression(assignment.Left);
         var right = context.Converter.ConvertExpression(assignment.Right);
 
-        // x ??= y converts to: x ?? (x = y)
-        // This ensures x is evaluated once and assigned only if null/undefined
-        return $"{left} ?? ({left} = {right})";
+        // x ??= y converts to: x ?? (x = y) — the target is named twice but evaluated once, and
+        // assigned only when null/undefined. Built as a `??` NODE so the writer knows to fence it
+        // off from a surrounding && or ||, which JavaScript refuses to parse beside it.
+        return JsExpr.Binary(JsExpr.Opaque(left), "??", JsExpr.Opaque($"({left} = {right})"));
     }
 
     public int Priority => 15; // Higher than AssignmentExpressionStrategy (10)

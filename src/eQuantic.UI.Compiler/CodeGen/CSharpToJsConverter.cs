@@ -15,6 +15,8 @@ using eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Async;   
 using eQuantic.UI.Compiler.CodeGen.Registry;
 
+using eQuantic.UI.Compiler.CodeGen.Ir;
+
 namespace eQuantic.UI.Compiler.CodeGen;
 
 /// <summary>
@@ -371,18 +373,33 @@ public class CSharpToJsConverter
     /// <summary>
     /// Convert a parsed expression to JavaScript with an expected type hint
     /// </summary>
-    public string ConvertExpression(ExpressionSyntax expression, string? expectedType = null)
+    /// <summary>The expression as JavaScript text, standing on its own.</summary>
+    public string ConvertExpression(ExpressionSyntax expression, string? expectedType = null) =>
+        JsExprWriter.Write(ConvertIr(expression, expectedType));
+
+    /// <summary>
+    /// The expression as IR. A strategy that has crossed over
+    /// (<see cref="IExpressionIrStrategy"/>) builds a real node; every other one still returns
+    /// text, which is wrapped OPAQUE and spliced verbatim — so an unmigrated strategy's output is
+    /// byte-identical to what it was before the IR existed. Callers that place an expression
+    /// SOMEWHERE (an operand, a receiver) should ask for this and let
+    /// <see cref="JsExprWriter"/> punctuate; callers that just need text can keep calling
+    /// <see cref="ConvertExpression(ExpressionSyntax, string?)"/>.
+    /// </summary>
+    public JsExpr ConvertIr(ExpressionSyntax expression, string? expectedType = null)
     {
         _context.ExpectedType = expectedType;
-        // Check cache
         var cached = _context.GetCached(expression);
         if (cached != null) return cached;
 
-        // Try strategies
         var strategy = _strategyRegistry.FindStrategy(expression, _context);
         if (strategy != null)
         {
-            var result = Stamp(expression, strategy.Convert(expression, _context));
+            // Stamping marks node CONSTRUCTIONS in design mode, and no construction shape has
+            // moved to the IR — so the migrated branch has nothing to stamp.
+            var result = strategy is IExpressionIrStrategy ir
+                ? ir.ConvertIr(expression, _context)
+                : JsExpr.Opaque(Stamp(expression, strategy.Convert(expression, _context)));
             _context.SetCached(expression, result);
             return result;
         }
@@ -390,7 +407,7 @@ public class CSharpToJsConverter
         _context.Report(expression, ConversionSeverity.Error, "EQ1001",
             $"C# expression '{expression.Kind()}' has no transpilation strategy — it cannot be emitted as JavaScript. " +
             "Rewrite it in a transpilable form, or add a conversion strategy for this construct.");
-        return expression.ToString();
+        return JsExpr.Opaque(expression.ToString());
     }
 
     /// <summary>

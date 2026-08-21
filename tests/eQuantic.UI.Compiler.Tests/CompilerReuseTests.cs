@@ -97,8 +97,9 @@ public class CompilerReuseTests
         var node = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree
             .ParseText("class Probe { void M() { var x = 1; } }").GetRoot();
 
-        context.SetCached(node, "cached");
-        Assert.Equal("cached", context.GetCached(node));
+        var cached = eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Opaque("cached");
+        context.SetCached(node, cached);
+        Assert.Same(cached, context.GetCached(node));
 
         context.Reset();
 

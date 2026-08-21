@@ -2,6 +2,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
 
+using eQuantic.UI.Compiler.CodeGen.Ir;
+
 namespace eQuantic.UI.Compiler.CodeGen;
 
 /// <summary>
@@ -156,15 +158,17 @@ public class ConversionContext
     }
 
     // Cache to avoid reprocessing the same node multiple times. Keyed by SyntaxNode, so an entry
-    // keeps its entire tree reachable — see Reset().
-    private readonly Dictionary<SyntaxNode, string> _cache = new();
+    // keeps its entire tree reachable — see Reset(). It holds IR rather than text: a node reached
+    // once as an operand and once on its own must be the same expression both times, and only the
+    // IR remembers how tightly it binds.
+    private readonly Dictionary<SyntaxNode, JsExpr> _cache = new();
 
-    public string? GetCached(SyntaxNode node)
+    public JsExpr? GetCached(SyntaxNode node)
     {
         return _cache.TryGetValue(node, out var result) ? result : null;
     }
 
-    public void SetCached(SyntaxNode node, string result)
+    public void SetCached(SyntaxNode node, JsExpr result)
     {
         _cache[node] = result;
     }
