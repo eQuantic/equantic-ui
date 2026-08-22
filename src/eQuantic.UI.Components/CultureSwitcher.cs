@@ -6,7 +6,38 @@ namespace eQuantic.UI.Components;
 /// switches to, and what a human sees. The label is the language's OWN endonym by convention
 /// ("Português", not "Portuguese") — a reader looking for their language does not read the one
 /// they cannot.</summary>
-public sealed record CultureOption(string Name, string Label);
+public sealed record CultureOption(string Name, string Label)
+{
+    /// <summary>Two or three letters for a trigger that has no room for a name — <c>PT</c>. The
+    /// label is what the OPEN menu says; this is what the closed control says.</summary>
+    public string? Short { get; init; }
+
+    /// <summary>A flag emoji, when the design uses one. Text, not an image: it is the one glyph
+    /// every target already draws, and it needs no asset pipeline to reach a Photon window.
+    /// <para>
+    /// A flag is a COUNTRY and a language is not, which is why it never appears alone here — it
+    /// rides beside the endonym rather than replacing it. Spanish is not Spain to most of the
+    /// people who read it.
+    /// </para></summary>
+    public string? Flag { get; init; }
+}
+
+/// <summary>How a <see cref="CultureSwitcher"/> presents itself.</summary>
+public enum CultureSwitcherShape
+{
+    /// <summary>Segments up to three languages, a menu beyond — the component's own judgement.</summary>
+    Auto,
+
+    /// <summary>Always a segmented control: every language visible, one tap away.</summary>
+    Segments,
+
+    /// <summary>
+    /// Always a menu. What a crowded strip needs: three segments cost the width of three language
+    /// NAMES, and a header that fits them in English does not fit them in Portuguese — which is a
+    /// layout that breaks on the translation rather than on the design.
+    /// </summary>
+    Menu,
+}
 
 /// <summary>
 /// The language switch, write-once (Track L D6). It asks the host for
@@ -36,6 +67,20 @@ public sealed class CultureSwitcher : StatelessComponent
     /// <summary>Control size — the switch usually lives in a toolbar beside the theme toggle.</summary>
     public SizeVariant Size { get; init; } = SizeVariant.Small;
 
+    /// <summary>Segments, a menu, or the component's own judgement. See
+    /// <see cref="CultureSwitcherShape"/> for why an app overrides it.</summary>
+    public CultureSwitcherShape Shape { get; init; } = CultureSwitcherShape.Auto;
+
+    /// <summary>
+    /// The glyph on the menu trigger — a globe, by convention.
+    /// <para>
+    /// The APP's, not a curated one: the §07 set has no globe, and widening a deliberately small
+    /// whitelist so one component can draw one picture is the wrong trade. An app already has an
+    /// icon pack; this takes whatever it hands over, and draws nothing when it hands over nothing.
+    /// </para>
+    /// </summary>
+    public IconGlyph? Icon { get; init; }
+
     /// <summary>Told after a switch, for an app that wants to react (a banner, an analytics
     /// event). The switch itself is already done by then.</summary>
     public Action<string>? OnChanged { get; init; }
@@ -61,7 +106,7 @@ public sealed class CultureSwitcher : StatelessComponent
             if (LanguageOf(Options[i].Name) == LanguageOf(current)) selected = i;
         }
 
-        if (Options.Count <= 3)
+        if (Shape != CultureSwitcherShape.Menu && (Shape == CultureSwitcherShape.Segments || Options.Count <= 3))
         {
             var labels = new List<string>();
             foreach (var option in Options) labels.Add(option.Label);
@@ -72,12 +117,22 @@ public sealed class CultureSwitcher : StatelessComponent
             };
         }
 
+        // The flag rides IN the label rather than in the icon slot: that slot takes a curated
+        // Icons value, and a flag is neither curated nor an icon — it is text, which is also the
+        // only form of it that reaches a native window with no asset pipeline.
         var items = new List<MenuItem>();
-        foreach (var option in Options) items.Add(new MenuItem(option.Label));
+        foreach (var option in Options)
+            items.Add(new MenuItem(option.Flag is { Length: > 0 } flag
+                ? $"{flag}  {option.Label}"
+                : option.Label));
+
+        // A GLOBE, and the short code for a name. The closed control says which language you are
+        // in; it does not have to say which three you could be in.
+        var chosen = Options[selected];
         return new Menu(
-            new Button(Options[selected].Label, Variant.Outline, Size)
+            new Button(chosen.Short is { Length: > 0 } code ? code : chosen.Label, Variant.Ghost, Size)
             {
-                Leading = CuratedIcons.Resolve(Icons.ChevronDown),
+                Leading = Icon,
             },
             items,
             index => Switch(controller, index));
