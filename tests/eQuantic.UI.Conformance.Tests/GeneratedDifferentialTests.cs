@@ -20,6 +20,16 @@ public class GeneratedDifferentialTests
 {
     private const int CasesPerBatch = 30;
 
+    /// <summary>
+    /// Types the generated programs use. An enum is a member-NAME string at run time and a
+    /// record compares by VALUE; neither can be declared inside a generated statement block, so
+    /// they live here and the grammar leans on them.
+    /// </summary>
+    private const string Prelude = """
+        public enum Suit { Clubs, Hearts, Spades }
+        public sealed record Card(int Rank, Suit Suit);
+        """;
+
     [SkippableTheory]
     [InlineData(0xE0501u)]
     [InlineData(0xE0502u)]
@@ -41,7 +51,7 @@ public class GeneratedDifferentialTests
             var program = new ProgramGenerator(batchSeed * 2654435761u + (uint)index).Generate();
             try
             {
-                ConformanceRunner.AssertStatementsSameAsDotNet(program);
+                ConformanceRunner.AssertStatementsSameAsDotNet(program, Prelude);
             }
             catch (Exception ex)
             {
@@ -80,6 +90,11 @@ public class GeneratedDifferentialTests
         private readonly List<string> _bools = [];
         private readonly List<string> _strings = [];
         private readonly List<string> _lists = [];
+        private readonly List<string> _longs = [];
+        private readonly List<string> _decimals = [];
+        private readonly List<string> _chars = [];
+        private readonly List<string> _suits = [];
+        private readonly List<string> _nullables = [];
 
         public string Generate()
         {
@@ -96,6 +111,35 @@ public class GeneratedDifferentialTests
             var name0 = "f0";
             program.Append($"var {name0} = {BoolExpr(2)}; ");
             _bools.Add(name0);
+
+            // The COMPAT types, which JavaScript does not have and every divergence so far has
+            // lived in: a long is a BigInt, a decimal is a Decimal object, a char is a 1-length
+            // string that promotes to its code unit. Values stay small — the documented overflow
+            // limits are pinned elsewhere and are not what this hunts.
+            for (var i = 0; i < 1 + Pick(2); i++)
+            {
+                var name = $"L{i}";
+                program.Append($"long {name} = {Pick(40)}L; ");
+                _longs.Add(name);
+            }
+            for (var i = 0; i < 1 + Pick(2); i++)
+            {
+                var name = $"m{i}";
+                program.Append($"decimal {name} = {Pick(100)}.{Pick(90) + 10}m; ");
+                _decimals.Add(name);
+            }
+            var charName = "c0";
+            program.Append($"char {charName} = '{(char)('a' + Pick(26))}'; ");
+            _chars.Add(charName);
+
+            // An ENUM crosses as its member NAME, and a NULLABLE has to keep "no value" apart
+            // from zero — two more places the two runtimes do not agree by default.
+            var suitName = "u0";
+            program.Append($"Suit {suitName} = Suit.{Suits[Pick(3)]}; ");
+            _suits.Add(suitName);
+            var maybeName = "q0";
+            program.Append($"int? {maybeName} = {(Pick(2) == 0 ? "null" : Pick(30).ToString())}; ");
+            _nullables.Add(maybeName);
 
             var listCount = 1 + Pick(2);
             for (var i = 0; i < listCount; i++)
@@ -119,12 +163,25 @@ public class GeneratedDifferentialTests
             for (var i = 0; i < statements; i++) program.Append(Statement());
 
             // The observable fold: every local reaches the result, so nothing generated is dead.
+            // The fold stays INSIDE an int. Mixing by 31 overflows in a handful of steps once
+            // the grammar grew, and an int overflowing in the default context is a documented
+            // divergence pinned elsewhere — reaching it here would make every program fail for
+            // the one reason this generator is meant not to hunt.
             program.Append("var acc = 17; ");
-            foreach (var n in _ints) program.Append($"acc = acc * 31 + {n}; ");
-            foreach (var b in _bools) program.Append($"acc = acc * 2 + ({b} ? 1 : 0); ");
-            foreach (var xs in _lists) program.Append($"acc = acc * 7 + {IntChain(xs)}; ");
+            foreach (var n in _ints) program.Append($"acc = (acc * 31 + {n}) % 1000003; ");
+            foreach (var b in _bools) program.Append($"acc = (acc * 2 + ({b} ? 1 : 0)) % 1000003; ");
+            foreach (var xs in _lists) program.Append($"acc = (acc * 7 + {IntChain(xs)}) % 1000003; ");
+            // A char folds through its CODE UNIT, the way C# promotes it.
+            foreach (var c in _chars) program.Append($"acc = (acc * 5 + {c}) % 1000003; ");
+            foreach (var q in _nullables) program.Append($"acc = (acc * 3 + ({q} ?? -1)) % 1000003; ");
             var fold = new StringBuilder("return $\"{acc}");
             foreach (var s in _strings) fold.Append($"|{{{s}}}");
+            // A long and a decimal are OBSERVED as text: their runtime representations differ from
+            // JavaScript's numbers, so printing them is what compares the value and not a coercion.
+            foreach (var l in _longs) fold.Append($"|{{{l}}}");
+            foreach (var m in _decimals) fold.Append($"|{{{m}}}");
+            foreach (var c in _chars) fold.Append($"|{{{c}}}");
+            foreach (var u in _suits) fold.Append($"|{{{u}}}");
             fold.Append("\";");
             program.Append(fold);
 
@@ -133,8 +190,39 @@ public class GeneratedDifferentialTests
 
         private string Statement()
         {
-            switch (Pick(8))
+            switch (Pick(16))
             {
+                case 12:
+                    // A switch EXPRESSION over an enum: member names on one side, strings on the other.
+                    return $"{IntVar()} += {SuitVar()} switch {{ Suit.Clubs => 1, Suit.Hearts => 2, _ => 3 }}; ";
+                case 13:
+                    return $"{SuitVar()} = {BoolExpr(1)} ? Suit.{Suits[Pick(3)]} : {SuitVar()}; ";
+                case 14:
+                    // A record compares by VALUE, and a property pattern binds through it.
+                {
+                    // A fresh NAME per statement: a pattern variable is scoped to the enclosing
+                    // block in C#, so two of these with one name is CS0128 — the generator
+                    // failing to compile its own program, which is not what it hunts.
+                    var card = $"card{_names++}";
+                    return $"var {card} = new Card({Pick(10)}, {SuitVar()}); "
+                           + $"if ({card} is {{ Rank: > 4 }} big{_names}) {{ {IntVar()} += big{_names}.Rank; }} "
+                           + $"if ({card} == new Card({card}.Rank, {card}.Suit)) {{ {IntVar()} += 1; }} ";
+                }
+                case 15:
+                {
+                    var bound = $"got{_names++}";
+                    return $"if ({NullableVar()} is int {bound}) {{ {IntVar()} += {bound}; }} else {{ {IntVar()} -= 2; }} ";
+                }
+                case 8:
+                    return $"{LongVar()} = {LongVar()} {(Pick(2) == 0 ? "+" : "-")} {Pick(30)}L; ";
+                case 9:
+                    return $"{DecVar()} = {DecVar()} {(Pick(2) == 0 ? "+" : "*")} {1 + Pick(5)}.{Pick(9)}m; ";
+                case 10:
+                    // A char compared and promoted: both are places C# and JavaScript disagree
+                    // unless the compiler says which one it means.
+                    return $"if ({CharVar()} > 'm') {{ {IntVar()} += {CharVar()} - 'a'; }} else {{ {IntVar()} -= 1; }} ";
+                case 11:
+                    return $"{StringVar()} += {(Pick(2) == 0 ? LongVar() : DecVar())}.ToString(); ";
                 case 6:
                     // A chain whose result feeds an accumulator: the interplay between operators is
                     // what no hand-written case enumerates.
@@ -210,6 +298,18 @@ public class GeneratedDifferentialTests
             }
             return chain;
         }
+
+        /// <summary>Fresh names for the variables a pattern binds — see case 14.</summary>
+        private int _names;
+
+        private static readonly string[] Suits = ["Clubs", "Hearts", "Spades"];
+
+        private string SuitVar() => _suits[Pick(_suits.Count)];
+        private string NullableVar() => _nullables[Pick(_nullables.Count)];
+
+        private string LongVar() => _longs[Pick(_longs.Count)];
+        private string DecVar() => _decimals[Pick(_decimals.Count)];
+        private string CharVar() => _chars[Pick(_chars.Count)];
 
         private string IntVar() => _ints[Pick(_ints.Count)];
         private string BoolVar() => _bools[Pick(_bools.Count)];
