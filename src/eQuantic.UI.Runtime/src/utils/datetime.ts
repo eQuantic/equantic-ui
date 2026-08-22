@@ -609,21 +609,44 @@ function tryParseDateOnly(text: string): DateOnly | null {
   const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t);
   if (iso) return valid(+iso[1], +iso[2], +iso[3]);
 
-  const parts = /^(\d{1,4})[/.-](\d{1,2})[/.-](\d{1,4})$/.exec(t);
+  const parts = /^(\d{1,4})[/.-](\d{1,4})[/.-](\d{1,4})$/.exec(t);
   if (!parts) return null;
 
   // Which slot holds what, read off the pattern: "M/d/yyyy" is month-first, "dd/MM/yyyy" is
-  // day-first. Without a catalog (a page with no server behind it) the invariant order applies,
-  // which is what .NET's own invariant culture does.
+  // day-first, "yyyy/MM/dd" leads with the year. Without a catalog (a page with no server behind
+  // it) the invariant order applies, which is what .NET's own invariant culture does.
   const pattern = (activePattern('dateShort') ?? 'M/d/yyyy').toLowerCase();
   const dayAt = pattern.indexOf('d');
   const monthAt = pattern.indexOf('m');
+  const yearAt = pattern.indexOf('y');
   const dayFirst = dayAt >= 0 && monthAt >= 0 && dayAt < monthAt;
+  const yearFirst = yearAt >= 0 && (dayAt < 0 || yearAt < dayAt) && (monthAt < 0 || yearAt < monthAt);
 
   const [, one, two, three] = parts;
-  // A four-digit part is the year wherever it sits — yyyy/MM/dd is a pattern too.
-  if (one.length === 4) return valid(+one, dayFirst ? +three : +two, dayFirst ? +two : +three);
-  return valid(+three, dayFirst ? +two : +one, dayFirst ? +one : +two);
+  // Three digits or more is a year wherever it sits, and a year-first culture takes the leading
+  // slot when the trailing one is not itself year-shaped. Both were PROBED against .NET rather
+  // than reasoned: en-US reads "2026/7/17" (month-first!) as the ISO order, and ja-JP reads
+  // "17/7/26" as 2017-07-26 where a slot-blind reader sees month 17 and gives up.
+  const yearLeads = looksLikeYear(one) || (yearFirst && !looksLikeYear(three));
+  // A year that leads is followed by month then day in EVERY culture .NET ships — a day-first
+  // culture handed "2026/7/17" still answers July 17th.
+  if (yearLeads) return valid(pivot(one), +two, +three);
+  return valid(pivot(three), dayFirst ? +two : +one, dayFirst ? +one : +two);
+}
+
+/** Three digits can only be a year: no month or day reaches 100. */
+function looksLikeYear(part: string): boolean {
+  return part.length >= 3;
+}
+
+/**
+ * A year as .NET reads it: one or two digits are resolved against the calendar's
+ * <c>TwoDigitYearMax</c>, which is 2049 for every culture the framework ships — 00–49 land in
+ * this century, 50–99 in the last. Three digits or more are literal, so "1/2/003" is year 3.
+ */
+function pivot(part: string): number {
+  const year = +part;
+  return part.length <= 2 ? (year <= 49 ? 2000 + year : 1900 + year) : year;
 }
 
 /** The date, or null when those numbers are not one — 31 February parses and does not exist. */
