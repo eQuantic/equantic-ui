@@ -8,7 +8,12 @@ import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
 import { getCurrentRoute } from '../router/current-route';
-import { ComponentInstanceStore, enterPass, exitPass } from '../shared/instance-store';
+import {
+  ComponentInstanceStore,
+  enterPass,
+  exitPass,
+  reconcileBuildRoot,
+} from '../shared/instance-store';
 import {
   getPhotonDensity,
   getInFlow,
@@ -92,7 +97,7 @@ export abstract class StatelessComponent extends Component {
     // and nothing on screen ever changed.)
     enterPass(this._instances, () => this._scheduleRender());
     try {
-      const component = this.build(context) as Component;
+      const component = reconcileBuildRoot(this.build(context)) as Component;
       return component.render();
     } catch (error) {
       // A PAGE has no parent to contain it. Its own throw used to leave the root unwritten, which
@@ -267,7 +272,7 @@ export abstract class StatefulComponent extends Component {
     // shared stateful retained inside it invalidate by re-rendering THIS page.
     enterPass(this._instances, () => this._scheduleRender());
     try {
-      const component = this.state.build(context) as Component;
+      const component = reconcileBuildRoot(this.state.build(context)) as Component;
       return component.render();
     } catch (error) {
       return renderComponentFailure(this.constructor.name, error);
@@ -492,7 +497,7 @@ export abstract class SharedStatefulComponent extends Component {
     // render this JOINS the outer pass instead (the host page owns retention).
     enterPass(this._instances, () => this._scheduleRender());
     try {
-      return (this.build(context) as Component).render();
+      return (reconcileBuildRoot(this.build(context)) as Component).render();
     } catch (error) {
       return renderComponentFailure(this.constructor.name, error);
     } finally {

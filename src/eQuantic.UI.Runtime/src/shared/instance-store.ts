@@ -159,6 +159,26 @@ export function exitPass(): void {
   activePass = null;
 }
 
+/**
+ * Reconciles the component a `build()` returned AS ITS ROOT, the way the lowering already
+ * reconciles every component BELOW it.
+ *
+ * The lowering meets a nested component as a `component` node and resolves it against the store
+ * (see `lowerNode`, case 'component'). A build ROOT never passes through there — the render paths
+ * call `built.render()` on it directly — so it was a FRESH instance every pass, and any state it
+ * held reset on the render its own `setState` asked for. A menu opened and closed in the same
+ * frame; a language switcher that returns a `Menu` looked inert.
+ *
+ * Non-stateful roots pass through untouched and cost no path, so the root counter keeps the same
+ * meaning for the bridges that share it.
+ */
+export function reconcileBuildRoot<T>(built: T): T {
+  const pass = activePass;
+  if (!pass) return built;
+  if ((built as { _sharedStateful?: boolean } | null)?._sharedStateful !== true) return built;
+  return pass.store.reconcile(pass.store.nextRootPath(), built, pass.invalidator) as T;
+}
+
 /** The pass in flight, if any — lowering consults it to reconcile component positions. */
 export function getActivePass(): {
   store: ComponentInstanceStore;
