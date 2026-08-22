@@ -40,7 +40,7 @@ already is. An inline `Calendar` also has its own uses (date ranges, scheduling)
 | # | Slice | State |
 |---|---|---|
 | 1 | **The grid vocabulary.** `Navigable` (the 2-D twin of `Adjustable`), `PressableRole.GridCell`, `AnchorPanelRole.Dialog`, and Photon's `SemanticRole.GridCell` + `SemanticNode.Selected` — with the Shortcut question answered | done |
-| 2 | **Culture.** First-day-of-week and short day names as DATA, not only inside formatting. The web reads `Intl`; Photon has `CultureInfo` and no `Intl`, so the two targets take their labels from different sources and need a cross-pin, exactly as the design system did | |
+| 2 | **Culture.** First-day-of-week and the day and month names as DATA, not only inside formatting | done — and the cross-pin changed the design. Deriving on each side looked safe (.NET matched bun across ten cultures) until the same comparison ran under node: four disagreements, including whether zh-CN's week starts on Sunday. So the server COMPUTES the names for the request's format culture and ships them in `__EQ_CULTURE__`, boot installs them before hydration, and the twin prefers them over Intl — which stays as the fallback for a render with no server behind it. Narrow day names are absent from both sides on purpose: .NET's `ShortestDayNames` and CLDR's `narrow` are different data, and no shared derivation works (first-character gives Chinese seven identical headers) |
 | 3 | **`Calendar`.** The month grid: navigation, min/max, today, single selection. Range mode after | |
 | 4 | **The three wrappers** plus the text-entry fallback row, the factories, ~8 SdkStrings keys (previous/next month, today, clear, choose date), and a date-shaped `FieldRule` — `Range` is numeric, and the `[FormModel]` generator reads only `[Required]` and `[Range]` | |
 
@@ -53,6 +53,16 @@ ArrowDown. So the grid does not use `Shortcut` for movement — `Navigable` puts
 its own focusable host, the way `Adjustable` already does, and focus scoping falls out of where the
 listener lives. Esc and Enter stay `Shortcut`'s job inside the open popover, where page-level and
 lifetime-scoped are the same thing.
+
+## What slice 2 learned, for whoever writes the Calendar
+
+- Ask `CalendarNames` — never `Intl`, never `CultureInfo` — from component code. The arrays are
+  ALWAYS Sunday-first, indexed by `System.DayOfWeek`; the calendar rotates them by
+  `FirstDayOfWeek` itself, so the rotation happens exactly once.
+- The C15 mock's day row ("S M T W T F S") is CLDR *narrow*, which is not available. Use the short
+  names; the cells are 44dp and the design's Caption 11/700 fits three letters.
+- A cell's accessible name wants `DayNamesLong` ("Friday, July 17"), not the abbreviation — a
+  screen reader reads "Fri" letter by letter.
 
 ## Two things the survey turned up that are not ours to fix here
 
