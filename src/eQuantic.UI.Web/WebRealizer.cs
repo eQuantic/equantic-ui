@@ -167,6 +167,7 @@ public static class WebRealizer
         InFlow inFlow => LowerInFlow(inFlow, context, horizontalAxis),
         InView inView => LowerInView(inView, context, horizontalAxis),
         Adjustable adjustable => LowerAdjustable(adjustable, context),
+        Navigable navigable => LowerNavigable(navigable, context),
         Shortcut shortcut => LowerShortcut(shortcut, context, horizontalAxis),
         Link link => LowerLink(link, context),
         LoopMotion motion => LowerLoopMotion(motion, context),
@@ -347,7 +348,12 @@ public static class WebRealizer
             // The anchor's half of the menu/listbox pattern, on its root — the trigger button.
             if (panelId is not null)
             {
-                anchor.AriaHasPopup = anchored.PanelRole == AnchorPanelRole.Listbox ? "listbox" : "menu";
+                anchor.AriaHasPopup = anchored.PanelRole switch
+                {
+                    AnchorPanelRole.Listbox => "listbox",
+                    AnchorPanelRole.Dialog => "dialog",
+                    _ => "menu",
+                };
                 // A Select's FIELD is the combobox — the role rides the trigger, not the panel.
                 if (anchored.PanelRole == AnchorPanelRole.Listbox) anchor.Role = "combobox";
                 if (anchored.Open)
@@ -416,7 +422,14 @@ public static class WebRealizer
         var openPanel = BuildAnchorPanel(anchored, context);
         if (panelId is not null)
         {
-            openPanel.Role = anchored.PanelRole == AnchorPanelRole.Listbox ? "listbox" : "menu";
+            openPanel.Role = anchored.PanelRole switch
+            {
+                AnchorPanelRole.Listbox => "listbox",
+                // A panel holding a COMPOSITE (C15's calendar): focus moves INTO it, so it is a
+                // dialog, and its rows are not items the trigger's activedescendant can point at.
+                AnchorPanelRole.Dialog => "dialog",
+                _ => "menu",
+            };
             openPanel.Id = panelId;
             // Number the item rows IN TREE ORDER — the ids aria-activedescendant points at. Tree
             // order is the one thing both producers agree on without sharing any state.
@@ -1165,6 +1178,48 @@ public static class WebRealizer
         if (LowerNode(adjustable.Child, context, null) is { } child) element.Children.Add(child);
         return element;
     }
+
+    /// <summary>
+    /// The 2-D composite (TS twin: lowerNavigable). One focusable host carrying the grid role and
+    /// the name, and one ROW per declared row — <c>display:contents</c>, so the row exists for
+    /// assistive tech and not for layout: the caller's Grid or Column keeps laying the cells out
+    /// exactly as it did. A grid whose cells are not inside rows is an invalid tree, which is why
+    /// the rows are structural here rather than left to the caller's markup.
+    /// <para>SSR half: the same markup, no handler — keydown only exists client-side, exactly as
+    /// Pressable's click does.</para>
+    /// </summary>
+    private static HtmlElement LowerNavigable(Navigable navigable, ComponentContext context)
+    {
+        var element = new RealizedElement("div")
+        {
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["role"] = navigable.Role switch { _ => "grid" },
+                ["tabindex"] = "0",
+            },
+        };
+        if (navigable.Label is { Length: > 0 } gridLabel) element.RawAttributes["aria-label"] = gridLabel;
+        // The focused CELL is announced without the focus leaving the composite's one stop.
+        if (navigable.ActiveCell is { } active)
+            element.RawAttributes["aria-activedescendant"] = NavigableCellId(active.Row, active.Item);
+
+        for (var index = 0; index < navigable.Rows.Count; index++)
+        {
+            var row = new RealizedElement("div")
+            {
+                // Transparent to layout: the row is an accessibility fact, not a box.
+                Style = new HtmlStyle { Display = Core.Display.Contents },
+                RawAttributes = new Dictionary<string, string> { ["role"] = "row" },
+            };
+            if (LowerNode(navigable.Rows[index], context, null) is { } lowered) row.Children.Add(lowered);
+            element.Children.Add(row);
+        }
+        return element;
+    }
+
+    /// <summary>The id a cell answers to for <c>aria-activedescendant</c> — the TS twin builds the
+    /// same string, or the attribute points at nothing.</summary>
+    internal static string NavigableCellId(int row, int item) => $"eq-cell-{row}-{item}";
 
     private static HtmlElement LowerCameraPreview(CameraPreview camera)
     {
@@ -1957,6 +2012,17 @@ public static class WebRealizer
         if (pressable.Role == PressableRole.Option)
         {
             element.Role = "option";
+            element.AriaSelected = pressable.Selected == true;
+            element.AriaPressed = null;
+            element.TabIndex = -1;
+        }
+
+        // One cell of a 2-D composite: PICKED like a tab or an option (design system C15 asks for
+        // gridcell + selected), and out of the Tab order because the enclosing Navigable is the
+        // composite's one stop — 42 days must not be 42 tab presses.
+        if (pressable.Role == PressableRole.GridCell)
+        {
+            element.Role = "gridcell";
             element.AriaSelected = pressable.Selected == true;
             element.AriaPressed = null;
             element.TabIndex = -1;
