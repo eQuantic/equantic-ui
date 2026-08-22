@@ -197,21 +197,35 @@ MSBuild: CompileEQuanticUI (BeforeTargets="Build")
 
 ### Compiler Components (eQuantic.UI.Compiler)
 
-The Roslyn-based compiler uses the **Strategy Pattern**:
+The Roslyn-based compiler READS C# with strategies and WRITES JavaScript from an IR:
 
 1. **ComponentParser** (`Parser/ComponentParser.cs`) - Parses C# AST
-2. **CSharpToJsConverter** (`CodeGen/CSharpToJsConverter.cs`) - Main conversion orchestrator
-3. **TypeScriptEmitter** (`CodeGen/TypeScriptEmitter.cs`) - TypeScript code generation
-4. **Strategies** (`CodeGen/Strategies/`) - Individual converters for C# constructs:
-   - `Expressions/` - Binary, member access, invocation, object creation
-   - `Statements/` - If, switch, while, foreach, try-catch, using
-   - `Linq/` - Where→filter, Select→map, First→find, Count→length
-   - `Types/` - Enum, Guid, Nullable, Tuple
-5. **SourceMapGenerator** - V3 Source Maps for C# debugging in browser
-6. **SemanticHelper** (`Services/SemanticHelper.cs`) - symbol-based decisions. The rule: name
+2. **CSharpToJsConverter** (`CodeGen/CSharpToJsConverter.cs`) - Dispatches each node to a strategy
+   and returns IR (`ConvertIr` / `ConvertStatementIr`); the string API (`ConvertExpression`) is the
+   seam for consumers not yet on the IR
+3. **Strategies** (`CodeGen/Strategies/`) - One per C# construct (`Expressions/`, `Statements/`,
+   `Linq/`, `Types/`, `Primitives/`…). Statements ALWAYS build a `JsStatement`. Expressions that
+   crossed over implement `IExpressionIrStrategy`; a text-returning `IConversionStrategy` is spliced
+   as an OPAQUE node, byte-identical to what it always produced — the strangler boundary. New
+   strategies are born on the IR: `tests/…/Coverage/ir-migration.baseline.txt` lists the text ones
+   and may only shrink (regen `EQ_UPDATE_IR_BASELINE=1`)
+4. **IR + writers** (`CodeGen/Ir/`) - `JsExpr` → `JsStatement` → `JsClassMember` → `JsClass` →
+   `JsModule`, ONE writer per level. The writers own what a strategy must never hand-write:
+   parentheses (precedence, associativity, the `??`-beside-`&&` rule JavaScript enforces), single
+   evaluation (`JsTemplate` binds a part used twice; a plain name is inlined), statement layout
+   (`JsLayout.Pretty`; `Compact` reproduces the old string world byte for byte), the one class
+   layout rule, and imports (`JsImport` records, `JsModuleWriter`)
+5. **TypeScriptEmitter** (`CodeGen/TypeScriptEmitter.cs`) - Decides WHAT a module contains —
+   members, imports — and hands nodes to the builder; it assembles no text
+6. **SourceMapGenerator** - V3 Source Maps for C# debugging in browser
+7. **SemanticHelper** (`Services/SemanticHelper.cs`) - symbol-based decisions. The rule: name
    heuristics are legal ONLY where the model cannot be asked (`Knows()` false — no model, or a
    strategy-rewrote node); an in-tree call the model cannot bind is a build error (EQ2006), never
    a guessed translation.
+
+Output contracts: the component pins (`EQ_UPDATE_TRANSPILED=1`) and the conformance suite (both
+sides executed) are the net. A layout change must be WHITESPACE-ONLY against the pins; a
+translation change must execute identically on both sides.
 
 **Supported C# Features:**
 - Expressions: Arithmetic, Logical, Ternary, Null-coalescing (`??`)
