@@ -24,6 +24,12 @@ import { calendarCatalog, formatLocale } from '../utils/culture';
 /** Where the host cannot say: ISO-8601's answer, and what most locales say. */
 const MONDAY = 1;
 
+/** What `Intl` resolves to with no locale asked for — the host's own, which is what the day and
+ * month names below already follow when no culture is installed. */
+function hostLocale(): string {
+  return new Intl.DateTimeFormat().resolvedOptions().locale;
+}
+
 /** A Sunday, so index 0..6 walks Sunday..Saturday — System.DayOfWeek's own numbering. */
 const SUNDAY = Date.UTC(2026, 7, 16);
 const DAY = 86_400_000;
@@ -55,7 +61,10 @@ export class CalendarNames {
     // point of this branch is to answer without a server.
     if (typeof Intl.Locale !== 'function') return MONDAY;
     try {
-      const locale = new Intl.Locale(formatLocale() ?? 'en-US') as Intl.Locale & {
+      // The HOST's locale when nothing is installed — the same default `Intl.DateTimeFormat`
+      // resolves for the names below. Hard-coding en-US here made the two disagree inside one
+      // render: German day names above a week that starts on Sunday.
+      const locale = new Intl.Locale(formatLocale() ?? hostLocale()) as Intl.Locale & {
         weekInfo?: { firstDay: number };
         getWeekInfo?: () => { firstDay: number };
       };

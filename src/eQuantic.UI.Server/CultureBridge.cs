@@ -11,8 +11,10 @@ namespace eQuantic.UI.Server;
 /// <summary>
 /// Track L D4 — the culture half of the shell bridge, the theme bridge's shape slot for slot:
 /// the server picks the catalog the request's UI culture resolves to and inlines it as
-/// <c>window.__EQ_CULTURE__ = { name, formatName, strings }</c>, applied by boot BEFORE hydration
-/// so the client resolves exactly the strings the server rendered. The catalogs are the build's
+/// <c>window.__EQ_CULTURE__ = { name, formatName, calendar, strings }</c>, applied by boot BEFORE
+/// hydration so the client resolves exactly the strings the server rendered — and names a month
+/// exactly as the server named it, which is what <c>calendar</c> carries (see
+/// <see cref="CalendarJson"/>: the browser's ICU and .NET's do not always agree). The catalogs are the build's
 /// own output (<c>wwwroot/_equantic/strings/{culture}.json</c>, eqc-emitted): resolution walks
 /// exact culture → parents → <c>neutral.json</c> — the .NET fallback chain, already FLATTENED at
 /// emit time (D12), so this walk only picks a FILE and never merges.

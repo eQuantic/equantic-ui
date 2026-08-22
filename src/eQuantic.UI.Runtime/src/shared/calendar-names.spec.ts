@@ -68,6 +68,19 @@ describe('calendar names (C# CalendarNamesFixtureTests cross-pin)', () => {
     expect(CalendarNames.firstDayOfWeek).toBe(6);
   });
 
+  it('with nothing installed, the week start follows the same locale as the names', () => {
+    // The fallback used to hard-code en-US for the first day while the names resolved the host's
+    // locale — one render could show German day names over a week starting on Sunday.
+    installCulture('', '', {});
+    const host = new Intl.DateTimeFormat().resolvedOptions().locale;
+    const asHost = new Intl.DateTimeFormat(host, { weekday: 'short', timeZone: 'UTC' });
+    expect(CalendarNames.dayNamesShort[0]).toBe(asHost.format(new Date(Date.UTC(2026, 7, 16))));
+    // …and the first day is whatever THAT locale says, not a constant.
+    const info = (new Intl.Locale(host) as Intl.Locale & { weekInfo?: { firstDay: number } })
+      .weekInfo;
+    if (info) expect(CalendarNames.firstDayOfWeek).toBe(info.firstDay === 7 ? 0 : info.firstDay);
+  });
+
   it('answers even where Intl.Locale does not exist', () => {
     // A minimal Intl build (or an older browser) may carry no Locale constructor at all, and week
     // data is newer still. Constructing it blind would throw in the one branch whose job is to
