@@ -32,4 +32,23 @@ public class OrderByThenByConformanceTests
         else
             ConformanceRunner.AssertSameAsDotNet(code);
     }
+
+    /// <summary>
+    /// A second <c>OrderBy</c> REPLACES the primary key; it does not refine the one under it. The
+    /// earlier ordering survives only as the tiebreak a stable sort gives it, so
+    /// <c>OrderBy(a).OrderBy(b)</c> and <c>OrderBy(a).ThenBy(b)</c> are different orders whenever
+    /// b has ties that a would break. Both were emitted as one comparator with a as the primary,
+    /// which is what ThenBy means — found by the differential generator, which reached the shape
+    /// three times in two thousand programs before anyone wrote it down.
+    /// </summary>
+    [Theory]
+    [InlineData("return string.Join(\"-\", new[]{4,15,3,15}.OrderBy(x => x % 2).OrderBy(x => x % 6));")]
+    [InlineData("return string.Join(\"-\", new[]{4,15,3,15}.OrderBy(x => x % 2).ThenBy(x => x % 6));")]
+    [InlineData("return string.Join(\"-\", new[]{5,3,8,1,9}.OrderBy(x => x % 3).OrderBy(x => x % 2));")]
+    [InlineData("return string.Join(\"-\", new[]{5,3,8,1,9}.OrderByDescending(x => x % 3).OrderBy(x => x % 2));")]
+    [InlineData("return string.Join(\"-\", new[]{5,3,8,1,9}.OrderBy(x => x % 3).ThenBy(x => x).OrderBy(x => x % 2));")]
+    [InlineData("return string.Join(\"-\", new[]{7,2,9,4}.OrderBy(x => x % 2).OrderBy(x => x % 3).ThenBy(x => x));")]
+    [InlineData("return new[]{4,15,3,15}.OrderBy(x => x % 2).OrderBy(x => x % 6).ElementAtOrDefault(3);")]
+    public void ASecondOrderByRestartsTheOrdering(string statements) =>
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
 }
