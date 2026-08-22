@@ -89,34 +89,34 @@ public static class ValueFlow
 
     /// <summary>An implicit conversion, by what Roslyn classified it as.</summary>
     private static JsExpr Convert(IConversionOperation conversion, ExpressionSyntax node, JsExpr translated,
-        ConversionContext context)
-    {
-        var kind = conversion.GetConversion();
-        var from = conversion.Operand.Type;
-        var to = conversion.Type;
+        ConversionContext context) =>
+        Apply(conversion.GetConversion(), conversion.Operand.Type, conversion.Type,
+            conversion.ConstantValue.HasValue ? conversion.ConstantValue.Value : null,
+            conversion.Operand.ConstantValue.HasValue ? conversion.Operand.ConstantValue.Value : null,
+            translated, context);
 
+    /// <summary>
+    /// A conversion APPLIED to a translated value — the one table, usable wherever the bound tree
+    /// reports a conversion that is not an expression of its own: the implicit conversion around an
+    /// expression, the element conversion of a <c>foreach</c>.
+    /// </summary>
+    public static JsExpr Apply(Conversion kind, ITypeSymbol? from, ITypeSymbol? to, object? convertedConstant,
+        object? operandConstant, JsExpr translated, ConversionContext context)
+    {
         // A constant converts at compile time ONLY where the JavaScript REPRESENTATION changes —
         // `1` flowing into a long is `1n`. An int constant flowing into a byte or a double is
         // already the number JavaScript wants, and folding it would rewrite the author's notation
         // (0x10 is not 16 to a reader) for no gain.
-        if (conversion.ConstantValue.HasValue && Constant(conversion.ConstantValue.Value, to) is { } folded)
+        if (convertedConstant is not null && Constant(convertedConstant, to) is { } folded)
             return folded;
 
-        // A USER-DEFINED implicit operator passes the value through, which is what the JavaScript
-        // model of these types already is: `SizeValue`, `Index`, `ColorToken` and their kin wrap a
-        // single primitive, and their twin IS that primitive — so `Size = 34f` and `name[..cut]`
-        // cross by carrying the number. A wrapper with real structure would need its operator
-        // lowered and called; no such conversion is reachable from transpiled code today, and the
-        // conformance suite is where that would show up as a divergence, not here as a refusal.
         if (kind.IsUserDefined)
             return kind.MethodSymbol is { } method
                 && UserDefinedOperators.Conversion(method, JsExprWriter.Write(translated)) is { } call
                 ? call
                 : translated;
 
-        if (kind.IsNumeric)
-            return Numeric(from, to, translated,
-                conversion.Operand.ConstantValue.HasValue ? conversion.Operand.ConstantValue.Value : null, context);
+        if (kind.IsNumeric) return Numeric(from, to, translated, operandConstant, context);
 
         if (kind.IsEnumeration && to is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
         {

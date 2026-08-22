@@ -33,6 +33,7 @@ public class UserDefinedOperatorConformanceTests
     [InlineData("Money m = new(1); m += 2; return m.Amount;")]                    // 3 — compound with an implicit operand
     [InlineData("Money m = new(2); m -= 5; return m.Amount;")]                    // -3
     [InlineData("var xs = new[] { new Money(1), new Money(2) }; int s = 0; foreach (var x in xs) s += (int)x; return s;")] // 3
+    [InlineData("var xs = new[] { 1, 2 }; int s = 0; foreach (Money m in xs) s += m.Amount; return s;")] // 3 — the element converts
     public void UserDefinedOperators_MatchDotNet(string statements) =>
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Money);
 }

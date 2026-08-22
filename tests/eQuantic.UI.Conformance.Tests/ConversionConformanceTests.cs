@@ -56,6 +56,16 @@ public class ConversionConformanceTests
         "long Big(long v) => v * 2; int n = 21; return Big(n).ToString();",           // "42" — int into a long parameter
         "char c = 'a'; var list = new List<int>(); list.Add(c); return list[0];",   // 97 — into a collection (an annotated declaration: the harness runs TypeScript now)
 
+        // STATEMENTS where the bound tree knows a conversion the syntax does not show: the ELEMENT
+        // of a foreach converts to the declared variable type, one item at a time.
+        "var xs = new[] { 1, 2 }; long s = 0; foreach (long l in xs) s += l; return s.ToString();",      // "3" — int elements into a long
+        "var xs = new[] { 1, 2 }; long s = 0; foreach (long l in xs) s += l * 3000000000L; return s.ToString();", // "9000000000" — exact past 2^32
+        "var xs = new[] { 7, 8 }; double s = 0; foreach (double d in xs) s += d / 2; return s;",          // 7.5 — int elements as doubles
+        "var xs = new[] { 'a', 'b' }; int s = 0; foreach (int code in xs) s += code; return s;",          // 195 — char elements as ints
+        "var xs = new[] { 1.5f, 2.5f }; float s = 0; foreach (var f in xs) s += f; return s.ToString();", // "4"
+        "var s = \"ab\"; int n = 0; foreach (var c in s) n += c; return n;",                            // 195 — a string enumerates chars
+        "var d = new Dictionary<string, int> { [\"a\"] = 1 }; long s = 0; foreach (var (k, v) in d) s += v; return s.ToString();", // "1"
+
         // A value flowing into a string through `+=` — the one concatenation shape no syntax rule saw.
         "string s = \"a\"; s += true; return s;",                                     // "aTrue"
         "string s = \"a\"; string? n = null; s += n; return s;",                      // "a"

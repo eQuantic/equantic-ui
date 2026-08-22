@@ -93,6 +93,16 @@ public class SemanticHelper
         return Knows(node) ? _semanticModel!.GetOperation(node) : null;
     }
 
+    /// <summary>What a <c>foreach</c> binds to — the element type, the conversion from the element
+    /// to the loop variable, the enumerator — Original-aware and guarded.</summary>
+    public ForEachStatementInfo? ForEachInfo(CommonForEachStatementSyntax statement)
+    {
+        var node = Original(statement);
+        return Knows(node) && node is CommonForEachStatementSyntax original
+            ? _semanticModel!.GetForEachStatementInfo(original)
+            : null;
+    }
+
     /// <summary>The symbol a node DECLARES (a lambda parameter, a local), Original-aware and
     /// guarded — the model throws for a node outside its tree.</summary>
     public ISymbol? GetDeclaredSymbol(SyntaxNode node)
