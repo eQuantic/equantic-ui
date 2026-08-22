@@ -57,12 +57,7 @@ public sealed class Calendar : StatefulComponent
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not Calendar fresh) return;
-        // Both sides non-null before anything compares them. `arriving != Selected` reads fine in
-        // C# — a lifted comparison — and lowers to `arriving.equals(this.selected)`, which throws
-        // on the very transition this line exists to detect: nothing selected, app selects a day.
-        // The same trap as the render path's, in the code written to fix that one.
-        var moved = fresh.Selected is { } arriving
-            && (Selected is not { } current || arriving != current);
+        var moved = fresh.Selected is { } arriving && arriving != Selected;
         Selected = fresh.Selected;
         OnChanged = fresh.OnChanged;
         Min = fresh.Min;
@@ -142,11 +137,7 @@ public sealed class Calendar : StatefulComponent
         var size = SizeValue.Fixed(CellSize);
         if (day.Month != _month.Month) return new Box(new BoxStyle { Width = size, Height = size });
 
-        // `Selected == day` is a LIFTED comparison in C# — false when nothing is selected — and the
-        // twin lowers it to `selected.equals(day)`, which throws on null. So an unselected calendar
-        // rendered on the server and died in the browser. Written explicitly here; the transpiler
-        // gap it stands on is filed separately, because every `nullableDate == date` has it.
-        var selected = Selected is { } chosen && chosen == day;
+        var selected = Selected == day;
         var isToday = day == Today();
         var reachable = InRange(day);
         var primary = theme.Colors(Variant.Primary);

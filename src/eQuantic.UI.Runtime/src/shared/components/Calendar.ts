@@ -56,8 +56,8 @@ export class Calendar extends SharedStatefulComponent {
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if (!((next instanceof Calendar && (fresh = next, true)))) return;
-        let arriving: any; let current: any; 
-        let moved = (arriving = fresh.selected) != null && (!((current = this.selected) != null) || !arriving.equals(current));
+        let arriving: any; 
+        let moved = (arriving = fresh.selected) != null && !$eq.equals(arriving, this.selected);
         this.selected = fresh.selected;
         this.onChanged = fresh.onChanged;
         this.min = fresh.min;
@@ -76,8 +76,7 @@ export class Calendar extends SharedStatefulComponent {
         let theme = context.theme;
         let size = SizeValue.fixed(Calendar.cellSize);
         if (day.month !== this._month.month) return new Box(new BoxStyle({ width: size, height: size }));
-        let chosen: any; 
-        let selected = (chosen = this.selected) != null && chosen.equals(day);
+        let selected = $eq.equals(this.selected, day);
         let isToday = day.equals(Calendar.today());
         let reachable = this.inRange(day);
         let primary = theme.colors('primary');

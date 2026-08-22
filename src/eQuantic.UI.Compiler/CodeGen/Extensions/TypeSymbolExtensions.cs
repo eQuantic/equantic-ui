@@ -119,6 +119,12 @@ public static class TypeSymbolExtensions
         return t != null && Array.IndexOf(IntegralTypes, t.SpecialType) >= 0;
     }
 
+    /// <summary>Whether this IS a <c>Nullable&lt;T&gt;</c> — the question every lifted operator
+    /// asks, and the one <see cref="IsNamed"/> deliberately does not (it unwraps, so a
+    /// <c>DateOnly?</c> answers yes to "is this a DateOnly").</summary>
+    public static bool IsNullableValue(this ITypeSymbol? type) =>
+        type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T };
+
     /// <summary><c>decimal</c> (or <c>decimal?</c>).</summary>
     public static bool IsDecimal(this ITypeSymbol? type) =>
         type.UnwrapNullable()?.SpecialType == SpecialType.System_Decimal;
