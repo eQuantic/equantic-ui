@@ -116,6 +116,13 @@ public class StatementConformanceTests
     [InlineData("var m = new Dictionary<string, int> { [\"k\"] = 1 }; return m[\"k\"];")]                     // 1
     [InlineData("var m = new Dictionary<string, int>(); m[\"new\"] = 5; return m[\"new\"];")]                 // 5 — a write CREATES
     [InlineData("var m = new Dictionary<string, int> { [\"k\"] = 1 }; m[\"k\"] += 4; return m[\"k\"];")]     // 5
+    // A compound write READS first, so a key that is not there throws exactly as a plain read does.
+    // Treating it as a create let an undefined into the arithmetic, and the page got NaN where the
+    // server got an exception.
+    [InlineData("var m = new Dictionary<string, int>(); try { m[\"gone\"] += 1; return 1; } catch { return -1; }")]  // -1
+    [InlineData("var m = new Dictionary<string, int> { [\"k\"] = 1 }; m[\"k\"]++; return m[\"k\"];")]              // 2
+    [InlineData("var m = new Dictionary<string, int> { [\"k\"] = 3 }; return -m[\"k\"];")]                          // -3 — a unary READS
+    [InlineData("var m = new Dictionary<string, int>(); try { var v = -m[\"gone\"]; return 1; } catch { return -1; }")] // -1
     public void OutOfRangeFailsWhereDotNetFails(string statements) =>
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
 }

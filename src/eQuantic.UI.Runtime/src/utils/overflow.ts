@@ -71,11 +71,12 @@ export function single(value: number): string {
  * entirely — a blank render, a NaN, a page that is subtly wrong rather than plainly broken.
  */
 export function substring(value: string, start: number, length?: number): string {
-  if (start < 0 || start > value.length) {
-    throw new RangeError('startIndex cannot be larger than length of string.');
-  }
+  // The three cases .NET tells apart, because which one it is says where the bug is.
+  if (start < 0) throw new RangeError('startIndex cannot be less than zero.');
+  if (start > value.length) throw new RangeError('startIndex cannot be larger than length of string.');
   if (length === undefined) return value.slice(start);
-  if (length < 0 || start + length > value.length) {
+  if (length < 0) throw new RangeError('length cannot be less than zero.');
+  if (start + length > value.length) {
     throw new RangeError('Index and length must refer to a location within the string.');
   }
   return value.slice(start, start + length);
@@ -87,6 +88,9 @@ export function substring(value: string, start: number, length?: number): string
  * bigint — and a plain object keys by string, so it is stringified the way an index would.
  */
 export function dictGet<V>(map: Record<string, V>, key: unknown): V {
+  // .NET tells an ABSENT key from a null one, and so does this: a null key is a caller mistake,
+  // a missing one is a lookup that found nothing.
+  if (key === null || key === undefined) throw new Error('Value cannot be null. (Parameter \'key\')');
   const property = String(key);
   if (!Object.prototype.hasOwnProperty.call(map, property)) {
     throw new Error(`The given key '${property}' was not present in the dictionary.`);

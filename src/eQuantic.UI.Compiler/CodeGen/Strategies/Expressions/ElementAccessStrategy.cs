@@ -58,21 +58,42 @@ public class ElementAccessStrategy : IExpressionIrStrategy
         return indexed;
     }
 
-    /// <summary>Whether this access is being WRITTEN to — the left of an assignment, or the
-    /// operand of ++/--. Those create the entry rather than read it.</summary>
-    private static bool IsAssignmentTarget(ElementAccessExpressionSyntax access) => access.Parent switch
+    /// <summary>
+    /// Whether this access CREATES the entry rather than reading it — which is only a plain
+    /// assignment. `m[k] = v` puts a key there whether or not it was; `m[k] += 1` and `m[k]++`
+    /// READ first and throw in .NET when the key is absent, so guarding them is not optional:
+    /// without it an undefined walks into the arithmetic and the page gets NaN instead of the
+    /// exception the server would have raised. `out`/`ref` write too.
+    /// </summary>
+    private static bool IsAssignmentTarget(ElementAccessExpressionSyntax access)
     {
-        AssignmentExpressionSyntax assignment => assignment.Left == access,
-        // ++ and -- only. `-map[k]`, `!map[k]` and `~map[k]` are prefix unaries too, and they
-        // READ — treating them as writes would put the missing key back to answering undefined,
-        // which is the whole of what this change fixes.
-        PrefixUnaryExpressionSyntax prefix =>
-            prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression),
-        PostfixUnaryExpressionSyntax postfix =>
-            postfix.IsKind(SyntaxKind.PostIncrementExpression) || postfix.IsKind(SyntaxKind.PostDecrementExpression),
-        ArgumentSyntax { RefOrOutKeyword.RawKind: not 0 } => true,
-        _ => false,
-    };
+        // Parentheses are not a context: `(m[k]) = v` is still the target of that assignment, and
+        // reading through them would emit `($eq.dictGet(…)) = v`, which does not even parse.
+        SyntaxNode node = access;
+        while (node.Parent is ParenthesizedExpressionSyntax parenthesized) node = parenthesized;
+
+        return node.Parent switch
+        {
+            // A COMPOUND assignment is NOT here: it reads first, and the assignment strategy
+            // lowers it to a guarded read plus a plain write.
+            // `??=` is here with `=` and not with `+=`: its lowering writes the READ and the WRITE
+            // from the same node (`a ?? (a = b)`), so a guarded read cannot stand in either place.
+            AssignmentExpressionSyntax assignment =>
+                assignment.Left == node
+                && (assignment.IsKind(SyntaxKind.SimpleAssignmentExpression)
+                    || assignment.IsKind(SyntaxKind.CoalesceAssignmentExpression)),
+            // ++ and -- also read first, and .NET throws for a key that is not there — but the
+            // guarded read cannot BE the target (`$eq.dictGet(…)++` does not parse) and the
+            // postfix form's value is the OLD one, so lowering it needs more than a template.
+            // Left as a plain `m[k]++` and recorded in the conversion gaps.
+            PrefixUnaryExpressionSyntax prefix =>
+                prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression),
+            PostfixUnaryExpressionSyntax postfix =>
+                postfix.IsKind(SyntaxKind.PostIncrementExpression) || postfix.IsKind(SyntaxKind.PostDecrementExpression),
+            ArgumentSyntax { RefOrOutKeyword.RawKind: not 0 } => true,
+            _ => false,
+        };
+    }
 
     public int Priority => 1;
 }

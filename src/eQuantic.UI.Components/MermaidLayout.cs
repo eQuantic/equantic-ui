@@ -232,8 +232,11 @@ public static class MermaidLayout
         for (var e = 0; e < graph.Edges.Count; e++)
         {
             var edge = graph.Edges[e];
-            if (index[edge.From] == index[edge.To]) back[e] = true;
-            else outgoing[index[edge.From]].Add(e);
+            // Both ends once: three reads to compare two of them and use one is the same repeat
+            // the labelled-gap loop had, and a dictionary read is a checked lookup now.
+            var from = index[edge.From];
+            if (from == index[edge.To]) back[e] = true;
+            else outgoing[from].Add(e);
         }
 
         // 0 = untouched, 1 = on the stack, 2 = done.

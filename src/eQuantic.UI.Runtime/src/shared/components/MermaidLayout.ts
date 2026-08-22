@@ -157,7 +157,8 @@ export class MermaidLayout {
         for (let i = 0; i < count; i++) outgoing.push([]);
         for (let e = 0; e < graph.edges.length; e++) {
             let edge = graph.edges[e];
-            if ($eq.dictGet(index, edge.from) === $eq.dictGet(index, edge.to)) back[e] = true; else outgoing[$eq.dictGet(index, edge.from)].push(e);
+            let from = $eq.dictGet(index, edge.from);
+            if (from === $eq.dictGet(index, edge.to)) back[e] = true; else outgoing[from].push(e);
         }
         let state = new Array(count).fill(0);
         let stackNode: number[] = [];

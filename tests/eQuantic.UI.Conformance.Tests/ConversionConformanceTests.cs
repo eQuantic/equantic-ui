@@ -44,6 +44,11 @@ public class ConversionConformanceTests
         // Recorded so the limit is known rather than discovered.
         "try { var bad = (new int[1])[5]; return 1; } catch { return -1; }",          // -1 in .NET; undefined here
         "var xs = new[]{1,2}; try { var v = xs[9]; return 1; } catch { return -1; }", // same, through a variable
+        // `m[k]++` on a MISSING key: .NET reads first and throws, and a plain object increments an
+        // undefined into NaN and creates the key. A compound `+=` IS lowered (guarded read, plain
+        // write); ++ is not, because the guarded read cannot be the assignment TARGET and the
+        // postfix form's value is the OLD one, which a template cannot express.
+        "var m = new Dictionary<string, int>(); try { m[\"gone\"]++; return 1; } catch { return -1; }",
         "int big = int.MaxValue; long r = big + 1L; return r.ToString();",         // "2147483648" — widened first
         "byte b = 250; b += 10; return b;",                                        // 4 (wraps at 256)
         "short s = 32767; s++; return s;",                                         // -32768
