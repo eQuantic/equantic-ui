@@ -65,6 +65,7 @@ public class ComponentParityFixtureTests
         ("divider-vertical", new Divider(DividerInset.None, DividerAxis.Vertical), NoPresses),
         ("banner", new Banner(Variant.Destructive, "Careful", "Something needs attention"), NoPresses),
         ("stepper", new Stepper(3), NoPresses),
+        ("stepper-labelled", new Stepper(3) { Label = "quantity" }, NoPresses),
         ("pagination", new Pagination(5, 2), NoPresses),
         ("page-indicator", new PageIndicator(4, 1), NoPresses),
         ("tooltip", new Tooltip(new Text("hover", TypeRole.BodyM, Theme.TextPrimary), "the tip"), NoPresses),

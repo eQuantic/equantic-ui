@@ -93,6 +93,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'divider-vertical': still(new Divider('none', 'vertical')),
     banner: still(new Banner('destructive', 'Careful', 'Something needs attention')),
     stepper: still(new Stepper(3)),
+    'stepper-labelled': still(Object.assign(new Stepper(3), { label: 'quantity' })),
     pagination: still(new Pagination(5, 2)),
     'page-indicator': still(new PageIndicator(4, 1)),
     tooltip: still(new Tooltip(new Text('hover', 'bodyM', photonTheme.textPrimary), 'the tip')),

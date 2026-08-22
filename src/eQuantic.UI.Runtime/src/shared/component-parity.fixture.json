@@ -934,7 +934,7 @@
             {
               "tag": "button",
               "attrs": {
-                "aria-label": "Decrease ",
+                "aria-label": "Decrease",
                 "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
               },
               "events": [
@@ -1018,7 +1018,161 @@
             {
               "tag": "button",
               "attrs": {
-                "aria-label": "Increase ",
+                "aria-label": "Increase",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xrfuoj eq-bo3n4y"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "svg",
+                          "attrs": {
+                            "aria-hidden": "true",
+                            "class": "eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9",
+                            "fill": "currentColor",
+                            "viewBox": "0 0 24 24"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"
+                              },
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "stepper-labelled": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1e8yzyr eq-1eb13m5 eq-1o1uad7 eq-5hocaj eq-bo3n4y eq-cl6mtg"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Decrease quantity",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xrfuoj eq-bo3n4y"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "svg",
+                          "attrs": {
+                            "aria-hidden": "true",
+                            "class": "eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9",
+                            "fill": "currentColor",
+                            "viewBox": "0 0 24 24"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "M19 13H5v-2h14z"
+                              },
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-ca9a4c"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-11aex6p eq-16x7aca eq-1hwu9wq eq-1txto41 eq-5augbd eq-5goeua eq-7gvrt4 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-type-label eq-y9mhin"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "3",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Increase quantity",
                 "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
               },
               "events": [
