@@ -8,7 +8,6 @@ BooleanMethodStrategy
 CastStrategy
 CharMethodStrategy
 CheckedExpressionStrategy
-ChunkStrategy
 CollectionExpressionStrategy
 CollectionMaterializationStrategy
 CompileTimeEvaluatedExpressionStrategy
@@ -24,7 +23,6 @@ DeclarationExpressionStrategy
 DefaultIfEmptyStrategy
 DefaultKeywordStrategy
 DictionaryStrategy
-DistinctByStrategy
 DistinctStrategy
 ElementAtStrategy
 EnumHasFlagStrategy
@@ -36,7 +34,6 @@ FieldExpressionStrategy
 FirstStrategy
 GenericNameStrategy
 GroupByStrategy
-GroupJoinStrategy
 GuidTypeStrategy
 HashSetStrategy
 HtmlNodeStrategy
@@ -45,7 +42,6 @@ InitializerExpressionStrategy
 InlinedConstantStrategy
 InterpolatedStringStrategy
 IsPatternStrategy
-JoinStrategy
 LastStrategy
 ListMethodStrategy
 LookupIndexerStrategy
@@ -73,7 +69,6 @@ ServiceProviderStrategy
 SingleStrategy
 SizeOfExpressionStrategy
 SkipStrategy
-SkipWhileStrategy
 SortedDictionaryStrategy
 StackAllocArrayCreationStrategy
 StringBuilderStrategy
@@ -83,11 +78,9 @@ StructuralEqualsStrategy
 SumStrategy
 SwitchExpressionStrategy
 TakeStrategy
-TakeWhileStrategy
 TaskMethodStrategy
 ThrowExpressionStrategy
 TimeSpanStrategy
-ToLookupStrategy
 ToStringStrategy
 TupleExpressionStrategy
 TupleMemberAccessStrategy

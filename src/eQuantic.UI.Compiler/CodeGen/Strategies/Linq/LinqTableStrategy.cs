@@ -86,6 +86,26 @@ public class LinqTableStrategy : IExpressionIrStrategy
         ("MinBy", 1) => "{0}.reduce((_a, _b) => (({1})(_b) < ({1})(_a) ? _b : _a))",
         ("ToDictionary", 2) => "Object.fromEntries({0}.map(x => [({1})(x), ({2})(x)]))",
         ("ToDictionary", 1) => "Object.fromEntries({0}.map(x => [({1})(x), (x => x)(x)]))",
+        // Partitioning by predicate: neither has an array method, so each is a loop that stops.
+        ("TakeWhile", 1) =>
+            "(function(arr) { const res = []; for(const x of arr) { if(({1})(x)) res.push(x); else break; } return res; })({0})",
+        ("SkipWhile", 1) =>
+            "(function(arr) { const res = []; let skipping = true; for(const x of arr) { if(skipping && ({1})(x)) continue; skipping = false; res.push(x); } return res; })({0})",
+        ("DistinctBy", 1) =>
+            "(arr => { const seen = new Set(); return arr.filter(x => { const k = ({1})(x); if(seen.has(k)) return false; seen.add(k); return true; }); })({0})",
+        ("Chunk", 1) =>
+            "(arr => { const n = {1}; const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; })({0})",
+        // A lookup is an array of arrays, each carrying its key — what a grouping is on this side.
+        ("ToLookup", 2) =>
+            "{0}.reduce((groups, item) => { const key = ({1})(item); let g = groups.find(x => x.key === key); if (!g) { g = []; g.key = key; groups.push(g); } g.push(({2})(item)); return groups; }, [])",
+        ("ToLookup", 1) =>
+            "{0}.reduce((groups, item) => { const key = ({1})(item); let g = groups.find(x => x.key === key); if (!g) { g = []; g.key = key; groups.push(g); } g.push((x => x)(item)); return groups; }, [])",
+        // Both joins index the INNER sequence once and then walk the outer, which is the shape
+        // that keeps a join linear instead of quadratic.
+        ("Join", 4) =>
+            "(() => { const _m = new Map(); for (const _x of {1}) { const _k = ({3})(_x); let _g = _m.get(_k); if (!_g) _m.set(_k, _g = []); _g.push(_x); } const _r = []; for (const _y of {0}) { const _g = _m.get(({2})(_y)); if (_g) for (const _z of _g) _r.push(({4})(_y, _z)); } return _r; })()",
+        ("GroupJoin", 4) =>
+            "(() => { const _m = new Map(); for (const _x of {1}) { const _k = ({3})(_x); let _g = _m.get(_k); if (!_g) _m.set(_k, _g = []); _g.push(_x); } return {0}.map(_y => ({4})(_y, _m.get(({2})(_y)) ?? [])); })()",
         ("Append", 1) => "[...{0}, {1}]",
         ("Prepend", 1) => "[{1}, ...{0}]",
         ("AsEnumerable", 0) => "{0}",

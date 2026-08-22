@@ -170,17 +170,10 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<AverageStrategy>();
         _strategyRegistry.Register<MinMaxStrategy>();
         _strategyRegistry.Register<GroupByStrategy>();
-        _strategyRegistry.Register<ToLookupStrategy>();
         _strategyRegistry.Register<LookupIndexerStrategy>();
-        _strategyRegistry.Register<JoinStrategy>();
-        _strategyRegistry.Register<GroupJoinStrategy>();
         _strategyRegistry.Register<ZipStrategy>();
         _strategyRegistry.Register<CastStrategy>();
         _strategyRegistry.Register<OfTypeStrategy>();
-        _strategyRegistry.Register<TakeWhileStrategy>();
-        _strategyRegistry.Register<SkipWhileStrategy>();
-        _strategyRegistry.Register<DistinctByStrategy>();
-        _strategyRegistry.Register<ChunkStrategy>();
         _strategyRegistry.Register<ElementAtStrategy>();
         _strategyRegistry.Register<SequenceEqualStrategy>();
         _strategyRegistry.Register<DefaultIfEmptyStrategy>();
