@@ -66,7 +66,8 @@ export class Calendar extends SharedStatefulComponent {
         let theme = context.theme;
         let size = SizeValue.fixed(Calendar.cellSize);
         if (day.month !== this._month.month) return new Box(new BoxStyle({ width: size, height: size }));
-        let selected = this.selected.equals(day);
+        let chosen: any; 
+        let selected = (chosen = this.selected) != null && chosen.equals(day);
         let isToday = day.equals(Calendar.today());
         let reachable = this.inRange(day);
         let primary = theme.colors('primary');

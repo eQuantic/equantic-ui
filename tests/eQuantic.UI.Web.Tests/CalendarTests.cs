@@ -31,15 +31,21 @@ public class CalendarTests
     /// the same tree.</summary>
     private static HtmlNode Render(VisualNode node, string culture = "en-US")
     {
-        var previous = CultureInfo.CurrentCulture;
+        var previousFormat = CultureInfo.CurrentCulture;
+        var previousUi = CultureInfo.CurrentUICulture;
         try
         {
+            // BOTH: the day and month names follow the FORMAT culture, and the chevron labels come
+            // from SdkStrings through a ResourceManager, which reads the UI culture. Pinning only
+            // the first passes here and fails on a machine whose language is not English.
             CultureInfo.CurrentCulture = new CultureInfo(culture);
+            CultureInfo.CurrentUICulture = new CultureInfo(culture);
             return WebRealizer.Lower(node, Theme).Render();
         }
         finally
         {
-            CultureInfo.CurrentCulture = previous;
+            CultureInfo.CurrentCulture = previousFormat;
+            CultureInfo.CurrentUICulture = previousUi;
         }
     }
 
@@ -117,7 +123,37 @@ public class CalendarTests
             .Where(l => l is not null)
             .ToList();
 
-        labels.Should().Contain(SdkStrings.PreviousMonth).And.Contain(SdkStrings.NextMonth);
+        // Read under the same pinned culture the tree was rendered in, so this compares the
+        // string the component emitted rather than this machine's translation of it.
+        labels.Should().Contain(UnderCulture(() => SdkStrings.PreviousMonth))
+            .And.Contain(UnderCulture(() => SdkStrings.NextMonth));
+    }
+
+    private static string UnderCulture(Func<string> read, string culture = "en-US")
+    {
+        var previous = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = new CultureInfo(culture);
+            return read();
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previous;
+        }
+    }
+
+    [Fact]
+    public void ACalendarWithNothingSelected_Renders()
+    {
+        // Every other case here hands it a date, which is why the whole suite missed that an
+        // unselected calendar crashed: `Selected == day` is a LIFTED comparison in C# — false for
+        // null — and the twin lowered it to `selected.equals(day)`, which throws. It rendered on
+        // the server and died in the browser, the worst place for a difference to live.
+        var cells = Cells(Render(new Calendar()));
+
+        cells.Should().NotBeEmpty();
+        cells.Should().OnlyContain(cell => cell.Attributes["aria-selected"] == "false");
     }
 
     [Fact]

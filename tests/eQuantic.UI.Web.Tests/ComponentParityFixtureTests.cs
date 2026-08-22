@@ -65,7 +65,12 @@ public class ComponentParityFixtureTests
         // fixture generated in São Paulo would differ from one generated in Berlin. The twin
         // installs the same culture before replaying.
         var previousCulture = CultureInfo.CurrentCulture;
+        var previousUiCulture = CultureInfo.CurrentUICulture;
         CultureInfo.CurrentCulture = new CultureInfo("en-US");
+        // The UI culture too: a component's own labels come from SdkStrings through a
+        // ResourceManager, so a fixture generated on a pt-BR machine would carry Portuguese chrome
+        // and the twin — which replays under en-US — would disagree with it.
+        CultureInfo.CurrentUICulture = new CultureInfo("en-US");
         try
         {
         foreach (var (name, node) in Cases())
@@ -81,6 +86,7 @@ public class ComponentParityFixtureTests
         finally
         {
             CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUiCulture;
         }
 
         var text = json.ToJson();

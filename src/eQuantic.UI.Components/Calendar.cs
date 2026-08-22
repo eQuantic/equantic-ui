@@ -119,7 +119,11 @@ public sealed class Calendar : StatefulComponent
         var size = SizeValue.Fixed(CellSize);
         if (day.Month != _month.Month) return new Box(new BoxStyle { Width = size, Height = size });
 
-        var selected = Selected == day;
+        // `Selected == day` is a LIFTED comparison in C# — false when nothing is selected — and the
+        // twin lowers it to `selected.equals(day)`, which throws on null. So an unselected calendar
+        // rendered on the server and died in the browser. Written explicitly here; the transpiler
+        // gap it stands on is filed separately, because every `nullableDate == date` has it.
+        var selected = Selected is { } chosen && chosen == day;
         var isToday = day == Today();
         var reachable = InRange(day);
         var primary = theme.Colors(Variant.Primary);
@@ -155,8 +159,15 @@ public sealed class Calendar : StatefulComponent
         };
     }
 
-    /// <summary>How a cell announces itself — "Friday, July 17, 2026", in the reader's language
-    /// and the culture's own word order for a long date.</summary>
+    /// <summary>How a cell announces itself — "Friday, 17 July 2026": the day name and the month
+    /// name in the reader's language, in a FIXED day-month-year order.
+    /// <para>
+    /// The order is ours, not the culture's. A long-date pattern would put the month first in
+    /// en-US and the day first in pt-BR, and reaching it means formatting through the pattern
+    /// rather than composing the parts — worth doing, and not while the composition is the thing
+    /// under test. What matters for a screen reader is already right: the names are translated,
+    /// and the day is spoken in full rather than as an abbreviation it would spell out.
+    /// </para></summary>
     private static string Spoken(DateOnly day) =>
         $"{CalendarNames.DayNamesLong[SundayIndex(day)]}, {day.Day} {CalendarNames.MonthNames[day.Month - 1]} {day.Year}";
 
