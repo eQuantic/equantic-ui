@@ -106,7 +106,11 @@ public class ComponentParityFixtureTests
             var handlers = ClickHandlers(frame).ToList();
             handlers.Count.Should().BeGreaterThan(index,
                 "a case presses the click handler at an index the lowered tree has");
-            handlers[index].DynamicInvoke();
+            // A click handler IS an Action (HtmlElement.OnClick, Pressable.OnPressed), so call it.
+            // DynamicInvoke stays as the fallback for a shape nobody has emitted yet, and the cast
+            // failing is worth more than reflection quietly accepting anything.
+            if (handlers[index] is Action press) press();
+            else handlers[index].DynamicInvoke();
             frame = WebRealizer.Lower(node, Theme, 1f, new StyleSink()).Render();
             ReferencesResolve(frame);
             yield return frame;
