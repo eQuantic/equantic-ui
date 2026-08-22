@@ -11,6 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
+import { round as dotnetRound } from '../utils/dotnet-math';
 import type { EventHandler, HtmlNode } from '../core/types';
 import { installDraggableController } from '../dom/draggable';
 import { installDragDismissController } from '../dom/drag-dismiss';
@@ -152,7 +153,7 @@ function hex(color: ColorValue): string {
 function withAlpha(token: ColorTokenValue, alpha: number): ColorTokenValue {
   const fade = (color: ColorValue): ColorValue => ({
     ...color,
-    a: Math.round(color.a * alpha),
+    a: dotnetRound(color.a * alpha),
   });
   return { light: fade(token.light), dark: fade(token.dark) };
 }
@@ -2161,7 +2162,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
               // inline code at 13.5 and hydration re-sized it to the paragraph's own size, so
               // every `code` span on a documentation page grew the moment the page booted.
               'font-size': run.styleOverride
-                ? px(Math.round(run.styleOverride.size * 2) / 2)
+                ? px(dotnetRound(run.styleOverride.size * 2) / 2)
                 : undefined,
             },
             [textLeaf(run.content)],

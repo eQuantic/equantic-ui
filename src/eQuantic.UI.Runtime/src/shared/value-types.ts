@@ -6,6 +6,7 @@
  * float→SizeValue conversion has no JS equivalent — the node classes normalize raw numbers instead.
  */
 
+import { round as dotnetRound } from '../utils/dotnet-math';
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 
 /**
@@ -27,7 +28,7 @@ export const Color = {
   },
   /** Alpha scaled by `opacity` (0..1) — byte-rounded exactly like C# `Color.WithOpacity`. */
   withOpacity(color: ColorValue, opacity: number): ColorValue {
-    return { ...color, a: Math.max(0, Math.min(255, Math.round(color.a * opacity))) };
+    return { ...color, a: Math.max(0, Math.min(255, dotnetRound(color.a * opacity))) };
   },
   /** Per-channel midpoint, alpha included — byte-exact with C# `Color.MidpointWith`
    * (`(a + b + 1) >> 1`, the §10 hover derivation's primitive). */
@@ -69,7 +70,7 @@ export class ColorToken {
 
   /** Both modes with alpha scaled — the C# token-level disabled 38% group, byte-rounded like `Color.WithOpacity`. */
   withOpacity(opacity: number): ColorToken {
-    const scale = (c: ColorValue): ColorValue => ({ ...c, a: Math.round(c.a * opacity) });
+    const scale = (c: ColorValue): ColorValue => ({ ...c, a: dotnetRound(c.a * opacity) });
     return new ColorToken(scale(this.light), scale(this.dark));
   }
 
@@ -198,7 +199,7 @@ export class TypeStyle implements TypeStyleValue {
    */
   withSize(size: number): TypeStyle {
     const lineHeight =
-      this.size <= 0 ? this.lineHeight : Math.round(((this.lineHeight * size) / this.size) * 2) / 2;
+      this.size <= 0 ? this.lineHeight : dotnetRound(((this.lineHeight * size) / this.size) * 2) / 2;
     return new TypeStyle(
       size,
       lineHeight,
@@ -212,7 +213,7 @@ export class TypeStyle implements TypeStyleValue {
 
   /** A style from a SIZE alone, with the typographic default line box (1.25×). */
   static ofSize(size: number, weight: string | number, tracking = 0, maxScale = 1.3): TypeStyle {
-    return new TypeStyle(size, Math.round(size * 1.25 * 2) / 2, weight, tracking, maxScale);
+    return new TypeStyle(size, dotnetRound(size * 1.25 * 2) / 2, weight, tracking, maxScale);
   }
 }
 
