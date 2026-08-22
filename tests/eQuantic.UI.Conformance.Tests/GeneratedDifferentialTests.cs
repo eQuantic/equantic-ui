@@ -61,7 +61,7 @@ public class GeneratedDifferentialTests
     /// a handful of mutating statements, then a deterministic fold of every local into one value —
     /// so no generated work is unobservable.
     /// </summary>
-    internal sealed class ProgramGenerator
+    private sealed class ProgramGenerator
     {
         private uint _state;
         public ProgramGenerator(uint seed) => _state = seed == 0 ? 1u : seed;

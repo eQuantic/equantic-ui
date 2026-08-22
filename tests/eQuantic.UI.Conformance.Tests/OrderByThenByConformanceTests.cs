@@ -41,7 +41,7 @@ public class OrderByThenByConformanceTests
     /// which is what ThenBy means — found by the differential generator, which reached the shape
     /// three times in two thousand programs before anyone wrote it down.
     /// </summary>
-    [Theory]
+    [SkippableTheory]
     [InlineData("return string.Join(\"-\", new[]{4,15,3,15}.OrderBy(x => x % 2).OrderBy(x => x % 6));")]
     [InlineData("return string.Join(\"-\", new[]{4,15,3,15}.OrderBy(x => x % 2).ThenBy(x => x % 6));")]
     [InlineData("return string.Join(\"-\", new[]{5,3,8,1,9}.OrderBy(x => x % 3).OrderBy(x => x % 2));")]
@@ -49,6 +49,9 @@ public class OrderByThenByConformanceTests
     [InlineData("return string.Join(\"-\", new[]{5,3,8,1,9}.OrderBy(x => x % 3).ThenBy(x => x).OrderBy(x => x % 2));")]
     [InlineData("return string.Join(\"-\", new[]{7,2,9,4}.OrderBy(x => x % 2).OrderBy(x => x % 3).ThenBy(x => x));")]
     [InlineData("return new[]{4,15,3,15}.OrderBy(x => x % 2).OrderBy(x => x % 6).ElementAtOrDefault(3);")]
-    public void ASecondOrderByRestartsTheOrdering(string statements) =>
+    public void ASecondOrderByRestartsTheOrdering(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }
