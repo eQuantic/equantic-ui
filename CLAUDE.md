@@ -250,6 +250,10 @@ translation change must execute identically on both sides.
   labeled `break`/`continue` (1:1 JS labels), collection-expression `with(...)` (capacity drops,
   comparers are EQ2007), `union` declarations (TS union alias module), `closed` hierarchies,
   extension indexers (`static item(receiver, …)`)
+- User-defined operators on IN-SOURCE types: binary, unary (named by arity), compound, and
+  implicit/explicit conversions — the twin carries them as static methods (`Money.opAdd`,
+  `Money.fromInt`) and every site the bound tree shows calls them; framework wrappers (`SizeValue`,
+  `Index`) pass their primitive through
 - Resource Management: `using` statements and `using var`
 - Exceptions: `try-catch-finally`
 - LINQ: Direct conversion to JS equivalents

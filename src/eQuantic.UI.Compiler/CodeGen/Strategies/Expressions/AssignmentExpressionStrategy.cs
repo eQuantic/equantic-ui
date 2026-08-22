@@ -58,6 +58,12 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             return $"let {left} {op} {right}";
         }
 
+        // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`.
+        if (context.SemanticHelper.GetOperation(assignment) is Microsoft.CodeAnalysis.Operations.ICompoundAssignmentOperation
+            { OperatorMethod: { } compoundMethod }
+            && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right) is { } compoundCall)
+            return JsExpr.Binary(leftIr, "=", compoundCall);
+
         // COMPOUND assignment on a decimal is arithmetic, and a decimal crosses as a runtime
         // Decimal rather than a JS number — so `total += amount` concatenates their text. A running
         // money total read "R$ 01240.5089.90640.00": the seed, then each amount, glued end to end.

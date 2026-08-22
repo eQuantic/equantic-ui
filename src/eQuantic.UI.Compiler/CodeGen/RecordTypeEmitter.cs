@@ -203,7 +203,9 @@ public class RecordTypeEmitter
         // two objects concatenate their toString()s, which is wrong output with nothing to see.
         foreach (var op in type.Members.OfType<OperatorDeclarationSyntax>())
         {
-            var opName = OperatorMethodName(op.OperatorToken.Text);
+            var opName = op.ParameterList.Parameters.Count == 1
+                ? UnaryOperatorMethodName(op.OperatorToken.Text)
+                : OperatorMethodName(op.OperatorToken.Text);
             if (opName is null) continue;
             var pars = string.Join(", ", op.ParameterList.Parameters
                 .Select(p => tsTypeDeclarations
@@ -213,6 +215,24 @@ public class RecordTypeEmitter
                 ? $"return {_converter.ConvertExpression(expr.Expression)};"
                 : op.Body is { } block ? Unwrap(_converter.Convert(block)) : "";
             sb.Append($"static {opName}({pars}) {{ {body} }} ");
+        }
+
+        // CONVERSION operators — `implicit operator Money(int v)`, `explicit operator int(Money m)`.
+        // A static method named for the direction: `Money.fromInt(5)`, `Money.toInt(m)`. The call
+        // sites reach it through the bound tree (ValueFlow for an implicit one, the cast strategy
+        // for an explicit one); without it the value crossed RAW, an int where a Money was expected.
+        foreach (var conversion in type.Members.OfType<ConversionOperatorDeclarationSyntax>())
+        {
+            var parameter = conversion.ParameterList.Parameters[0];
+            var toSelf = conversion.Type.ToString() == name;
+            var opName = ConversionMethodName(toSelf ? parameter.Type!.ToString() : conversion.Type.ToString(), from: toSelf);
+            var par = tsTypeDeclarations
+                ? $"{parameter.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(parameter.Type)}"
+                : parameter.Identifier.Text.ToJsIdentifier();
+            var body = conversion.ExpressionBody is { } expr
+                ? $"return {_converter.ConvertExpression(expr.Expression)};"
+                : conversion.Body is { } block ? Unwrap(_converter.Convert(block)) : "";
+            sb.Append($"static {opName}({par}) {{ {body} }} ");
         }
 
         // Static FIELDS — `public static readonly CodePosition Start = new(0, 0);`. The other half of
@@ -323,6 +343,32 @@ public class RecordTypeEmitter
         ">=" => "opGreaterOrEqual",
         _ => null,
     };
+
+    /// <summary>A UNARY operator's method, named by what it does so it cannot collide with the
+    /// binary operator spelled with the same token (`-m` is opNegate, `a - b` is opSubtract).</summary>
+    internal static string? UnaryOperatorMethodName(string token) => token switch
+    {
+        "-" => "opNegate",
+        "+" => "opPlus",
+        "!" => "opNot",
+        "~" => "opComplement",
+        _ => null,
+    };
+
+    /// <summary>
+    /// A CONVERSION operator's method: <c>from</c> the source type when it produces the declaring
+    /// type, <c>to</c> the target type when it consumes it — named by the C# keyword or type name
+    /// the author wrote (`int` → Int, `Money` → Money), the same text a symbol displays, so the
+    /// emitter (syntax) and the call site (bound tree) agree without a table.
+    /// </summary>
+    internal static string ConversionMethodName(string typeText, bool from)
+    {
+        var bare = typeText.Trim().TrimEnd('?');
+        var dot = bare.LastIndexOf('.');
+        if (dot >= 0) bare = bare[(dot + 1)..];
+        var pascal = bare.Length == 0 ? bare : char.ToUpperInvariant(bare[0]) + bare[1..];
+        return (from ? "from" : "to") + pascal;
+    }
 
     /// <summary>A converted block comes back braced; a method body wants its contents.</summary>
     private static string Unwrap(string block)

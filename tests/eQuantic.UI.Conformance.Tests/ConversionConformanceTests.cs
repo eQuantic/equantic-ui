@@ -54,6 +54,7 @@ public class ConversionConformanceTests
         "int n = 3; float f = n; return f.ToString();",                             // "3"
         "long l = 5; double d = l; return d;",                                      // 5 — a long narrows to double
         "long Big(long v) => v * 2; int n = 21; return Big(n).ToString();",           // "42" — int into a long parameter
+        "char c = 'a'; var list = new List<int>(); list.Add(c); return list[0];",   // 97 — into a collection (an annotated declaration: the harness runs TypeScript now)
 
         // A value flowing into a string through `+=` — the one concatenation shape no syntax rule saw.
         "string s = \"a\"; s += true; return s;",                                     // "aTrue"

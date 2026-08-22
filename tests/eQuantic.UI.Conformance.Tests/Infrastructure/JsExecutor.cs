@@ -41,7 +41,11 @@ public static class JsExecutor
 
     public static string Run(string jsProgram, int timeoutMs = 20000)
     {
-        var scriptPath = Path.Combine(Path.GetTempPath(), $"eq-conformance-{Guid.NewGuid():N}.mjs");
+        // The program is the TYPESCRIPT the SDK emits — a declaration whose type differs from its
+        // initializer carries an annotation (`let m: Money = Money.fromInt(5)`). Bun runs .ts as is,
+        // which is the SDK's own pipeline; the node fallback gets plain .mjs and only sees the
+        // annotation-free shapes.
+        var scriptPath = Path.Combine(Path.GetTempPath(), $"eq-conformance-{Guid.NewGuid():N}{(BunWorks() ? ".ts" : ".mjs")}");
         File.WriteAllText(scriptPath, jsProgram);
         try
         {

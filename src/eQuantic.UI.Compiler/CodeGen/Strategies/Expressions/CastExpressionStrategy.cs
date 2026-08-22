@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -16,6 +17,13 @@ public class CastExpressionStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var cast = (CastExpressionSyntax)node;
+
+        // An EXPLICIT user-defined conversion on an in-source type calls the operator its twin
+        // carries (`(int)money` → Money.toInt(money)); a framework wrapper passes through below.
+        if (context.SemanticHelper.GetOperation(cast) is Microsoft.CodeAnalysis.Operations.IConversionOperation
+            { Conversion: { IsUserDefined: true, MethodSymbol: { } conversionMethod } }
+            && UserDefinedOperators.Conversion(conversionMethod, context.Converter.ConvertExpression(cast.Expression)) is { } call)
+            return JsExprWriter.Write(call);
 
         // Enums are represented at runtime by their member-name string (SizeVariant.Medium -> 'medium'),
         // not by their numeric value (see EnumStrategy). A numeric cast therefore can't reach the value the

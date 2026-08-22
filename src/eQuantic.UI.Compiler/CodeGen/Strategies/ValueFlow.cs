@@ -108,7 +108,11 @@ public static class ValueFlow
         // cross by carrying the number. A wrapper with real structure would need its operator
         // lowered and called; no such conversion is reachable from transpiled code today, and the
         // conformance suite is where that would show up as a divergence, not here as a refusal.
-        if (kind.IsUserDefined) return translated;
+        if (kind.IsUserDefined)
+            return kind.MethodSymbol is { } method
+                && UserDefinedOperators.Conversion(method, JsExprWriter.Write(translated)) is { } call
+                ? call
+                : translated;
 
         if (kind.IsNumeric)
             return Numeric(from, to, translated,

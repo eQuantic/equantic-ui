@@ -23,6 +23,12 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
         {
             if (prefix.OperatorToken.Text is "++" or "--" && Step(prefix.Operand, prefix.OperatorToken.Text, node, context) is { } stepped)
                 return stepped;
+            // A USER-DEFINED unary operator on an in-source type calls the twin's static method.
+            if (context.SemanticHelper.GetOperation(prefix) is Microsoft.CodeAnalysis.Operations.IUnaryOperation
+                { OperatorMethod: { } unaryMethod }
+                && UserDefinedOperators.Unary(unaryMethod, prefix.OperatorToken.Text,
+                    context.Converter.ConvertExpression(prefix.Operand)) is { } unaryCall)
+                return unaryCall;
             return JsExpr.Prefix(prefix.OperatorToken.Text,
                 context.Converter.ConvertIr(prefix.Operand));
         }
