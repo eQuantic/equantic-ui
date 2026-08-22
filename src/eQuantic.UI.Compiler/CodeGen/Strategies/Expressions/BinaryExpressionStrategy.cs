@@ -132,16 +132,40 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         }
 
         // DateTime/TimeSpan are runtime compat classes with operator overloads (+ - and comparisons).
-        // Route to their methods based on the operand types. (Null comparisons fall through.)
-        if (left != "null" && right != "null" && op != "&&" && op != "||")
+        // Route to their methods based on the operand types.
+        //
+        // The "not the literal null" guard is about the operand's TEXT, and it is there so that
+        // `date == null` keeps the loose equality that already answers correctly. A TYPED null
+        // still carries its type, though: `((DateTime?)null) + TimeSpan.Zero` is a nullable
+        // DateTime to the model and reached the native `+`, which coerces instead of propagating
+        // the absence. So the guard yields to what the TYPES say whenever the lift below would
+        // claim the expression.
+        var lt = context.SemanticHelper.GetType(binary.Left);
+        var rt = context.SemanticHelper.GetType(binary.Right);
+        var typedNullOperand = (left == "null" || right == "null")
+            && (lt.IsNullableValue() || rt.IsNullableValue());
+        if ((left != "null" && right != "null" || typedNullOperand) && op != "&&" && op != "||")
         {
-            var lt = context.SemanticHelper.GetType(binary.Left);
-            var rt = context.SemanticHelper.GetType(binary.Right);
             // Several of these put an operand in RECEIVER position (`{left}.diff(…)`), where a
             // loose operand rebinds silently: `a + b.diff(c)` is not `(a + b).diff(c)`.
-            var dtResult = ConvertDateTimeOrTimeSpan(
-                JsExprWriter.WriteIn(leftIr, JsPrecedence.Call),
-                JsExprWriter.WriteIn(rightIr, JsPrecedence.Call), op, lt, rt);
+            var leftText = JsExprWriter.WriteIn(leftIr, JsPrecedence.Call);
+            var rightText = JsExprWriter.WriteIn(rightIr, JsPrecedence.Call);
+
+            // A NULLABLE operand lifts the whole thing. In C# these comparisons answer rather than
+            // throw — `null == date` is false, `null == null` is true, every relational with an
+            // absent operand is false — and nothing in the source reads as dangerous, which is why
+            // this went unnoticed until a calendar rendered on the server and died on hydration:
+            // the emitted `left.equals(right)` and `left.compareTo(right)` are METHOD calls on a
+            // runtime class, and null has no methods.
+            // The per-type templates below are reused verbatim, built over `$a`/`$b` and wrapped —
+            // one lift for every compat type instead of a null branch in each of the five.
+            if (lt.IsNullableValue() || rt.IsNullableValue())
+            {
+                var lifted = LiftNullableCompat(leftText, rightText, op, lt, rt, context);
+                if (lifted != null) return lifted;
+            }
+
+            var dtResult = ConvertDateTimeOrTimeSpan(leftText, rightText, op, lt, rt);
             if (dtResult != null) return JsExpr.Opaque(dtResult);
         }
 
@@ -275,6 +299,34 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
     /// <c>TimeSpan ± TimeSpan</c>, and comparisons via <c>compareTo</c>/<c>equals</c>. Returns null for
     /// any combination not modelled (falls back to the default operator handling).
     /// </summary>
+    /// <summary>
+    /// The compat comparison, LIFTED — C#'s own answer when an operand is absent, which is an
+    /// answer and never a throw.
+    /// <para>
+    /// Equality goes through <c>$eq.equals</c> rather than the relational lift because the two
+    /// disagree on the one case that matters: <c>null == null</c> is TRUE in C#, where every
+    /// relational with an absent operand is false. Arithmetic propagates the absence instead of
+    /// answering a bool, which is the third rule and the reason this is not one helper.
+    /// </para>
+    /// </summary>
+    private static JsExpr? LiftNullableCompat(string left, string right, string op,
+        ITypeSymbol? lt, ITypeSymbol? rt, ConversionContext context)
+    {
+        // The body over placeholder operands: whatever the per-type branch would have emitted.
+        var body = ConvertDateTimeOrTimeSpan("$a", "$b", op, lt, rt);
+        if (body is null) return null;
+
+        context.UsedHelpers.Add(Eq.Import);
+        return op switch
+        {
+            "==" => JsExpr.Callish($"{Eq.Equals}({left}, {right})"),
+            "!=" => JsExpr.Prefix("!", JsExpr.Callish($"{Eq.Equals}({left}, {right})")),
+            "<" or ">" or "<=" or ">=" =>
+                JsExpr.Callish($"{Eq.LiftCmp}({left}, {right}, ($a, $b) => {body})"),
+            _ => JsExpr.Callish($"{Eq.LiftArith}({left}, {right}, ($a, $b) => {body})"),
+        };
+    }
+
     private static string? ConvertDateTimeOrTimeSpan(string left, string right, string op, ITypeSymbol? lt, ITypeSymbol? rt)
     {
         const string dt = "System.DateTime";
