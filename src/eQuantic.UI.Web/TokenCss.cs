@@ -465,7 +465,27 @@ public static class PhotonCssGenerator
         // Text entry mechanics (spec B9): the input is chrome-less — the container shows focus —
         // and the placeholder rides TextMuted. Values are tokens; only mechanics live here.
         css.AppendLine(".eq-entry { outline: none; }");
+        // The .eq-field shell FILLS its container and centres what is in it. Without this it was a
+        // plain block of content height, so an entry dropped straight into a fixed-height Box —
+        // which is what a hand-built field does, and what the framework's own TextInput avoids
+        // only because it wraps the entry in a centred Row — sat against the top edge: measured at
+        // 0px above and 24px below inside a 44dp box, with the caret and the placeholder up there
+        // with it. Centring here fixes every composition instead of asking each one to remember a
+        // Row, and a multi-line entry is unaffected (its height is its own, and centring a single
+        // child that already fills the line is a no-op).
+        css.AppendLine(".eq-field { display: flex; align-items: center; height: 100%; }");
         css.AppendLine(".eq-entry::placeholder { color: var(--eq-color-text-muted); }");
+        // AUTOFILL. Chrome paints its own background and text colour over an autofilled control,
+        // ignoring ours — so a themed field showed a pale rectangle floating inside it, in the one
+        // flow (a filled form) where the app looks least finished. Clipping that background to the
+        // TEXT makes it invisible while leaving the field's own surface alone, and the fill colour
+        // and caret come back to the theme. The state sticks through hover, focus and active, so
+        // every one of them has to say it.
+        css.AppendLine(".eq-entry:-webkit-autofill, .eq-entry:-webkit-autofill:hover, "
+            + ".eq-entry:-webkit-autofill:focus, .eq-entry:-webkit-autofill:active { "
+            + "-webkit-background-clip: text; background-clip: text; "
+            + "-webkit-text-fill-color: var(--eq-color-text-primary); "
+            + "caret-color: var(--eq-color-text-primary); }");
         // The entry's description twin: clipped, NOT display:none — a hidden target still reads
         // for aria-describedby, but only a rendered one announces as a live region.
         css.AppendLine(".eq-desc { position: absolute; width: 1px; height: 1px; margin: -1px; border: 0; padding: 0; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }");
