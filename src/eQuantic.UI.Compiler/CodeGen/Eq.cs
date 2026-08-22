@@ -26,6 +26,9 @@ public static class Eq
 
     public const string Dec = "$eq.num.dec";
     public const string Long = "$eq.num.long";
+    /// <summary>The typed boundary: a server value (SSR state, a Server Action result) coerced
+    /// ONCE to its runtime type, by the spec the compiler computed from the C# type.</summary>
+    public const string Hydrate = "$eq.hydrate";
     public const string Round = "$eq.math.round";
     /// <summary>A checked arithmetic result — the value, or the OverflowException C# throws.</summary>
     public const string Checked = "$eq.num.checked";

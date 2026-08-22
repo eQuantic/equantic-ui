@@ -38,6 +38,36 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     expect(page._downloads).toBe(675617);
   });
 
+  it('hydrates by the class $hydration map when the compiler emitted one — the typed boundary', () => {
+    class Todo {
+      static $hydration = { id: 'long' as const };
+      id = 0n;
+      title = '';
+    }
+    class WalletPage {
+      static $hydration = { _total: 'decimal' as const, _count: 'long' as const, _todos: [Todo] as const };
+      _total: unknown = null; // even a null default hydrates — the spec, not the witness, types it
+      _count: unknown = 0n;
+      _todos: unknown = [];
+      _label = '';
+    }
+    const page = new WalletPage();
+    win.__INITIAL_STATE__ = {
+      _total: '10.50',
+      _count: '9007199254740993',
+      _todos: [{ id: '1', title: 'a' }],
+      _label: 'x',
+    };
+
+    adoptServerState(page);
+
+    expect(String(page._total)).toBe('10.50');
+    expect(page._count).toBe(9007199254740993n);
+    expect((page._todos as Todo[])[0]).toBeInstanceOf(Todo);
+    expect((page._todos as Todo[])[0].id).toBe(1n);
+    expect(page._label).toBe('x'); // no spec entry — assigned verbatim
+  });
+
   it('ignores keys the component does not declare', () => {
     const page = { _downloads: 1 } as Record<string, unknown>;
     win.__INITIAL_STATE__ = { _downloads: 2, _stale: 'from another page' };

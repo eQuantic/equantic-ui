@@ -26,10 +26,10 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
         var pattern = ConvertDesignation(foreachStmt.Variable);
         var collection = context.Converter.ConvertExpression(foreachStmt.Expression);
 
-        if (context.SemanticHelper.GetType(foreachStmt.Expression).IsDictionaryLike(out var numericKey))
+        if (context.SemanticHelper.GetType(foreachStmt.Expression).IsDictionaryLike(out var keyForm))
         {
             context.UsedHelpers.Add(Eq.Import);
-            collection = $"$eq.entries({collection}, {(numericKey ? "true" : "false")})";
+            collection = $"$eq.entries({collection}, {keyForm})";
         }
 
         var body = context.Converter.ConvertStatementIr(foreachStmt.Statement);

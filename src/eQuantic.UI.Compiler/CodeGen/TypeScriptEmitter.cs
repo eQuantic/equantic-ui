@@ -69,6 +69,61 @@ public class TypeScriptEmitter
     private JsStatement Contents(BlockSyntax block) =>
         JsStatement.Sequence(((JsBlock)_converter.ConvertBlockIr(block)).Statements);
 
+    /// <summary>The model that can answer for THIS node's tree — a component and the types it
+    /// references may live in different files of one compilation, and Roslyn throws for a node
+    /// from another tree.</summary>
+    private SemanticModel? ModelFor(SyntaxNode node)
+    {
+        if (_converter.Model is not { } model) return null;
+        if (ReferenceEquals(node.SyntaxTree, model.SyntaxTree)) return model;
+        return model.Compilation.ContainsSyntaxTree(node.SyntaxTree)
+            ? model.Compilation.GetSemanticModel(node.SyntaxTree)
+            : null;
+    }
+
+    /// <summary>The symbol of a declared type — what the hydration spec is computed from — or
+    /// null where no model can say (a rewritten node, an isolated snippet).</summary>
+    private ITypeSymbol? BindType(TypeSyntax? type) =>
+        type is null ? null : ModelFor(type)?.GetTypeInfo(type).Type;
+
+    /// <summary>The VALUE a [ServerAction] resolves to on the client: its return type with the
+    /// task unwrapped — <c>Task&lt;List&lt;Todo&gt;&gt;</c> is <c>List&lt;Todo&gt;</c>; void and a
+    /// bare Task carry nothing.</summary>
+    private ITypeSymbol? ActionValueType(MethodDeclarationSyntax? method)
+    {
+        if (method is null || ModelFor(method)?.GetDeclaredSymbol(method) is not IMethodSymbol symbol)
+            return null;
+        return symbol.ReturnType switch
+        {
+            INamedTypeSymbol { Arity: 1 } task when task.OriginalDefinition.ToDisplayString()
+                is "System.Threading.Tasks.Task<TResult>" or "System.Threading.Tasks.ValueTask<TResult>"
+                => task.TypeArguments[0],
+            { SpecialType: SpecialType.System_Void } => null,
+            INamedTypeSymbol bare when bare.ToDisplayString()
+                is "System.Threading.Tasks.Task" or "System.Threading.Tasks.ValueTask" => null,
+            var other => other,
+        };
+    }
+
+    /// <summary>
+    /// The class's TYPED BOUNDARY: <c>static $hydration = { total: 'decimal', … }</c>, naming every
+    /// field whose wire form differs from its runtime type (HydrationSpec). The runtime hydrates
+    /// SSR state and prefetch payloads by this map — coerced once at the boundary, so use sites
+    /// need no defensive coercions. Nothing is emitted when every field is identity.
+    /// </summary>
+    private void EmitHydrationMap(TypeScriptCodeBuilder.ClassBuilder c,
+        IEnumerable<(string Key, TypeSyntax? Type)> fields)
+    {
+        var referenced = new HashSet<string>();
+        var entries = fields
+            .Select(field => (field.Key, Spec: HydrationSpec.Of(BindType(field.Type), referenced)))
+            .Where(field => field.Spec is not null)
+            .Select(field => $"{field.Key}: {field.Spec}")
+            .ToList();
+        if (entries.Count == 0) return;
+        c.Field("$hydration", null, $"{{ {string.Join(", ", entries)} }}", null, isStatic: true);
+    }
+
     /// <summary>A Build method's body as IR: its block, its expression as a return, or the
     /// fallback — and the node its first line maps to.</summary>
     private (JsStatement Body, SyntaxNode? Source) BuildBody(MethodDeclarationSyntax? build, JsStatement fallback)
@@ -195,8 +250,17 @@ public class TypeScriptEmitter
                         // C# value types default without an initializer (`private int _count;` is 0);
                         // an uninitialized TS field is `undefined` and would poison arithmetic (NaN).
                         tsDefault ??= ImplicitValueTypeDefault(field.Type);
+                        if (tsDefault is not null && tsDefault.Contains("$eq."))
+                            component.UsedHelpers.Add(Eq.Import);
                         c.Field(field.Name.ToCamelCase(), tsType, tsDefault, field.DefaultValueNode, field.IsStatic);
                     }
+
+                    // The page's own typed boundary — what adoptServerState hydrates a prefetch
+                    // payload by (a write-once page's fields are the payload's fields).
+                    if (!component.IsPrimitive)
+                        EmitHydrationMap(c, component.ComponentFields
+                            .Where(field => !field.IsStatic)
+                            .Select(field => (field.Name.ToCamelCase(), field.TypeNode)));
                 }
 
                 if (component.IsPrimitive)
@@ -454,9 +518,18 @@ public class TypeScriptEmitter
                     var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
                     var returnType = CSharpTypeToTypeScript(action.ReturnType);
 
+                    // The action's RESULT crosses the typed boundary too: a Task<decimal> arrives
+                    // as a string, a Task<List<Todo>> as plain objects — hydrated ONCE here, by
+                    // the spec of the C# return type, so the caller computes with runtime types.
+                    var invoke = $"getServerActionsClient().invoke('{action.ActionId}', [{argsList}])";
+                    var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), new HashSet<string>());
+                    if (resultSpec is not null) component.UsedHelpers.Add(Eq.Import);
+
                     c.Member(JsClassMember.Method("async ", action.MethodName.ToCamelCase(), "", paramsList, "", JsStatement.Block(new[]
                     {
-                        JsStatement.Raw($"return await getServerActionsClient().invoke('{action.ActionId}', [{argsList}])"),
+                        JsStatement.Raw(resultSpec is null
+                            ? $"return await {invoke}"
+                            : $"return {Eq.Hydrate}(await {invoke}, {resultSpec})"),
                     })), action.SyntaxNode);
                 }
             }, component.TypeParameters);
@@ -947,11 +1020,19 @@ public class TypeScriptEmitter
             foreach (var field in component.StateFields)
             {
                 var tsType = CSharpTypeToTypeScript(field.Type);
-                var tsDefault = field.DefaultValueNode != null 
+                // A compat-typed field must DEFAULT to its runtime type (0n, dec(0)) — the default
+                // is also the witness legacy hydration reads a field's type from.
+                var tsDefault = field.DefaultValueNode != null
                     ? _converter.ConvertExpression(field.DefaultValueNode, field.Type)
-                    : ConvertToTsValue(field.DefaultValue ?? GetDefaultForType(field.Type), field.Type);
+                    : (field.Type.EndsWith('?') ? null : ImplicitValueTypeDefault(field.Type))
+                      ?? ConvertToTsValue(field.DefaultValue ?? GetDefaultForType(field.Type), field.Type);
+                if (tsDefault.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
                 c.Field(field.Name, tsType, tsDefault);
             }
+
+            // The state's typed boundary — what SSR hydration coerces each field by (see
+            // component.ts: `static $hydration` wins; fields without a spec keep the witness).
+            EmitHydrationMap(c, component.StateFields.Select(field => (field.Name, field.TypeNode)));
 
             // Constructor
             c.Member(JsClassMember.Constructor($"component: {component.Name}", JsStatement.Block(new[]

@@ -830,6 +830,7 @@ public class ComponentParser
                 {
                     Name = variable.Identifier.Text,
                     Type = field.Declaration.Type.ToString(),
+                    TypeNode = field.Declaration.Type,
                     DefaultValue = variable.Initializer?.Value.ToString(),
                     DefaultValueNode = variable.Initializer?.Value,
                     IsStatic = isStatic
@@ -853,6 +854,7 @@ public class ComponentParser
                 {
                     Name = variable.Identifier.Text,
                     Type = field.Declaration.Type.ToString(),
+                    TypeNode = field.Declaration.Type,
                     DefaultValue = variable.Initializer?.Value.ToString(),
                     DefaultValueNode = variable.Initializer?.Value
                 });

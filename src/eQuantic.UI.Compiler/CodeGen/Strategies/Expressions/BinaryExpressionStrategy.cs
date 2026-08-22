@@ -49,28 +49,40 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // return, an initializer — not only in a binary expression.
 
         // decimal is an exact base-10 type implemented by the runtime Decimal class; route its
-        // operators to method calls. (Null comparisons fall through to the loose-equality logic.)
+        // operators to method calls. The operands ARE Decimals — literals construct one, a mixed
+        // operand converts at the bound tree's seam (ValueFlow), a server value hydrates at the
+        // typed boundary. (Null comparisons fall through to the loose-equality logic.)
         if (left != "null" && right != "null"
             && (context.SemanticHelper.GetType(binary.Left).IsDecimal()
                 || context.SemanticHelper.GetType(binary.Right).IsDecimal()))
         {
-            var decResult = ConvertDecimal(left, right, op, binary, context);
-            if (decResult != null) return JsExpr.Opaque(decResult);
+            var decResult = ConvertDecimal(leftIr, rightIr, op);
+            if (decResult != null) return decResult;
         }
 
-        // long/ulong are exact 64-bit via BigInt. Wrap operands in long() and use native BigInt
-        // operators (BigInt `/` truncates, matching C# long division — so this must run before the
+        // long/ulong are exact 64-bit via BigInt, and the operands ARE BigInts: literals carry the
+        // suffix, conversions settle at the bound tree's seams (ValueFlow), and a value from the
+        // server is hydrated at the typed boundary — so the native operators apply directly
+        // (BigInt `/` truncates, matching C# long division — so this must run before the
         // integer-division branch below). Null comparisons fall through to the loose-equality logic.
         if (left != "null" && right != "null" && op != "&&" && op != "||"
             && (context.SemanticHelper.GetType(binary.Left).IsLong()
                 || context.SemanticHelper.GetType(binary.Right).IsLong()))
         {
-            context.UsedHelpers.Add(Eq.Import);
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
-            // The wrap is DEFENSIVE, not a conversion: a long that arrived from state crosses JSON
-            // as a string, so every use site coerces (long() takes bigint | number | string) until
-            // hydration is typed. An operand ValueFlow already made a BigInt is left alone.
-            var longResult = JsExpr.Opaque($"({AsLong(left)} {jsOp} {AsLong(right)})");
+            // A SHIFT COUNT stays an int in C# (no conversion for the bound tree to record), but a
+            // BigInt shift needs BigInt on both sides — the one conversion this branch owns.
+            if (op is "<<" or ">>" && !context.SemanticHelper.GetType(binary.Right).IsLong())
+            {
+                if (context.SemanticHelper.TryGetConstantValue(binary.Right, out var count))
+                    rightIr = JsExpr.Literal($"{System.Convert.ToInt64(count, System.Globalization.CultureInfo.InvariantCulture)}n");
+                else
+                {
+                    context.UsedHelpers.Add(Eq.Import);
+                    rightIr = JsExpr.Callish($"{Eq.Long}({JsExprWriter.WriteIn(rightIr, JsPrecedence.Call)})");
+                }
+            }
+            var longResult = JsExpr.Binary(leftIr, jsOp, rightIr);
             // A 64-bit result settles like any fixed-width one: checked throws, an explicit
             // `unchecked` wraps (BigInt does not on its own), the default keeps counting.
             if (op is "+" or "-" or "*" or "<<")
@@ -218,14 +230,6 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         return JsExpr.Binary(leftIr, op, rightIr);
     }
 
-    /// <summary>An operand as a BigInt: a literal or a value ValueFlow already converted passes
-    /// through; anything else is coerced, because its runtime shape is not guaranteed.</summary>
-    private static string AsLong(string operand) =>
-        (operand.StartsWith(Eq.Long + "(", StringComparison.Ordinal) && operand.EndsWith(")", StringComparison.Ordinal))
-        || (operand.EndsWith("n", StringComparison.Ordinal) && operand.Length > 1 && operand[..^1].All(char.IsDigit))
-            ? operand
-            : $"{Eq.Long}({operand})";
-
     /// <summary>The enum type of an operand, for a non-flags enum (a flags enum is numeric already).</summary>
     private static INamedTypeSymbol? EnumOperand(ExpressionSyntax operand, ConversionContext context) =>
         context.SemanticHelper.GetType(operand) is INamedTypeSymbol { TypeKind: TypeKind.Enum } type && !type.IsFlagsEnum()
@@ -238,30 +242,29 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             : converted;
 
     /// <summary>
-    /// Routes a decimal binary operation to the runtime Decimal class. Non-decimal operands are
-    /// wrapped with dec(...). Returns null for operators not modelled (falls back to the default).
+    /// Routes a decimal binary operation to the runtime Decimal class — directly on the operands,
+    /// which the typed world guarantees ARE Decimals. Returns null for operators not modelled
+    /// (falls back to the default).
     /// </summary>
-    private static string? ConvertDecimal(string left, string right, string op, BinaryExpressionSyntax binary, ConversionContext context)
+    private static JsExpr? ConvertDecimal(JsExpr leftIr, JsExpr rightIr, string op)
     {
-        // Always wrap both operands in $eq.num.dec(): it is a pass-through for existing Decimals and
-        // coerces plain numbers (e.g. a decimal field that arrived from state as a JS number) — so the
-        // call is safe regardless of the runtime representation.
-        context.UsedHelpers.Add(Eq.Import);
-        var l = $"{Eq.Dec}({left})";
-        var r = $"{Eq.Dec}({right})";
+        // The LEFT lands in receiver position, where a loose operand rebinds silently
+        // (`a + b`.add(c) is not `(a + b).add(c)`); the writer fences by precedence.
+        var l = JsExprWriter.WriteIn(leftIr, JsPrecedence.Call);
+        var r = JsExprWriter.Write(rightIr);
 
         return op switch
         {
-            "+" => $"{l}.add({r})",
-            "-" => $"{l}.sub({r})",
-            "*" => $"{l}.mul({r})",
-            "/" => $"{l}.div({r})",
-            "==" => $"{l}.equals({r})",
-            "!=" => $"!{l}.equals({r})",
-            "<" => $"({l}.compareTo({r}) < 0)",
-            ">" => $"({l}.compareTo({r}) > 0)",
-            "<=" => $"({l}.compareTo({r}) <= 0)",
-            ">=" => $"({l}.compareTo({r}) >= 0)",
+            "+" => JsExpr.Callish($"{l}.add({r})"),
+            "-" => JsExpr.Callish($"{l}.sub({r})"),
+            "*" => JsExpr.Callish($"{l}.mul({r})"),
+            "/" => JsExpr.Callish($"{l}.div({r})"),
+            "==" => JsExpr.Callish($"{l}.equals({r})"),
+            "!=" => JsExpr.Prefix("!", JsExpr.Callish($"{l}.equals({r})")),
+            "<" => JsExpr.Callish($"({l}.compareTo({r}) < 0)"),
+            ">" => JsExpr.Callish($"({l}.compareTo({r}) > 0)"),
+            "<=" => JsExpr.Callish($"({l}.compareTo({r}) <= 0)"),
+            ">=" => JsExpr.Callish($"({l}.compareTo({r}) >= 0)"),
             _ => null
         };
     }

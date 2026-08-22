@@ -46,6 +46,11 @@ export class Decimal {
     return new Decimal(am - bm, scale);
   }
 
+  /** Unary minus — C#'s `-m`, exact (the sign flips on the mantissa, the scale stays). */
+  neg(): Decimal {
+    return new Decimal(-this.mantissa, this.scale);
+  }
+
   mul(other: Decimal): Decimal {
     return new Decimal(this.mantissa * other.mantissa, this.scale + other.scale);
   }

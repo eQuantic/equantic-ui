@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Invocation;
@@ -54,11 +55,17 @@ public class MathStrategy : IConversionStrategy
         {
             context.UsedHelpers.Add(Eq.Import);
             // A DECIMAL rounds as a decimal — the number helper would round the object to NaN.
-            // Half-to-even, the same MidpointRounding.ToEven the double path honours.
+            // Half-to-even, the same MidpointRounding.ToEven the double path honours. The value IS
+            // a Decimal (typed world); it lands in receiver position, so the writer fences it.
             if (context.SemanticHelper.GetType(invocation.ArgumentList.Arguments[0].Expression).IsDecimal())
+            {
+                var receiver = JsExprWriter.WriteIn(
+                    context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression),
+                    JsPrecedence.Call);
                 return argsList.Count >= 2
-                    ? $"{Eq.Dec}({argsList[0]}).round({argsList[1]})"
-                    : $"{Eq.Dec}({argsList[0]}).round()";
+                    ? $"{receiver}.round({argsList[1]})"
+                    : $"{receiver}.round()";
+            }
             return argsList.Count >= 2
                 ? $"{Eq.Round}({argsList[0]}, {argsList[1]})"
                 : $"{Eq.Round}({argsList[0]})";

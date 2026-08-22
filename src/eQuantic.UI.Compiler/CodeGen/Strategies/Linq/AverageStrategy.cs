@@ -39,19 +39,27 @@ public class AverageStrategy : IConversionStrategy
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments;
 
-        // Same rule as Sum: a decimal crosses as a runtime Decimal, so `+` concatenates. Averaging
-        // then divided that text by a count and produced NaN — visibly broken rather than quietly
-        // wrong, which is the only mercy in it.
+        // Same rule as Sum: a decimal is a runtime Decimal, so `+` concatenates. Averaging then
+        // divided that text by a count and produced NaN — visibly broken rather than quietly
+        // wrong, which is the only mercy in it. LONG elements sum exactly as BigInt (a number
+        // seed would throw) and divide as the double C# declares Average(long) to return.
         var exact = context.SemanticHelper.GetType(invocation).IsDecimal();
         if (exact) context.UsedHelpers.Add(Eq.Import);
+        var longElements = !exact && (args.Count > 0 && args[0].Expression is SimpleLambdaExpressionSyntax selectorLambda
+            ? context.SemanticHelper.GetType((SyntaxNode?)selectorLambda.ExpressionBody ?? selectorLambda.Body)
+            : context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType()).IsLong();
 
+        // The accumulator starts as the Decimal seed and each element IS a Decimal (typed world).
+        // The COUNT is a plain number, so the divisor converts — that one dec() is a conversion.
         string Add(string left, string right) => exact
-            ? $"{Eq.Dec}({left}).add({Eq.Dec}({right}))"
+            ? $"{left}.add({right})"
             : $"{left} + {right}";
-        var seed = exact ? $"{Eq.Dec}(0)" : "0";
+        var seed = exact ? $"{Eq.Dec}(0)" : longElements ? "0n" : "0";
         string Divide(string sum) => exact
-            ? $"{Eq.Dec}({sum}).div({Eq.Dec}({caller}.length))"
-            : $"({sum} / {caller}.length)";
+            ? $"{sum}.div({Eq.Dec}({caller}.length))"
+            : longElements
+                ? $"(Number({sum}) / {caller}.length)"
+                : $"({sum} / {caller}.length)";
 
         if (args.Count > 0)
         {

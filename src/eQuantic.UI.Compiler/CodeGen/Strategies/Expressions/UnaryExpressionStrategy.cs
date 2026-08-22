@@ -29,6 +29,24 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
                 && UserDefinedOperators.Unary(unaryMethod, prefix.OperatorToken.Text,
                     context.Converter.ConvertExpression(prefix.Operand)) is { } unaryCall)
                 return unaryCall;
+
+            // A DECIMAL is a runtime Decimal object: JavaScript's `-` coerces it through its text
+            // into a plain NUMBER, silently shedding the type (`-3.99m` computed on as a double).
+            // A constant folds to the negated literal; anything else negates on the type.
+            if (prefix.OperatorToken.Text is "-" or "+"
+                && context.SemanticHelper.GetType(prefix.Operand).IsDecimal())
+            {
+                if (prefix.OperatorToken.Text == "+") return context.Converter.ConvertIr(prefix.Operand);
+                if (context.SemanticHelper.GetOperation(prefix) is Microsoft.CodeAnalysis.Operations.IUnaryOperation
+                    { ConstantValue: { HasValue: true, Value: decimal negated } })
+                {
+                    context.UsedHelpers.Add(Eq.Import);
+                    return JsExpr.Callish($"{Eq.Dec}(\"{negated.ToString(System.Globalization.CultureInfo.InvariantCulture)}\")");
+                }
+                var negatable = context.Converter.ConvertIr(prefix.Operand);
+                return JsExpr.Callish($"{JsExprWriter.WriteIn(negatable, JsPrecedence.Call)}.neg()");
+            }
+
             return JsExpr.Prefix(prefix.OperatorToken.Text,
                 context.Converter.ConvertIr(prefix.Operand));
         }
@@ -66,6 +84,25 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             var text = JsExprWriter.WriteIn(target, JsPrecedence.Call);
             return JsExpr.Binary(target, "=", JsExpr.Callish($"String.fromCharCode({text}.charCodeAt(0) {delta} 1)"));
         }
+
+        // A DECIMAL steps on the type: JavaScript's own ++ coerces the Decimal through its text
+        // into a plain number, shedding the type mid-loop. Postfix IN VALUE POSITION answers the
+        // OLD value — recovered exactly (base-10 add/sub of one is exact) instead of binding a temp.
+        if (type.IsDecimal())
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var decimalTarget = context.Converter.ConvertIr(operandSyntax);
+            var decimalText = JsExprWriter.WriteIn(decimalTarget, JsPrecedence.Call);
+            var method = op == "++" ? "add" : "sub";
+            var assigned = JsExpr.Binary(decimalTarget, "=", JsExpr.Callish($"{decimalText}.{method}({Eq.Dec}(1))"));
+            if (node is PostfixUnaryExpressionSyntax && ValueUsed(node))
+            {
+                var inverse = op == "++" ? "sub" : "add";
+                return JsExpr.Callish($"({JsExprWriter.Write(assigned)}, {decimalText}.{inverse}({Eq.Dec}(1)))");
+            }
+            return assigned;
+        }
+
         if (IntegerWidth.Of(type) is not { } width) return null;
         var arithmetic = ArithmeticContext.Of(node, context);
         if (!(arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))) return null;
@@ -75,6 +112,15 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
         return JsExpr.Binary(operand, "=", stepped);
     }
+
+    /// <summary>Whether the step's RESULT is read — false in the two places an increment is pure
+    /// effect: its own statement, and a for-loop's incrementor slot.</summary>
+    private static bool ValueUsed(SyntaxNode node) => node.Parent switch
+    {
+        ExpressionStatementSyntax => false,
+        ForStatementSyntax loop => !loop.Incrementors.Contains(node),
+        _ => true,
+    };
 
     public int Priority => 10;
 }

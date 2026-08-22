@@ -12,13 +12,16 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// implicit conversions live. Every syntax strategy translates a node as written; this settles
 /// the translation by what the bound tree says flows around it: the implicit conversion Roslyn
 /// inserted (<see cref="IConversionOperation"/> with <c>IsImplicit</c> — char to int, int to
-/// long, a boxing on its way into a string), the interpolation hole that formats it, the string
-/// concatenation that prints it. One mechanism, applied at the dispatcher after every expression,
-/// so a conversion the syntax never shows is honoured at every site C# applies it — arguments,
-/// returns, initializers, branches — not only where a strategy remembered to look.
+/// long, int to decimal, a boxing on its way into a string), the interpolation hole that formats
+/// it, the string concatenation that prints it. One mechanism, applied at the dispatcher after
+/// every expression, so a conversion the syntax never shows is honoured at every site C# applies
+/// it — arguments, returns, initializers, branches — not only where a strategy remembered to look.
 /// <para>
 /// The strangler rule: a syntax strategy must NOT apply a conversion this settles, or the value
-/// converts twice. What it settles is listed here and nowhere else.
+/// converts twice. What it settles is listed here and nowhere else. The complement is the TYPED
+/// BOUNDARY (HydrationSpec + <c>$eq.hydrate</c>): a value from the SERVER is coerced once at
+/// hydration, so the conversions this table applies are the only ones anywhere — no use site
+/// coerces defensively.
 /// </para>
 /// </summary>
 public static class ValueFlow
@@ -163,16 +166,14 @@ public static class ValueFlow
         var value = translated;
         var fromSpecial = from?.SpecialType ?? SpecialType.None;
 
-        // A DECIMAL SOURCE has no invariant representation yet (a negated literal is a plain
-        // number, a hydrated one a string) — coerce like every decimal use site does, then ask for
-        // its number once and narrow or widen like any double. And a decimal shrinking into an
-        // integral type ALWAYS throws past the edge in C# — checked or not — so the check rides
-        // along. (Only an explicit cast gets here — implicit decimal conversions all go INTO
-        // decimal, which still yields below.)
+        // A DECIMAL SOURCE is a runtime Decimal (the typed world guarantees it): its number is
+        // asked for once, and the value then narrows or widens like any double. A decimal
+        // shrinking into an integral type ALWAYS throws past the edge in C# — checked or not —
+        // so the check rides along. (Only an explicit cast gets here — implicit decimal
+        // conversions all go INTO decimal, settled below.)
         if (fromSpecial == SpecialType.System_Decimal)
         {
-            context.UsedHelpers.Add(Eq.Import);
-            value = JsExpr.Callish($"{Eq.Dec}({JsExprWriter.Write(value)}).toNumber()");
+            value = JsExpr.Callish($"{JsExprWriter.WriteIn(value, JsPrecedence.Call)}.toNumber()");
             fromSpecial = SpecialType.System_Double;
             isChecked = true;
         }
@@ -186,10 +187,14 @@ public static class ValueFlow
                 : JsExpr.Callish($"{JsExprWriter.WriteIn(value, JsPrecedence.Call)}.charCodeAt(0)");
         }
 
-        // DECIMAL as the TARGET is still the binary strategy's: it wraps both operands on its way
-        // to the runtime Decimal, and settling here as well would wrap twice. Moves with typed
-        // hydration.
-        if (to is { SpecialType: SpecialType.System_Decimal }) return value;
+        // A value FLOWING INTO A DECIMAL becomes the runtime Decimal at the conversion seam — the
+        // bound tree's word, at every site C# applies it — so decimal arithmetic and calls receive
+        // real Decimals and need no defensive coercion of their own.
+        if (to is { SpecialType: SpecialType.System_Decimal })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Callish($"{Eq.Dec}({JsExprWriter.WriteIn(value, JsPrecedence.Call)})");
+        }
 
         return fromSpecial is SpecialType.System_Int64 or SpecialType.System_UInt64
             ? FromLong(fromSpecial, to, value, isChecked, context)

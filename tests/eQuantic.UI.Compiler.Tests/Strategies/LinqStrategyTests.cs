@@ -84,9 +84,9 @@ public class LinqStrategyTests
         var result = TestHelper.ConvertExpression("list.Select(u => u.Orders.Where(o => o.Total > 100))");
         
         // This validates that the inner .Where() is correctly converted inside the .Select() callback.
-        // o.Total is a decimal, so the > comparison is routed through the Decimal compat type
-        // ($eq.num.dec(...).compareTo) for exact base-10 semantics.
-        result.Should().Be("this.list.map((u) => u.orders.filter((o) => ($eq.num.dec(o.total).compareTo($eq.num.dec(100)) > 0)))");
+        // o.Total is a decimal — a real Decimal in the typed world — so the > comparison routes
+        // through compareTo, and the int literal converts at the bound tree's seam (ValueFlow).
+        result.Should().Be("this.list.map((u) => u.orders.filter((o) => (o.total.compareTo($eq.num.dec(100)) > 0)))");
     }
 
     [Fact]

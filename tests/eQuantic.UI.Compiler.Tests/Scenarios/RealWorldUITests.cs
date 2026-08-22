@@ -65,11 +65,11 @@ public class RealWorldUITests
         result.Should().Contain("filter");
         result.Should().Contain("map");
         result.Should().Contain("reduce");
-        // `Price` is a DECIMAL, and a decimal crosses as a runtime Decimal rather than a JS number,
-        // so `_a + _b` here would concatenate their text instead of adding them. This assertion
-        // used to demand exactly that, which is how a payments total reached the browser reading
-        // "R$ 01240.50640.00".
-        result.Should().Contain("$eq.num.dec(_a).add($eq.num.dec(_b))");
+        // `Price` is a DECIMAL, and a decimal is a runtime Decimal rather than a JS number, so
+        // `_a + _b` here would concatenate their text instead of adding them. This assertion used
+        // to demand exactly that, which is how a payments total reached the browser reading
+        // "R$ 01240.50640.00". The elements ARE Decimals (typed world): the method applies direct.
+        result.Should().Contain("_a.add(_b)");
         result.Should().Contain("$eq.num.dec(0)");
     }
 

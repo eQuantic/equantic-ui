@@ -57,9 +57,10 @@ public class DecimalSumTests
             """);
 
         // Whatever the reduction looks like, it must go through the decimal arithmetic — a bare
-        // `a + b` over two `$eq.num.dec` values is string concatenation.
+        // `a + b` over two Decimal values is string concatenation. The elements ARE Decimals
+        // (typed world), so the method applies to them directly; the seed constructs one.
         Assert.DoesNotContain("(_a, _b) => _a + _b", js);
-        Assert.Contains("$eq.num.dec(_a).add($eq.num.dec(_b))", js);
+        Assert.Contains("_a.add(_b)", js);
         Assert.Contains("$eq.num.dec(0))", js);
     }
 

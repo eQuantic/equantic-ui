@@ -64,16 +64,17 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right) is { } compoundCall)
             return JsExpr.Binary(leftIr, "=", compoundCall);
 
-        // COMPOUND assignment on a decimal is arithmetic, and a decimal crosses as a runtime
-        // Decimal rather than a JS number — so `total += amount` concatenates their text. A running
-        // money total read "R$ 01240.5089.90640.00": the seed, then each amount, glued end to end.
-        // The binary form already routes here; this is the same operation spelled shorter.
+        // COMPOUND assignment on a decimal is arithmetic on the runtime Decimal — `total +=
+        // amount` emitted bare concatenates their text. A running money total read
+        // "R$ 01240.5089.90640.00": the seed, then each amount, glued end to end. The target IS a
+        // Decimal (typed world) and the VALUE arrives converted — the bound tree wraps a mixed
+        // value in the conversion, and ValueFlow settles it like any other flow.
         if (op.Length == 2 && op[1] == '=' && "+-*/".Contains(op[0])
             && context.SemanticHelper.GetType(assignment.Left).IsDecimal())
         {
-            context.UsedHelpers.Add(Eq.Import);
             var method = op[0] switch { '+' => "add", '-' => "sub", '*' => "mul", _ => "div" };
-            return JsExpr.Binary(leftIr, "=", JsExpr.Callish($"{Eq.Dec}({left}).{method}({Eq.Dec}({right}))"));
+            return JsExpr.Binary(leftIr, "=",
+                JsExpr.Callish($"{JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.{method}({right})"));
         }
 
         var leftType = context.SemanticHelper.GetType(assignment.Left);
@@ -112,10 +113,12 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         }
 
         // `x /= y` on integers is integer division, exactly like `x = x / y` — the compound form
-        // used to reach JavaScript's `/=`, which divides as a double.
+        // used to reach JavaScript's `/=`, which divides as a double. NOT for a long target: its
+        // BigInt `/` already truncates, and Math.trunc rejects a BigInt outright.
         // Built as IR, not as a template: a right-hand side that is a ternary (`x /= c ? 4 : 1`)
         // has to be fenced under the `/`, and the writer is the one that knows.
-        if (op == "/=" && context.SemanticHelper.GetType(assignment.Left).IsIntegral())
+        if (op == "/=" && context.SemanticHelper.GetType(assignment.Left).IsIntegral()
+            && !context.SemanticHelper.GetType(assignment.Left).IsLong())
             return JsExpr.Binary(leftIr, "=",
                 JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(leftIr, "/", rightIr)));
 

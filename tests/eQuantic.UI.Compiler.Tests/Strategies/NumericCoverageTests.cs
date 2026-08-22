@@ -66,8 +66,9 @@ public class NumericCoverageTests
     [Fact]
     public void DecimalArithmetic_RoutesThroughDecimalClass()
     {
-        // Both operands wrapped in $eq.num.dec() (pass-through for Decimals, coercion for plain numbers).
+        // The operands ARE Decimals — a literal constructs one, a mixed operand converts at the
+        // bound tree's seam, a server value hydrates at the typed boundary. No per-use coercion.
         TestHelper.ConvertExpression("1.1m + 2.2m")
-            .Should().Be("$eq.num.dec($eq.num.dec(\"1.1\")).add($eq.num.dec($eq.num.dec(\"2.2\")))");
+            .Should().Be("$eq.num.dec(\"1.1\").add($eq.num.dec(\"2.2\"))");
     }
 }

@@ -7,6 +7,7 @@ import type { VisualNodeValue } from '../shared/nodes';
 import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
+import { hydrate, type HydrationSpec } from '../utils/hydrate';
 import { getCurrentRoute } from '../router/current-route';
 import {
   ComponentInstanceStore,
@@ -43,12 +44,17 @@ export function adoptServerState(target: object): void {
   const payload = w.__INITIAL_STATE__;
   if (!payload) return;
   const self = target as Record<string, unknown>;
+  // The class's TYPED boundary: the compiler emits `static $hydration` naming every field whose
+  // wire form differs from its runtime type. A spec'd field is coerced by what it IS; the rest
+  // keep the witness path (the default value reveals the type) for compat.
+  const specs = (target.constructor as { $hydration?: Record<string, HydrationSpec> }).$hydration;
   let adopted = false;
   for (const key of Object.keys(payload)) {
     // Only fields the component actually declares: an unknown key is stale payload, never a new
     // field (assigning it would silently create one no build ever reads).
     if (!(key in self) || typeof payload[key] === 'function') continue;
-    self[key] = hydrateValue(self[key], payload[key]);
+    const spec = specs?.[key];
+    self[key] = spec !== undefined ? hydrate(payload[key], spec) : hydrateValue(self[key], payload[key]);
     adopted = true;
   }
   // Leave the payload for its real owner when nothing here matched — a Core page reads it from its
@@ -225,13 +231,20 @@ export abstract class StatefulComponent extends Component {
 
         // Copy data properties from SSR state to client state.
         // Server preserves original field names (including underscore prefix).
-        // The existing field's default value reveals its runtime type, so values that crossed the
-        // wire as strings (decimal -> Decimal, long -> bigint) are coerced back to that type —
-        // see hydrateValue. Plain fields are assigned verbatim.
+        // The state class's `static $hydration` (emitted by the compiler) says what each field IS,
+        // so values that crossed the wire as strings (decimal -> Decimal, long -> bigint, records
+        // -> their prototypes) are coerced ONCE here. Fields without a spec keep the witness path
+        // (the default value reveals the type — see hydrateValue). Plain fields assign verbatim.
         const state = this._state as unknown as Record<string, unknown>;
+        const specs = (this._state.constructor as { $hydration?: Record<string, HydrationSpec> })
+          .$hydration;
         Object.keys(initialState).forEach((key) => {
           if (this._state && typeof initialState[key] !== 'function' && key in this._state) {
-            state[key] = hydrateValue(state[key], initialState[key]);
+            const spec = specs?.[key];
+            state[key] =
+              spec !== undefined
+                ? hydrate(initialState[key], spec)
+                : hydrateValue(state[key], initialState[key]);
           }
         });
         // Clear initial state to prevent reuse

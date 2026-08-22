@@ -81,6 +81,17 @@ public class RecordTypeEmitter
         // A base record is emitted as its own module — import it so `extends` resolves.
         var (baseName, _, _) = BaseInfo(type);
         if (baseName != null) imports.Append($"import {{ {baseName} }} from \"./{baseName}\";\n");
+        // Records the hydration map references by NAME (`price: Money`) are their own modules too;
+        // the map is the only place the emitted JS names them (types erase), so import them here.
+        if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol symbol)
+        {
+            var specReferences = new HashSet<string>();
+            HydrationSpec.Members(symbol, specReferences);
+            specReferences.Remove(type.Identifier.Text);
+            if (baseName != null) specReferences.Remove(baseName);
+            foreach (var reference in specReferences.OrderBy(n => n, StringComparer.Ordinal))
+                imports.Append($"import {{ {reference} }} from \"./{reference}\";\n");
+        }
         return imports.Append("\nexport ").Append(body).Append('\n').ToString();
     }
 
@@ -186,6 +197,12 @@ public class RecordTypeEmitter
             sb.Append(tsTypeDeclarations ? $"with(patch: any) {{ return new {name}(" : $"with(patch) {{ return new {name}(");
             sb.Append(string.Join(", ", members.Select(m => $"('{m.Js}' in patch ? patch.{m.Js} : this.{m.Js})")));
             sb.Append("); } ");
+
+            // The twin's own TYPED BOUNDARY: which members hydrate off the wire, and as what —
+            // `$eq.hydrate` rebuilds a payload object on this prototype and coerces by this map.
+            if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol symbol
+                && HydrationSpec.Members(symbol, new HashSet<string>()) is { } hydration)
+                sb.Append($"static $hydration = {hydration}; ");
         }
 
         // User-declared methods — a STATIC one keeps its modifier: a record's factory

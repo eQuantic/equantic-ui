@@ -185,10 +185,10 @@ public class ObjectCreationStrategy : IConversionStrategy
                 // A Dictionary SOURCE is a plain object — spreading it yields nothing. Its
                 // entries (as .key/.value pairs) are what `new List<KeyValuePair<,>>(dict)` means.
                 var sourceType = context.SemanticHelper.GetType(creation.ArgumentList.Arguments[0].Expression);
-                if (sourceType.IsDictionaryLike(out var numericKey))
+                if (sourceType.IsDictionaryLike(out var keyForm))
                 {
                     context.UsedHelpers.Add(Eq.Import);
-                    return $"$eq.entries({arguments}, {(numericKey ? "true" : "false")})";
+                    return $"$eq.entries({arguments}, {keyForm})";
                 }
                 return $"[...{arguments}]";     // a copy of the source, not an alias of it
             }

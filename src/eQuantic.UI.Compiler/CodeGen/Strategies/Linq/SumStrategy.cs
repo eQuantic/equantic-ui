@@ -39,17 +39,20 @@ public class SumStrategy : IConversionStrategy
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments;
 
-        // WHAT is being added decides how. A decimal crosses as a runtime Decimal, not a JS number,
-        // so `_sum + amount` concatenates their text: a payments total read
-        // "R$ 01240.50640.00" — the seed, then each amount, glued end to end. The result type of
-        // the call answers for both forms, with and without a selector.
+        // WHAT is being added decides how. A decimal is a runtime Decimal, not a JS number, so
+        // `_sum + amount` concatenates their text: a payments total read "R$ 01240.50640.00" —
+        // the seed, then each amount, glued end to end. A long is a BigInt, whose `+` throws next
+        // to a NUMBER seed — the seed must be 0n. The result type of the call answers for both
+        // forms, with and without a selector.
         var summed = context.SemanticHelper.GetType(invocation);
         var exact = summed.IsDecimal();
 
+        // The accumulator starts as the Decimal seed and each element IS a Decimal (typed world) —
+        // the method applies directly.
         string Add(string left, string right) => exact
-            ? $"{Eq.Dec}({left}).add({Eq.Dec}({right}))"
+            ? $"{left}.add({right})"
             : $"{left} + {right}";
-        var seed = exact ? $"{Eq.Dec}(0)" : "0";
+        var seed = exact ? $"{Eq.Dec}(0)" : summed.IsLong() ? "0n" : "0";
         if (exact) context.UsedHelpers.Add(Eq.Import);
 
         if (args.Count > 0)

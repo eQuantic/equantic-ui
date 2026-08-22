@@ -212,6 +212,9 @@ public class StateField
 {
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
+    /// <summary>The declared type SYNTAX — what the semantic model binds to a symbol, so the
+    /// emitter can compute the field's hydration spec from the type itself (never its spelling).</summary>
+    public Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax? TypeNode { get; set; }
     public string? DefaultValue { get; set; }
     public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? DefaultValueNode { get; set; }
     /// <summary>True for <c>static</c>/<c>const</c> fields — emitted as a <c>static</c> class member and

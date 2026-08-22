@@ -293,9 +293,13 @@ public static class TypeSymbolExtensions
     /// also answer .key/.value, with numeric keys restored (Object.entries strings them, and a
     /// stringified key silently turns later arithmetic into concatenation).
     /// </summary>
-    public static bool IsDictionaryLike(this ITypeSymbol? type, out bool numericKey)
+    public static bool IsDictionaryLike(this ITypeSymbol? type, out string keyForm)
     {
-        numericKey = false;
+        // What `$eq.entries` restores each stringified object key as — the KEY TYPE the compiler
+        // saw: `'long'` a BigInt, `'decimal'` a runtime Decimal, `true` a plain number, `false`
+        // the string it already is. An object key is always a string at runtime; the C# key the
+        // loop binds is the exact type, or `key + 1` concatenates (or throws, for a BigInt).
+        keyForm = "false";
         if (type is not INamedTypeSymbol named) return false;
         var definition = named.OriginalDefinition.ToDisplayString();
         var isDictionary = definition is "System.Collections.Generic.Dictionary<TKey, TValue>"
@@ -303,14 +307,19 @@ public static class TypeSymbolExtensions
             or "System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>";
         if (!isDictionary || named.TypeArguments.Length != 2) return false;
         var key = named.TypeArguments[0].SpecialType;
-        numericKey = key is SpecialType.System_Int32
-            or SpecialType.System_Int64 or SpecialType.System_Single or SpecialType.System_Double
-            or SpecialType.System_Int16 or SpecialType.System_Byte or SpecialType.System_Decimal;
+        keyForm = key switch
+        {
+            SpecialType.System_Int64 or SpecialType.System_UInt64 => "'long'",
+            SpecialType.System_Decimal => "'decimal'",
+            SpecialType.System_Int32 or SpecialType.System_Single or SpecialType.System_Double
+                or SpecialType.System_Int16 or SpecialType.System_Byte => "true",
+            _ => "false",
+        };
         // ONLY primitive-keyed dictionaries lower to plain objects. A record/struct key lowers to
         // $eq.collections.valueMap, which is ITERABLE with .key/.value pairs already — wrapping it
         // in Object.entries would enumerate the map's internals, not its entries (the conformance
         // suite caught exactly that).
-        return numericKey || key == SpecialType.System_String
+        return keyForm != "false" || key == SpecialType.System_String
             || named.TypeArguments[0] is INamedTypeSymbol { TypeKind: TypeKind.Enum };
     }
 

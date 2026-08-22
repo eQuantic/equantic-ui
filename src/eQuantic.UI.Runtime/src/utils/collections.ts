@@ -8,6 +8,8 @@
  */
 
 import { equals } from './equals';
+import { dec, Decimal } from './decimal';
+import { long } from './long';
 
 export class Queue<T> {
   private readonly items: T[];
@@ -360,24 +362,43 @@ export function count(collection: unknown): number {
 /**
  * A transpiled C# `Dictionary` is a plain object — not iterable. This is what a `foreach` over
  * one (and a `new List<KeyValuePair<,>>(dict)`) compiles to: each pair DESTRUCTURES as
- * `[key, value]` and also answers `.key`/`.value` (both C# consumption shapes), and numeric keys
- * come back as numbers — Object.entries strings them, and a stringified key turns the next
- * `key + 1` into concatenation.
+ * `[key, value]` and also answers `.key`/`.value` (both C# consumption shapes), and keys come back
+ * as the KEY TYPE the compiler saw — Object.entries strings every key, and a stringified key turns
+ * the next `key + 1` into concatenation. `true` restores plain numbers; `'long'` restores BigInt
+ * and `'decimal'` the runtime Decimal (their object-key form is a string, but the C# key the loop
+ * binds is the exact type).
  */
+type EntryKeyKind = boolean | 'long' | 'decimal';
+
 export function entries<V>(
   dict: Record<string, V>,
-  numericKeys: true,
+  keyKind: true,
 ): Array<[number, V] & { key: number; value: V }>;
 export function entries<V>(
   dict: Record<string, V>,
-  numericKeys?: false,
+  keyKind?: false,
 ): Array<[string, V] & { key: string; value: V }>;
 export function entries<V>(
   dict: Record<string, V>,
-  numericKeys = false,
-): Array<[string | number, V] & { key: string | number; value: V }> {
+  keyKind: 'long',
+): Array<[bigint, V] & { key: bigint; value: V }>;
+export function entries<V>(
+  dict: Record<string, V>,
+  keyKind: 'decimal',
+): Array<[Decimal, V] & { key: Decimal; value: V }>;
+export function entries<V>(
+  dict: Record<string, V>,
+  keyKind: EntryKeyKind = false,
+): Array<[unknown, V] & { key: unknown; value: V }> {
   return Object.entries(dict).map(([rawKey, value]) => {
-    const key = numericKeys ? Number(rawKey) : rawKey;
-    return Object.assign([key, value] as [string | number, V], { key, value });
+    const key =
+      keyKind === 'long'
+        ? long(rawKey)
+        : keyKind === 'decimal'
+          ? dec(rawKey)
+          : keyKind
+            ? Number(rawKey)
+            : rawKey;
+    return Object.assign([key, value] as [unknown, V], { key, value });
   });
 }

@@ -1,5 +1,6 @@
 import { dec } from './utils/decimal';
 import { combineDelegate, removeDelegate } from './utils/delegates';
+import { hydrate } from './utils/hydrate';
 import { long } from './utils/long';
 import { round } from './utils/dotnet-math';
 import { checked, single } from './utils/overflow';
@@ -90,6 +91,8 @@ export const $eq = {
   slice,
   /** Design mode only: the source span that constructed a node — see `origin`. */
   origin,
+  /** The typed boundary: a server value coerced ONCE to its runtime type — see utils/hydrate. */
+  hydrate,
   /** Numeric compat: exact decimal and 64-bit integer. */
   num: { dec, long, checked, single },
   /** Math with .NET semantics (banker's rounding). */
