@@ -14,7 +14,7 @@ import * as vocabulary from './shared/vocabulary';
  */
 describe('runtime export parity', () => {
   it('everything runtime-exports exposes also resolves through index', () => {
-    const missing = Object.keys(runtimeExports).filter(name => !(name in indexExports));
+    const missing = Object.keys(runtimeExports).filter((name) => !(name in indexExports));
     expect(missing).toEqual([]);
   });
 
@@ -22,10 +22,13 @@ describe('runtime export parity', () => {
     // A transpiled twin imports the vocabulary from runtime-exports by name. Anything the
     // vocabulary exports as a node class must therefore be reachable there.
     const nodes = Object.entries(vocabulary)
-      .filter(([, value]) => typeof value === 'function'
-        && Object.prototype.isPrototypeOf.call(vocabulary.VisualNode, value))
+      .filter(
+        ([, value]) =>
+          typeof value === 'function' &&
+          Object.prototype.isPrototypeOf.call(vocabulary.VisualNode, value),
+      )
       .map(([name]) => name);
-    const missing = nodes.filter(name => !(name in runtimeExports));
+    const missing = nodes.filter((name) => !(name in runtimeExports));
     expect(missing).toEqual([]);
   });
 });

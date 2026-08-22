@@ -52,8 +52,13 @@ describe('hydrateValue', () => {
   // --- Record/struct re-hydration (Tier 3): SSR sends a plain object; restore the class instance. ---
 
   class Point {
-    constructor(public x: number, public y: number) {}
-    sum() { return this.x + this.y; }
+    constructor(
+      public x: number,
+      public y: number,
+    ) {}
+    sum() {
+      return this.x + this.y;
+    }
   }
 
   it('rebuilds a record instance from a plain SSR object (methods + instanceof restored)', () => {
@@ -66,8 +71,13 @@ describe('hydrateValue', () => {
 
   it('rebuilds nested records recursively via the default witness', () => {
     class Line {
-      constructor(public start: Point, public end: Point) {}
-      dx() { return this.end.x - this.start.x; }
+      constructor(
+        public start: Point,
+        public end: Point,
+      ) {}
+      dx() {
+        return this.end.x - this.start.x;
+      }
     }
     const witness = new Line(new Point(0, 0), new Point(0, 0));
     const result = hydrateValue(witness, { start: { x: 1, y: 1 }, end: { x: 5, y: 1 } }) as Line;

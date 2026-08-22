@@ -80,7 +80,9 @@ function shape(b: MarkdownBlock): string {
     case 'rule':
       return 'hr';
     case 'list':
-      return 'list ' + b.items.map((it) => `${it.marker}@${it.depth} ${runsText(it.runs)}`).join('; ');
+      return (
+        'list ' + b.items.map((it) => `${it.marker}@${it.depth} ${runsText(it.runs)}`).join('; ')
+      );
     case 'table':
       return (
         'table head=' +

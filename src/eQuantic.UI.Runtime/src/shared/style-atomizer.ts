@@ -39,7 +39,15 @@ const SURFACE_VARS: ReadonlyArray<readonly [keyof AppTheme & string, string]> = 
   ['scrim', 'scrim'],
 ];
 
-const VARIANT_ORDER = ['primary', 'secondary', 'destructive', 'success', 'warning', 'info', 'tertiary'];
+const VARIANT_ORDER = [
+  'primary',
+  'secondary',
+  'destructive',
+  'success',
+  'warning',
+  'info',
+  'tertiary',
+];
 
 function hex(color: { r: number; g: number; b: number; a: number }): string {
   const channel = (v: number) => v.toString(16).padStart(2, '0');
@@ -163,7 +171,9 @@ function ensureRule(className: string, declaration: string): void {
     // there would drown every spec run in noise the browser never produces.
     const isJsdom = typeof navigator !== 'undefined' && navigator.userAgent.includes('jsdom');
     if (!isJsdom && inserted && inserted.style.length === 0 && declaration.length > 0) {
-      console.warn(`[eQuantic.UI] atomic rule dropped by the CSS parser: .${className}{${declaration}}`);
+      console.warn(
+        `[eQuantic.UI] atomic rule dropped by the CSS parser: .${className}{${declaration}}`,
+      );
     }
   } catch (error) {
     // An unparsable RULE must never take the app down; the element just misses that rule.
@@ -328,10 +338,7 @@ export interface AtomizedStyle {
  */
 /** Spec S5: pseudo-variant rules of the same atomic family — `.eq-x:hover{decl}`; the pseudo is
  * part of the hash so hover/base variants of one declaration are distinct classes. */
-export function atomizePseudo(
-  pseudo: string,
-  entries: Record<string, string | undefined>,
-): string {
+export function atomizePseudo(pseudo: string, entries: Record<string, string | undefined>): string {
   const vars = varMapFor(getPhotonTheme());
   const classes: string[] = [];
   for (const name of Object.keys(entries)) {
@@ -392,7 +399,10 @@ export function atomizeScrolled(entries: Record<string, string | undefined>): st
       ruleTexts.set(className, tagged);
       const target = registry();
       try {
-        target?.insertRule(`html.eq-scrolled .${className}{${declaration}}`, target.cssRules.length);
+        target?.insertRule(
+          `html.eq-scrolled .${className}{${declaration}}`,
+          target.cssRules.length,
+        );
       } catch {
         /* unparsable rules must never take the app down */
       }

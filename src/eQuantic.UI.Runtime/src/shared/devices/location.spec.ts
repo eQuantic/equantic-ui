@@ -11,9 +11,10 @@ describe('WebLocation', () => {
 
   it('a fix resolves the value and settles the permission as granted', async () => {
     stubGeolocation({
-      getCurrentPosition: (ok) => ok({
-        coords: { latitude: 41.1, longitude: -8.6, accuracy: 35 },
-      } as GeolocationPosition),
+      getCurrentPosition: (ok) =>
+        ok({
+          coords: { latitude: 41.1, longitude: -8.6, accuracy: 35 },
+        } as GeolocationPosition),
     });
     const location = new WebLocation();
 
@@ -24,9 +25,13 @@ describe('WebLocation', () => {
 
   it('a refusal resolves null — never a rejection — and settles denied', async () => {
     stubGeolocation({
-      getCurrentPosition: (_ok, fail) => fail!({
-        code: 1, PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3,
-      } as GeolocationPositionError),
+      getCurrentPosition: (_ok, fail) =>
+        fail!({
+          code: 1,
+          PERMISSION_DENIED: 1,
+          POSITION_UNAVAILABLE: 2,
+          TIMEOUT: 3,
+        } as GeolocationPositionError),
     });
     const location = new WebLocation();
 

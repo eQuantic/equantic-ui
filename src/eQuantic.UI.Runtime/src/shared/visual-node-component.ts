@@ -19,7 +19,12 @@ export class VisualNodeComponent extends Component {
   private readonly theme?: AppTheme;
   private readonly _instances = new ComponentInstanceStore();
 
-  constructor(node: VisualNodeValue | ComponentChild, theme?: AppTheme, _typeScale?: number, props?: unknown) {
+  constructor(
+    node: VisualNodeValue | ComponentChild,
+    theme?: AppTheme,
+    _typeScale?: number,
+    props?: unknown,
+  ) {
     super(props);
     this.node = node;
     this.theme = theme;

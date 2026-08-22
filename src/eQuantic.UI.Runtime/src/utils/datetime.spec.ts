@@ -67,12 +67,18 @@ describe('DateTime — .NET semantics', () => {
 
   it('subtracts two DateTimes into a TimeSpan', () => {
     expect(dateTime(2024, 1, 20).diff(dateTime(2024, 1, 15))).toBeInstanceOf(TimeSpan);
-    expect(dateTime(2024, 1, 20).diff(dateTime(2024, 1, 15)).toString()).toBe('5.00:00:00');
+    expect(
+      dateTime(2024, 1, 20)
+        .diff(dateTime(2024, 1, 15))
+        .toString(),
+    ).toBe('5.00:00:00');
   });
 
   it('adds and subtracts a TimeSpan', () => {
     expect(dateTime(2024, 1, 15).add(timeSpan.fromDays(5)).toString()).toBe('01/20/2024 00:00:00');
-    expect(dateTime(2024, 1, 15).subtract(timeSpan.fromHours(48)).toString()).toBe('01/13/2024 00:00:00');
+    expect(dateTime(2024, 1, 15).subtract(timeSpan.fromHours(48)).toString()).toBe(
+      '01/13/2024 00:00:00',
+    );
   });
 
   it('compares', () => {

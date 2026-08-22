@@ -27,13 +27,15 @@ describe('flex-basis lowering (C# cross-pin)', () => {
   });
 
   it('a basis is emitted in px', () => {
-    expect(effectiveStyle(lowerVisualNode(flexible({ flex: 1, basis: 440 }), ctx)))
-      .toContain('flex: 1 1 440px');
+    expect(effectiveStyle(lowerVisualNode(flexible({ flex: 1, basis: 440 }), ctx))).toContain(
+      'flex: 1 1 440px',
+    );
   });
 
   it('shrink 0 refuses to give space back', () => {
-    expect(effectiveStyle(lowerVisualNode(flexible({ flex: 1, basis: 320, shrink: 0 }), ctx)))
-      .toContain('flex: 1 0 320px');
+    expect(
+      effectiveStyle(lowerVisualNode(flexible({ flex: 1, basis: 320, shrink: 0 }), ctx)),
+    ).toContain('flex: 1 0 320px');
   });
 
   it('a zero basis is still 0%, not 0px', () => {

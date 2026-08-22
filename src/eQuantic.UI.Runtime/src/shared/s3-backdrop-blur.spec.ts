@@ -20,6 +20,8 @@ describe('S3 backdrop blur lowering (C# cross-pin)', () => {
 
   it('zero/absent blur emits nothing', () => {
     expect(effectiveStyle(lowerVisualNode(box({}), ctx))).not.toContain('backdrop-filter');
-    expect(effectiveStyle(lowerVisualNode(box({ backdropBlur: 0 }), ctx))).not.toContain('backdrop-filter');
+    expect(effectiveStyle(lowerVisualNode(box({ backdropBlur: 0 }), ctx))).not.toContain(
+      'backdrop-filter',
+    );
   });
 });

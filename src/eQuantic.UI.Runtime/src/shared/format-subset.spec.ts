@@ -22,6 +22,9 @@ const fixture = readFileSync('src/shared/__fixtures__/format-subset.txt', 'utf8'
 
 /** ICU's non-breaking spaces, folded — the C# dumper folds the same two, and for the same reason:
  * the exact codepoint moved between ICU versions and the two runtimes may carry different builds. */
+// The narrow and regular no-break spaces ARE the subject here — .NET formats with them, and the
+// test folds them to a plain space to compare the digits.
+// eslint-disable-next-line no-irregular-whitespace
 const normalize = (value: string): string => value.replace(/ /g, ' ').replace(/ /g, ' ');
 
 interface Case {
@@ -122,17 +125,16 @@ describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => 
 
       const mismatches: string[] = [];
       for (const testCase of cases.filter((c) => c.culture === culture)) {
-        const value =
-          testCase.kind === 'date' ? localDate(testCase.value) : Number(testCase.value);
+        const value = testCase.kind === 'date' ? localDate(testCase.value) : Number(testCase.value);
         // An EMPTY spec is `{0}` — the no-specifier placeholder — so it must go through the
         // composite formatter, which is where .NET's per-culture default lives.
         const actual = normalize(
-          testCase.spec.length === 0
-            ? stringFormat('{0}', value)
-            : format(value, testCase.spec),
+          testCase.spec.length === 0 ? stringFormat('{0}', value) : format(value, testCase.spec),
         );
         if (actual !== testCase.expected)
-          mismatches.push(`${testCase.kind} ${testCase.value}:${testCase.spec} → "${actual}" ≠ "${testCase.expected}"`);
+          mismatches.push(
+            `${testCase.kind} ${testCase.value}:${testCase.spec} → "${actual}" ≠ "${testCase.expected}"`,
+          );
       }
       expect(mismatches).toEqual([]);
     });
@@ -157,7 +159,9 @@ describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => 
         testCase.spec.length === 0 ? String(value) : format(value, testCase.spec, undefined, true),
       );
       if (actual !== testCase.expected)
-        mismatches.push(`${testCase.value}:${testCase.spec} → "${actual}" ≠ "${testCase.expected}"`);
+        mismatches.push(
+          `${testCase.value}:${testCase.spec} → "${actual}" ≠ "${testCase.expected}"`,
+        );
     }
     expect(mismatches).toEqual([]);
   });

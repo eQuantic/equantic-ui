@@ -204,7 +204,8 @@ function transformValue(t: TransformValue): string | undefined {
   const parts: string[] = [];
   if (tx !== 0 || ty !== 0) parts.push(`translate(${px(tx)}, ${px(ty)})`);
   if (rot !== 0) parts.push(`rotate(${num(rot)}deg)`);
-  if (sx !== 1 || sy !== 1) parts.push(sx === sy ? `scale(${num(sx)})` : `scale(${num(sx)}, ${num(sy)})`);
+  if (sx !== 1 || sy !== 1)
+    parts.push(sx === sy ? `scale(${num(sx)})` : `scale(${num(sx)}, ${num(sy)})`);
   return parts.length > 0 ? parts.join(' ') : undefined;
 }
 
@@ -244,7 +245,6 @@ function sizeValue(size: SizeValueValue | undefined): string | undefined {
       return undefined; // hug = auto
   }
 }
-
 
 // ---- style string assembly — the C# HtmlStyle.ToCssString property ORDER, subset used -------------
 
@@ -301,7 +301,12 @@ function lowerNodeKind(
     case 'spacer':
       return lowerSpacer(node as SpacerNode, horizontalAxis);
     case 'sheetSurface':
-      return lowerSheetSurface(node as unknown as SheetSurfaceLowering, context, horizontalAxis, path);
+      return lowerSheetSurface(
+        node as unknown as SheetSurfaceLowering,
+        context,
+        horizontalAxis,
+        path,
+      );
     case 'scrollView':
       return lowerScrollView(node as ScrollViewNode, context, path);
     case 'loopMotion':
@@ -327,8 +332,13 @@ function lowerNodeKind(
     // C# twin: a vector IS an icon free of the §07 size whitelist, and free of the square box.
     case 'vector': {
       const vector = node as unknown as VectorNode;
-      return lowerGlyph(vector.glyph, vector.size, vector.height ?? vector.size,
-        vector.color ?? null, vector.label ?? null);
+      return lowerGlyph(
+        vector.glyph,
+        vector.size,
+        vector.height ?? vector.size,
+        vector.color ?? null,
+        vector.label ?? null,
+      );
     }
     // C# twin: artwork stays VECTOR in the DOM — one <path> per shape, the paint the file chose.
     case 'drawing':
@@ -376,7 +386,8 @@ function lowerNodeKind(
       try {
         built = resolved.build(context.componentContext);
       } catch (error) {
-        const name = (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
+        const name =
+          (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
         reportComponentFailure(name, error);
         built = describeComponentFailure(name, error, getPhotonTheme());
       }
@@ -491,7 +502,9 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   // slab writes with an ink of its own, and the page theme's would vanish into the slab.
   const theme = getPhotonTheme();
   const caretInk = tokenValue(node.caretColor ?? theme.textPrimary);
-  const selectionInk = tokenValue(withAlpha(node.selectionColor ?? theme.focusRing, SELECTION_ALPHA));
+  const selectionInk = tokenValue(
+    withAlpha(node.selectionColor ?? theme.focusRing, SELECTION_ALPHA),
+  );
   const selection = editor.selection;
   if (!selection.isEmpty) {
     for (let line = selection.start.line; line <= selection.end.line; line++) {
@@ -499,26 +512,38 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       const lineLength = editor.document.line(line).length;
       const to = line === selection.end.line ? selection.end.column : lineLength + 1;
       if (to <= from) continue;
-      surface.children.push(mark(
-        node.contentLeft + from * node.columnWidth,
-        node.contentTop + line * node.lineHeight,
-        (to - from) * node.columnWidth, node.lineHeight,
-        'eq-code-selection', selectionInk, 1));
+      surface.children.push(
+        mark(
+          node.contentLeft + from * node.columnWidth,
+          node.contentTop + line * node.lineHeight,
+          (to - from) * node.columnWidth,
+          node.lineHeight,
+          'eq-code-selection',
+          selectionInk,
+          1,
+        ),
+      );
     }
   }
   const caret = selection.focus;
-  surface.children.push(mark(
-    node.contentLeft + caret.column * node.columnWidth,
-    node.contentTop + caret.line * node.lineHeight,
-    CARET_WIDTH, node.lineHeight, 'eq-code-caret', caretInk, 0));
+  surface.children.push(
+    mark(
+      node.contentLeft + caret.column * node.columnWidth,
+      node.contentTop + caret.line * node.lineHeight,
+      CARET_WIDTH,
+      node.lineHeight,
+      'eq-code-caret',
+      caretInk,
+      0,
+    ),
+  );
 
-  if (typeof document === 'undefined') return surface;   // SSR: the marks are enough
+  if (typeof document === 'undefined') return surface; // SSR: the marks are enough
 
   const changed = () => node.onChanged?.();
   surface.events['keydown'] = ((event: KeyboardEvent) => {
     const modifiers =
-      (event.shiftKey ? 1 : 0) | (event.altKey ? 2 : 0) |
-      ((event.metaKey || event.ctrlKey) ? 4 : 0);
+      (event.shiftKey ? 1 : 0) | (event.altKey ? 2 : 0) | (event.metaKey || event.ctrlKey ? 4 : 0);
     if (handleCodeKey(editor, event.key, modifiers)) {
       event.preventDefault();
       changed();
@@ -628,10 +653,11 @@ function mark(
     tag: 'div',
     attributes: {
       class: className,
-      style: `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;`
-        + `background-color:${ink};`
-        + (radius > 0 ? `border-radius:${radius}px;` : '')
-        + 'pointer-events:none;',
+      style:
+        `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;` +
+        `background-color:${ink};` +
+        (radius > 0 ? `border-radius:${radius}px;` : '') +
+        'pointer-events:none;',
     },
     events: {},
     children: [],
@@ -832,7 +858,8 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
   // never gets the browser's parse-time autofocus.
   if (node.autofocus === true) {
     input.attributes['autofocus'] = '';
-    input.events['eq:mounted'] = ((element: HTMLElement) => element.focus()) as unknown as EventHandler;
+    input.events['eq:mounted'] = ((element: HTMLElement) =>
+      element.focus()) as unknown as EventHandler;
   }
   if (node.disabled === true) {
     input.attributes['disabled'] = '';
@@ -912,7 +939,14 @@ function transitionValue(spec: TransitionSpecValue): string {
   const properties: string[] = [];
   const channels = spec.channels ?? 0;
   if (channels & StyleChannels.colors)
-    properties.push('background-color', 'background-image', 'border-color', 'color', 'fill', 'stroke');
+    properties.push(
+      'background-color',
+      'background-image',
+      'border-color',
+      'color',
+      'fill',
+      'stroke',
+    );
   if (channels & StyleChannels.opacity) properties.push('opacity');
   if (channels & StyleChannels.transform) properties.push('transform');
   if (channels & StyleChannels.shadow) properties.push('box-shadow');
@@ -1002,7 +1036,11 @@ function lowerSheetSurface(
   const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
   // user-select off: a drag on the grid EXTENDS the sheet selection — the browser's native text
   // sweep would paint blue over the cells and fight the band.
-  const view = element('div', { outline: 'none', 'user-select': 'none', '-webkit-user-select': 'none' }, child ? [child] : []);
+  const view = element(
+    'div',
+    { outline: 'none', 'user-select': 'none', '-webkit-user-select': 'none' },
+    child ? [child] : [],
+  );
   view.attributes['tabindex'] = '0';
   view.attributes['role'] = 'grid';
   if (node.label) view.attributes['aria-label'] = node.label;
@@ -1027,7 +1065,10 @@ function lowerSheetSurface(
       acc += doc.rowHeight(row);
       row++;
     }
-    return new CellRefCtor(Math.max(0, Math.min(row, doc.rows - 1)), Math.max(0, Math.min(col, doc.cols - 1)));
+    return new CellRefCtor(
+      Math.max(0, Math.min(row, doc.rows - 1)),
+      Math.max(0, Math.min(col, doc.cols - 1)),
+    );
   };
   const cellAt = (event: MouseEvent): CellRefCtor =>
     cellFor(event.currentTarget as HTMLElement, event.clientX, event.clientY);
@@ -1067,7 +1108,7 @@ function lowerSheetSurface(
     const target = event.currentTarget as HTMLElement;
     target.focus();
     if (sheet.editing) {
-      sheet.commitEdit();   // clicking away lands the draft, like Excel
+      sheet.commitEdit(); // clicking away lands the draft, like Excel
     }
 
     // Excel's little square: a grab near the selection's bottom-right corner starts a FILL drag.
@@ -1095,7 +1136,7 @@ function lowerSheetSurface(
 
     const cell = cellAt(event);
     if (event.shiftKey) {
-      sheet.selectTo(cell);   // the anchor stands, the selection stretches to the click
+      sheet.selectTo(cell); // the anchor stands, the selection stretches to the click
       changed();
       return;
     }
@@ -1556,41 +1597,47 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
   const inDocument = typeof document !== 'undefined';
   if (inDocument) for (const [id, value] of runs) ensureGradient(id, value);
 
-  const defs: HtmlNode[] = runs.size === 0 || inDocument
-    ? []
-    : [{
-        tag: 'defs',
-        attributes: {},
-        events: {},
-        children: [...runs].map(([id, value]) => gradientElement(id, value)),
-      }];
+  const defs: HtmlNode[] =
+    runs.size === 0 || inDocument
+      ? []
+      : [
+          {
+            tag: 'defs',
+            attributes: {},
+            events: {},
+            children: [...runs].map(([id, value]) => gradientElement(id, value)),
+          },
+        ];
 
   return {
     tag: 'svg',
     attributes,
     events: {},
-    children: [...defs, ...(artwork.shapes ?? []).map((shape) => {
-      const shapeAttributes: Record<string, string | undefined> = {
-        d: shape.path,
-        fill: paint(shape.fill),
-      };
-      // `currentColor` has no alpha of its own — the C# realizer says why, and the two must agree.
-      const alpha = (value: VectorPaintValue): number =>
-        value.kind === 'none' ? 0 : value.color.a / 255;
-      if (shape.fill.kind === 'inherit' && alpha(shape.fill) < 1)
-        shapeAttributes['fill-opacity'] = num(alpha(shape.fill));
-      if (shape.stroke.kind !== 'none') {
-        shapeAttributes['stroke'] = paint(shape.stroke);
-        if (shape.stroke.kind === 'inherit' && alpha(shape.stroke) < 1)
-          shapeAttributes['stroke-opacity'] = num(alpha(shape.stroke));
-        shapeAttributes['stroke-width'] = num(shape.strokeWidth);
-        shapeAttributes['stroke-linecap'] = 'round';
-        shapeAttributes['stroke-linejoin'] = 'round';
-      }
-      if (shape.evenOdd) shapeAttributes['fill-rule'] = 'evenodd';
-      if (shape.opacity < 1) shapeAttributes['opacity'] = num(shape.opacity);
-      return { tag: 'path', attributes: shapeAttributes, events: {}, children: [] };
-    })],
+    children: [
+      ...defs,
+      ...(artwork.shapes ?? []).map((shape) => {
+        const shapeAttributes: Record<string, string | undefined> = {
+          d: shape.path,
+          fill: paint(shape.fill),
+        };
+        // `currentColor` has no alpha of its own — the C# realizer says why, and the two must agree.
+        const alpha = (value: VectorPaintValue): number =>
+          value.kind === 'none' ? 0 : value.color.a / 255;
+        if (shape.fill.kind === 'inherit' && alpha(shape.fill) < 1)
+          shapeAttributes['fill-opacity'] = num(alpha(shape.fill));
+        if (shape.stroke.kind !== 'none') {
+          shapeAttributes['stroke'] = paint(shape.stroke);
+          if (shape.stroke.kind === 'inherit' && alpha(shape.stroke) < 1)
+            shapeAttributes['stroke-opacity'] = num(alpha(shape.stroke));
+          shapeAttributes['stroke-width'] = num(shape.strokeWidth);
+          shapeAttributes['stroke-linecap'] = 'round';
+          shapeAttributes['stroke-linejoin'] = 'round';
+        }
+        if (shape.evenOdd) shapeAttributes['fill-rule'] = 'evenodd';
+        if (shape.opacity < 1) shapeAttributes['opacity'] = num(shape.opacity);
+        return { tag: 'path', attributes: shapeAttributes, events: {}, children: [] };
+      }),
+    ],
   };
 }
 
@@ -1719,13 +1766,15 @@ function cssCursor(cursor: string): string {
 /** The twin of C# `WebRealizer.PaintsNothing`: a box with no content and nothing painted. */
 function paintsNothing(box: BoxNode): boolean {
   const style = box.style ?? ({} as BoxStyleValue);
-  return !box.child
-    && !style.background
-    && !style.gradient
-    && !style.glow
-    && !style.pattern
-    && !(style.borderWidth && style.borderWidth > 0)
-    && !(style.elevation && style.elevation > 0);
+  return (
+    !box.child &&
+    !style.background &&
+    !style.gradient &&
+    !style.glow &&
+    !style.pattern &&
+    !(style.borderWidth && style.borderWidth > 0) &&
+    !(style.elevation && style.elevation > 0)
+  );
 }
 
 function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
@@ -1737,12 +1786,18 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     'flex-shrink': rigid(style.width, style.height),
     // FILL is a CEILING (C# twin): an item's automatic minimum size overrides width, so a Fill
     // box grew past its parent to fit its longest content. An explicit minWidth still wins.
-    'min-width': style.minWidth && style.minWidth > 0
-      ? px(style.minWidth)
-      : style.width?.kind === 'fill' ? '0' : undefined,
-    'min-height': style.minHeight && style.minHeight > 0
-      ? px(style.minHeight)
-      : style.height?.kind === 'fill' ? '0' : undefined,
+    'min-width':
+      style.minWidth && style.minWidth > 0
+        ? px(style.minWidth)
+        : style.width?.kind === 'fill'
+          ? '0'
+          : undefined,
+    'min-height':
+      style.minHeight && style.minHeight > 0
+        ? px(style.minHeight)
+        : style.height?.kind === 'fill'
+          ? '0'
+          : undefined,
     'max-width': style.maxWidth && style.maxWidth > 0 ? px(style.maxWidth) : undefined,
     'max-height': style.maxHeight && style.maxHeight > 0 ? px(style.maxHeight) : undefined,
     padding:
@@ -1769,7 +1824,10 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
       if (style.shadows && style.shadows.length > 0)
         for (const entry of style.shadows)
           parts.push(
-            `0 ${px(entry.offsetY)} ${px(entry.blur)} ${px(entry.spread)} ${tokenValue(entry.color)}`.replace('0 0px', '0 0'),
+            `0 ${px(entry.offsetY)} ${px(entry.blur)} ${px(entry.spread)} ${tokenValue(entry.color)}`.replace(
+              '0 0px',
+              '0 0',
+            ),
           );
       if (style.shadow)
         parts.push(
@@ -1836,8 +1894,10 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
 
   const result = element('div', entries);
 
-  if (style.hover && !(simulatedState & SIMULATED_HOVERED)) appendDiff(result, ':hover', style.hover);
-  if (style.focus && !(simulatedState & SIMULATED_FOCUSED)) appendDiff(result, ':focus-visible', style.focus);
+  if (style.hover && !(simulatedState & SIMULATED_HOVERED))
+    appendDiff(result, ':hover', style.hover);
+  if (style.focus && !(simulatedState & SIMULATED_FOCUSED))
+    appendDiff(result, ':focus-visible', style.focus);
 
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');
@@ -1901,7 +1961,8 @@ function diffEntries(diff: StyleDiffValue): Record<string, string | undefined> {
   if (diff.elevation != null) {
     const spec = getPhotonTheme().elevation(diff.elevation);
     if (spec && (spec.blur !== 0 || spec.offsetY !== 0 || spec.spread !== 0)) {
-      entries['box-shadow'] = `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`;
+      entries['box-shadow'] =
+        `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`;
     }
   }
   if (diff.opacity != null) entries['opacity'] = num(diff.opacity);
@@ -2020,11 +2081,11 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     color: tokenValue(text.color ?? context.textPrimary),
     // Line alignment inside the paragraph (C# twin) — wrapped lines of a centered headline
     // must center too.
-    'text-align':
-      text.align === 'center' ? 'center' : text.align === 'end' ? 'end' : undefined,
+    'text-align': text.align === 'center' ? 'center' : text.align === 'end' ? 'end' : undefined,
     // Authored \n is a HARD break (pre-line keeps normal wrapping between them) — C# twin.
     // Mono text is CODE (indentation survives); plain text only keeps its newlines.
-    'white-space': text.mono === true ? 'pre-wrap' : text.content.includes('\n') ? 'pre-line' : undefined,
+    'white-space':
+      text.mono === true ? 'pre-wrap' : text.content.includes('\n') ? 'pre-line' : undefined,
     'font-family': text.mono === true ? MONO_STACK : undefined,
     'font-variant-numeric': text.tabular === true ? 'tabular-nums' : undefined,
     // The slant (C# twin): the node's own, or the ROLE's when the theme cuts that role italic.
@@ -2069,8 +2130,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     const override = text.styleOverride;
     style['font-size'] = px(override.size);
     style['line-height'] = px(override.lineHeight);
-    const weight =
-      cssFontWeight(override.weight);
+    const weight = cssFontWeight(override.weight);
     style['font-weight'] = String(weight);
     style['letter-spacing'] = px(override.tracking);
   }
@@ -2212,8 +2272,11 @@ function lowerPressable(
     // "mixed" exists for checkboxes and nothing else — the C# realizer enforces the same rule.
     node.attributes['role'] = pressable.role;
     node.attributes['aria-checked'] =
-      pressable.mixed && pressable.role === 'checkbox' ? 'mixed'
-      : pressable.selected === true ? 'true' : 'false';
+      pressable.mixed && pressable.role === 'checkbox'
+        ? 'mixed'
+        : pressable.selected === true
+          ? 'true'
+          : 'false';
   } else if (pressable.role === 'destination') {
     // Where you ARE, which pressed/selected/checked cannot say. Keeps its Tab stop (a nav is a
     // list of links), and only the current one carries the attribute — every destination
@@ -2232,7 +2295,10 @@ function lowerPressable(
   if (!disabled) {
     // eq-pressed carries the same declaration :active does (see the generated stylesheet), so a
     // simulated press cannot drift from a real one — it is the same selector list.
-    prependClass(node, simulatedState & SIMULATED_PRESSED ? 'eq-pressable eq-pressed' : 'eq-pressable');
+    prependClass(
+      node,
+      simulatedState & SIMULATED_PRESSED ? 'eq-pressable eq-pressed' : 'eq-pressable',
+    );
     if (pressable.pressedBackground) {
       const tail = `--eq-pressed-bg: ${tokenValue(pressable.pressedBackground)}`;
       const existing = node.attributes['style'];
@@ -2261,8 +2327,7 @@ function lowerFlexible(
   // breaker measures against in a WRAPPING container, which is what lets two panes sit side by
   // side while there is room and take a line each when there is not. min-size 0 lets text shrink to
   // ellipsis instead of pushing siblings (the truncation contract).
-  const basis =
-    flexible.basis !== undefined && flexible.basis > 0 ? `${flexible.basis}px` : '0%';
+  const basis = flexible.basis !== undefined && flexible.basis > 0 ? `${flexible.basis}px` : '0%';
   const shrink = flexible.shrink ?? 1;
   const node = element('div', {
     flex: `${flexible.flex} ${shrink} ${basis}`,
@@ -2326,7 +2391,8 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
   // path is unique per instance by construction. It NEED not match the C# producer's spelling:
   // an open panel never comes from SSR (it opens by interaction), so hydration never compares
   // these ids — the one place both spellings could meet.
-  const panelRole = node.panelRole === 'menu' || node.panelRole === 'listbox' ? node.panelRole : null;
+  const panelRole =
+    node.panelRole === 'menu' || node.panelRole === 'listbox' ? node.panelRole : null;
   const panelId = panelRole ? `eq-panel-${hashDeclaration(path)}` : null;
 
   const anchor = lowerNode(node.anchor, context, null, path + '/0');
@@ -2498,13 +2564,22 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
     // ORDER (down is next) — WAI-ARIA's own split, one mapping per role family.
     const downIsNext = role !== 'slider';
     host.events['keydown'] = ((event: KeyboardEvent) => {
-      const direction = event.key === 'ArrowRight' ? 1
-        : event.key === 'ArrowLeft' ? -1
-        : event.key === 'ArrowUp' ? (downIsNext ? -1 : 1)
-        : event.key === 'ArrowDown' ? (downIsNext ? 1 : -1)
-        : 0;
+      const direction =
+        event.key === 'ArrowRight'
+          ? 1
+          : event.key === 'ArrowLeft'
+            ? -1
+            : event.key === 'ArrowUp'
+              ? downIsNext
+                ? -1
+                : 1
+              : event.key === 'ArrowDown'
+                ? downIsNext
+                  ? 1
+                  : -1
+                : 0;
       if (direction === 0) return;
-      event.preventDefault();   // an arrow that also scrolls the page is two answers to one key
+      event.preventDefault(); // an arrow that also scrolls the page is two answers to one key
       adjust(direction);
     }) as unknown as EventHandler;
   }
@@ -2573,7 +2648,8 @@ function resolveStackChild(
     try {
       node = resolved.build(context.componentContext) as VisualNodeValue;
     } catch (error) {
-      const name = (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
+      const name =
+        (resolved as { constructor?: { name?: string } }).constructor?.name ?? 'Component';
       reportComponentFailure(name, error);
       return describeComponentFailure(name, error, getPhotonTheme()) as VisualNodeValue;
     }
@@ -2655,7 +2731,9 @@ function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: st
     ...(top ? { [`${gapProp}-bottom`]: px(gap) } : { [`${gapProp}-top`]: px(gap) }),
     transition: motion ? motionTransition(motion, true) : undefined,
     opacity: closed ? '0' : undefined,
-    transform: closed ? `translateY(${px(top ? ANCHOR_MOTION_LIFT : -ANCHOR_MOTION_LIFT)})` : undefined,
+    transform: closed
+      ? `translateY(${px(top ? ANCHOR_MOTION_LIFT : -ANCHOR_MOTION_LIFT)})`
+      : undefined,
     visibility: closed ? 'hidden' : undefined,
     'pointer-events': closed ? 'none' : undefined,
   });
@@ -2761,8 +2839,7 @@ let scrolledControllerInstalled = false;
 function installScrolledController(): void {
   if (scrolledControllerInstalled || typeof window === 'undefined') return;
   scrolledControllerInstalled = true;
-  const apply = () =>
-    document.documentElement.classList.toggle('eq-scrolled', window.scrollY > 8);
+  const apply = () => document.documentElement.classList.toggle('eq-scrolled', window.scrollY > 8);
   window.addEventListener('scroll', apply, { passive: true });
   apply();
 }
@@ -2800,14 +2877,21 @@ function lowerAdaptive(node: AdaptiveNodeValue, context: LoweringContext, path: 
 /** Spec S4 mirror: CSS Grid — identical track/gap/span strings to the C# LowerGrid. */
 function lowerGrid(grid: GridNode, context: LoweringContext, path: string): HtmlNode {
   const tracks = grid.columns
-    .map((t) => (t.kind === 'fixed' ? px(t.value) : t.kind === 'fill' ? `${num(t.value)}fr` : 'auto'))
+    .map((t) =>
+      t.kind === 'fixed' ? px(t.value) : t.kind === 'fill' ? `${num(t.value)}fr` : 'auto',
+    )
     .join(' ');
   const rowGap = grid.rowGap ?? grid.gap;
   const result = element('div', {
     'box-sizing': 'border-box',
     display: 'grid',
     'grid-template-columns': tracks,
-    gap: rowGap !== grid.gap ? `${px(rowGap)} ${px(grid.gap)}` : grid.gap > 0 ? px(grid.gap) : undefined,
+    gap:
+      rowGap !== grid.gap
+        ? `${px(rowGap)} ${px(grid.gap)}`
+        : grid.gap > 0
+          ? px(grid.gap)
+          : undefined,
     width: sizeValue(grid.width),
     height: sizeValue(grid.height),
     'flex-shrink': rigid(grid.width, grid.height),

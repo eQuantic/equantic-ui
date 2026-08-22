@@ -3,7 +3,9 @@ import { StringBuilder, stringBuilder } from './string-builder';
 
 describe('StringBuilder — .NET-compat', () => {
   it('appends strings fluently', () => {
-    expect(stringBuilder().append('Hello').append(' ').append('World').toString()).toBe('Hello World');
+    expect(stringBuilder().append('Hello').append(' ').append('World').toString()).toBe(
+      'Hello World',
+    );
   });
 
   it('seeds from an initial string', () => {

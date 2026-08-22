@@ -70,11 +70,7 @@ export class WebPhotoLibrary {
       // window regaining focus is the fallback. A frame of delay lets a real 'change' win the race —
       // focus comes back before the change event fires.
       input.addEventListener('cancel', () => finish([]));
-      window.addEventListener(
-        'focus',
-        () => setTimeout(() => finish([]), 300),
-        { once: true },
-      );
+      window.addEventListener('focus', () => setTimeout(() => finish([]), 300), { once: true });
 
       input.click();
     });

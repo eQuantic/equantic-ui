@@ -72,10 +72,10 @@ describe('drag-to-dismiss controller (web)', () => {
 
   it('follows past the slop and glides back on a short release', () => {
     pointer('pointerdown', sheet, 300);
-    pointer('pointermove', document, 340);                 // dy 40 — past the 12dp slop
+    pointer('pointermove', document, 340); // dy 40 — past the 12dp slop
     expect(sheet.style.transform).toBe('translateY(40px)');
 
-    pointer('pointerup', document, 340);                   // short of 96 → glide back
+    pointer('pointerup', document, 340); // short of 96 → glide back
     expect(sheet.style.transform).toBe('');
     expect(sheet.style.transition).toContain('transform');
     expect(host.dismissals).toBe(0);
@@ -83,7 +83,7 @@ describe('drag-to-dismiss controller (web)', () => {
 
   it('a release past the threshold dismisses — and the exit motion takes over', async () => {
     pointer('pointerdown', sheet, 300);
-    pointer('pointermove', document, 420);                 // dy 120 — past ThresholdDp
+    pointer('pointermove', document, 420); // dy 120 — past ThresholdDp
     pointer('pointerup', document, 420);
     await nextFrame();
 
@@ -95,7 +95,7 @@ describe('drag-to-dismiss controller (web)', () => {
 
   it('a sub-slop wiggle never engages the drag', () => {
     pointer('pointerdown', sheet, 300);
-    pointer('pointermove', document, 308);                 // dy 8 < slop 12
+    pointer('pointermove', document, 308); // dy 8 < slop 12
     expect(sheet.style.transform).toBe('');
     pointer('pointerup', document, 308);
     expect(host.dismissals).toBe(0);

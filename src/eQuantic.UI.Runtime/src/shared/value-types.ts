@@ -148,7 +148,13 @@ export class Transform2D {
     return new Transform2D(this.translateX, this.translateY, degrees, this.scaleX, this.scaleY);
   }
   withScale(uniform: number): Transform2D {
-    return new Transform2D(this.translateX, this.translateY, this.rotationDegrees, uniform, uniform);
+    return new Transform2D(
+      this.translateX,
+      this.translateY,
+      this.rotationDegrees,
+      uniform,
+      uniform,
+    );
   }
 }
 
@@ -192,7 +198,7 @@ export class TypeStyle implements TypeStyleValue {
    */
   withSize(size: number): TypeStyle {
     const lineHeight =
-      this.size <= 0 ? this.lineHeight : Math.round((this.lineHeight * size) / this.size * 2) / 2;
+      this.size <= 0 ? this.lineHeight : Math.round(((this.lineHeight * size) / this.size) * 2) / 2;
     return new TypeStyle(
       size,
       lineHeight,

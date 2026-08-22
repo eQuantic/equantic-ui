@@ -25,10 +25,15 @@ export class WebLocation {
   constructor() {
     // Best-effort refresh; browsers without the Permissions API just start unknown.
     if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
-      navigator.permissions.query({ name: 'geolocation' }).then((status) => {
-        if (status.state === 'granted') this.state = 'granted';
-        else if (status.state === 'denied') this.state = 'denied';
-      }).catch(() => { /* unknown stays notDetermined */ });
+      navigator.permissions
+        .query({ name: 'geolocation' })
+        .then((status) => {
+          if (status.state === 'granted') this.state = 'granted';
+          else if (status.state === 'denied') this.state = 'denied';
+        })
+        .catch(() => {
+          /* unknown stays notDetermined */
+        });
     }
   }
 
@@ -50,7 +55,7 @@ export class WebLocation {
         },
         (error) => {
           if (error.code === error.PERMISSION_DENIED) this.state = 'denied';
-          resolve(null);   // denied, off, or no fix — the contract's null, never a rejection
+          resolve(null); // denied, off, or no fix — the contract's null, never a rejection
         },
         { timeout: 15_000 },
       );

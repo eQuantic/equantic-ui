@@ -66,9 +66,13 @@ function solveAndDump(source: string): string {
 describe('Mermaid twin layout (cross-pinned with MermaidTests.cs)', () => {
   it('places every box on the same numbers the C# layout pinned', () => {
     const actual =
-      '== flowchart ==\n' + solveAndDump(FLOWCHART)
-      + '\n== flowchart-lr ==\n' + solveAndDump(FLOWCHART_LR)
-      + '\n== sequence ==\n' + solveAndDump(SEQUENCE) + '\n';
+      '== flowchart ==\n' +
+      solveAndDump(FLOWCHART) +
+      '\n== flowchart-lr ==\n' +
+      solveAndDump(FLOWCHART_LR) +
+      '\n== sequence ==\n' +
+      solveAndDump(SEQUENCE) +
+      '\n';
     expect(actual).toBe(fixture);
   });
 

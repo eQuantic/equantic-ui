@@ -69,7 +69,9 @@ let loadCatalog: (culture: string) => Promise<Record<string, string> | null> = d
 async function defaultLoader(culture: string): Promise<Record<string, string> | null> {
   if (typeof fetch !== 'function') return null;
   try {
-    const response = await fetch(`/_equantic/strings/${culture}.json`, { credentials: 'same-origin' });
+    const response = await fetch(`/_equantic/strings/${culture}.json`, {
+      credentials: 'same-origin',
+    });
     if (!response.ok) return null;
     return (await response.json()) as Record<string, string>;
   } catch {

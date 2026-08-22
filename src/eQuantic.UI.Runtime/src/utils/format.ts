@@ -49,8 +49,15 @@ import { round } from './dotnet-math';
 function asJsDate(value: unknown): Date | null {
   if (value instanceof Date) return value;
   if (value instanceof DotNetDateTime)
-    return new Date(value.year, value.month - 1, value.day,
-      value.hour, value.minute, value.second, value.millisecond);
+    return new Date(
+      value.year,
+      value.month - 1,
+      value.day,
+      value.hour,
+      value.minute,
+      value.second,
+      value.millisecond,
+    );
   return null;
 }
 
@@ -62,8 +69,12 @@ function asJsDate(value: unknown): Date | null {
  *   `ToString(CultureInfo.InvariantCulture)` asks for, and the shape a number written for a
  *   machine (a CSS length, a key, a wire value) has to keep whoever is reading the page.
  */
-export function format(value: any, format: string | null, alignment?: number,
-                       invariant?: boolean): string {
+export function format(
+  value: any,
+  format: string | null,
+  alignment?: number,
+  invariant?: boolean,
+): string {
   if (value === null || value === undefined) return '';
   if (invariant) invariantDepth++;
   try {
@@ -74,7 +85,6 @@ export function format(value: any, format: string | null, alignment?: number,
 }
 
 function formatCore(value: any, format: string | null, alignment?: number): string {
-
   let result = String(value);
 
   if (format) {
@@ -190,10 +200,17 @@ function formatNumber(value: number, format: string): string {
         useGrouping: false,
       });
     case 'D': // Decimal (integer pad) — culture-independent by definition in .NET
-      return (value < 0 ? '-' : '')
-        + Math.abs(Math.round(value)).toString().padStart(digits.length > 0 ? precision : 1, '0');
+      return (
+        (value < 0 ? '-' : '') +
+        Math.abs(Math.round(value))
+          .toString()
+          .padStart(digits.length > 0 ? precision : 1, '0')
+      );
     case 'X': // Hex — culture-independent
-      return Math.floor(value).toString(16).toUpperCase().padStart(digits.length > 0 ? precision : 1, '0');
+      return Math.floor(value)
+        .toString(16)
+        .toUpperCase()
+        .padStart(digits.length > 0 ? precision : 1, '0');
     default:
       return value.toString();
   }
@@ -277,29 +294,75 @@ function renderPattern(value: Date, pattern: string): string {
     const token = ch.repeat(run);
 
     switch (token) {
-      case 'dddd': out.push(namePart(value, { weekday: 'long' }, 'weekday')); break;
-      case 'ddd': out.push(namePart(value, { weekday: 'short' }, 'weekday')); break;
-      case 'dd': out.push(String(value.getDate()).padStart(2, '0')); break;
-      case 'd': out.push(String(value.getDate())); break;
-      case 'MMMM': out.push(namePart(value, { month: 'long' }, 'month')); break;
-      case 'MMM': out.push(namePart(value, { month: 'short' }, 'month')); break;
-      case 'MM': out.push(String(value.getMonth() + 1).padStart(2, '0')); break;
-      case 'M': out.push(String(value.getMonth() + 1)); break;
-      case 'yyyy': out.push(String(value.getFullYear()).padStart(4, '0')); break;
-      case 'yyy': out.push(String(value.getFullYear()).padStart(3, '0')); break;
-      case 'yy': out.push(String(value.getFullYear() % 100).padStart(2, '0')); break;
-      case 'y': out.push(String(value.getFullYear() % 100)); break;
-      case 'HH': out.push(String(hours24).padStart(2, '0')); break;
-      case 'H': out.push(String(hours24)); break;
-      case 'hh': out.push(String(hours12).padStart(2, '0')); break;
-      case 'h': out.push(String(hours12)); break;
-      case 'mm': out.push(String(value.getMinutes()).padStart(2, '0')); break;
-      case 'm': out.push(String(value.getMinutes())); break;
-      case 'ss': out.push(String(value.getSeconds()).padStart(2, '0')); break;
-      case 's': out.push(String(value.getSeconds())); break;
-      case 'tt': out.push(namePart(value, { hour: 'numeric', hour12: true }, 'dayPeriod')); break;
-      case 't': out.push(namePart(value, { hour: 'numeric', hour12: true }, 'dayPeriod').slice(0, 1)); break;
-      default: out.push(token); break;
+      case 'dddd':
+        out.push(namePart(value, { weekday: 'long' }, 'weekday'));
+        break;
+      case 'ddd':
+        out.push(namePart(value, { weekday: 'short' }, 'weekday'));
+        break;
+      case 'dd':
+        out.push(String(value.getDate()).padStart(2, '0'));
+        break;
+      case 'd':
+        out.push(String(value.getDate()));
+        break;
+      case 'MMMM':
+        out.push(namePart(value, { month: 'long' }, 'month'));
+        break;
+      case 'MMM':
+        out.push(namePart(value, { month: 'short' }, 'month'));
+        break;
+      case 'MM':
+        out.push(String(value.getMonth() + 1).padStart(2, '0'));
+        break;
+      case 'M':
+        out.push(String(value.getMonth() + 1));
+        break;
+      case 'yyyy':
+        out.push(String(value.getFullYear()).padStart(4, '0'));
+        break;
+      case 'yyy':
+        out.push(String(value.getFullYear()).padStart(3, '0'));
+        break;
+      case 'yy':
+        out.push(String(value.getFullYear() % 100).padStart(2, '0'));
+        break;
+      case 'y':
+        out.push(String(value.getFullYear() % 100));
+        break;
+      case 'HH':
+        out.push(String(hours24).padStart(2, '0'));
+        break;
+      case 'H':
+        out.push(String(hours24));
+        break;
+      case 'hh':
+        out.push(String(hours12).padStart(2, '0'));
+        break;
+      case 'h':
+        out.push(String(hours12));
+        break;
+      case 'mm':
+        out.push(String(value.getMinutes()).padStart(2, '0'));
+        break;
+      case 'm':
+        out.push(String(value.getMinutes()));
+        break;
+      case 'ss':
+        out.push(String(value.getSeconds()).padStart(2, '0'));
+        break;
+      case 's':
+        out.push(String(value.getSeconds()));
+        break;
+      case 'tt':
+        out.push(namePart(value, { hour: 'numeric', hour12: true }, 'dayPeriod'));
+        break;
+      case 't':
+        out.push(namePart(value, { hour: 'numeric', hour12: true }, 'dayPeriod').slice(0, 1));
+        break;
+      default:
+        out.push(token);
+        break;
     }
     i += run;
   }
@@ -379,7 +442,10 @@ function general(value: unknown): string {
  * @param enumType The enum object
  * @returns The enum value if found, undefined otherwise
  */
-export function parseEnum<T extends Record<string, any>>(value: string | number, enumType: T): T[keyof T] | undefined {
+export function parseEnum<T extends Record<string, any>>(
+  value: string | number,
+  enumType: T,
+): T[keyof T] | undefined {
   if (typeof value === 'number') {
     return enumType[value] !== undefined ? enumType[value] : undefined;
   }
@@ -393,7 +459,7 @@ export function parseEnum<T extends Record<string, any>>(value: string | number,
 
   // Try case-insensitive match
   const keys = Object.keys(enumType);
-  const matchedKey = keys.find(k => k.toLowerCase() === strValue.toLowerCase());
+  const matchedKey = keys.find((k) => k.toLowerCase() === strValue.toLowerCase());
 
   if (matchedKey) {
     return enumType[matchedKey];
@@ -401,9 +467,7 @@ export function parseEnum<T extends Record<string, any>>(value: string | number,
 
   // Try matching by value (reverse lookup for numeric enums)
   const values = Object.values(enumType);
-  const matchedValue = values.find(v =>
-    String(v).toLowerCase() === strValue.toLowerCase()
-  );
+  const matchedValue = values.find((v) => String(v).toLowerCase() === strValue.toLowerCase());
 
   if (matchedValue !== undefined) {
     return matchedValue as T[keyof T];

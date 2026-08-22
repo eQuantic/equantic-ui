@@ -22,8 +22,9 @@ describe('link lowering (navigation semantics)', () => {
 
   // The router reads this off the anchor to decide where the new page starts (C# twin).
   it('marks a link that keeps the reader position', () => {
-    expect(lower(new Link('/a', new Text('a', 'label')))!.attributes['data-eq-keep-position'])
-      .toBeUndefined();
+    expect(
+      lower(new Link('/a', new Text('a', 'label')))!.attributes['data-eq-keep-position'],
+    ).toBeUndefined();
     expect(
       lower(new Link('/a', new Text('a', 'label'), { keepsPosition: true }))!.attributes[
         'data-eq-keep-position'
@@ -33,9 +34,13 @@ describe('link lowering (navigation semantics)', () => {
 
   // An app-internal link invites the router to warm it on hover; an external one does not (C# twin).
   it('invites prefetch for app links only', () => {
-    expect(lower(new Link('/docs/b', new Text('b', 'label')))!.attributes['data-prefetch']).toBe('');
+    expect(lower(new Link('/docs/b', new Text('b', 'label')))!.attributes['data-prefetch']).toBe(
+      '',
+    );
     expect(
-      lower(new Link('https://example.test/x', new Text('x', 'label')))!.attributes['data-prefetch'],
+      lower(new Link('https://example.test/x', new Text('x', 'label')))!.attributes[
+        'data-prefetch'
+      ],
     ).toBeUndefined();
   });
 

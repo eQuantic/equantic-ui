@@ -58,7 +58,9 @@ export class WebCultureController {
       const here = window.location.pathname;
       const [current] = splitCulturePath(here);
       if (current !== '' && current !== uiCulture) {
-        Navigator.go(pathForCulture(uiCulture, here) + window.location.search + window.location.hash);
+        Navigator.go(
+          pathForCulture(uiCulture, here) + window.location.search + window.location.hash,
+        );
         return;
       }
     }
@@ -70,8 +72,7 @@ export class WebCultureController {
     if (typeof document === 'undefined') return;
     try {
       const value = encodeURIComponent(`c=${formatCulture}|uic=${uiCulture}`);
-      document.cookie =
-        `${CULTURE_COOKIE}=${value}; path=/; max-age=${DEFAULT_DAYS * 86_400}; samesite=lax`;
+      document.cookie = `${CULTURE_COOKIE}=${value}; path=/; max-age=${DEFAULT_DAYS * 86_400}; samesite=lax`;
     } catch {
       /* cookies blocked — the page still switched; only the NEXT request forgets */
     }

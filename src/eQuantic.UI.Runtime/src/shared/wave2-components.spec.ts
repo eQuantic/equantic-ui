@@ -12,9 +12,13 @@ import { Tabs } from './__transpiled__/Tabs';
 describe('wave-2 transpiled components (real eqc output)', () => {
   it('Checkbox toggles through the row-level pressable', () => {
     let changed = false;
-    const node = new Checkbox(false, () => {
-      changed = true;
-    }, 'Agree').render();
+    const node = new Checkbox(
+      false,
+      () => {
+        changed = true;
+      },
+      'Agree',
+    ).render();
     expect(node.tag).toBe('button');
     (node.events.click as () => void)();
     expect(changed).toBe(true);

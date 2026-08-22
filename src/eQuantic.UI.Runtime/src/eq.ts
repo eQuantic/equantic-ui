@@ -6,7 +6,16 @@ import { format, parseEnum, stringFormat } from './utils/format';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
-import { queue, stack, valueMap, linkedList, contains, count, setAdd, entries } from './utils/collections';
+import {
+  queue,
+  stack,
+  valueMap,
+  linkedList,
+  contains,
+  count,
+  setAdd,
+  entries,
+} from './utils/collections';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp } from './utils/nullable';
 import { equals } from './utils/equals';
@@ -96,7 +105,18 @@ export const $eq = {
    */
   /** What a transpiled constructor resolves its dependencies through — see utils/services. */
   services: { resolve: resolveService },
-  collections: { queue, stack, valueMap, linkedList, sortedSet, sortedDictionary, sortedList, contains, count, setAdd },
+  collections: {
+    queue,
+    stack,
+    valueMap,
+    linkedList,
+    sortedSet,
+    sortedDictionary,
+    sortedList,
+    contains,
+    count,
+    setAdd,
+  },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
   nullable: { arith: liftArith, cmp: liftCmp },
   /**

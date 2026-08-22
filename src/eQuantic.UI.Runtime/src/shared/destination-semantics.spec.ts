@@ -34,7 +34,7 @@ describe('a navigation destination says where you are', () => {
     expect(lowerVisualNode(destination(false), ctx).attributes['aria-current']).toBeUndefined();
   });
 
-  it('never borrows another role\'s word for it', () => {
+  it("never borrows another role's word for it", () => {
     const current = lowerVisualNode(destination(true), ctx).attributes;
 
     expect(current['aria-pressed']).toBeUndefined();

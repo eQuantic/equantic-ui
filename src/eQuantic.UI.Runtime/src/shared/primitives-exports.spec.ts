@@ -93,8 +93,9 @@ describe('Primitives value twins carry the C# values', () => {
   });
 
   it('NetworkState.offline is the C# NetworkState.Offline', () => {
-    expect({ online: NetworkState.offline.online, kind: NetworkState.offline.kind })
-      .toEqual(pinnedValues.networkOffline);
+    expect({ online: NetworkState.offline.online, kind: NetworkState.offline.kind }).toEqual(
+      pinnedValues.networkOffline,
+    );
   });
 
   // The BOUNDARIES, which is where an off-by-one between the two would live.

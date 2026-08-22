@@ -31,7 +31,8 @@ describe('hover-reveal Escape suppression (WCAG 1.4.13)', () => {
   // (where a dialog would listen) up to the document (where the suppressor listens in capture).
   const escape = () =>
     (document.activeElement ?? document.body).dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
 
   it('Escape suppresses the host holding focus — and only that one', () => {
     (host().querySelector('button') as HTMLButtonElement).focus();
@@ -39,7 +40,9 @@ describe('hover-reveal Escape suppression (WCAG 1.4.13)', () => {
     escape();
 
     expect(host().classList.contains('eq-reveal-suppressed')).toBe(true);
-    expect(document.getElementById('other')!.classList.contains('eq-reveal-suppressed')).toBe(false);
+    expect(document.getElementById('other')!.classList.contains('eq-reveal-suppressed')).toBe(
+      false,
+    );
   });
 
   it('focus does not move — hiding the panel is the whole effect', () => {

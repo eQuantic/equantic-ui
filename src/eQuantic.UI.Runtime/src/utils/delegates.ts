@@ -11,6 +11,9 @@
  * `Delegate.Remove` does when the same handler was added twice.
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-function-type -- a delegate IS any function: these only
+   store, combine and spread them, never call one with arguments of their own. */
+
 /** The invocation list of a composed delegate, kept so `remove` can rebuild it. */
 const lists = new WeakMap<Function, Function[]>();
 

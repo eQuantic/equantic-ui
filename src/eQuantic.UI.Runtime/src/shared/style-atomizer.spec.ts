@@ -17,7 +17,9 @@ describe('style atomizer: C# ↔ TS twin (fixture cross-pin)', () => {
     for (const entry of fixture as FixtureEntry[]) {
       // Through declarationFor, not string concatenation: a vendor pair is ONE declaration written
       // twice, and the C# twin hashes the same paired text.
-      expect(`eq-${hashDeclaration(declarationFor(entry.prop, entry.rewritten))}`).toBe(entry.class);
+      expect(`eq-${hashDeclaration(declarationFor(entry.prop, entry.rewritten))}`).toBe(
+        entry.class,
+      );
     }
   });
 

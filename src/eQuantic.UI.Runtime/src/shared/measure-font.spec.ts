@@ -30,7 +30,13 @@ describe('the measuring canvas is given a font it can parse', () => {
   it('writes a NUMERIC weight, never the enum member name', async () => {
     const { measurePhotonText } = await import('./photon-context');
 
-    measurePhotonText('0000000000', { size: 11.5, lineHeight: 14.5, weight: 'regular', tracking: 0, mono: true });
+    measurePhotonText('0000000000', {
+      size: 11.5,
+      lineHeight: 14.5,
+      weight: 'regular',
+      tracking: 0,
+      mono: true,
+    });
 
     expect(fonts).toHaveLength(1);
     expect(fonts[0]).toMatch(/^400 11\.5px ui-monospace/);

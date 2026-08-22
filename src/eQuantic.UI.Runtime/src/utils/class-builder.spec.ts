@@ -14,25 +14,17 @@ describe('ClassBuilder', () => {
     });
 
     it('should add classes', () => {
-      const result = ClassBuilder.create()
-        .add('flex', 'items-center')
-        .add('gap-4', 'p-6')
-        .build();
+      const result = ClassBuilder.create().add('flex', 'items-center').add('gap-4', 'p-6').build();
       expect(result).toBe('flex items-center gap-4 p-6');
     });
 
     it('should ignore null and undefined', () => {
-      const result = ClassBuilder.create()
-        .add('flex', null, 'items-center', undefined)
-        .build();
+      const result = ClassBuilder.create().add('flex', null, 'items-center', undefined).build();
       expect(result).toBe('flex items-center');
     });
 
     it('should ignore duplicates', () => {
-      const result = ClassBuilder.create()
-        .add('flex', 'items-center')
-        .add('flex', 'gap-4')
-        .build();
+      const result = ClassBuilder.create().add('flex', 'items-center').add('flex', 'gap-4').build();
       expect(result).toBe('flex items-center gap-4');
     });
   });
@@ -55,26 +47,19 @@ describe('ClassBuilder', () => {
     });
 
     it('should add nothing when false and no fallback', () => {
-      const result = ClassBuilder.create()
-        .add('flex')
-        .when(false, 'bg-blue-600')
-        .build();
+      const result = ClassBuilder.create().add('flex').when(false, 'bg-blue-600').build();
       expect(result).toBe('flex');
     });
 
     it('should support multiple classes when true', () => {
-      const result = ClassBuilder.create()
-        .when(true, 'flex', 'items-center', 'gap-4')
-        .build();
+      const result = ClassBuilder.create().when(true, 'flex', 'items-center', 'gap-4').build();
       expect(result).toBe('flex items-center gap-4');
     });
   });
 
   describe('withPrefix', () => {
     it('should add prefix to classes', () => {
-      const result = ClassBuilder.create()
-        .withPrefix('hover:', 'bg-gray-100', 'scale-110')
-        .build();
+      const result = ClassBuilder.create().withPrefix('hover:', 'bg-gray-100', 'scale-110').build();
       expect(result).toBe('hover:bg-gray-100 hover:scale-110');
     });
   });
@@ -97,10 +82,7 @@ describe('ClassBuilder', () => {
     });
 
     it('should add active classes', () => {
-      const result = ClassBuilder.create()
-        .add('bg-blue-600')
-        .active('bg-blue-700')
-        .build();
+      const result = ClassBuilder.create().add('bg-blue-600').active('bg-blue-700').build();
       expect(result).toBe('bg-blue-600 active:bg-blue-700');
     });
 
@@ -113,10 +95,7 @@ describe('ClassBuilder', () => {
     });
 
     it('should add group-hover classes', () => {
-      const result = ClassBuilder.create()
-        .add('opacity-0')
-        .groupHover('opacity-100')
-        .build();
+      const result = ClassBuilder.create().add('opacity-0').groupHover('opacity-100').build();
       expect(result).toBe('opacity-0 group-hover:opacity-100');
     });
 
@@ -131,50 +110,32 @@ describe('ClassBuilder', () => {
 
   describe('responsive breakpoints', () => {
     it('should add sm breakpoint classes', () => {
-      const result = ClassBuilder.create()
-        .add('text-sm')
-        .sm('text-base')
-        .build();
+      const result = ClassBuilder.create().add('text-sm').sm('text-base').build();
       expect(result).toBe('text-sm sm:text-base');
     });
 
     it('should add md breakpoint classes', () => {
-      const result = ClassBuilder.create()
-        .add('flex-col')
-        .md('flex-row')
-        .build();
+      const result = ClassBuilder.create().add('flex-col').md('flex-row').build();
       expect(result).toBe('flex-col md:flex-row');
     });
 
     it('should add lg breakpoint classes', () => {
-      const result = ClassBuilder.create()
-        .add('hidden')
-        .lg('block')
-        .build();
+      const result = ClassBuilder.create().add('hidden').lg('block').build();
       expect(result).toBe('hidden lg:block');
     });
 
     it('should add xl breakpoint classes', () => {
-      const result = ClassBuilder.create()
-        .add('max-w-md')
-        .xl('max-w-lg')
-        .build();
+      const result = ClassBuilder.create().add('max-w-md').xl('max-w-lg').build();
       expect(result).toBe('max-w-md xl:max-w-lg');
     });
 
     it('should add 2xl breakpoint classes', () => {
-      const result = ClassBuilder.create()
-        .add('px-4')
-        .xl2('px-8')
-        .build();
+      const result = ClassBuilder.create().add('px-4').xl2('px-8').build();
       expect(result).toBe('px-4 2xl:px-8');
     });
 
     it('should add custom breakpoint classes', () => {
-      const result = ClassBuilder.create()
-        .add('hidden')
-        .responsive('3xl', 'block')
-        .build();
+      const result = ClassBuilder.create().add('hidden').responsive('3xl', 'block').build();
       expect(result).toBe('hidden 3xl:block');
     });
   });
@@ -196,7 +157,9 @@ describe('ClassBuilder', () => {
         .dark('bg-gray-900')
         .md('flex-row')
         .build();
-      expect(result).toBe('flex items-center gap-4 p-6 bg-white hover:bg-gray-100 dark:bg-gray-900 md:flex-row');
+      expect(result).toBe(
+        'flex items-center gap-4 p-6 bg-white hover:bg-gray-100 dark:bg-gray-900 md:flex-row',
+      );
     });
   });
 });
@@ -207,7 +170,9 @@ describe('joinClasses', () => {
   });
 
   it('should filter null and undefined', () => {
-    expect(joinClasses('flex', null, 'items-center', undefined, 'gap-4')).toBe('flex items-center gap-4');
+    expect(joinClasses('flex', null, 'items-center', undefined, 'gap-4')).toBe(
+      'flex items-center gap-4',
+    );
   });
 
   it('should filter empty strings', () => {

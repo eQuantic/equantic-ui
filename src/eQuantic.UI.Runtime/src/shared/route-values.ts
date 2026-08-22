@@ -17,10 +17,7 @@ import { getCurrentRoute, routeData, type RouteData } from '../router/current-ro
 export class RouteValues {
   private readonly data: RouteData;
 
-  constructor(
-    parameters?: Record<string, string> | null,
-    query?: Record<string, string> | null,
-  ) {
+  constructor(parameters?: Record<string, string> | null, query?: Record<string, string> | null) {
     this.data = routeData(parameters ?? {}, query ?? {});
   }
 

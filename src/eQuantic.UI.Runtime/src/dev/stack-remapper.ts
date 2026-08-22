@@ -139,16 +139,18 @@ export async function remapFramesToCSharp(
     }
 
     const original = consumers.get(name)?.originalPositionFor(frame.line, frame.column) ?? null;
-    result.push(original
-      ? {
-          func: original.name ?? frame.func,
-          file: original.source,
-          line: original.line,
-          column: original.column,
-          mapped: true,
-          sourceContent: original.sourceContent,
-        }
-      : frame);
+    result.push(
+      original
+        ? {
+            func: original.name ?? frame.func,
+            file: original.source,
+            line: original.line,
+            column: original.column,
+            mapped: true,
+            sourceContent: original.sourceContent,
+          }
+        : frame,
+    );
   }
   return result;
 }

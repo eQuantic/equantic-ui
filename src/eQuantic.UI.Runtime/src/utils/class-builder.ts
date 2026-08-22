@@ -40,7 +40,6 @@ export class ClassBuilder {
     return this;
   }
 
-
   /**
    * Conditionally adds classes if the condition is true.
    *
@@ -180,7 +179,7 @@ export class ClassBuilder {
  * // => "flex items-center gap-4"
  */
 export function joinClasses(...classes: (string | null | undefined)[]): string {
-  return classes.filter(c => c && c.trim()).join(' ');
+  return classes.filter((c) => c && c.trim()).join(' ');
 }
 
 /**
@@ -192,7 +191,7 @@ export function joinClasses(...classes: (string | null | undefined)[]): string {
 export function whenClass(
   condition: boolean,
   className?: string,
-  fallback?: string
+  fallback?: string,
 ): string | undefined {
   return condition ? className : fallback;
 }

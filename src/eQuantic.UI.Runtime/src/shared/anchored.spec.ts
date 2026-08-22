@@ -46,7 +46,10 @@ describe('anchored lowering (C# cross-pin)', () => {
 
   it('dismissible gets a REAL scrim pressable before the panel', () => {
     let dismissed = false;
-    const host = lowerVisualNode(anchored({ open: true, onDismiss: () => (dismissed = true) }), ctx);
+    const host = lowerVisualNode(
+      anchored({ open: true, onDismiss: () => (dismissed = true) }),
+      ctx,
+    );
     expect(host.children).toHaveLength(3);
     const scrim = host.children[1] as {
       tag: string;
@@ -76,7 +79,6 @@ describe('anchored lowering (C# cross-pin)', () => {
     expect(panel.attributes['class']).toMatch(/^eq-anchor-panel eq-anchor-t-center /);
   });
 });
-
 
 /**
  * Escape closes an open panel — the native twin registers the identical binding while it is open.

@@ -100,9 +100,7 @@ export function matchPattern(pattern: string, path: string): Record<string, stri
  * ones so a literal like `/users/new` wins over `/users/{id}`.
  */
 export function matchRoute(routes: readonly RouteEntry[], path: string): RouteMatch | null {
-  const ordered = [...routes].sort(
-    (a, b) => paramCount(a.pattern) - paramCount(b.pattern),
-  );
+  const ordered = [...routes].sort((a, b) => paramCount(a.pattern) - paramCount(b.pattern));
   for (const route of ordered) {
     const params = matchPattern(route.pattern, path);
     if (params !== null) return { page: route.page, title: route.title, params };

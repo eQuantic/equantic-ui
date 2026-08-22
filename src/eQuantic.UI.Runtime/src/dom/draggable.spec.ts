@@ -32,10 +32,10 @@ describe('draggable controller', () => {
     surface.setAttribute('data-eq-drag-min', '-96');
     surface.setAttribute('data-eq-drag-max', '0');
     surface.setAttribute('data-eq-drag-rest', '0');
-    surface.addEventListener('eq-drag-released', e =>
+    surface.addEventListener('eq-drag-released', (e) =>
       released.push((e as CustomEvent<number>).detail),
     );
-    surface.addEventListener('eq-drag-moved', e => moved.push((e as CustomEvent<number>).detail));
+    surface.addEventListener('eq-drag-moved', (e) => moved.push((e as CustomEvent<number>).detail));
     installDraggableController();
   });
 
@@ -90,8 +90,7 @@ describe('draggable controller', () => {
 
   it('reports a fraction of its own extent when the gesture is normalized', () => {
     // A slider's track is fluid: the component cannot know its pixel width, and the DOM can.
-    surface.getBoundingClientRect = () =>
-      ({ width: 200, height: 40, left: 0, top: 0 }) as DOMRect;
+    surface.getBoundingClientRect = () => ({ width: 200, height: 40, left: 0, top: 0 }) as DOMRect;
     surface.setAttribute('data-eq-drag-normalized', '1');
     surface.setAttribute('data-eq-drag-min', '0');
     surface.setAttribute('data-eq-drag-max', '1');

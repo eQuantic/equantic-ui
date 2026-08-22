@@ -623,11 +623,19 @@ export interface CodeSurfaceNode extends VisualNodeValue {
 
 /** What the surface needs from the controller — the transpiled class satisfies it structurally. */
 export interface CodeEditorLike {
-  readonly selection: { anchor: CodePositionLike; focus: CodePositionLike; isEmpty: boolean;
-    start: CodePositionLike; end: CodePositionLike };
+  readonly selection: {
+    anchor: CodePositionLike;
+    focus: CodePositionLike;
+    isEmpty: boolean;
+    start: CodePositionLike;
+    end: CodePositionLike;
+  };
   readonly caret: CodePositionLike;
-  readonly document: { lineCount: number; line(index: number): string;
-    clamp(position: CodePositionLike): CodePositionLike };
+  readonly document: {
+    lineCount: number;
+    line(index: number): string;
+    clamp(position: CodePositionLike): CodePositionLike;
+  };
   readOnly: boolean;
   type(c: string): boolean;
   selectWord(at: CodePositionLike): void;

@@ -12,7 +12,10 @@ const marker = (): VisualNodeValue =>
     style: { width: { kind: 'fixed', value: 10 }, height: { kind: 'fixed', value: 10 } },
   }) as unknown as VisualNodeValue;
 
-function shortcut(chord: { key: string; modifiers?: number }, onPressed: () => void): VisualNodeValue {
+function shortcut(
+  chord: { key: string; modifiers?: number },
+  onPressed: () => void,
+): VisualNodeValue {
   return {
     nodeKind: 'shortcut',
     child: marker(),
@@ -29,25 +32,37 @@ describe('S8 shortcuts (C# cross-pin)', () => {
   beforeEach(() => resetShortcuts());
 
   it('marks the child with the chord and leaves the tree shape alone', () => {
-    const node = lowerVisualNode(shortcut({ key: 'k', modifiers: 4 }, () => {}), ctx);
+    const node = lowerVisualNode(
+      shortcut({ key: 'k', modifiers: 4 }, () => {}),
+      ctx,
+    );
     // Layout-transparent: the CHILD is what lowered — no wrapper element.
     expect(node.tag).toBe('div');
     expect(node.attributes['data-eq-shortcut']).toBe('command+k');
   });
 
   it('modifiers serialize in the fixed C# order', () => {
-    const node = lowerVisualNode(shortcut({ key: 'K', modifiers: 4 | 1 }, () => {}), ctx);
+    const node = lowerVisualNode(
+      shortcut({ key: 'K', modifiers: 4 | 1 }, () => {}),
+      ctx,
+    );
     expect(node.attributes['data-eq-shortcut']).toBe('command+shift+k');
   });
 
   it('a bare key needs no modifier prefix', () => {
-    const node = lowerVisualNode(shortcut({ key: 'Escape' }, () => {}), ctx);
+    const node = lowerVisualNode(
+      shortcut({ key: 'Escape' }, () => {}),
+      ctx,
+    );
     expect(node.attributes['data-eq-shortcut']).toBe('escape');
   });
 
   it('declarations go live when the pass commits — and unmounting drops them', () => {
     let fired = 0;
-    lowerVisualNode(shortcut({ key: 'Escape' }, () => fired++), ctx);
+    lowerVisualNode(
+      shortcut({ key: 'Escape' }, () => fired++),
+      ctx,
+    );
     commitShortcuts();
     expect(activeShortcuts()).toHaveLength(1);
     activeShortcuts()[0].handler();

@@ -12,9 +12,8 @@ describe('S5 hoverable lowering (C# cross-pin)', () => {
   it('wires mouseenter/mouseleave to the boolean callback', () => {
     const log: boolean[] = [];
     const node = lowerVisualNode(
-      new Hoverable(
-        new Box(new BoxStyle({ width: 10, height: 10 })),
-        (entered) => log.push(entered),
+      new Hoverable(new Box(new BoxStyle({ width: 10, height: 10 })), (entered) =>
+        log.push(entered),
       ) as unknown as VisualNodeValue,
       ctx,
     );

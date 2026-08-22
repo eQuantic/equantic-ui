@@ -10,7 +10,10 @@ const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
 describe('cameraPreview lowering (C# cross-pin)', () => {
   it('without a session it is the placeholder div — which is every SSR', () => {
     const node: CameraPreviewNode = {
-      nodeKind: 'cameraPreview', session: null, width: 320, height: 240,
+      nodeKind: 'cameraPreview',
+      session: null,
+      width: 320,
+      height: 240,
     };
     const html = lowerVisualNode(node, ctx);
     expect(html.tag).toBe('div');
@@ -18,7 +21,10 @@ describe('cameraPreview lowering (C# cross-pin)', () => {
 
   it('with one, a muted autoplaying video carrying the session id', () => {
     const node: CameraPreviewNode = {
-      nodeKind: 'cameraPreview', session: { id: 'cam-1' }, width: 320, height: 240,
+      nodeKind: 'cameraPreview',
+      session: { id: 'cam-1' },
+      width: 320,
+      height: 240,
     };
     const html = lowerVisualNode(node, ctx);
     expect(html.tag).toBe('video');

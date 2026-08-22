@@ -51,7 +51,9 @@ describe('UI factories (no-new authoring twin)', () => {
   });
 
   it('the factory tree renders through the same lowering as constructed nodes', () => {
-    const factoryNode = UI.column(8, 'start', 'stretch', false, null, null, [UI.text('hello', 'bodyM')]).render();
+    const factoryNode = UI.column(8, 'start', 'stretch', false, null, null, [
+      UI.text('hello', 'bodyM'),
+    ]).render();
     const constructed = (() => {
       const column = new Column(8);
       column.add(new Text('hello', 'bodyM'));

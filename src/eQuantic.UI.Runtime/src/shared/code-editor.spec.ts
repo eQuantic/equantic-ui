@@ -102,7 +102,10 @@ describe('code surface (web)', () => {
         lineHeight: LINE,
         columnWidth: COLUMN,
       }) as never,
-      { textPrimary: photonTheme.textPrimary, componentContext: { theme: photonTheme, typeScale: 1 } },
+      {
+        textPrimary: photonTheme.textPrimary,
+        componentContext: { theme: photonTheme, typeScale: 1 },
+      },
     );
 
     const caret = node.children.find((c) => c.attributes['class'] === 'eq-code-caret')!;
@@ -125,7 +128,10 @@ describe('code surface (web)', () => {
         lineHeight: LINE,
         columnWidth: COLUMN,
       }) as never,
-      { textPrimary: photonTheme.textPrimary, componentContext: { theme: photonTheme, typeScale: 1 } },
+      {
+        textPrimary: photonTheme.textPrimary,
+        componentContext: { theme: photonTheme, typeScale: 1 },
+      },
     );
 
     const bands = node.children.filter((c) => c.attributes['class'] === 'eq-code-selection');
@@ -212,7 +218,7 @@ describe('the tokenizers, running in the browser', () => {
     const tokens: unknown[] = [];
     CodeLanguages.cSharp.tokenize('public static string Name() => "hi";', 0, tokens as never);
 
-    const kinds = (tokens as { start: number; end: number; kind: string }[]);
+    const kinds = tokens as { start: number; end: number; kind: string }[];
     expect(kinds.find((t) => t.start === 0)!.kind).toBe('keyword');
     expect(kinds.find((t) => t.start === 14)!.kind).toBe('type');
     expect(kinds.find((t) => t.start === 21)!.kind).toBe('function');
@@ -275,7 +281,10 @@ describe('components centre like nodes', () => {
   it('a component exposes centered() the way the vocabulary does', async () => {
     const { Card } = await import('./components/Card');
     const { Text } = await import('./vocabulary');
-    const centred = new Card(new Text('hi') as never).centered() as { nodeKind: string; children: unknown[] };
+    const centred = new Card(new Text('hi') as never).centered() as {
+      nodeKind: string;
+      children: unknown[];
+    };
     expect(centred.nodeKind).toBe('row');
     expect(centred.children).toHaveLength(1);
   });
@@ -299,7 +308,10 @@ describe('the marks are painted, not merely placed', () => {
         caretColor,
         selectionColor,
       }) as never,
-      { textPrimary: photonTheme.textPrimary, componentContext: { theme: photonTheme, typeScale: 1 } },
+      {
+        textPrimary: photonTheme.textPrimary,
+        componentContext: { theme: photonTheme, typeScale: 1 },
+      },
     );
   };
 
@@ -311,7 +323,10 @@ describe('the marks are painted, not merely placed', () => {
   });
 
   it('paints the caret with the NODE ink — an inverse slab writes with its own', () => {
-    const ink = { light: { r: 0xc9, g: 0xd4, b: 0xde, a: 255 }, dark: { r: 0xc9, g: 0xd4, b: 0xde, a: 255 } };
+    const ink = {
+      light: { r: 0xc9, g: 0xd4, b: 0xde, a: 255 },
+      dark: { r: 0xc9, g: 0xd4, b: 0xde, a: 255 },
+    };
 
     // A page theme's TextPrimary is nearly black; on the playground's dark slab that caret is the
     // slab. The colour has to ride the node, which is what makes it right on both targets.
@@ -319,10 +334,15 @@ describe('the marks are painted, not merely placed', () => {
   });
 
   it('washes the selection band to 28% — the C# SelectionAlpha twin', () => {
-    const blue = { light: { r: 0x00, g: 0x50, b: 0xa0, a: 255 }, dark: { r: 0x00, g: 0x50, b: 0xa0, a: 255 } };
+    const blue = {
+      light: { r: 0x00, g: 0x50, b: 0xa0, a: 255 },
+      dark: { r: 0x00, g: 0x50, b: 0xa0, a: 255 },
+    };
 
     // 255 × 0.28 = 71.4 → 71 = 0x47. The text reads THROUGH the band; an opaque one hides the line
     // you just selected.
-    expect(styleOf(surfaceWith(undefined, blue), 'eq-code-selection')).toContain('background-color:#0050a047');
+    expect(styleOf(surfaceWith(undefined, blue), 'eq-code-selection')).toContain(
+      'background-color:#0050a047',
+    );
   });
 });

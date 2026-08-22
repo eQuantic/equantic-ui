@@ -11,7 +11,9 @@ import { describe, expect, it } from 'vitest';
 import { SharedCounter } from './__transpiled__/SharedCounter';
 
 const nextFrame = () =>
-  new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
 
 describe('transpiled SharedCounter (real eqc output, direct-SetState shape)', () => {
   it('mounts, increments through the lowered click, and re-renders the count', async () => {

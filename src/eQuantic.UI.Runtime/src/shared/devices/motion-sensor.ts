@@ -36,9 +36,11 @@ export class WebMotionSensor {
   private handler: ((e: DeviceMotionEvent) => void) | null = null;
 
   get isAvailable(): boolean {
-    return typeof window !== 'undefined'
-      && typeof DeviceMotionEvent !== 'undefined'
-      && (typeof navigator === 'undefined' || (navigator.maxTouchPoints ?? 0) > 0);
+    return (
+      typeof window !== 'undefined' &&
+      typeof DeviceMotionEvent !== 'undefined' &&
+      (typeof navigator === 'undefined' || (navigator.maxTouchPoints ?? 0) > 0)
+    );
   }
 
   subscribe(onReading: (reading: MotionReadingValue) => void): Subscription {
@@ -64,9 +66,14 @@ export class WebMotionSensor {
     const gate = (DeviceMotionEvent as unknown as { requestPermission?: () => Promise<string> })
       .requestPermission;
     if (typeof gate === 'function') {
-      gate.call(DeviceMotionEvent).then((answer) => {
-        if (answer === 'granted') attach();
-      }).catch(() => { /* asked outside a user gesture: Safari said no, and meant it */ });
+      gate
+        .call(DeviceMotionEvent)
+        .then((answer) => {
+          if (answer === 'granted') attach();
+        })
+        .catch(() => {
+          /* asked outside a user gesture: Safari said no, and meant it */
+        });
     } else {
       attach();
     }
@@ -101,6 +108,9 @@ export class WebMotionSensor {
   }
 }
 
-function vector(v: DeviceMotionEventAcceleration | null | undefined, divisor: number): MotionVectorValue {
+function vector(
+  v: DeviceMotionEventAcceleration | null | undefined,
+  divisor: number,
+): MotionVectorValue {
   return { x: (v?.x ?? 0) / divisor, y: (v?.y ?? 0) / divisor, z: (v?.z ?? 0) / divisor };
 }

@@ -27,7 +27,9 @@ export function attachCameraStreams(): void {
     const stream = streams.get(video.dataset.eqCamera ?? '');
     if (stream && video.srcObject !== stream) {
       video.srcObject = stream;
-      void video.play().catch(() => { /* autoplay policies; muted video is allowed everywhere */ });
+      void video.play().catch(() => {
+        /* autoplay policies; muted video is allowed everywhere */
+      });
     }
   }
 }

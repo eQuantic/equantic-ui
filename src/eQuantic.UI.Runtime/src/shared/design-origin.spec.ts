@@ -35,9 +35,7 @@ describe('design-mode origin (C# cross-pin)', () => {
   it('without an origin nothing is emitted', () => {
     // Production is every build where nothing set an origin. An empty `data-eq-origin=""` would
     // still be an attribute the C# producer does not write.
-    expect(originsOf(lowerVisualNode(node({}), ctx))).toEqual(
-      expect.arrayContaining([undefined]),
-    );
+    expect(originsOf(lowerVisualNode(node({}), ctx))).toEqual(expect.arrayContaining([undefined]));
     expect(originsOf(lowerVisualNode(node({}), ctx)).filter(Boolean)).toHaveLength(0);
   });
 

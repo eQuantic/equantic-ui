@@ -19,10 +19,20 @@ describe('S1 style lowering (C# cross-pin)', () => {
 
   it('transform emits the ordered list, only non-neutral parts', () => {
     const full = lowerVisualNode(
-      box({ transform: { translateX: 4, translateY: -2, rotationDegrees: 8, scaleX: 1.05, scaleY: 1.05 } }),
+      box({
+        transform: {
+          translateX: 4,
+          translateY: -2,
+          rotationDegrees: 8,
+          scaleX: 1.05,
+          scaleY: 1.05,
+        },
+      }),
       ctx,
     );
-    expect(effectiveStyle(full)).toContain('transform: translate(4px, -2px) rotate(8deg) scale(1.05)');
+    expect(effectiveStyle(full)).toContain(
+      'transform: translate(4px, -2px) rotate(8deg) scale(1.05)',
+    );
 
     const rotateOnly = lowerVisualNode(box({ transform: { rotationDegrees: 90 } }), ctx);
     const style = effectiveStyle(rotateOnly);
@@ -33,7 +43,9 @@ describe('S1 style lowering (C# cross-pin)', () => {
 
   it('aspect-ratio lowers to the CSS declaration', () => {
     expect(
-      effectiveStyle(lowerVisualNode(box({ aspectRatio: 16 / 9, width: { kind: 'fill', value: 0 } }), ctx)),
+      effectiveStyle(
+        lowerVisualNode(box({ aspectRatio: 16 / 9, width: { kind: 'fill', value: 0 } }), ctx),
+      ),
     ).toContain('aspect-ratio: 1.7778');
   });
 
@@ -46,7 +58,10 @@ describe('S1 style lowering (C# cross-pin)', () => {
       children: [
         box({ width: { kind: 'fixed', value: 10 }, height: { kind: 'fixed', value: 10 } }),
         {
-          ...(box({ width: { kind: 'fixed', value: 10 }, height: { kind: 'fixed', value: 10 } }) as object),
+          ...(box({
+            width: { kind: 'fixed', value: 10 },
+            height: { kind: 'fixed', value: 10 },
+          }) as object),
           alignSelf: 'start',
         } as VisualNodeValue,
       ],

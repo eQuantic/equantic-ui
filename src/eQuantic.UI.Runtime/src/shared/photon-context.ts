@@ -125,7 +125,8 @@ let measuring: CanvasRenderingContext2D | null | undefined;
 /** One canvas for the whole page — creating one per call is how a measurer becomes the slow part. */
 function measuringContext(): CanvasRenderingContext2D | null {
   if (measuring !== undefined) return measuring;
-  measuring = typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d');
+  measuring =
+    typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d');
   return measuring;
 }
 

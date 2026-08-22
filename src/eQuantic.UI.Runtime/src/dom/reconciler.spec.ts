@@ -366,7 +366,7 @@ describe('Reconciler event contracts', () => {
     input.click();
 
     expect(clicks).toBe(1);
-    expect(input.checked).toBe(true, );
+    expect(input.checked).toBe(true);
 
     parent.remove();
   });

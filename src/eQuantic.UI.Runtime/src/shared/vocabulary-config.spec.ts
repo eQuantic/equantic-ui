@@ -57,7 +57,10 @@ function declaredArity(Klass: { toString(): string }): number {
 const abstractBases = new Set(['VisualNode', 'FlexNode']);
 
 const classes = (Object.entries(vocabulary) as [string, unknown][])
-  .filter(([name, value]) => typeof value === 'function' && /^class/.test(String(value)) && !abstractBases.has(name))
+  .filter(
+    ([name, value]) =>
+      typeof value === 'function' && /^class/.test(String(value)) && !abstractBases.has(name),
+  )
   .map(([name, value]) => [name, value as new (...args: unknown[]) => unknown] as const);
 
 describe('vocabulary twins accept the trailing config eqc emits', () => {

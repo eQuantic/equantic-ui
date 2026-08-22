@@ -89,7 +89,9 @@ describe('S6 transitions (C# cross-pin)', () => {
       ctx,
     );
 
-    expect(classesOf(node)).toContain(transitionClass('opacity 100ms cubic-bezier(0, 0, 0, 1) 40ms'));
+    expect(classesOf(node)).toContain(
+      transitionClass('opacity 100ms cubic-bezier(0, 0, 0, 1) 40ms'),
+    );
   });
 
   it('a gradient via midpoint lands as the third stop at its position', () => {
@@ -130,7 +132,9 @@ describe('anchored motion (C# cross-pin)', () => {
     );
 
     expect(host.children).toHaveLength(2);
-    const panel = host.children[host.children.length - 1] as { attributes: Record<string, string | undefined> };
+    const panel = host.children[host.children.length - 1] as {
+      attributes: Record<string, string | undefined>;
+    };
     const classes = classesOf(panel);
     expect(classes).toContain(`eq-${hashDeclaration('opacity:0')}`);
     expect(classes).toContain(`eq-${hashDeclaration('visibility:hidden')}`);
@@ -150,7 +154,9 @@ describe('anchored motion (C# cross-pin)', () => {
       ctx,
     );
 
-    const panel = host.children[host.children.length - 1] as { attributes: Record<string, string | undefined> };
+    const panel = host.children[host.children.length - 1] as {
+      attributes: Record<string, string | undefined>;
+    };
     const classes = classesOf(panel);
     expect(classes).not.toContain(`eq-${hashDeclaration('opacity:0')}`);
     expect(classes).not.toContain(`eq-${hashDeclaration('visibility:hidden')}`);

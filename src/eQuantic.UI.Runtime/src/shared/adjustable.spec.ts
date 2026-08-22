@@ -11,7 +11,11 @@ describe('adjustable lowering (C# cross-pin)', () => {
   function lower(onAdjust?: (d: number) => void, role?: AdjustableNode['role']) {
     const node: AdjustableNode = {
       nodeKind: 'adjustable',
-      child: { nodeKind: 'text', content: 'knob', role: 'label' } as unknown as AdjustableNode['child'],
+      child: {
+        nodeKind: 'text',
+        content: 'knob',
+        role: 'label',
+      } as unknown as AdjustableNode['child'],
       label: 'Budget',
       onAdjust,
       ...(role ? { role } : {}),
@@ -38,10 +42,10 @@ describe('adjustable lowering (C# cross-pin)', () => {
     press('ArrowRight');
     press('ArrowUp');
     press('ArrowLeft');
-    press('Enter');   // not the adjustable's key: untouched, unprevented
+    press('Enter'); // not the adjustable's key: untouched, unprevented
 
     expect(seen).toEqual([1, 1, -1]);
-    expect(prevented).toBe(3, );
+    expect(prevented).toBe(3);
   });
 
   it('a radiogroup reads DOWN as next — reading order, not value', () => {

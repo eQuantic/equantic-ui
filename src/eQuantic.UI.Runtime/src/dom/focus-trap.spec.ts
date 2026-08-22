@@ -155,7 +155,10 @@ describe('§10 preferred initial focus', () => {
     resetFocusTraps();
     // The controller hops one rAF before focusing (a fading-in layer is not focusable until the
     // style lands); a synchronous stub lets these tests observe the LANDING, which is their point.
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0; });
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
   });
 
   afterEach(() => vi.unstubAllGlobals());

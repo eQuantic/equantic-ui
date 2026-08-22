@@ -41,7 +41,10 @@ export type GuardResult = boolean | string | void;
  * leaves the URL untouched. Receives the pending navigation and the current location. May be async (e.g.
  * to check an auth token). Guards run in registration order; the first to cancel or redirect wins.
  */
-export type NavigationGuard = (to: PendingNavigation, from: URL) => GuardResult | Promise<GuardResult>;
+export type NavigationGuard = (
+  to: PendingNavigation,
+  from: URL,
+) => GuardResult | Promise<GuardResult>;
 
 export interface RouterOptions {
   routes: readonly RouteEntry[];
@@ -190,7 +193,11 @@ export class Router {
     return this.goForwardGuarded(match, url, keepPosition);
   }
 
-  private async goForwardGuarded(match: RouteMatch, url: URL, keepPosition: boolean): Promise<void> {
+  private async goForwardGuarded(
+    match: RouteMatch,
+    url: URL,
+    keepPosition: boolean,
+  ): Promise<void> {
     const decision = await this.runGuards(match, url);
     if (decision === false) return; // cancelled — leave the URL untouched
     if (typeof decision === 'string') {

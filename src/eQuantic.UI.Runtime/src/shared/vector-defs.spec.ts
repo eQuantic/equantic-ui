@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { Drawing, VectorDrawing, VectorPaint, VectorShape, VectorGradient, VectorStop } from './vocabulary';
+import {
+  Drawing,
+  VectorDrawing,
+  VectorPaint,
+  VectorShape,
+  VectorGradient,
+  VectorStop,
+} from './vocabulary';
 import type { HtmlNode } from '../core/types';
 
 /**
@@ -45,7 +52,10 @@ describe('gradient definitions belong to the document', () => {
   it('leaves the drawing itself without defs, so no arm can own the document"s', () => {
     const svg = new Drawing(sky(), 100, 100).render() as HtmlNode;
 
-    const walk = (node: HtmlNode): HtmlNode[] => [node, ...node.children.flatMap((c) => walk(c as HtmlNode))];
+    const walk = (node: HtmlNode): HtmlNode[] => [
+      node,
+      ...node.children.flatMap((c) => walk(c as HtmlNode)),
+    ];
     expect(walk(svg).filter((n) => n.tag === 'defs')).toHaveLength(0);
     // …and the shape still names the run, which is the half that must not change.
     const path = walk(svg).find((n) => n.tag === 'path')!;

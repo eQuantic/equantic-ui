@@ -41,9 +41,9 @@ describe('matchPattern / matchRoute', () => {
     expect(matchRoute(intRoutes, '/users/abc')).toBeNull();
     const guidRoutes: RouteEntry[] = [{ pattern: '/t/{id:guid}', page: 'T' }];
     expect(matchRoute(guidRoutes, '/t/123')).toBeNull();
-    expect(
-      matchRoute(guidRoutes, '/t/3f2504e0-4f89-41d3-9a0c-0305e82c3301')?.params.id,
-    ).toBe('3f2504e0-4f89-41d3-9a0c-0305e82c3301');
+    expect(matchRoute(guidRoutes, '/t/3f2504e0-4f89-41d3-9a0c-0305e82c3301')?.params.id).toBe(
+      '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+    );
   });
 
   it('accepts unknown constraints (server validates)', () => {
@@ -144,7 +144,12 @@ describe('Router (happy-dom)', () => {
 
   it('ignores modified clicks (ctrl/meta/shift/alt, non-left button)', () => {
     const a = anchor({ href: '/counter' });
-    const e = new window.MouseEvent('click', { bubbles: true, cancelable: true, button: 0, metaKey: true });
+    const e = new window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      metaKey: true,
+    });
     a.dispatchEvent(e);
     expect(e.defaultPrevented).toBe(false);
     expect(onNavigate).not.toHaveBeenCalled();

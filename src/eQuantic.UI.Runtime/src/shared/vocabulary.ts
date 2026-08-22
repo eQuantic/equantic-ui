@@ -59,11 +59,15 @@ export abstract class VisualNode {
    * A Box has no alignment of its own, and centring needs slack, so the wrapper fills both axes.
    */
   centered(): VisualNode {
-    const row = new Row(0, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
+    const row = new Row(0, {
+      width: SizeValue.fill,
+      height: SizeValue.fill,
+      main: 'center',
+      cross: 'center',
+    });
     row.add(this);
     return row;
   }
-
 }
 
 /**
@@ -107,12 +111,17 @@ export class TextRun {
   /** The SLANTED cut for this run (C# `TextRun.Italic`) — markdown's `*single asterisk*`. */
   italic = false;
 
-  constructor(content: string, color: ColorTokenValue | null = null, mono = false, config?: EqConfig) {
+  constructor(
+    content: string,
+    color: ColorTokenValue | null = null,
+    mono = false,
+    config?: EqConfig,
+  ) {
     this.content = content;
     this.color = color;
     this.mono = mono;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 }
 
 /** Mirror of the C# `ShadowSpec` record struct — positional constructor, like the transpiler emits. */
@@ -127,8 +136,8 @@ export class ShadowSpec {
     this.blur = blur;
     this.spread = spread;
     this.color = color as ColorTokenValue;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 }
 
 interface BoxStyleConfig {
@@ -223,12 +232,16 @@ export class Box extends VisualNode {
   style: BoxStyle;
   child: VisualChild | null;
 
-  constructor(style: BoxStyle = new BoxStyle(), child: VisualChild | null = null, config?: EqConfig) {
+  constructor(
+    style: BoxStyle = new BoxStyle(),
+    child: VisualChild | null = null,
+    config?: EqConfig,
+  ) {
     super();
     this.style = style;
     this.child = child;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 }
 
 interface FlexConfig {
@@ -773,8 +786,8 @@ export class Hoverable extends VisualNode {
     super();
     this.child = child;
     this.onChanged = onChanged;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 }
 
 /** Mirror of the C# `Overlay` (Phase C): the viewport layer above the page. */
@@ -820,8 +833,8 @@ export class Presence extends VisualNode {
     super();
     this.child = child;
     this.enter = enter;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 }
 
 /** Navigation semantics: the child becomes a link to destination — the child owns all visuals. */
@@ -857,8 +870,8 @@ export class DragDismiss extends VisualNode {
     super();
     this.child = child;
     this.onDismiss = onDismiss;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 }
 
 interface TextEntryConfig {
@@ -925,8 +938,8 @@ export class KeyChord {
   constructor(key: string, modifiers = 0, config?: EqConfig) {
     this.key = key;
     this.modifiers = modifiers;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 
   /** C# twin: `KeyChord.Command("k")` — ⌘K on Apple, Ctrl+K elsewhere. */
   static command(key: string): KeyChord {
@@ -956,13 +969,18 @@ export class Shortcut extends VisualNode {
   chord: KeyChord;
   onPressed: (() => void) | null;
 
-  constructor(child: VisualChild, chord: KeyChord, onPressed: (() => void) | null = null, config?: EqConfig) {
+  constructor(
+    child: VisualChild,
+    chord: KeyChord,
+    onPressed: (() => void) | null = null,
+    config?: EqConfig,
+  ) {
     super();
     this.child = child;
     this.chord = chord;
     this.onPressed = onPressed;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 }
 
 /** Mirror of the C# `LinearGradient` record: two token stops on a straight axis (engine fence),
@@ -1022,7 +1040,10 @@ export class TransitionSpec {
   }
 
   /** C# twin: `TransitionSpec.Of(channels, Motion.Press)` — a NAMED role, duration AND curve. */
-  static of(channels: number, motion: { durationMs: number; curve: readonly number[] }): TransitionSpec {
+  static of(
+    channels: number,
+    motion: { durationMs: number; curve: readonly number[] },
+  ): TransitionSpec {
     return new TransitionSpec(channels, motion.durationMs, 0, { easing: motion.curve });
   }
 
@@ -1062,8 +1083,8 @@ export class GridPattern {
     this.cell = cell;
     this.color = color;
     this.lineWidth = lineWidth;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 }
 
 interface LoopMotionConfig {
@@ -1114,7 +1135,9 @@ export class ScrollView extends VisualNode {
     child: VisualChild,
     axis = 'vertical',
     config?: {
-      width?: SizeValue | number; height?: SizeValue | number; offset?: number;
+      width?: SizeValue | number;
+      height?: SizeValue | number;
+      offset?: number;
       onScrolled?: ((offset: number) => void) | null;
       onViewportChanged?: ((height: number) => void) | null;
     },
@@ -1242,14 +1265,21 @@ export class IconGlyph {
   viewBox: string;
   strokeWidth: number;
 
-  constructor(name: string, path: string, style = 'fill', viewBox = '0 0 24 24', strokeWidth = 2, config?: EqConfig) {
+  constructor(
+    name: string,
+    path: string,
+    style = 'fill',
+    viewBox = '0 0 24 24',
+    strokeWidth = 2,
+    config?: EqConfig,
+  ) {
     this.name = name;
     this.path = path;
     this.style = style;
     this.viewBox = viewBox;
     this.strokeWidth = strokeWidth;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 }
 
 export class Icon extends VisualNode {
@@ -1411,7 +1441,9 @@ export class VectorPaint {
 
   /** Whether this paint is a run of colours rather than one. */
   isGradient(): boolean {
-    return (this.kind === 'linearGradient' || this.kind === 'radialGradient') && this.gradient !== null;
+    return (
+      (this.kind === 'linearGradient' || this.kind === 'radialGradient') && this.gradient !== null
+    );
   }
 }
 
@@ -1602,8 +1634,8 @@ export class Spinner extends VisualNode {
     super();
     this.size = size;
     this.color = color;
-      if (config) Object.assign(this, config);
-    }
+    if (config) Object.assign(this, config);
+  }
 }
 
 export class Spacer extends VisualNode {
@@ -1631,8 +1663,13 @@ export class Spacer extends VisualNode {
 // A COMPONENT centres like any other node: in C# `Centered()` is an extension on VisualNode and a
 // component is one, so the same call has to mean the same thing here. The vocabulary hands the
 // core the wrapper's shape at import time rather than being imported by it (no evaluation cycle).
-setCenterWrapper(child => {
-  const row = new Row(0, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
+setCenterWrapper((child) => {
+  const row = new Row(0, {
+    width: SizeValue.fill,
+    height: SizeValue.fill,
+    main: 'center',
+    cross: 'center',
+  });
   row.add(child as never);
   return row;
 });

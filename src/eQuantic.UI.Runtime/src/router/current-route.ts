@@ -19,7 +19,8 @@ export function routeData(
   const q = query instanceof URLSearchParams ? query : new URLSearchParams(query);
   return {
     params,
-    param: (name) => (Object.prototype.hasOwnProperty.call(params, name) ? params[name] : undefined),
+    param: (name) =>
+      Object.prototype.hasOwnProperty.call(params, name) ? params[name] : undefined,
     query: (name) => q.get(name) ?? undefined,
   };
 }

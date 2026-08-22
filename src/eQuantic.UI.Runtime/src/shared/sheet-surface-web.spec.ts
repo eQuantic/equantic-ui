@@ -55,7 +55,7 @@ describe('SheetSurface on the web', () => {
     key(node, 'ArrowRight', { shiftKey: true });
 
     expect(sheet.activeCell).toEqual(new CellRef(1, 1));
-    expect(sheet.selection.colCount).toBe(2, );
+    expect(sheet.selection.colCount).toBe(2);
   });
 
   it('types the Excel way: replace, append, Enter commits stepping down', () => {
@@ -98,8 +98,8 @@ describe('SheetSurface on the web', () => {
     };
 
     // jsdom's getBoundingClientRect is all zeros, so clientX/Y ARE grid coordinates.
-    mousedown({ clientX: 48, clientY: 14 });                       // A1
-    mousedown({ clientX: 96 * 2 + 48, clientY: 28 * 2 + 14, shiftKey: true });   // shift+click C3
+    mousedown({ clientX: 48, clientY: 14 }); // A1
+    mousedown({ clientX: 96 * 2 + 48, clientY: 28 * 2 + 14, shiftKey: true }); // shift+click C3
     expect(sheet.selection.topRow).toBe(0);
     expect(sheet.selection.bottomRow).toBe(2);
     expect(sheet.selection.rightCol).toBe(2);

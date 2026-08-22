@@ -8,7 +8,17 @@
 
 import { describe, expect, it } from 'vitest';
 import { SharedStatefulComponent, StatelessComponent } from '../core/component';
-import { Anchored, Box, BoxStyle, Column, Hoverable, Pressable, Row, Sticky, Text } from './vocabulary';
+import {
+  Anchored,
+  Box,
+  BoxStyle,
+  Column,
+  Hoverable,
+  Pressable,
+  Row,
+  Sticky,
+  Text,
+} from './vocabulary';
 
 const nextFrame = () =>
   new Promise<void>((resolve) =>

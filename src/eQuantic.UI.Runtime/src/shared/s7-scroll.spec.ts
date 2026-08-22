@@ -7,13 +7,19 @@ import type { VisualNodeValue } from './nodes';
 
 const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
 const box = (): VisualNodeValue =>
-  ({ nodeKind: 'box', style: { width: { kind: 'fixed', value: 10 }, height: { kind: 'fixed', value: 10 } } }) as unknown as VisualNodeValue;
+  ({
+    nodeKind: 'box',
+    style: { width: { kind: 'fixed', value: 10 }, height: { kind: 'fixed', value: 10 } },
+  }) as unknown as VisualNodeValue;
 
 /** Spec S7 client lowering — the LITERAL strings the C# S7ScrollRealizerTests pin. */
 describe('S7 scroll semantics (C# cross-pin)', () => {
   it('sticky lowers to position:sticky at the offset', () => {
     const style = effectiveStyle(
-      lowerVisualNode({ nodeKind: 'sticky', child: box(), offset: 8 } as unknown as VisualNodeValue, ctx),
+      lowerVisualNode(
+        { nodeKind: 'sticky', child: box(), offset: 8 } as unknown as VisualNodeValue,
+        ctx,
+      ),
     );
     expect(style).toContain('position: sticky');
     expect(style).toContain('top: 8px');
@@ -34,7 +40,10 @@ describe('S7 scroll semantics (C# cross-pin)', () => {
 
   it('both-axis scroll is auto on both', () => {
     const style = effectiveStyle(
-      lowerVisualNode({ nodeKind: 'scrollView', axis: 'both', child: box() } as unknown as VisualNodeValue, ctx),
+      lowerVisualNode(
+        { nodeKind: 'scrollView', axis: 'both', child: box() } as unknown as VisualNodeValue,
+        ctx,
+      ),
     );
     expect(style).toContain('overflow-x: auto');
     expect(style).toContain('overflow-y: auto');

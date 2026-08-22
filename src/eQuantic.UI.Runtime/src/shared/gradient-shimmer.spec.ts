@@ -10,7 +10,16 @@ import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode, tokenValue } from './lowering';
 import { setPhotonTheme } from './photon-context';
-import { Box, BoxStyle, Color, ColorToken, GridPattern, LinearGradient, RadialGradient, Text } from '../index';
+import {
+  Box,
+  BoxStyle,
+  Color,
+  ColorToken,
+  GridPattern,
+  LinearGradient,
+  RadialGradient,
+  Text,
+} from '../index';
 import { Skeleton } from './components/Skeleton';
 
 setPhotonTheme(photonTheme);
@@ -171,7 +180,9 @@ describe('gradient + shimmer lowering (C# GradientShimmerRealizerTests cross-pin
     );
 
     const style = effectiveStyle(node);
-    expect(style.indexOf('linear-gradient(to right')).toBeLessThan(style.indexOf('radial-gradient('));
+    expect(style.indexOf('linear-gradient(to right')).toBeLessThan(
+      style.indexOf('radial-gradient('),
+    );
     expect(style.indexOf('radial-gradient(')).toBeLessThan(style.indexOf('transparent 1px'));
     expect(style).toContain('background-size: auto, auto, 56px 56px, 56px 56px');
   });

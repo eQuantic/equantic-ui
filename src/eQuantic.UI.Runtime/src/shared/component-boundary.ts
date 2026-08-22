@@ -134,7 +134,10 @@ export function describeComponentFailure(
     gap: 10,
     main: 'start',
     cross: 'start',
-    children: [glyph, { nodeKind: 'flexible', flex: 1, child: column } as unknown as VisualNodeValue],
+    children: [
+      glyph,
+      { nodeKind: 'flexible', flex: 1, child: column } as unknown as VisualNodeValue,
+    ],
   } as FlexNodeValue;
 
   const panel: BoxNode = {

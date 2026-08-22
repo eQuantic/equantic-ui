@@ -60,12 +60,20 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
       ...(photonData as unknown as ThemeData),
       variants: {
         ...(photonData as unknown as ThemeData).variants,
-        primary: [[purple, purple], [white, white], [purple, purple], [purple, purple], [white, white]],
+        primary: [
+          [purple, purple],
+          [white, white],
+          [purple, purple],
+          [purple, purple],
+          [white, white],
+        ],
       },
     });
 
     expect(material.colors('primary').base.light).toEqual({ r: 103, g: 80, b: 164, a: 255 });
-    expect(material.colors('primary').base.light).not.toEqual(photonTheme.colors('primary').base.light);
+    expect(material.colors('primary').base.light).not.toEqual(
+      photonTheme.colors('primary').base.light,
+    );
   });
 
   it('materializeTheme returns a structurally valid AppTheme', () => {

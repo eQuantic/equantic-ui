@@ -16,7 +16,13 @@ function shell(content: HtmlNode): HtmlNode {
   };
 }
 
-const text = (s: string): HtmlNode => ({ tag: '#text', textContent: s, attributes: {}, events: {}, children: [] });
+const text = (s: string): HtmlNode => ({
+  tag: '#text',
+  textContent: s,
+  attributes: {},
+  events: {},
+  children: [],
+});
 
 describe('RenderManager.adopt — SPA-navigation persistent layout', () => {
   let container: HTMLElement;

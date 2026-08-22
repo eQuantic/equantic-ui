@@ -10,7 +10,10 @@ import { lowerVisualNode, px, tokenValue } from './lowering';
  */
 
 const rgb = (r: number, g: number, b: number, a = 255) => ({ r, g, b, a });
-const token = (light: [number, number, number], dark: [number, number, number]): ColorTokenValue => ({
+const token = (
+  light: [number, number, number],
+  dark: [number, number, number],
+): ColorTokenValue => ({
   light: rgb(...light),
   dark: rgb(...dark),
 });
@@ -75,7 +78,9 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
       gap: 8,
       main: 'spaceBetween',
       cross: 'center',
-      children: [box({ width: { kind: 'fixed', value: 20 }, height: { kind: 'fixed', value: 20 } })],
+      children: [
+        box({ width: { kind: 'fixed', value: 20 }, height: { kind: 'fixed', value: 20 } }),
+      ],
     } as VisualNodeValue;
 
     const node = lowerVisualNode(row, ctx);
@@ -353,10 +358,12 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     const component: VisualNodeValue = {
       nodeKind: 'component',
       build: () =>
-        box(
-          { background: primaryBase, height: { kind: 'fixed', value: 40 } },
-          { nodeKind: 'text', content: 'Pay', role: 'label', maxLines: 1 } as VisualNodeValue,
-        ),
+        box({ background: primaryBase, height: { kind: 'fixed', value: 40 } }, {
+          nodeKind: 'text',
+          content: 'Pay',
+          role: 'label',
+          maxLines: 1,
+        } as VisualNodeValue),
     } as VisualNodeValue;
 
     const node = lowerVisualNode(component, ctx);
@@ -377,7 +384,9 @@ describe('a fixed size does not shrink', () => {
 
   it('a fixed-width box refuses to shrink beside an overflowing sibling', () => {
     const gutter = box({ width: fixed(68) }, undefined);
-    expect(effectiveStyle(lowerVisualNode(gutter as VisualNodeValue, ctx))).toContain('flex-shrink: 0');
+    expect(effectiveStyle(lowerVisualNode(gutter as VisualNodeValue, ctx))).toContain(
+      'flex-shrink: 0',
+    );
   });
 
   it('a fixed-height row refuses to shrink in a column', () => {
@@ -395,8 +404,12 @@ describe('a fixed size does not shrink', () => {
   it('leaves HUG and FILL alone — those shrink by design (a long label ellipsizes)', () => {
     const hug = box({}, undefined);
     const fill = box({ width: { kind: 'fill' as const, value: 0 } }, undefined);
-    expect(effectiveStyle(lowerVisualNode(hug as VisualNodeValue, ctx))).not.toContain('flex-shrink');
-    expect(effectiveStyle(lowerVisualNode(fill as VisualNodeValue, ctx))).not.toContain('flex-shrink');
+    expect(effectiveStyle(lowerVisualNode(hug as VisualNodeValue, ctx))).not.toContain(
+      'flex-shrink',
+    );
+    expect(effectiveStyle(lowerVisualNode(fill as VisualNodeValue, ctx))).not.toContain(
+      'flex-shrink',
+    );
   });
 });
 
