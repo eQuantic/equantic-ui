@@ -61,7 +61,8 @@ export type IconGlyphStyleValue = 'fill' | 'stroke';
 export type IconsValue =
   'search' | 'close' | 'check' | 'checkCircle' | 'info' | 'warning' | 'error' | 'person'
   | 'chevronLeft' | 'chevronRight' | 'chevronUp' | 'chevronDown' | 'mail' | 'notifications'
-  | 'heart' | 'heartFilled' | 'plus' | 'minus' | 'play' | 'refresh' | 'copy' | 'table' | 'menu';
+  | 'heart' | 'heartFilled' | 'plus' | 'minus' | 'play' | 'refresh' | 'copy' | 'table' | 'menu'
+  | 'calendar' | 'clock';
 
 export type ImageFitValue = 'contain' | 'cover' | 'stretch';
 

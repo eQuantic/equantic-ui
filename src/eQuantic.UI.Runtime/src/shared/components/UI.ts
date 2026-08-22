@@ -1,4 +1,4 @@
-import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Card, Checkbox, Chip, ColorToken, Column, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, Select, Shortcut, Simulated, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "../runtime-exports";
+import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Card, Checkbox, Chip, ColorToken, Column, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, Select, Shortcut, Simulated, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, children: VisualNode[] | null = null) {
@@ -187,6 +187,18 @@ export class UI {
 
     static stepper(value: number, onChanged: ((int: number) => void) | null = null) {
         return new Stepper(value, onChanged);
+    }
+
+    static datePicker(selected: DateOnly | null = null, onChanged: ((dateOnly: DateOnly) => void) | null = null, min: DateOnly | null = null, max: DateOnly | null = null, label: string = '') {
+        return new DatePicker(selected, onChanged, min, max, label);
+    }
+
+    static timePicker(selected: TimeOnly | null = null, onChanged: ((timeOnly: TimeOnly) => void) | null = null, stepMinutes: number = 30, min: TimeOnly | null = null, max: TimeOnly | null = null, label: string = '') {
+        return new TimePicker(selected, onChanged, stepMinutes, min, max, label);
+    }
+
+    static dateTimePicker(selected: Date | null = null, onChanged: ((dateTime: Date) => void) | null = null, min: Date | null = null, max: Date | null = null, stepMinutes: number = 30, dateLabel: string = '', timeLabel: string = '') {
+        return new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel);
     }
 
     static calendar(selected: DateOnly | null = null, onChanged: ((dateOnly: DateOnly) => void) | null = null, min: DateOnly | null = null, max: DateOnly | null = null) {

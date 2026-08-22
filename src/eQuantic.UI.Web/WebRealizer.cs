@@ -1117,6 +1117,13 @@ public static class WebRealizer
         // The accessible NAME — a placeholder vanishes under text, so it never substitutes for one.
         if (entry.Label is { Length: > 0 } accessibleName) element.RawAttributes["aria-label"] = accessibleName;
         if (entry.Disabled) element.RawAttributes["disabled"] = "";
+        // NOT DECLARED HERE, and it is a gap rather than a decision: the client twin installs an
+        // `input` handler and this side installs nothing, so the parity fixture — which is
+        // generated from THIS tree — cannot notice the client losing one. Exactly the hole the
+        // grid's keydown had before #12, except that one could be closed in an afternoon because
+        // `OnKeyDown` already existed on HtmlElement. `OnInput` is in the event-name map with no
+        // property behind it, so closing this means a Core API addition and a hydration story for
+        // the value it carries. Filed, not smuggled into a component change.
         // The attribute alone only acts on the initial parse; the client lowering also focuses on
         // mount, which is what a dialog opened later needs.
         if (entry.Autofocus) element.RawAttributes["autofocus"] = "";

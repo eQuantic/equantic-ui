@@ -41,4 +41,13 @@
   <data name="Today" xml:space="preserve">
     <value>Hoje</value>
   </data>
+  <data name="ChooseDate" xml:space="preserve">
+    <value>Escolha uma data</value>
+  </data>
+  <data name="ChooseTime" xml:space="preserve">
+    <value>Escolha um horário</value>
+  </data>
+  <data name="DateFormatHint" xml:space="preserve">
+    <value>DD/MM/AAAA</value>
+  </data>
 </root>

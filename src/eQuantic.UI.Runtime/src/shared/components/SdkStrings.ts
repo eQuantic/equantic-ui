@@ -41,6 +41,18 @@ export class SdkStrings {
         return $eq.str("SdkResources", "Today");
     }
 
+    static get chooseDate(): string {
+        return $eq.str("SdkResources", "ChooseDate");
+    }
+
+    static get chooseTime(): string {
+        return $eq.str("SdkResources", "ChooseTime");
+    }
+
+    static get dateFormatHint(): string {
+        return $eq.str("SdkResources", "DateFormatHint");
+    }
+
     static get spreadsheet(): string {
         return $eq.str("SdkResources", "Spreadsheet");
     }

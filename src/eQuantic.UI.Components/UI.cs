@@ -276,6 +276,22 @@ public static class UI
     public static Stepper Stepper(int value, Action<int>? onChanged = null) =>
         new Stepper(value, onChanged);
 
+    /// <summary>A date, typed or picked from a calendar.</summary>
+    public static DatePicker DatePicker(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
+        DateOnly? min = null, DateOnly? max = null, string label = "") =>
+        new DatePicker(selected, onChanged, min, max, label);
+
+    /// <summary>A time of day, picked from a list of slots.</summary>
+    public static TimePicker TimePicker(TimeOnly? selected = null, Action<TimeOnly>? onChanged = null,
+        int stepMinutes = 30, TimeOnly? min = null, TimeOnly? max = null, string label = "") =>
+        new TimePicker(selected, onChanged, stepMinutes, min, max, label);
+
+    /// <summary>A moment — the date and the time, as one value.</summary>
+    public static DateTimePicker DateTimePicker(DateTime? selected = null, Action<DateTime>? onChanged = null,
+        DateTime? min = null, DateTime? max = null, int stepMinutes = 30,
+        string dateLabel = "", string timeLabel = "") =>
+        new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel);
+
     /// <summary>A month at a time — the grid a date is picked from.</summary>
     public static Calendar Calendar(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
         DateOnly? min = null, DateOnly? max = null) =>

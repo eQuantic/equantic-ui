@@ -50,6 +50,16 @@ public static class SdkStrings
     /// <summary>What today's cell is called beyond its date — the ring is paint, this is the word.</summary>
     public static string Today => SdkResources.Today;
 
+    /// <summary>A date picker's accessible name when the app supplies none.</summary>
+    public static string ChooseDate => SdkResources.ChooseDate;
+
+    /// <summary>A time picker's accessible name when the app supplies none.</summary>
+    public static string ChooseTime => SdkResources.ChooseTime;
+
+    /// <summary>What shape the typed fallback expects — the one string here that is not prose,
+    /// because the ORDER of the parts is what a reader needs and it differs by language.</summary>
+    public static string DateFormatHint => SdkResources.DateFormatHint;
+
     /// <summary>The sheet surface's accessible name when the app supplies none.</summary>
     public static string Spreadsheet => SdkResources.Spreadsheet;
 
