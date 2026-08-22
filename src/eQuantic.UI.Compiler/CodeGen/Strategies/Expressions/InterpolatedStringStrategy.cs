@@ -35,22 +35,25 @@ public class InterpolatedStringStrategy : IConversionStrategy
                     break;
                 case InterpolationSyntax interpolation:
                     sb.Append("${");
+                    // A PLAIN hole arrives converted the way C# converts it — null → "", bool →
+                    // "True", an enum as its member name — because ValueFlow settles a value on
+                    // its way into text; only a hole with a format or an alignment receives the
+                    // raw value, for the formatter.
                     var expr = context.Converter.ConvertExpression(interpolation.Expression);
-                    // An interpolated ENUM is a ToString by another name, and it crosses as the
-                    // lowercase wire value — so `$"{Kind.B}"` printed "b" here and "B" on the
-                    // server. Same lookup, same reason (see ToStringStrategy).
-                    if (context.SemanticHelper.GetType(interpolation.Expression)
-                        is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
-                    {
-                        expr = Invocation.ToStringStrategy.EnumNameLookup(
-                            enumType, interpolation.Expression, expr);
-                    }
-                    
                     var format = interpolation.FormatClause?.FormatStringToken.ValueText;
                     var alignment = interpolation.AlignmentClause?.Value.ToString();
                     
                     if (format != null || alignment != null)
                     {
+                        // A FORMATTED enum still prints its member name, not the lowercase wire
+                        // value (`$"{Kind.B,5}"` is "    B" on the server): the lookup is here
+                        // because the hole handed the formatter the raw value.
+                        if (context.SemanticHelper.GetType(interpolation.Expression)
+                            is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+                        {
+                            expr = Invocation.ToStringStrategy.EnumNameLookup(
+                                enumType, interpolation.Expression, expr);
+                        }
                         context.UsedHelpers.Add(Eq.Import);
                         var fmtArg = format != null ? $"'{format}'" : "null";
                         var alignArg = alignment != null ? $", {alignment}" : "";
@@ -58,10 +61,7 @@ public class InterpolatedStringStrategy : IConversionStrategy
                     }
                     else
                     {
-                        // A plain `{x}` is a ToString: the same conversion concatenation applies
-                        // (null → "", bool → "True"), decided once in StringConversion.
-                        sb.Append(JsExprWriter.Write(StringConversion.ToDotNetString(
-                            interpolation.Expression, JsExpr.Opaque(expr), context)));
+                        sb.Append(expr);
                     }
 
                     sb.Append('}');

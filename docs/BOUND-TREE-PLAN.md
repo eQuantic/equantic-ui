@@ -27,14 +27,16 @@ value converts twice.
 |---|---|---|
 | 0 | `SemanticHelper.GetOperation` — Original-aware, Knows-guarded access to the bound tree | done (Fase 4.2: `IsChecked`) |
 | 1 | `ValueFlow` — the dispatcher settles every expression for the implicit conversion wrapping it in the bound tree; owns char promotion and int→long (the syntax rules were removed); yields on text (`StringConversion`) and decimal | done |
-| 2 | Text: string concatenation and interpolation operands settled by the bound tree (`IBinaryOperation` string Add, `IInterpolationOperation`); `StringConversion` becomes ValueFlow's | next |
-| 3 | `IBinaryOperation` as an operation strategy: `IsLifted` replaces the nullable-lifting guess, `OperatorMethod` lowers user-defined operators (today: passed through), enum and width rules read the operation | |
+| 2 | Text: a value on its way into a concatenation (boxed, or a string operand — of `+` or of `+=`'s VALUE, never its target) or a plain interpolation hole is settled by ValueFlow; the concatenation and interpolation strategies dropped their calls. `s += flag` prints "True" for the first time | done |
+| 3 | `IBinaryOperation` as an operation strategy: `IsLifted` replaces the nullable-lifting guess, `OperatorMethod` lowers user-defined operators (today: passed through), enum and width rules read the operation; decimal operand wrapping moves to ValueFlow | next |
 | 4 | Statements: `IForEachLoopOperation` (element conversion, deconstruction), `IUsingOperation`, pattern operations | |
 | 5 | Explicit conversions: `CastExpressionStrategy`'s tables and `IntegerWidth.Wrap` become one conversion table, used by ValueFlow and by casts | |
 
 ## Lessons recorded on the way
 
 - `GetOperation(node)` returns the OPERAND; the implicit conversion is its `Parent`. Hook there.
+- A compound assignment has a Target and a Value; only the Value FLOWS. Matching any child of
+  `s += x` settled the target too (`r ?? '' += 't'`), which is how slice 1's first cut failed.
 - A constant folds only where the JavaScript REPRESENTATION changes (`1` → `1n`); folding `0x10`
   to `16` rewrites the author for nothing.
 - An int widening to float is exact — do not fround it (FloatStore rounds at the store).

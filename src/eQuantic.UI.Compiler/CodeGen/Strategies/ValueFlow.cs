@@ -27,14 +27,18 @@ public static class ValueFlow
     public static JsExpr Settle(ExpressionSyntax node, JsExpr translated, ConversionContext context)
     {
         var operation = context.SemanticHelper.GetOperation(node);
-        if (operation?.Parent is not IConversionOperation { IsImplicit: true } conversion) return translated;
-        if (!ReferenceEquals(conversion.Operand, operation)) return translated;
+        if (operation is null) return translated;
 
-        // WHERE A SYNTAX STRATEGY IS STILL THE OWNER. A value on its way into a string converts by
-        // C#'s rules — a null string prints as nothing, a bool as "True" — and that is
-        // StringConversion, applied by the concatenation and interpolation strategies. Settling it
-        // here as well would convert it twice, so this yields until that translation moves over.
-        if (FlowsIntoText(conversion)) return translated;
+        // A VALUE ON ITS WAY INTO TEXT converts by C#'s rules — a null string prints as nothing, a
+        // bool as "True", an enum as its member name (StringConversion). The bound tree shows the
+        // three ways a value gets there: boxed into a concatenation (`"v=" + n`, `s += flag`), a
+        // string operand of one (no conversion — a string is already a string), or the expression
+        // of an interpolation hole, which has no conversion either (the handler is generic). Only
+        // the VALUE of a compound assignment flows; its target is being written, not printed.
+        if (FlowsIntoText(operation)) return StringConversion.ToDotNetString(node, translated, context);
+
+        if (operation.Parent is not IConversionOperation { IsImplicit: true } conversion) return translated;
+        if (!ReferenceEquals(conversion.Operand, operation)) return translated;
 
         // TWO CHARS COMPARED stay characters. C# promotes both to int and compares the code units;
         // JavaScript compares 1-length strings by the same code units, in the same order — so
@@ -61,15 +65,27 @@ public static class ValueFlow
     private static ITypeSymbol? Unconverted(IOperation operand) =>
         operand is IConversionOperation { IsImplicit: true } conversion ? conversion.Operand.Type : operand.Type;
 
-    /// <summary>Whether a converted value is on its way into TEXT — a string concatenation, or an
-    /// interpolation hole.</summary>
-    private static bool FlowsIntoText(IConversionOperation conversion) => conversion.Parent switch
+    /// <summary>Whether this operation's value is on its way into TEXT: through the boxing a
+    /// concatenation wraps it in, directly as a string operand of one, or as a plain hole of an
+    /// interpolated string (a hole with a format or an alignment hands the raw value to the
+    /// formatter instead).</summary>
+    private static bool FlowsIntoText(IOperation operation)
     {
-        IBinaryOperation { OperatorKind: BinaryOperatorKind.Add, Type.SpecialType: SpecialType.System_String } => true,
-        ICompoundAssignmentOperation { Type.SpecialType: SpecialType.System_String } => true,
-        IInterpolationOperation => true,
-        _ => false,
-    };
+        var parent = operation.Parent;
+        if (parent is IConversionOperation { IsImplicit: true } boxing && ReferenceEquals(boxing.Operand, operation))
+        {
+            operation = boxing;
+            parent = boxing.Parent;
+        }
+        return parent switch
+        {
+            IBinaryOperation { OperatorKind: BinaryOperatorKind.Add, Type.SpecialType: SpecialType.System_String } => true,
+            ICompoundAssignmentOperation { OperatorKind: BinaryOperatorKind.Add, Type.SpecialType: SpecialType.System_String } compound
+                => ReferenceEquals(compound.Value, operation),
+            IInterpolationOperation { FormatString: null, Alignment: null } hole => ReferenceEquals(hole.Expression, operation),
+            _ => false,
+        };
+    }
 
     /// <summary>An implicit conversion, by what Roslyn classified it as.</summary>
     private static JsExpr Convert(IConversionOperation conversion, ExpressionSyntax node, JsExpr translated,

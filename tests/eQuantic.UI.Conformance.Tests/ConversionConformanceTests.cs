@@ -54,6 +54,13 @@ public class ConversionConformanceTests
         "int n = 3; float f = n; return f.ToString();",                             // "3"
         "long l = 5; double d = l; return d;",                                      // 5 — a long narrows to double
         "long Big(long v) => v * 2; int n = 21; return Big(n).ToString();",           // "42" — int into a long parameter
+
+        // A value flowing into a string through `+=` — the one concatenation shape no syntax rule saw.
+        "string s = \"a\"; s += true; return s;",                                     // "aTrue"
+        "string s = \"a\"; string? n = null; s += n; return s;",                      // "a"
+        "string s = \"a\"; int? q = null; s += q; return s;",                         // "a"
+        "string s = \"a\"; s += 'b'; return s;",                                      // "ab"
+        "string s = \"a\"; s += 1.5; return s;",                                      // "a1.5"
         // The author's word decides for int and long: `unchecked` wraps, `checked` throws, and the
         // default keeps the double's count (a documented limit — see IntegerWidth).
         "return unchecked(int.MaxValue + 1);",                                      // -2147483648
