@@ -21,10 +21,23 @@ export function checked(
   unsigned = false,
 ): number | bigint {
   if (typeof value === 'bigint') {
+    // A BigInt checked into ANY width — 64 for long arithmetic, narrower for a checked cast
+    // (`checked((int)aLong)` throws past 2^31-1, exactly where C# does).
+    const width = BigInt(bits);
     const ok = unsigned
-      ? value >= 0n && value <= 2n ** 64n - 1n
-      : value >= -(2n ** 63n) && value <= 2n ** 63n - 1n;
+      ? value >= 0n && value <= 2n ** width - 1n
+      : value >= -(2n ** (width - 1n)) && value <= 2n ** (width - 1n) - 1n;
     if (!ok) throw new Error('Arithmetic operation resulted in an overflow.');
+    return value;
+  }
+  if (bits === 64) {
+    // A checked NUMBER against the 64-bit edge (`checked((long)aDouble)`). The edges must be the
+    // doubles C# compares against: 2^63 and 2^64 are exact, 2^63-1 is not (it rounds UP to 2^63,
+    // so `> max` would let the exact edge through) — compare with >= against the power itself.
+    const ok = unsigned
+      ? value >= 0 && value < 18446744073709551616
+      : value >= -9223372036854775808 && value < 9223372036854775808;
+    if (!ok || !Number.isFinite(value)) throw new Error('Arithmetic operation resulted in an overflow.');
     return value;
   }
   const [min, max] = RANGES[bits];

@@ -201,7 +201,7 @@ export class CodeEditorController {
             if (add) lines.push(text.length === 0 ? text : step + text); else if (text.startsWith(step)) lines.push(text.slice(step.length)); else lines.push((_s => { const _c = ' ' + '\t'; let _i = 0; while (_i < _s.length && _c.includes(_s[_i])) _i++; return _s.slice(_i); })(text).length === text.length ? text : text.slice(1));
         }
         let range = new CodeRange(new CodePosition(first, 0), new CodePosition(last, this._document.line(last).length));
-        let anchorShift = add ? step.length : -(Math.trunc(Math.min(step.length, this._document.indentOf(first).length)) | 0);
+        let anchorShift = add ? step.length : -Math.min(step.length, this._document.indentOf(first).length);
         if (!this.apply(range, lines.join('\n'))) return false;
         this.selection = new CodeRange(new CodePosition(first, Math.max(0, this._selection.anchor.column + anchorShift)), new CodePosition(last, this._document.line(last).length));
         return true;

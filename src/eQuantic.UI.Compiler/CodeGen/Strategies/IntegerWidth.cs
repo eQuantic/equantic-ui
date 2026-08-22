@@ -15,7 +15,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 public static class IntegerWidth
 {
     /// <summary>The bit width and signedness of a fixed-width integer type, or null.</summary>
-    public static (int Bits, bool Unsigned)? Of(ITypeSymbol? type) => type?.SpecialType switch
+    public static (int Bits, bool Unsigned)? Of(ITypeSymbol? type) => Of(type?.SpecialType ?? SpecialType.None);
+
+    /// <summary>The bit width and signedness of a fixed-width integer type, or null.</summary>
+    public static (int Bits, bool Unsigned)? Of(SpecialType type) => type switch
     {
         SpecialType.System_SByte => (8, false),
         SpecialType.System_Byte => (8, true),

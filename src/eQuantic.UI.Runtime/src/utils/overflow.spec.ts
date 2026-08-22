@@ -11,6 +11,24 @@ describe('checked arithmetic', () => {
     expect(checked(9_223_372_036_854_775_807n, 64)).toBe(9_223_372_036_854_775_807n);
     expect(() => checked(9_223_372_036_854_775_808n, 64)).toThrow(/overflow/);
   });
+
+  it('checks a BigInt into a NARROWER width — a checked cast off a long', () => {
+    expect(checked(2_147_483_647n, 32)).toBe(2_147_483_647n);
+    expect(() => checked(2_147_483_648n, 32)).toThrow(/overflow/);
+    expect(() => checked(-1n, 32, true)).toThrow(/overflow/);
+    expect(checked(65_535n, 16, true)).toBe(65_535n);
+    expect(() => checked(70_000n, 16, true)).toThrow(/overflow/);
+  });
+
+  it('checks a NUMBER against the 64-bit edge — a checked (long) cast off a double', () => {
+    expect(checked(100.9, 64)).toBe(100.9);
+    expect(() => checked(1e20, 64)).toThrow(/overflow/);
+    expect(() => checked(9_223_372_036_854_775_808, 64)).toThrow(/overflow/); // 2^63 exactly
+    expect(checked(-9_223_372_036_854_775_808, 64)).toBe(-9_223_372_036_854_775_808);
+    expect(() => checked(-1, 64, true)).toThrow(/overflow/);
+    expect(() => checked(18_446_744_073_709_551_616, 64, true)).toThrow(/overflow/); // 2^64 exactly
+    expect(() => checked(Number.NaN, 64)).toThrow(/overflow/);
+  });
 });
 
 describe('a float as text', () => {

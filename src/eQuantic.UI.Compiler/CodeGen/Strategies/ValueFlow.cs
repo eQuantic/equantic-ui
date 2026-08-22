@@ -93,15 +93,18 @@ public static class ValueFlow
         Apply(conversion.GetConversion(), conversion.Operand.Type, conversion.Type,
             conversion.ConstantValue.HasValue ? conversion.ConstantValue.Value : null,
             conversion.Operand.ConstantValue.HasValue ? conversion.Operand.ConstantValue.Value : null,
-            translated, context);
+            translated, context, conversion.IsChecked);
 
     /// <summary>
     /// A conversion APPLIED to a translated value — the one table, usable wherever the bound tree
-    /// reports a conversion that is not an expression of its own: the implicit conversion around an
-    /// expression, the element conversion of a <c>foreach</c>.
+    /// reports a conversion: the implicit conversion around an expression, the element conversion
+    /// of a <c>foreach</c>, the explicit conversion a cast spells out. Implicit and explicit are
+    /// the same table because the PAIR of types decides — a narrowing pair only ever arrives from
+    /// an explicit conversion, so no flag is needed; <paramref name="isChecked"/> is the one thing
+    /// the pair cannot say (a checked cast throws where the unchecked one wraps).
     /// </summary>
     public static JsExpr Apply(Conversion kind, ITypeSymbol? from, ITypeSymbol? to, object? convertedConstant,
-        object? operandConstant, JsExpr translated, ConversionContext context)
+        object? operandConstant, JsExpr translated, ConversionContext context, bool isChecked = false)
     {
         // A constant converts at compile time ONLY where the JavaScript REPRESENTATION changes —
         // `1` flowing into a long is `1n`. An int constant flowing into a byte or a double is
@@ -116,7 +119,26 @@ public static class ValueFlow
                 ? call
                 : translated;
 
-        if (kind.IsNumeric) return Numeric(from, to, translated, operandConstant, context);
+        // A NULLABLE conversion converts the underlying value and lets null pass: `(int?)aDouble?`
+        // is null for a null, the numeric narrowing otherwise. The bound tree names only the
+        // lifted conversion; the unwrapped types say what happens under it. A non-nullable SOURCE
+        // cannot be null, so its value converts directly.
+        if (kind.IsNullable)
+        {
+            var fromUnwrapped = from.UnwrapNullable();
+            var toUnwrapped = to.UnwrapNullable();
+            if (!ReferenceEquals(fromUnwrapped, from))
+            {
+                var name = JsExpr.Identifier("__v");
+                var converted = Numeric(fromUnwrapped, toUnwrapped, name, null, isChecked, context);
+                if (ReferenceEquals(converted, name)) return translated;   // identity under the lift
+                return JsExpr.Callish($"((__v) => __v == null ? null : {JsExprWriter.Write(converted)})"
+                    + $"({JsExprWriter.Write(translated)})");
+            }
+            return Numeric(fromUnwrapped, toUnwrapped, translated, operandConstant, isChecked, context);
+        }
+
+        if (kind.IsNumeric) return Numeric(from, to, translated, operandConstant, isChecked, context);
 
         if (kind.IsEnumeration && to is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
         {
@@ -126,50 +148,155 @@ public static class ValueFlow
             return zero is null ? translated : JsExpr.Literal($"'{zero.Name.ToCamelCase()}'");
         }
 
-        // Identity, reference, boxing, nullable wrapping, null/default literals, method groups,
-        // lambdas, interpolated strings, tuples: the value is already what JavaScript needs.
+        // Identity, reference, boxing, null/default literals, method groups, lambdas,
+        // interpolated strings, tuples: the value is already what JavaScript needs.
         return translated;
     }
 
     /// <summary>A numeric conversion between the primitives JavaScript represents differently:
-    /// a char is a 1-length string, a long a BigInt, a decimal a Decimal, a float a rounded double.</summary>
+    /// a char is a 1-length string, a long a BigInt, a decimal a Decimal, a float a rounded
+    /// double, and every fixed-width integer a plain number that must wrap (or throw, checked)
+    /// where C# says it does.</summary>
     private static JsExpr Numeric(ITypeSymbol? from, ITypeSymbol? to, JsExpr translated, object? constant,
-        ConversionContext context)
+        bool isChecked, ConversionContext context)
     {
-        var text = JsExprWriter.WriteIn(translated, JsPrecedence.Call);
         var value = translated;
-        if (from is { SpecialType: SpecialType.System_Char })
+        var fromSpecial = from?.SpecialType ?? SpecialType.None;
+
+        // A DECIMAL SOURCE has no invariant representation yet (a negated literal is a plain
+        // number, a hydrated one a string) — coerce like every decimal use site does, then ask for
+        // its number once and narrow or widen like any double. And a decimal shrinking into an
+        // integral type ALWAYS throws past the edge in C# — checked or not — so the check rides
+        // along. (Only an explicit cast gets here — implicit decimal conversions all go INTO
+        // decimal, which still yields below.)
+        if (fromSpecial == SpecialType.System_Decimal)
         {
-            // A constant char folds to its code unit: `'A' + col` reads as 65 + col, the way the
-            // hand-written rule this replaced always emitted it.
-            value = constant is char c
-                ? JsExpr.Literal(((int)c).ToString(CultureInfo.InvariantCulture))
-                : JsExpr.Callish($"{text}.charCodeAt(0)");
-            text = JsExprWriter.Write(value);
+            context.UsedHelpers.Add(Eq.Import);
+            value = JsExpr.Callish($"{Eq.Dec}({JsExprWriter.Write(value)}).toNumber()");
+            fromSpecial = SpecialType.System_Double;
+            isChecked = true;
         }
 
-        switch (to?.SpecialType)
+        // A char is a 1-length string: its number is the code unit. A constant char folds to it:
+        // `'A' + col` reads as 65 + col, the way the hand-written rule this replaced emitted it.
+        if (fromSpecial == SpecialType.System_Char)
         {
-            case SpecialType.System_Int64 or SpecialType.System_UInt64 when !from.IsLong():
-                context.UsedHelpers.Add(Eq.Import);
-                return JsExpr.Callish($"{Eq.Long}({text})");
-            // DECIMAL is still the binary strategy's: it wraps both operands on its way to the
-            // runtime Decimal, and settling here as well would wrap twice. Moves over next.
-            case SpecialType.System_Decimal:
+            value = constant is char c
+                ? JsExpr.Literal(((int)c).ToString(CultureInfo.InvariantCulture))
+                : JsExpr.Callish($"{JsExprWriter.WriteIn(value, JsPrecedence.Call)}.charCodeAt(0)");
+        }
+
+        // DECIMAL as the TARGET is still the binary strategy's: it wraps both operands on its way
+        // to the runtime Decimal, and settling here as well would wrap twice. Moves with typed
+        // hydration.
+        if (to is { SpecialType: SpecialType.System_Decimal }) return value;
+
+        return fromSpecial is SpecialType.System_Int64 or SpecialType.System_UInt64
+            ? FromLong(fromSpecial, to, value, isChecked, context)
+            : FromNumber(fromSpecial, to, value, isChecked, context);
+    }
+
+    /// <summary>A BigInt on its way to another representation: a plain number for the double
+    /// family, the width's slice of its bits for a narrower integer, the code unit's character
+    /// for char — or the overflow a checked context throws.</summary>
+    private static JsExpr FromLong(SpecialType from, ITypeSymbol? to, JsExpr value, bool isChecked,
+        ConversionContext context)
+    {
+        var text = JsExprWriter.WriteIn(value, JsPrecedence.Call);
+        var target = to?.SpecialType ?? SpecialType.None;
+        switch (target)
+        {
+            case SpecialType.System_Single:
+                return FloatStore.Round(JsExpr.Callish($"Number({text})"));
+            case SpecialType.System_Double:
+                return JsExpr.Callish($"Number({text})");
+            case SpecialType.System_Char:
+                return JsExpr.Callish(isChecked
+                    ? $"String.fromCharCode(Number({Checked(value, (16, true), context)}))"
+                    : $"String.fromCharCode(Number(BigInt.asUintN(16, {text})))");
+            case SpecialType.System_Int64 or SpecialType.System_UInt64 when target != from:
+                // long ↔ ulong reinterprets the same 64 bits; a checked context throws instead.
+                var toUnsigned = target == SpecialType.System_UInt64;
+                return isChecked
+                    ? IntegerWidth.Checked(value, (64, toUnsigned), context)
+                    : IntegerWidth.Wrap(value, (64, toUnsigned));
+            default:
+                if (IntegerWidth.Of(target) is { Bits: < 64 } width)
+                    return JsExpr.Callish(isChecked
+                        ? $"Number({Checked(value, width, context)})"
+                        : $"Number(BigInt.{(width.Unsigned ? "asUintN" : "asIntN")}({width.Bits}, {text}))");
                 return value;
-            case SpecialType.System_Single or SpecialType.System_Double when from.IsLong():
-                var widened = JsExpr.Callish($"Number({text})");
-                return to.SpecialType == SpecialType.System_Single ? FloatStore.Round(widened) : widened;
+        }
+    }
+
+    /// <summary>A plain number on its way to another representation: a BigInt for the long
+    /// family, truncated and wrapped into a narrower width (a widening pair passes through
+    /// untouched), the code unit's character for char, rounded once for a genuine loss of float
+    /// precision — or the overflow a checked context throws.</summary>
+    private static JsExpr FromNumber(SpecialType from, ITypeSymbol? to, JsExpr value, bool isChecked,
+        ConversionContext context)
+    {
+        // A fractional source truncates toward zero FIRST — C# rounds the value before it checks
+        // or wraps it, so `checked((byte)255.9)` is 255, not an overflow.
+        var fractional = from is SpecialType.System_Single or SpecialType.System_Double;
+        var target = to?.SpecialType ?? SpecialType.None;
+
+        switch (target)
+        {
+            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+                context.UsedHelpers.Add(Eq.Import);
+                var unsigned64 = target == SpecialType.System_UInt64;
+                var range = isChecked
+                    ? Checked(value, (64, unsigned64), context)
+                    : JsExprWriter.WriteIn(value, JsPrecedence.Call);
+                var asLong = JsExpr.Callish($"{Eq.Long}({range})");
+                // A signed (or fractional) source reinterprets into ulong's 64 bits — `(ulong)-1`
+                // is 2^64-1, not -1n. A checked context threw instead; an unsigned source fits.
+                return !isChecked && unsigned64 && (fractional || WidthOfSource(from) is not { Unsigned: true })
+                    ? IntegerWidth.Wrap(asLong, (64, true))
+                    : asLong;
+            case SpecialType.System_Char:
+                var unit = fractional && isChecked ? Truncate(value) : value;
+                return JsExpr.Callish(isChecked
+                    ? $"String.fromCharCode({Checked(unit, (16, true), context)})"
+                    : $"String.fromCharCode({JsExprWriter.WriteIn(unit, JsPrecedence.Call)})");
             // A DOUBLE narrowing to a float genuinely loses precision, so it rounds. An INTEGER
             // widening to one does not — every int a UI computes is exact as a single — and
             // rounding it would put a fround around half the layout arithmetic (FloatStore: the
             // rounding belongs at the store, not at every step).
-            case SpecialType.System_Single when from is { SpecialType: SpecialType.System_Double }:
+            case SpecialType.System_Single when from is SpecialType.System_Double:
                 return FloatStore.Round(value);
             default:
-                return value;
+                if (IntegerWidth.Of(target) is not { } width) return value;
+                var whole = fractional ? Truncate(value) : value;
+                if (isChecked) return IntegerWidth.Checked(whole, width, context);
+                // The same masks every wrapped RESULT uses (IntegerWidth) — a pair whose source
+                // range already fits the target needs none: char into an int is its code unit.
+                return !fractional && WidthOfSource(from) is { } source && Fits(source, width)
+                    ? whole
+                    : IntegerWidth.Wrap(whole, width);
         }
     }
+
+    /// <summary>The value truncated toward zero — the integer part C# takes from a double.</summary>
+    private static JsExpr Truncate(JsExpr value) =>
+        JsExpr.Callish($"Math.trunc({JsExprWriter.WriteIn(value, JsPrecedence.Call)})");
+
+    /// <summary>The checked-cast call: the value, or the OverflowException C# throws.</summary>
+    private static string Checked(JsExpr value, (int Bits, bool Unsigned) width, ConversionContext context) =>
+        JsExprWriter.Write(IntegerWidth.Checked(value, width, context));
+
+    /// <summary>The width whose RANGE bounds a source value: a char is a 16-bit unsigned code
+    /// unit, the fixed-width integers are themselves, anything else is unbounded (null).</summary>
+    private static (int Bits, bool Unsigned)? WidthOfSource(SpecialType from) => from == SpecialType.System_Char
+        ? (16, true)
+        : IntegerWidth.Of(from);
+
+    /// <summary>Whether every value of the source width is already a value of the target width —
+    /// the wrap would be a no-op mask on half the arithmetic in a page.</summary>
+    private static bool Fits((int Bits, bool Unsigned) from, (int Bits, bool Unsigned) to) => from.Unsigned
+        ? to.Bits > from.Bits || (to.Bits == from.Bits && to.Unsigned)
+        : !to.Unsigned && to.Bits >= from.Bits;
 
     private static JsExpr? Constant(object? constant, ITypeSymbol? to) => to?.SpecialType switch
     {

@@ -8,7 +8,6 @@ ArrayStaticStrategy
 AsExpressionStrategy
 AverageStrategy
 BooleanMethodStrategy
-CastExpressionStrategy
 CastStrategy
 CharMethodStrategy
 CheckedExpressionStrategy
