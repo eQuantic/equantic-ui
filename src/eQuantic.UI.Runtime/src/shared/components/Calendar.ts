@@ -56,8 +56,8 @@ export class Calendar extends SharedStatefulComponent {
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if (!((next instanceof Calendar && (fresh = next, true)))) return;
-        let arriving: any; 
-        let moved = (arriving = fresh.selected) != null && !arriving.equals(this.selected);
+        let arriving: any; let current: any; 
+        let moved = (arriving = fresh.selected) != null && (!((current = this.selected) != null) || !arriving.equals(current));
         this.selected = fresh.selected;
         this.onChanged = fresh.onChanged;
         this.min = fresh.min;
@@ -129,10 +129,22 @@ export class Calendar extends SharedStatefulComponent {
 
     page(months: number) {
         return this.setState(() => {
-            this._month = this._month.addMonths(months);
+            let target = this._month.addMonths(months);
+            if (!this.hasReachableDay(target)) return;
+            this._month = target;
             let cursor: any; 
-            if ((cursor = this._cursor) != null) this._cursor = this.clampToRange(cursor.addMonths(months));
+            if ((cursor = this._cursor) != null) {
+                this._cursor = this.clampToRange(cursor.addMonths(months));
+                this._month = Calendar.firstOfMonth(this._cursor);
+            }
         });
+    }
+
+    hasReachableDay(month: DateOnly) {
+        let first = Calendar.firstOfMonth(month);
+        let next = first.addMonths(1);
+        let min: any; 
+        return this.inRange(first) || this.inRange(next.addDays(-1)) || (min = this.min) != null && (min.compareTo(first) >= 0) && (min.compareTo(next) < 0);
     }
 
     choose(day: DateOnly) {

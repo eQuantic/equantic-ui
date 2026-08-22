@@ -57,7 +57,12 @@ public sealed class Calendar : StatefulComponent
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not Calendar fresh) return;
-        var moved = fresh.Selected is { } arriving && arriving != Selected;
+        // Both sides non-null before anything compares them. `arriving != Selected` reads fine in
+        // C# — a lifted comparison — and lowers to `arriving.equals(this.selected)`, which throws
+        // on the very transition this line exists to detect: nothing selected, app selects a day.
+        // The same trap as the render path's, in the code written to fix that one.
+        var moved = fresh.Selected is { } arriving
+            && (Selected is not { } current || arriving != current);
         Selected = fresh.Selected;
         OnChanged = fresh.OnChanged;
         Min = fresh.Min;
@@ -260,10 +265,31 @@ public sealed class Calendar : StatefulComponent
 
     private void Page(int months) => SetState(() =>
     {
-        _month = _month.AddMonths(months);
-        // The cursor travels with the view, or the next arrow press would jump back.
-        if (_cursor is { } cursor) _cursor = ClampToRange(cursor.AddMonths(months));
+        var target = _month.AddMonths(months);
+        // A month with no reachable day in it is not somewhere to go: min/max bound the chevrons
+        // exactly as they bound the arrows, and paging into an empty grid would leave the reader
+        // looking at a month they cannot use with no way to tell why.
+        if (!HasReachableDay(target)) return;
+
+        _month = target;
+        // The cursor travels with the view, or the next arrow press would jump back. Clamping can
+        // land it in a different month than the one just paged to — the view follows the CURSOR,
+        // which is the rule the arrows already obey, so the two never disagree.
+        if (_cursor is { } cursor)
+        {
+            _cursor = ClampToRange(cursor.AddMonths(months));
+            _month = FirstOfMonth(_cursor.Value);
+        }
     });
+
+    /// <summary>Whether a month holds a day the reader may actually pick.</summary>
+    private bool HasReachableDay(DateOnly month)
+    {
+        var first = FirstOfMonth(month);
+        var next = first.AddMonths(1);
+        return InRange(first) || InRange(next.AddDays(-1))
+            || (Min is { } min && min >= first && min < next);
+    }
 
     private void Choose(DateOnly day)
     {

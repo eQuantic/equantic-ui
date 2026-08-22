@@ -215,6 +215,39 @@ public class CalendarTests
     }
 
     [Fact]
+    public void AdoptingASelection_WhenThereWasNone_DoesNotThrow()
+    {
+        // The transition the `moved` check exists to detect is the one that used to break it:
+        // nothing selected, then the app selects a day. Lifted in C#, `.equals(null)` in the twin.
+        var mounted = new Calendar();
+        Render(mounted);
+
+        mounted.AdoptConfig(new Calendar(new DateOnly(2026, 9, 3)));
+        var after = Render(mounted);
+
+        Walk(after).Single(n => n.Attributes.GetValueOrDefault("role") == "grid")
+            .Attributes["aria-label"].Should().Be("September 2026");
+    }
+
+    [Fact]
+    public void TheChevronsAreBoundedByMinAndMax()
+    {
+        // min/max bound the chevrons exactly as they bound the arrows. Paging past the edge would
+        // leave the reader looking at a month with nothing pickable in it and no way to tell why.
+        var bounded = new Calendar(July17, min: new DateOnly(2026, 7, 1), max: new DateOnly(2026, 7, 31));
+        var tree = Render(bounded);
+        var next = Walk(tree).First(n =>
+            n.Attributes.GetValueOrDefault("aria-label") == SdkStringUnderTest.NextMonth);
+
+        Press(next);
+        var after = Render(bounded);
+
+        Walk(after).Single(n => n.Attributes.GetValueOrDefault("role") == "grid")
+            .Attributes["aria-label"].Should().Be("July 2026", "August holds no reachable day");
+        Cells(after).Should().HaveCount(31);
+    }
+
+    [Fact]
     public void ACalendarWithNothingSelected_Renders()
     {
         // Every other case here hands it a date, which is why the whole suite missed that an
