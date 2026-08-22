@@ -35,6 +35,40 @@ public class LinqTotalityConformanceTests
     [InlineData("new[]{1,2,3}.Zip(new[]{10,20,30}, (a, b) => a + b).ToList()")] // [11,22,33]
     // Materialization
     [InlineData("new[]{3,1,2}.OrderBy(x => x).ToArray()")]                      // [1,2,3]
+    // ── The operators the strategies implement and NOTHING executed, before slice (1) of the
+    // coverage plan. A table that replaces 42 strategies can only be trusted against a net that
+    // covers what those 42 claim; 14 of the 57 had no executed case at all.
+    // Set operations
+    [InlineData("new[]{1,2,3,2}.Union(new[]{3,4}).ToList()")]                   // [1,2,3,4]
+    [InlineData("new[]{1,2,3}.Intersect(new[]{2,3,4}).ToList()")]               // [2,3]
+    [InlineData("new[]{1,2,3}.Except(new[]{2}).ToList()")]                      // [1,3]
+    [InlineData("new[]{1,2}.SequenceEqual(new[]{1,2})")]                        // true
+    [InlineData("new[]{1,2}.SequenceEqual(new[]{2,1})")]                        // false
+    // The single-element family, and what it does when the count is not one
+    [InlineData("new[]{7}.Single()")]                                           // 7
+    [InlineData("new[]{7}.SingleOrDefault()")]                                  // 7
+    [InlineData("new int[0].SingleOrDefault()")]                                // 0
+    [InlineData("new[]{1,2}.Where(x => x > 5).SingleOrDefault()")]              // 0
+    [InlineData("new[]{1,2,3}.LastOrDefault()")]                                // 3
+    [InlineData("new int[0].FirstOrDefault()")]                                 // 0
+    [InlineData("new[]{1,2}.Where(x => x > 5).FirstOrDefault()")]               // 0
+    [InlineData("new string[0].FirstOrDefault()")]                              // null
+    [InlineData("new[]{1,2}.FirstOrDefault(x => x > 5)")]                       // 0
+    [InlineData("new int[0].LastOrDefault()")]                                  // 0
+    [InlineData("new[]{1,2,3}.ElementAtOrDefault(1)")]                          // 2
+    [InlineData("new[]{1,2,3}.ElementAtOrDefault(9)")]                          // 0
+    // Empty sequences and generators
+    [InlineData("new int[0].DefaultIfEmpty().ToList()")]                        // [0]
+    [InlineData("new int[0].DefaultIfEmpty(5).ToList()")]                       // [5]
+    [InlineData("new[]{1}.DefaultIfEmpty(5).ToList()")]                         // [1]
+    [InlineData("Enumerable.Empty<int>().Count()")]                             // 0
+    [InlineData("Enumerable.Range(2, 4).ToList()")]                             // [2,3,4,5]
+    [InlineData("Enumerable.Repeat(7, 3).ToList()")]                            // [7,7,7]
+    [InlineData("Enumerable.Range(1, 5).Where(x => x % 2 == 1).Sum()")]         // 9
+    // Type filtering: Cast throws where OfType skips
+    [InlineData("new object[]{1, 2}.Cast<int>().Sum()")]                        // 3
+    [InlineData("new object[]{1, \"a\", 2}.OfType<int>().Sum()")]              // 3
+    [InlineData("new object[]{1, \"a\"}.OfType<string>().Count()")]            // 1
     public void Linq_MatchesDotNet(string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

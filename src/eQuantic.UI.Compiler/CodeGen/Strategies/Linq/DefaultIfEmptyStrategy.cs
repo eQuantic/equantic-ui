@@ -27,11 +27,10 @@ public class DefaultIfEmptyStrategy : IConversionStrategy
         // DefaultIfEmpty(val) -> source.length > 0 ? source : [val]
         // DefaultIfEmpty() -> source.length > 0 ? source : [null] (or default)
         
-        var defaultVal = "null";
-        if (args.Count > 0)
-        {
-            defaultVal = context.Converter.ConvertExpression(args[0].Expression);
-        }
+        // With no argument the filler is the ELEMENT's default, which for a value type is not null.
+        var defaultVal = args.Count > 0
+            ? context.Converter.ConvertExpression(args[0].Expression)
+            : DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context);
 
         return $"({caller}.length > 0 ? {caller} : [{defaultVal}])";
     }

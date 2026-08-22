@@ -11,8 +11,14 @@ public class SequenceEqualStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
         if (memberAccess.Name.Identifier.Text != "SequenceEqual") return false;
 
+        // An ARRAY receiver binds MemoryExtensions.SequenceEqual (through ReadOnlySpan) rather
+        // than Enumerable's — a better overload the modern BCL added — and the LINQ gate alone
+        // then refused the call, leaving `MemoryExtensions.sequenceEqual(…)`, a name that exists
+        // nowhere. Both spell the same element-wise comparison.
         var symbol = context.SemanticHelper.GetSymbol(invocation);
-        if (symbol is IMethodSymbol ms && context.SemanticHelper.IsLinqExtension(ms.ContainingType)) return true;
+        if (symbol is IMethodSymbol ms
+            && (context.SemanticHelper.IsLinqExtension(ms.ContainingType)
+                || ms.ContainingType?.Name == "MemoryExtensions")) return true;
 
         return symbol == null && context.CanGuess(node);
     }

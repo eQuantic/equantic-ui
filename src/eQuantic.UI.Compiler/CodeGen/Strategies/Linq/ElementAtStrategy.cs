@@ -27,9 +27,11 @@ public class ElementAtStrategy : IConversionStrategy
         if (args.Count == 1)
         {
             var index = context.Converter.ConvertExpression(args[0].Expression);
-            // ElementAt(i) -> source[i]
-            // Safe assumption for arrays.
-            return $"{caller}[{index}]";
+            // ElementAt(i) is source[i]; ElementAtOrDefault(i) answers the ELEMENT's default when
+            // the index is out of range, where a bare lookup would hand back undefined.
+            if (memberAccess.Name.Identifier.Text != "ElementAtOrDefault") return $"{caller}[{index}]";
+            var fallback = DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context);
+            return $"({caller}[{index}] ?? {fallback})";
         }
 
         return caller;

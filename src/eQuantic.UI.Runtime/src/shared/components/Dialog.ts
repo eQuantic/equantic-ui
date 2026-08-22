@@ -30,7 +30,7 @@ export class Dialog extends StatelessComponent {
         content.add(new Text(this.title, 'title'));
         content.add(new Text(this.body, 'bodyM', theme.textSecondary, 6));
         let actions = new Row(8, 'start', 'center', false, null, null, { main: 'end' });
-        let safe = this.actions.find((action) => action.variant === 'ghost');
+        let safe = (this.actions.find((action) => action.variant === 'ghost') ?? null);
         for (const action of this.actions) {
             actions.add(new Button(action.label, action.variant, 'medium', action.onPressed, { initialFocus: (action === safe) }));
         }

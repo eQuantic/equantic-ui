@@ -42,8 +42,11 @@ public class LastStrategy : IConversionStrategy
 
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments;
+        // The default of the ELEMENT — see DefaultValue; null is only right for a reference type.
         var isOrDefault = methodName == "LastOrDefault";
-        var defaultSuffix = isOrDefault ? " ?? null" : "";
+        var defaultSuffix = isOrDefault
+            ? $" ?? {DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context)}"
+            : "";
 
         if (args.Count > 0)
         {

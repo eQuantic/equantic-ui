@@ -44,8 +44,11 @@ public class SingleStrategy : IConversionStrategy
 
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments;
+        // The default of the ELEMENT — `new int[0].SingleOrDefault()` is 0 in .NET, not null.
         var isOrDefault = methodName == "SingleOrDefault";
-        var defaultSuffix = isOrDefault ? " ?? null" : "";
+        var defaultSuffix = isOrDefault
+            ? $" ?? {DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context)}"
+            : "";
 
         if (args.Count > 0)
         {

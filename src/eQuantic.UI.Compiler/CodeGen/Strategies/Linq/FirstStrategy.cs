@@ -48,19 +48,24 @@ public class FirstStrategy : IConversionStrategy
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments;
         
+        // FirstOrDefault answers the ELEMENT's default when nothing matches — 0 for an int
+        // sequence, not null (DefaultValue). First() keeps the bare lookup: C# throws on an empty
+        // sequence and this hands back undefined, a divergence documented here since before the
+        // conformance suite existed and left as it was.
+        var orDefault = memberAccess.Name.Identifier.Text == "FirstOrDefault"
+            ? $" ?? {DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context)}"
+            : "";
+
         if (args.Count > 0)
         {
             // First(predicate) -> find(predicate)
             var predicate = context.Converter.ConvertExpression(args[0].Expression);
-            return $"{caller}.find({predicate})";
+            return orDefault.Length > 0
+                ? $"({caller}.find({predicate}){orDefault})"
+                : $"{caller}.find({predicate})";
         }
-        else
-        {
-            // First() -> [0]
-            // Note: In C#, First() throws if empty, but JS array access returns undefined (like FirstOrDefault)
-            // This is an acceptable divergence for transpilation unless strict emulation is required.
-            return $"{caller}[0]"; 
-        }
+
+        return orDefault.Length > 0 ? $"({caller}[0]{orDefault})" : $"{caller}[0]";
     }
 
     public int Priority => 10;
