@@ -36,14 +36,14 @@ public class ConversionConformanceTests
         // narrowing casts truncate, and integers wrap (unchecked by default)
         "double d = 3.99; int i = (int)d; return i;",                              // 3
         "double d = -3.99; int i = (int)d; return i;",                             // -3
-        "int big = int.MaxValue; int r = big + 1; return r;",
+        "int big = int.MaxValue; int r = big + 1; return r;",                      // -2147483648 (wraps)
         // An ARRAY INDEX out of range throws in .NET and answers undefined here. Substring and a
         // missing dictionary key were fixed to fail where .NET fails; this one is not, and the
         // reason is cost: it would put a bounds check on EVERY index in every loop the framework
         // emits, and an index out of range is a defect the server catches on the same code path.
         // Recorded so the limit is known rather than discovered.
-        "try { var bad = (new int[1])[5]; return 1; } catch { return -1; }",
-        "var xs = new[]{1,2}; try { var v = xs[9]; return 1; } catch { return -1; }",                      // -2147483648 (wraps)
+        "try { var bad = (new int[1])[5]; return 1; } catch { return -1; }",          // -1 in .NET; undefined here
+        "var xs = new[]{1,2}; try { var v = xs[9]; return 1; } catch { return -1; }", // same, through a variable
         "int big = int.MaxValue; long r = big + 1L; return r.ToString();",         // "2147483648" — widened first
         "byte b = 250; b += 10; return b;",                                        // 4 (wraps at 256)
         "short s = 32767; s++; return s;",                                         // -32768

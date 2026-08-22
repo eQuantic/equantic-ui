@@ -108,7 +108,9 @@ export class MermaidLayout {
         if (!graph.vertical) {
             for (const edge of graph.edges) {
                 if (edge.label.length === 0) continue;
-                let lower = rank[$eq.dictGet(index, edge.from)] < rank[$eq.dictGet(index, edge.to)] ? rank[$eq.dictGet(index, edge.from)] : rank[$eq.dictGet(index, edge.to)];
+                let fromRank = rank[$eq.dictGet(index, edge.from)];
+                let toRank = rank[$eq.dictGet(index, edge.to)];
+                let lower = fromRank < toRank ? fromRank : toRank;
                 let needed = Math.fround(MermaidLayout.labelChipWidth(edge.label) + 24);
                 if (lower >= 0 && lower < rankCount && gapAfter[lower] < needed) gapAfter[lower] = needed;
             }

@@ -78,11 +78,15 @@ export function substring(value: string, start: number, length?: number): string
   if (length < 0 || start + length > value.length) {
     throw new RangeError('Index and length must refer to a location within the string.');
   }
-  return value.substr(start, length);
+  return value.slice(start, start + length);
 }
 
-/** A dictionary read: .NET throws for a key that is not there, rather than answering "nothing". */
-export function dictGet<V>(map: Record<string, V>, key: string | number): V {
+/**
+ * A dictionary read: .NET throws for a key that is not there, rather than answering "nothing".
+ * The key is whatever the compiler emitted — a string, a number, a char, an enum's member name, a
+ * bigint — and a plain object keys by string, so it is stringified the way an index would.
+ */
+export function dictGet<V>(map: Record<string, V>, key: unknown): V {
   const property = String(key);
   if (!Object.prototype.hasOwnProperty.call(map, property)) {
     throw new Error(`The given key '${property}' was not present in the dictionary.`);

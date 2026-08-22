@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Services;
@@ -62,7 +63,13 @@ public class ElementAccessStrategy : IExpressionIrStrategy
     private static bool IsAssignmentTarget(ElementAccessExpressionSyntax access) => access.Parent switch
     {
         AssignmentExpressionSyntax assignment => assignment.Left == access,
-        PrefixUnaryExpressionSyntax or PostfixUnaryExpressionSyntax => true,
+        // ++ and -- only. `-map[k]`, `!map[k]` and `~map[k]` are prefix unaries too, and they
+        // READ — treating them as writes would put the missing key back to answering undefined,
+        // which is the whole of what this change fixes.
+        PrefixUnaryExpressionSyntax prefix =>
+            prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression),
+        PostfixUnaryExpressionSyntax postfix =>
+            postfix.IsKind(SyntaxKind.PostIncrementExpression) || postfix.IsKind(SyntaxKind.PostDecrementExpression),
         ArgumentSyntax { RefOrOutKeyword.RawKind: not 0 } => true,
         _ => false,
     };
