@@ -544,14 +544,45 @@ public class CSharpToJsConverter
         {
             foreach (var stmt in block.Statements.Where(statement => statement is LocalFunctionStatementSyntax))
                 statements.Add(ConvertStatementIr(stmt));
-            foreach (var stmt in block.Statements.Where(statement => statement is not LocalFunctionStatementSyntax))
-                statements.Add(ConvertStatementIr(stmt));
+            statements.AddRange(WithUsingDeclarations(
+                block.Statements.Where(statement => statement is not LocalFunctionStatementSyntax).ToList(), 0));
         }
         finally
         {
             _context.Depth--;
         }
         return JsStatement.Block(statements);
+    }
+
+    /// <summary>
+    /// A <c>using</c> DECLARATION owns the rest of its block: everything after it runs inside a
+    /// try whose finally disposes the resource — also when the body throws or returns — and
+    /// several in one block nest, each disposing in reverse order of declaration. Emitted as a
+    /// bare const (which is what it was for a long time), the resource was simply never disposed.
+    /// </summary>
+    private List<JsStatement> WithUsingDeclarations(IReadOnlyList<StatementSyntax> statements, int from)
+    {
+        var result = new List<JsStatement>();
+        for (var i = from; i < statements.Count; i++)
+        {
+            var stmt = statements[i];
+            result.Add(ConvertStatementIr(stmt));
+            if (stmt is not LocalDeclarationStatementSyntax usingDecl
+                || !usingDecl.UsingKeyword.IsKind(SyntaxKind.UsingKeyword)) continue;
+
+            List<JsStatement> rest;
+            _context.Depth++;
+            try { rest = WithUsingDeclarations(statements, i + 1); }
+            finally { _context.Depth--; }
+
+            var isAsync = usingDecl.AwaitKeyword.IsKind(SyntaxKind.AwaitKeyword);
+            var disposes = usingDecl.Declaration.Variables.Reverse()
+                .Select(variable => Strategies.Statements.UsingLowering.Dispose(variable.Identifier.Text.ToJsIdentifier(), isAsync))
+                .ToList();
+            result.Add(JsStatement.Try(JsStatement.Block(rest), Array.Empty<JsCatch>(), JsStatement.Block(disposes)));
+            return result;
+        }
+        return result;
     }
 
     /// <summary>The statement as text, laid out at the current depth.</summary>

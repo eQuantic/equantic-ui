@@ -34,10 +34,11 @@ public class LocalDeclarationStrategy : IStatementStrategy
 
             if (decl.UsingKeyword.IsKind(SyntaxKind.UsingKeyword))
             {
-                // For a 'using var', we should ideally wrap the remainder of the block.
+                // A `using var` is a const; the BLOCK it sits in wraps what follows in the
+                // try/finally that disposes it (CSharpToJsConverter.ConvertBlockIr).
                 // Since this strategy only sees the statement, we'll emit a declaration
                 // and a comment. The true 100% implementation requires block-aware conversion.
-                statements.Add($"{patternVars}const {name} = {JsExprWriter.Write(init)}; /* using */");
+                statements.Add($"{patternVars}const {name} = {JsExprWriter.Write(init)};");
                 continue;
             }
 

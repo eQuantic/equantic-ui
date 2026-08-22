@@ -39,11 +39,7 @@ public class UsingStatementStrategy : IStatementStrategy
         }
 
         var body = context.Converter.ConvertStatementIr(usingStmt.Statement);
-        var resource = JsExpr.Identifier(resourceVar);
-        var dispose = JsStatement.If(
-            JsExpr.Opaque($"{resourceVar} && typeof {resourceVar}.dispose === 'function'"),
-            JsStatement.Block(new[] { JsStatement.Expression(JsExpr.Call(JsExpr.Member(resource, "dispose"))) }),
-            null);
+        var dispose = UsingLowering.Dispose(resourceVar, usingStmt.AwaitKeyword.Value != null);
 
         return JsStatement.Block(new[]
         {

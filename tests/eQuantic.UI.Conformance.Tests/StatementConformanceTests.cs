@@ -69,4 +69,19 @@ public class StatementConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>A <c>using</c> on a type of your own disposes it — the twin carries Dispose as
+    /// <c>dispose()</c>, the statement form lowers to try/finally, and the DECLARATION form owns the
+    /// rest of its block: disposed after the return value is taken, when the body throws, and in
+    /// reverse order when several share a block.</summary>
+    [Theory]
+    [InlineData("var log = new List<string>(); using (var r = new Res(log, \"r\")) { log.Add(\"body\"); } return string.Join(\",\", log);")]   // "body,r"
+    [InlineData("var log = new List<string>(); string F() { using var r = new Res(log, \"r\"); log.Add(\"body\"); return string.Join(\",\", log); } return F();")] // "body" — the value is taken before the dispose
+    [InlineData("var log = new List<string>(); string F() { using var r = new Res(log, \"r\"); log.Add(\"body\"); return \"x\"; } F(); return string.Join(\",\", log);")] // "body,r" — disposed on the way out
+    [InlineData("var log = new List<string>(); try { using var r = new Res(log, \"r\"); throw new Exception(); } catch { } return string.Join(\",\", log);")] // "r" — disposed when the body throws
+    [InlineData("var log = new List<string>(); { using var a = new Res(log, \"a\"); using var b = new Res(log, \"b\"); log.Add(\"body\"); } return string.Join(\",\", log);")] // "body,b,a" — reverse order
+    [InlineData("var log = new List<string>(); { using Res a = new(log, \"a\"), b = new(log, \"b\"); } return string.Join(\",\", log);")] // "b,a" — one declaration, two resources
+    public void Using_DisposesAnInSourceType(string statements) =>
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public record struct Res(List<string> Log, string Name) : IDisposable { public void Dispose() => Log.Add(Name); }");
 }
