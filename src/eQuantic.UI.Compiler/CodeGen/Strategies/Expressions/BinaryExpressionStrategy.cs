@@ -132,11 +132,20 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         }
 
         // DateTime/TimeSpan are runtime compat classes with operator overloads (+ - and comparisons).
-        // Route to their methods based on the operand types. (Null comparisons fall through.)
-        if (left != "null" && right != "null" && op != "&&" && op != "||")
+        // Route to their methods based on the operand types.
+        //
+        // The "not the literal null" guard is about the operand's TEXT, and it is there so that
+        // `date == null` keeps the loose equality that already answers correctly. A TYPED null
+        // still carries its type, though: `((DateTime?)null) + TimeSpan.Zero` is a nullable
+        // DateTime to the model and reached the native `+`, which coerces instead of propagating
+        // the absence. So the guard yields to what the TYPES say whenever the lift below would
+        // claim the expression.
+        var lt = context.SemanticHelper.GetType(binary.Left);
+        var rt = context.SemanticHelper.GetType(binary.Right);
+        var typedNullOperand = (left == "null" || right == "null")
+            && (lt.IsNullableValue() || rt.IsNullableValue());
+        if ((left != "null" && right != "null" || typedNullOperand) && op != "&&" && op != "||")
         {
-            var lt = context.SemanticHelper.GetType(binary.Left);
-            var rt = context.SemanticHelper.GetType(binary.Right);
             // Several of these put an operand in RECEIVER position (`{left}.diff(…)`), where a
             // loose operand rebinds silently: `a + b.diff(c)` is not `(a + b).diff(c)`.
             var leftText = JsExprWriter.WriteIn(leftIr, JsPrecedence.Call);

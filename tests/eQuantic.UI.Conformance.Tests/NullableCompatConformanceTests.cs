@@ -51,6 +51,14 @@ public class NullableCompatConformanceTests
     [InlineData("DateTime? a = null; var b = TimeSpan.FromHours(1); var c = a + b; return c == null;")]   // true
     [InlineData("TimeSpan? a = null; var b = TimeSpan.FromHours(1); var c = a + b; return c == null;")]   // true
     [InlineData("DateTime? a = new DateTime(2026, 7, 17); var b = TimeSpan.FromDays(1); return (a + b).ToString();")] // the sum
+    // ---- the operand that LOWERS to the literal null: a typed null still carries its type ----
+    [InlineData("var c = ((DateTime?)null) + TimeSpan.FromHours(1); return c == null;")]              // true
+    [InlineData("var c = ((TimeSpan?)null) + TimeSpan.FromHours(1); return c == null;")]              // true
+    [InlineData("return ((DateOnly?)null) < new DateOnly(2026, 7, 17);")]                             // false
+    [InlineData("return ((DateOnly?)null) >= new DateOnly(2026, 7, 17);")]                            // false
+    [InlineData("return ((TimeOnly?)null) > new TimeOnly(10, 30);")]                                  // false
+    [InlineData("return ((DateTime?)null) == new DateTime(2026, 7, 17);")]                            // false
+    [InlineData("return new DateOnly(2026, 7, 17) > ((DateOnly?)null);")]                             // false — literal on the RIGHT
     public void NullableCompatComparison_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
