@@ -80,16 +80,16 @@ export class SdkStrings {
             if (letter === '\'') {
                 let close = pattern.indexOf('\'', i + 1);
                 if (close < 0) {
-                    hint.append(pattern.slice(i + 1));
+                    hint.append($eq.text.substring(pattern, i + 1));
                     break;
                 }
-                hint.append(pattern.substring(i + 1, i + 1 + close - i - 1));
+                hint.append($eq.text.substring(pattern, i + 1, close - i - 1));
                 i = close + 1;
                 continue;
             }
             let run = 1;
             while (i + run < pattern.length && pattern[i + run] === letter) run++;
-            if (letter === 'd') hint.append(day).append(day); else if (letter === 'M') hint.append(month).append(month); else if (letter === 'y') hint.append(year).append(year).append(year).append(year); else hint.append(pattern.substring(i, i + run));
+            if (letter === 'd') hint.append(day).append(day); else if (letter === 'M') hint.append(month).append(month); else if (letter === 'y') hint.append(year).append(year).append(year).append(year); else hint.append($eq.text.substring(pattern, i, run));
             i += run;
         }
         return hint.toString();

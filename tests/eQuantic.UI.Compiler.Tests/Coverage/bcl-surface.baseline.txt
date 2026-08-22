@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=103 · fenced=32 · invalid-probe=6 · native=763
+# totals: eq=105 · fenced=32 · invalid-probe=6 · native=761
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -740,8 +740,8 @@ native         String.Split(String,StringSplitOptions)
 native         String.StartsWith(Char)
 native         String.StartsWith(String)
 native         String.StartsWith(String,StringComparison)
-native         String.Substring(Int32)
-native         String.Substring(Int32,Int32)
+eq             String.Substring(Int32)
+eq             String.Substring(Int32,Int32)
 native         String.ToCharArray()
 native         String.ToCharArray(Int32,Int32)
 native         String.ToLower()

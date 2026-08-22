@@ -385,8 +385,14 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
+        // A plain target keeps the `a ?? (a = b)` shape: named twice, evaluated once.
         result.Should().Contain("this.cache ?? (this.cache =");
-        result.Should().Contain("this.cache[this.key] ?? (this.cache[this.key] =");
+        // A DICTIONARY entry does not. `m[k] ??= v` reads the entry first, and .NET throws for a
+        // key that is not there, so the read goes through the guard and the result is written —
+        // which cannot be written as `a ?? (a = b)`, because the guarded read is not a target.
+        // The receiver and the key are each bound once, so neither is evaluated twice.
+        result.Should().Contain("$eq.dictGet($0, $1) ?? this.fetchValue(this.key)");
+        result.Should().Contain("(this.cache, this.key)");
     }
 
     // ============ Real Component State Management ============

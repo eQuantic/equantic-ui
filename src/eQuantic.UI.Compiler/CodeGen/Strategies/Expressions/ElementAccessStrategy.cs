@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Services;
@@ -35,12 +36,59 @@ public class ElementAccessStrategy : IExpressionIrStrategy
         }
 
         // Each indexer argument is one subscript.
+        // A DICTIONARY READ fails for a key that is not there. A plain object answers `undefined`,
+        // so the absence spread through the program instead of stopping it where .NET stops it —
+        // and an undefined reaching a render is a blank, not an error anyone can trace. Only a
+        // READ: the same syntax on the left of an assignment is how a key is ADDED.
+        if (elementAccess.ArgumentList.Arguments.Count == 1
+            && !IsAssignmentTarget(elementAccess)
+            && context.SemanticHelper.GetType(elementAccess.Expression).IsDictionaryLike(out _))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var map = context.Converter.ConvertExpression(elementAccess.Expression);
+            var key = context.Converter.ConvertExpression(elementAccess.ArgumentList.Arguments[0].Expression);
+            return JsExpr.Callish($"{Eq.DictGet}({map}, {key})");
+        }
+
         var indexed = context.Converter.ConvertIr(elementAccess.Expression);
         foreach (var arg in elementAccess.ArgumentList.Arguments)
         {
             indexed = JsExpr.Index(indexed, context.Converter.ConvertIr(arg.Expression));
         }
         return indexed;
+    }
+
+    /// <summary>
+    /// Whether this access CREATES the entry rather than reading it — which is only a plain
+    /// assignment. `m[k] = v` puts a key there whether or not it was; `m[k] += 1` and `m[k]++`
+    /// READ first and throw in .NET when the key is absent, so guarding them is not optional:
+    /// without it an undefined walks into the arithmetic and the page gets NaN instead of the
+    /// exception the server would have raised. `out`/`ref` write too.
+    /// </summary>
+    private static bool IsAssignmentTarget(ElementAccessExpressionSyntax access)
+    {
+        // Parentheses are not a context: `(m[k]) = v` is still the target of that assignment, and
+        // reading through them would emit `($eq.dictGet(…)) = v`, which does not even parse.
+        SyntaxNode node = access;
+        while (node.Parent is ParenthesizedExpressionSyntax parenthesized) node = parenthesized;
+
+        return node.Parent switch
+        {
+            // A COMPOUND assignment is NOT here: it reads first, and the assignment strategy
+            // lowers it to a guarded read plus a plain write.
+            AssignmentExpressionSyntax assignment =>
+                assignment.Left == node && assignment.IsKind(SyntaxKind.SimpleAssignmentExpression),
+            // ++ and -- also read first, and .NET throws for a key that is not there — but the
+            // guarded read cannot BE the target (`$eq.dictGet(…)++` does not parse) and the
+            // postfix form's value is the OLD one, so lowering it needs more than a template.
+            // Left as a plain `m[k]++` and recorded in the conversion gaps.
+            PrefixUnaryExpressionSyntax prefix =>
+                prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression),
+            PostfixUnaryExpressionSyntax postfix =>
+                postfix.IsKind(SyntaxKind.PostIncrementExpression) || postfix.IsKind(SyntaxKind.PostDecrementExpression),
+            ArgumentSyntax { RefOrOutKeyword.RawKind: not 0 } => true,
+            _ => false,
+        };
     }
 
     public int Priority => 1;

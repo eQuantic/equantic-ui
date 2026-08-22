@@ -162,9 +162,12 @@ public static class MermaidLayout
             foreach (var edge in graph.Edges)
             {
                 if (edge.Label.Length == 0) continue;
-                var lower = rank[index[edge.From]] < rank[index[edge.To]]
-                    ? rank[index[edge.From]]
-                    : rank[index[edge.To]];
+                // Each end looked up ONCE. Four dictionary reads to pick the smaller of two ranks
+                // is work repeated for nothing, and on the web each read now checks that the key
+                // is there (a missing one throws, as it does in .NET) — so a repeat is not free.
+                var fromRank = rank[index[edge.From]];
+                var toRank = rank[index[edge.To]];
+                var lower = fromRank < toRank ? fromRank : toRank;
                 var needed = LabelChipWidth(edge.Label) + 24;
                 if (lower >= 0 && lower < rankCount && gapAfter[lower] < needed)
                     gapAfter[lower] = needed;
@@ -229,8 +232,11 @@ public static class MermaidLayout
         for (var e = 0; e < graph.Edges.Count; e++)
         {
             var edge = graph.Edges[e];
-            if (index[edge.From] == index[edge.To]) back[e] = true;
-            else outgoing[index[edge.From]].Add(e);
+            // Both ends once: three reads to compare two of them and use one is the same repeat
+            // the labelled-gap loop had, and a dictionary read is a checked lookup now.
+            var from = index[edge.From];
+            if (from == index[edge.To]) back[e] = true;
+            else outgoing[from].Add(e);
         }
 
         // 0 = untouched, 1 = on the stack, 2 = done.

@@ -95,6 +95,10 @@ public class GeneratedDifferentialTests
         private readonly List<string> _chars = [];
         private readonly List<string> _suits = [];
         private readonly List<string> _nullables = [];
+        private readonly List<string> _dates = [];
+        private readonly List<string> _spans = [];
+        private readonly List<string> _maybeDates = [];
+        private readonly List<string> _maps = [];
 
         public string Generate()
         {
@@ -141,6 +145,32 @@ public class GeneratedDifferentialTests
             program.Append($"int? {maybeName} = {(Pick(2) == 0 ? "null" : Pick(30).ToString())}; ");
             _nullables.Add(maybeName);
 
+            // DATES are runtime CLASSES on the other side, so every operator on them is a
+            // method call and every comparison had to be taught to LIFT — which is where the
+            // crash of #15 lived. They are never PRINTED here: a date rendered without a
+            // culture is a documented divergence, pinned elsewhere, and would drown this.
+            for (var i = 0; i < 1 + Pick(2); i++)
+            {
+                var name = $"d{i}";
+                program.Append($"DateTime {name} = new DateTime(20{10 + Pick(15)}, {1 + Pick(12)}, {1 + Pick(28)}); ");
+                _dates.Add(name);
+            }
+            var spanName = "t0";
+            program.Append($"TimeSpan {spanName} = TimeSpan.FromMinutes({1 + Pick(600)}); ");
+            _spans.Add(spanName);
+            var maybeDate = "nd0";
+            program.Append($"DateTime? {maybeDate} = {(Pick(2) == 0 ? "null" : $"new DateTime(20{10 + Pick(15)}, {1 + Pick(12)}, {1 + Pick(28)})")}; ");
+            _maybeDates.Add(maybeDate);
+
+            // A DICTIONARY is a plain object on the other side, so its keys are strings there
+            // whatever they are here, and enumerating it goes through $eq.entries.
+            var mapName = "map0";
+            program.Append($"var {mapName} = new Dictionary<string, int> {{ "
+                + string.Join(", ", Enumerable.Range(0, 2 + Pick(3))
+                    .Select(i => $"[\"k{i}\"] = {Pick(50)}"))
+                + " }; ");
+            _maps.Add(mapName);
+
             var listCount = 1 + Pick(2);
             for (var i = 0; i < listCount; i++)
             {
@@ -174,6 +204,15 @@ public class GeneratedDifferentialTests
             // A char folds through its CODE UNIT, the way C# promotes it.
             foreach (var c in _chars) program.Append($"acc = (acc * 5 + {c}) % 1000003; ");
             foreach (var q in _nullables) program.Append($"acc = (acc * 3 + ({q} ?? -1)) % 1000003; ");
+            // A date is OBSERVED through its parts and its comparisons, never its text.
+            foreach (var d in _dates)
+                program.Append($"acc = (acc * 11 + {d}.Year + {d}.Month * 31 + {d}.Day + {d}.DayOfYear) % 1000003; ");
+            foreach (var t in _spans)
+                program.Append($"acc = (acc * 13 + (int){t}.TotalMinutes + {t}.Hours) % 1000003; ");
+            foreach (var n in _maybeDates)
+                program.Append($"acc = (acc * 17 + ({n}.HasValue ? {n}.Value.Day : -1)) % 1000003; ");
+            foreach (var m in _maps)
+                program.Append($"acc = (acc * 19 + {m}.Count + {m}.Values.Sum() + ({m}.ContainsKey(\"k1\") ? 7 : 0)) % 1000003; ");
             var fold = new StringBuilder("return $\"{acc}");
             foreach (var s in _strings) fold.Append($"|{{{s}}}");
             // A long and a decimal are OBSERVED as text: their runtime representations differ from
@@ -190,8 +229,38 @@ public class GeneratedDifferentialTests
 
         private string Statement()
         {
-            switch (Pick(16))
+            switch (Pick(24))
             {
+                case 20:
+                    return $"foreach (var pair in {MapVar()}) {{ {IntVar()} = ({IntVar()} + pair.Value + pair.Key.Length) % 9973; }} ";
+                case 21:
+                    return $"if ({MapVar()}.TryGetValue(\"k{Pick(4)}\", out var found{_names})) {{ {IntVar()} += found{_names++}; }} ";
+                case 22:
+                {
+                    // A THROW that is caught: the exception TYPE and message differ across the
+                    // two runtimes, so only whether the catch ran is observed.
+                    // Substring and a missing dictionary key both throw on BOTH sides. An array
+                    // index out of range does not — that one is a documented limit, pinned in the
+                    // conversion gaps, and reaching it here would make every program fail for a
+                    // reason this instrument is not hunting.
+                    var thrower = Pick(2) == 0
+                        ? $"var bad = {StringVar()}.Substring({20 + Pick(20)});"
+                        : $"var bad = {MapVar()}[\"missing{Pick(9)}\"];";
+                    return $"try {{ {thrower} {IntVar()} += 1; }} catch {{ {IntVar()} -= 1; }} ";
+                }
+                case 23:
+                    return $"{StringVar()} = ({StringVar()} + \"{new string((char)('a' + Pick(26)), 1 + Pick(3))}\")"
+                           + $".Replace(\"{(char)('a' + Pick(26))}\", \"{(char)('a' + Pick(26))}\").Trim().PadLeft({Pick(9)}, '.'); ";
+                case 16:
+                    return $"if ({DateVar()} < {DateVar()}.AddDays({1 + Pick(400)})) {{ {IntVar()} += 3; }} ";
+                case 17:
+                    return $"{IntVar()} += ({DateVar()}.AddMonths({Pick(15)}) - {DateVar()}).Days % 97; ";
+                case 18:
+                    // The LIFTED comparison: an absent operand ANSWERS, it does not throw.
+                    return $"if ({MaybeDateVar()} == null || {MaybeDateVar()} > {DateVar()}) {{ {IntVar()} += 5; }} "
+                           + $"if ({MaybeDateVar()} == {MaybeDateVar()}) {{ {IntVar()} += 1; }} ";
+                case 19:
+                    return $"{SpanVar()} = {SpanVar()} + TimeSpan.FromMinutes({1 + Pick(120)}); ";
                 case 12:
                     // A switch EXPRESSION over an enum: member names on one side, strings on the other.
                     return $"{IntVar()} += {SuitVar()} switch {{ Suit.Clubs => 1, Suit.Hearts => 2, _ => 3 }}; ";
@@ -304,6 +373,12 @@ public class GeneratedDifferentialTests
 
         private static readonly string[] Suits = ["Clubs", "Hearts", "Spades"];
 
+        private string MapVar() => _maps[Pick(_maps.Count)];
+
+        private string DateVar() => _dates[Pick(_dates.Count)];
+        private string SpanVar() => _spans[Pick(_spans.Count)];
+        private string MaybeDateVar() => _maybeDates[Pick(_maybeDates.Count)];
+
         private string SuitVar() => _suits[Pick(_suits.Count)];
         private string NullableVar() => _nullables[Pick(_nullables.Count)];
 
@@ -356,9 +431,12 @@ public class GeneratedDifferentialTests
                     ? StringVar()
                     : $"\"{(char)('a' + Pick(26))}{(char)('a' + Pick(26))}\"";
 
-            return Pick(5) switch
+            return Pick(8) switch
             {
                 0 => $"({StringExpr(depth - 1)} + {StringExpr(depth - 1)})",
+                5 => $"{StringExpr(depth - 1)}.PadRight({1 + Pick(6)}, '-')",
+                6 => $"({StringExpr(depth - 1)} + {StringExpr(depth - 1)}).Substring({Pick(2)})",
+                7 => $"{StringExpr(depth - 1)}.Replace('{(char)('a' + Pick(26))}', '{(char)('a' + Pick(26))}')",
                 1 => $"({StringExpr(depth - 1)} + {IntExpr(depth - 1)})",
                 2 => $"{StringExpr(depth - 1)}.ToUpper()",
                 3 => $"({BoolExpr(depth - 1)} ? {StringExpr(depth - 1)} : {StringExpr(depth - 1)})",
