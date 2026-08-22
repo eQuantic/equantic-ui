@@ -184,7 +184,23 @@ public sealed class Calendar : StatefulComponent
         if (_cursor is not { } cursor) return null;
         var offset = cursor.DayNumber - start.DayNumber;
         if (offset < 0 || offset >= 42) return null;
-        return (offset / 7 + 1, offset % 7);
+        // The cursor's own day has to BE a cell, or there is nothing to point at.
+        if (cursor.Month != _month.Month || !InRange(cursor)) return null;
+
+        // COUNTED, not the column. The realizers number cells by walking the row and numbering
+        // what carries role=gridcell, and this grid is full of things that do not: the days of the
+        // neighbouring months are holes and the days outside min/max are plain boxes. July 2026
+        // starts on a Wednesday, so the first week has three holes before the 1st — by column it
+        // would be item 3, and the realizer calls it item 0. The activedescendant would have named
+        // the 4th while the ring sat on the 1st.
+        var row = offset / 7;
+        var item = 0;
+        for (var column = 0; column < offset % 7; column++)
+        {
+            var day = start.AddDays(row * 7 + column);
+            if (day.Month == _month.Month && InRange(day)) item++;
+        }
+        return (row + 1, item);
     }
 
     /// <summary>What an abstract move means to a month grid. The COMPOSITE decides, which is why

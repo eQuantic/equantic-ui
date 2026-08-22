@@ -7748,7 +7748,7 @@
         {
           "tag": "div",
           "attrs": {
-            "aria-activedescendant": "eq-cell-1du8uvv-1-3",
+            "aria-activedescendant": "eq-cell-1du8uvv-1-0",
             "aria-label": "July 2026",
             "role": "grid",
             "tabindex": "0"

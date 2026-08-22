@@ -90,7 +90,14 @@ export class Calendar extends SharedStatefulComponent {
         if (!((cursor = this._cursor) != null)) return null;
         let offset = cursor.dayNumber - start.dayNumber;
         if (offset < 0 || offset >= 42) return null;
-        return [Math.trunc(offset / 7) + 1, offset % 7];
+        if (cursor.month !== this._month.month || !this.inRange(cursor)) return null;
+        let row = Math.trunc(offset / 7);
+        let item = 0;
+        for (let column = 0; column < offset % 7; column++) {
+            let day = start.addDays(row * 7 + column);
+            if (day.month === this._month.month && this.inRange(day)) item++;
+        }
+        return [row + 1, item];
     }
 
     move(move: NavigableMoveValue) {

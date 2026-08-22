@@ -144,6 +144,37 @@ public class CalendarTests
     }
 
     [Fact]
+    public void OnceTheresACursor_TheActivedescendantNamesTheDayItIsOn()
+    {
+        // No case here had a cursor, which is why nothing noticed that the id was computed from the
+        // COLUMN while the realizers number by counting CELLS. July 2026 starts on a Wednesday, so
+        // the first week carries three holes: the 1st is column 3 and cell 0, and the pointer named
+        // the 4th while the ring sat on the 1st.
+        var calendar = new Calendar(July17);
+        var first = Render(calendar);
+        var firstCell = Cells(first)[0];
+        firstCell.Attributes["aria-label"].Should().Be("Wednesday, 1 July 2026");
+
+        // Pressing a day is what gives the grid a cursor.
+        Press(firstCell);
+        var after = Render(calendar);
+
+        var grid = Walk(after).Single(n => n.Attributes.GetValueOrDefault("role") == "grid");
+        var active = grid.Attributes["aria-activedescendant"];
+        var target = Walk(after).Single(n => n.Attributes.GetValueOrDefault("id") == active);
+        target.Attributes["aria-label"].Should().Be("Wednesday, 1 July 2026",
+            "the activedescendant has to name the day the cursor is on, not the one at that column");
+    }
+
+    /// <summary>Invokes a lowered node's click handler — the same Action the realizer put there.</summary>
+    private static void Press(HtmlNode node)
+    {
+        var handler = node.Events.Values.OfType<Action>().FirstOrDefault();
+        handler.Should().NotBeNull("the cell has to carry a press for this test to mean anything");
+        handler!();
+    }
+
+    [Fact]
     public void ACalendarWithNothingSelected_Renders()
     {
         // Every other case here hands it a date, which is why the whole suite missed that an
