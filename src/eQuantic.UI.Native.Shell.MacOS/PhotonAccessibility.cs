@@ -96,8 +96,10 @@ internal static class PhotonAccessibility
             // Disclosure state — VoiceOver reads "expanded"/"collapsed" after the name.
             if (node.Expanded is { } isOpen)
                 SendVoid(element, Sel("setAccessibilityExpanded:"), isOpen);
-            // The destination the user is ON — AppKit's own word for it, read after the name.
-            if (node.Current) SendVoid(element, Sel("setAccessibilitySelected:"), true);
+            // The destination the user is ON, or the one of a set that is PICKED — AppKit has one
+            // word for both, read after the name.
+            if (node.Current || node.Selected == true)
+                SendVoid(element, Sel("setAccessibilitySelected:"), true);
             SendVoid(element, Sel("setAccessibilityEnabled:"), !node.Disabled);
             SendVoid(element, Sel("setAccessibilityParent:"), view);
             // The path, visible in Accessibility Inspector — the same identity every press,

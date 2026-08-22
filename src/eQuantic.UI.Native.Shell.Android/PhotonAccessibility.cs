@@ -109,10 +109,11 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         info.Checkable = node.Checked is SemanticCheck.On or SemanticCheck.Off;
         info.Checked = node.Checked == SemanticCheck.On;
 
-        // The destination the user is ON. TalkBack reads it as "selected" after the name — the
-        // platform's nearest word to the web's aria-current, and the reason a bar whose active stop
-        // is only a tint colour is a bar a screen-reader user walks blind.
-        info.Selected = node.Current;
+        // The destination the user is ON, or the one of a set that is PICKED (a tab, an option, a
+        // calendar day). TalkBack reads both as "selected" after the name — the platform has one
+        // word where the web has two, and a bar whose active stop is only a tint colour is a bar a
+        // screen-reader user walks blind.
+        info.Selected = node.Current || node.Selected == true;
 
         info.Focusable = true;
         info.AccessibilityFocused = _focused == virtualViewId;

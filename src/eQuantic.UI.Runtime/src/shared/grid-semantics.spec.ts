@@ -52,7 +52,21 @@ describe('grid semantics (C# GridSemanticsTests cross-pin)', () => {
     expect(host.attributes?.role).toBe('grid');
     expect(host.attributes?.tabindex).toBe('0');
     expect(host.attributes?.['aria-label']).toBe('July 2026');
-    expect(host.attributes?.['aria-activedescendant']).toBe('eq-cell-1-1');
+    const active = host.attributes?.['aria-activedescendant'];
+    expect(active).toBe('eq-cell-1-1');
+    // …and the reference RESOLVES. A dangling activedescendant reads to assistive tech as no focus
+    // at all, and the attribute alone cannot tell you the difference.
+    const target = walk(host).filter((n) => n.attributes?.id === active);
+    expect(target).toHaveLength(1);
+    expect(target[0].attributes?.role).toBe('gridcell');
+  });
+
+  it('the header row names its columns', () => {
+    const headers = walk(render(month())).filter((n) => n.attributes?.role === 'columnheader');
+    // C15: the day names ARE the column headers, so a cell announces "Friday, July 17".
+    expect(headers).toHaveLength(2);
+    // …and a header is never also a target the arrows can land on.
+    expect(headers.every((h) => h.attributes?.id === undefined)).toBe(true);
   });
 
   it('cells are gridcells that state selection and leave the tab order', () => {

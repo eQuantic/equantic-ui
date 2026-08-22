@@ -1211,10 +1211,42 @@ public static class WebRealizer
                 Style = new HtmlStyle { Display = Core.Display.Contents },
                 RawAttributes = new Dictionary<string, string> { ["role"] = "row" },
             };
-            if (LowerNode(navigable.Rows[index], context, null) is { } lowered) row.Children.Add(lowered);
+            if (LowerNode(navigable.Rows[index], context, null) is { } lowered)
+            {
+                row.Children.Add(lowered);
+                if (navigable.HasHeaderRow && index == 0) MarkColumnHeaders(lowered);
+            }
+            // The cells are IDENTIFIED — an aria-activedescendant pointing at an id nothing
+            // carries is a dangling reference, which reads to assistive tech as no focus at all.
+            var item = 0;
+            if (!(navigable.HasHeaderRow && index == 0)) NumberGridCells(row, index, ref item);
             element.Children.Add(row);
         }
         return element;
+    }
+
+    /// <summary>Walks one lowered row and ids every gridcell in tree order — the id the host's
+    /// aria-activedescendant points at, built the same way by the TS twin.</summary>
+    private static void NumberGridCells(Core.HtmlElement element, int row, ref int item)
+    {
+        if (element.Role == "gridcell")
+        {
+            element.Id = NavigableCellId(row, item);
+            item++;
+        }
+        foreach (var child in element.Children)
+            if (child is Core.HtmlElement childElement)
+                NumberGridCells(childElement, row, ref item);
+    }
+
+    /// <summary>The header row's cells NAME their columns (design system C15: the day names).
+    /// They are the row content's DIRECT children — whatever the caller laid out, one element per
+    /// column — so the rule is structural rather than a guess about what a header looks like.</summary>
+    private static void MarkColumnHeaders(Core.HtmlElement rowContent)
+    {
+        foreach (var child in rowContent.Children)
+            if (child is Core.HtmlElement cell)
+                cell.Role = "columnheader";
     }
 
     /// <summary>The id a cell answers to for <c>aria-activedescendant</c> — the TS twin builds the

@@ -2677,10 +2677,38 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
     const row = element('div', { display: 'contents' });
     row.attributes['role'] = 'row';
     const lowered = lowerNode(rows[index], context, null, `${path}/${index}`);
-    if (lowered) row.children.push(lowered);
+    const isHeader = node.hasHeaderRow === true && index === 0;
+    if (lowered) {
+      row.children.push(lowered);
+      if (isHeader) markColumnHeaders(lowered);
+    }
+    // The cells are IDENTIFIED — an aria-activedescendant pointing at an id nothing carries is a
+    // dangling reference, which reads to assistive tech as no focus at all.
+    if (!isHeader) numberGridCells(row, index, { next: 0 });
     host.children.push(row);
   }
   return host;
+}
+
+/** Ids every gridcell of one row in tree order — the C# twin numbers the same way. */
+function numberGridCells(node: HtmlNode, row: number, counter: { next: number }): void {
+  if (node.attributes?.role === 'gridcell') {
+    node.attributes['id'] = navigableCellId(row, counter.next);
+    counter.next++;
+  }
+  for (const child of node.children ?? []) numberGridCells(child as HtmlNode, row, counter);
+}
+
+/**
+ * The header row's cells NAME their columns (design system C15: the day names). They are the row
+ * content's DIRECT children — whatever the caller laid out, one element per column — so the rule
+ * is structural rather than a guess about what a header looks like.
+ */
+function markColumnHeaders(rowContent: HtmlNode): void {
+  for (const child of rowContent.children ?? []) {
+    const cell = child as HtmlNode;
+    if (cell.attributes) cell.attributes['role'] = 'columnheader';
+  }
 }
 
 /**

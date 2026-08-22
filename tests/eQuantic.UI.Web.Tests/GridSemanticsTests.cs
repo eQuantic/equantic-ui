@@ -65,8 +65,26 @@ public class GridSemanticsTests
         host.Attributes["role"].Should().Be("grid");
         host.Attributes["tabindex"].Should().Be("0");
         host.Attributes["aria-label"].Should().Be("July 2026");
-        // The arrows move a CELL without the focus ever leaving the host's one stop.
-        host.Attributes["aria-activedescendant"].Should().Be("eq-cell-1-1");
+        // The arrows move a CELL without the focus ever leaving the host's one stop…
+        var active = host.Attributes["aria-activedescendant"];
+        active.Should().Be("eq-cell-1-1");
+        // …and the reference RESOLVES. A dangling activedescendant reads to assistive tech as no
+        // focus at all, and the attribute alone cannot tell you the difference.
+        Walk(host).Where(node => node.Attributes.GetValueOrDefault("id") == active)
+            .Should().ContainSingle().Which.Attributes["role"].Should().Be("gridcell");
+    }
+
+    [Fact]
+    public void TheHeaderRowNamesItsColumns()
+    {
+        var headers = Walk(Render(Month()))
+            .Where(node => node.Attributes.GetValueOrDefault("role") == "columnheader")
+            .ToList();
+
+        // C15: the day names ARE the column headers, so a cell announces "Friday, July 17".
+        headers.Should().HaveCount(3);
+        // …and a header is never also a target the arrows can land on.
+        headers.Should().OnlyContain(header => !header.Attributes.ContainsKey("id"));
     }
 
     [Fact]
