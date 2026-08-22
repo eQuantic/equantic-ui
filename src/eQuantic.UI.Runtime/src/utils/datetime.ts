@@ -154,10 +154,21 @@ export class TimeSpan {
   }
 }
 
-function ticksFromUnit(value: number, ticksPerUnit: bigint): bigint {
+/**
+ * A count that .NET types as `long` and C# lets you write as an int literal. Both cross: a
+ * transpiled `long` is a bigint (`TimeSpan.FromSeconds(90)` binds .NET 9's long overload), while a
+ * `double` count stays a number. Beyond 2^53 a bigint count loses precision here — the same span is
+ * past `TimeSpan.MaxValue` in .NET, which throws, so no representable span is affected.
+ */
+function asNumber(value: bigint | number): number {
+  return typeof value === 'bigint' ? Number(value) : value;
+}
+
+function ticksFromUnit(value: bigint | number, ticksPerUnit: bigint): bigint {
   // .NET scales through milliseconds and rounds to the nearest tick.
   return (
-    BigInt(Math.round(value * Number(ticksPerUnit / TICKS_PER_MILLISECOND))) * TICKS_PER_MILLISECOND
+    BigInt(Math.round(asNumber(value) * Number(ticksPerUnit / TICKS_PER_MILLISECOND))) *
+    TICKS_PER_MILLISECOND
   );
 }
 
@@ -166,11 +177,11 @@ export interface TimeSpanFactory {
   (hours: number, minutes: number, seconds: number): TimeSpan;
   (days: number, hours: number, minutes: number, seconds: number): TimeSpan;
   (days: number, hours: number, minutes: number, seconds: number, milliseconds: number): TimeSpan;
-  fromDays(value: number): TimeSpan;
-  fromHours(value: number): TimeSpan;
-  fromMinutes(value: number): TimeSpan;
-  fromSeconds(value: number): TimeSpan;
-  fromMilliseconds(value: number): TimeSpan;
+  fromDays(value: bigint | number): TimeSpan;
+  fromHours(value: bigint | number): TimeSpan;
+  fromMinutes(value: bigint | number): TimeSpan;
+  fromSeconds(value: bigint | number): TimeSpan;
+  fromMilliseconds(value: bigint | number): TimeSpan;
   fromTicks(value: bigint | number): TimeSpan;
   parse(text: string): TimeSpan;
   readonly zero: TimeSpan;
@@ -210,7 +221,8 @@ timeSpan.fromDays = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_DAY));
 timeSpan.fromHours = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_HOUR));
 timeSpan.fromMinutes = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_MINUTE));
 timeSpan.fromSeconds = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_SECOND));
-timeSpan.fromMilliseconds = (v) => new TimeSpan(BigInt(Math.round(v)) * TICKS_PER_MILLISECOND);
+timeSpan.fromMilliseconds = (v) =>
+  new TimeSpan(BigInt(Math.round(asNumber(v))) * TICKS_PER_MILLISECOND);
 timeSpan.fromTicks = (v) => new TimeSpan(typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
 timeSpan.parse = (text: string): TimeSpan => {
   // .NET "c" format: [-][d.]hh:mm:ss[.fffffff]
@@ -821,8 +833,8 @@ export interface DateTimeOffsetFactory {
     second: number,
     offset: TimeSpan,
   ): DateTimeOffset;
-  fromUnixTimeSeconds(seconds: number): DateTimeOffset;
-  fromUnixTimeMilliseconds(ms: number): DateTimeOffset;
+  fromUnixTimeSeconds(seconds: bigint | number): DateTimeOffset;
+  fromUnixTimeMilliseconds(ms: bigint | number): DateTimeOffset;
   now(): DateTimeOffset;
   utcNow(): DateTimeOffset;
   parse(text: string): DateTimeOffset;
@@ -848,10 +860,15 @@ function dateTimeOffsetImpl(...args: unknown[]): DateTimeOffset {
 }
 
 export const dateTimeOffset = dateTimeOffsetImpl as DateTimeOffsetFactory;
+/** A `long` count kept EXACT — these two take a long in .NET, so a bigint must not round-trip
+ * through a double on its way to ticks. */
+function asBigInt(value: bigint | number): bigint {
+  return typeof value === 'bigint' ? value : BigInt(Math.trunc(value));
+}
 dateTimeOffset.fromUnixTimeSeconds = (s) =>
-  new DateTimeOffset(UNIX_EPOCH_TICKS + BigInt(Math.trunc(s)) * TICKS_PER_SECOND, 0n);
+  new DateTimeOffset(UNIX_EPOCH_TICKS + asBigInt(s) * TICKS_PER_SECOND, 0n);
 dateTimeOffset.fromUnixTimeMilliseconds = (ms) =>
-  new DateTimeOffset(UNIX_EPOCH_TICKS + BigInt(Math.trunc(ms)) * TICKS_PER_MILLISECOND, 0n);
+  new DateTimeOffset(UNIX_EPOCH_TICKS + asBigInt(ms) * TICKS_PER_MILLISECOND, 0n);
 dateTimeOffset.now = () => new DateTimeOffset(dateTime.now().ticks, 0n);
 dateTimeOffset.utcNow = () => new DateTimeOffset(dateTime.utcNow().ticks, 0n);
 dateTimeOffset.parse = (text: string): DateTimeOffset => {

@@ -218,7 +218,12 @@ The Roslyn-based compiler READS C# with strategies and WRITES JavaScript from an
 5. **TypeScriptEmitter** (`CodeGen/TypeScriptEmitter.cs`) - Decides WHAT a module contains —
    members, imports — and hands nodes to the builder; it assembles no text
 6. **SourceMapGenerator** - V3 Source Maps for C# debugging in browser
-7. **SemanticHelper** (`Services/SemanticHelper.cs`) - symbol-based decisions. The rule: name
+7. **ValueFlow** (`CodeGen/Strategies/ValueFlow.cs`) - the dispatcher settles EVERY expression for
+   the implicit conversion the BOUND tree (`IOperation`) wraps it in — char promotion, int→long —
+   at every site C# applies it. A rule ValueFlow owns is removed from the syntax strategies (never
+   both, or the value converts twice); it yields on text and decimal until those move. The bound
+   tree is the destination: `docs/BOUND-TREE-PLAN.md` lists the slices
+8. **SemanticHelper** (`Services/SemanticHelper.cs`) - symbol-based decisions. The rule: name
    heuristics are legal ONLY where the model cannot be asked (`Knows()` false — no model, or a
    strategy-rewrote node); an in-tree call the model cannot bind is a build error (EQ2006), never
    a guessed translation.

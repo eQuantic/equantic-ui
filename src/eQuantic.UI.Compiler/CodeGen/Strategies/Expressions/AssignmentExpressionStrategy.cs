@@ -77,16 +77,15 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         if (op == "=" && leftType is { SpecialType: SpecialType.System_Single })
             rightIr = FloatStore.Settle(assignment.Right, rightIr, context);
 
-        // A compound on a CHAR, or with a char on the right of a numeric target, computes on the
-        // code unit: `c += 1` steps the character, `sum += ch` adds its code.
+        // A compound on a CHAR TARGET writes a character back: `c += 1` steps it. A char on the
+        // RIGHT arrives as its code unit already — ValueFlow settles the promotion the bound tree
+        // records, wherever C# applies it.
         if (op.Length >= 2 && op[^1] == '=' && op != "==" && op != "!=" && op != "<=" && op != ">=")
         {
             var binaryOp = op[..^1];
             if (leftType is { SpecialType: SpecialType.System_Char } && binaryOp is "+" or "-")
                 return JsExpr.Binary(leftIr, "=", JsExpr.Callish(
-                    $"String.fromCharCode({JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {CharOrValue(assignment.Right, right, rightType)})"));
-            if (rightType is { SpecialType: SpecialType.System_Char } && leftType is { SpecialType: not SpecialType.System_String })
-                rightIr = JsExpr.Callish(CharOrValue(assignment.Right, right, rightType));
+                    $"String.fromCharCode({JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {JsExprWriter.WriteIn(rightIr, JsPrecedence.Additive)})"));
 
             // A fixed-width target settles the compound result by its type (IntegerWidth), and a
             // float target rounds it to single precision.
@@ -117,14 +116,6 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
         // an assignment used as an operand is fenced by whoever places it.
         return JsExpr.Binary(leftIr, op, rightIr);
-    }
-
-    /// <summary>A char operand's code unit — folded for a literal — or the value as written.</summary>
-    private static string CharOrValue(ExpressionSyntax operand, string converted, ITypeSymbol? type)
-    {
-        if (type is not { SpecialType: SpecialType.System_Char }) return converted;
-        if (operand is LiteralExpressionSyntax { Token.Value: char c }) return ((int)c).ToString();
-        return $"{converted}.charCodeAt(0)";
     }
 
     public int Priority => 10;

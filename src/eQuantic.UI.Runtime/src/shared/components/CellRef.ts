@@ -11,14 +11,14 @@ export class CellRef { declare row: number; declare col: number; declare maxCols
     let col = 0;
     let i = 0;
     while (i < text.length && text[i] >= 'A' && text[i] <= 'Z') {
-        col = col * 26 + ((text[i]).charCodeAt(0) - 65 + 1);
+        col = col * 26 + (text[i].charCodeAt(0) - 65 + 1);
         i++;
     }
     if (i === 0 || i === text.length) return null;
     let row = 0;
     while (i < text.length) {
         if (text[i] < '0' || text[i] > '9') return null;
-        row = row * 10 + ((text[i]).charCodeAt(0) - 48);
+        row = row * 10 + (text[i].charCodeAt(0) - 48);
         i++;
     }
     if (row === 0) return null;

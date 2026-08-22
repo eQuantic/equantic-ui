@@ -401,6 +401,9 @@ public class CSharpToJsConverter
             var result = strategy is IExpressionIrStrategy ir
                 ? StampIr(expression, ir.ConvertIr(expression, _context))
                 : JsExpr.Opaque(Stamp(expression, strategy.Convert(expression, _context)));
+            // The bound tree has the last word: the implicit conversion C# applied around this
+            // expression, the string it flows into — settled once here, for every site.
+            result = ValueFlow.Settle(expression, result, _context);
             _context.SetCached(expression, result);
             return result;
         }

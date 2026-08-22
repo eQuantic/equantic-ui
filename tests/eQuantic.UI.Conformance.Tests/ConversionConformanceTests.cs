@@ -40,6 +40,20 @@ public class ConversionConformanceTests
         "int big = int.MaxValue; long r = big + 1L; return r.ToString();",         // "2147483648" — widened first
         "byte b = 250; b += 10; return b;",                                        // 4 (wraps at 256)
         "short s = 32767; s++; return s;",                                         // -32768
+
+        // An implicit conversion is not a shape of expression — it happens wherever C# says a value
+        // flows into a wider or different type. These are the sites a syntax rule never sees.
+        "char c = 'a'; int i = c; return i;",                                       // 97 — initializer
+        "int Twice(int x) => x * 2; char c = 'a'; return Twice(c);",                 // 194 — argument
+        "char c = 'a'; var a = new int[100]; a[c] = 7; return a[97];",              // 7 — index
+        "char Pick() => 'z'; int n = Pick(); return n;",                            // 122 — a call's result
+        "char c = 'a'; return c > 90;",                                             // true — comparison
+        "char c = 'a'; return (c + 1).ToString();",                                 // "98"
+        "int n = 7; long l = n; return l.ToString();",                              // "7" — int widens to long
+        "int n = 7; return DateTimeOffset.FromUnixTimeSeconds(n).Year;",            // 1970 — int into a long parameter
+        "int n = 3; float f = n; return f.ToString();",                             // "3"
+        "long l = 5; double d = l; return d;",                                      // 5 — a long narrows to double
+        "long Big(long v) => v * 2; int n = 21; return Big(n).ToString();",           // "42" — int into a long parameter
         // The author's word decides for int and long: `unchecked` wraps, `checked` throws, and the
         // default keeps the double's count (a documented limit — see IntegerWidth).
         "return unchecked(int.MaxValue + 1);",                                      // -2147483648

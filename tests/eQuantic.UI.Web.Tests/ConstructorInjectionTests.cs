@@ -225,7 +225,9 @@ public class ConstructorInjectionTests
         ticking.Should().Contain(".dispose()");
         // The interval is the runtime's TimeSpan, which is what the web realization reads the
         // milliseconds off. A bare number here would mean the two sides disagree about the unit.
-        ticking.Should().Contain("timeSpan.fromMilliseconds(1700)");
+        // `FromMilliseconds(1700)` binds .NET 9's long overload, and the bound tree records the
+        // int→long conversion the syntax never shows; a transpiled long is a BigInt (ValueFlow).
+        ticking.Should().Contain("timeSpan.fromMilliseconds(1700n)");
     }
 
     [Fact]
