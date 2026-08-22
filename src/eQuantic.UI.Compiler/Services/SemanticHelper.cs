@@ -63,15 +63,32 @@ public class SemanticHelper
     {
         if (_symbolOverrides.TryGetValue(node, out var overridden)) return overridden;
         node = Original(node);
-        return Knows(node) ? _semanticModel!.GetSymbolInfo(node).Symbol : null;
+        if (_symbols.TryGetValue(node, out var remembered)) return remembered;
+        var symbol = Knows(node) ? _semanticModel!.GetSymbolInfo(node).Symbol : null;
+        _symbols[node] = symbol;
+        return symbol;
     }
 
     public ITypeSymbol? GetType(SyntaxNode node)
     {
         if (_typeOverrides.TryGetValue(node, out var overridden)) return overridden;
         node = Original(node);
-        return Knows(node) ? _semanticModel!.GetTypeInfo(node).Type : null;
+        if (_types.TryGetValue(node, out var remembered)) return remembered;
+        var type = Knows(node) ? _semanticModel!.GetTypeInfo(node).Type : null;
+        _types[node] = type;
+        return type;
     }
+
+    /// <summary>
+    /// What the model already answered, for THIS model. Dispatching one node runs the gate of
+    /// every candidate strategy, and the ones that share its shape each ask the same question
+    /// about the same node — six model queries per distinct node, measured, five of them repeats.
+    /// The answer cannot change: a helper is rebuilt whenever the model is (SetSemanticModel), the
+    /// overrides are consulted BEFORE this and still win, and the key is the node the model is
+    /// actually asked about — the in-tree original, after any synthetic mapping.
+    /// </summary>
+    private readonly Dictionary<SyntaxNode, ISymbol?> _symbols = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<SyntaxNode, ITypeSymbol?> _types = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>The type a node is CONVERTED to (a collection expression takes its shape from its
     /// target), Original-aware and guarded.</summary>
