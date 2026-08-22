@@ -89,16 +89,16 @@ public class SdkStringLiteralGuardTests
         // read — the member doing the reading is itself policed by the rule above.
         var own = CSharpSyntaxTree.ParseText(
             File.ReadAllText(Path.Combine(componentsDir, "SdkStrings.cs"))).GetRoot();
-        var declarations = own.DescendantNodes().OfType<PropertyDeclarationSyntax>()
-            .Select(property => property.Identifier)
-            .ToHashSet();
+        // OUTSIDE its own declaration is the whole of it. Every property here is written
+        // `X => SdkResources.X`, so a name always occurs inside its own body — counting that
+        // would mark all sixteen as read and leave a guard that can never fail.
         var readByAnotherString = own.DescendantNodes().OfType<IdentifierNameSyntax>()
-            // A `<see cref="…"/>` is a mention, not a read — the one way this could go soft.
-            .Where(identifier => identifier.Ancestors()
-                .OfType<DocumentationCommentTriviaSyntax>().Any() == false)
-            .Select(identifier => identifier.Identifier)
-            .Where(token => !declarations.Contains(token))
-            .Select(token => token.Text)
+            // A `<see cref="…"/>` is a mention, not a read — the other way this could go soft.
+            .Where(identifier => !identifier.Ancestors()
+                .OfType<DocumentationCommentTriviaSyntax>().Any())
+            .Where(identifier => identifier.FirstAncestorOrSelf<PropertyDeclarationSyntax>()
+                ?.Identifier.Text != identifier.Identifier.Text)
+            .Select(identifier => identifier.Identifier.Text)
             .ToHashSet(StringComparer.Ordinal);
 
         var unread = typeof(Components.SdkStrings).GetProperties()

@@ -32,7 +32,7 @@ export class TimePicker extends SharedStatefulComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let times = this.slots();
+        let open = this._open && !this.disabled;
         let field = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
         field.add(new Icon('clock', 20, theme.textMuted));
         let value: any; 
@@ -41,7 +41,7 @@ export class TimePicker extends SharedStatefulComponent {
         field.add(new Icon('chevronDown', 16, theme.textSecondary));
         let box = new Box(new BoxStyle({ height: Sizing.height('medium', context.density), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), field);
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (const time of times) {
+        for (const time of open ? this.slots() : []) {
             let slot = time;
             let picked = $eq.equals(this.selected, slot);
             let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
@@ -49,8 +49,8 @@ export class TimePicker extends SharedStatefulComponent {
             list.add(new Pressable(new Box(new BoxStyle({ height: Sizing.height('medium', context.density), padding: EdgeInsets.symmetric(12, 0), width: SizeValue.fill, background: picked ? theme.colors('primary').subtle : null, hover: picked ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.pick(slot), { role: 'option', selected: picked }));
         }
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), height: SizeValue.fixed(TimePicker.panelHeight), clip: true }), new ScrollView(list));
-        let picker: VisualNode = new Anchored(this.disabled ? box : new Pressable(box, this.toggle.bind(this), { label: this.label.length > 0 ? this.label : SdkStrings.chooseTime, expanded: this._open }), panel, { open: this._open && !this.disabled, onDismiss: this.close.bind(this), matchAnchorWidth: true, panelRole: 'listbox' });
-        if (this._open && !this.disabled) picker = new Shortcut(picker, KeyChord.escape, this.close.bind(this));
+        let picker: VisualNode = new Anchored(this.disabled ? box : new Pressable(box, this.toggle.bind(this), { label: this.label.length > 0 ? this.label : SdkStrings.chooseTime, expanded: this._open }), panel, { open: open, onDismiss: this.close.bind(this), matchAnchorWidth: true, panelRole: 'listbox' });
+        if (open) picker = new Shortcut(picker, KeyChord.escape, this.close.bind(this));
         return picker;
     }
 

@@ -54,7 +54,11 @@ public sealed class TimePicker : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var times = Slots();
+        // A closed panel is never realized — the web target returns before it, and the native one
+        // does not paint it — so the rows are built only when they will be seen. At a one-minute
+        // step that is 1440 rows, each with its own closure, skipped on every render until the
+        // field is pressed.
+        var open = _open && !Disabled;
 
         var field = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
         field.Add(new Icon(Icons.Clock, IconSize.Dense, theme.TextMuted));
@@ -77,7 +81,7 @@ public sealed class TimePicker : StatefulComponent
         }, field);
 
         var list = new Column(gap: 0) { Width = SizeValue.Fill };
-        foreach (var time in times)
+        foreach (var time in open ? Slots() : [])
         {
             var slot = time;
             var picked = Selected == slot;
@@ -117,13 +121,13 @@ public sealed class TimePicker : StatefulComponent
             Disabled ? box : new Pressable(box, Toggle) { Label = Label.Length > 0 ? Label : SdkStrings.ChooseTime, Expanded = _open },
             panel)
         {
-            Open = _open && !Disabled,
+            Open = open,
             OnDismiss = Close,
             MatchAnchorWidth = true,
             PanelRole = AnchorPanelRole.Listbox,
         };
 
-        if (_open && !Disabled) picker = new Shortcut(picker, KeyChord.Escape, Close);
+        if (open) picker = new Shortcut(picker, KeyChord.Escape, Close);
         return picker;
     }
 

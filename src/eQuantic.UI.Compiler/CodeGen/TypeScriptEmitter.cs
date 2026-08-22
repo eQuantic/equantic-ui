@@ -2157,7 +2157,12 @@ public class TypeScriptEmitter
             "bool" or "boolean" => "boolean",
             "void" => "void",
             "object" => "any",
-            "DateTime" => "Date",
+            // NOT the JS `Date`. The runtime carries its own DateTime — ticks, .NET's epoch, and
+            // the kind — exported beside DateOnly and TimeOnly, which reach here correctly only
+            // because nothing rewrote them. Emitting `Date` typed the generated factory surface
+            // for a class the framework never passes, and told any consumer reading it to hand
+            // over the wrong one.
+            "DateTime" => "DateTime",
             "Guid" => "string",
             "Task" => "void",
             // C# names the build argument `ComponentContext`; the runtime declares one interface

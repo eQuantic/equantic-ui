@@ -280,6 +280,44 @@ public class DatePickerTests
     }
 
     [Fact]
+    public void AClosedListCostsNothing_HoweverFineTheStep()
+    {
+        // The panel is not realized while closed, so building its rows is work nobody sees. At a
+        // one-minute step that is a day of them, on every render, until the field is pressed.
+        var closed = new TimePicker(stepMinutes: 1);
+        Nodes(closed).OfType<Pressable>().Count(p => p.Role == PressableRole.Option).Should().Be(0);
+
+        Press(Trigger(Render(closed)));
+        Nodes(closed).OfType<Pressable>().Count(p => p.Role == PressableRole.Option)
+            .Should().Be(24 * 60, "and every one of them once it is open");
+    }
+
+    /// <summary>Every node the component BUILDS, whether or not a target would realize it.</summary>
+    private static IEnumerable<VisualNode> Nodes(UiComponent component)
+    {
+        IEnumerable<VisualNode> Walk(VisualNode node)
+        {
+            yield return node;
+            var children = node switch
+            {
+                FlexNode flex => flex.Children,
+                Box box => box.Child is { } only ? new[] { only } : Array.Empty<VisualNode>(),
+                Pressable pressable => new[] { pressable.Child },
+                Flexible flexible => new[] { flexible.Child },
+                Anchored anchored => new[] { anchored.Anchor, anchored.Panel },
+                Shortcut shortcut => new[] { shortcut.Child },
+                ScrollView scroll => new[] { scroll.Child },
+                _ => Array.Empty<VisualNode>(),
+            };
+            foreach (var child in children)
+                foreach (var descendant in Walk(child))
+                    yield return descendant;
+        }
+
+        return Walk(component.BuildContained(new ComponentContext(Theme)));
+    }
+
+    [Fact]
     public void AControlledParentThatClearsTheMoment_ClearsBothHalves()
     {
         var picker = new DateTimePicker(new DateTime(2026, 7, 17, 11, 0, 0));
