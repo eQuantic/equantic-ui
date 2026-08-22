@@ -9,6 +9,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Ir;
 /// </summary>
 public abstract record JsClassMember
 {
+    /// <summary>Where this member came from, when the emitter knows — what the source map records.</summary>
+    public JsOrigin? Origin { get; init; }
+
+    /// <summary>Whether the member has a body between braces — what the class layout rule keys on.</summary>
+    public bool HasBody => this is JsAccessorMember or JsMethodMember or JsConstructorMember;
+
     /// <summary>The strangler seam: a member line as the emitter wrote it.</summary>
     public static JsClassMember Raw(string text) => new JsMemberRaw(text);
 

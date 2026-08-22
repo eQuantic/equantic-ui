@@ -29,28 +29,52 @@ public class TypeScriptCodeBuilder
 
     public List<SourceMapping> GetMappings() => _mappings;
 
+    /// <summary>The callback form: the class's members are collected into a <see cref="JsClass"/>
+    /// and written through the one class writer below.</summary>
     public void Class(string name, string? baseClass, Action<ClassBuilder> buildAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool export = true, bool isAbstract = false)
     {
-        if (sourceNode != null) RecordMapping(sourceNode);
-        var generics = typeParameters != null && typeParameters.Any() ? $"<{string.Join(", ", typeParameters)}>" : "";
-        var extendsClause = string.IsNullOrEmpty(baseClass) ? "" : $" extends {baseClass}";
+        var members = new ClassBuilder(this);
+        buildAction(members);
+        Write(new JsClass(name, baseClass, typeParameters?.ToList() ?? [], export, isAbstract, members.Members,
+            new JsOrigin(sourceNode)));
+    }
+
+    /// <summary>
+    /// The single writer of a class. The header, then every member through the member writer under
+    /// the ONE layout rule — a blank line before a member with a body and before a field that
+    /// follows one, fields contiguous, nothing after the last — then the closing brace and the
+    /// blank line that separates classes.
+    /// </summary>
+    public void Write(JsClass jsClass)
+    {
+        if (jsClass.Origin?.Member is { } classNode) RecordMapping(classNode);
+        var generics = jsClass.TypeParameters.Count > 0 ? $"<{string.Join(", ", jsClass.TypeParameters)}>" : "";
+        var extendsClause = string.IsNullOrEmpty(jsClass.Base) ? "" : $" extends {jsClass.Base}";
         // `abstract` is emitted, not erased: a base that declares a member for its subclasses to
         // supply has to say so, or TypeScript reads the declaration as a real property and refuses
         // the accessor that implements it. In PLAIN JavaScript there is no such keyword — `abstract
         // class X {` is a parse error that costs the whole module — and nothing is lost by dropping
         // it, since the only thing it buys is a compile-time refusal to instantiate.
-        var abstractKeyword = isAbstract && TypeAnnotations ? "abstract " : "";
-
+        var abstractKeyword = jsClass.Abstract && TypeAnnotations ? "abstract " : "";
         // The closing brace travels with the scope: a class body that opens and never closes is the
         // one bug generated code reliably ships, and a `using` makes it unrepresentable.
-        using (_writer.BeginBlock($"{(export ? "export " : "")}{abstractKeyword}class {name}{generics}{extendsClause} {{"))
+        using (_writer.BeginBlock($"{(jsClass.Export ? "export " : "")}{abstractKeyword}class {jsClass.Name}{generics}{extendsClause} {{"))
         {
-            buildAction(new ClassBuilder(this));
+            var written = 0;
+            var lastHadBody = false;
+            foreach (var member in jsClass.Members)
+            {
+                if (written > 0 && (member.HasBody || lastHadBody)) Write("");
+                written++;
+                lastHadBody = member.HasBody;
+                // The body's source maps to the line it starts on, one level in.
+                if (member.Origin?.Body is { } body) RecordMapping(body, member.Origin.BodyLine, 1);
+                Line(JsMemberWriter.Write(member, Layout), member.Origin?.Member);
+            }
         }
         Write("");
     }
 
-    /// <summary>How member bodies are laid out — the converter's layout, handed over by the emitter.</summary>
     public JsLayout Layout { get; set; } = JsLayout.Pretty;
 
     public void Indent() => _writer.IndentLevel++;
@@ -96,26 +120,13 @@ public class TypeScriptCodeBuilder
 
     public override string ToString() => _writer.ToString();
 
+    /// <summary>Collects a class's members in order; the layout is the writer's.</summary>
     public class ClassBuilder(TypeScriptCodeBuilder builder)
     {
         private readonly TypeScriptCodeBuilder _builder = builder;
-        private int _members;
-        private bool _lastHadBody;
+        private readonly List<JsClassMember> _members = new();
 
-        /// <summary>
-        /// The ONE layout rule for a class body: a blank line separates a member with a body —
-        /// an accessor, a method, the constructor — from whatever precedes it, and a field from a
-        /// body member before it; fields stay contiguous, and nothing trails the last member.
-        /// Decided here, once, so the two member families cannot drift apart again (methods used
-        /// to be followed by a blank line and accessors not, which is how a generated class read
-        /// as two different hands).
-        /// </summary>
-        private void Separate(bool hasBody)
-        {
-            if (_members > 0 && (hasBody || _lastHadBody)) _builder.Line("");
-            _members++;
-            _lastHadBody = hasBody;
-        }
+        public IReadOnlyList<JsClassMember> Members => _members;
 
         /// <param name="isDeclare">Emit a TYPE-ONLY field (<c>declare x: T;</c>) — no runtime code at all.
         /// Required for properties populated from outside the class body (the base
@@ -128,37 +139,24 @@ public class TypeScriptCodeBuilder
             // Plain-JavaScript mode: `declare` does not exist, and a declare field carries no
             // initializer — the whole line has nothing to say.
             if (!_builder.TypeAnnotations && isDeclare) return;
-            var init = defaultValue != null ? $" = {defaultValue}" : "";
             var prefix = (isDeclare ? "declare " : "") + (isStatic ? "static " : "");
             var annotation = !_builder.TypeAnnotations || string.IsNullOrEmpty(type) ? "" : $": {type}";
-            Separate(hasBody: false);
-            _builder.Line($"{prefix}{name}{annotation}{init};", sourceNode);
+            _members.Add(JsClassMember.Field(prefix, name, annotation, defaultValue) with { Origin = new JsOrigin(sourceNode) });
         }
 
         public void Property(string name, string type, bool isPublic = true, SyntaxNode? sourceNode = null)
         {
             if (!_builder.TypeAnnotations) return;   // a bare interface-style property is TypeScript-only
             var access = isPublic ? "" : "private ";
-            Separate(hasBody: false);
-            _builder.Line($"{access}{name}: {type};", sourceNode);
+            _members.Add(JsClassMember.Field(access, name, $": {type}") with { Origin = new JsOrigin(sourceNode) });
         }
 
-        public void Raw(string content, SyntaxNode? sourceNode = null)
-        {
-            Separate(hasBody: false);
-            _builder.Line(content, sourceNode);
-        }
+        public void Raw(string content, SyntaxNode? sourceNode = null) =>
+            _members.Add(JsClassMember.Raw(content) with { Origin = new JsOrigin(sourceNode) });
 
-        /// <summary>A member through the member writer, laid out by the class's one rule.</summary>
+        /// <summary>A member, with where it came from for the source map.</summary>
         public void Member(JsClassMember member, SyntaxNode? sourceNode = null,
-            SyntaxNode? bodySource = null, int bodyLine = 1)
-        {
-            Separate(hasBody: member is JsAccessorMember or JsMethodMember or JsConstructorMember);
-            // The body's source maps to the line it starts on — `bodyLine` lines below the signature
-            // (past any statements the emitter put in front of it), one level in.
-            if (bodySource != null) _builder.RecordMapping(bodySource, bodyLine, 1);
-            _builder.Line(JsMemberWriter.Write(member, _builder.Layout), sourceNode);
-        }
-
+            SyntaxNode? bodySource = null, int bodyLine = 1) =>
+            _members.Add(member with { Origin = new JsOrigin(sourceNode, bodySource, bodyLine) });
     }
 }
