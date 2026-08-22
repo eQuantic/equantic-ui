@@ -13,11 +13,19 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// stays visibly fenced in the BCL audit baseline instead of silently guessed.
 /// <para>
 /// The table admits only translations that are FAITHFUL and evaluate every argument exactly once:
-/// char predicates go through single-evaluation regexes, <c>IsInfinity</c> through
-/// <c>Math.abs(x) === Infinity</c>. Members whose semantics JS cannot honour on those terms
-/// (sign-bit <c>IsNegative</c> on double, <c>SinPi</c>, <c>FusedMultiplyAdd</c>, the Int64
-/// surface riding on BigInt) are deliberately absent. <c>Parse</c>/<c>TryParse</c> stay with
-/// <see cref="NumberMethodStrategy"/>.
+/// char predicates go through single-evaluation regexes, template parts the writer binds to
+/// temps, and what needs bit access or exact argument reduction goes through a runtime helper
+/// (<c>$eq.math.sinPi</c> is 0 at integers where <c>Math.sin(Math.PI)</c> is 1.22e-16;
+/// <c>$eq.bits.rotateLeft64</c> rotates the long's two's-complement bits). One generated
+/// conformance case per entry proves each mapping against .NET (NumericBclConformanceTests).
+/// What stays fenced is impossible BY CONSTRUCTION or deliberately out of scope:
+/// <c>Int64.BigMul</c> returns an Int128 (a type with no twin), <c>Char.GetNumericValue</c>
+/// needs the Unicode numeric-value table (data, not a function), <c>Char.GetUnicodeCategory</c>
+/// would need thirty <c>\p{…}</c> classes mapped to the enum (derivable — parked until someone
+/// needs it), <c>String.IsInterned</c> asks about an intern pool JavaScript does not have, and
+/// the <c>ReciprocalEstimate</c> pair answers with the PLATFORM's hardware estimate (.NET on
+/// ARM64 uses FRECPE — there is no number this side could faithfully produce).
+/// <c>Parse</c>/<c>TryParse</c> stay with <see cref="NumberMethodStrategy"/>.
 /// </para>
 /// </summary>
 public class PrimitiveStaticStrategy : IExpressionIrStrategy
@@ -60,7 +68,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
 
         // Templates say what they compute; the writer decides what to evaluate once.
         var emit = MethodTable(method.ContainingType.SpecialType, method.Name, args.Length)!;
-        if (emit.Contains(Eq.Round)) context.UsedHelpers.Add(Eq.Import);
+        if (emit.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Template(emit, args, context.TypeAnnotations);
     }
 
@@ -122,6 +130,64 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "IsPositiveInfinity" => "({0} === Infinity)",
                 "IsNegativeInfinity" => "({0} === -Infinity)",
                 "IsInteger" => "Number.isInteger({0})",
+                // The *Pi family reduces its argument EXACTLY before the plain function — the
+                // point of these members is SinPi(1) being 0 where Math.sin(Math.PI) is 1.22e-16.
+                "SinPi" => "$eq.math.sinPi({0})",
+                "CosPi" => "$eq.math.cosPi({0})",
+                "TanPi" => "$eq.math.tanPi({0})",
+                "AcosPi" => "(Math.acos({0}) / Math.PI)",
+                "AsinPi" => "(Math.asin({0}) / Math.PI)",
+                "AtanPi" => "(Math.atan({0}) / Math.PI)",
+                "Atan2Pi" => "(Math.atan2({0}, {1}) / Math.PI)",
+                // Tuples cross as arrays; the shared argument binds once (JsTemplate).
+                "SinCos" => "[Math.sin({0}), Math.cos({0})]",
+                "SinCosPi" => "[$eq.math.sinPi({0}), $eq.math.cosPi({0})]",
+                // Composed exponentials and logs.
+                "Exp10M1" => "(Math.pow(10, {0}) - 1)",
+                "Exp2M1" => "(Math.pow(2, {0}) - 1)",
+                "Log10P1" => "Math.log10(1 + {0})",
+                "Log2P1" => "Math.log2(1 + {0})",
+                // Sign and classification over the double's ACTUAL semantics: the sign BIT decides
+                // for ±0 (CopySign(3.5, -0.0) is -3.5). NaN's sign bit stays out of reach — the
+                // one corner these forms concede.
+                "CopySign" => "(({1} < 0 || Object.is({1}, -0)) ? -Math.abs({0}) : Math.abs({0}))",
+                "IsNegative" => "({0} < 0 || Object.is({0}, -0))",
+                "IsPositive" => "(!({0} < 0) && !Object.is({0}, -0))",
+                "IsEvenInteger" => "(Number.isInteger({0}) && {0} % 2 === 0)",
+                "IsOddInteger" => "(Number.isInteger({0}) && Math.abs({0} % 2) === 1)",
+                "IsNormal" => "(Number.isFinite({0}) && {0} !== 0 && Math.abs({0}) >= 2.2250738585072014e-308)",
+                "IsSubnormal" => "({0} !== 0 && Math.abs({0}) < 2.2250738585072014e-308)",
+                "IsRealNumber" => "(!Number.isNaN({0}))",
+                // A power of two round-trips through its own log — exact for every power,
+                // subnormals included, and off-by-anything for every non-power.
+                "IsPow2" => "({0} > 0 && Number.isFinite({0}) && Math.pow(2, Math.round(Math.log2({0}))) === {0})",
+                // The bit-adjacent surface rides the runtime's Float64 view.
+                "BitIncrement" => "$eq.math.bitIncrement({0})",
+                "BitDecrement" => "$eq.math.bitDecrement({0})",
+                "ILogB" => "$eq.math.ilogb({0})",
+                // One rounding, per contract: FMA via TwoProduct/TwoSum; the ESTIMATE member's
+                // contract allows any of its implementations, and the fused one matches .NET
+                // wherever the host has hardware FMA (this Mac does).
+                "FusedMultiplyAdd" => "$eq.math.fma({0}, {1}, {2})",
+                "MultiplyAddEstimate" => "$eq.math.fma({0}, {1}, {2})",
+                // .NET's IEEE remainder is DEFINED as this expression, half-to-even included —
+                // $eq.math.round is banker's already.
+                "Ieee754Remainder" => $"({{0}} - {{1}} * {Eq.Round}({{0}} / {{1}}))",
+                // The documented .NET formula, verbatim.
+                "Lerp" => "(({0} * (1 - {2})) + ({1} * {2}))",
+                "ScaleB" => "({0} * Math.pow(2, {1}))",
+                "RootN" => "$eq.math.rootN({0}, {1})",
+                // Native = the platform's plain comparison; no NaN promises to keep.
+                "MaxNative" => "Math.max({0}, {1})",
+                "MinNative" => "Math.min({0}, {1})",
+                "ClampNative" => "Math.min(Math.max({0}, {1}), {2})",
+                // The tie-and-NaN rule set lives once, in the runtime.
+                "MaxMagnitude" => "$eq.math.maxMagnitude({0}, {1})",
+                "MinMagnitude" => "$eq.math.minMagnitude({0}, {1})",
+                "MaxMagnitudeNumber" => "$eq.math.maxMagnitudeNumber({0}, {1})",
+                "MinMagnitudeNumber" => "$eq.math.minMagnitudeNumber({0}, {1})",
+                "MaxNumber" => "$eq.math.maxNumber({0}, {1})",
+                "MinNumber" => "$eq.math.minNumber({0}, {1})",
                 _ => null,
             };
         }
@@ -130,6 +196,30 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         {
             var shared = SharedNumeric(name, argCount);
             if (shared is not null) return shared;
+
+            // The BIT surface is width-specific — a short rotates 16 bits, not 32 — so only
+            // Int32's members are admitted; the narrower widths stay fenced until someone needs
+            // them with their own masks.
+            if (home == SpecialType.System_Int32)
+            {
+                var int32 = name switch
+                {
+                    // Exact past 2^32: the product IS a long, so it computes as one.
+                    "BigMul" when argCount == 2 => $"({Eq.Long}({{0}}) * {Eq.Long}({{1}}))",
+                    "IsPow2" => "({0} > 0 && ({0} & ({0} - 1)) === 0)",
+                    "LeadingZeroCount" => "Math.clz32({0})",
+                    "Log2" => "({0} === 0 ? 0 : 31 - Math.clz32({0}))",
+                    "PopCount" => "$eq.bits.popCount32({0})",
+                    // JS masks shift counts to 5 bits exactly as the IL does, so the count wraps
+                    // for free, and `|` lands the result back in signed int32.
+                    "RotateLeft" when argCount == 2 => "(({0} << {1}) | ({0} >>> (32 - {1})))",
+                    "RotateRight" when argCount == 2 => "(({0} >>> {1}) | ({0} << (32 - {1})))",
+                    "TrailingZeroCount" => "({0} === 0 ? 32 : 31 - Math.clz32({0} & -{0}))",
+                    _ => null,
+                };
+                if (int32 is not null) return int32;
+            }
+
             return name switch
             {
                 // Small ints have no -0 and no NaN, so the plain comparisons are exact.
@@ -137,6 +227,16 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "IsNegative" => "({0} < 0)",
                 "IsEvenInteger" => "({0} % 2 === 0)",
                 "IsOddInteger" => "(Math.abs({0} % 2) === 1)",
+                // Width-agnostic: the magnitude fits every small width without wrapping.
+                "CopySign" when argCount == 2 => "({1} < 0 ? -Math.abs({0}) : Math.abs({0}))",
+                // A tuple crosses as an array; both parts of the division bind once.
+                "DivRem" when argCount == 2 => "[Math.trunc({0} / {1}), {0} % {1}]",
+                // Ties: the larger magnitude wins; an exact tie goes to the greater value for
+                // Max and the lesser for Min — which is what max/min of the pair says.
+                "MaxMagnitude" when argCount == 2 =>
+                    "(Math.abs({0}) > Math.abs({1}) ? {0} : Math.abs({0}) < Math.abs({1}) ? {1} : Math.max({0}, {1}))",
+                "MinMagnitude" when argCount == 2 =>
+                    "(Math.abs({0}) > Math.abs({1}) ? {1} : Math.abs({0}) < Math.abs({1}) ? {0} : Math.min({0}, {1}))",
                 _ => null,
             };
         }
@@ -144,9 +244,10 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         if (home == SpecialType.System_Int64)
         {
             // A long IS a BigInt on this side, so the shared Math.* table cannot serve — BigInt
-            // has no Math. Arrows keep every argument single-evaluation; Sign answers a NUMBER
-            // (C#'s long.Sign returns int). The 64-bit BIT surface (RotateLeft, PopCount, …) and
-            // DivRem/BigMul stay deliberately fenced.
+            // has no Math. Templates keep every argument single-evaluation; Sign answers a NUMBER
+            // (C#'s long.Sign returns int). The 64-bit bit surface rides $eq.bits, which counts
+            // and rotates the two's-complement bits .NET sees. BigMul stays fenced: it returns an
+            // Int128, a type with no twin.
             return name switch
             {
                 "Abs" => "({0} < 0n ? -{0} : {0})",
@@ -158,6 +259,17 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "IsNegative" => "({0} < 0n)",
                 "IsEvenInteger" => "({0} % 2n === 0n)",
                 "IsOddInteger" => "({0} % 2n !== 0n)",
+                "CopySign" when argCount == 2 => "({1} < 0n ? ({0} > 0n ? -{0} : {0}) : ({0} < 0n ? -{0} : {0}))",
+                "DivRem" when argCount == 2 => "[{0} / {1}, {0} % {1}]",
+                "IsPow2" => "({0} > 0n && ({0} & ({0} - 1n)) === 0n)",
+                "LeadingZeroCount" => "$eq.bits.leadingZeroCount64({0})",
+                "Log2" => "$eq.bits.log2Of64({0})",
+                "PopCount" => "$eq.bits.popCount64({0})",
+                "RotateLeft" when argCount == 2 => "$eq.bits.rotateLeft64({0}, {1})",
+                "RotateRight" when argCount == 2 => "$eq.bits.rotateRight64({0}, {1})",
+                "TrailingZeroCount" => "$eq.bits.trailingZeroCount64({0})",
+                "MaxMagnitude" when argCount == 2 => "$eq.math.maxMagnitude({0}, {1})",
+                "MinMagnitude" when argCount == 2 => "$eq.math.minMagnitude({0}, {1})",
                 _ => null,
             };
         }
@@ -185,6 +297,12 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "Parse" when argCount == 1 =>
                     "(($s) => { if ($s.length !== 1) throw new Error('String must be exactly one character long.'); return $s; })({0})",
                 "ConvertFromUtf32" when argCount == 1 => "String.fromCodePoint({0})",
+                // The surrogate pair IS the code point: concatenate the halves and read it back.
+                "ConvertToUtf32" when argCount == 2 => "({0} + {1}).codePointAt(0)",
+                // Out-of-range indexes read NaN from charCodeAt, and every comparison says no.
+                "IsSurrogatePair" when argCount == 2 =>
+                    "({0}.charCodeAt({1}) >= 0xD800 && {0}.charCodeAt({1}) <= 0xDBFF"
+                    + " && {0}.charCodeAt({1} + 1) >= 0xDC00 && {0}.charCodeAt({1} + 1) <= 0xDFFF)",
                 _ => null,
             };
         }

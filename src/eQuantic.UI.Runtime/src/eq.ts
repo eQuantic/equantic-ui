@@ -2,7 +2,32 @@ import { dec } from './utils/decimal';
 import { combineDelegate, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
 import { long } from './utils/long';
-import { round } from './utils/dotnet-math';
+import {
+  round,
+  sinPi,
+  cosPi,
+  tanPi,
+  fma,
+  bitIncrement,
+  bitDecrement,
+  ilogb,
+  rootN,
+  maxMagnitude,
+  minMagnitude,
+  maxMagnitudeNumber,
+  minMagnitudeNumber,
+  maxNumber,
+  minNumber,
+} from './utils/dotnet-math';
+import {
+  popCount32,
+  popCount64,
+  rotateLeft64,
+  rotateRight64,
+  leadingZeroCount64,
+  trailingZeroCount64,
+  log2Of64,
+} from './utils/bits';
 import { checked, single } from './utils/overflow';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { str } from './utils/culture';
@@ -95,8 +120,36 @@ export const $eq = {
   hydrate,
   /** Numeric compat: exact decimal and 64-bit integer. */
   num: { dec, long, checked, single },
-  /** Math with .NET semantics (banker's rounding). */
-  math: { round },
+  /** Math with .NET semantics: banker's rounding, the *Pi family (exact at special angles),
+   * fused multiply-add, bit-adjacent doubles, sign-aware roots, and the min/max tie rules. */
+  math: {
+    round,
+    sinPi,
+    cosPi,
+    tanPi,
+    fma,
+    bitIncrement,
+    bitDecrement,
+    ilogb,
+    rootN,
+    maxMagnitude,
+    minMagnitude,
+    maxMagnitudeNumber,
+    minMagnitudeNumber,
+    maxNumber,
+    minNumber,
+  },
+  /** Bit operations of the IBinaryInteger surface: population counts, rotations, zero counts —
+   * 32-bit on numbers, 64-bit on the BigInt-backed long. */
+  bits: {
+    popCount32,
+    popCount64,
+    rotateLeft64,
+    rotateRight64,
+    leadingZeroCount64,
+    trailingZeroCount64,
+    log2Of64,
+  },
   /** Text: number/string formatting and StringBuilder. */
   text: { format, stringFormat, stringBuilder },
   /** Date and time, tick-precise. */
