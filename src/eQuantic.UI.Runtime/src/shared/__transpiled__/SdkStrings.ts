@@ -29,6 +29,18 @@ export class SdkStrings {
         return $eq.str("SdkResources", "NextMatch");
     }
 
+    static get previousMonth(): string {
+        return $eq.str("SdkResources", "PreviousMonth");
+    }
+
+    static get nextMonth(): string {
+        return $eq.str("SdkResources", "NextMonth");
+    }
+
+    static get today(): string {
+        return $eq.str("SdkResources", "Today");
+    }
+
     static get spreadsheet(): string {
         return $eq.str("SdkResources", "Spreadsheet");
     }

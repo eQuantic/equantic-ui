@@ -25,8 +25,16 @@ import { Avatar } from './components/Avatar';
 import { Button } from './components/Button';
 import { ProgressBar } from './components/ProgressBar';
 import { Switch } from './components/Switch';
+import { Calendar } from './components/Calendar';
+import { dateOnly } from '../utils/datetime';
+import { installCulture } from '../utils/culture';
+import calendarNames from './calendar-names.fixture.json';
 
 setPhotonTheme(photonTheme);
+
+// The calendar reads the culture for its names, so the twin replays under the SAME one the C#
+// generator fixed — with the shipped catalog, which is what a server-rendered page installs.
+installCulture('en-US', 'en-US', {}, calendarNames['en-US']);
 
 const lower = (node: unknown): HtmlNode =>
   lowerVisualNode(node as never, {
@@ -56,6 +64,8 @@ function cases(): Record<string, unknown> {
       new Text('two', 'label', photonTheme.textPrimary),
     ),
     'button-in-column': column(8, new Button('A'), new Button('B', 'outline')),
+    'calendar-july-2026': new Calendar(dateOnly(2026, 7, 17)),
+    'calendar-bounded': new Calendar(dateOnly(2026, 7, 17), null, dateOnly(2026, 7, 10), dateOnly(2026, 7, 20)),
   };
 }
 
@@ -98,3 +108,4 @@ describe('component parity: the twin lowers to the tree C# lowers to', () => {
     });
   }
 });
+

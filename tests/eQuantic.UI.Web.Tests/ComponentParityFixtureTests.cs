@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Globalization;
 using System.Text.Json;
 using eQuantic.UI.Components;
 using eQuantic.UI.Core;
@@ -41,6 +42,12 @@ public class ComponentParityFixtureTests
         ("column-of-text", Stack(Space.S3, new Text("one", TypeRole.BodyM, Theme.TextPrimary),
                                             new Text("two", TypeRole.Label, Theme.TextPrimary))),
         ("button-in-column", Stack(Space.S2, new Button("A"), new Button("B", Variant.Outline))),
+        // A COMPOSITE, and the first case here whose tree is a grid: 31 cells, seven column
+        // headers, a roving tab order, and a selection stated as an attribute. Pinned under a
+        // fixed culture and a fixed date, or the fixture would say something different every day.
+        ("calendar-july-2026", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17))),
+        ("calendar-bounded", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17),
+            min: new DateOnly(2026, 7, 10), max: new DateOnly(2026, 7, 20))),
     ];
 
     private static VisualNode Stack(float gap, params VisualNode[] children)
@@ -54,6 +61,13 @@ public class ComponentParityFixtureTests
     public void TheLoweredTrees_MatchTheSharedFixture()
     {
         var json = new JsonObject();
+        // A FIXED culture for the whole set: the calendar reads CultureInfo for its names, so a
+        // fixture generated in São Paulo would differ from one generated in Berlin. The twin
+        // installs the same culture before replaying.
+        var previousCulture = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = new CultureInfo("en-US");
+        try
+        {
         foreach (var (name, node) in Cases())
         {
             // Through a STYLE SINK, which is the path SSR takes: declarations become atomic classes
@@ -62,6 +76,11 @@ public class ComponentParityFixtureTests
             // divergence — and it would hide the one that matters, the class HASH agreeing.
             var sink = new StyleSink();
             json[name] = Canonical(WebRealizer.Lower(node, Theme, 1f, sink).Render());
+        }
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
         }
 
         var text = json.ToJson();

@@ -127,6 +127,11 @@ export { VisualNodeComponent } from './visual-node-component';
 // build()/render() time, never during module evaluation.
 // The roster is the GENERATED barrel, never a hand-kept list: a list fell thirteen components
 // behind, and each of them transpiled, embedded, and then failed to import.
+// The .NET-compat value types a twin can NAME in an annotation (`selected: DateOnly | null`).
+// The values are built through `$eq.time.*`, but the TYPE has to resolve or the generated module
+// does not compile — and a page that does not compile is a page that does not render.
+export { DateTime, DateOnly, TimeOnly, TimeSpan, DateTimeOffset } from '../utils/datetime';
+export { Decimal } from '../utils/decimal';
 export { CalendarNames } from './calendar-names';
 export * from './components';
 

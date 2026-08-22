@@ -32,4 +32,13 @@
   <data name="NothingSelected" xml:space="preserve">
     <value>Nada seleccionado</value>
   </data>
+  <data name="PreviousMonth" xml:space="preserve">
+    <value>Mes anterior</value>
+  </data>
+  <data name="NextMonth" xml:space="preserve">
+    <value>Mes siguiente</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>Hoy</value>
+  </data>
 </root>

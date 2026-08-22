@@ -613,8 +613,10 @@ export interface NavigableNode extends VisualNodeValue {
   role?: 'grid';
   /** Whether rows[0] holds the column headers (a calendar's day-name row). */
   hasHeaderRow?: boolean;
-  /** The focused cell as [row, item] — announced through aria-activedescendant. */
-  activeCell?: [number, number] | null;
+  /** The focused cell as [row, item] — announced through aria-activedescendant. A C# tuple
+   * crosses as a plain array and the transpiler cannot promise its arity, so the type is what a
+   * tuple actually becomes; the realizer reads exactly two entries. */
+  activeCell?: readonly number[] | null;
 }
 
 /**

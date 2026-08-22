@@ -13,9 +13,12 @@ export const sdkNeutralStrings: Record<string, string> = {
   'Dismiss': "Dismiss",
   'Find': "Find",
   'NextMatch': "Next match",
+  'NextMonth': "Next month",
   'NothingSelected': "Nothing selected",
   'PreviousMatch': "Previous match",
+  'PreviousMonth': "Previous month",
   'Remove': "Remove",
   'SearchPlaceholder': "Search\u2026",
   'Spreadsheet': "Spreadsheet",
+  'Today': "Today",
 };

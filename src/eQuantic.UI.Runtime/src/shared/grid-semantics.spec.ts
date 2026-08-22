@@ -5,6 +5,7 @@ import { effectiveStyle } from './style-atomizer';
 import type { LoweringContext } from './lowering';
 import type { HtmlNode } from '../core/types';
 import type { VisualNodeValue } from './nodes';
+import keyTable from './navigable-keys.fixture.json';
 
 const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
 
@@ -139,6 +140,25 @@ describe('grid semantics (C# GridSemanticsTests cross-pin)', () => {
       'rowStart',
       'rowEnd',
     ]);
+  });
+
+  it('maps every key exactly as the C# half does', () => {
+    // The SSR realizer has its own table (NavigableKeys.cs) because the abstract layer names moves
+    // and not keys. A key one half claims and the other ignores is a calendar whose arrows work
+    // until hydration, or only after it — and nothing else in either suite would notice.
+    const moves: string[] = [];
+    const host = render(month((move) => moves.push(move)));
+    const keydown = host.events?.keydown as unknown as (event: KeyboardEvent) => void;
+
+    for (const [spelling, expected] of Object.entries(keyTable as Record<string, string | null>)) {
+      const shiftKey = spelling.startsWith('shift+');
+      const key = shiftKey ? spelling.slice('shift+'.length) : spelling;
+      moves.length = 0;
+      keydown({ key, shiftKey, preventDefault: () => {} } as unknown as KeyboardEvent);
+      expect(moves, `${spelling} must map the same on both halves`).toEqual(
+        expected === null ? [] : [expected],
+      );
+    }
   });
 
   it('a key the grid does not claim reaches the page untouched', () => {

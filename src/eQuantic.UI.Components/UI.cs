@@ -276,6 +276,11 @@ public static class UI
     public static Stepper Stepper(int value, Action<int>? onChanged = null) =>
         new Stepper(value, onChanged);
 
+    /// <summary>A month at a time — the grid a date is picked from.</summary>
+    public static Calendar Calendar(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
+        DateOnly? min = null, DateOnly? max = null) =>
+        new Calendar(selected, onChanged, min, max);
+
     /// <summary>One choice out of a dropdown list.</summary>
     public static Select Select(IReadOnlyList<string> options, int selectedIndex = -1,
         Action<int>? onChanged = null, string? placeholder = null) =>
