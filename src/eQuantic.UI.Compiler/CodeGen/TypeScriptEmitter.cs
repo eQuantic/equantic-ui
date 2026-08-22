@@ -111,10 +111,17 @@ public class TypeScriptEmitter
     /// SSR state and prefetch payloads by this map — coerced once at the boundary, so use sites
     /// need no defensive coercions. Nothing is emitted when every field is identity.
     /// </summary>
+    /// <summary>The in-source types this module's hydration specs NAME. They are emitted into the
+    /// body (a spec says <c>[Todo]</c>, meaning the class), but they appear in no syntax the type
+    /// scan walks — a record reaches a page only as a field's declared type or an action's return
+    /// type, neither of which used to produce a runtime reference. Collected here and added to the
+    /// import candidates, or the module loads into "Todo is not defined".</summary>
+    private readonly HashSet<string> _hydrationReferences = new();
+
     private void EmitHydrationMap(TypeScriptCodeBuilder.ClassBuilder c,
         IEnumerable<(string Key, TypeSyntax? Type)> fields)
     {
-        var referenced = new HashSet<string>();
+        var referenced = _hydrationReferences;
         var entries = fields
             .Select(field => (field.Key, Spec: HydrationSpec.Of(BindType(field.Type), referenced)))
             .Where(field => field.Spec is not null)
@@ -217,6 +224,7 @@ public class TypeScriptEmitter
         // Everything the PREVIOUS component left behind goes here — the node cache above all, which
         // pins a syntax tree per entry and used to survive this point (see ConversionContext.Reset).
         _converter.Reset();
+        _hydrationReferences.Clear();
         component.UsedHelpers.Clear();
 
         // Note: We'll emit imports AFTER generating component code
@@ -522,7 +530,7 @@ public class TypeScriptEmitter
                     // as a string, a Task<List<Todo>> as plain objects — hydrated ONCE here, by
                     // the spec of the C# return type, so the caller computes with runtime types.
                     var invoke = $"getServerActionsClient().invoke('{action.ActionId}', [{argsList}])";
-                    var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), new HashSet<string>());
+                    var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), _hydrationReferences);
                     if (resultSpec is not null) component.UsedHelpers.Add(Eq.Import);
 
                     c.Member(JsClassMember.Method("async ", action.MethodName.ToCamelCase(), "", paramsList, "", JsStatement.Block(new[]
@@ -654,6 +662,10 @@ public class TypeScriptEmitter
                 componentTypes.Add(t);
             }
         }
+
+        // Types a HYDRATION SPEC names — see _hydrationReferences: emitted into the body, present
+        // in no syntax the walks above cover.
+        foreach (var t in _hydrationReferences) componentTypes.Add(t);
 
         // Types the CONVERSION introduced into the output (extension calls reduced to
         // `Class.method(...)`) — invisible to every syntax walk above by construction.

@@ -98,3 +98,18 @@ describe('typed hydration', () => {
     expect(item.price.value.toString()).toBe('3.99');
   });
 });
+
+describe('a tuple', () => {
+  it('hydrates positionally, and passes a null position through', () => {
+    const spec = { tuple: ['decimal', 'long', null] } as const;
+    const [amount, id, label] = hydrate(['1.5', '9007199254740993', 'x'], spec) as unknown[];
+    expect(amount).toBeInstanceOf(Decimal);
+    expect(String(amount)).toBe('1.5');
+    expect(id).toBe(9007199254740993n);
+    expect(label).toBe('x');
+  });
+
+  it('leaves a value that is not an array alone', () => {
+    expect(hydrate('nope', { tuple: ['decimal'] })).toBe('nope');
+  });
+});

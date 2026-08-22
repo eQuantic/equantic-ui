@@ -43,6 +43,7 @@ export type HydrationSpec =
   | HydrationTag
   | readonly [HydrationSpec]
   | { readonly dict: HydrationSpec }
+  | { readonly tuple: readonly (HydrationSpec | null)[] }
   | HydratableConstructor;
 
 /** The value coerced to what the spec says it is. Null and undefined pass through untouched. */
@@ -53,6 +54,12 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
   if (Array.isArray(spec)) {
     const inner = (spec as readonly [HydrationSpec])[0];
     return Array.isArray(incoming) ? incoming.map((element) => hydrate(element, inner)) : incoming;
+  }
+  // A TUPLE is positional: element i hydrates by spec i, and a null position passes through.
+  if ('tuple' in (spec as { tuple?: readonly (HydrationSpec | null)[] })) {
+    const parts = (spec as { tuple: readonly (HydrationSpec | null)[] }).tuple;
+    if (!Array.isArray(incoming)) return incoming;
+    return incoming.map((element, i) => (parts[i] == null ? element : hydrate(element, parts[i]!)));
   }
   if ('dict' in (spec as { dict?: HydrationSpec })) {
     const inner = (spec as { dict: HydrationSpec }).dict;

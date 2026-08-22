@@ -60,6 +60,16 @@ public static class HydrationSpec
         if (ElementType(named) is { } element)
             return List(element, referenced, visiting);
 
+        // A TUPLE crosses as an ARRAY, positionally — it has no twin to name, and naming it
+        // `ValueTuple` (its symbol name) emitted a reference to a class that exists nowhere.
+        if (named.IsTupleType)
+        {
+            var parts = named.TupleElements.Select(e => Of(e.Type, referenced, visiting)).ToList();
+            return parts.Any(part => part is not null)
+                ? $"{{ tuple: [{string.Join(", ", parts.Select(part => part ?? "null"))}] }}"
+                : null;
+        }
+
         // An IN-SOURCE record or struct has an emitted twin (a class, a prototype, methods); it
         // appears in the spec by NAME when any member transitively needs hydration — the twin's
         // own `static $hydration` says which.
