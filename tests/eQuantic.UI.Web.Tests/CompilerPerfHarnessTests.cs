@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using eQuantic.UI.Compiler;
+using eQuantic.UI.Compiler.Services;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
@@ -47,10 +48,13 @@ public class CompilerPerfHarnessTests(ITestOutputHelper output)
 
         var watch = Stopwatch.StartNew();
         var trees = paths
-            .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path))
+            // eqc parses with ParseDefaults.Options (LanguageVersion.Preview). Parsing with
+            // Roslyn's defaults here would build a compilation that rejects syntax a real build
+            // accepts — an instrument measuring a corpus the compiler never sees.
+            .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), ParseDefaults.Options, path))
             .Append(CSharpSyntaxTree.ParseText(
                 "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
-                path: "GlobalUsings.g.cs"))
+                ParseDefaults.Options, "GlobalUsings.g.cs"))
             .ToList();
         var parse = watch.ElapsedMilliseconds;
 

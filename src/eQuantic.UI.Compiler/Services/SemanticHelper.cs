@@ -63,8 +63,9 @@ public class SemanticHelper
     {
         if (_symbolOverrides.TryGetValue(node, out var overridden)) return overridden;
         node = Original(node);
+        if (!Knows(node)) return null;
         if (_symbols.TryGetValue(node, out var remembered)) return remembered;
-        var symbol = Knows(node) ? _semanticModel!.GetSymbolInfo(node).Symbol : null;
+        var symbol = _semanticModel!.GetSymbolInfo(node).Symbol;
         _symbols[node] = symbol;
         return symbol;
     }
@@ -73,8 +74,9 @@ public class SemanticHelper
     {
         if (_typeOverrides.TryGetValue(node, out var overridden)) return overridden;
         node = Original(node);
+        if (!Knows(node)) return null;
         if (_types.TryGetValue(node, out var remembered)) return remembered;
-        var type = Knows(node) ? _semanticModel!.GetTypeInfo(node).Type : null;
+        var type = _semanticModel!.GetTypeInfo(node).Type;
         _types[node] = type;
         return type;
     }
@@ -85,7 +87,9 @@ public class SemanticHelper
     /// about the same node — six model queries per distinct node, measured, five of them repeats.
     /// The answer cannot change: a helper is rebuilt whenever the model is (SetSemanticModel), the
     /// overrides are consulted BEFORE this and still win, and the key is the node the model is
-    /// actually asked about — the in-tree original, after any synthetic mapping.
+    /// actually asked about — the in-tree original, after any synthetic mapping. Only nodes the
+    /// model CAN answer for are remembered: a node it cannot is always null, and holding it here
+    /// would keep a synthetic alive past the ClearSynthetics that exists to drop it.
     /// </summary>
     private readonly Dictionary<SyntaxNode, ISymbol?> _symbols = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<SyntaxNode, ITypeSymbol?> _types = new(ReferenceEqualityComparer.Instance);
