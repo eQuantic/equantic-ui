@@ -186,8 +186,18 @@ function frames(node: unknown, presses: number[]): unknown[] {
 }
 
 /** A lowered node the way the C# half writes it — the shapes have to be byte-comparable. */
-/** Handlers the twin attaches that SSR never emits — see lowerTextEntry. */
+/**
+ * Handlers `lowerTextEntry` attaches to the entry ELEMENT itself, which SSR never emits: it says
+ * it produces "identical DOM to the C# SSR realizer, plus the client-only handlers", because the
+ * server sends markup and the client attaches behaviour. C# attaches none of these, so there is no
+ * matching filter on that side — the asymmetry is the point.
+ *
+ * Scoped to the entry's own tag on purpose. Other components attach the same NAMES for their own
+ * reasons — the spreadsheet surface listens for keydown and the clipboard trio — and filtering
+ * globally would hide a real regression the day one of those joins the fixture.
+ */
 const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'paste', 'cut', 'copy']);
+const ENTRY_TAGS = new Set(['input', 'textarea']);
 
 function canonical(node: HtmlNode): unknown {
   const attrs: Record<string, string> = {};
@@ -199,12 +209,9 @@ function canonical(node: HtmlNode): unknown {
   if (node.key !== undefined && node.key !== null) result.key = node.key;
   if (node.textContent !== undefined && node.textContent !== null) result.text = node.textContent;
   result.attrs = attrs;
-  // CLIENT-ONLY handlers are excluded, by design and not by convenience: lowerTextEntry says it
-  // produces "identical DOM to the C# SSR realizer, PLUS the client-only handlers", because the
-  // server sends markup and the client attaches behaviour. Comparing them would fail on a
-  // difference the product intends. The twin's own specs are what hold these.
+  const entry = ENTRY_TAGS.has(node.tag);
   result.events = Object.keys(node.events ?? {})
-    .filter((name) => !CLIENT_ONLY_EVENTS.has(name))
+    .filter((name) => !(entry && CLIENT_ONLY_EVENTS.has(name)))
     .sort();
   result.children = (node.children ?? []).map(canonical);
   return result;
