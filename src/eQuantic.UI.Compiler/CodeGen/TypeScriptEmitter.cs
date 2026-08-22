@@ -53,6 +53,35 @@ public class TypeScriptEmitter
     /// same two lines by hand.
     /// </para>
     /// </summary>
+    /// <summary><c>target = value;</c> as IR.</summary>
+    private static JsStatement Assign(JsExpr target, JsExpr value) =>
+        JsStatement.Expression(JsExpr.Binary(target, "=", value));
+
+    /// <summary><c>if (this.name === undefined) this.name = value;</c> — a default applied only
+    /// where props left the slot empty.</summary>
+    private static JsStatement DefaultIfUndefined(string name, string value) =>
+        JsStatement.If(
+            JsExpr.Binary(JsExpr.ThisMember(name), "===", JsExpr.Identifier("undefined")),
+            Assign(JsExpr.ThisMember(name), JsExpr.Opaque(value)), null);
+
+    /// <summary>A C# block's statements, to be placed in a member body the emitter is assembling
+    /// — no braces of their own.</summary>
+    private JsStatement Contents(BlockSyntax block) =>
+        JsStatement.Sequence(((JsBlock)_converter.ConvertBlockIr(block)).Statements);
+
+    /// <summary>A Build method's body as IR: its block, its expression as a return, or the
+    /// fallback — and the node its first line maps to.</summary>
+    private (JsStatement Body, SyntaxNode? Source) BuildBody(MethodDeclarationSyntax? build, JsStatement fallback)
+    {
+        if (build?.Body != null) return (_converter.ConvertBlockIr(build.Body), build.Body);
+        if (build?.ExpressionBody != null)
+        {
+            var expression = build.ExpressionBody.Expression;
+            return (JsStatement.Block(new[] { JsStatement.Raw(ExpressionBodyReturn(expression)) }), expression);
+        }
+        return (JsStatement.Block(new[] { fallback }), null);
+    }
+
     private string ExpressionBodyReturn(ExpressionSyntax expression) =>
         $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}return {_converter.ConvertExpression(expression)};";
 
@@ -197,78 +226,68 @@ public class TypeScriptEmitter
                         jsParams = OptionalParam("props", "any");
                     }
 
-                    c.Constructor(jsParams, () =>
+                    // Pass props to super
+                    var ctorStatements = new List<JsStatement>
                     {
-                        // Pass props to super
-                        c.Raw(hasExplicitParams ? "super();" : "super(props);");
+                        JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"),
+                            hasExplicitParams ? Array.Empty<JsExpr>() : new[] { JsExpr.Identifier("props") })),
+                    };
 
-                        // Assign explicit parameters as properties
-                        if (hasExplicitParams)
-                        {
-                            foreach (var param in ctor!.Parameters)
-                            {
-                                c.Raw($"this.{param.Name.ToCamelCase()} = {param.Name};");
-                            }
-                        }
+                    // Assign explicit parameters as properties
+                    if (hasExplicitParams)
+                    {
+                        foreach (var param in ctor!.Parameters)
+                            ctorStatements.Add(Assign(JsExpr.ThisMember(param.Name.ToCamelCase()), JsExpr.Identifier(param.Name)));
+                    }
 
-                        // Apply defaults for properties not provided in props (only if still undefined)
-                        foreach (var prop in component.Properties.Where(p => p.IsPublic && p.DefaultValue != null))
-                        {
-                            var camelName = prop.Name.ToCamelCase();
-                            var tsDefault = prop.DefaultValueNode != null 
-                                ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
-                                : ConvertToTsValue(prop.DefaultValue, prop.Type);
-                            
-                            c.Raw($"if (this.{camelName} === undefined) this.{camelName} = {tsDefault};");
-                        }
+                    // Apply defaults for properties not provided in props (only if still undefined)
+                    foreach (var prop in component.Properties.Where(p => p.IsPublic && p.DefaultValue != null))
+                    {
+                        var camelName = prop.Name.ToCamelCase();
+                        var tsDefault = prop.DefaultValueNode != null 
+                            ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
+                            : ConvertToTsValue(prop.DefaultValue, prop.Type);
+                        ctorStatements.Add(DefaultIfUndefined(camelName, tsDefault));
+                    }
 
-                        // Execute C# constructor body (e.g., Direction = FlexDirection.Column)
-                        if (ctor?.SyntaxNode?.Body != null)
-                        {
-                            _converter.SetCurrentClass(component.Name);
-                            var jsBody = _converter.Convert(ctor.SyntaxNode.Body);
-                            jsBody = StripJsBraces(jsBody);
-                            if (!string.IsNullOrWhiteSpace(jsBody))
-                            {
-                                c.Raw(jsBody, ctor.SyntaxNode.Body);
-                            }
-                        }
-                    });
+                    // Execute C# constructor body (e.g., Direction = FlexDirection.Column)
+                    var ctorBodyLine = ctorStatements.Count + 1;
+                    if (ctor?.SyntaxNode?.Body != null)
+                    {
+                        _converter.SetCurrentClass(component.Name);
+                        ctorStatements.Add(Contents(ctor.SyntaxNode.Body));
+                    }
+                    c.Member(JsClassMember.Constructor(jsParams, JsStatement.Block(ctorStatements)),
+                        separated: true, bodySource: ctor?.SyntaxNode?.Body, bodyLine: ctorBodyLine);
 
                     // Emit Render method for primitive - ONLY if defined or it's the base primitive
                     if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
                     {
-                        c.Method("render", "", false, () => 
-                        {
-                            // Discover `out var x` variables to hoist. Only single-variable designations:
-                            // parenthesised ones (`var (a, b) = …` deconstruction) are emitted as
-                            // `let { … } = …` by the assignment strategy, so hoisting them would yield
-                            // an invalid `let (a, b);`.
-                            var outVars = component.BuildMethodNode.Body.DescendantNodes()
-                                .OfType<DeclarationExpressionSyntax>()
-                                .Select(d => d.Designation)
-                                .OfType<SingleVariableDesignationSyntax>()
-                                .Select(s => s.Identifier.Text)
-                                .Distinct();
+                        // Discover `out var x` variables to hoist. Only single-variable designations:
+                        // parenthesised ones (`var (a, b) = …` deconstruction) are emitted as
+                        // `let { … } = …` by the assignment strategy, so hoisting them would yield
+                        // an invalid `let (a, b);`.
+                        var outVars = component.BuildMethodNode.Body.DescendantNodes()
+                            .OfType<DeclarationExpressionSyntax>()
+                            .Select(d => d.Designation)
+                            .OfType<SingleVariableDesignationSyntax>()
+                            .Select(s => s.Identifier.Text)
+                            .Distinct()
+                            .ToList();
+                        var renderStatements = outVars.Select(v => JsStatement.Raw($"let {v};")).ToList();
 
-                            foreach (var v in outVars)
-                            {
-                                c.Raw($"let {v};");
-                            }
-
-                            _converter.SetCurrentClass(component.Name);
-                            var jsBody = _converter.Convert(component.BuildMethodNode.Body);
-                            jsBody = StripJsBraces(jsBody);
-                            c.Raw(jsBody, component.BuildMethodNode.Body);
-                        });
+                        _converter.SetCurrentClass(component.Name);
+                        renderStatements.Add(Contents(component.BuildMethodNode.Body));
+                        c.Member(JsClassMember.Method("", "render", "", "", "", JsStatement.Block(renderStatements)),
+                            separated: true, bodySource: component.BuildMethodNode.Body, bodyLine: outVars.Count + 1);
                     }
                     else if (component.BaseClassName == "HtmlElement" || component.BaseClassName == null)
                     {
                         // Fallback for base primitives that MUST have a render
-                        c.Method("render", "", false, () => 
+                        c.Member(JsClassMember.Method("", "render", "", "", "", JsStatement.Block(new[]
                         {
-                            c.Raw("return { tag: 'div', attributes: {}, events: {}, children: [] };");
-                        });
+                            JsStatement.Raw("return { tag: 'div', attributes: {}, events: {}, children: [] };"),
+                        })), separated: true);
                     }
 
                     // Emit helper methods
@@ -283,10 +302,10 @@ public class TypeScriptEmitter
                 }
                 else if (component.IsStateful)
                 {
-                    c.Method("createState", "", false, () => 
+                    c.Member(JsClassMember.Method("", "createState", "", "", "", JsStatement.Block(new[]
                     {
-                        c.Raw($"return new {component.StateClassName}(this)");
-                    });
+                        JsStatement.Raw($"return new {component.StateClassName}(this)"),
+                    })), separated: true);
                 }
                 // A concrete component, OR an abstract base that still defines a concrete Build/members for
                 // its subclasses to inherit (a pure-abstract class with no Build emits nothing here).
@@ -325,14 +344,13 @@ public class TypeScriptEmitter
                         var signature = paramList.Length > 0
                             ? $"{paramList}, {OptionalParam("props", "any")}"
                             : OptionalParam("props", "any");
-                        c.Constructor(signature, () =>
+                        var statements = new List<JsStatement> { JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"))) };
                         {
                             // The config object carries what a C# OBJECT INITIALIZER assigned, and in C#
                             // that runs AFTER the constructor. Handing it to super() first put it there
                             // first, so every positional parameter's own default overwrote it —
                             // `new Button(label, ...) { OnPressed = f }` emitted `onPressed = null`
                             // over the handler and the button did nothing at all.
-                            c.Raw("super();");
 
                             // FIRST, so the C# constructor body below can use them — which is the
                             // whole point of taking a dependency through a constructor.
@@ -351,7 +369,7 @@ public class TypeScriptEmitter
                                 var target = ctorDef!.IsPrimaryConstructor
                                     ? $"this.{service.Name.ToCamelCase()}"
                                     : $"const {service.Name.ToCamelCase()}";
-                                c.Raw($"{target} = {Eq.ResolveService}('{service.ServiceKey}');");
+                                statements.Add(JsStatement.Raw($"{target} = {Eq.ResolveService}('{service.ServiceKey}');"));
 
                                 // The twin of CapabilityScope.Require: a component that declared it
                                 // cannot work without this one says so HERE, where the capability is
@@ -363,10 +381,10 @@ public class TypeScriptEmitter
                                 {
                                     var name = service.Name.ToCamelCase();
                                     var read = ctorDef.IsPrimaryConstructor ? $"this.{name}" : name;
-                                    c.Raw($"if ({read} === undefined || {read} === null) throw new Error("
+                                    statements.Add(JsStatement.Raw($"if ({read} === undefined || {read} === null) throw new Error("
                                         + $"'{component.Name} needs {service.ServiceKey}, and this target has none. "
                                         + $"Register it with the host, or declare the parameter as {service.ServiceKey}? "
-                                        + "if the component can work without it.');");
+                                        + "if the component can work without it.');"));
                                 }
                             }
                             foreach (var param in passed)
@@ -378,7 +396,9 @@ public class TypeScriptEmitter
                                 // `_label`) has no `this.<name>` to write — the C# ctor body does the wiring.
                                 if (hasCtorBody && !component.Properties.Any(pr => !pr.IsStatic && pr.Name.ToCamelCase() == camelName))
                                     continue;
-                                c.Raw($"if ({camelName} !== undefined) this.{camelName} = {camelName};");
+                                statements.Add(JsStatement.If(
+                                    JsExpr.Binary(JsExpr.Identifier(camelName), "!==", JsExpr.Identifier("undefined")),
+                                    Assign(JsExpr.ThisMember(camelName), JsExpr.Identifier(camelName)), null));
                             }
                             _converter.SetCurrentClass(component.Name);
                             foreach (var p in autoDefaults)
@@ -387,16 +407,15 @@ public class TypeScriptEmitter
                                 var def = p.DefaultValueNode != null
                                     ? _converter.ConvertExpression(p.DefaultValueNode, p.Type)
                                     : p.ImplicitDefaultJs!;
-                                c.Raw($"if (this.{cn} === undefined) this.{cn} = {def};");
+                                statements.Add(DefaultIfUndefined(cn, def));
                             }
-                            if (hasCtorBody)
-                            {
-                                var body = StripJsBraces(_converter.Convert(ctorDef!.BodyNode!));
-                                if (!string.IsNullOrWhiteSpace(body)) c.Raw(body, ctorDef.BodyNode);
-                            }
+                            var bodyLine = statements.Count + 1;
+                            if (hasCtorBody) statements.Add(Contents(ctorDef!.BodyNode!));
                             // …and the initializer last, which is where C# runs it.
-                            c.Raw("if (props && typeof props === 'object') Object.assign(this, props);");
-                        });
+                            statements.Add(JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);"));
+                            c.Member(JsClassMember.Constructor(signature, JsStatement.Block(statements)),
+                                separated: true, bodySource: ctorDef?.BodyNode, bodyLine: bodyLine);
+                        }
                     }
 
                     // Build method — underscore the param when the body never uses it
@@ -407,31 +426,13 @@ public class TypeScriptEmitter
                     var buildBodyText = component.BuildMethodNode?.Body?.ToString()
                         ?? component.BuildMethodNode?.ExpressionBody?.ToString();
                     var buildParamName = buildBodyText?.Contains("context") == false ? "_context" : "context";
-                    c.Method("build", Param(buildParamName, "BuildContext"), false, () =>
-                    {
-                         if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
-                         {
-                            // Use robust converter for stateless build body
-                            _converter.SetCurrentClass(component.Name);
-                            var jsBody = _converter.Convert(component.BuildMethodNode.Body);
-                            jsBody = StripJsBraces(jsBody);
-                            c.Raw(jsBody, component.BuildMethodNode.Body);
-                         }
-                         else if (component.BuildMethodNode?.ExpressionBody != null)
-                         {
-                            // Expression-bodied Build: `IComponent Build(ctx) => new Box {…};`. Convert the
-                            // whole expression (handles trees, ternaries, switch-expressions, method calls,
-                            // interpolation — anything the converter knows) and return it.
-                            _converter.SetCurrentClass(component.Name);
-                            c.Raw(ExpressionBodyReturn(component.BuildMethodNode.ExpressionBody.Expression),
-                                component.BuildMethodNode.ExpressionBody.Expression);
-                         }
-                         else
-                         {
-                             // Fallback for components without explicit Build method
-                             c.Raw("throw new Error('Build method not implemented');");
-                         }
-                    });
+                    // The body converts straight to IR: a block as itself, an expression-bodied Build
+                    // (`IComponent Build(ctx) => new Box {…};`) as a return, and nothing as the fallback.
+                    _converter.SetCurrentClass(component.Name);
+                    var (buildBody, buildSource) = BuildBody(component.BuildMethodNode,
+                        JsStatement.Raw("throw new Error('Build method not implemented');"));
+                    c.Member(JsClassMember.Method("", "build", "", Param(buildParamName, "BuildContext"), "", buildBody),
+                        separated: true, bodySource: buildSource);
 
                     // Emit helper methods
                     foreach (var method in component.Methods)
@@ -453,10 +454,10 @@ public class TypeScriptEmitter
                     var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
                     var returnType = CSharpTypeToTypeScript(action.ReturnType);
 
-                    c.Method(action.MethodName.ToCamelCase(), paramsList, true, () => 
+                    c.Member(JsClassMember.Method("async ", action.MethodName.ToCamelCase(), "", paramsList, "", JsStatement.Block(new[]
                     {
-                        c.Raw($"return await getServerActionsClient().invoke('{action.ActionId}', [{argsList}])");
-                    }, sourceNode: action.SyntaxNode);
+                        JsStatement.Raw($"return await getServerActionsClient().invoke('{action.ActionId}', [{argsList}])"),
+                    })), action.SyntaxNode, separated: true);
                 }
             }, component.TypeParameters);
 
@@ -951,19 +952,19 @@ public class TypeScriptEmitter
             }
 
             // Constructor
-            c.Constructor($"component: {component.Name}", () =>
+            c.Member(JsClassMember.Constructor($"component: {component.Name}", JsStatement.Block(new[]
             {
-                c.Raw("super();");
-                c.Raw("this._component = component;");
-            });
+                JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"))),
+                Assign(JsExpr.ThisMember("_component"), JsExpr.Identifier("component")),
+            })), separated: true);
             
             // SetState
-            c.Method("setState", Param("fn", "() => void"), false, () => 
+            c.Member(JsClassMember.Method("", "setState", "", Param("fn", "() => void"), "", JsStatement.Block(new[]
             {
-                c.Raw("fn();");
-                c.Raw("this._needsRender = true;");
-                c.Raw("this._component._scheduleRender();");
-            });
+                JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("fn"))),
+                Assign(JsExpr.ThisMember("_needsRender"), JsExpr.Literal("true")),
+                JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.ThisMember("_component"), "_scheduleRender"))),
+            })), separated: true);
 
             // Custom methods (Phase 2: Semantic Body)
             foreach (var method in component.Methods)
@@ -972,38 +973,13 @@ public class TypeScriptEmitter
             }
             
             // Build method
-            c.Method("build", Param("context", "BuildContext"), false, () =>
-            {
-                if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
-                {
-                    // Use robust converter to emit full body (supports variables, loops, etc.)
-                   _converter.SetCurrentClass(component.StateClassName);
-                   var jsBody = _converter.Convert(component.BuildMethodNode.Body);
-                   
-                   // Remove outer braces since c.Method adds them (via logic or we need to be careful)
-                   // Actually c.Method adds braces. Convert(Block) adds braces. 
-                   // We should strip the outer braces from jsBody to avoid double indentation/bracing if necessary,
-                   // OR just emit the content. 
-                   // Let's rely on Convert returning "{ ... }" and we just inject the *content*?
-                   // CSharpToJsConverter struct: ConvertBlock returns "{ stmt; stmt; }"
-                   // CodeBuilder Method adds "{ ... }". 
-                   // So we need to strip first and last char of jsBody.
-                   
-                   c.Raw(StripJsBraces(jsBody), component.BuildMethodNode.Body);
-                }
-                else if (component.BuildMethodNode?.ExpressionBody != null)
-                {
-                    // Expression-bodied Build (`=> new X(...)`) — before this branch it silently fell
-                    // through to the empty-Container fallback, discarding the page's whole tree.
-                    _converter.SetCurrentClass(component.StateClassName);
-                    var expression = component.BuildMethodNode.ExpressionBody.Expression;
-                    c.Raw(ExpressionBodyReturn(expression), expression);
-                }
-                else
-                {
-                    c.Raw("return new Container({});");
-                }
-            });
+            // The state's Build: its block, its expression as a return (before that branch existed an
+            // expression-bodied Build fell through to the empty Container and lost the page's tree),
+            // or the empty Container.
+            _converter.SetCurrentClass(component.StateClassName);
+            var (stateBody, stateSource) = BuildBody(component.BuildMethodNode, JsStatement.Raw("return new Container({});"));
+            c.Member(JsClassMember.Method("", "build", "", Param("context", "BuildContext"), "", stateBody),
+                separated: true, bodySource: stateSource);
         });
         WriteLn();
     }

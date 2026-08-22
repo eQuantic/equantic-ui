@@ -83,14 +83,17 @@ public class TypeScriptCodeBuilder
         }
     }
 
-    private void RecordMapping(SyntaxNode node)
+    /// <param name="lineOffset">Lines BELOW the current one the mapping points at — a member
+    /// body's first statement, written as part of the member's own text.</param>
+    /// <param name="indentOffset">Levels deeper than the current indentation that line sits at.</param>
+    private void RecordMapping(SyntaxNode node, int lineOffset = 0, int indentOffset = 0)
     {
         var pos = node.GetLocation().GetLineSpan();
         _mappings.Add(new SourceMapping
         {
-            GeneratedLine = _writer.CurrentLine,
+            GeneratedLine = _writer.CurrentLine + lineOffset,
             // 0-based column where the emitted line's content begins (after indentation).
-            GeneratedColumn = _writer.IndentLevel * 4,
+            GeneratedColumn = (_writer.IndentLevel + indentOffset) * 4,
             // Roslyn line/character positions are already 0-based, matching the source-map spec.
             SourceLine = pos.StartLinePosition.Line,
             SourceColumn = pos.StartLinePosition.Character,
@@ -128,35 +131,20 @@ public class TypeScriptCodeBuilder
             _builder.Line($"{access}{name}: {type};", sourceNode);
         }
 
-        public void Constructor(string parameters, Action bodyAction, SyntaxNode? sourceNode = null) =>
-            Member($"constructor({parameters}) {{", bodyAction, sourceNode);
-
-        public void Method(string name, string parameters, bool isAsync, Action bodyAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool isStatic = false, bool isGenerator = false)
-        {
-            // Iterator methods (yield) are JS GENERATORS: the `*` marker is what lets the emitted
-            // `yield` statements parse. `async *` is the async-iterator form, also valid JS.
-            var prefix = (isStatic ? "static " : "") + (isAsync ? "async " : "") + (isGenerator ? "*" : "");
-            var generics = typeParameters != null && typeParameters.Any() ? $"<{string.Join(", ", typeParameters)}>" : "";
-            Member($"{prefix}{name}{generics}({parameters}) {{", bodyAction, sourceNode);
-        }
-
         public void Raw(string content, SyntaxNode? sourceNode = null) => _builder.Line(content, sourceNode);
 
         /// <summary>A member through the member writer. <paramref name="separated"/> adds the blank
         /// line the method family has always been followed by (the accessor family has not — the
         /// layout is the emitter's to normalize, not this seam's).</summary>
-        public void Member(JsClassMember member, SyntaxNode? sourceNode = null, bool separated = false)
+        public void Member(JsClassMember member, SyntaxNode? sourceNode = null, bool separated = false,
+            SyntaxNode? bodySource = null, int bodyLine = 1)
         {
+            // The body's source maps to the line it starts on — `bodyLine` lines below the signature
+            // (past any statements the emitter put in front of it), one level in.
+            if (bodySource != null) _builder.RecordMapping(bodySource, bodyLine, 1);
             _builder.Line(JsMemberWriter.Write(member, _builder.Layout), sourceNode);
             if (separated) _builder.Line("");
         }
 
-        /// <summary>A member with a body, and the blank line every member is followed by.</summary>
-        private void Member(string signature, Action bodyAction, SyntaxNode? sourceNode)
-        {
-            if (sourceNode != null) _builder.RecordMapping(sourceNode);
-            using (_builder._writer.BeginBlock(signature)) bodyAction();
-            _builder.Line("");
-        }
     }
 }
