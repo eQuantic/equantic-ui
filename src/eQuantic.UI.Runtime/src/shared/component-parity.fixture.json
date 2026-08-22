@@ -508,6 +508,1877 @@
       ]
     }
   ],
+  "badge": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-17a2pwz eq-17gcljg eq-1eb13m5 eq-1hgsylc eq-1or4gpz eq-bo3n4y eq-guk3hb"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-17jb6qs eq-1eg324q eq-5goeua eq-epaxs4 eq-mbtjfn eq-pbx3g3 eq-r94c75 eq-type-caption eq-vrom5h"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "7",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "badge-overflow": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-17a2pwz eq-17gcljg eq-1eb13m5 eq-1or4gpz eq-bo3n4y eq-guk3hb eq-jq1py4"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-17jb6qs eq-1dakdsg eq-1eg324q eq-5goeua eq-epaxs4 eq-mbtjfn eq-pbx3g3 eq-type-caption eq-vrom5h"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "99\u002B",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "card": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-15bwtfr eq-1eb13m5 eq-1eviv88 eq-1gsypk4 eq-1pwthtl eq-5hocaj eq-7ow04d eq-ag04go"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "eq-7gvrt4 eq-type-bodym"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "#text",
+              "text": "body",
+              "attrs": {},
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "checkbox-on": [
+    {
+      "tag": "button",
+      "attrs": {
+        "aria-checked": "true",
+        "aria-label": "Accept",
+        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable",
+        "role": "checkbox"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1iu691c eq-1uhnwvg eq-ewlixa eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1eb13m5 eq-bo3n4y eq-iuiqgs eq-jq1py4 eq-s01o67 eq-z2pkxm"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "svg",
+                      "attrs": {
+                        "aria-hidden": "true",
+                        "class": "eq-16x7aca eq-19vml7g eq-1dakdsg eq-1or4gpz",
+                        "fill": "currentColor",
+                        "viewBox": "0 0 24 24"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                          },
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-12qw9lh eq-7gvrt4 eq-h7owsy eq-mbtjfn eq-type-bodym eq-xkrzsg"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Accept",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "checkbox-off": [
+    {
+      "tag": "button",
+      "attrs": {
+        "aria-checked": "false",
+        "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable",
+        "role": "checkbox"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1iu691c eq-1uhnwvg eq-ewlixa eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1eb13m5 eq-1iq7nu eq-bo3n4y eq-iuiqgs eq-s01o67 eq-z2pkxm"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "chip": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-12ve49g eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-bo3n4y eq-hw1jqi"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu eq-v9un6z"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-1nj1bb6 eq-1x60j26 eq-5goeua eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-pbx3g3 eq-type-caption eq-y9mhin"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Filter",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "chip-selected": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-17a2pwz eq-1eb13m5 eq-1nzghh4 eq-1su9m49 eq-bo3n4y eq-hw1jqi eq-p7ntc"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu eq-v9un6z"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "svg",
+              "attrs": {
+                "aria-hidden": "true",
+                "class": "eq-16x7aca eq-19vml7g eq-1h2zrd3 eq-1or4gpz",
+                "fill": "currentColor",
+                "viewBox": "0 0 24 24"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "path",
+                  "attrs": {
+                    "d": "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                  },
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-1h2zrd3 eq-1x60j26 eq-5goeua eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-pbx3g3 eq-type-caption eq-y9mhin"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Chosen",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "divider": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-rx01wr eq-yjvyu6"
+      },
+      "events": [],
+      "children": []
+    }
+  ],
+  "divider-vertical": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-1gudvpj eq-1h3pxaa eq-1jjc6f6 eq-bo3n4y eq-yjvyu6"
+      },
+      "events": [],
+      "children": []
+    }
+  ],
+  "banner": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-ufuzv4"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "svg",
+              "attrs": {
+                "aria-hidden": "true",
+                "class": "eq-16x7aca eq-17y6yig eq-96qelu eq-i95eb9",
+                "fill": "currentColor",
+                "viewBox": "0 0 24 24"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "path",
+                  "attrs": {
+                    "d": "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-2h2zm0-4h-2V7h2z"
+                  },
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-168ghzj eq-5ew4ww"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-11yg588 eq-1eb13m5 eq-aexooi eq-m7pi4h eq-m92pvu eq-mc2xdp"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-12qw9lh eq-17y6yig eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-type-caption eq-xkrzsg eq-y9mhin"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "Careful",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-112ynfn eq-17y6yig eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-type-caption eq-xkrzsg"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "Something needs attention",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "stepper": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1e8yzyr eq-1eb13m5 eq-1o1uad7 eq-5hocaj eq-bo3n4y eq-cl6mtg"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Decrease",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xrfuoj eq-bo3n4y"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "svg",
+                          "attrs": {
+                            "aria-hidden": "true",
+                            "class": "eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9",
+                            "fill": "currentColor",
+                            "viewBox": "0 0 24 24"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "M19 13H5v-2h14z"
+                              },
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-ca9a4c"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-11aex6p eq-16x7aca eq-1hwu9wq eq-1txto41 eq-5augbd eq-5goeua eq-7gvrt4 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-type-label eq-y9mhin"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "3",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Increase",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xrfuoj eq-bo3n4y"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "svg",
+                          "attrs": {
+                            "aria-hidden": "true",
+                            "class": "eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9",
+                            "fill": "currentColor",
+                            "viewBox": "0 0 24 24"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"
+                              },
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "stepper-labelled": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1e8yzyr eq-1eb13m5 eq-1o1uad7 eq-5hocaj eq-bo3n4y eq-cl6mtg"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Decrease quantity",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xrfuoj eq-bo3n4y"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "svg",
+                          "attrs": {
+                            "aria-hidden": "true",
+                            "class": "eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9",
+                            "fill": "currentColor",
+                            "viewBox": "0 0 24 24"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "M19 13H5v-2h14z"
+                              },
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-ca9a4c"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-11aex6p eq-16x7aca eq-1hwu9wq eq-1txto41 eq-5augbd eq-5goeua eq-7gvrt4 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-type-label eq-y9mhin"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "3",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Increase quantity",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1xrfuoj eq-bo3n4y"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "svg",
+                          "attrs": {
+                            "aria-hidden": "true",
+                            "class": "eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9",
+                            "fill": "currentColor",
+                            "viewBox": "0 0 24 24"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"
+                              },
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pagination": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-19dgm5h eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "button",
+          "attrs": {
+            "aria-label": "Previous",
+            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable",
+            "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+          },
+          "events": [
+            "click"
+          ],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-189q21e eq-1e8yzyr eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-hw1jqi"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu eq-v9un6z"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-5goeua eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-type-label eq-y9mhin"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "Previous",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1gwdd6k eq-1uhnwvg eq-ewlixa eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Page 1",
+                "aria-pressed": "false",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-189q21e eq-18tlusk eq-1eb13m5 eq-2s6r7n eq-8jbob8 eq-bo3n4y eq-hj6cvq"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "span",
+                          "attrs": {
+                            "class": "eq-16x7aca eq-1nj1bb6 eq-5augbd eq-5goeua eq-epaxs4 eq-mbtjfn eq-type-caption"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "#text",
+                              "text": "1",
+                              "attrs": {},
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Page 2",
+                "aria-pressed": "true",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-18tlusk eq-1eb13m5 eq-2s6r7n eq-8jbob8 eq-bo3n4y eq-hj6cvq eq-jq1py4"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "span",
+                          "attrs": {
+                            "class": "eq-16x7aca eq-1dakdsg eq-5augbd eq-5goeua eq-epaxs4 eq-mbtjfn eq-type-caption"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "#text",
+                              "text": "2",
+                              "attrs": {},
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Page 3",
+                "aria-pressed": "false",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-189q21e eq-18tlusk eq-1eb13m5 eq-2s6r7n eq-8jbob8 eq-bo3n4y eq-hj6cvq"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "span",
+                          "attrs": {
+                            "class": "eq-16x7aca eq-1nj1bb6 eq-5augbd eq-5goeua eq-epaxs4 eq-mbtjfn eq-type-caption"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "#text",
+                              "text": "3",
+                              "attrs": {},
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Page 4",
+                "aria-pressed": "false",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-189q21e eq-18tlusk eq-1eb13m5 eq-2s6r7n eq-8jbob8 eq-bo3n4y eq-hj6cvq"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "span",
+                          "attrs": {
+                            "class": "eq-16x7aca eq-1nj1bb6 eq-5augbd eq-5goeua eq-epaxs4 eq-mbtjfn eq-type-caption"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "#text",
+                              "text": "4",
+                              "attrs": {},
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Page 5",
+                "aria-pressed": "false",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-189q21e eq-18tlusk eq-1eb13m5 eq-2s6r7n eq-8jbob8 eq-bo3n4y eq-hj6cvq"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "span",
+                          "attrs": {
+                            "class": "eq-16x7aca eq-1nj1bb6 eq-5augbd eq-5goeua eq-epaxs4 eq-mbtjfn eq-type-caption"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "#text",
+                              "text": "5",
+                              "attrs": {},
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "button",
+          "attrs": {
+            "aria-label": "Next",
+            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable",
+            "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+          },
+          "events": [
+            "click"
+          ],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-189q21e eq-1e8yzyr eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-hw1jqi"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu eq-v9un6z"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-5goeua eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-type-label eq-y9mhin"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "Next",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "page-indicator": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-m7pi4h eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1371iuq eq-154xbjv eq-17a2pwz eq-1eb13m5 eq-8ktm3z eq-bo3n4y eq-rxm3as"
+          },
+          "events": [],
+          "children": []
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1371iuq eq-17a2pwz eq-1eb13m5 eq-bo3n4y eq-jq1py4 eq-r2od8e eq-rxm3as"
+          },
+          "events": [],
+          "children": []
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1371iuq eq-154xbjv eq-17a2pwz eq-1eb13m5 eq-8ktm3z eq-bo3n4y eq-rxm3as"
+          },
+          "events": [],
+          "children": []
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1371iuq eq-154xbjv eq-17a2pwz eq-1eb13m5 eq-8ktm3z eq-bo3n4y eq-rxm3as"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "tooltip": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-anchorhost eq-hoverreveal"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "span",
+          "attrs": {
+            "aria-describedby": "eq-tip-1xtgw69",
+            "class": "eq-7gvrt4 eq-type-bodym"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "#text",
+              "text": "hover",
+              "attrs": {},
+              "events": [],
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-anchor-panel eq-anchor-t-center eq-low5pc",
+            "id": "eq-tip-1xtgw69",
+            "role": "tooltip"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-18tlusk eq-1eb13m5 eq-60rbl8 eq-71rsfd"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "span",
+                  "attrs": {
+                    "class": "eq-16x7aca eq-5goeua eq-epaxs4 eq-k0ph0b eq-mbtjfn eq-type-caption"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": "the tip",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-15qobfw eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-168ghzj eq-5ew4ww"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "One",
+                "aria-selected": "false",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable",
+                "role": "tab",
+                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)",
+                "tabindex": "-1"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-11yg588 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-aexooi eq-m92pvu eq-mc2xdp"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-168ghzj eq-1gudvpj"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-16x7aca eq-1ehjvh5 eq-1hwu9wq eq-1xfx61h eq-5goeua eq-epaxs4 eq-gxup24 eq-mbtjfn eq-type-caption eq-y9mhin"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "One",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-i65znl eq-kngwsg eq-xhcqoy"
+                      },
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-168ghzj eq-5ew4ww"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Two",
+                "aria-selected": "true",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable",
+                "role": "tab",
+                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)",
+                "tabindex": "-1"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-11yg588 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-aexooi eq-m92pvu eq-mc2xdp"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-168ghzj eq-1gudvpj"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-16x7aca eq-17jb6qs eq-1ehjvh5 eq-1hwu9wq eq-1piw7rt eq-5goeua eq-epaxs4 eq-gxup24 eq-mbtjfn eq-type-caption"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "Two",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-i65znl eq-xhcqoy"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-1fggo7a eq-5ew4ww eq-akjizx eq-bo3n4y eq-i65znl eq-jq1py4"
+                          },
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-168ghzj eq-5ew4ww"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Three",
+                "aria-selected": "false",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1jjc6f6 eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable",
+                "role": "tab",
+                "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)",
+                "tabindex": "-1"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-11yg588 eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-aexooi eq-m92pvu eq-mc2xdp"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-168ghzj eq-1gudvpj"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-16x7aca eq-1ehjvh5 eq-1hwu9wq eq-1xfx61h eq-5goeua eq-epaxs4 eq-gxup24 eq-mbtjfn eq-type-caption eq-y9mhin"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "Three",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-i65znl eq-kngwsg eq-xhcqoy"
+                      },
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "search-field": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-12ve49g eq-17a2pwz eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-cl6mtg eq-hebsiu"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "svg",
+              "attrs": {
+                "aria-hidden": "true",
+                "class": "eq-16x7aca eq-1xfx61h eq-96qelu eq-i95eb9",
+                "fill": "currentColor",
+                "viewBox": "0 0 24 24"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "path",
+                  "attrs": {
+                    "d": "M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14"
+                  },
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-168ghzj eq-5ew4ww"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-field"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "input",
+                      "attrs": {
+                        "aria-label": "Search\u2026",
+                        "class": "eq-1esejbi eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-entry eq-type-bodym",
+                        "placeholder": "Search\u2026",
+                        "type": "text",
+                        "value": "term"
+                      },
+                      "events": [],
+                      "children": []
+                    },
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "aria-live": "polite",
+                        "class": "eq-desc"
+                      },
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-label": "Clear search",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw eq-pressable",
+                "style": "--eq-pressed-bg: light-dark(#e2e5ea, #2a323d)"
+              },
+              "events": [
+                "click"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-17a2pwz eq-1eb13m5 eq-1m836id eq-bo3n4y eq-cl6mtg eq-ra6ajf"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "svg",
+                          "attrs": {
+                            "aria-hidden": "true",
+                            "class": "eq-16x7aca eq-1xfx61h eq-96qelu eq-i95eb9",
+                            "fill": "currentColor",
+                            "viewBox": "0 0 24 24"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                              },
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "text-input": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-1eb13m5 eq-1pyii92 eq-5ew4ww eq-aexooi eq-akjizx eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-m92pvu eq-mc2xdp eq-v9un6z"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-1nj1bb6 eq-type-label"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Label",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-15qobfw eq-1e8yzyr eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-hebsiu"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-m92pvu eq-mc2xdp"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-168ghzj eq-5ew4ww"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-field"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "input",
+                              "attrs": {
+                                "aria-label": "Label",
+                                "class": "eq-1esejbi eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-entry eq-type-bodyl",
+                                "type": "text",
+                                "value": "value"
+                              },
+                              "events": [],
+                              "children": []
+                            },
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "aria-live": "polite",
+                                "class": "eq-desc"
+                              },
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "eq-16x7aca eq-1xfx61h eq-5goeua eq-epaxs4 eq-mbtjfn eq-type-caption"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "radio-group": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-m7pi4h eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-m7pi4h eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-checked": "true",
+                "aria-label": "a",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-p7nbpw eq-pressable",
+                "role": "radio",
+                "tabindex": "-1"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1iu691c eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-m92pvu eq-mc2xdp eq-vwp2xk"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-17a2pwz eq-1eb13m5 eq-6w1srn eq-bo3n4y eq-iuiqgs eq-s01o67"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "eq-17a2pwz eq-1eb13m5 eq-1jmiv2e eq-1yewskx eq-bo3n4y eq-jq1py4"
+                              },
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-16x7aca eq-5goeua eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-type-bodym"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "a",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-checked": "false",
+                "aria-label": "b",
+                "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-p7nbpw eq-pressable",
+                "role": "radio",
+                "tabindex": "-1"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1iu691c eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-m92pvu eq-mc2xdp eq-vwp2xk"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-17a2pwz eq-1eb13m5 eq-1iq7nu eq-bo3n4y eq-iuiqgs eq-s01o67"
+                      },
+                      "events": [],
+                      "children": []
+                    },
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-16x7aca eq-5goeua eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-type-bodym"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "b",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "empty-state": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-1m2fmjk eq-5ew4ww eq-aexooi eq-akjizx eq-ewlixa eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-12ve49g eq-17a2pwz eq-1b1jdyl eq-1eb13m5 eq-8y94ea eq-bo3n4y"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "svg",
+                  "attrs": {
+                    "aria-hidden": "true",
+                    "class": "eq-16x7aca eq-1su9m49 eq-1xfx61h eq-1xtjgfe",
+                    "fill": "currentColor",
+                    "viewBox": "0 0 24 24"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "path",
+                      "attrs": {
+                        "d": "M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14"
+                      },
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "aria-hidden": "true",
+            "class": "eq-1or4gpz eq-bo3n4y"
+          },
+          "events": [],
+          "children": []
+        },
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "eq-114sn1y eq-12qw9lh eq-7gvrt4 eq-h7owsy eq-mbtjfn eq-mxq5ld eq-pbx3g3 eq-type-title eq-xkrzsg eq-y9mhin"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "#text",
+              "text": "Nothing here",
+              "attrs": {},
+              "events": [],
+              "children": []
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "aria-hidden": "true",
+            "class": "eq-1371iuq eq-bo3n4y"
+          },
+          "events": [],
+          "children": []
+        },
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "eq-12qw9lh eq-1nj1bb6 eq-h7owsy eq-mbtjfn eq-type-bodym eq-xkrzsg"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "#text",
+              "text": "Try another term",
+              "attrs": {},
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "select-opens": [
     {
       "tag": "div",

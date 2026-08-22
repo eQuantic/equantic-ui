@@ -52,6 +52,30 @@ public class ComponentParityFixtureTests
                                            new Text("two", TypeRole.Label, Theme.TextPrimary)), NoPresses),
         ("button-in-column", Stack(Space.S2, new Button("A"), new Button("B", Variant.Outline)), NoPresses),
 
+        // A BROAD sweep of the library. Every one of these has a twin whose constructor mirrors
+        // the C# one parameter for parameter, so the same arguments build the same component on
+        // both sides — which is what makes a difference in the lowered tree mean something.
+        ("badge", new Badge(7), NoPresses),
+        ("badge-overflow", new Badge(140, 99, Variant.Primary), NoPresses),
+        ("card", new Card(new Text("body", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
+        ("checkbox-on", new Checkbox(true, null, "Accept"), NoPresses),
+        ("checkbox-off", new Checkbox(false), NoPresses),
+        ("chip", new Chip("Filter"), NoPresses),
+        ("chip-selected", new Chip("Chosen", ChipKind.Filter, true), NoPresses),
+        ("divider", new Divider(), NoPresses),
+        ("divider-vertical", new Divider(DividerInset.None, DividerAxis.Vertical), NoPresses),
+        ("banner", new Banner(Variant.Destructive, "Careful", "Something needs attention"), NoPresses),
+        ("stepper", new Stepper(3), NoPresses),
+        ("stepper-labelled", new Stepper(3) { Label = "quantity" }, NoPresses),
+        ("pagination", new Pagination(5, 2), NoPresses),
+        ("page-indicator", new PageIndicator(4, 1), NoPresses),
+        ("tooltip", new Tooltip(new Text("hover", TypeRole.BodyM, Theme.TextPrimary), "the tip"), NoPresses),
+        ("tabs", new Tabs(["One", "Two", "Three"], 1), NoPresses),
+        ("search-field", new SearchField("term"), NoPresses),
+        ("text-input", new TextInput("value", null, "Label"), NoPresses),
+        ("radio-group", new RadioGroup(["a", "b"], 0), NoPresses),
+        ("empty-state", new EmptyState(Icons.Search, "Nothing here", "Try another term"), NoPresses),
+
         // DRIVEN: the state has to move the same way on both sides, and one lowering cannot show
         // that. Opening a Select and switching an Accordion's open section are the two smallest
         // changes of state that rewrite a subtree.

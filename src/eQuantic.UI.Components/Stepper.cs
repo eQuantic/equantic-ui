@@ -33,6 +33,14 @@ public sealed class Stepper : StatelessComponent
     /// <summary>Announced by the control; the number alone says nothing about what it counts.</summary>
     public string Label { get; init; } = "";
 
+    /// <summary>
+    /// What a screen reader announces for one of the two buttons. With a Label it names the thing
+    /// being stepped ("Increase quantity"); WITHOUT one it is the verb alone, because
+    /// <c>$"Increase {Label}"</c> on an empty Label announces "Increase " — a trailing space, and
+    /// a name that says what the button does to nothing in particular.
+    /// </summary>
+    private string Action(string verb) => Label.Length == 0 ? verb : $"{verb} {Label}";
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
@@ -42,7 +50,7 @@ public sealed class Stepper : StatelessComponent
 
         var row = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
         row.Add(Arm(theme, Icons.Minus, height, canDecrement,
-            () => OnChanged?.Invoke(Value - Step), $"Decrease {Label}"));
+            () => OnChanged?.Invoke(Value - Step), Action("Decrease")));
 
         // The value HUGS between the arms with a floor, rather than flexing: a Flexible here makes
         // the whole control greedy, and a Stepper next to a label ate the label's row.
@@ -62,7 +70,7 @@ public sealed class Stepper : StatelessComponent
         row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
 
         row.Add(Arm(theme, Icons.Plus, height, canIncrement,
-            () => OnChanged?.Invoke(Value + Step), $"Increase {Label}"));
+            () => OnChanged?.Invoke(Value + Step), Action("Increase")));
 
         return new Box(new BoxStyle
         {
