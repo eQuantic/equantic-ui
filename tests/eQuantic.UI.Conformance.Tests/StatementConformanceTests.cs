@@ -16,6 +16,11 @@ public class StatementConformanceTests
     // if / else
     [InlineData("int x = 7; if (x > 5) { return \"big\"; } else { return \"small\"; }")]   // "big"
     [InlineData("int x = 3; if (x > 5) return \"big\"; return \"small\";")]                 // "small" (braceless)
+    // A brace-less body whose expression declares a pattern variable: the hoisted `let` and the
+    // statement must BOTH stay inside the construct (the writer braces the pair).
+    [InlineData("var xs = new[] { \"a\", \"\" }; string r = \"\"; foreach (var x in xs) r += x is { Length: > 0 } v ? v : \"-\"; return r;")] // "a-"
+    [InlineData("int i = 0; string r = \"\"; while (i < 2) if (\"ab\"[i++] is var c) r += c; return r;")]   // "ab"
+    [InlineData("int n = 0; for (int i = 0; i < 3; i++) if (i is > 0 and var k) n += k; return n;")]          // 3
     // for, accumulation
     [InlineData("int sum = 0; for (int i = 1; i <= 5; i++) { sum += i; } return sum;")]     // 15
     // foreach over an array

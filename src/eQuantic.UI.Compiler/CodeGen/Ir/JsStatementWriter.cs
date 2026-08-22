@@ -40,7 +40,7 @@ public static class JsStatementWriter
         JsThrow @throw => $"throw {JsExprWriter.Write(@throw.Value!)};",
         JsLet let => $"let {let.Name}{let.Annotation} = {JsExprWriter.Write(let.Initializer)};",
         JsConst @const => $"const {@const.Name} = {JsExprWriter.Write(@const.Initializer)};",
-        JsHeaded headed => $"{headed.Head} {Compact(headed.Body)}",
+        JsHeaded headed => $"{headed.Head} {BracedCompact(headed.Body)}",
         JsTry @try => $"try {Compact(@try.Body)}"
                       + string.Concat(@try.Catches.Select(c => $" catch{(c.Binding.Length == 0 ? "" : " " + c.Binding)} {Compact(c.Block)}"))
                       + (@try.Finally is null ? "" : $" finally {Compact(@try.Finally)}"),
@@ -48,10 +48,10 @@ public static class JsStatementWriter
                             + string.Concat(@switch.Cases.Select(c =>
                                 string.Concat(c.Labels.Select(l => $" {l}:")) + string.Concat(c.Body.Select(b => " " + Compact(b)))))
                             + " }",
-        JsIf @if => $"if ({JsExprWriter.Write(@if.Condition)}) {Compact(@if.Then)}"
-                    + (@if.Else is null ? "" : $" else {Compact(@if.Else)}"),
-        JsWhile @while => $"while ({JsExprWriter.Write(@while.Condition)}) {Compact(@while.Body)}",
-        JsDoWhile doWhile => $"do {Compact(doWhile.Body)} while ({JsExprWriter.Write(doWhile.Condition)});",
+        JsIf @if => $"if ({JsExprWriter.Write(@if.Condition)}) {BracedCompact(@if.Then)}"
+                    + (@if.Else is null ? "" : $" else {BracedCompact(@if.Else)}"),
+        JsWhile @while => $"while ({JsExprWriter.Write(@while.Condition)}) {BracedCompact(@while.Body)}",
+        JsDoWhile doWhile => $"do {BracedCompact(doWhile.Body)} while ({JsExprWriter.Write(doWhile.Condition)});",
         JsBreak { Label: null } => "break;",
         JsBreak @break => $"break {@break.Label};",
         JsContinue { Label: null } => "continue;",
@@ -59,6 +59,33 @@ public static class JsStatementWriter
         JsEmpty => "",
         _ => throw new InvalidOperationException($"No writer for IR node {statement.GetType().Name}."),
     };
+
+
+    /// <summary>
+    /// A SUBSTATEMENT — the body of a loop, the branch of an <c>if</c> — written so that several
+    /// statements standing where C# needed only one still belong to the construct.
+    /// <para>
+    /// C# lets a body go without braces, and a pattern variable hoists a declaration in front of
+    /// the statement it belongs to. Put together, the body became two statements and only the
+    /// first one stayed in the loop: <c>foreach (var o in xs) items.Add(o.Flag is { Length: > 0 }
+    /// flag ? … : …);</c> emitted the loop over a lone <c>let flag;</c> and left the Add behind it,
+    /// which is not the same program and does not even parse (a lone `let` may not be a body).
+    /// Braces here rather than at each strategy: every construct with a substatement needs the
+    /// same rule, and a strategy that forgets it produces code that runs and is wrong.
+    /// </para>
+    /// </summary>
+    private static string BracedCompact(JsStatement statement) =>
+        NeedsBraces(statement) ? Compact(JsStatement.Block(((JsStatements)statement).Statements)) : Compact(statement);
+
+    private static string BracedPretty(JsStatement statement, int depth) =>
+        NeedsBraces(statement)
+            ? Pretty(JsStatement.Block(((JsStatements)statement).Statements), depth)
+            : Pretty(statement, depth);
+
+    /// <summary>A sequence of two or more is the only shape that leaks; one or none reads the same
+    /// either way, and a block already carries its own braces.</summary>
+    private static bool NeedsBraces(JsStatement statement) =>
+        statement is JsStatements sequence && sequence.Statements.Count > 1;
 
     // ── pretty: one statement per line, blocks indented ────────────────────────────────────
 
@@ -69,15 +96,15 @@ public static class JsStatementWriter
         JsRawStatement raw => raw.Text,
         JsStatements sequence => Lines(sequence.Statements, depth),
         JsBlock block => PrettyBlock(block, depth),
-        JsIf @if => $"if ({JsExprWriter.Write(@if.Condition)}) {Pretty(@if.Then, depth)}"
-                    + (@if.Else is null ? "" : $" else {Pretty(@if.Else, depth)}"),
-        JsHeaded headed => $"{headed.Head} {Pretty(headed.Body, depth)}",
+        JsIf @if => $"if ({JsExprWriter.Write(@if.Condition)}) {BracedPretty(@if.Then, depth)}"
+                    + (@if.Else is null ? "" : $" else {BracedPretty(@if.Else, depth)}"),
+        JsHeaded headed => $"{headed.Head} {BracedPretty(headed.Body, depth)}",
         JsTry @try => $"try {Pretty(@try.Body, depth)}"
                       + string.Concat(@try.Catches.Select(c => $" catch{(c.Binding.Length == 0 ? "" : " " + c.Binding)} {Pretty(c.Block, depth)}"))
                       + (@try.Finally is null ? "" : $" finally {Pretty(@try.Finally, depth)}"),
         JsSwitch @switch => PrettySwitch(@switch, depth),
-        JsWhile @while => $"while ({JsExprWriter.Write(@while.Condition)}) {Pretty(@while.Body, depth)}",
-        JsDoWhile doWhile => $"do {Pretty(doWhile.Body, depth)} while ({JsExprWriter.Write(doWhile.Condition)});",
+        JsWhile @while => $"while ({JsExprWriter.Write(@while.Condition)}) {BracedPretty(@while.Body, depth)}",
+        JsDoWhile doWhile => $"do {BracedPretty(doWhile.Body, depth)} while ({JsExprWriter.Write(doWhile.Condition)});",
         _ => Compact(statement),
     };
 
