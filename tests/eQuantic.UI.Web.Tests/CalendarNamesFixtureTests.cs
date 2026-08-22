@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
@@ -20,14 +21,13 @@ public class CalendarNamesFixtureTests
     private static readonly string[] Cultures =
         ["en-US", "pt-BR", "es-ES", "fr-FR", "de-DE", "ja-JP", "ar-EG", "en-GB", "ru-RU", "zh-CN"];
 
-    private static string FixturePath()
+    /// <summary>Derived from THIS file's location, not from the build output — the repository's
+    /// own convention (StyleAtomizerTests, FormatSubsetTests), and deterministic where a walk up
+    /// from <c>AppContext.BaseDirectory</c> depends on where the runner put the binaries.</summary>
+    private static string FixturePath([CallerFilePath] string sourcePath = "")
     {
-        var here = new DirectoryInfo(AppContext.BaseDirectory);
-        while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Runtime")))
-            here = here.Parent;
-
-        here.Should().NotBeNull("the test has to find the repository root to write the fixture");
-        return Path.Combine(here!.FullName, "src", "eQuantic.UI.Runtime", "src", "shared",
+        var repoRoot = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", ".."));
+        return Path.Combine(repoRoot, "src", "eQuantic.UI.Runtime", "src", "shared",
             "calendar-names.fixture.json");
     }
 
