@@ -175,6 +175,46 @@ public class CalendarTests
     }
 
     [Fact]
+    public void WhenTheAppMovesTheSelection_TheViewFollowsIt()
+    {
+        // A CONTROLLED calendar. Without this the instance adopted the new date and kept showing
+        // the old month, so the selection was simply not on screen and the component looked like
+        // it had ignored the app.
+        var mounted = new Calendar(July17);
+        Render(mounted);
+
+        mounted.AdoptConfig(new Calendar(new DateOnly(2026, 9, 3)));
+        var after = Render(mounted);
+
+        Walk(after).Single(n => n.Attributes.GetValueOrDefault("role") == "grid")
+            .Attributes["aria-label"].Should().Be("September 2026");
+        Cells(after).Single(c => c.Attributes["aria-selected"] == "true")
+            .Attributes["aria-label"].Should().Be("Thursday, 3 September 2026");
+    }
+
+    [Fact]
+    public void AnUnrelatedReRender_DoesNotYankTheViewBack()
+    {
+        // The other half of the rule: re-syncing on EVERY adopt would drag the reader back from
+        // whatever month they had paged to, on a re-render that changed nothing about the date.
+        var mounted = new Calendar(July17);
+        Render(mounted);
+        Press(Walk(Render(mounted)).First(n =>
+            n.Attributes.GetValueOrDefault("aria-label") == SdkStringUnderTest.NextMonth));
+
+        mounted.AdoptConfig(new Calendar(July17));
+        var after = Render(mounted);
+
+        Walk(after).Single(n => n.Attributes.GetValueOrDefault("role") == "grid")
+            .Attributes["aria-label"].Should().Be("August 2026");
+    }
+
+    private static class SdkStringUnderTest
+    {
+        internal static string NextMonth => UnderCulture(() => SdkStrings.NextMonth);
+    }
+
+    [Fact]
     public void ACalendarWithNothingSelected_Renders()
     {
         // Every other case here hands it a date, which is why the whole suite missed that an

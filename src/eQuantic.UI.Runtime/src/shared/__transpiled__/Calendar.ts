@@ -56,10 +56,20 @@ export class Calendar extends SharedStatefulComponent {
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if (!((next instanceof Calendar && (fresh = next, true)))) return;
+        let arriving: any; 
+        let moved = (arriving = fresh.selected) != null && !arriving.equals(this.selected);
         this.selected = fresh.selected;
         this.onChanged = fresh.onChanged;
         this.min = fresh.min;
         this.max = fresh.max;
+        let chosen: any; 
+        if (moved && (chosen = this.selected) != null) {
+            this._month = Calendar.firstOfMonth(chosen);
+            this._cursor = chosen;
+        } else { let cursor: any; if ((cursor = this._cursor) != null && !this.inRange(cursor)) {
+            this._cursor = this.clampToRange(cursor);
+            this._month = Calendar.firstOfMonth(this._cursor);
+        } }
     }
 
     cell(day: DateOnly, context: any) {

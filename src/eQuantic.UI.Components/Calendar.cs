@@ -57,10 +57,28 @@ public sealed class Calendar : StatefulComponent
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not Calendar fresh) return;
+        var moved = fresh.Selected is { } arriving && arriving != Selected;
         Selected = fresh.Selected;
         OnChanged = fresh.OnChanged;
         Min = fresh.Min;
         Max = fresh.Max;
+
+        // A CONTROLLED calendar: the app moved the selection, so the view follows it. Without this
+        // the instance adopted the new date and kept showing the old month — the selection was
+        // simply not on screen, and the calendar looked like it had ignored the app.
+        // Only when the selection actually MOVED: re-syncing on every adopt would yank the view
+        // back from wherever the reader had paged to, on any unrelated re-render.
+        if (moved && Selected is { } chosen)
+        {
+            _month = FirstOfMonth(chosen);
+            _cursor = chosen;
+        }
+        // New bounds can strand the cursor outside them, where Enter would refuse it.
+        else if (_cursor is { } cursor && !InRange(cursor))
+        {
+            _cursor = ClampToRange(cursor);
+            _month = FirstOfMonth(_cursor.Value);
+        }
     }
 
     public override VisualNode Build(ComponentContext context)
