@@ -27,28 +27,54 @@ public class ComponentParityFixtureTests
 {
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
-    /// <summary>The components under parity, by NAME. The twin spec builds the same names with the
-    /// same arguments; a name present on one side only fails the guard on the other.</summary>
-    private static IEnumerable<(string Name, VisualNode Node)> Cases() =>
+    /// <summary>
+    /// The components under parity, by NAME, each with the PRESSES that drive it. The twin spec
+    /// builds the same names with the same arguments, and a name present on one side only fails
+    /// the guard on the other.
+    /// </summary>
+    /// <remarks>
+    /// A press is the index of a click handler in the lowered tree, in document order, invoked
+    /// between one frame and the next. A component with no presses is one frame — its lowering —
+    /// and one with presses is the lowering after each of them, which is where a twin whose state
+    /// does not move shows up.
+    /// </remarks>
+    private static IEnumerable<(string Name, VisualNode Node, int[] Presses)> Cases() =>
     [
-        ("text", new Text("hello", TypeRole.BodyM, Theme.TextPrimary)),
-        ("button-primary", new Button("Save")),
-        ("button-ghost-small", new Button("Cancel", Variant.Ghost, SizeVariant.Small)),
-        ("switch-on", new Switch(true)),
-        ("switch-off", new Switch(false)),
-        ("progress-determinate", new ProgressBar(0.42f)),
-        ("progress-indeterminate", new ProgressBar()),
-        ("avatar", new Avatar("EM", SizeVariant.Large, "Edgar")),
+        ("text", new Text("hello", TypeRole.BodyM, Theme.TextPrimary), NoPresses),
+        ("button-primary", new Button("Save"), NoPresses),
+        ("button-ghost-small", new Button("Cancel", Variant.Ghost, SizeVariant.Small), NoPresses),
+        ("switch-on", new Switch(true), NoPresses),
+        ("switch-off", new Switch(false), NoPresses),
+        ("progress-determinate", new ProgressBar(0.42f), NoPresses),
+        ("progress-indeterminate", new ProgressBar(), NoPresses),
+        ("avatar", new Avatar("EM", SizeVariant.Large, "Edgar"), NoPresses),
         ("column-of-text", Stack(Space.S3, new Text("one", TypeRole.BodyM, Theme.TextPrimary),
-                                            new Text("two", TypeRole.Label, Theme.TextPrimary))),
-        ("button-in-column", Stack(Space.S2, new Button("A"), new Button("B", Variant.Outline))),
+                                           new Text("two", TypeRole.Label, Theme.TextPrimary)), NoPresses),
+        ("button-in-column", Stack(Space.S2, new Button("A"), new Button("B", Variant.Outline)), NoPresses),
+
+        // DRIVEN: the state has to move the same way on both sides, and one lowering cannot show
+        // that. Opening a Select and switching an Accordion's open section are the two smallest
+        // changes of state that rewrite a subtree.
+        ("select-opens", new Select(["alpha", "beta", "gamma"], 0), [0]),
+        ("accordion-switches", new Accordion([
+            new AccordionItem("One") { Content = new Text("body one", TypeRole.BodyM, Theme.TextPrimary) },
+            new AccordionItem("Two") { Content = new Text("body two", TypeRole.BodyM, Theme.TextPrimary) },
+        ], 0), [1]),
+
         // A COMPOSITE, and the first case here whose tree is a grid: 31 cells, seven column
         // headers, a roving tab order, and a selection stated as an attribute. Pinned under a
         // fixed culture and a fixed date, or the fixture would say something different every day.
-        ("calendar-july-2026", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17))),
+        ("calendar-july-2026", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17)), NoPresses),
         ("calendar-bounded", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17),
-            min: new DateOnly(2026, 7, 10), max: new DateOnly(2026, 7, 20))),
+            min: new DateOnly(2026, 7, 10), max: new DateOnly(2026, 7, 20)), NoPresses),
+        // DRIVEN: pressing a day is the whole point of a calendar, and the frame after it is where
+        // a twin whose state moved differently shows. Index 2 is the first day CELL — the two
+        // chevrons come first in tree order — so this picks July 1st over the 17th.
+        ("calendar-picks-a-day", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17)), [2]),
     ];
+
+    /// <summary>A component that is only lowered, never driven.</summary>
+    private static readonly int[] NoPresses = [];
 
     private static VisualNode Stack(float gap, params VisualNode[] children)
     {
@@ -61,27 +87,19 @@ public class ComponentParityFixtureTests
     public void TheLoweredTrees_MatchTheSharedFixture()
     {
         var json = new JsonObject();
-        // A FIXED culture for the whole set: the calendar reads CultureInfo for its names, so a
-        // fixture generated in São Paulo would differ from one generated in Berlin. The twin
-        // installs the same culture before replaying.
+        // A FIXED culture for the whole set: a calendar reads CultureInfo for its day and month
+        // names, so a fixture generated in São Paulo would differ from one generated in Berlin.
+        // The UI culture too, and for a different reason: a component's own labels come from
+        // SdkStrings through a ResourceManager, which reads THAT one. The twin installs the same
+        // pair before replaying.
         var previousCulture = CultureInfo.CurrentCulture;
         var previousUiCulture = CultureInfo.CurrentUICulture;
         CultureInfo.CurrentCulture = new CultureInfo("en-US");
-        // The UI culture too: a component's own labels come from SdkStrings through a
-        // ResourceManager, so a fixture generated on a pt-BR machine would carry Portuguese chrome
-        // and the twin — which replays under en-US — would disagree with it.
         CultureInfo.CurrentUICulture = new CultureInfo("en-US");
         try
         {
-        foreach (var (name, node) in Cases())
-        {
-            // Through a STYLE SINK, which is the path SSR takes: declarations become atomic classes
-            // instead of inline style. The client always atomizes, so lowering without a sink here
-            // would compare two different representations of the same styling and call it a
-            // divergence — and it would hide the one that matters, the class HASH agreeing.
-            var sink = new StyleSink();
-            json[name] = Canonical(WebRealizer.Lower(node, Theme, 1f, sink).Render());
-        }
+            foreach (var (name, node, presses) in Cases())
+                json[name] = JsonValue.List(Frames(node, presses).Select(Canonical));
         }
         finally
         {
@@ -102,6 +120,85 @@ public class ComponentParityFixtureTests
             + "with EQ_UPDATE_PARITY_FIXTURE=1 once the twin agrees");
     }
 
+    /// <summary>Every frame of a case: the lowering, then the lowering after each press. Lowering
+    /// goes through a STYLE SINK, which is the path SSR takes — declarations become atomic classes
+    /// instead of inline style, and the client always atomizes, so lowering without one would
+    /// compare two representations of the same styling and call it a divergence, while hiding the
+    /// thing that matters, which is the class HASH agreeing.</summary>
+    private static IEnumerable<HtmlNode> Frames(VisualNode node, int[] presses)
+    {
+        var frame = WebRealizer.Lower(node, Theme, 1f, new StyleSink()).Render();
+        ReferencesResolve(frame);
+        yield return frame;
+        foreach (var index in presses)
+        {
+            var handlers = ClickHandlers(frame).ToList();
+            handlers.Count.Should().BeGreaterThan(index,
+                "a case presses the click handler at an index the lowered tree has");
+            // A click handler IS an Action (HtmlElement.OnClick, Pressable.OnPressed), so call it.
+            // DynamicInvoke stays as the fallback for a shape nobody has emitted yet, and the cast
+            // failing is worth more than reflection quietly accepting anything.
+            if (handlers[index] is Action press) press();
+            else handlers[index].DynamicInvoke();
+            frame = WebRealizer.Lower(node, Theme, 1f, new StyleSink()).Render();
+            ReferencesResolve(frame);
+            yield return frame;
+        }
+    }
+
+    /// <summary>
+    /// A generated ID reduced to its shape. An anchored panel's id is a HASH, and the two sides
+    /// hash different inputs — safe today only because an open panel never comes from SSR, so the
+    /// two never meet in one document. Comparing the hashes would fail on a difference the product
+    /// allows; NOT comparing them would hide a reference that points at nothing, so
+    /// <see cref="ReferencesResolve"/> checks that separately, on the un-normalised tree.
+    /// </summary>
+    private static string Normalize(string attribute, string value)
+    {
+        // CLASS is compared as a SET. Attribute order does not enter the CSS cascade — the
+        // stylesheet's does — so a class list in another order is the same styling, and the two
+        // sides do build it in another order (C# puts `eq-anchor-scrim` before the atomised
+        // declarations; the twin appends it). What carries meaning is WHICH classes are there,
+        // because each one is a hash of a declaration, and that is pinned.
+        if (attribute == "class")
+            value = string.Join(' ', value.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .OrderBy(name => name, StringComparer.Ordinal));
+        return System.Text.RegularExpressions.Regex.Replace(value, @"eq-panel-[a-z0-9]+", "eq-panel-#");
+    }
+
+    /// <summary>Every ARIA reference in the tree points at an id the tree HAS. A dangling
+    /// `aria-activedescendant` reads to a screen reader as no focus at all, and the attribute pins
+    /// it against itself, so nothing that compares attribute values can see it.</summary>
+    private static void ReferencesResolve(HtmlNode root)
+    {
+        var ids = new HashSet<string>();
+        var references = new List<(string Attribute, string Value)>();
+        Walk(root);
+        foreach (var (attribute, value) in references)
+            foreach (var target in value.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                ids.Should().Contain(target, $"{attribute} must name an element the tree has");
+        return;
+
+        void Walk(HtmlNode node)
+        {
+            if (node.Attributes.TryGetValue("id", out var id) && id is not null) ids.Add(id);
+            foreach (var name in new[] { "aria-activedescendant", "aria-controls", "aria-labelledby",
+                         "aria-describedby", "aria-owns" })
+                if (node.Attributes.TryGetValue(name, out var value) && value is not null)
+                    references.Add((name, value));
+            foreach (var child in node.Children) Walk(child);
+        }
+    }
+
+    /// <summary>Every click handler in the tree, in DOCUMENT order — the order the twin walks too,
+    /// so an index means the same control on both sides.</summary>
+    private static IEnumerable<Delegate> ClickHandlers(HtmlNode node)
+    {
+        foreach (var pair in node.Events.Where(e => e.Key is "click" or "onclick")) yield return pair.Value;
+        foreach (var child in node.Children)
+            foreach (var handler in ClickHandlers(child)) yield return handler;
+    }
+
     /// <summary>A lowered node as canonical JSON: attributes and event NAMES sorted, absent things
     /// absent. Events cross as names alone — a delegate and a closure cannot be compared, but
     /// whether the twin still HAS the handler is exactly what tends to go missing.</summary>
@@ -109,7 +206,8 @@ public class ComponentParityFixtureTests
     {
         var attributes = new JsonObject();
         foreach (var pair in node.Attributes.OrderBy(a => a.Key, StringComparer.Ordinal))
-            if (pair.Value is not null) attributes[pair.Key] = JsonValue.Text(pair.Value);
+            if (pair.Value is not null)
+                attributes[pair.Key] = JsonValue.Text(Normalize(pair.Key, pair.Value));
 
         var result = new JsonObject { ["tag"] = JsonValue.Text(node.Tag) };
         if (node.Key is not null) result["key"] = JsonValue.Text(node.Key);
