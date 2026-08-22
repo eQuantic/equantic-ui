@@ -73,13 +73,19 @@ public class CompilerPerfHarnessTests(ITestOutputHelper output)
         compiler.SetProjectCompilation(compilation);
 
         var perFile = new List<(long Ms, string File)>();
+        var modules = 0;
+        var failed = new List<string>();
         long Pass(bool record)
         {
             var pass = Stopwatch.StartNew();
             foreach (var path in paths)
             {
                 var each = Stopwatch.StartNew();
-                compiler.CompileFile(path).Count();
+                foreach (var result in compiler.CompileFile(path))
+                {
+                    if (record) modules++;
+                    if (record && !result.Success) failed.Add($"{Path.GetFileName(path)}:{result.ComponentName}");
+                }
                 if (record) perFile.Add((each.ElapsedMilliseconds, Path.GetFileName(path)));
             }
             return pass.ElapsedMilliseconds;
@@ -88,7 +94,7 @@ public class CompilerPerfHarnessTests(ITestOutputHelper output)
         var cold = Pass(false);
         var warm = Pass(true);
 
-        output.WriteLine($"{paths.Count} files");
+        output.WriteLine($"{paths.Count} files, {modules} modules");
         output.WriteLine($"  parse        {parse,6} ms");
         output.WriteLine($"  references   {metadata,6} ms");
         output.WriteLine($"  transpile    {cold,6} ms cold");
@@ -97,9 +103,13 @@ public class CompilerPerfHarnessTests(ITestOutputHelper output)
         foreach (var (ms, file) in perFile.OrderByDescending(entry => entry.Ms).Take(8))
             output.WriteLine($"    {ms,5} ms  {file}");
 
-        // The only assertion: the corpus compiled. A timing that fails a build on a busy machine
-        // is a timing everyone learns to re-run until it passes.
-        Assert.NotEmpty(perFile);
+        // The corpus really COMPILED, which a timing report otherwise never checks: a compiler
+        // that failed on every file would produce the tidiest numbers in this file's history.
+        // What is deliberately NOT asserted is the time — a wall-clock gate fails on a busy
+        // machine and teaches everyone to re-run it until it passes.
+        Assert.Empty(failed);
+        Assert.NotEqual(0, modules);
+        Assert.Equal(paths.Count, perFile.Count);
     }
 
     private static string RepoRoot([CallerFilePath] string sourcePath = "") =>
