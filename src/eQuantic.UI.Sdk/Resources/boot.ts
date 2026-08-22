@@ -18,7 +18,11 @@ import {
   type NavigationGuard,
   type ThemeData,
 } from '../../eQuantic.UI.Runtime/src/index';
-import { installCulture, setCultureInvalidator } from '../../eQuantic.UI.Runtime/src/utils/culture';
+import {
+  installCulture,
+  setCultureInvalidator,
+  type CalendarCatalog,
+} from '../../eQuantic.UI.Runtime/src/utils/culture';
 
 // --- Constants ---
 const APP_ROOT_ID = 'app';
@@ -129,13 +133,23 @@ export async function boot(): Promise<void> {
     // client must resolve exactly the strings the server rendered, or the SSR-identity contract
     // breaks on any translated page. The server emits window.__EQ_CULTURE__ next to the theme.
     const cultureData = (window as unknown as {
-      __EQ_CULTURE__?: { name?: string; formatName?: string; strings?: Record<string, string> };
+      __EQ_CULTURE__?: {
+        name?: string;
+        formatName?: string;
+        strings?: Record<string, string>;
+        // What a calendar is CALLED for this request's format culture. Shipped rather than
+        // derived: the server's ICU and the browser's do not always agree (ar-EG abbreviates
+        // Sunday with the definite article in one and without it in the other), and a label that
+        // differs between the SSR HTML and the hydrated tree is a flicker nobody catches.
+        calendar?: CalendarCatalog;
+      };
     }).__EQ_CULTURE__;
     if (cultureData) {
       installCulture(
         cultureData.name ?? '',
         cultureData.formatName ?? cultureData.name ?? '',
         cultureData.strings ?? {},
+        cultureData.calendar,
       );
     }
 

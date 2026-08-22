@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Server;
 
@@ -37,7 +38,36 @@ internal static class CultureBridge
         // culture names still serialize through the encoder because they are request-shaped.
         return $"{{\"name\":{JsonSerializer.Serialize(uiCulture.Name)}," +
             $"\"formatName\":{JsonSerializer.Serialize(formatCulture.Name)}," +
+            $"\"calendar\":{CalendarJson(formatCulture)}," +
             $"\"strings\":{catalog}}}";
+    }
+
+    /// <summary>
+    /// What a calendar is CALLED for this request's format culture — shipped, not derived. The
+    /// browser's ICU and .NET's do not always agree (ar-EG abbreviates Sunday as "أحد" here and
+    /// "الأحد" in a JS runtime, both correct Arabic), and a day name that differs between the SSR
+    /// HTML and the hydrated tree is a flicker on exactly the pages nobody debugs. The client
+    /// keeps an Intl fallback for renders with no server behind them.
+    /// </summary>
+    private static string CalendarJson(CultureInfo formatCulture)
+    {
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = formatCulture;
+            return JsonSerializer.Serialize(new
+            {
+                firstDayOfWeek = CalendarNames.FirstDayOfWeek,
+                dayNamesShort = CalendarNames.DayNamesShort,
+                dayNamesLong = CalendarNames.DayNamesLong,
+                monthNames = CalendarNames.MonthNames,
+                monthNamesShort = CalendarNames.MonthNamesShort,
+            });
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
     }
 
     private static string? PickCatalog(string stringsDir, CultureInfo uiCulture)

@@ -85,9 +85,41 @@ async function defaultLoader(culture: string): Promise<Record<string, string> | 
  * boot from `window.__EQ_CULTURE__` BEFORE hydration, so the client resolves exactly the strings
  * the server rendered and the SSR-identity contract holds on a translated page (D4).
  */
-export function installCulture(ui: string, format: string, strings: Record<string, string>): void {
+export interface CalendarCatalog {
+  firstDayOfWeek: number;
+  dayNamesShort: string[];
+  dayNamesLong: string[];
+  monthNames: string[];
+  monthNamesShort: string[];
+}
+
+/**
+ * What the SERVER said a calendar is called, for this request's format culture. Present on any
+ * page the server rendered; absent in a client-only render, where Intl answers instead.
+ *
+ * It is shipped rather than derived because the two sides read different ICU builds and they do
+ * not always agree: `ar-EG` abbreviates Sunday as "أحد" in .NET and "الأحد" in a JS runtime's ICU
+ * — both correct Arabic, one with the definite article — and even two JS engines disagreed in the
+ * probe. Deriving on each side would put a different label in the SSR HTML and the hydrated tree.
+ */
+let activeCalendar: CalendarCatalog | null = null;
+
+/** The server's calendar names for the active culture, or null when nothing installed them. */
+export function calendarCatalog(): CalendarCatalog | null {
+  return activeCalendar;
+}
+
+export function installCulture(
+  ui: string,
+  format: string,
+  strings: Record<string, string>,
+  calendar?: CalendarCatalog | null,
+): void {
   active = { ui, format };
   activeStrings = strings;
+  // A culture change without a catalog falls back to Intl rather than keeping the OLD culture's
+  // names, which would be the one answer that is certainly wrong.
+  activeCalendar = calendar ?? null;
   warned.clear();
   if (ui.length > 0) catalogs.set(ui, strings);
 
