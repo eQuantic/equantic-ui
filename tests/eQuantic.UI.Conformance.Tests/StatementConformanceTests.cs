@@ -84,4 +84,19 @@ public class StatementConformanceTests
     public void Using_DisposesAnInSourceType(string statements) =>
         ConformanceRunner.AssertStatementsSameAsDotNet(statements,
             "public record struct Res(List<string> Log, string Name) : IDisposable { public void Dispose() => Log.Add(Name); }");
+
+    /// <summary>
+    /// The remaining substatement positions, for the bracing rule the writer applies
+    /// (SubstatementBracingTests covers the writer's own contract, and the cases above cover
+    /// foreach/while/for): a bare <c>if</c> body, a bare <c>else</c>, a <c>do</c> body, and a bare
+    /// body nested inside another. Each holds one statement in C# and two after a pattern variable
+    /// hoists its declaration.
+    /// </summary>
+    [Theory]
+    [InlineData("var o = new List<string>(); string s = \"a\"; if (s != null) o.Add(s is { Length: > 0 } v ? v : \"-\"); return string.Join(\",\", o);")]                     // "a"
+    [InlineData("var o = new List<string>(); string s = \"a\"; if (s == null) o.Add(\"n\"); else o.Add(s is { Length: > 0 } v ? v : \"-\"); return string.Join(\",\", o);")] // "a"
+    [InlineData("var o = new List<string>(); string s = \"a\"; var i = 0; do o.Add(s is { Length: > 0 } v ? v : \"-\"); while (++i < 2); return string.Join(\",\", o);")]     // "a,a"
+    [InlineData("var o = new List<string>(); string s = \"ab\"; foreach (var _ in new[] { 1 }) if (s is { Length: > 1 } v) o.Add(v); return string.Join(\",\", o);")]           // "ab"
+    public void APatternVariableSurvivesEveryOtherUnbracedBody(string statements) =>
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
 }
