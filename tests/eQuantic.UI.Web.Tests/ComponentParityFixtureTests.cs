@@ -26,12 +26,17 @@ public class ComponentParityFixtureTests
 {
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
-    /// <summary>The components under parity, by NAME. The twin spec builds the same names with the
-    /// same arguments; a name present on one side only fails the guard on the other.</summary>
-    /// <summary>A case is a component and the PRESSES that drive it: each entry is the index of a
-    /// click handler in the lowered tree, in document order, invoked between one frame and the
-    /// next. A component with no presses is one frame — its lowering — and one with presses is the
-    /// lowering after each of them, which is where a twin whose state does not move shows up.</summary>
+    /// <summary>
+    /// The components under parity, by NAME, each with the PRESSES that drive it. The twin spec
+    /// builds the same names with the same arguments, and a name present on one side only fails
+    /// the guard on the other.
+    /// </summary>
+    /// <remarks>
+    /// A press is the index of a click handler in the lowered tree, in document order, invoked
+    /// between one frame and the next. A component with no presses is one frame — its lowering —
+    /// and one with presses is the lowering after each of them, which is where a twin whose state
+    /// does not move shows up.
+    /// </remarks>
     private static IEnumerable<(string Name, VisualNode Node, int[] Presses)> Cases() =>
     [
         ("text", new Text("hello", TypeRole.BodyM, Theme.TextPrimary), NoPresses),
