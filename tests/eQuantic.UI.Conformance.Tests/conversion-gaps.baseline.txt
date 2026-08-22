@@ -1,2 +1,4 @@
 int big = int.MaxValue; int r = big + 1; return r;
+try { var bad = (new int[1])[5]; return 1; } catch { return -1; }
+var xs = new[]{1,2}; try { var v = xs[9]; return 1; } catch { return -1; }
 long l = long.MaxValue; return (l + 1).ToString();

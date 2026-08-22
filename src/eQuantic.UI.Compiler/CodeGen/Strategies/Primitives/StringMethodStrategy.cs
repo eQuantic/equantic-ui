@@ -89,7 +89,7 @@ public class StringMethodStrategy : IConversionStrategy
             "EndsWith" => $"{lhs}.endsWith({Fold(args[0])})",
             "Contains" => $"{lhs}.includes({Fold(args[0])})",
             "Equals" => $"({Fold(caller)} === {Fold(args[0])})",
-            "Substring" => ConvertSubstring(caller, args),
+            "Substring" => ConvertSubstring(caller, args, context),
             "IndexOf" => $"{lhs}.indexOf({Fold(args[0])}{extraArgs})",
             "LastIndexOf" => $"{lhs}.lastIndexOf({Fold(args[0])}{extraArgs})",
             "PadLeft" => ConvertPadLeft(caller, args),
@@ -158,19 +158,22 @@ public class StringMethodStrategy : IConversionStrategy
         return $"{caller}.replaceAll({args[0]}, {args[1]})";
     }
 
-    private string ConvertSubstring(string caller, List<string> args)
+    /// <summary>
+    /// Substring through the runtime, which REFUSES an out-of-range index the way .NET does.
+    /// JavaScript's own clamps — `"ab".slice(9)` is "" and `substring` swaps its arguments rather
+    /// than complain — so a call that stops a server request kept going in the browser with an
+    /// empty string spreading through it. Found by the differential generator, which reached the
+    /// shape once it learned to write a try/catch.
+    /// </summary>
+    private string ConvertSubstring(string caller, List<string> args, ConversionContext context)
     {
-        if (args.Count == 1)
+        context.UsedHelpers.Add(Eq.Import);
+        return args.Count switch
         {
-            // Substring(startIndex) -> slice(startIndex)
-            return $"{caller}.slice({args[0]})";
-        }
-        if (args.Count >= 2)
-        {
-            // Substring(startIndex, length) -> substring(startIndex, startIndex + length)
-            return $"{caller}.substring({args[0]}, {args[0]} + {args[1]})";
-        }
-        return $"{caller}.substring()";
+            0 => $"{Eq.Substring}({caller}, 0)",
+            1 => $"{Eq.Substring}({caller}, {args[0]})",
+            _ => $"{Eq.Substring}({caller}, {args[0]}, {args[1]})",
+        };
     }
 
     private string ConvertPadLeft(string caller, List<string> args)

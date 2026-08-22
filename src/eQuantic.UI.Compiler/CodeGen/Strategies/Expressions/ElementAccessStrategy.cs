@@ -35,6 +35,20 @@ public class ElementAccessStrategy : IExpressionIrStrategy
         }
 
         // Each indexer argument is one subscript.
+        // A DICTIONARY READ fails for a key that is not there. A plain object answers `undefined`,
+        // so the absence spread through the program instead of stopping it where .NET stops it —
+        // and an undefined reaching a render is a blank, not an error anyone can trace. Only a
+        // READ: the same syntax on the left of an assignment is how a key is ADDED.
+        if (elementAccess.ArgumentList.Arguments.Count == 1
+            && !IsAssignmentTarget(elementAccess)
+            && context.SemanticHelper.GetType(elementAccess.Expression).IsDictionaryLike(out _))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var map = context.Converter.ConvertExpression(elementAccess.Expression);
+            var key = context.Converter.ConvertExpression(elementAccess.ArgumentList.Arguments[0].Expression);
+            return JsExpr.Callish($"{Eq.DictGet}({map}, {key})");
+        }
+
         var indexed = context.Converter.ConvertIr(elementAccess.Expression);
         foreach (var arg in elementAccess.ArgumentList.Arguments)
         {
@@ -42,6 +56,16 @@ public class ElementAccessStrategy : IExpressionIrStrategy
         }
         return indexed;
     }
+
+    /// <summary>Whether this access is being WRITTEN to — the left of an assignment, or the
+    /// operand of ++/--. Those create the entry rather than read it.</summary>
+    private static bool IsAssignmentTarget(ElementAccessExpressionSyntax access) => access.Parent switch
+    {
+        AssignmentExpressionSyntax assignment => assignment.Left == access,
+        PrefixUnaryExpressionSyntax or PostfixUnaryExpressionSyntax => true,
+        ArgumentSyntax { RefOrOutKeyword.RawKind: not 0 } => true,
+        _ => false,
+    };
 
     public int Priority => 1;
 }

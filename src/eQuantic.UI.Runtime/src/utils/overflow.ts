@@ -63,3 +63,29 @@ export function single(value: number): string {
   }
   return String(value);
 }
+
+/**
+ * Out of range is an ERROR in .NET and a shrug in JavaScript: `"ab".substring(9)` is "" and
+ * `xs[9]` is undefined, where the CLR throws. A program that would stop loudly on the server keeps
+ * running in the browser with an absent value spreading through it, and surfaces somewhere else
+ * entirely — a blank render, a NaN, a page that is subtly wrong rather than plainly broken.
+ */
+export function substring(value: string, start: number, length?: number): string {
+  if (start < 0 || start > value.length) {
+    throw new RangeError('startIndex cannot be larger than length of string.');
+  }
+  if (length === undefined) return value.slice(start);
+  if (length < 0 || start + length > value.length) {
+    throw new RangeError('Index and length must refer to a location within the string.');
+  }
+  return value.substr(start, length);
+}
+
+/** A dictionary read: .NET throws for a key that is not there, rather than answering "nothing". */
+export function dictGet<V>(map: Record<string, V>, key: string | number): V {
+  const property = String(key);
+  if (!Object.prototype.hasOwnProperty.call(map, property)) {
+    throw new Error(`The given key '${property}' was not present in the dictionary.`);
+  }
+  return map[property];
+}

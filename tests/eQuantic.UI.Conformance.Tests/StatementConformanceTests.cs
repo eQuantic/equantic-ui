@@ -99,4 +99,23 @@ public class StatementConformanceTests
     [InlineData("var o = new List<string>(); string s = \"ab\"; foreach (var _ in new[] { 1 }) if (s is { Length: > 1 } v) o.Add(v); return string.Join(\",\", o);")]           // "ab"
     public void APatternVariableSurvivesEveryOtherUnbracedBody(string statements) =>
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+
+    /// <summary>
+    /// OUT OF RANGE is an error in .NET and a shrug in JavaScript: `"ab".substring(9)` is "" and a
+    /// missing key answers undefined, where the CLR throws. A program that stops loudly on the
+    /// server kept going in the browser with an absent value spreading through it, surfacing later
+    /// as a blank render rather than as the failure it was. Found by the differential generator
+    /// once it learned to write a try/catch.
+    /// </summary>
+    [Theory]
+    [InlineData("var s = \"qd\"; try { var bad = s.Substring(36); return 1; } catch { return -1; }")]          // -1
+    [InlineData("var s = \"qd\"; try { var bad = s.Substring(1, 9); return 1; } catch { return -1; }")]        // -1
+    [InlineData("var s = \"qd\"; try { var bad = s.Substring(-1); return 1; } catch { return -1; }")]          // -1
+    [InlineData("var s = \"abcd\"; return s.Substring(1) + \"|\" + s.Substring(1, 2) + \"|\" + s.Substring(4);")] // "bcd|bc|"
+    [InlineData("var m = new Dictionary<string, int> { [\"k\"] = 1 }; try { var v = m[\"nope\"]; return 1; } catch { return -1; }")] // -1
+    [InlineData("var m = new Dictionary<string, int> { [\"k\"] = 1 }; return m[\"k\"];")]                     // 1
+    [InlineData("var m = new Dictionary<string, int>(); m[\"new\"] = 5; return m[\"new\"];")]                 // 5 — a write CREATES
+    [InlineData("var m = new Dictionary<string, int> { [\"k\"] = 1 }; m[\"k\"] += 4; return m[\"k\"];")]     // 5
+    public void OutOfRangeFailsWhereDotNetFails(string statements) =>
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
 }
