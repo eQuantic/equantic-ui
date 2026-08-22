@@ -71,8 +71,8 @@ public class ConversionConformanceTests
         // decimal and long mixed with int literals
         "decimal m = 10m; int i = 3; return (m / i).ToString();",                  // "3.3333333333333333333333333333"
         "decimal m = 0.1m; return (m + 0.2m == 0.3m);",                            // true
-        "decimal m = 1.5m; return Math.Round(m);",                                 // 2
-        "decimal m = 2.5m; return Math.Round(m);",                                 // 2 — banker's
+        "decimal m = 1.5m; return Math.Round(m).ToString();",                      // "2"
+        "decimal m = 2.5m; return Math.Round(m).ToString();",                      // "2" — banker's
         "long l = 5000000000L; int i = 2; return (l * i).ToString();",             // "10000000000"
         "long l = 7; return (l / 2).ToString();",                                  // "3"
         "long l = long.MaxValue; return (l + 1).ToString();",                      // "-9223372036854775808"

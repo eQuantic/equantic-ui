@@ -70,6 +70,14 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             return JsExpr.Binary(leftIr, "=", JsExpr.Callish($"{Eq.Dec}({left}).{method}({Eq.Dec}({right}))"));
         }
 
+        // `x /= y` on integers is integer division, exactly like `x = x / y` — the compound form
+        // used to reach JavaScript's `/=`, which divides as a double.
+        // Built as IR, not as a template: a right-hand side that is a ternary (`x /= c ? 4 : 1`)
+        // has to be fenced under the `/`, and the writer is the one that knows.
+        if (op == "/=" && context.SemanticHelper.GetType(assignment.Left).IsIntegral())
+            return JsExpr.Binary(leftIr, "=",
+                JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(leftIr, "/", rightIr)));
+
         // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
         // an assignment used as an operand is fenced by whoever places it.
         return JsExpr.Binary(leftIr, op, rightIr);

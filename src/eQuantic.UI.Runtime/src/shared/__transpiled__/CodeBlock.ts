@@ -113,7 +113,7 @@ export class CodeBlock extends StatelessComponent {
     static metricsFor(context: any, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
         let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
         let gutter = showLineNumbers ? Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12 : 0;
-        return new CodeMetrics(style, $eq.math.round(style.lineHeight * 1.15), context.monoAdvance(style), gutter);
+        return new CodeMetrics(style, $eq.math.round(style.lineHeight * Math.fround(1.15)), context.monoAdvance(style), gutter);
     }
 
     gutter(context: any) {

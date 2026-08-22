@@ -37,7 +37,7 @@ export class ListItem extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let content = new Column(2);
-        content.add(new Text(this.title, 'bodyM', theme.textPrimary, 1, 'start', false, false, null, { styleOverride: new TypeStyle(15, 20, 'medium', 0, 1.3) }));
+        content.add(new Text(this.title, 'bodyM', theme.textPrimary, 1, 'start', false, false, null, { styleOverride: new TypeStyle(15, 20, 'medium', 0, Math.fround(1.3)) }));
         let subtitle: any; 
         if ((subtitle = this.subtitle) != null) content.add(new Text(subtitle, 'caption', theme.textSecondary, this.subtitleLines >= 2 ? 2 : 1));
         let row = new Row(12, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center', padding: EdgeInsets.symmetric(16, 8) });

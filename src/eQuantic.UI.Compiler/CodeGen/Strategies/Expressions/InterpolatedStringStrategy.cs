@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -57,7 +58,10 @@ public class InterpolatedStringStrategy : IConversionStrategy
                     }
                     else
                     {
-                        sb.Append(expr);
+                        // A plain `{x}` is a ToString: the same conversion concatenation applies
+                        // (null → "", bool → "True"), decided once in StringConversion.
+                        sb.Append(JsExprWriter.Write(StringConversion.ToDotNetString(
+                            interpolation.Expression, JsExpr.Opaque(expr), context)));
                     }
 
                     sb.Append('}');

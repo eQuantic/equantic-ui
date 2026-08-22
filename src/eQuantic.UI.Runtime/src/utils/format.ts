@@ -85,7 +85,8 @@ export function format(
 }
 
 function formatCore(value: any, format: string | null, alignment?: number): string {
-  let result = String(value);
+  // .NET spells a bool `True`/`False`; JavaScript lowercases it. Everything else reads the same.
+  let result = typeof value === 'boolean' ? (value ? 'True' : 'False') : String(value);
 
   if (format) {
     const date = asJsDate(value);

@@ -1,8 +1,8 @@
 import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Row, SharedStatefulComponent, SizeValue, Spacer, UiComponent, VariantValue } from "../runtime-exports";
 
 export class ProgressBar extends SharedStatefulComponent {
-    static sweepFromX: number = -0.35;
-    static sweepToX: number = 1.05;
+    static sweepFromX: number = -Math.fround(0.35);
+    static sweepToX: number = Math.fround(1.05);
     static sweepDurationMs: number = 1200;
     _snapNext: boolean = false;
     declare value: any;

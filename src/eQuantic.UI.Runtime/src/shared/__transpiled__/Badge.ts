@@ -33,7 +33,7 @@ export class Badge extends StatelessComponent {
             return new Box(new BoxStyle({ width: this.ring ? 12 : 8, height: this.ring ? 12 : 8, background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.ring ? 2 : 0, borderColor: theme.surface }));
         }
         let label = this.count > this.max ? `${this.max}+` : `${this.count}`;
-        let text = new Text(label, 'caption', textColor, 1, 'start', false, false, null, { styleOverride: new TypeStyle(10, 12, 'bold', 0, 1.3) });
+        let text = new Text(label, 'caption', textColor, 1, 'start', false, false, null, { styleOverride: new TypeStyle(10, 12, 'bold', 0, Math.fround(1.3)) });
         let content = text.centered();
         return new Box(new BoxStyle({ height: this.ring ? 20 : 16, minWidth: this.ring ? 20 : 16, padding: EdgeInsets.symmetric(4, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.ring ? 2 : 0, borderColor: theme.surface }), content);
     }

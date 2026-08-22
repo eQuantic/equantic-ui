@@ -28,7 +28,7 @@ export class AppBar extends StatelessComponent {
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center' });
         let leading: any; 
         if ((leading = this.leading) != null) row.add(leading);
-        let title = new Text(this.title, 'title', theme.textPrimary, 1, 'start', false, false, null, { styleOverride: new TypeStyle(20, 26, 'semiBold', 0, 1.3) });
+        let title = new Text(this.title, 'title', theme.textPrimary, 1, 'start', false, false, null, { styleOverride: new TypeStyle(20, 26, 'semiBold', 0, Math.fround(1.3)) });
         let titlePad = new Box(new BoxStyle({ padding: new EdgeInsets(this.leading == null ? 12 : 8, 0, 8, 0) }), title);
         row.add(new Flexible(titlePad));
         let actions: any; 

@@ -56,6 +56,17 @@ public class LiteralExpressionStrategy : IExpressionIrStrategy
             return JsExpr.Literal($"{noSuffix}n");
         }
 
+        // A float literal is SINGLE precision: `0.1f` is not 0.1 but the nearest float, and a
+        // double that receives it keeps that value — `(double)0.1f > 0.1` is true in C#. Only a
+        // literal single precision actually CHANGES is wrapped: `10f` and `0.5f` are exact.
+        if (suffix.IndexOfAny(new[] { 'F', 'f' }) >= 0
+            && double.TryParse(noSuffix, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var asDouble)
+            && (double)(float)asDouble != asDouble)
+        {
+            return JsExpr.Callish($"Math.fround({noSuffix})");
+        }
+
         return JsExpr.Literal(noSuffix);
     }
 

@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Invocation;
 
@@ -52,6 +53,12 @@ public class MathStrategy : IConversionStrategy
         if (methodName == "Round" && argsList.Count >= 1)
         {
             context.UsedHelpers.Add(Eq.Import);
+            // A DECIMAL rounds as a decimal — the number helper would round the object to NaN.
+            // Half-to-even, the same MidpointRounding.ToEven the double path honours.
+            if (context.SemanticHelper.GetType(invocation.ArgumentList.Arguments[0].Expression).IsDecimal())
+                return argsList.Count >= 2
+                    ? $"{Eq.Dec}({argsList[0]}).round({argsList[1]})"
+                    : $"{Eq.Dec}({argsList[0]}).round()";
             return argsList.Count >= 2
                 ? $"{Eq.Round}({argsList[0]}, {argsList[1]})"
                 : $"{Eq.Round}({argsList[0]})";

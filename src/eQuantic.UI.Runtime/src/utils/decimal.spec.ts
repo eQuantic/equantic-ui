@@ -49,3 +49,15 @@ describe('Decimal — exact base-10 arithmetic', () => {
     expect(parsed.toString()).toBe('0.123456789012345678901234567');
   });
 });
+
+describe('Decimal.round — half to even', () => {
+  it('rounds midpoints to the even neighbour, like Math.Round(decimal)', () => {
+    expect(Decimal.from('1.5').round().toString()).toBe('2');
+    expect(Decimal.from('2.5').round().toString()).toBe('2');
+    expect(Decimal.from('-2.5').round().toString()).toBe('-2');
+    expect(Decimal.from('2.51').round().toString()).toBe('3');
+    expect(Decimal.from('2.345').round(2).toString()).toBe('2.34');
+    expect(Decimal.from('2.355').round(2).toString()).toBe('2.36');
+    expect(Decimal.from('7').round(2).toString()).toBe('7');
+  });
+});

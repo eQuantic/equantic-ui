@@ -35,11 +35,11 @@ export class SheetDocument {
     }
 
     setRowHeight(row: number, height: number) {
-        if (Math.abs(height - SheetDocument.defaultRowHeight) < 0.01) delete this._rowHeights[row]; else this._rowHeights[row] = Math.max(12, height);
+        if (Math.abs(height - SheetDocument.defaultRowHeight) < Math.fround(0.01)) delete this._rowHeights[row]; else this._rowHeights[row] = Math.max(12, height);
     }
 
     setColWidth(col: number, width: number) {
-        if (Math.abs(width - SheetDocument.defaultColWidth) < 0.01) delete this._colWidths[col]; else this._colWidths[col] = Math.max(24, width);
+        if (Math.abs(width - SheetDocument.defaultColWidth) < Math.fround(0.01)) delete this._colWidths[col]; else this._colWidths[col] = Math.max(24, width);
     }
 
     clamp(cell: CellRef) {

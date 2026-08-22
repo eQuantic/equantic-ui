@@ -24,7 +24,7 @@ export class Tabs extends StatelessComponent {
         for (let i = 0; i < this.labels.length; i++) {
             let isActive = i === this.selected;
             let index = i;
-            let label = new Text(this.labels[i], 'caption', isActive ? primary.base : theme.textMuted, 1, 'start', false, false, null, { styleOverride: new TypeStyle(14, 18, isActive ? 'bold' : 'semiBold', 0.1, 1.3) });
+            let label = new Text(this.labels[i], 'caption', isActive ? primary.base : theme.textMuted, 1, 'start', false, false, null, { styleOverride: new TypeStyle(14, 18, isActive ? 'bold' : 'semiBold', Math.fround(0.1), Math.fround(1.3)) });
             let labelRow = new Row(0, 'start', 'center', false, null, null, { main: 'center', height: SizeValue.fill });
             labelRow.add(label);
             let cell = new Column(0, 'start', 'stretch', false, null, null, { height: SizeValue.fill });

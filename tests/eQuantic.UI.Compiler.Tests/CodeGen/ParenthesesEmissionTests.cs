@@ -11,11 +11,13 @@ namespace eQuantic.UI.Compiler.Tests.CodeGen;
 public class ParenthesesEmissionTests
 {
     [Theory]
-    [InlineData("var r = ((name)) + \"x\";", "let r = this.name + 'x';")]
+    // The harness compiles with no nullable context, so `name` MAY be null and the concatenation
+    // says so — under nullable-enabled code a `string` is left bare.
+    [InlineData("var r = ((name)) + \"x\";", "let r = (this.name ?? '') + 'x';")]
     [InlineData("var r = (list1).Count;", "let r = this.list1.length;")]
     [InlineData("var r = (list1.Count) + 1;", "let r = this.list1.length + 1;")]
     [InlineData("var r = (list1.Count + 1) * 2;", "let r = (this.list1.length + 1) * 2;")]
-    [InlineData("var r = FetchValue((name + \"x\"));", "let r = this.fetchValue(this.name + 'x');")]
+    [InlineData("var r = FetchValue((name + \"x\"));", "let r = this.fetchValue((this.name ?? '') + 'x');")]
     [InlineData("var r = (status == Status.Active ? list1 : list2).Count;",
                 "let r = (this.status === 'active' ? this.list1 : this.list2).length;")]
     // ToString lowers through a template strategy (`String(…)`): an UNMIGRATED consumer, so the

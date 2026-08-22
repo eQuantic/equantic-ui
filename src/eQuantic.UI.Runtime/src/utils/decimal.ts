@@ -72,6 +72,24 @@ export class Decimal {
     return new Decimal(quotient, targetFrac).trimTrailingZeros();
   }
 
+  /**
+   * `Math.Round(decimal[, digits])` — half-to-even, .NET's default MidpointRounding for decimals,
+   * the same rule `div` applies to its 28th digit. A value with no more digits than asked for
+   * is itself.
+   */
+  round(digits = 0): Decimal {
+    if (digits < 0) throw new Error('Rounding digits must be between 0 and 28.');
+    if (this.scale <= digits) return this;
+    const divisor = 10n ** BigInt(this.scale - digits);
+    let quotient = this.mantissa / divisor;
+    const remainder = this.mantissa % divisor;
+    const absRem2 = (remainder < 0n ? -remainder : remainder) * 2n;
+    if (absRem2 > divisor || (absRem2 === divisor && quotient % 2n !== 0n)) {
+      quotient += this.mantissa < 0n ? -1n : 1n;
+    }
+    return new Decimal(quotient, digits);
+  }
+
   private trimTrailingZeros(): Decimal {
     let m = this.mantissa;
     let s = this.scale;

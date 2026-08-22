@@ -54,9 +54,10 @@ public class S1StyleTranspilationTests
         var result = compiler.CompileSource(ComponentSource, "RotatedBadge.cs").Single();
 
         result.Success.Should().BeTrue(string.Join("; ", result.Errors.Select(e => e.Message)));
-        result.TypeScript.Should().Contain("Transform2D.rotate(8).withScale(1.05)",
+        result.TypeScript.Should().Contain("Transform2D.rotate(8).withScale(Math.fround(1.05))",
             "the static factory is class-qualified and the combinator camelCased");
-        result.TypeScript.Should().Contain("opacity: 0.85");
+        // 0.85f is a SINGLE-precision value; the emitted literal says so (0.25f below is exact and stays bare).
+        result.TypeScript.Should().Contain("opacity: Math.fround(0.85)");
         result.TypeScript.Should().Contain("alignSelf: 'start'");
         result.TypeScript.Should().MatchRegex("import \\{[^}]*Transform2D[^}]*\\} from \"@equantic/runtime\"",
             "the S1 value type rides the runtime import like the rest of the vocabulary");

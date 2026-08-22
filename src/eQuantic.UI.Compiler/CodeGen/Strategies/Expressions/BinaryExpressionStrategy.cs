@@ -84,7 +84,9 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // long/ulong are handled by their own branches above). .NET evaluates both operands, then:
         // arithmetic -> null if either is null; relational -> FALSE if either is null. Naive JS would
         // coerce null to 0 (so `null < 5` is `true`), diverging — route through the runtime lift.
-        if (op != "&&" && op != "||")
+        // (Not for a string CONCATENATION with a nullable operand — that is a ToString, below.)
+        if (op != "&&" && op != "||"
+            && context.SemanticHelper.GetType(binary) is not { SpecialType: SpecialType.System_String })
         {
             var nlt = context.SemanticHelper.GetType(binary.Left);
             var nrt = context.SemanticHelper.GetType(binary.Right);
@@ -158,6 +160,15 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                 "!=" => "!==",
                 _ => op
             };
+        }
+
+        // STRING CONCATENATION converts each operand the way C# does, not the way JavaScript
+        // does: `"a" + null` is "a" (not "anull"), `"v=" + flag` is "v=True", a null `int?` is
+        // nothing. One rule, shared with interpolation (StringConversion).
+        if (op == "+" && context.SemanticHelper.GetType(binary) is { SpecialType: SpecialType.System_String })
+        {
+            leftIr = StringConversion.ToDotNetString(binary.Left, leftIr, context);
+            rightIr = StringConversion.ToDotNetString(binary.Right, rightIr, context);
         }
 
         return JsExpr.Binary(leftIr, op, rightIr);
