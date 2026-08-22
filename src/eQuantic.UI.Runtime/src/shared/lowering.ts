@@ -2608,8 +2608,19 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
 }
 
 /** The id a cell answers to for aria-activedescendant — the C# twin builds the same string. */
-function navigableCellId(row: number, item: number): string {
-  return `eq-cell-${row}-${item}`;
+function navigableCellId(scope: string, row: number, item: number): string {
+  return `eq-cell-${scope}-${row}-${item}`;
+}
+
+/**
+ * What makes one grid's cell ids distinct from another's on the same page: the grid's NAME, hashed
+ * with the atomizer's FNV — the one hash both producers compute identically, which is what SSR
+ * hydration needs. Two grids that also share a name (the same month rendered twice) would still
+ * collide, which is the point where a caller should give them names that differ; a screen reader
+ * needs that anyway.
+ */
+function navigableScope(node: NavigableNode): string {
+  return hashDeclaration(node.label ?? '');
 }
 
 /**
@@ -2655,8 +2666,10 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
   host.attributes['role'] = node.role ?? 'grid';
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
+  const scope = navigableScope(node);
   if (node.activeCell)
     host.attributes['aria-activedescendant'] = navigableCellId(
+      scope,
       node.activeCell[0],
       node.activeCell[1],
     );
@@ -2684,19 +2697,24 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
     }
     // The cells are IDENTIFIED — an aria-activedescendant pointing at an id nothing carries is a
     // dangling reference, which reads to assistive tech as no focus at all.
-    if (!isHeader) numberGridCells(row, index, { next: 0 });
+    if (!isHeader) numberGridCells(row, scope, index, { next: 0 });
     host.children.push(row);
   }
   return host;
 }
 
 /** Ids every gridcell of one row in tree order — the C# twin numbers the same way. */
-function numberGridCells(node: HtmlNode, row: number, counter: { next: number }): void {
+function numberGridCells(
+  node: HtmlNode,
+  scope: string,
+  row: number,
+  counter: { next: number },
+): void {
   if (node.attributes?.role === 'gridcell') {
-    node.attributes['id'] = navigableCellId(row, counter.next);
+    node.attributes['id'] = navigableCellId(scope, row, counter.next);
     counter.next++;
   }
-  for (const child of node.children ?? []) numberGridCells(child as HtmlNode, row, counter);
+  for (const child of node.children ?? []) numberGridCells(child as HtmlNode, scope, row, counter);
 }
 
 /**

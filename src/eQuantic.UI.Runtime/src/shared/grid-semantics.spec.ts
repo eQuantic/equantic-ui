@@ -24,12 +24,12 @@ const cell = (day: string, selected: boolean): VisualNodeValue =>
 const row = (...children: VisualNodeValue[]): VisualNodeValue =>
   ({ nodeKind: 'row', gap: 0, main: 'start', cross: 'center', children }) as unknown as VisualNodeValue;
 
-function month(onMove?: (move: string) => void): VisualNodeValue {
+function month(onMove?: (move: string) => void, label = 'July 2026'): VisualNodeValue {
   return {
     nodeKind: 'navigable',
     rows: [row(text('S'), text('M')), row(cell('1', false), cell('2', true))],
     onMove,
-    label: 'July 2026',
+    label,
     hasHeaderRow: true,
     activeCell: [1, 1],
   } as unknown as VisualNodeValue;
@@ -52,13 +52,28 @@ describe('grid semantics (C# GridSemanticsTests cross-pin)', () => {
     expect(host.attributes?.role).toBe('grid');
     expect(host.attributes?.tabindex).toBe('0');
     expect(host.attributes?.['aria-label']).toBe('July 2026');
-    const active = host.attributes?.['aria-activedescendant'];
-    expect(active).toBe('eq-cell-1-1');
+    const active = host.attributes?.['aria-activedescendant'] ?? '';
+    expect(active.startsWith('eq-cell-') && active.endsWith('-1-1')).toBe(true);
     // …and the reference RESOLVES. A dangling activedescendant reads to assistive tech as no focus
     // at all, and the attribute alone cannot tell you the difference.
     const target = walk(host).filter((n) => n.attributes?.id === active);
     expect(target).toHaveLength(1);
     expect(target[0].attributes?.role).toBe('gridcell');
+  });
+
+  it('two grids on one page do not share cell ids', () => {
+    // The ids are DOM-global: an unscoped eq-cell-1-1 would appear twice and an activedescendant
+    // could resolve into the other calendar.
+    const july = walk(render(month(undefined, 'July 2026')))
+      .map((n) => n.attributes?.id)
+      .filter((id): id is string => id !== undefined);
+    const august = walk(render(month(undefined, 'August 2026')))
+      .map((n) => n.attributes?.id)
+      .filter((id): id is string => id !== undefined);
+
+    expect(july).toHaveLength(2);
+    expect(august).toHaveLength(2);
+    expect(july.some((id) => august.includes(id))).toBe(false);
   });
 
   it('the header row names its columns', () => {

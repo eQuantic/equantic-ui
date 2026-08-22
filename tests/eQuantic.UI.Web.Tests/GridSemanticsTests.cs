@@ -44,7 +44,7 @@ public class GridSemanticsTests
             Label = $"July {day}",
         };
 
-    private static Navigable Month(Action<NavigableMove>? onMove = null) =>
+    private static Navigable Month(Action<NavigableMove>? onMove = null, string label = "July 2026") =>
         new(
             [
                 Row(new Text("S"), new Text("M"), new Text("T")),
@@ -52,7 +52,7 @@ public class GridSemanticsTests
             ],
             onMove ?? (_ => { }))
         {
-            Label = "July 2026",
+            Label = label,
             HasHeaderRow = true,
             ActiveCell = (1, 1),
         };
@@ -67,7 +67,7 @@ public class GridSemanticsTests
         host.Attributes["aria-label"].Should().Be("July 2026");
         // The arrows move a CELL without the focus ever leaving the host's one stop…
         var active = host.Attributes["aria-activedescendant"];
-        active.Should().Be("eq-cell-1-1");
+        active.Should().StartWith("eq-cell-").And.EndWith("-1-1");
         // …and the reference RESOLVES. A dangling activedescendant reads to assistive tech as no
         // focus at all, and the attribute alone cannot tell you the difference.
         Walk(host).Where(node => node.Attributes.GetValueOrDefault("id") == active)
@@ -115,6 +115,31 @@ public class GridSemanticsTests
         // …and the row must not become a box: the caller's Grid/Column keeps placing the cells.
         rows.Should().OnlyContain(row =>
             row.Attributes.ContainsKey("style") && row.Attributes["style"]!.Replace(" ", "").Contains("display:contents"));
+    }
+
+    [Fact]
+    public void TwoGridsOnOnePage_DoNotShareCellIds()
+    {
+        // The ids are DOM-global, so an unscoped eq-cell-1-1 would appear twice and an
+        // activedescendant could resolve into the other calendar. Two months, two id spaces.
+        var page = new Column();
+        page.Add(Month(label: "July 2026"));
+        page.Add(Month(label: "August 2026"));
+
+        var ids = Walk(Render(page))
+            .Select(node => node.Attributes.GetValueOrDefault("id"))
+            .Where(id => id is not null)
+            .ToList();
+
+        ids.Should().HaveCount(6).And.OnlyHaveUniqueItems();
+        // …and each grid's activedescendant lands in its OWN grid.
+        foreach (var host in Walk(Render(page))
+                     .Where(node => node.Attributes.GetValueOrDefault("role") == "grid"))
+        {
+            var active = host.Attributes["aria-activedescendant"];
+            Walk(host).Where(node => node.Attributes.GetValueOrDefault("id") == active)
+                .Should().ContainSingle();
+        }
     }
 
     [Fact]

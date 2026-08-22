@@ -1199,9 +1199,13 @@ public static class WebRealizer
             },
         };
         if (navigable.Label is { Length: > 0 } gridLabel) element.RawAttributes["aria-label"] = gridLabel;
-        // The focused CELL is announced without the focus leaving the composite's one stop.
+        // Ids are scoped to THIS grid: two calendars on one page would otherwise both call their
+        // cells eq-cell-1-1, which is a duplicate id and an activedescendant that may resolve into
+        // the wrong grid. The scope is the grid's own name, hashed with the atomizer's FNV — the
+        // one hash both producers compute identically, which is what SSR hydration needs.
+        var scope = NavigableScope(navigable);
         if (navigable.ActiveCell is { } active)
-            element.RawAttributes["aria-activedescendant"] = NavigableCellId(active.Row, active.Item);
+            element.RawAttributes["aria-activedescendant"] = NavigableCellId(scope, active.Row, active.Item);
 
         for (var index = 0; index < navigable.Rows.Count; index++)
         {
@@ -1219,7 +1223,7 @@ public static class WebRealizer
             // The cells are IDENTIFIED — an aria-activedescendant pointing at an id nothing
             // carries is a dangling reference, which reads to assistive tech as no focus at all.
             var item = 0;
-            if (!(navigable.HasHeaderRow && index == 0)) NumberGridCells(row, index, ref item);
+            if (!(navigable.HasHeaderRow && index == 0)) NumberGridCells(row, scope, index, ref item);
             element.Children.Add(row);
         }
         return element;
@@ -1227,16 +1231,16 @@ public static class WebRealizer
 
     /// <summary>Walks one lowered row and ids every gridcell in tree order — the id the host's
     /// aria-activedescendant points at, built the same way by the TS twin.</summary>
-    private static void NumberGridCells(Core.HtmlElement element, int row, ref int item)
+    private static void NumberGridCells(Core.HtmlElement element, string scope, int row, ref int item)
     {
         if (element.Role == "gridcell")
         {
-            element.Id = NavigableCellId(row, item);
+            element.Id = NavigableCellId(scope, row, item);
             item++;
         }
         foreach (var child in element.Children)
             if (child is Core.HtmlElement childElement)
-                NumberGridCells(childElement, row, ref item);
+                NumberGridCells(childElement, scope, row, ref item);
     }
 
     /// <summary>The header row's cells NAME their columns (design system C15: the day names).
@@ -1251,7 +1255,15 @@ public static class WebRealizer
 
     /// <summary>The id a cell answers to for <c>aria-activedescendant</c> — the TS twin builds the
     /// same string, or the attribute points at nothing.</summary>
-    internal static string NavigableCellId(int row, int item) => $"eq-cell-{row}-{item}";
+    internal static string NavigableCellId(string scope, int row, int item) =>
+        $"eq-cell-{scope}-{row}-{item}";
+
+    /// <summary>What makes one grid's cell ids distinct from another's on the same page: the
+    /// grid's NAME, hashed. Two grids that also share a name (the same month rendered twice) would
+    /// still collide — a documented limit, and the point where a caller should give them names
+    /// that differ, which a screen reader needs anyway.</summary>
+    internal static string NavigableScope(Navigable navigable) =>
+        StyleAtomizer.Hash(navigable.Label);
 
     private static HtmlElement LowerCameraPreview(CameraPreview camera)
     {
