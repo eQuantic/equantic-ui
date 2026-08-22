@@ -49,8 +49,7 @@ export class DateTimePicker extends SharedStatefulComponent {
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if (!((next instanceof DateTimePicker && (fresh = next, true)))) return;
-        let arriving: any; 
-        let moved = (arriving = fresh.selected) != null && !$eq.equals(arriving, this.selected);
+        let moved = !$eq.equals(fresh.selected, this.selected);
         this.selected = fresh.selected;
         this.onChanged = fresh.onChanged;
         this.min = fresh.min;
@@ -58,10 +57,11 @@ export class DateTimePicker extends SharedStatefulComponent {
         this.stepMinutes = fresh.stepMinutes;
         this.dateLabel = fresh.dateLabel;
         this.timeLabel = fresh.timeLabel;
-        let value: any; 
-        if (moved && (value = this.selected) != null) {
-            this._date = $eq.time.dateOnly.fromDateTime(value);
-            this._time = $eq.time.timeOnly.fromDateTime(value);
+        if (moved) {
+            let value: any; 
+            this._date = (value = this.selected) != null ? $eq.time.dateOnly.fromDateTime(value) : null;
+            let moment: any; 
+            this._time = (moment = this.selected) != null ? $eq.time.timeOnly.fromDateTime(moment) : null;
         }
     }
 

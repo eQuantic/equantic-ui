@@ -23,7 +23,7 @@ export class TimePicker extends SharedStatefulComponent {
         if (this.disabled === undefined) this.disabled = false;
         this.selected = selected;
         this.onChanged = onChanged;
-        this.stepMinutes = stepMinutes < 1 ? 1 : stepMinutes;
+        this.stepMinutes = TimePicker.step(stepMinutes);
         this.min = min;
         this.max = max;
         this.label = label;
@@ -59,10 +59,14 @@ export class TimePicker extends SharedStatefulComponent {
         if (!((next instanceof TimePicker && (fresh = next, true)))) return;
         this.selected = fresh.selected;
         this.onChanged = fresh.onChanged;
-        this.stepMinutes = fresh.stepMinutes;
+        this.stepMinutes = TimePicker.step(fresh.stepMinutes);
         this.min = fresh.min;
         this.max = fresh.max;
         this.label = fresh.label;
+    }
+
+    static step(minutes: number) {
+        return minutes < 1 ? 1 : minutes;
     }
 
     slots() {

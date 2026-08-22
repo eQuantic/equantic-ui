@@ -21,7 +21,7 @@ public sealed class TimePicker : StatefulComponent
     {
         Selected = selected;
         OnChanged = onChanged;
-        StepMinutes = stepMinutes < 1 ? 1 : stepMinutes;
+        StepMinutes = Step(stepMinutes);
         Min = min;
         Max = max;
         Label = label;
@@ -40,11 +40,16 @@ public sealed class TimePicker : StatefulComponent
         if (next is not TimePicker fresh) return;
         Selected = fresh.Selected;
         OnChanged = fresh.OnChanged;
-        StepMinutes = fresh.StepMinutes;
+        StepMinutes = Step(fresh.StepMinutes);
         Min = fresh.Min;
         Max = fresh.Max;
         Label = fresh.Label;
     }
+
+    /// <summary>The step both doors agree on — the constructor's and the adopt's. A step under a
+    /// minute is not a step: the slot walk would stand still, and the guard that stops it from
+    /// standing still forever would leave the list holding one option.</summary>
+    private static int Step(int minutes) => minutes < 1 ? 1 : minutes;
 
     public override VisualNode Build(ComponentContext context)
     {

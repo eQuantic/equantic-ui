@@ -48,7 +48,10 @@ public sealed class DateTimePicker : StatefulComponent
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not DateTimePicker fresh) return;
-        var moved = fresh.Selected is { } arriving && arriving != Selected;
+        // NULL is a value the app can hand down, so the comparison includes it: a parent that
+        // clears the moment is moving it as surely as one that changes it, and a picker still
+        // showing yesterday's halves after a Clear button is the bug that reads as "it ignored me".
+        var moved = fresh.Selected != Selected;
         Selected = fresh.Selected;
         OnChanged = fresh.OnChanged;
         Min = fresh.Min;
@@ -59,10 +62,10 @@ public sealed class DateTimePicker : StatefulComponent
         // The app moved the moment, so both halves follow it — the same rule the Calendar keeps
         // for its view, and for the same reason: a control that ignores the value it was handed
         // looks broken long before anyone calls it wrong.
-        if (moved && Selected is { } value)
+        if (moved)
         {
-            _date = DateOnly.FromDateTime(value);
-            _time = TimeOnly.FromDateTime(value);
+            _date = Selected is { } value ? DateOnly.FromDateTime(value) : null;
+            _time = Selected is { } moment ? TimeOnly.FromDateTime(moment) : null;
         }
     }
 
