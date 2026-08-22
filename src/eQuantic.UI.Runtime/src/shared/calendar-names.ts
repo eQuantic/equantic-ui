@@ -21,6 +21,9 @@ import { calendarCatalog, formatLocale } from '../utils/culture';
  * seven identical headers, because 周日/周一/周二 all begin with the same glyph.
  */
 
+/** Where the host cannot say: ISO-8601's answer, and what most locales say. */
+const MONDAY = 1;
+
 /** A Sunday, so index 0..6 walks Sunday..Saturday — System.DayOfWeek's own numbering. */
 const SUNDAY = Date.UTC(2026, 7, 16);
 const DAY = 86_400_000;
@@ -47,13 +50,21 @@ export class CalendarNames {
   static get firstDayOfWeek(): number {
     const shipped = calendarCatalog();
     if (shipped) return shipped.firstDayOfWeek;
-    const locale = new Intl.Locale(formatLocale() ?? 'en-US') as Intl.Locale & {
-      weekInfo?: { firstDay: number };
-      getWeekInfo?: () => { firstDay: number };
-    };
-    const info = locale.getWeekInfo?.() ?? locale.weekInfo;
-    if (!info) return 1;
-    return info.firstDay === 7 ? 0 : info.firstDay;
+    // `Intl.Locale` is the NEWEST part of Intl and week data is newer still: a minimal build (or
+    // an older browser) may have neither, and constructing it blind would throw where the whole
+    // point of this branch is to answer without a server.
+    if (typeof Intl.Locale !== 'function') return MONDAY;
+    try {
+      const locale = new Intl.Locale(formatLocale() ?? 'en-US') as Intl.Locale & {
+        weekInfo?: { firstDay: number };
+        getWeekInfo?: () => { firstDay: number };
+      };
+      const info = locale.getWeekInfo?.() ?? locale.weekInfo;
+      // Intl counts 1..7 from Monday; System.DayOfWeek counts 0..6 from Sunday.
+      return info ? (info.firstDay === 7 ? 0 : info.firstDay) : MONDAY;
+    } catch {
+      return MONDAY;
+    }
   }
 
   /** The seven day names abbreviated, ALWAYS Sunday-first — the calendar rotates them itself. */

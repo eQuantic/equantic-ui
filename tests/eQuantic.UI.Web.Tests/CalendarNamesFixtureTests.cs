@@ -66,8 +66,19 @@ public class CalendarNamesFixtureTests
         }) + "\n";
 
         var path = FixturePath();
-        if (!File.Exists(path) || File.ReadAllText(path) != json) File.WriteAllText(path, json);
-        File.ReadAllText(path).Should().Be(json);
+        // A pin that rewrites itself is not a pin: it would pass in CI while the twin quietly read
+        // the freshly-written file from the same workspace. Regeneration is deliberate and named,
+        // the way every other fixture in this repository does it.
+        if (Environment.GetEnvironmentVariable("EQ_UPDATE_CALENDAR_FIXTURE") == "1")
+        {
+            File.WriteAllText(path, json);
+            return;
+        }
+
+        File.Exists(path).Should().BeTrue(
+            "the twin asserts against this fixture — generate it once with EQ_UPDATE_CALENDAR_FIXTURE=1");
+        File.ReadAllText(path).Should().Be(json,
+            "the calendar names changed; regenerate with EQ_UPDATE_CALENDAR_FIXTURE=1 and review the diff");
     }
 
     [Fact]

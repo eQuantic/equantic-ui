@@ -68,6 +68,21 @@ describe('calendar names (C# CalendarNamesFixtureTests cross-pin)', () => {
     expect(CalendarNames.firstDayOfWeek).toBe(6);
   });
 
+  it('answers even where Intl.Locale does not exist', () => {
+    // A minimal Intl build (or an older browser) may carry no Locale constructor at all, and week
+    // data is newer still. Constructing it blind would throw in the one branch whose job is to
+    // answer without a server.
+    const real = Intl.Locale;
+    try {
+      (Intl as { Locale?: unknown }).Locale = undefined;
+      installCulture('fr-FR', 'fr-FR', {});
+      expect(CalendarNames.firstDayOfWeek).toBe(1);
+      expect(CalendarNames.dayNamesShort).toHaveLength(7);
+    } finally {
+      (Intl as { Locale?: unknown }).Locale = real;
+    }
+  });
+
   it('a culture switch without a catalog does not keep the OLD culture’s names', () => {
     installCulture('fr-FR', 'fr-FR', {}, fixture['fr-FR']);
     expect(CalendarNames.monthNames[0]).toBe('janvier');
