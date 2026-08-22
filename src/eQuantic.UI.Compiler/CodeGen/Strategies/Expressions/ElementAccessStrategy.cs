@@ -76,12 +76,8 @@ public class ElementAccessStrategy : IExpressionIrStrategy
         {
             // A COMPOUND assignment is NOT here: it reads first, and the assignment strategy
             // lowers it to a guarded read plus a plain write.
-            // `??=` is here with `=` and not with `+=`: its lowering writes the READ and the WRITE
-            // from the same node (`a ?? (a = b)`), so a guarded read cannot stand in either place.
             AssignmentExpressionSyntax assignment =>
-                assignment.Left == node
-                && (assignment.IsKind(SyntaxKind.SimpleAssignmentExpression)
-                    || assignment.IsKind(SyntaxKind.CoalesceAssignmentExpression)),
+                assignment.Left == node && assignment.IsKind(SyntaxKind.SimpleAssignmentExpression),
             // ++ and -- also read first, and .NET throws for a key that is not there — but the
             // guarded read cannot BE the target (`$eq.dictGet(…)++` does not parse) and the
             // postfix form's value is the OLD one, so lowering it needs more than a template.

@@ -121,6 +121,9 @@ public class StatementConformanceTests
     // server got an exception.
     [InlineData("var m = new Dictionary<string, int>(); try { m[\"gone\"] += 1; return 1; } catch { return -1; }")]  // -1
     [InlineData("var m = new Dictionary<string, int> { [\"k\"] = 1 }; m[\"k\"]++; return m[\"k\"];")]              // 2
+    [InlineData("var m = new Dictionary<string, string?>(); try { m[\"gone\"] ??= \"v\"; return 1; } catch { return -1; }")]  // -1
+    [InlineData("var m = new Dictionary<string, string?> { [\"k\"] = null }; m[\"k\"] ??= \"v\"; return m[\"k\"];")]   // "v"
+    [InlineData("var m = new Dictionary<string, string?> { [\"k\"] = \"had\" }; m[\"k\"] ??= \"v\"; return m[\"k\"];")] // "had"
     [InlineData("var m = new Dictionary<string, int> { [\"k\"] = 3 }; return -m[\"k\"];")]                          // -3 — a unary READS
     [InlineData("var m = new Dictionary<string, int>(); try { var v = -m[\"gone\"]; return 1; } catch { return -1; }")] // -1
     public void OutOfRangeFailsWhereDotNetFails(string statements) =>

@@ -50,7 +50,6 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // key once each, so neither is evaluated twice.
         if (assignment.Left is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } target
             && !assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
-            && !assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.CoalesceAssignmentExpression)
             && context.SemanticHelper.GetType(target.Expression).IsDictionaryLike(out _))
         {
             context.UsedHelpers.Add(Eq.Import);

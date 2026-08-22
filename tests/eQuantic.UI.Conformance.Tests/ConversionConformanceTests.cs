@@ -45,9 +45,10 @@ public class ConversionConformanceTests
         "try { var bad = (new int[1])[5]; return 1; } catch { return -1; }",          // -1 in .NET; undefined here
         "var xs = new[]{1,2}; try { var v = xs[9]; return 1; } catch { return -1; }", // same, through a variable
         // `m[k]++` on a MISSING key: .NET reads first and throws, and a plain object increments an
-        // undefined into NaN and creates the key. A compound `+=` IS lowered (guarded read, plain
-        // write); ++ is not, because the guarded read cannot be the assignment TARGET and the
-        // postfix form's value is the OLD one, which a template cannot express.
+        // undefined into NaN and creates the key. `+=` and `??=` ARE lowered — read through the
+        // guard, write the result — because their value IS the result. A postfix increment's
+        // value is the value BEFORE it, which a template cannot express, so it is the one form of
+        // read-then-write left unguarded.
         "var m = new Dictionary<string, int>(); try { m[\"gone\"]++; return 1; } catch { return -1; }",
         "int big = int.MaxValue; long r = big + 1L; return r.ToString();",         // "2147483648" — widened first
         "byte b = 250; b += 10; return b;",                                        // 4 (wraps at 256)

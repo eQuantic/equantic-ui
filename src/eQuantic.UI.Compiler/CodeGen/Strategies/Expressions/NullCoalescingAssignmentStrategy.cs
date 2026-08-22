@@ -22,6 +22,23 @@ public class NullCoalescingAssignmentStrategy : IExpressionIrStrategy
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var assignment = (AssignmentExpressionSyntax)node;
+
+        // A DICTIONARY entry reads before it coalesces, and .NET throws for a key that is not
+        // there — `m[k] ??= v` on a missing key is a KeyNotFoundException, not an insert. The
+        // guarded read cannot stand in `a ?? (a = b)`, so it is lowered the way the compound
+        // assignment is: read through the guard, write the result. Writing back a value that was
+        // already there is not observable on a plain object, and `??` still short-circuits the
+        // right-hand side. The template binds the receiver and key once each.
+        if (assignment.Left is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } target
+            && context.SemanticHelper.GetType(target.Expression).IsDictionaryLike(out _))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Template($"{{0}}[{{1}}] = {Eq.DictGet}({{0}}, {{1}}) ?? {{2}}",
+                context.Converter.ConvertIr(target.Expression),
+                context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression),
+                context.Converter.ConvertIr(assignment.Right));
+        }
+
         var left = context.Converter.ConvertExpression(assignment.Left);
         var right = context.Converter.ConvertExpression(assignment.Right);
 
